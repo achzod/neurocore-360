@@ -5,19 +5,73 @@ import { formatTxtToDashboard } from "./formatDashboard";
 // CONFIGURATION DESIGN SYSTEM (Homepage)
 // ==========================================
 
-const CSS_VARIABLES = `
-  :root {
-    --primary: #5eead4; /* Teal-300 like */
-    --primary-glow: rgba(94, 234, 212, 0.5);
-    --secondary: #9F8CFF; /* Violet */
-    --background: #0a0a0a; /* Darker than 0F0F0F */
+const CSS_VARIABLES_DARK = `
+  :root[data-theme="dark"] {
+    /* Surfaces Material Design style (Oura/Ultrahuman) */
+    --bg: #0B0B0F;
+    --surface-0: #121212;
+    --surface-1: #1E1E1E;
+    --surface-2: #242424;
+    --surface-3: #2E2E2E;
+    
+    /* Legacy compatibility */
+    --background: #0B0B0F;
     --card-bg: #121212;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --border: rgba(255, 255, 255, 0.1);
-    --accent-gradient: linear-gradient(to right, #5eead4, #34d399, #22d3ee);
+    
+    /* Texte */
+    --text: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.65);
+    --text-faint: rgba(255,255,255,0.42);
+    --text-primary: rgba(255,255,255,0.92);
+    --text-secondary: rgba(255,255,255,0.65);
+    
+    /* Accent (limité, désaturé) */
+    --primary: #5eead4; /* Teal désaturé */
+    --primary-glow: rgba(94, 234, 212, 0.3);
+    --accent-ok: #34d399; /* Vert doux (OK uniquement) */
+    --accent-warning: #f59e0b; /* Ambre doux (à corriger uniquement) */
+    --secondary: #9F8CFF; /* Violet */
+    
+    /* Bordure */
+    --border: rgba(255,255,255,0.06);
+    --accent-gradient: linear-gradient(to right, #5eead4, #34d399);
   }
 `;
+
+const CSS_VARIABLES_LIGHT = `
+  :root[data-theme="light"] {
+    /* Surfaces Material Design style */
+    --bg: #ffffff;
+    --surface-0: #f8fafc;
+    --surface-1: #f1f5f9;
+    --surface-2: #e2e8f0;
+    --surface-3: #cbd5e1;
+    
+    /* Legacy compatibility */
+    --background: #ffffff;
+    --card-bg: #f8fafc;
+    
+    /* Texte */
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-faint: #64748b;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    
+    /* Accent */
+    --primary: #0d9488; /* Teal-600 */
+    --primary-glow: rgba(13, 148, 136, 0.3);
+    --accent-ok: #059669; /* Vert */
+    --accent-warning: #d97706; /* Ambre */
+    --secondary: #7c3aed; /* Violet-600 */
+    
+    /* Bordure */
+    --border: rgba(0, 0, 0, 0.1);
+    --accent-gradient: linear-gradient(to right, #0d9488, #059669);
+  }
+`;
+
+const CSS_VARIABLES = CSS_VARIABLES_DARK + CSS_VARIABLES_LIGHT;
 
 const SVG_SCALES_PATTERN = `
   <svg width="0" height="0">
@@ -39,6 +93,37 @@ function getScoreLevel(score: number): string {
   if (score >= 70) return "OPTIMAL";
   if (score >= 50) return "MOYEN";
   return "CRITIQUE";
+}
+
+// Score Ring Oura style (grand cercle avec label en dessous)
+function generateScoreRing(score: number, size: number = 200): string {
+  const center = size / 2;
+  const radius = (size / 2) - 20;
+  const stroke = 12;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  const color = getScoreColor(score);
+  const label = getScoreLevel(score);
+
+  return `
+    <svg width="${size}" height="${size + 40}" viewBox="0 0 ${size} ${size + 40}">
+      <defs>
+        <filter id="glow-${score}">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="${stroke}" />
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${color}" stroke-width="${stroke}" 
+        stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" 
+        transform="rotate(-90 ${center} ${center})" filter="url(#glow-${score})" />
+      <text x="${center}" y="${center - 8}" font-size="56" font-family="Inter, sans-serif" font-weight="800" fill="var(--text)" text-anchor="middle">${score}</text>
+      <text x="${center}" y="${center + 24}" font-size="14" font-family="Inter, sans-serif" font-weight="700" fill="${color}" text-anchor="middle" letter-spacing="0.1em">${label}</text>
+    </svg>
+  `;
 }
 
 function generateSVGGauge(score: number): string {
@@ -63,40 +148,38 @@ function generateSVGGauge(score: number): string {
 function generateSVGRadar(scores: Record<string, number>): string {
   let categories = Object.keys(scores);
   
-  // Simplifier le radar : limiter à 8 catégories maximum
-  // Prendre les catégories avec les scores les plus pertinents (priorité aux scores moyens/faibles pour voir les axes d'amélioration)
-  if (categories.length > 8) {
+  // Simplifier le radar : limiter à 6 catégories maximum pour meilleure lisibilité
+  if (categories.length > 6) {
     categories = categories
       .sort((a, b) => (scores[a] || 0) - (scores[b] || 0)) // Trier par score croissant
-      .slice(0, 8); // Prendre les 8 premiers (scores les plus faibles = axes d'amélioration)
+      .slice(0, 6); // Prendre les 6 premiers (scores les plus faibles = axes d'amélioration)
   }
   
   const numCategories = categories.length;
   if (numCategories === 0) {
-    // Retourner un SVG vide avec message au lieu de chaîne vide
     return `<svg width="400" height="400" viewBox="0 0 400 400"><text x="200" y="200" font-size="14" fill="#94a3b8" text-anchor="middle">Scores en cours d'analyse</text></svg>`;
   }
 
   const size = 400;
   const center = size / 2;
-  const radius = (size / 2) * 0.65;
+  const radius = (size / 2) * 0.7;
   const angleStep = (Math.PI * 2) / numCategories;
 
-  // Background grid
-  const gridLevels = [0.2, 0.4, 0.6, 0.8, 1];
+  // Background grid - moins de niveaux pour plus de clarté
+  const gridLevels = [0.25, 0.5, 0.75, 1];
   const gridHtml = gridLevels.map(level => {
     const r = radius * level;
     const points = categories.map((_, i) => {
       const angle = i * angleStep - Math.PI / 2;
       return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
     }).join(' ');
-    return `<polygon points="${points}" fill="none" stroke="#333" stroke-width="1" />`;
+    return `<polygon points="${points}" fill="none" stroke="#262626" stroke-width="1" opacity="0.5" />`;
   }).join('');
 
   // Axis
   const axisHtml = categories.map((_, i) => {
     const angle = i * angleStep - Math.PI / 2;
-    return `<line x1="${center}" y1="${center}" x2="${center + radius * Math.cos(angle)}" y2="${center + radius * Math.sin(angle)}" stroke="#333" stroke-width="1" />`;
+    return `<line x1="${center}" y1="${center}" x2="${center + radius * Math.cos(angle)}" y2="${center + radius * Math.sin(angle)}" stroke="#333" stroke-width="1" opacity="0.3" />`;
   }).join('');
 
   // Score polygon
@@ -108,29 +191,53 @@ function generateSVGRadar(scores: Record<string, number>): string {
   }).join(' ');
 
   const polygonHtml = `
-    <polygon points="${points}" fill="rgba(94, 234, 212, 0.15)" stroke="#5eead4" stroke-width="2" stroke-linejoin="round" style="filter: drop-shadow(0 0 8px rgba(94, 234, 212, 0.3));" />
+    <polygon points="${points}" fill="rgba(94, 234, 212, 0.2)" stroke="#5eead4" stroke-width="2.5" stroke-linejoin="round" />
     ${categories.map((cat, i) => {
       const score = scores[cat] || 0;
       const angle = i * angleStep - Math.PI / 2;
       const r = radius * (score / 100);
-      return `<circle cx="${center + r * Math.cos(angle)}" cy="${center + r * Math.sin(angle)}" r="4" fill="#5eead4" stroke="#000" stroke-width="2" />`;
+      return `<circle cx="${center + r * Math.cos(angle)}" cy="${center + r * Math.sin(angle)}" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" />`;
     }).join('')}
   `;
 
-  // Labels
+  // Labels - amélioration avec abréviations intelligentes
+  const labelMap: Record<string, string> = {
+    'ANALYSE VISU': 'VISUEL',
+    'ANALYSE SYST': 'CARDIO',
+    'ANALYSE META': 'METABO',
+    'ANALYSE BIOM': 'BIOMEC',
+    'ANALYSE ENT': 'ENTRAIN',
+    'ANALYSE SOMM': 'SOMMEIL',
+    'ANALYSE DIG': 'DIGEST',
+    'ANALYSE AXE': 'HORMONE',
+    'PROTOCOLE MATIN': 'MATIN',
+    'PROTOCOLE SOIR': 'SOIR',
+    'PROTOCOLE DIG': 'DIGEST',
+    'PROTOCOLE BUR': 'BUREAU',
+    'PROTOCOLE ENT': 'ENTRAIN',
+    'PLAN SEMAINE': 'PLAN',
+    'KPI ET TAB': 'KPI',
+    'STACK SUPP': 'SUPPLE',
+    'SYNTHESE': 'SYNTH'
+  };
+  
   const labelsHtml = categories.map((cat, i) => {
     const angle = i * angleStep - Math.PI / 2;
-    const r = radius + 35;
+    const r = radius + 40;
     const x = center + r * Math.cos(angle);
     const y = center + r * Math.sin(angle);
     const textAnchor = Math.cos(angle) > 0.1 ? "start" : Math.cos(angle) < -0.1 ? "end" : "middle";
     
-    // Split long labels
-    const words = cat.split(' ');
-    let label = cat;
-    if (words.length > 2) label = words[0] + ' ' + words[1] + '...';
+    // Chercher une abréviation dans le map
+    let label = cat.toUpperCase().substring(0, 10);
+    for (const [key, abbr] of Object.entries(labelMap)) {
+      if (cat.toUpperCase().startsWith(key)) {
+        label = abbr;
+        break;
+      }
+    }
     
-    return `<text x="${x}" y="${y}" font-size="11" font-family="Inter, sans-serif" font-weight="600" fill="#94a3b8" text-anchor="${textAnchor}">${label.toUpperCase()}</text>`;
+    return `<text x="${x}" y="${y}" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="${textAnchor}">${label}</text>`;
   }).join('');
 
   return `
@@ -174,7 +281,15 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       
       if (!l) return '';
 
-      // Titres internes
+      // Titres internes - Formatage professionnel
+      // Détecter "1. le diagnostic d'autorité" et autres titres numérotés
+      if (l.match(/^\d+\.\s*[a-z]/)) {
+        // Titre numéroté avec minuscules -> mettre en majuscules
+        const parts = l.match(/^(\d+\.\s*)(.+)$/);
+        if (parts) {
+          return `<h4 class="subsection-title">${parts[1]}${parts[2].toUpperCase()}</h4>`;
+        }
+      }
       if (l.match(/^[A-Z\s]{5,}:?$/) || (l.length < 50 && l.toUpperCase() === l && !l.includes('.') && l.length > 4)) {
         return `<h4 class="subsection-title">${l.replace(':', '')}</h4>`;
       }
@@ -208,24 +323,31 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     const level = getScoreLevel(section.score);
     const color = getScoreColor(section.score);
 
+    // Accordéon style Oura (par défaut fermé, sauf Executive Summary)
+    const isExecutive = section.title.toUpperCase().includes('EXECUTIVE SUMMARY');
+    const isDefaultOpen = isExecutive;
+    
     return `
-      <section class="card section-card" id="${section.id}">
-        <div class="section-header">
-          <div>
-            <span class="section-category">ANALYSE & STRATÉGIE</span>
-            <h3 class="section-title">${section.title}</h3>
+      <div class="accordion-section" id="${section.id}">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">${section.title}</h3>
           </div>
-          <div class="score-badge">
-            ${generateSVGGauge(section.score)}
-            <div class="score-meta">
-              <span class="score-level" style="color: ${color}">${level}</span>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              ${generateSVGGauge(section.score)}
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: ${color}">${level}</span>
             </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">${isDefaultOpen ? '−' : '+'}</span>
           </div>
         </div>
-        <div class="section-content">
-          ${formattedContent}
+        <div class="accordion-content ${isDefaultOpen ? 'open' : ''}">
+          <div class="accordion-body">
+            ${formattedContent}
+          </div>
         </div>
-      </section>
+      </div>
     `;
   }).join("");
 
@@ -258,8 +380,8 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     }
 
     /* TYPOGRAPHY */
-    h1, h2, h3, h4 { color: white; letter-spacing: -0.02em; }
-    p { margin-bottom: 1.5rem; color: #cbd5e1; font-weight: 300; font-size: 1.05rem; }
+    h1, h2, h3, h4 { color: var(--text-primary); letter-spacing: -0.02em; }
+    p { margin-bottom: 1.5rem; color: var(--text-secondary); font-weight: 300; font-size: 1.05rem; }
     strong { color: var(--primary); font-weight: 600; }
 
     /* HERO SECTION */
@@ -297,7 +419,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       font-size: 3.5rem;
       font-weight: 800;
       margin-bottom: 16px;
-      background: linear-gradient(to bottom, #fff, #94a3b8);
+      background: linear-gradient(to bottom, var(--text-primary), var(--text-secondary));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -333,6 +455,233 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       margin-bottom: 20px;
     }
 
+    /* OURA STYLE DASHBOARD COMPONENTS */
+    
+    /* Hero Score Ring (Oura style) */
+    .hero-score-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+    .hero-score-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .hero-score-phrase {
+      font-size: 16px;
+      color: var(--text);
+      max-width: 400px;
+      text-align: center;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+    
+    /* Contributors Cards (3 causes racines) */
+    .contributors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin: 32px 0;
+    }
+    .contributor-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .contributor-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .contributor-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    .contributor-impact {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .contributor-action {
+      font-size: 13px;
+      color: var(--primary);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    /* KPI Tiles (4-6 max) */
+    .kpi-tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+    .kpi-tile {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .kpi-tile-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-tile-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .kpi-tile-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .kpi-tile.priority-high {
+      border-color: var(--accent-warning);
+    }
+    .kpi-tile.priority-ok {
+      border-color: var(--accent-ok);
+    }
+    
+    /* Plan 3 Phases */
+    .plan-phases {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin: 32px 0;
+    }
+    .phase-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .phase-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .phase-bullets {
+      list-style: none;
+      padding: 0;
+    }
+    .phase-bullets li {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 10px;
+      padding-left: 20px;
+      position: relative;
+    }
+    .phase-bullets li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    
+    /* Bloc "À confirmer" (tests vidéo) */
+    .confirm-block {
+      background: var(--surface-2);
+      border: 1px solid var(--accent-warning);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+    .confirm-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-warning);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .confirm-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    
+    /* Accordéon pour sections détaillées */
+    .accordion-section {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .accordion-header {
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+    .accordion-header:hover {
+      background: var(--surface-2);
+    }
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .accordion-content.open {
+      max-height: 5000px;
+    }
+    .accordion-body {
+      padding: 0 20px 20px 20px;
+    }
+    
+    /* Badge Priorité */
+    .priority-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .priority-badge.high {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--accent-warning);
+    }
+    .priority-badge.medium {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+    .priority-badge.low {
+      background: rgba(94, 234, 212, 0.2);
+      color: var(--primary);
+    }
+
     /* SECTIONS */
     .section-card {
       background: var(--card-bg);
@@ -366,7 +715,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     .section-title {
       font-size: 2rem;
       font-weight: 700;
-      color: white;
+      color: var(--text-primary);
       max-width: 80%;
     }
     .score-badge {
@@ -388,7 +737,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     /* CONTENT ELEMENTS */
     .subsection-title {
       font-size: 1.1rem;
-      color: white;
+      color: var(--text-primary);
       border-left: 3px solid var(--primary);
       padding-left: 15px;
       margin: 40px 0 20px;
@@ -434,7 +783,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       font-size: 0.9rem;
     }
     .kpi-label { color: var(--text-secondary); }
-    .kpi-value { color: white; font-weight: 700; }
+    .kpi-value { color: var(--text-primary); font-weight: 700; }
 
     .photos-grid {
       display: grid;
@@ -464,6 +813,142 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       border-top: 1px solid var(--border);
       margin-top: 60px;
     }
+    
+    /* THEME SELECTOR */
+    .theme-selector {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .theme-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .theme-btn:hover {
+      background: rgba(94, 234, 212, 0.1);
+      color: var(--primary);
+    }
+    .theme-btn.active {
+      background: var(--primary);
+      color: var(--background);
+    }
+    
+    /* TABLE OF CONTENTS */
+    .toc-container {
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 999;
+      max-width: 280px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .toc-container.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .toc-toggle {
+      position: fixed;
+      left: 20px;
+      top: 20px;
+      z-index: 1000;
+      width: 48px;
+      height: 48px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--primary);
+      font-size: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: all 0.2s ease;
+    }
+    .toc-toggle:hover {
+      background: var(--primary);
+      color: var(--background);
+      transform: scale(1.05);
+    }
+    .toc-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-list {
+      list-style: none;
+    }
+    .toc-item {
+      margin-bottom: 8px;
+    }
+    .toc-link {
+      display: block;
+      padding: 8px 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      line-height: 1.4;
+    }
+    .toc-link:hover {
+      background: rgba(94, 234, 212, 0.1);
+      color: var(--primary);
+      transform: translateX(4px);
+    }
+    .toc-link.active {
+      background: rgba(94, 234, 212, 0.2);
+      color: var(--primary);
+      font-weight: 600;
+      border-left: 3px solid var(--primary);
+    }
+    
+    @media (max-width: 1200px) {
+      .toc-container {
+        max-width: 240px;
+      }
+    }
+    
+    @media (max-width: 968px) {
+      .toc-container,
+      .toc-toggle {
+        display: none;
+      }
+      .theme-selector {
+        top: 10px;
+        right: 10px;
+      }
+    }
 
     @media (max-width: 768px) {
       .hero h1 { font-size: 2.5rem; }
@@ -483,45 +968,238 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     }
   </style>
 </head>
-<body>
+<body data-theme="dark">
+  <!-- Theme Selector -->
+  <div class="theme-selector">
+    <button class="theme-btn active" data-theme="dark">🌙 Dark</button>
+    <button class="theme-btn" data-theme="light">☀️ Light</button>
+  </div>
+  
+  <!-- Table of Contents Toggle -->
+  <button class="toc-toggle" id="toc-toggle" aria-label="Afficher la table des matières">📑</button>
+  
+  <!-- Table of Contents -->
+  <nav class="toc-container" id="toc-container">
+    <div class="toc-title">Table des matières</div>
+    <ul class="toc-list">
+      ${dashboard.sections.map(section => `
+        <li class="toc-item">
+          <a href="#${section.id}" class="toc-link" data-section="${section.id}">${section.title}</a>
+        </li>
+      `).join('')}
+    </ul>
+  </nav>
+  
   <div class="container">
     
-    <header class="hero">
-      <span class="hero-badge">Analyse Métabolique Complète</span>
-      <h1>NEUROCORE 360°</h1>
-      <p class="client-name">${dashboard.clientName}</p>
-      <div style="margin-top: 30px; font-size: 0.8rem; color: var(--text-secondary);">
-        ID: ${auditId} • Généré le ${dashboard.generatedAt}
+    <!-- Hero Header Compact (Oura style) -->
+    <header class="hero" style="padding: 40px 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
+        <div>
+          <span class="hero-badge">Diagnostic express en 30 secondes</span>
+          <h1 style="font-size: 2rem; margin: 12px 0 8px 0;">${dashboard.clientName}</h1>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">
+            Généré le ${dashboard.generatedAt} • ID: ${auditId.substring(0, 8)}
+          </p>
+        </div>
       </div>
+      
+      <!-- Hero Score Ring (Oura style) -->
+      <div class="hero-score-container">
+        <div class="hero-score-label">Score Global</div>
+        ${generateScoreRing(dashboard.global, 240)}
+        <p class="hero-score-phrase">
+          ${dashboard.global >= 85 ? 'Excellente base métabolique' : dashboard.global >= 70 ? 'Bon potentiel d\'optimisation' : dashboard.global >= 50 ? 'Amélioration significative possible' : 'Priorité : corrections fondamentales'}
+        </p>
+      </div>
+      
+      <!-- Notice importante (anti-hallucination) -->
+      <p style="font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 24px; padding: 12px; background: var(--surface-1); border-radius: 8px;">
+        📸 Analyse basée sur photos statiques. Posture confirmée par tests vidéo simples.
+      </p>
     </header>
 
-    <div class="global-stats">
-      <div class="stat-card">
-        <h3>Indice de Vitalité</h3>
-        ${generateSVGGauge(dashboard.global)}
-      </div>
-      <div class="stat-card">
-        <h3>Profil Métabolique</h3>
-        ${generateSVGRadar(scores)}
-      </div>
-    </div>
+    <!-- 3 Cartes Causes Racines (Contributors) -->
+    ${(() => {
+      const executiveSection = dashboard.sections.find(s => s.title.toUpperCase().includes('EXECUTIVE SUMMARY') || s.category === 'executive');
+      if (!executiveSection) return '';
+      
+      // Extraire les 3 causes principales depuis le contenu Executive Summary
+      const content = executiveSection.content;
+      const causes = [];
+      
+      // Chercher "LEVIER" ou des patterns similaires
+      const levierMatch = content.match(/(?:LEVIER|LEVEUR|CAUSE|RACINE)[\s\S]{0,200}/i);
+      if (levierMatch) {
+        const lines = levierMatch[0].split('\n').slice(0, 4).filter(l => l.trim().length > 20);
+        causes.push(...lines.slice(0, 3));
+      }
+      
+      // Si pas assez, utiliser les premières phrases significatives
+      if (causes.length < 3) {
+        const sentences = content.split(/[\.\n]/).filter(s => s.trim().length > 30 && s.trim().length < 200);
+        causes.push(...sentences.slice(0, 3 - causes.length));
+      }
+      
+      if (causes.length === 0) {
+        causes.push(
+          'Optimisation métabolique nécessaire',
+          'Correction posturale prioritaire',
+          'Rééquilibrage hormonal recommandé'
+        );
+      }
+      
+      return `
+        <div class="contributors-grid">
+          ${causes.slice(0, 3).map((cause, i) => `
+            <div class="contributor-card">
+              <div class="contributor-title">Cause racine ${i + 1}</div>
+              <div class="contributor-impact">${cause.trim().substring(0, 120)}${cause.length > 120 ? '...' : ''}</div>
+              <div class="contributor-action">→ Voir détails ci-dessous</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    })()}
+
+    <!-- KPI Tiles (4-6) -->
+    ${(() => {
+      const analysisSections = dashboard.sections.filter(s => s.category === 'analysis' && s.score > 0).slice(0, 6);
+      const kpiLabels: Record<string, string> = {
+        'VISUELLE': 'Compo',
+        'POSTURALE': 'Compo',
+        'BIOMECANIQUE': 'Posture',
+        'CARDIOVASCULAIRE': 'Cardio',
+        'METABOLISME': 'Métabo',
+        'NUTRITION': 'Métabo',
+        'SOMMEIL': 'Récup',
+        'RECUPERATION': 'Récup',
+        'DIGESTION': 'Digest',
+        'HORMONAUX': 'Hormone',
+        'ENTRAINEMENT': 'Force'
+      };
+      
+      const kpiTiles = analysisSections.map(section => {
+        const titleKey = Object.keys(kpiLabels).find(key => section.title.toUpperCase().includes(key)) || 'AUTO';
+        const label = kpiLabels[titleKey] || titleKey.substring(0, 8);
+        const priority = section.score < 50 ? 'high' : section.score < 70 ? 'medium' : 'ok';
+        
+        return {
+          label,
+          score: section.score,
+          priority,
+          desc: section.title.replace(/^ANALYSE\s+/i, '').substring(0, 40)
+        };
+      });
+      
+      if (kpiTiles.length === 0) return '';
+      
+      return `
+        <div class="kpi-tiles-grid">
+          ${kpiTiles.map(tile => `
+            <div class="kpi-tile priority-${tile.priority}">
+              <div class="kpi-tile-label">${tile.label}</div>
+              <div class="kpi-tile-value">${tile.score}<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">${tile.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    })()}
 
     ${photosHTML}
 
-    <main>
+    <!-- Plan d'action en 3 phases -->
+    ${(() => {
+      const planSection = dashboard.sections.find(s => s.title.toUpperCase().includes('PLAN') && s.title.toUpperCase().includes('SEMAINE'));
+      if (!planSection) return '';
+      
+      const content = planSection.content;
+      // Extraire les 3 phases (Phase 1, Phase 2, Phase 3 ou Semaines 1-4, 5-8, 9-12)
+      const phases: Array<{ title: string; bullets: string[] }> = [];
+      
+      const phaseMatches = content.match(/(?:PHASE|SEMAINE).*?30.*?60.*?90|(?:SEMAINE|PHASE)\s*(?:1|2|3).*?[\s\S]{0,500}/gi);
+      if (phaseMatches && phaseMatches.length >= 3) {
+        phaseMatches.slice(0, 3).forEach((match, i) => {
+          const bullets = match.split(/[•\-\+]/).filter(b => b.trim().length > 10).slice(0, 3);
+          phases.push({
+            title: `Phase ${i + 1}`,
+            bullets: bullets.map(b => b.trim().substring(0, 100))
+          });
+        });
+      } else {
+        // Fallback : créer 3 phases génériques
+        phases.push(
+          { title: 'Phase 1 : Fondations (Semaines 1-4)', bullets: ['Stabilisation posturale', 'Correction alimentaire', 'Protocoles de base'] },
+          { title: 'Phase 2 : Accélération (Semaines 5-8)', bullets: ['Optimisation métabolique', 'Renforcement ciblé', 'Mesures avancées'] },
+          { title: 'Phase 3 : Consolidation (Semaines 9-12)', bullets: ['Automatisation', 'Optimisation fine', 'Maintenance'] }
+        );
+      }
+      
+      return `
+        <div class="plan-phases">
+          ${phases.map(phase => `
+            <div class="phase-card">
+              <div class="phase-title">${phase.title}</div>
+              <ul class="phase-bullets">
+                ${phase.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    })()}
+
+    <!-- Bloc "À confirmer" (tests vidéo) -->
+    <div class="confirm-block">
+      <div class="confirm-title">
+        ⚠️ À confirmer par tests vidéo
+      </div>
+      <div class="confirm-text">
+        L'analyse posturale est basée sur des photos statiques. Pour confirmer les hypothèses et affiner le diagnostic, des tests vidéo simples sont recommandés :
+        <br><br>
+        <strong>Tests recommandés :</strong> Squat de profil, mouvement d'épaule (flexion/extension), test de mobilité hanche.
+        <br><br>
+        Ces tests permettront de valider les observations et d'ajuster les recommandations spécifiques.
+      </div>
+    </div>
+
+    <!-- Radar Graphique (Profil Métabolique) -->
+    <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin: 32px 0; text-align: center;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em;">Profil Métabolique</h3>
+      ${generateSVGRadar(scores)}
+    </div>
+
+    ${dashboard.ctaDebut ? `
+    <div class="cta-box cta-debut" style="max-width: 900px; margin: 40px auto 60px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.05) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: center;">
+      <h3 style="color: var(--primary); font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.1em;">🎯 Rappel Important</h3>
+      <div style="color: var(--text-primary); font-size: 1.05rem; line-height: 1.8; white-space: pre-line; text-align: left;">${dashboard.ctaDebut.replace(/\n\n/g, '\n').trim()}</div>
+    </div>
+    ` : ''}
+
+    <!-- Sections Détaillées (Accordéon) -->
+    <div style="margin-top: 48px;">
+      <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text); margin-bottom: 32px; text-transform: uppercase; letter-spacing: 0.05em;">Détails de l'analyse</h2>
       ${sectionsHTML}
-    </main>
+    </div>
+
+    ${dashboard.ctaFin ? `
+    <div class="cta-box cta-fin" style="max-width: 900px; margin: 60px auto 40px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.15) 0%, rgba(94, 234, 212, 0.08) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: center;">
+      <h3 style="color: var(--primary); font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.1em;">🚀 Prêt à Transformer Ces Insights ?</h3>
+      <div style="color: var(--text-primary); font-size: 1.1rem; line-height: 1.9; white-space: pre-line; text-align: left;">${dashboard.ctaFin.replace(/={3,}/g, '').replace(/PROCHAINES ETAPES|PRET A TRANSFORMER.*\?/g, '').trim()}</div>
+    </div>
+    ` : ''}
 
     <!-- Formulaire d'avis -->
     <div id="review-form-container" style="max-width: 700px; margin: 60px auto; padding: 40px; background: var(--card-bg); border: 1px solid var(--primary); border-radius: 24px;">
-      <h3 style="color: white; margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 700;">⭐ Ton avis compte !</h3>
+      <h3 style="color: var(--text-primary); margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 700;">⭐ Ton avis compte !</h3>
       <p style="color: var(--text-secondary); margin-bottom: 32px; text-align: center; font-size: 1.05rem;">Donne ton avis sur cette analyse pour m'aider à améliorer mes services</p>
       
       <form id="review-form" style="display: flex; flex-direction: column; gap: 24px;">
         <input type="hidden" id="audit-id" value="${auditId}" />
         
         <div>
-          <label style="color: white; display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Note sur 5 étoiles *</label>
+          <label style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Note sur 5 étoiles *</label>
           <div id="rating-stars" style="display: flex; gap: 8px; justify-content: center; font-size: 2.5rem; cursor: pointer;">
             <span data-rating="1" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
             <span data-rating="2" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
@@ -533,7 +1211,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
         </div>
         
         <div>
-          <label for="comment" style="color: white; display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Ton commentaire *</label>
+          <label for="comment" style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Ton commentaire *</label>
           <textarea 
             id="comment" 
             name="comment" 
@@ -541,19 +1219,19 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
             minlength="10" 
             maxlength="1000"
             placeholder="Partage ton expérience avec cette analyse..."
-            style="width: 100%; min-height: 140px; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem; resize: vertical;"
+            style="width: 100%; min-height: 140px; padding: 16px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem; resize: vertical;"
           ></textarea>
           <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Minimum 10 caractères</small>
         </div>
         
         <div>
-          <label for="email" style="color: white; display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Email (optionnel)</label>
+          <label for="email" style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Email (optionnel)</label>
           <input 
             type="email" 
             id="email" 
             name="email"
             placeholder="ton@email.com"
-            style="width: 100%; padding: 14px 16px; background: #0a0a0a; border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem;"
+            style="width: 100%; padding: 14px 16px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem;"
           />
         </div>
         
@@ -585,6 +1263,84 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
   
   <script>
     (function() {
+      // Theme Management
+      const savedTheme = localStorage.getItem('report-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      const themeButtons = document.querySelectorAll('.theme-btn');
+      themeButtons.forEach(btn => {
+        if (btn.dataset.theme === savedTheme) {
+          btn.classList.add('active');
+        }
+        btn.addEventListener('click', () => {
+          const theme = btn.dataset.theme;
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('report-theme', theme);
+          themeButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+      
+      // Table of Contents Management
+      const tocToggle = document.getElementById('toc-toggle');
+      const tocContainer = document.getElementById('toc-container');
+      const tocLinks = document.querySelectorAll('.toc-link');
+      
+      if (tocToggle && tocContainer) {
+        tocToggle.addEventListener('click', () => {
+          tocContainer.classList.toggle('visible');
+        });
+        
+        // Close TOC when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!tocContainer.contains(e.target) && !tocToggle.contains(e.target)) {
+            tocContainer.classList.remove('visible');
+          }
+        });
+        
+        // Smooth scroll for TOC links
+        tocLinks.forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('href').substring(1);
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) {
+              const offsetTop = targetSection.offsetTop - 100;
+              window.scrollTo({
+                top: offsetTop,
+                behavior: 'smooth'
+              });
+              tocContainer.classList.remove('visible');
+            }
+          });
+        });
+        
+        // Highlight active section in TOC on scroll
+        const sections = document.querySelectorAll('.section-card');
+        const observerOptions = {
+          root: null,
+          rootMargin: '-100px 0px -66% 0px',
+          threshold: 0
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.section === id) {
+                  link.classList.add('active');
+                }
+              });
+            }
+          });
+        }, observerOptions);
+        
+        sections.forEach(section => observer.observe(section));
+      }
+      
+      // Review Form
       const form = document.getElementById('review-form');
       const ratingStars = document.getElementById('rating-stars');
       const ratingInput = document.getElementById('rating-value');
@@ -658,8 +1414,12 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
           return;
         }
         
-        // Obtenir l'URL de base depuis window.location
-        const baseUrl = window.location.origin;
+        // Obtenir l'URL de base - utiliser l'URL du serveur si fichier local
+        let baseUrl = window.location.origin;
+        if (baseUrl === 'null' || baseUrl.startsWith('file://')) {
+          // Si fichier ouvert localement, utiliser l'URL du serveur
+          baseUrl = 'https://neurocore-360.onrender.com';
+        }
         
         const formData = {
           auditId: auditId,

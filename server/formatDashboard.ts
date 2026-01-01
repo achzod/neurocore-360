@@ -104,16 +104,26 @@ function extractGeneratedAt(txtContent: string): string {
 
 function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefined {
   if (type === 'debut') {
-    const startMarker = '==== OFFRE EXCLUSIVE';
-    const idx = txtContent.indexOf(startMarker);
-    if (idx !== -1) {
-      const endIdx = txtContent.indexOf('====', idx + startMarker.length);
-      if (endIdx !== -1) {
-        return txtContent.substring(idx, endIdx + 4).trim();
+    // Chercher "RAPPEL IMPORTANT" ou "INFOS IMPORTANTES"
+    const markers = ['RAPPEL IMPORTANT', 'INFOS IMPORTANTES'];
+    for (const marker of markers) {
+      const idx = txtContent.indexOf(marker);
+      if (idx !== -1) {
+        // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
+        const endMarkers = ['AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
+        let endIdx = txtContent.length;
+        for (const endMarker of endMarkers) {
+          const endPos = txtContent.indexOf(endMarker, idx + marker.length);
+          if (endPos !== -1 && endPos < endIdx) {
+            endIdx = endPos;
+          }
+        }
+        return txtContent.substring(idx, endIdx).trim();
       }
     }
   } else {
-    const markers = ['PROCHAINE ETAPE', 'OFFRE LIMITEE', 'RESERVE TA PLACE'];
+    // Chercher "PRET A TRANSFORMER" ou "PROCHAINES ETAPES"
+    const markers = ['PRET A TRANSFORMER CES INSIGHTS', 'PROCHAINES ETAPES', 'PROCHAINE ETAPE'];
     for (const marker of markers) {
       const idx = txtContent.lastIndexOf(marker);
       if (idx !== -1) {

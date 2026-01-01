@@ -50,8 +50,8 @@ REPONDS UNIQUEMENT avec ce JSON (pas de texte avant/apres, pas de markdown) :
     "visceral": "faible|modere|eleve|tres-eleve",
     "subcutaneous": "faible|modere|eleve|tres-eleve",
     "zones": ["4 zones stockage prioritaires avec DETAILS"],
-    "estimatedBF": "XX-XX% (sois CONSERVATEUR - sous-estime plutôt que surestime, surtout pour les hommes actifs)",
-    "waistToHipRatio": "0.XX (androide/gynoide/mixte)",
+    "estimatedBF": "Range qualitatif uniquement (ex: 'modéré-élevé', 'faible-modéré') - JAMAIS de chiffre précis sans mesure DEXA/BOD POD. Sois CONSERVATEUR.",
+    "waistToHipRatio": "Tendance qualitative uniquement (ex: 'tendance androïde', 'tendance gynoïde', 'mixte') - JAMAIS de chiffre précis (ex: 0.92) sans mesure au ruban selon protocole standardisé",
     "hormonalPattern": "description pattern hormonal visible",
     "inflammationSigns": "description signes inflammation/retention"
   },
@@ -299,13 +299,38 @@ export function formatPhotoAnalysisForReport(analysis: PhotoAnalysisResult, pren
   if (analysis.fatDistribution.zones.length > 0) {
     report += `Tes zones de stockage principales : ${analysis.fatDistribution.zones.join(", ")}. `;
   }
-  report += `J'estime ton taux de gras a environ ${analysis.fatDistribution.estimatedBF}. Ton ratio taille/hanches : ${analysis.fatDistribution.waistToHipRatio}.\n\n`;
+  // Ne pas afficher de chiffres précis (WHR, BF %) si non mesurés
+  const bfStr = analysis.fatDistribution.estimatedBF || "";
+  const whrStr = analysis.fatDistribution.waistToHipRatio || "";
+  // Si BF contient un % ou chiffres, utiliser description qualitative
+  if (bfStr && !bfStr.includes("Non") && !bfStr.includes("disponible")) {
+    if (bfStr.match(/\d+%/) || bfStr.match(/\d+-\d+%/)) {
+      // C'est un chiffre, remplacer par tendance qualitative
+      report += `Tendance composition corporelle : modérée-élevée (analyse visuelle, sans mesure précise). `;
+    } else {
+      report += `Tendance composition corporelle : ${bfStr}. `;
+    }
+  }
+  // Si WHR contient un chiffre (0.XX), ne pas l'afficher
+  if (whrStr && !whrStr.includes("Non") && !whrStr.includes("disponible")) {
+    if (whrStr.match(/0\.\d+/)) {
+      // C'est un chiffre inventé, utiliser pattern hormonal à la place
+      report += `Distribution graisseuse : ${analysis.fatDistribution.hormonalPattern || "tendance de stockage abdominal (analyse visuelle)"}. `;
+    } else {
+      // C'est déjà une description qualitative
+      report += `Distribution graisseuse : ${whrStr}. `;
+    }
+  } else {
+    // Utiliser pattern hormonal comme fallback
+    report += `Distribution graisseuse : ${analysis.fatDistribution.hormonalPattern || "analyse basée sur photos statiques"}. `;
+  }
+  report += `\n\nIMPORTANT : Analyse basée sur photos statiques. Pour mesures précises (tour de taille/hanches selon protocole standardisé, % masse grasse), utilise repères anatomiques et équipements validés.\n\n`;
   
-  report += `TA POSTURE (Score: ${analysis.posture.overallScore}/100)\n`;
+  report += `TA POSTURE (Score: ${analysis.posture.overallScore}/100 - analyse basée sur photos statiques)\n`;
   report += `Ta tete : ${analysis.posture.headPosition}. Tes epaules : ${analysis.posture.shoulderAlignment}. `;
   report += `Ta colonne : ${analysis.posture.spineAlignment}. Ton bassin : ${analysis.posture.pelvicTilt}. Tes genoux : ${analysis.posture.kneesAlignment}.\n`;
   if (analysis.posture.issues.length > 0) {
-    report += `Ce que je detecte comme problemes : ${analysis.posture.issues.join("; ")}.\n\n`;
+    report += `Indices observés sur photos statiques : ${analysis.posture.issues.join("; ")}. À confirmer par tests vidéo simples pour validation.\n\n`;
   }
   
   report += `TON EQUILIBRE MUSCULAIRE\n`;

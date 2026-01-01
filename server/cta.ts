@@ -39,6 +39,8 @@ Tu consultes ton analyse PREMIUM NEUROCORE 360 complete.
 
 IMPORTANT : Si tu decides de prendre un coaching avec moi apres cette analyse, le montant que tu as paye pour cette analyse (${amountPaid}EUR) sera DEDUIT A 100% du prix du coaching.
 
+CODE PROMO COACHING : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)
+
 Pour toute question ou pour discuter de ton accompagnement :
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
@@ -89,6 +91,8 @@ Tu as maintenant entre les mains une analyse complete et personnalisee de ton pr
    - Support continu pour maximiser tes resultats
    
    BONUS : Le montant que tu as paye pour cette analyse (${amountPaid}EUR) est DEDUIT A 100% du prix du coaching.
+   
+   CODE PROMO : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)
 
 Contacte-moi pour discuter de ton accompagnement :
 Email: ${CONTACT.email}

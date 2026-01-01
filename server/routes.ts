@@ -18,6 +18,18 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Helper function to get base URL
+  function getBaseUrl(): string {
+    if (process.env.RENDER_EXTERNAL_URL) {
+      return process.env.RENDER_EXTERNAL_URL;
+    } else if (process.env.REPLIT_DOMAINS) {
+      const replitDomain = process.env.REPLIT_DOMAINS.split(',')[0];
+      return `https://${replitDomain}`;
+    } else {
+      return `http://localhost:${process.env.PORT || 5000}`;
+    }
+  }
+  
   app.post("/api/questionnaire/save-progress", async (req, res) => {
     try {
       const data = saveProgressSchema.parse(req.body);
@@ -96,10 +108,8 @@ export async function registerRoutes(
     const success = await waitForCompletion();
     
     if (success) {
-      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const baseUrl = replitDomain 
-        ? `https://${replitDomain}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
+      const baseUrl = getBaseUrl();
+      console.log(`[Email] Using baseUrl: ${baseUrl} for audit ${auditId}`);
 
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       
@@ -107,20 +117,31 @@ export async function registerRoutes(
       const completedAudit = await storage.getAudit(auditId);
       const clientName = completedAudit?.narrativeReport?.clientName || email.split('@')[0];
       
+      console.log(`[Email] Sending report ready email to ${email} for audit ${auditId}`);
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (emailSent) {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-        console.log(`[Auto] Report ready and email sent for audit ${auditId}`);
+        console.log(`[Email] ✅ Report ready email sent successfully to ${email} for audit ${auditId}`);
         
         // Envoyer email admin en copie
-        await sendAdminEmailNewAudit(email, clientName, auditType, auditId);
+        console.log(`[Email] Sending admin notification email for audit ${auditId}`);
+        const adminEmailSent = await sendAdminEmailNewAudit(email, clientName, auditType, auditId);
+        if (adminEmailSent) {
+          console.log(`[Email] ✅ Admin notification email sent successfully for audit ${auditId}`);
+        } else {
+          console.error(`[Email] ❌ Admin notification email FAILED for audit ${auditId}`);
+        }
       } else {
-        console.error(`[Auto] Report ready but email FAILED for audit ${auditId} - check SendPulse config`);
+        console.error(`[Email] ❌ Report ready email FAILED for audit ${auditId} - check SendPulse config`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       }
     } else {
       await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" });
-      console.error(`[Auto] Report generation failed for audit ${auditId}`);
+      console.error(`[Email] ❌ Report generation failed or timeout for audit ${auditId}`);
+    }
+    } catch (error) {
+      console.error(`[Email] ❌ Error in processReportAndSendEmail for audit ${auditId}:`, error);
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
     }
   }
 
@@ -329,11 +350,7 @@ export async function registerRoutes(
 
       const token = await storage.createMagicToken(email);
       
-      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const baseUrl = replitDomain 
-        ? `https://${replitDomain}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
-
+      const baseUrl = getBaseUrl();
       const emailSent = await sendMagicLinkEmail(email, token, baseUrl);
       
       if (emailSent) {
@@ -464,12 +481,8 @@ export async function registerRoutes(
         return;
       }
 
-      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const baseUrl = replitDomain 
-        ? `https://${replitDomain}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
-
-      console.log(`[Resend] Sending email to ${audit.email} for audit ${auditId}`);
+      const baseUrl = getBaseUrl();
+      console.log(`[Resend] Sending email to ${audit.email} for audit ${auditId} (baseUrl: ${baseUrl})`);
       
       const emailSent = await sendReportReadyEmail(audit.email, auditId, audit.type, baseUrl);
       
@@ -516,11 +529,8 @@ export async function registerRoutes(
     const success = await checkComplete();
     
     if (success) {
-      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const baseUrl = replitDomain 
-        ? `https://${replitDomain}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
-
+      const baseUrl = getBaseUrl();
+      console.log(`[Admin] Sending email to ${email} for audit ${auditId} (baseUrl: ${baseUrl})`);
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (emailSent) {
         await storage.updateAudit(auditId, {
@@ -643,10 +653,7 @@ export async function registerRoutes(
       
       const stripe = await getUncachableStripeClient();
       
-      const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-      const baseUrl = replitDomain 
-        ? `https://${replitDomain}` 
-        : `http://localhost:${process.env.PORT || 5000}`;
+      const baseUrl = getBaseUrl();
       
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
