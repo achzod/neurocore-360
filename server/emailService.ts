@@ -289,3 +289,79 @@ export async function sendMagicLinkEmail(
     return false;
   }
 }
+
+export async function sendAdminEmailNewAudit(
+  clientEmail: string,
+  clientName: string,
+  auditType: string,
+  auditId: string
+): Promise<boolean> {
+  try {
+    const adminEmail = "achzod@yt@gmail.com";
+    const token = await getAccessToken();
+    const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
+
+    const emailContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
+          <tr>
+            <td style="padding: 40px 30px;">
+              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 24px;">Nouvelle analyse générée</h2>
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px;">
+                <strong style="color: #fafafa;">Client:</strong> ${clientName} (${clientEmail})
+              </p>
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px;">
+                <strong style="color: #fafafa;">Type:</strong> ${planLabel}
+              </p>
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px;">
+                <strong style="color: #fafafa;">Audit ID:</strong> ${auditId}
+              </p>
+              <p style="color: #a3a3a3; font-size: 14px; line-height: 1.7; margin: 0;">
+                L'analyse a été générée avec succès et l'email a été envoyé au client.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: {
+          html: encodeBase64(emailContent),
+          text: `Nouvelle analyse ${planLabel} générée pour ${clientName} (${clientEmail}) - Audit ID: ${auditId}`,
+          subject: `[NEUROCORE 360] Nouvelle analyse ${planLabel} - ${clientName}`,
+          from: {
+            name: SENDER_NAME,
+            email: SENDER_EMAIL,
+          },
+          to: [{ email: adminEmail }],
+        },
+      }),
+    });
+
+    const result = await response.json() as { result: boolean };
+    console.log(`[SendPulse] Admin email sent to ${adminEmail}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending admin email:", error);
+    return false;
+  }
+}
