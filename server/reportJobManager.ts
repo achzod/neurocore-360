@@ -1,4 +1,5 @@
 import { generateAndConvertAudit } from "./geminiPremiumEngine";
+import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
 import { generateExportHTMLFromTxt } from "./exportService";
 import { storage } from "./storage";
 import type { ClientData } from "./types";
