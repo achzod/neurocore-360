@@ -282,7 +282,7 @@ export class PgStorage implements IStorage {
     }
 
     const id = randomUUID();
-    const scores = calculateScoresFromResponses(input.responses);
+    const scores = this.calculateScores(input.responses);
 
     const isDelayedMode = process.env.DELIVERY_MODE === "delayed";
     const deliveryDelay = input.type === "GRATUIT" ? 24 : 48;
@@ -408,6 +408,10 @@ export class PgStorage implements IStorage {
     }
     await pool.query("DELETE FROM magic_tokens WHERE token = $1", [token]);
     return row.email;
+  }
+
+  private calculateScores(responses: Record<string, unknown>): Record<string, number> {
+    return calculateScoresFromResponses(responses);
   }
 
   private rowToAudit(row: any): Audit {
