@@ -36,6 +36,7 @@ import {
   Heart,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { DNAHelix } from "@/components/animations/DNAHelix";
 import { BodyVisualization } from "@/components/animations/BodyVisualization";
 
@@ -277,12 +278,12 @@ function BodyMappingSection() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const categories = [
-    { id: "metabolism", name: "Métabolisme", color: "hsl(160 84% 39%)", borderColor: "border-green-500" },
-    { id: "biomechanics", name: "Biomécanique", color: "hsl(280 70% 50%)", borderColor: "border-purple-500" },
-    { id: "neurology", name: "Neurologie", color: "hsl(200 80% 50%)", borderColor: "border-blue-500" },
-    { id: "cardio", name: "Cardio", color: "hsl(0 70% 50%)", borderColor: "border-red-500" },
-    { id: "hormones", name: "Hormones", color: "hsl(45 90% 50%)", borderColor: "border-yellow-500" },
-    { id: "immunity", name: "Immunité", color: "hsl(120 60% 45%)", borderColor: "border-green-400" },
+    { id: "metabolism", name: "Métabolisme", color: "hsl(160 84% 39%)" },
+    { id: "biomechanics", name: "Biomécanique", color: "hsl(280 70% 50%)" },
+    { id: "neurology", name: "Neurologie", color: "hsl(200 80% 50%)" },
+    { id: "cardio", name: "Cardio", color: "hsl(0 70% 50%)" },
+    { id: "hormones", name: "Hormones", color: "hsl(45 90% 50%)" },
+    { id: "immunity", name: "Immunité", color: "hsl(120 60% 45%)" },
   ];
 
   return (
@@ -298,14 +299,14 @@ function BodyMappingSection() {
           </p>
         </div>
 
-        {/* Animation BodyVisualization au centre */}
+        {/* Animation BodyVisualization centrée */}
         <div className="flex justify-center mb-12">
           <div className="h-[500px] w-[500px] max-w-full">
             <BodyVisualization activeCategory={activeCategory || undefined} className="h-full w-full" />
           </div>
         </div>
 
-        {/* Boutons de catégories */}
+        {/* Boutons de catégories en dessous */}
         <div className="mb-12">
           <p className="text-center text-muted-foreground mb-6 text-sm font-medium">
             Sélectionne une catégorie pour voir les zones analysées :
@@ -320,7 +321,7 @@ function BodyMappingSection() {
                   className={`
                     relative px-4 py-3 rounded-lg border-2 transition-all
                     ${isActive 
-                      ? `${category.borderColor} border-2 bg-card shadow-lg` 
+                      ? 'bg-card shadow-lg border-2' 
                       : 'border-border bg-card/50 hover:border-border/80'
                     }
                   `}
@@ -331,14 +332,14 @@ function BodyMappingSection() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <div 
-                    className="text-sm font-semibold"
-                    style={{ color: isActive ? category.color : undefined }}
+                    className="text-sm font-semibold text-center"
+                    style={{ color: isActive ? category.color : 'inherit' }}
                   >
                     {category.name}
                   </div>
                   {isActive && (
                     <motion.div
-                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-background"
                       style={{ backgroundColor: category.color }}
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}

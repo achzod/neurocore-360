@@ -91,49 +91,79 @@ export function BodyVisualization({ className = "", activeCategory }: BodyVisual
         />
 
         {bodyZones.map((zone, index) => {
+          // Si une catégorie est active, on montre seulement les zones de cette catégorie
+          // Sinon, on montre toutes les zones mais avec moins d'intensité
           const isActive = !activeCategory || zone.category === activeCategory;
           const color = categoryColors[zone.category];
+          const shouldShow = !activeCategory || isActive;
           
           return (
-            <g key={zone.id}>
-              <motion.circle
-                cx={zone.cx}
-                cy={zone.cy}
-                r="6"
-                fill="transparent"
-                animate={{
-                  r: [6, 10, 6],
-                  opacity: [0.1, 0.3, 0.1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: index * 0.2,
-                }}
-                style={{ fill: isActive ? color : "transparent" }}
-              />
+            <g key={zone.id} opacity={shouldShow ? 1 : 0.2}>
+              {/* Halo externe - seulement si actif */}
+              {isActive && (
+                <motion.circle
+                  cx={zone.cx}
+                  cy={zone.cy}
+                  r="8"
+                  fill="transparent"
+                  stroke={color}
+                  strokeWidth="0.5"
+                  animate={{
+                    r: [8, 12, 8],
+                    opacity: [0.2, 0.4, 0.2],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    delay: index * 0.15,
+                  }}
+                />
+              )}
               
+              {/* Cercle de pulse moyen */}
+              {isActive && (
+                <motion.circle
+                  cx={zone.cx}
+                  cy={zone.cy}
+                  r="5"
+                  fill={color}
+                  animate={{
+                    r: [5, 7, 5],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    delay: index * 0.1,
+                  }}
+                />
+              )}
+              
+              {/* Point central */}
               <motion.circle
                 cx={zone.cx}
                 cy={zone.cy}
-                r="2.5"
-                fill={isActive ? color : "hsl(var(--muted-foreground) / 0.3)"}
+                r={isActive ? "3" : "1.5"}
+                fill={isActive ? color : "hsl(var(--muted-foreground) / 0.4)"}
                 filter={isActive ? "url(#bodyGlow)" : undefined}
                 style={{ cursor: "pointer" }}
                 animate={isActive ? {
-                  scale: [1, 1.2, 1],
-                  opacity: [0.8, 1, 0.8],
-                } : {}}
+                  scale: [1, 1.3, 1],
+                  opacity: [0.9, 1, 0.9],
+                } : {
+                  opacity: [0.3, 0.5, 0.3],
+                }}
                 transition={{
-                  duration: 1.5,
+                  duration: isActive ? 1.2 : 2,
                   repeat: Infinity,
-                  delay: index * 0.1,
+                  delay: index * 0.08,
                 }}
                 onMouseEnter={() => setHoveredZone(zone)}
                 onMouseLeave={() => setHoveredZone(null)}
-                whileHover={{ scale: 1.5 }}
+                whileHover={{ scale: isActive ? 1.5 : 1.2 }}
               />
               
+              {/* Point blanc central - seulement si actif */}
               {isActive && (
                 <motion.circle
                   cx={zone.cx}
@@ -141,12 +171,12 @@ export function BodyVisualization({ className = "", activeCategory }: BodyVisual
                   r="1"
                   fill="white"
                   animate={{
-                    opacity: [0.5, 1, 0.5],
+                    opacity: [0.6, 1, 0.6],
                   }}
                   transition={{
                     duration: 1,
                     repeat: Infinity,
-                    delay: index * 0.15,
+                    delay: index * 0.12,
                   }}
                 />
               )}
