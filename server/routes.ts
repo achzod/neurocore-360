@@ -928,25 +928,12 @@ CREATE TABLE IF NOT EXISTS cta_history (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audits' AND column_name = 'email') THEN
-    CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
-  END IF;
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'audits' AND column_name = 'user_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);
-  END IF;
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'reviews') THEN
-    CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
-    CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
-  END IF;
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'cta_history') THEN
-    CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
-  END IF;
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'report_jobs') THEN
-    CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
-  END IF;
-END $$;
+CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
+CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
+CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
+CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
 `;
       
       const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0 && !s.startsWith('--'));
@@ -971,8 +958,9 @@ END $$;
             await client.query(statement + ';');
             executed++;
           } catch (error: any) {
-            // Ignorer les erreurs si la table/index existe déjà
-            if (error.code === '42P07' || error.code === '42710' || error.message.includes('already exists')) {
+            // Ignorer les erreurs si la table/index existe déjà, ou si colonne n'existe pas (pour les index)
+            if (error.code === '42P07' || error.code === '42710' || error.code === '42703' || 
+                error.message.includes('already exists') || error.message.includes('does not exist')) {
               skipped++;
             } else {
               console.error('[Init DB] Error:', error.message);
