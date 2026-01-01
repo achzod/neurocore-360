@@ -13,8 +13,21 @@ import type {
 } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 
+// Configuration de la connexion PostgreSQL
+const getDatabaseUrl = (): string => {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
+  if (!url) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+  // Vérifier que l'URL est valide (commence par postgres:// ou postgresql://)
+  if (!url.startsWith('postgres://') && !url.startsWith('postgresql://')) {
+    throw new Error(`Invalid DATABASE_URL format. Expected postgres:// or postgresql://, got: ${url.substring(0, 20)}...`);
+  }
+  return url;
+};
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: getDatabaseUrl(),
 });
 
 export interface MagicToken {
