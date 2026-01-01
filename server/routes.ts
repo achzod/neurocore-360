@@ -843,5 +843,140 @@ export async function registerRoutes(
     }
   });
 
+  // Endpoint admin pour initialiser la base de données
+  app.post("/api/admin/init-db", async (req, res) => {
+    try {
+      const { Pool } = await import('pg');
+      
+      const sql = `
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audits (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+  email VARCHAR(255) NOT NULL,
+  type VARCHAR(20) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
+  responses JSONB NOT NULL DEFAULT '{}',
+  scores JSONB NOT NULL DEFAULT '{}',
+  narrative_report JSONB,
+  report_delivery_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  report_scheduled_for TIMESTAMP,
+  report_sent_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  completed_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS questionnaire_progress (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  current_section TEXT NOT NULL DEFAULT '0',
+  total_sections TEXT NOT NULL DEFAULT '14',
+  percent_complete TEXT NOT NULL DEFAULT '0',
+  responses JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS magic_tokens (
+  token VARCHAR(255) PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  expires_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS report_jobs (
+  audit_id VARCHAR(36) PRIMARY KEY,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  progress INTEGER NOT NULL DEFAULT 0,
+  current_section TEXT NOT NULL DEFAULT '',
+  error TEXT,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  last_progress_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  completed_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36),
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  reviewed_at TIMESTAMP,
+  reviewed_by VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS cta_history (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id VARCHAR(36) NOT NULL,
+  cta_type VARCHAR(20) NOT NULL,
+  scheduled_at TIMESTAMP NOT NULL,
+  sent_at TIMESTAMP,
+  status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+  email_subject TEXT,
+  email_message TEXT,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
+CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
+CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
+CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
+`;
+      
+      const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0 && !s.startsWith('--'));
+      
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
+      if (!databaseUrl) {
+        return res.status(500).json({ error: 'DATABASE_URL not configured' });
+      }
+      
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes('render.com') ? { rejectUnauthorized: false } : false,
+      });
+      
+      const client = await pool.connect();
+      
+      try {
+        let executed = 0;
+        let skipped = 0;
+        for (const statement of statements) {
+          try {
+            await client.query(statement + ';');
+            executed++;
+          } catch (error: any) {
+            // Ignorer les erreurs si la table/index existe déjà
+            if (error.code === '42P07' || error.code === '42710' || error.message.includes('already exists')) {
+              skipped++;
+            } else {
+              console.error('[Init DB] Error:', error.message);
+              throw error;
+            }
+          }
+        }
+        res.json({ success: true, message: `Database initialized (${executed} executed, ${skipped} skipped)` });
+      } finally {
+        client.release();
+        await pool.end();
+      }
+    } catch (error: any) {
+      console.error('[Init DB] Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
