@@ -287,8 +287,8 @@ function ProcessSection() {
     },
     {
       step: 2,
-      title: "Analyse IA Avancée",
-      description: "Notre IA Gemini analyse tes réponses et tes photos pour créer un profil complet",
+      title: "Analyse Avancée",
+      description: "J'analyse tes réponses et tes photos pour créer un profil complet personnalisé",
       icon: Brain,
     },
     {

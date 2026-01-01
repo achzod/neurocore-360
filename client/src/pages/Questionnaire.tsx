@@ -573,8 +573,8 @@ export default function Questionnaire() {
                           Ces photos sont ESSENTIELLES pour ton analyse
                         </p>
                         <p className="text-sm text-amber-700/90 dark:text-amber-400/90">
-                          Sans ces 3 photos, notre IA ne pourra pas realiser ton analyse posturale complete. 
-                          C'est l'un des piliers de l'audit : nous detectons les desequilibres musculaires, 
+                          Sans ces 3 photos, je ne pourrai pas realiser ton analyse posturale complete. 
+                          C'est l'un des piliers de l'audit : je detecte les desequilibres musculaires, 
                           les compensations, et les sources potentielles de douleurs ou contre-performances.
                         </p>
                         <div className="text-sm text-amber-700/80 dark:text-amber-400/80 space-y-1">
