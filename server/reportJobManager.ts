@@ -194,16 +194,17 @@ async function generateReportAsync(
       progress: 20,
     });
 
-    console.log(`[ReportJobManager] Calling Gemini engine for ${auditId}`);
+    console.log(`[ReportJobManager] Calling GPT-5.2-2025-12-11 engine for ${auditId}`);
     
+    // Utiliser GPT-5.2-2025-12-11 pour la génération
     const result = await withTimeout(
-      generateAndConvertAudit(responses as ClientData, photoAnalysis, auditType as any, auditId),
+      generateAndConvertAuditWithOpenAI(responses as ClientData, photoAnalysis, auditType as any, auditId),
       AI_CALL_TIMEOUT_MS,
-      `Gemini report generation for ${auditId}`
+      `GPT-5.2-2025-12-11 report generation for ${auditId}`
     );
 
     if (!result.success) {
-      throw new Error(result.error || "Gemini generation failed");
+      throw new Error(result.error || "GPT-5.2-2025-12-11 generation failed");
     }
 
     const report = {
