@@ -1,0 +1,19 @@
+═══════════════════════════════════════════════════════════
+VARIABLES D'ENVIRONNEMENT POUR RENDER
+═══════════════════════════════════════════════════════════
+
+Copie-colle ces valeurs dans Render Dashboard > Environment:
+
+GEMINI_API_KEY = AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk
+
+DATABASE_URL = (copie l'URL depuis Replit ou crée une DB PostgreSQL sur Render)
+
+SESSION_SECRET = (n'importe quelle string random, ex: abc123xyz789secret)
+
+SMTP_USER = (ton email SendPulse)
+
+SMTP_PASS = (ton mot de passe SendPulse)
+
+═══════════════════════════════════════════════════════════
+Les autres variables sont déjà dans render.yaml
+═══════════════════════════════════════════════════════════
