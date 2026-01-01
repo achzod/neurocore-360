@@ -848,112 +848,101 @@ export async function registerRoutes(
     try {
       const { Pool } = await import('pg');
       
-      const sql = `
--- Supprimer et recréer audits pour avoir le bon schéma
-DROP TABLE IF EXISTS audits CASCADE;
-
-CREATE TABLE IF NOT EXISTS users (
-  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) NOT NULL UNIQUE,
-  name VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS audits (
-  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id VARCHAR(36) NOT NULL REFERENCES users(id),
-  email VARCHAR(255) NOT NULL,
-  type VARCHAR(20) NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
-  responses JSONB NOT NULL DEFAULT '{}',
-  scores JSONB NOT NULL DEFAULT '{}',
-  narrative_report JSONB,
-  report_delivery_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-  report_scheduled_for TIMESTAMP,
-  report_sent_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  completed_at TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS questionnaire_progress (
-  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) NOT NULL UNIQUE,
-  current_section TEXT NOT NULL DEFAULT '0',
-  total_sections TEXT NOT NULL DEFAULT '14',
-  percent_complete TEXT NOT NULL DEFAULT '0',
-  responses JSONB NOT NULL DEFAULT '{}',
-  status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
-  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS magic_tokens (
-  token VARCHAR(255) PRIMARY KEY,
-  email VARCHAR(255) NOT NULL,
-  expires_at TIMESTAMP NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS report_jobs (
-  audit_id VARCHAR(36) PRIMARY KEY,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending',
-  progress INTEGER NOT NULL DEFAULT 0,
-  current_section TEXT NOT NULL DEFAULT '',
-  error TEXT,
-  attempt_count INTEGER NOT NULL DEFAULT 0,
-  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  last_progress_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  completed_at TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS reviews (
-  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-  audit_id VARCHAR(36) NOT NULL,
-  user_id VARCHAR(36),
-  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-  comment TEXT NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-  reviewed_at TIMESTAMP,
-  reviewed_by VARCHAR(255)
-);
-
-CREATE TABLE IF NOT EXISTS cta_history (
-  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-  audit_id VARCHAR(36) NOT NULL,
-  cta_type VARCHAR(20) NOT NULL,
-  scheduled_at TIMESTAMP NOT NULL,
-  sent_at TIMESTAMP,
-  status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
-  email_subject TEXT,
-  email_message TEXT,
-  error TEXT,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
-
--- ALTER TABLE pour ajouter les colonnes manquantes si elles n'existent pas
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS user_id VARCHAR(36);
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS email VARCHAR(255);
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS type VARCHAR(20);
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'COMPLETED';
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS responses JSONB DEFAULT '{}';
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS scores JSONB DEFAULT '{}';
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS narrative_report JSONB;
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_delivery_status VARCHAR(20) DEFAULT 'PENDING';
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_scheduled_for TIMESTAMP;
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_sent_at TIMESTAMP;
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
-ALTER TABLE audits ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
-
-CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
-CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);
-CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
-CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
-CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
-CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
-`;
-      
-      const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0 && !s.startsWith('--'));
+      // Requêtes SQL exécutées une par une pour éviter les problèmes de parsing
+      const statements = [
+        // D'abord supprimer audits pour le recréer avec le bon schéma
+        `DROP TABLE IF EXISTS audits CASCADE`,
+        
+        // Créer users
+        `CREATE TABLE IF NOT EXISTS users (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          name VARCHAR(255),
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
+        
+        // Créer audits avec le bon schéma
+        `CREATE TABLE IF NOT EXISTS audits (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(36) REFERENCES users(id),
+          email VARCHAR(255) NOT NULL,
+          type VARCHAR(20) NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
+          responses JSONB NOT NULL DEFAULT '{}',
+          scores JSONB NOT NULL DEFAULT '{}',
+          narrative_report JSONB,
+          report_delivery_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+          report_scheduled_for TIMESTAMP,
+          report_sent_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          completed_at TIMESTAMP
+        )`,
+        
+        // Autres tables
+        `CREATE TABLE IF NOT EXISTS questionnaire_progress (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          current_section TEXT NOT NULL DEFAULT '0',
+          total_sections TEXT NOT NULL DEFAULT '14',
+          percent_complete TEXT NOT NULL DEFAULT '0',
+          responses JSONB NOT NULL DEFAULT '{}',
+          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
+        
+        `CREATE TABLE IF NOT EXISTS magic_tokens (
+          token VARCHAR(255) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          expires_at TIMESTAMP NOT NULL
+        )`,
+        
+        `CREATE TABLE IF NOT EXISTS report_jobs (
+          audit_id VARCHAR(36) PRIMARY KEY,
+          status VARCHAR(20) NOT NULL DEFAULT 'pending',
+          progress INTEGER NOT NULL DEFAULT 0,
+          current_section TEXT NOT NULL DEFAULT '',
+          error TEXT,
+          attempt_count INTEGER NOT NULL DEFAULT 0,
+          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          last_progress_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          completed_at TIMESTAMP
+        )`,
+        
+        `CREATE TABLE IF NOT EXISTS reviews (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          audit_id VARCHAR(36) NOT NULL,
+          user_id VARCHAR(36),
+          rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+          comment TEXT NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          reviewed_at TIMESTAMP,
+          reviewed_by VARCHAR(255)
+        )`,
+        
+        `CREATE TABLE IF NOT EXISTS cta_history (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          audit_id VARCHAR(36) NOT NULL,
+          cta_type VARCHAR(20) NOT NULL,
+          scheduled_at TIMESTAMP NOT NULL,
+          sent_at TIMESTAMP,
+          status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+          email_subject TEXT,
+          email_message TEXT,
+          error TEXT,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
+        
+        // Index
+        `CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`,
+        `CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`
+      ];
       
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
       if (!databaseUrl) {
