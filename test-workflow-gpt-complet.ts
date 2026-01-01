@@ -50,15 +50,23 @@ const PHOTO_PATTERNS = ['front', 'side', 'back'];
 async function loadPhotos(): Promise<string[]> {
   const photos: string[] = [];
   
-  for (const file of PHOTO_FILES) {
-    const filePath = path.join(PHOTOS_DIR, file);
-    if (fs.existsSync(filePath)) {
-      const buffer = fs.readFileSync(filePath);
-      const base64 = buffer.toString('base64');
-      photos.push(`data:image/jpeg;base64,${base64}`);
-    } else {
-      console.log(`⚠️  Photo non trouvée: ${file}`);
+  // Chercher les fichiers correspondant aux patterns
+  if (fs.existsSync(PHOTOS_DIR)) {
+    const files = fs.readdirSync(PHOTOS_DIR);
+    for (const pattern of PHOTO_PATTERNS) {
+      const file = files.find(f => f.toLowerCase().includes(pattern) && (f.endsWith('.jpg') || f.endsWith('.jpeg')));
+      if (file) {
+        const filePath = path.join(PHOTOS_DIR, file);
+        const buffer = fs.readFileSync(filePath);
+        const base64 = buffer.toString('base64');
+        photos.push(`data:image/jpeg;base64,${base64}`);
+        console.log(`   ✅ Photo chargée: ${file}`);
+      } else {
+        console.log(`⚠️  Photo non trouvée pour pattern: ${pattern}`);
+      }
     }
+  } else {
+    console.log(`⚠️  Dossier photos non trouvé: ${PHOTOS_DIR}`);
   }
   
   return photos;
