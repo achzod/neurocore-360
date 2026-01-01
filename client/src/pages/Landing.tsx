@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -460,68 +460,57 @@ function ProcessSection() {
 }
 
 function TestimonialsSection() {
-  const reviews = [
-    { 
-      name: "Alexandre T.", 
-      age: 34,
-      location: "Lyon",
-      rating: 5, 
-      title: "Bluffé par la précision",
-      comment: "Honnêtement, je m'attendais à un truc générique comme tous les questionnaires santé en ligne. Là c'est autre chose. Le rapport a identifié une résistance à l'insuline que même mon médecin n'avait pas vue. J'ai ajusté mon timing de repas comme recommandé, et en 6 semaines j'ai perdu 4kg de gras sans rien changer d'autre. Le protocole de magnésium glycinate le soir a aussi réglé mes problèmes de sommeil.",
-      avatar: "A",
-      plan: "Premium"
-    },
-    { 
-      name: "Camille R.", 
-      age: 29,
-      location: "Paris",
-      rating: 5, 
-      title: "Enfin des réponses après 3 ans de fatigue",
-      comment: "Ça fait 3 ans que je galère avec une fatigue chronique. Médecins, prises de sang, thyroïde... tout était 'normal'. L'audit a mis le doigt sur un déficit en fer ferritine (alors que mon fer sérique était OK) et un déséquilibre cortisol. Les recommandations étaient hyper précises : fer bisglycinate à jeun, adaptogènes le matin. Au bout de 2 mois, je revis.",
-      avatar: "C",
-      plan: "Premium"
-    },
-    { 
-      name: "Maxime D.", 
-      age: 41,
-      location: "Bordeaux",
-      rating: 5, 
-      title: "Mon coach ne comprend pas comment j'ai progressé",
-      comment: "Je fais du CrossFit depuis 5 ans, j'étais en plateau depuis 18 mois. L'audit a révélé que mon ratio oméga 3/6 était catastrophique et que je sous-dosais mes glucides les jours d'entraînement. En suivant le protocole nutrition périodisée du rapport, j'ai PR mon deadlift de 15kg en 3 mois. Mon coach me demande ce que j'ai changé.",
-      avatar: "M",
-      plan: "Premium"
-    },
-    { 
-      name: "Julie M.", 
-      age: 36,
-      location: "Marseille",
-      rating: 5, 
-      title: "Plus efficace que 2 ans de naturopathe",
-      comment: "J'ai dépensé facilement 2000 euros chez des naturopathes ces dernières années. Des conseils vagues, des compléments random... Ici pour 79 euros j'ai eu un plan précis : quel complément, quel dosage, à quel moment, pendant combien de temps. Le suivi du cycle hormonal dans le rapport Elite c'est de l'or. SPM divisé par deux en 2 cycles.",
-      avatar: "J",
-      plan: "Premium"
-    },
-    { 
-      name: "Thomas B.", 
-      age: 45,
-      location: "Toulouse",
-      rating: 4, 
-      title: "Très complet, demande de l'investissement",
-      comment: "Le questionnaire est long, faut être honnête. Mais c'est justement ce qui fait la qualité du rapport. Chaque question a un sens. J'ai découvert que mes problèmes de concentration venaient probablement d'une inflammation chronique liée à mon alimentation. Le protocole anti-inflammatoire fonctionne, je mets 4 étoiles juste parce que j'aurais aimé plus de suivi après.",
-      avatar: "T",
-      plan: "Premium"
-    },
-    { 
-      name: "Sarah L.", 
-      age: 31,
-      location: "Nantes",
-      rating: 5, 
-      title: "Le rapport a changé ma vision de la santé",
-      comment: "Je pensais bien manger, bien dormir, bien m'entraîner. Le rapport m'a montré 3 angles morts majeurs : mon stress chronique qui plombait ma récupération, un déficit en vitamine D malgré mes sorties, et un microbiote déséquilibré (ballonnements que je normalisais). 4 mois plus tard, je dors mieux, je digère mieux, et j'ai pris 2kg de muscle.",
-      avatar: "S",
-      plan: "Premium"
-    },
-  ];
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch("/api/reviews");
+      const data = await response.json();
+      if (data.success && data.reviews) {
+        // Les reviews sont déjà triés par date DESC dans la query SQL
+        setReviews(data.reviews.slice(0, 6)); // Limiter à 6 pour l'affichage
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+    // Rafraîchir toutes les 30 secondes pour mettre à jour automatiquement
+    const interval = setInterval(fetchReviews, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format date en français : "15 janv" ou "3 fév"
+  const formatDate = (dateString: string | Date): string => {
+    const date = new Date(dateString);
+    const months = [
+      "janv", "fév", "mars", "avr", "mai", "juin",
+      "juil", "août", "sept", "oct", "nov", "déc"
+    ];
+    return `${date.getDate()} ${months[date.getMonth()]}`;
+  };
+
+  // Calculer la moyenne et le nombre total
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : "4.8";
+  const totalReviews = reviews.length;
+
+  // Générer avatar initiale depuis le commentaire ou email
+  const getAvatarInitial = (review: any): string => {
+    if (review.email) {
+      return review.email.charAt(0).toUpperCase();
+    }
+    if (review.comment) {
+      return review.comment.charAt(0).toUpperCase();
+    }
+    return "A";
+  };
 
   const renderStars = (rating: number) => (
     <div className="flex gap-0.5">
@@ -534,6 +523,9 @@ function TestimonialsSection() {
     </div>
   );
 
+  // Fallback si pas de reviews (afficher les données statiques)
+  const displayReviews = reviews.length > 0 ? reviews : [];
+
   return (
     <section className="py-16 lg:py-24" data-testid="section-testimonials">
       <div className="mx-auto max-w-6xl px-4">
@@ -544,8 +536,8 @@ function TestimonialsSection() {
                 <Star key={star} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
               ))}
             </div>
-            <span className="text-xl font-bold">4.8/5</span>
-            <span className="text-sm text-muted-foreground">(127 avis)</span>
+            <span className="text-xl font-bold">{averageRating}/5</span>
+            <span className="text-sm text-muted-foreground">({totalReviews} avis)</span>
           </div>
           <h2 className="text-2xl font-bold sm:text-3xl" data-testid="text-testimonials-title">
             Ce qu'en disent mes clients
@@ -555,49 +547,53 @@ function TestimonialsSection() {
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {reviews.map((review, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: idx * 0.08 }}
-            >
-              <Card className="h-full border-border/50 bg-card/50" data-testid={`card-review-${idx}`}>
-                <CardContent className="flex h-full flex-col p-5">
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
-                        {review.avatar}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{review.name}</span>
-                          <span className="text-xs text-muted-foreground">{review.age} ans</span>
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground">Chargement des avis...</div>
+        ) : displayReviews.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">Aucun avis pour le moment</div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {displayReviews.map((review, idx) => (
+              <motion.div
+                key={review.id || idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+              >
+                <Card className="h-full border-border/50 bg-card/50" data-testid={`card-review-${idx}`}>
+                  <CardContent className="flex h-full flex-col p-5">
+                    <div className="mb-3 flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
+                          {getAvatarInitial(review)}
                         </div>
-                        <span className="text-xs text-muted-foreground">{review.location}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              {review.email ? review.email.split("@")[0] : "Utilisateur"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(review.createdAt)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className="shrink-0 text-xs">
-                      {review.plan}
-                    </Badge>
-                  </div>
-                  
-                  <div className="mb-2 flex items-center gap-2">
-                    {renderStars(review.rating)}
-                  </div>
-                  
-                  <h4 className="mb-2 font-semibold text-foreground">{review.title}</h4>
-                  
-                  <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
-                    {review.comment}
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                    
+                    <div className="mb-2 flex items-center gap-2">
+                      {renderStars(review.rating)}
+                    </div>
+                    
+                    <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
+                      {review.comment}
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
