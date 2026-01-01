@@ -849,6 +849,9 @@ export async function registerRoutes(
       const { Pool } = await import('pg');
       
       const sql = `
+-- Supprimer et recréer audits pour avoir le bon schéma
+DROP TABLE IF EXISTS audits CASCADE;
+
 CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) NOT NULL UNIQUE,
