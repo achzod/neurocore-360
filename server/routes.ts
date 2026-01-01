@@ -107,6 +107,7 @@ export async function registerRoutes(
 
     const success = await waitForCompletion();
     
+    try {
     if (success) {
       const baseUrl = getBaseUrl();
       console.log(`[Email] Using baseUrl: ${baseUrl} for audit ${auditId}`);
