@@ -297,7 +297,7 @@ export async function sendAdminEmailNewAudit(
   auditId: string
 ): Promise<boolean> {
   try {
-    const adminEmail = "achzod@yt@gmail.com";
+    const adminEmail = "achzodyt@gmail.com";
     const token = await getAccessToken();
     const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
 
