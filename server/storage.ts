@@ -11,7 +11,7 @@ import type {
   ReportJob,
   ReportJobStatusEnum,
 } from "@shared/schema";
-import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
+import { generateFullAnalysis } from "./analysisEngine";
 
 // Configuration de la connexion PostgreSQL
 const getDatabaseUrl = (): string => {
