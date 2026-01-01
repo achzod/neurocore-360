@@ -529,7 +529,7 @@ function PricingSection() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2 justify-items-center max-w-4xl mx-auto">
+        <div className="grid gap-6 lg:grid-cols-2 items-stretch max-w-4xl mx-auto">
           {PRICING_PLANS.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -537,7 +537,7 @@ function PricingSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="relative"
+              className="relative flex"
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
