@@ -63,7 +63,10 @@ function generateSVGGauge(score: number): string {
 function generateSVGRadar(scores: Record<string, number>): string {
   const categories = Object.keys(scores);
   const numCategories = categories.length;
-  if (numCategories === 0) return "";
+  if (numCategories === 0) {
+    // Retourner un SVG vide avec message au lieu de chaîne vide
+    return `<svg width="400" height="400" viewBox="0 0 400 400"><text x="200" y="200" font-size="14" fill="#94a3b8" text-anchor="middle">Scores en cours d'analyse</text></svg>`;
+  }
 
   const size = 400;
   const center = size / 2;
@@ -500,12 +503,191 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       ${sectionsHTML}
     </main>
 
+    <!-- Formulaire d'avis -->
+    <div id="review-form-container" style="max-width: 700px; margin: 60px auto; padding: 40px; background: var(--card-bg); border: 1px solid var(--primary); border-radius: 24px;">
+      <h3 style="color: white; margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 700;">⭐ Ton avis compte !</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 32px; text-align: center; font-size: 1.05rem;">Donne ton avis sur cette analyse pour m'aider à améliorer mes services</p>
+      
+      <form id="review-form" style="display: flex; flex-direction: column; gap: 24px;">
+        <input type="hidden" id="audit-id" value="${auditId}" />
+        
+        <div>
+          <label style="color: white; display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Note sur 5 étoiles *</label>
+          <div id="rating-stars" style="display: flex; gap: 8px; justify-content: center; font-size: 2.5rem; cursor: pointer;">
+            <span data-rating="1" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="2" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="3" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="4" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="5" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+          </div>
+          <input type="hidden" id="rating-value" name="rating" required />
+        </div>
+        
+        <div>
+          <label for="comment" style="color: white; display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Ton commentaire *</label>
+          <textarea 
+            id="comment" 
+            name="comment" 
+            required 
+            minlength="10" 
+            maxlength="1000"
+            placeholder="Partage ton expérience avec cette analyse..."
+            style="width: 100%; min-height: 140px; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem; resize: vertical;"
+          ></textarea>
+          <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Minimum 10 caractères</small>
+        </div>
+        
+        <div>
+          <label for="email" style="color: white; display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Email (optionnel)</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email"
+            placeholder="ton@email.com"
+            style="width: 100%; padding: 14px 16px; background: #0a0a0a; border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem;"
+          />
+        </div>
+        
+        <button 
+          type="submit"
+          style="background: linear-gradient(135deg, var(--primary) 0%, #059669 100%); color: white; padding: 16px 32px; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 4px 20px rgba(94, 234, 212, 0.3);"
+          onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+        >
+          Envoyer mon avis
+        </button>
+        
+        <div id="review-success" style="display: none; padding: 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--primary); border-radius: 12px; color: var(--primary); text-align: center; font-weight: 500;">
+          ✅ Merci pour ton avis ! Il sera examiné avant publication.
+        </div>
+        
+        <div id="review-error" style="display: none; padding: 20px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; color: #fca5a5; text-align: center; font-weight: 500;">
+          ❌ Erreur lors de l'envoi. Réessaie plus tard.
+        </div>
+      </form>
+    </div>
+
     <footer class="footer">
-      <p>Rapport généré par l'intelligence clinique <strong>NEUROCORE</strong></p>
+      <p>Rapport généré par <strong>NEUROCORE 360</strong> - par ACHZOD</p>
       <p>Expertise certifiée • Science appliquée • Résultats mesurables</p>
     </footer>
 
   </div>
+  
+  <script>
+    (function() {
+      const form = document.getElementById('review-form');
+      const ratingStars = document.getElementById('rating-stars');
+      const ratingInput = document.getElementById('rating-value');
+      const commentInput = document.getElementById('comment');
+      const emailInput = document.getElementById('email');
+      const successDiv = document.getElementById('review-success');
+      const errorDiv = document.getElementById('review-error');
+      let selectedRating = 0;
+      
+      // Gestion des étoiles
+      const stars = ratingStars.querySelectorAll('span');
+      stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+          selectedRating = index + 1;
+          ratingInput.value = selectedRating;
+          updateStars();
+        });
+        star.addEventListener('mouseenter', () => {
+          if (!selectedRating) {
+            highlightStars(index + 1);
+          }
+        });
+      });
+      ratingStars.addEventListener('mouseleave', () => {
+        if (!selectedRating) {
+          stars.forEach(s => s.style.color = '#404040');
+        } else {
+          updateStars();
+        }
+      });
+      
+      function updateStars() {
+        stars.forEach((star, index) => {
+          if (index < selectedRating) {
+            star.style.color = '#fbbf24';
+            star.style.transform = 'scale(1.1)';
+          } else {
+            star.style.color = '#404040';
+            star.style.transform = 'scale(1)';
+          }
+        });
+      }
+      
+      function highlightStars(count) {
+        stars.forEach((star, index) => {
+          if (index < count) {
+            star.style.color = '#fbbf24';
+            star.style.transform = 'scale(1.05)';
+          } else {
+            star.style.color = '#404040';
+            star.style.transform = 'scale(1)';
+          }
+        });
+      }
+      
+      // Soumission du formulaire
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        successDiv.style.display = 'none';
+        errorDiv.style.display = 'none';
+        
+        if (!selectedRating) {
+          alert('Veuillez sélectionner une note');
+          return;
+        }
+        
+        const auditId = document.getElementById('audit-id').value;
+        if (!auditId) {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = '❌ ID audit manquant';
+          return;
+        }
+        
+        // Obtenir l'URL de base depuis window.location
+        const baseUrl = window.location.origin;
+        
+        const formData = {
+          auditId: auditId,
+          rating: selectedRating,
+          comment: commentInput.value.trim(),
+          email: emailInput.value.trim() || undefined
+        };
+        
+        try {
+          const response = await fetch(baseUrl + '/api/review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            successDiv.style.display = 'block';
+            form.reset();
+            selectedRating = 0;
+            updateStars();
+            ratingStars.style.pointerEvents = 'none';
+            commentInput.disabled = true;
+            emailInput.disabled = true;
+            form.querySelector('button[type="submit"]').disabled = true;
+          } else {
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = data.error || 'Erreur lors de l\\'envoi';
+          }
+        } catch (error) {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = '❌ Erreur réseau. Réessaie plus tard.';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }

@@ -100,8 +100,11 @@ export async function sendReportReadyEmail(
               <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 16px; text-align: center;">
                 J'ai termine l'analyse complete de ton profil metabolique a travers les 15 domaines de sante.
               </p>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 16px; text-align: center;">
                 Decouvre tes scores, recommandations personnalisees et protocoles de supplements.
+              </p>
+              <p style="color: #fbbf24; font-size: 15px; line-height: 1.7; margin: 0 0 32px; text-align: center; font-weight: 600; background-color: rgba(251, 191, 36, 0.1); padding: 12px; border-radius: 8px;">
+                ⭐ Apres avoir consulte ton rapport, n'oublie pas de laisser ton avis et de noter sur 5 etoiles !
               </p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>

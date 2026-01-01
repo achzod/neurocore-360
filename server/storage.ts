@@ -35,10 +35,8 @@ export interface IStorage {
   getAllAudits(): Promise<Audit[]>;
   createAudit(audit: InsertAudit & { email: string; responses: Record<string, unknown> }): Promise<Audit>;
   updateAudit(id: string, data: Partial<Audit>): Promise<Audit | undefined>;
-  deleteAudit(id: string): Promise<boolean>;
 
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
-  getAllProgress(): Promise<QuestionnaireProgress[]>;
   saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress>;
 
   createMagicToken(email: string): Promise<string>;
@@ -99,18 +97,18 @@ export class MemStorage implements IStorage {
     return this.getAuditsByUserId(user.id);
   }
 
-  async getAllAudits(): Promise<Audit[]> {
-    return Array.from(this.audits.values());
-  }
-
-  async getAllProgress(): Promise<QuestionnaireProgress[]> {
-    return Array.from(this.progress.values());
-  }
-
   async getPendingAudits(): Promise<Audit[]> {
     return Array.from(this.audits.values()).filter(
       (audit) => audit.reportDeliveryStatus === "PENDING"
     );
+  }
+
+  async getAllAudits(): Promise<Audit[]> {
+    return Array.from(this.audits.values()).sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
   }
 
   async createAudit(
@@ -153,10 +151,6 @@ export class MemStorage implements IStorage {
     const updated = { ...audit, ...data };
     this.audits.set(id, updated);
     return updated;
-  }
-
-  async deleteAudit(id: string): Promise<boolean> {
-    return this.audits.delete(id);
   }
 
   async getProgress(email: string): Promise<QuestionnaireProgress | undefined> {
@@ -258,28 +252,13 @@ export class PgStorage implements IStorage {
     return result.rows.map(row => this.rowToAudit(row));
   }
 
-  async getAllAudits(): Promise<Audit[]> {
-    const result = await pool.query("SELECT * FROM audits ORDER BY created_at DESC");
+  async getPendingAudits(): Promise<Audit[]> {
+    const result = await pool.query("SELECT * FROM audits WHERE report_delivery_status = 'PENDING'");
     return result.rows.map(row => this.rowToAudit(row));
   }
 
-  async getAllProgress(): Promise<QuestionnaireProgress[]> {
-    const result = await pool.query("SELECT * FROM questionnaire_progress ORDER BY last_activity_at DESC");
-    return result.rows.map(row => ({
-      id: row.id,
-      email: row.email,
-      currentSection: row.current_section,
-      totalSections: row.total_sections,
-      percentComplete: row.percent_complete,
-      responses: row.responses || {},
-      status: row.status,
-      startedAt: row.started_at,
-      lastActivityAt: row.last_activity_at,
-    }));
-  }
-
-  async getPendingAudits(): Promise<Audit[]> {
-    const result = await pool.query("SELECT * FROM audits WHERE report_delivery_status = 'PENDING'");
+  async getAllAudits(): Promise<Audit[]> {
+    const result = await pool.query("SELECT * FROM audits ORDER BY created_at DESC LIMIT 100");
     return result.rows.map(row => this.rowToAudit(row));
   }
 
@@ -322,18 +301,6 @@ export class PgStorage implements IStorage {
       updates.push(`narrative_report = $${paramIndex++}`);
       values.push(JSON.stringify((data as any).narrativeReport));
     }
-    if ((data as any).reportTxt !== undefined) {
-      updates.push(`report_txt = $${paramIndex++}`);
-      values.push((data as any).reportTxt);
-    }
-    if ((data as any).reportHtml !== undefined) {
-      updates.push(`report_html = $${paramIndex++}`);
-      values.push((data as any).reportHtml);
-    }
-    if ((data as any).reportGeneratedAt !== undefined) {
-      updates.push(`report_generated_at = $${paramIndex++}`);
-      values.push((data as any).reportGeneratedAt);
-    }
 
     if (updates.length === 0) return this.getAudit(id);
 
@@ -345,11 +312,6 @@ export class PgStorage implements IStorage {
 
     if (result.rows.length === 0) return undefined;
     return this.rowToAudit(result.rows[0]);
-  }
-
-  async deleteAudit(id: string): Promise<boolean> {
-    const result = await pool.query("DELETE FROM audits WHERE id = $1", [id]);
-    return (result.rowCount ?? 0) > 0;
   }
 
   async getProgress(email: string): Promise<QuestionnaireProgress | undefined> {
@@ -445,9 +407,6 @@ export class PgStorage implements IStorage {
       responses: row.responses,
       scores: row.scores,
       narrativeReport: row.narrative_report,
-      reportTxt: row.report_txt,
-      reportHtml: row.report_html,
-      reportGeneratedAt: row.report_generated_at,
       reportDeliveryStatus: row.report_delivery_status,
       reportScheduledFor: row.report_scheduled_for,
       reportSentAt: row.report_sent_at,
