@@ -1,30 +1,55 @@
 /**
- * Configuration Gemini AI - Version Render (sans Replit AI Integration)
- * Utilise directement la clé API Gemini standard
+ * NEUROCORE 360 - Configuration centralisée Gemini
  */
 
 export const GEMINI_CONFIG = {
-  // Clé API Gemini (priorité: GEMINI_API_KEY standard, fallback vers ancienne config Replit)
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.AI_INTEGRATIONS_GEMINI_API_KEY || "",
-  
-  // Modèle à utiliser
-  GEMINI_MODEL: process.env.GEMINI_MODEL || "gemini-2.5-pro",
-  
-  // Pas besoin de base URL custom pour l'API standard
-  GEMINI_BASE_URL: "",
-  
-  // Paramètres de génération
-  GEMINI_TEMPERATURE: 0.7,
-  GEMINI_MAX_TOKENS: 8192,
-  
-  // Retry config
+  GEMINI_API_KEY: "AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk",
+  GEMINI_MODEL: "gemini-2.5-pro",
+  GEMINI_TEMPERATURE: 0.85,
+  GEMINI_MAX_TOKENS: 8000,
   GEMINI_MAX_RETRIES: 3,
-  GEMINI_SLEEP_BETWEEN: 2, // secondes
+  GEMINI_SLEEP_BETWEEN: 3,
 };
 
-// Validation au démarrage
-if (!GEMINI_CONFIG.GEMINI_API_KEY) {
-  console.error('[Gemini] ⚠️ GEMINI_API_KEY not configured - AI features will fail');
-} else {
-  console.log(`[Gemini] ✅ Configured with model: ${GEMINI_CONFIG.GEMINI_MODEL}`);
-}
+export const AUDIT_TIERS = {
+  FREE: {
+    name: 'Gratuit',
+    price: 0,
+    sectionsUnlocked: [
+      'Executive Summary',
+      'Synthese Clinique et Prochaine Etape',
+      'Cause Racine en 3 phrases'
+    ],
+    sectionsTeaser: [
+      'Analyse visuelle et posturale complete',
+      'Analyse metabolisme et nutrition',
+      'Analyse sommeil et recuperation',
+      'Analyse axes hormonaux'
+    ],
+    sectionsLocked: [
+      'Analyse biomecanique et sangle profonde',
+      'Analyse entrainement et periodisation',
+      'Analyse systeme cardiovasculaire',
+      'Analyse digestion et microbiote',
+      'Protocole Matin Anti-Cortisol',
+      'Protocole Soir Verrouillage Sommeil',
+      'Protocole Digestion 14 Jours',
+      'Protocole Bureau Anti-Sedentarite',
+      'Protocole Entrainement Personnalise',
+      'Plan d\'action 30/60/90 Jours',
+      'KPI et Tableau de Bord',
+      'Stack de Supplements Personnalise'
+    ]
+  },
+  PREMIUM: {
+    name: 'Premium',
+    price: 49,
+    sectionsUnlocked: 'ALL'
+  },
+  ELITE: {
+    name: 'Elite',
+    price: 149,
+    sectionsUnlocked: 'ALL',
+    extras: ['Appel 30min', 'Suivi 7 jours', 'Plan personnalisé PDF']
+  }
+};
