@@ -189,7 +189,7 @@ ${photoAnalysisStr}
 
   const nonEmptySections = results.filter((r) => (r.text || '').trim().length > 0).length;
   if (nonEmptySections === 0) {
-    console.error('[OpenAI] Aucune section n'a été générée (réponses vides). Audit annulé.');
+    console.error('[OpenAI] Aucune section n\'a été générée (réponses vides). Audit annulé.');
     return null;
   }
 

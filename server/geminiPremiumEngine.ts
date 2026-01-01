@@ -1139,4 +1139,4 @@ export function listPendingAudits(): string[] {
   }
 }
 
-export { SECTIONS, SECTION_INSTRUCTIONS, callGemini, loadFromCache, deleteCache };
+export { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, callGemini, loadFromCache, deleteCache };
