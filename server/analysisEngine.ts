@@ -1,5 +1,20 @@
 type Responses = Record<string, unknown>;
 
+// Helper pour convertir une valeur en array de strings de façon sécurisée
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(v => String(v));
+  }
+  if (typeof value === 'string' && value.trim()) {
+    // Si c'est une string, on la split si elle contient des virgules
+    if (value.includes(',')) {
+      return value.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [value];
+  }
+  return [];
+}
+
 interface SupplementProtocol {
   name: string;
   dosage: string;
@@ -72,7 +87,7 @@ export function analyzeProfilBase(responses: Responses): SectionScore {
   const sexe = responses["sexe"] as string;
   const objectif = responses["objectif"] as string;
   const activite = responses["niveau-activite"] as string;
-  const historique = responses["historique-medical"] as string[];
+  const historique = toStringArray(responses["historique-medical"]);
   const profession = responses["profession"] as string;
 
   let activiteScore = 70;
@@ -267,7 +282,7 @@ export function analyzeCompositionCorporelle(responses: Responses): SectionScore
   const masseGrasse = responses["masse-grasse"] as string;
   const evolution = responses["evolution-poids"] as string;
   const morphologie = responses["morphologie"] as string;
-  const zones = responses["zones-stockage"] as string[];
+  const zones = toStringArray(responses["zones-stockage"]);
   const retention = responses["retention-eau"] as string;
   const regimes = responses["regimes-passes"] as string;
 
@@ -509,7 +524,7 @@ export function analyzeNutritionTracking(responses: Responses): SectionScore {
   const legumes = responses["legumes-jour"] as string;
   const hydratation = responses["hydratation"] as string;
   const tracking = responses["tracking"] as string;
-  const sups = responses["supplements"] as string[];
+  const sups = toStringArray(responses["supplements"]);
 
   let proteineScore = 70;
   if (proteines === "4+") proteineScore = 95;
@@ -733,7 +748,7 @@ export function analyzeDigestionMicrobiome(responses: Responses): SectionScore {
   const digestion = responses["digestion-generale"] as string;
   const ballonnements = responses["ballonnements"] as string;
   const transit = responses["transit"] as string;
-  const intolerance = responses["intolerance"] as string[];
+  const intolerance = toStringArray(responses["intolerance"]);
   const probiotiques = responses["probiotiques"] as string;
   const antibiotiques = responses["antibiotiques"] as string;
 
@@ -993,7 +1008,7 @@ export function analyzeHormonesStress(responses: Responses): SectionScore {
   const stressNiveau = responses["stress-niveau"] as string;
   const stressChronique = responses["stress-chronique"] as string;
   const anxiete = responses["anxiete"] as string;
-  const cortisolSignes = responses["cortisol-signes"] as string[];
+  const cortisolSignes = toStringArray(responses["cortisol-signes"]);
   const libido = responses["libido"] as string;
 
   let stressScore = 70;
@@ -1095,10 +1110,10 @@ export function analyzeActivitePerformance(responses: Responses): SectionScore {
 
   // Questions existantes
   const sportFreq = responses["sport-frequence"] as string;
-  const typeSport = responses["type-sport"] as string[];
+  const typeSport = toStringArray(responses["type-sport"]);
   const recuperation = responses["recuperation"] as string;
   const performanceEvolution = responses["performance-evolution"] as string;
-  const blessures = responses["blessures"] as string[];
+  const blessures = toStringArray(responses["blessures"]);
 
   // Nouvelles questions peri-workout
   const cardioJeun = responses["cardio-jeun"] as string;
@@ -1316,7 +1331,7 @@ export function analyzePsychologieMental(responses: Responses): SectionScore {
   const traumaImpact = responses["trauma-impact"] as string;
   const estimeSoi = responses["estime-soi"] as string;
   const soutienSocial = responses["soutien-social"] as string;
-  const blocagesPerso = responses["blocages-perso"] as string[] || [];
+  const blocagesPerso = toStringArray(responses["blocages-perso"]);
 
   let tcaScore = 90;
   if (tcaHistorique === "actuel") {

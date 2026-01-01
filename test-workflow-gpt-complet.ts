@@ -13,7 +13,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const BASE_URL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
+const BASE_URL = process.env.RENDER_EXTERNAL_URL || 'https://neurocore-360.onrender.com';
 const TEST_EMAIL = 'achkou@gmail.com';
 const ADMIN_EMAIL = 'achzodyt@gmail.com';
 

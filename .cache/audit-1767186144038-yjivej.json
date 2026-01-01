@@ -1,0 +1,131 @@
+{
+  "auditId": "1767186144038-yjivej",
+  "clientData": {
+    "prenom": "Achraf",
+    "nom": "K.",
+    "age": "26-35",
+    "sexe": "Homme",
+    "taille": "180",
+    "poids": "85",
+    "objectif": "Retrouver mon physique d'il y a 5 ans",
+    "objectif-poids": "Perdre 5 a 10 kg",
+    "morphologie": "Mesomorphe",
+    "type-travail": "Bureau / sedentaire",
+    "niveau-activite": "Tres actif",
+    "zones-stockage": [
+      "Ventre",
+      "Hanches"
+    ],
+    "retention-eau": "Parfois",
+    "masse-grasse": "21-25%",
+    "energie-matin": "Fatigue",
+    "energie-apres-midi": "Coup de barre",
+    "energie-soir": "Energique",
+    "metabolisme": "Lent",
+    "envies-sucre": "Frequentes",
+    "frequence-entrainement": "3-4 fois par semaine",
+    "type-entrainement": "Musculation + HIIT",
+    "duree-seance": "60-90 min",
+    "moment-entrainement": "Soir",
+    "intensite": "Elevee",
+    "experience": "Intermediaire",
+    "objectif-training": "Recomposition",
+    "stagnation": "Oui, depuis plusieurs mois",
+    "courbatures": "Souvent",
+    "douleurs": [
+      "Dos",
+      "Nuque"
+    ],
+    "mobilite": "Jamais",
+    "squat-profond": "Difficile",
+    "cardio-type": "Velo, HIIT",
+    "cardio-frequence": "1-2 fois par semaine",
+    "cardio-duree": "20-30 min",
+    "ratio-cardio": "80% HIIT, 20% fond",
+    "fc-repos": "70-80",
+    "petit-dejeuner": "Sucre",
+    "nb-repas": "3",
+    "repas-exterieur": "3-5 fois par semaine",
+    "alcool": "4-7 verres par semaine",
+    "eau": "1.5-2L",
+    "cafeine": "3-4 cafés",
+    "heure-dernier-cafe": "Parfois après 16h",
+    "supplements": [
+      "Whey",
+      "Creatine",
+      "Vitamines"
+    ],
+    "proteines": "Moyennes",
+    "heures-sommeil": "6-7h",
+    "qualite-sommeil": "Moyenne",
+    "heure-coucher": "1h du matin",
+    "endormissement": "Long",
+    "reveils-nocturnes": "Parfois",
+    "ecrans-soir": "Oui",
+    "temperature-chambre": "Chaude",
+    "digestion": "Moyenne",
+    "ballonnements": "Souvent",
+    "reflux": "Parfois",
+    "transit": "Normal",
+    "gluten": "Quotidien",
+    "lactose": "Quotidien",
+    "niveau-stress": "Eleve",
+    "sources-stress": [
+      "Travail",
+      "Finances"
+    ],
+    "gestion-stress": "Sport",
+    "motivation": "Variable",
+    "procrastination": "Souvent",
+    "brain-fog": "Parfois",
+    "heures-assis": "8-10h par jour"
+  },
+  "photoAnalysis": {
+    "fatDistribution": {
+      "visceral": "modere",
+      "subcutaneous": "modere",
+      "zones": [],
+      "estimatedBF": "Non disponible - Erreur lors de l'analyse IA Gemini",
+      "waistToHipRatio": "Non disponible"
+    },
+    "posture": {
+      "headPosition": "Non evalue - photos requises",
+      "shoulderAlignment": "Non evalue",
+      "spineAlignment": "Non evalue",
+      "pelvicTilt": "Non evalue",
+      "kneesAlignment": "Non evalue",
+      "overallScore": 50,
+      "issues": [
+        "Analyse photo non disponible: Erreur lors de l'analyse IA Gemini"
+      ]
+    },
+    "muscularBalance": {
+      "upperBody": "Non evalue",
+      "lowerBody": "Non evalue",
+      "leftRightSymmetry": "Non evalue",
+      "anteriorPosterior": "Non evalue",
+      "weakAreas": [],
+      "strongAreas": []
+    },
+    "medicalObservations": {
+      "skinCondition": [],
+      "edemaPresence": "Non observe",
+      "vascularSigns": [],
+      "potentialConcerns": []
+    },
+    "recommendations": {
+      "posturalCorrections": [
+        "Fournir des photos pour une analyse posturale complete"
+      ],
+      "muscleGroupsToTarget": [],
+      "mobilityWork": [],
+      "medicalFollowUp": []
+    },
+    "summary": "Analyse photo non realisee: Erreur lors de l'analyse IA Gemini. Pour une analyse complete, veuillez fournir 3 photos (face, profil, dos) en bonne qualite et eclairage.",
+    "confidenceLevel": 0
+  },
+  "tier": "PREMIUM",
+  "sections": {},
+  "startedAt": "2025-12-31T13:02:24.046Z",
+  "lastUpdated": "2025-12-31T13:03:45.194Z"
+}
