@@ -61,7 +61,16 @@ function generateSVGGauge(score: number): string {
 }
 
 function generateSVGRadar(scores: Record<string, number>): string {
-  const categories = Object.keys(scores);
+  let categories = Object.keys(scores);
+  
+  // Simplifier le radar : limiter à 8 catégories maximum
+  // Prendre les catégories avec les scores les plus pertinents (priorité aux scores moyens/faibles pour voir les axes d'amélioration)
+  if (categories.length > 8) {
+    categories = categories
+      .sort((a, b) => (scores[a] || 0) - (scores[b] || 0)) // Trier par score croissant
+      .slice(0, 8); // Prendre les 8 premiers (scores les plus faibles = axes d'amélioration)
+  }
+  
   const numCategories = categories.length;
   if (numCategories === 0) {
     // Retourner un SVG vide avec message au lieu de chaîne vide

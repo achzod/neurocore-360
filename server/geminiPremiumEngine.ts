@@ -5,23 +5,17 @@
  * AVEC SYSTÈME DE CACHE PROGRESSIF pour reprendre après crash
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as fs from "fs";
-import * as path from "path";
-import {
-  ClientData,
-  PhotoAnalysis,
-  AuditResult,
-  SectionName,
-  AuditTier,
-} from "./types";
-import { getCTADebut, getCTAFin, PRICING } from "./cta";
-import { formatPhotoAnalysisForReport } from "./photoAnalysisAI";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as fs from 'fs';
+import * as path from 'path';
+import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from './types';
+import { getCTADebut, getCTAFin, PRICING } from './cta';
+import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 
-//
+// 
 // SYSTÈME DE CACHE POUR SAUVEGARDE PROGRESSIVE
-//
-const CACHE_DIR = path.join(process.cwd(), ".cache");
+// 
+const CACHE_DIR = path.join(process.cwd(), '.cache');
 
 interface CacheData {
   auditId: string;
@@ -53,7 +47,7 @@ function loadFromCache(auditId: string): CacheData | null {
   const cachePath = getCachePath(auditId);
   if (fs.existsSync(cachePath)) {
     try {
-      return JSON.parse(fs.readFileSync(cachePath, "utf-8"));
+      return JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
     } catch {
       return null;
     }
@@ -73,11 +67,14 @@ function generateAuditId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }
 
-import { GEMINI_CONFIG } from "./geminiConfig";
+import { GEMINI_CONFIG } from './geminiConfig';
 
-// Initialisation standard (compatible Render/Replit/local)
+// Initialisation standard
 const genAI = new GoogleGenerativeAI(GEMINI_CONFIG.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.GEMINI_MODEL });
+const model = genAI.getGenerativeModel({ 
+  model: GEMINI_CONFIG.GEMINI_MODEL 
+});
+
 const GEMINI_MODEL = GEMINI_CONFIG.GEMINI_MODEL;
 const GEMINI_TEMPERATURE = GEMINI_CONFIG.GEMINI_TEMPERATURE;
 const GEMINI_MAX_TOKENS = GEMINI_CONFIG.GEMINI_MAX_TOKENS;
@@ -85,10 +82,10 @@ const GEMINI_MAX_RETRIES = GEMINI_CONFIG.GEMINI_MAX_RETRIES;
 const GEMINI_SLEEP_BETWEEN = GEMINI_CONFIG.GEMINI_SLEEP_BETWEEN;
 
 const SECTIONS: SectionName[] = [
-  //  PAGE 1 : EXECUTIVE SUMMARY
+  //  PAGE 1 : EXECUTIVE SUMMARY 
   "Executive Summary",
-
-  //  ANALYSES PROFONDES
+  
+  //  ANALYSES PROFONDES 
   "Analyse visuelle et posturale complete",
   "Analyse biomecanique et sangle profonde",
   "Analyse entrainement et periodisation",
@@ -97,21 +94,21 @@ const SECTIONS: SectionName[] = [
   "Analyse sommeil et recuperation",
   "Analyse digestion et microbiote",
   "Analyse axes hormonaux",
-
-  //  PROTOCOLES FERMES
+  
+  //  PROTOCOLES FERMES 
   "Protocole Matin Anti-Cortisol",
   "Protocole Soir Verrouillage Sommeil",
   "Protocole Digestion 14 Jours",
   "Protocole Bureau Anti-Sedentarite",
   "Protocole Entrainement Personnalise",
-
-  //  PLAN CONCRET
+  
+  //  PLAN CONCRET 
   "Plan Semaine par Semaine 30-60-90",
   "KPI et Tableau de Bord",
   "Stack Supplements Optimise",
-
-  //  CONCLUSION
-  "Synthese et Prochaines Etapes",
+  
+  //  CONCLUSION 
+  "Synthese et Prochaines Etapes"
 ];
 
 const PROMPT_SECTION = `Tu es Achzod, coach sportif d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
@@ -138,20 +135,17 @@ Section a rediger : {section}
 - TUTOIE toujours.
 - Zero blabla generique. Chaque phrase doit transpirer l'expertise clinique.
 
-⚠️ RÈGLES ANTI-RÉPÉTITION (TRÈS IMPORTANT) :
-- NE COMMENCE JAMAIS une section par le prénom du client seul ("Achkan,"). C'est répétitif et robotique.
-- Varie tes accroches : commence par une observation, une question rhétorique, un constat choc, une métaphore.
-- NE RÉPÈTE PAS les mêmes métaphores (Ferrari, moteur, chirurgical) dans plusieurs sections.
-- Si tu as déjà expliqué un concept (ex: syndrome croisé), NE LE RÉEXPLIQUE PAS dans une autre section. Fais juste référence.
-
  FORMAT ET STRUCTURE (RÈGLES D'OR) 
-1. TITRES : Utilise uniquement des TITRES EN MAJUSCULES sur une ligne seule.
-2. RÉCIT : Rédige des paragraphes NARRATIFS fluides. Ne fais JAMAIS de listes à puces.
-3. DASHBOARDS CLINIQUES : Utilise UNIQUEMENT des émojis. INTERDICTION ABSOLUE d'utiliser des crochets ou des carrés de progression.
-   Exemple : Vitalité : 🔴🔴🔴🟡🟢
-4. ZERO ASCII : Interdiction d'utiliser des symboles informatiques (ex: triples egaux, tirets de separation).
-5. SCORE OBLIGATOIRE : À la fin de CHAQUE section, ajoute une ligne "Score : XX/100" où XX est ton évaluation de cette dimension pour le client.
-6. TON : Expert, direct, comme un chirurgien olympique.
+1. TITRE PRINCIPAL : Une seule ligne en MAJUSCULES pour la section principale (ex: "ANALYSE SYSTEME CARDIOVASCULAIRE")
+2. SOUS-SECTIONS : Pour les sous-parties, utilise le format suivant :
+   - Sous-titre en minuscules avec numéro (ex: "1. Spectre de conditionnement métabolique")
+   - Le contenu suit directement, sans répéter le titre principal
+   - Pas de titre principal répété avant chaque sous-section
+3. RÉCIT : Rédige des paragraphes NARRATIFS fluides. Ne fais JAMAIS de listes à puces.
+4. VISUELS : Pour les timelines et visuels, utilise des phrases complètes et explicatives, pas seulement des emojis ou termes techniques seuls.
+5. ZERO ASCII : Interdiction d'utiliser des symboles informatiques (ex: triples egaux, tirets de separation).
+6. SCORE OBLIGATOIRE : À la fin de CHAQUE section principale, ajoute une ligne "Score : XX/100" où XX est ton évaluation de cette dimension pour le client.
+7. TON : Expert, direct, comme un chirurgien olympique.
 
 {section_specific_instructions}
 
@@ -160,210 +154,132 @@ Donnees du client :
 `;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
+  
+  // 
+  // EXECUTIVE SUMMARY - PAGE 1 (20 secondes pour scotcher)
+  // 
   "Executive Summary": `
 INSTRUCTIONS POUR "EXECUTIVE SUMMARY" :
-C'est la pièce maîtresse. Elle doit être BRUTALE, CLINIQUE et CONNECTÉE ÉMOTIONNELLEMENT.
+C'est la pièce maîtresse. Elle doit être BRUTALE et CLINIQUE.
 
-1. ACCROCHE PUISSANTE (3-4 lignes) :
-- Le client doit se sentir VU et COMPRIS dès la première phrase
-- Identifie le PARADOXE de sa situation : "Tu fais X mais tu obtiens Y"
-- Crée une connexion émotionnelle immédiate
+1. LE DIAGNOSTIC D'AUTORITÉ :
+Explique en 3 paragraphes pourquoi le corps du client est en mode "Survie". Utilise uniquement des émojis pour les scores (ex: Vitalité : 🔴🔴🔴🟡🟢 3/5). INTERDICTION de faire des barres avec des carrés .
 
-2. LE DIAGNOSTIC D'AUTORITÉ (10-15 lignes) :
-- Résume son profil (âge, stats, objectifs, situation) de manière personnalisée
-- Explique pourquoi son corps est en mode "SURVIE" et non "PERFORMANCE"
-- Utilise des dashboards émojis pour visualiser :
-  Vitalité : 🔴🔴🟡🟢🟢
-  Récupération : 🔴🔴🔴🟡🟢
-  Environnement Hormonal : 🔴🔴🔴🔴🟢
-- INTERDICTION ABSOLUE d'utiliser des carrés ou barres de progression
+2. LE LEVIER D'ÉLITE :
+Quelle est l'action unique qui va déverrouiller 80% des résultats ?
 
-3. LE PARADOXE IDENTIFIÉ :
-- Pourquoi il BLOQUE malgré ses EFFORTS ?
-- Connecte les points : sommeil ↔ cortisol ↔ entraînement ↔ plateau ↔ digestion
-- Une phrase type : "Tu ne manques pas de volonté, tu manques de synchronisation biologique"
+3. LA PROJECTION MÉTABOLIQUE :
+Où sera sa physiologie dans 30 jours ?`,
 
-4. LE LEVIER D'ÉLITE :
-- Quelle est L'ACTION UNIQUE qui va déverrouiller 80% des résultats ?
-- Pas une liste de 10 choses, UN SEUL levier prioritaire
-- Explique POURQUOI ce levier est le plus important pour CE client
-
-5. LA PROJECTION MÉTABOLIQUE (30 JOURS) :
-- Où sera sa physiologie dans 30 jours S'IL APPLIQUE ?
-- Sois CONCRET : énergie, sommeil, digestion, force, visuel
-- Crée l'envie et l'espoir
-
-MINIMUM 40-50 LIGNES. Ton chaud et direct comme un mentor exigeant.`,
-
+  // 
+  // ANALYSES PROFONDES (plus courtes mais ULTRA precises)
+  // 
   "Analyse visuelle et posturale complete": `
 INSTRUCTIONS POUR "ANALYSE VISUELLE ET POSTURALE COMPLETE" :
 
-TU ES UN EXPERT EN MORPHO-PHYSIOLOGIE. C'est LA section la plus importante de l'audit.
+TU ES UN EXPERT EN MORPHO-PHYSIOLOGIE. 
+1. MAPPING VISUEL OBLIGATOIRE :
+Cite explicitement les photos fournies ("Sur ton cliché de face...", "L'angle de ton bassin sur la photo de profil..."). 
+Même si tu déduis des choses, présente-les comme une analyse visuelle de tes photos.
 
-1. ANALYSE DE LA STRUCTURE OSSEUSE ET MUSCULAIRE :
-- Analyse les CLAVICULES : horizontales, inclinées vers le bas (signe de trapèzes faibles), asymétrie ?
-- Analyse la CAGE THORACIQUE : large/étroite, creuse/bombée ?
-- Analyse la LARGEUR D'ÉPAULES et le RATIO épaules/taille (V-taper ou forme en H ?)
-- Développement musculaire : quels groupes sont EN AVANCE, EN RETARD, ASYMÉTRIQUES ?
-- Épaisseur du dos vs développement pectoraux (déséquilibre push/pull ?)
+2. RÉCIT CLINIQUE PROFOND :
+Explique la répartition des graisses comme une signature endocrinienne. 
+Parle de "Tensegrité Myofasciale" et de "Force de Cisaillement". 
+Fais le lien entre la posture et la biochimie du stress.
 
-2. ANALYSE DE LA COMPOSITION CORPORELLE :
-- ESTIMATION DU TAUX DE GRAS (fourchette) basée sur les photos
-- PATTERN DE STOCKAGE : où se concentre le gras ? (abdominal viscéral, sous-cutané, obliques, bas du dos, hanches)
-- Ce pattern de stockage = SIGNATURE ENDOCRINIENNE. Interprète :
-  * Stockage abdominal = cortisol chronique + résistance insuline
-  * Stockage hanches/cuisses = dominance oestrogénique ou mauvaise gestion des oestrogènes
-  * Stockage bas du dos = insuline + sédentarité
-- Relie CHAQUE zone de stockage à une hypothèse hormonale précise
-
-3. ANALYSE POSTURALE VISIBLE :
-- Position des ÉPAULES : enroulées vers l'avant ? asymétrie ?
-- Position du BASSIN : antéversion (fesses en arrière, ventre en avant) ou rétroversion ?
-- Courbure de la COLONNE : hyperlordose, cyphose thoracique ?
-- Position de la TÊTE : protraction cervicale (tête en avant) ?
-
-4. INTERPRÉTATION PHYSIOLOGIQUE PROFONDE :
-- Explique la "Tensegrité Myofasciale" : comment les tensions d'un côté créent des compensations de l'autre
-- Parle de "Force de Cisaillement" sur les disques lombaires
-- Fais le LIEN DIRECT entre la posture observée et :
-  * La biochimie du stress (cortisol chronique = tensions musculaires = posture fermée)
-  * Les douleurs rapportées par le client
-  * La stagnation de ses résultats
-
-5. PRESCRIPTION POSTURALE IMMÉDIATE :
-- Quelle est LA priorité posturale numéro 1 à corriger ?
-- Un exercice précis à faire quotidiennement
-
-⚠️ RÈGLE PHOTOS OBLIGATOIRE :
-Tu DOIS citer les photos de manière PRÉCISE et MESURÉE. Exemples :
-- "Sur ta photo de FACE, je mesure visuellement que ton épaule droite est environ 1.5cm plus haute que la gauche"
-- "Ta photo de PROFIL révèle une projection cervicale d'environ 3-4cm en avant de ta ligne de gravité"
-- "Vue de DOS, je note une asymétrie marquée au niveau du trapèze gauche, signe de..."
-- "L'angle de ton bassin sur la photo de profil montre une antéversion d'environ 10-15°"
-
-Si tu n'as PAS de données photo, dis-le clairement et base-toi sur les réponses du questionnaire.
-MINIMUM 50-60 LIGNES de narration experte, pas de bullet points.`,
+INTERDICTION : Pas de tirets, pas de schémas texte. Uniquement de la narration d'expert.`,
 
   "Analyse biomecanique et sangle profonde": `
 INSTRUCTIONS POUR "ANALYSE BIOMECANIQUE ET SANGLE PROFONDE" :
 
-TU ES UN CLINICIEN DU MOUVEMENT ET EXPERT EN BIOMÉCANIQUE. C'est une section CRUCIALE.
+TU ES UN CLINICIEN DU MOUVEMENT. Rédige un RAPPORT D'EXPERTISE DE HAUT VOL.
+1. DIAGNOSTIC DE TENSEGRITÉ :
+Décris l'interaction entre le psoas, le diaphragme et la sangle profonde non pas comme des muscles, mais comme un système de haubans et de pressions.
 
-1. ANALYSE DE L'HISTORIQUE SPORTIF ET SON IMPACT POSTURAL :
-- Comment son passé sportif (ou son absence) a façonné sa posture actuelle ?
-- Quels muscles ont été sur-sollicités vs négligés pendant des années ?
-- Comment la sédentarité professionnelle (8-10h assis) a remodelé son corps ?
+2. MÉCANISMES DE DÉFAILLANCE :
+Explique pourquoi le "bas du dos" est la victime collatérale d'une inhibition neurologique (amnésie des fessiers).
 
-2. LE SYSTÈME TRANSVERSE vs GRAND DROIT (EXPLICATION PROFONDE) :
-- Le TRANSVERSE ABDOMINAL = le vrai corset naturel, stabilisateur de la colonne
-- Le GRAND DROIT = le muscle "esthétique" des tablettes, mais PAS stabilisateur
-- Explique pourquoi faire des crunchs sans transverse activé = ventre qui RESSORT
-- Comment détecter un transverse faible : le ventre qui "tombe" même maigre
+3. RÉÉDUCATION NEUROLOGIQUE :
+Propose une intégration neurologique (Stomach Vacuum, activation ciblée) expliquée de manière scientifique.
 
-3. DÉTECTION ANTÉVERSION / RÉTROVERSION PELVIENNE :
-- ANTÉVERSION (bassin basculé vers l'avant) : fesses qui ressortent, ventre poussé vers l'avant, hyperlordose
-- RÉTROVERSION (bassin basculé vers l'arrière) : fesses plates, dos plat, compression lombaire
-- Analyse les photos pour identifier le type de bascule du client
-- Explique les CAUSES : psoas raccourci, fessiers inhibés, position assise prolongée
-
-4. LA CASCADE BIOMÉCANIQUE DESTRUCTRICE (EXPLIQUE CHAQUE ÉTAPE) :
-Psoas raccourci (position assise) 
-→ Bascule du bassin vers l'avant (antéversion)
-→ Hyperlordose lombaire
-→ Compression du diaphragme
-→ Respiration superficielle (thoracique au lieu d'abdominale)
-→ Activation chronique du système nerveux sympathique
-→ Cortisol élevé en permanence
-→ Stockage abdominal MÊME en déficit calorique
-→ Inflammation chronique des lombaires (douleurs)
-
-5. L'AMNÉSIE DES FESSIERS (GLUTEAL AMNESIA) :
-- Quand on reste assis 8h/jour, le cerveau "oublie" d'activer les fessiers
-- Inhibition réciproque : psoas tendu = fessiers inhibés
-- Conséquence : les lombaires compensent = douleurs + stagnation des squats/deadlifts
-- Le client peut avoir des fessiers "visuellement" présents mais neurologiquement endormis
-
-6. LIEN POSTURE → ESTHÉTIQUE ABDOMINALE :
-- Un ventre qui ressort N'EST PAS toujours du gras
-- Causes non-grasses : antéversion pelvienne, transverse faible, ballonnements, viscères poussés vers l'avant
-- Pourquoi certains ont un ventre "gonflé" même à 12% de gras
-
-7. PRESCRIPTIONS BIOMÉCANIQUES IMMÉDIATES :
-- Exercice 1 : Stomach Vacuum (réactivation du transverse) - explication technique
-- Exercice 2 : Activation des fessiers avant CHAQUE séance (glute bridge, clams)
-- Exercice 3 : Étirement du psoas (fente du chevalier) - 60 sec/côté/jour
-
-MINIMUM 50-60 LIGNES de narration experte et scientifique.
-Chaque mécanisme doit être EXPLIQUÉ en profondeur, pas juste mentionné.`,
+INTERDICTION : Pas de listes, pas de tirets, pas de graphiques texte. Uniquement de la narration experte.`,
 
   "Analyse entrainement et periodisation": `
 INSTRUCTIONS POUR "ANALYSE ENTRAINEMENT ET PERIODISATION" :
 
-AUDIT DE SON PROGRAMME ACTUEL avec analyse des erreurs et recommandations.
-Minimum 60 lignes de contenu expert.`,
+AUDIT DE SON PROGRAMME ACTUEL :
+- Split utilise : [PPL/Full Body/Bro Split/Upper-Lower]
+- Frequence : X seances/semaine
+- Duree moyenne : X minutes
+- Volume total estime : X series/muscle/semaine
+
+ERREURS DETECTEES :
+1. [Erreur 1 + explication physiologique]
+2. [Erreur 2 + explication physiologique]
+3. [Erreur 3 + explication physiologique]
+
+RATIO PUSH/PULL/LEGS :
+- Actuel : [ratio estime]
+- Optimal pour son objectif : [ratio cible]
+- Desequilibre identifie : [ex: trop de push, pas assez de pull]
+
+ANALYSE DU TEMPO ET TENSION :
+- Tempo probable : non controle (a corriger)
+- Temps sous tension : insuffisant pour hypertrophie
+- Mind-muscle connection : a developper sur [muscles specifiques]
+
+SURCHARGE PROGRESSIVE :
+- Appliquee ? [oui/non]
+- Si non : stagnation neurale inevitable
+
+TECHNIQUES D'INTENSIFICATION A INTEGRER :
++ Drop sets pour [muscle]
++ Rest-pause pour [muscle]
++ Tempo lent (4-0-2-0) pour [muscle]
+
+PERIODISATION RECOMMANDEE :
+- Bloc 1 (S1-4) : [focus]
+- Bloc 2 (S5-8) : [focus]
+- Bloc 3 (S9-12) : [focus]
+- Deload : toutes les 4-6 semaines
+
+Score programme actuel : X/10
+`,
 
   "Analyse systeme cardiovasculaire": `
 INSTRUCTIONS POUR "ANALYSE SYSTEME CARDIOVASCULAIRE" :
 
-1. SPECTRE DE CONDITIONNEMENT (Visuel) :
-Cree un visuel simple (émojis) situant le client sur le spectre entre "Sédentaire Actif" et "Athlète Métabolique".
+STRUCTURE :
+- Titre principal unique : "ANALYSE SYSTEME CARDIOVASCULAIRE"
+- Sous-section 1 : "1. Positionnement métabolique"
+  Rédige un paragraphe narratif situant le client sur le spectre entre "Sédentaire Actif" et "Athlète Métabolique". 
+  Utilise des phrases complètes, pas seulement des emojis. Explique pourquoi il est à cette position.
 
-2. RÉCIT CLINIQUE :
-Interprète la fréquence cardiaque au repos. Explique la différence entre "faire du cardio" et "construire ses mitochondries". 
-Pourquoi la Zone 2 est le socle de la combustion des graisses ?
+- Sous-section 2 : "2. Récit clinique cardiovasculaire"
+  Interprète la fréquence cardiaque au repos avec des phrases complètes. 
+  Explique la différence entre "faire du cardio" et "construire ses mitochondries" de manière narrative. 
+  Explique pourquoi la Zone 2 est le socle de la combustion des graisses avec des exemples concrets.
 
-Minimum 60 lignes.`,
+Minimum 60 lignes de texte narratif.`,
 
   "Analyse metabolisme et nutrition": `
 INSTRUCTIONS POUR "ANALYSE METABOLISME ET NUTRITION" :
 
-TU ES UN EXPERT EN BIOCHIMIE NUTRITIONNELLE ET MÉTABOLISME.
+TU ES UN EXPERT EN BIOCHIMIE NUTRITIONNELLE.
 
-1. CALCULS MÉTABOLIQUES PRÉCIS :
-- BMR (métabolisme de base) calculé avec son poids, taille, âge
-- TDEE (dépense totale) avec son niveau d'activité professionnelle + sportive
-- Déficit/surplus calorique estimé actuel
-- Besoins en MACROS optimaux : protéines (g/kg), glucides (timing), lipides (types)
+STRUCTURE :
+- Titre principal unique : "ANALYSE METABOLISME ET NUTRITION"
+- Sous-section 1 : "1. Timeline métabolique quotidienne"
+  Rédige un récit narratif expliquant le cycle de l'insuline sur une journée type si on suit tes conseils.
+  Utilise des phrases complètes : "Le matin, l'insuline reste basse car... En fin de journée, après l'entraînement, on crée un pic contrôlé car..."
+  Pas de simples termes techniques isolés. Explique chaque phase avec des phrases complètes.
 
-2. ANALYSE PRÉCISE DE CE QU'IL MANGE :
-- Qu'est-ce qu'il consomme selon ses réponses ?
-- Identifie les ERREURS de timing : glucides au mauvais moment, fenêtre anabolique ratée
-- Analyse la qualité des sources de protéines, glucides, lipides
+- Sous-section 2 : "2. Récit narratif métabolique"
+  Analyse le TDEE et les apports avec des phrases complètes. 
+  Explique le mécanisme de la Lipase Hormone-Sensible (HSL) de manière narrative et accessible.
+  Parle du "Vol de la prégnénolone" de manière fluide et pédagogique.
 
-3. LE MÉCANISME DE LA LIPASE HORMONE-SENSIBLE (HSL) :
-- La HSL = l'enzyme qui DÉVERROUILLE les cellules graisseuses
-- L'insuline = l'interrupteur OFF de la HSL
-- Quand l'insuline est haute → IMPOSSIBLE de brûler du gras
-- Explique pourquoi manger 6 petits repas = insuline haute toute la journée = gras verrouillé
-
-4. LE "VOL DE LA PRÉGNÉNOLONE" :
-- La prégnénolone = précurseur de TOUTES les hormones stéroïdes (cortisol ET testostérone)
-- En cas de stress chronique → le corps VOLE la prégnénolone pour faire du cortisol
-- Résultat : testostérone qui chute, libido basse, muscle qui stagne
-- Explique ce mécanisme de manière narrative et accessible
-
-5. SENSIBILITÉ À L'INSULINE ET PARTITIONNEMENT :
-- Quand les cellules deviennent "sourdes" à l'insuline
-- Le glucose n'entre plus dans les muscles → stocké en gras
-- Comment améliorer le partitionnement : timing, entraînement, suppléments
-
-6. LE CARB CYCLING (s'il est pertinent pour ce client) :
-- Jours HIGH carbs (autour de l'entraînement)
-- Jours LOW carbs (repos, focus mental)
-- Pourquoi c'est supérieur à un régime linéaire
-
-7. ANALYSE DE SA SUPPLÉMENTATION ACTUELLE :
-- Ce qu'il prend et ce que ça apporte vraiment
-- Ce qui MANQUE cruellement (oméga-3, magnésium, vitamine D ?)
-
-8. TIMELINE MÉTABOLIQUE OPTIMALE (journée type) :
-☀️ 07:00 - Réveil : [ce qu'il devrait faire]
-☕ 08:00 - Petit-déjeuner : [composition idéale]
-🏋️ 12:00 - Pré-entraînement : [timing optimal]
-💪 13:00 - Post-entraînement : [fenêtre anabolique]
-🌙 20:00 - Dîner : [derniers glucides ou non ?]
-
-MINIMUM 70-80 LIGNES avec chiffres précis et explications scientifiques.`,
+Minimum 80 lignes de texte narratif.`,
 
   "Analyse sommeil et recuperation": `
 INSTRUCTIONS POUR "ANALYSE SOMMEIL ET RECUPERATION" :
@@ -372,10 +288,10 @@ Rédige un DIAGNOSTIC HORMONAL NOCTURNE.
 INTERDICTION : Pas de listes à puces, pas de tirets.
 
 1. LE RYTHME CIRCADIEN DÉRÉGLÉ :
-Analyse l'inversion de la courbe de cortisol de manière narrative.
+Analyse l'inversion de la courbe de cortisol de manière narrative. Pourquoi le client est-il "fatigué le matin" et "branché le soir" ?
 
 2. LA CHIMIE DU SOMMEIL PROFOND :
-Explique le rôle de l'Hormone de Croissance (GH) et de la Mélatonine.
+Explique le rôle de l'Hormone de Croissance (GH) et de la Mélatonine. Comment la lumière bleue pirate le cerveau ?
 
 3. CONSÉQUENCES SUR LE PHYSIQUE :
 Explique pourquoi le muscle ne se répare pas et pourquoi le gras abdominal s'installe.
@@ -389,10 +305,10 @@ Rédige un RAPPORT SUR L'ÉCOSYSTÈME INTESTINAL.
 INTERDICTION : Pas de listes à puces, pas de tirets.
 
 1. L'ÉTAT DU JARDIN INTÉRIEUR :
-Analyse les symptômes comme des signes de dysbiose ou de fermentation.
+Analyse les symptômes (ballonnements, reflux) comme des signes de dysbiose ou de fermentation.
 
 2. L'AXE INTESTIN-CERVEAU :
-Explique la production de sérotonine et l'impact sur l'humeur.
+Explique la production de sérotonine et l'impact sur l'humeur et les fringales (leaky gut).
 
 3. LA PERMÉABILITÉ ET L'INFLAMMATION :
 Comment un intestin "poreux" crée une rétention d'eau et bloque la perte de gras.
@@ -402,122 +318,626 @@ Minimum 60 lignes de texte narratif.`,
   "Analyse axes hormonaux": `
 INSTRUCTIONS POUR "ANALYSE AXES HORMONAUX" :
 
-1. RADAR D'ÉQUILIBRE (Visuel) :
-Cree un radar simple (émojis) montrant l'état des axes Cortisol, Insuline, Testostérone et Thyroïde.
+STRUCTURE :
+- Titre principal unique : "ANALYSE AXES HORMONAUX"
+- Sous-section 1 : "1. Équilibre hormonal global"
+  Rédige un paragraphe narratif décrivant l'état des axes Cortisol, Insuline, Testostérone et Thyroïde.
+  Utilise des phrases complètes, pas seulement des emojis. Explique l'état de chaque axe avec des phrases.
 
-2. SYNTHÈSE ENDOCRINIENNE :
-Explique l'interaction entre ces hormones. Détaille la stratégie du bilan sanguin.
+- Sous-section 2 : "2. Synthèse endocrinienne"
+  Explique l'interaction entre ces hormones avec des phrases complètes. 
+  Détaille la stratégie du bilan sanguin comme une enquête indispensable de manière narrative.
 
-Minimum 70 lignes.`,
+Minimum 70 lignes de texte narratif.`,
 
+  // 
+  // PROTOCOLES FERMES (mode d'emploi precis)
+  // 
   "Protocole Matin Anti-Cortisol": `
 INSTRUCTIONS POUR "PROTOCOLE MATIN ANTI-CORTISOL" :
 
-C'est un MODE D'EMPLOI MINUTE PAR MINUTE. Pas de blabla, que de l'actionnable.
-Détaille : réveil, hydratation, lumière, douche, petit-déjeuner, premier café.
-Ce protocole doit être COPIABLE tel quel par le client.`,
+C'est un MODE D'EMPLOI MINUTE PAR MINUTE. Pas de blabla, que de l'actionnable. INTERDICTION d'utiliser des barres de separation informatiques.
+
+FORMAT OBLIGATOIRE :
+
+PROTOCOLE MATIN ANTI-CORTISOL
+Objectif : Resynchroniser ton pic de cortisol le MATIN (ou il doit etre)
+
+REVEIL (T+0) :
+- Pas de snooze (chaque snooze = confusion circadienne)
+- Premiere action : [action precise]
+
+T+0 a T+5 min :
+- Hydratation : [quantite exacte, ex: "500ml eau + 1 pincee sel + 1/2 citron"]
+- Mouvement : [action precise, ex: "10 squats air pour activer la circulation"]
+
+T+5 a T+15 min :
+- Lumiere : [instruction precise, ex: "10 min devant fenetre ou dehors, PAS de lunettes de soleil"]
+- Si pas de soleil : "Lampe 10 000 lux a 30cm pendant 10 min"
+
+T+15 a T+45 min :
+- Douche : [protocole exact, ex: "30 sec eau froide sur nuque et dos a la fin"]
+- Habillage
+
+T+45 a T+60 min - PETIT-DEJEUNER :
+- ZERO sucre, ZERO fruit, ZERO jus
+- Proteines obligatoires : [X grammes, sources]
+- Graisses saines : [sources]
+- Exemples de petit-dej :
+  Option 1 : [recette complete]
+  Option 2 : [recette complete]
+  Option 3 : [recette complete]
+
+T+60 a T+90 min :
+- Premier cafe SEULEMENT apres ce delai
+- Pourquoi : [explication adenosine/cortisol en 1 phrase]
+
+INTERDICTIONS ABSOLUES LE MATIN :
+x Pas de telephone au lit
+x Pas de reseaux sociaux avant 10h
+x Pas de nouvelles/infos negatives
+x Pas de reunion stressante avant 10h si possible
+
+DUREE D'APPLICATION : 21 jours minimum pour reset circadien
+
+Ce protocole doit etre COPIABLE tel quel par le client.
+`,
 
   "Protocole Soir Verrouillage Sommeil": `
 INSTRUCTIONS POUR "PROTOCOLE SOIR VERROUILLAGE SOMMEIL" :
 
-MODE D'EMPLOI MINUTE PAR MINUTE pour un sommeil réparateur.
-Détaille : H-3, H-2, H-1.5, H-1, H-0.5 avant coucher.
-Ce protocole doit être applicable DES CE SOIR.`,
+MODE D'EMPLOI MINUTE PAR MINUTE pour un sommeil reparateur. INTERDICTION d'utiliser des barres informatiques.
+
+FORMAT OBLIGATOIRE :
+
+PROTOCOLE SOIR VERROUILLAGE SOMMEIL
+Objectif : Preparer ton corps au sommeil PROFOND (N3 + REM)
+
+H-3 AVANT COUCHER :
+- Dernier repas : [composition, ex: "Proteines + legumes, glucides moderes"]
+- Fin de l'entrainement si tu t'entraines le soir
+- Fin de la cafeine a 14h (rappel)
+
+H-2 AVANT COUCHER :
+- Baisser les lumieres principales
+- Activer le mode "Night Shift" sur tous les ecrans
+- OU lunettes anti-lumiere bleue (filtrant 100% des bleus)
+
+H-1.5 AVANT COUCHER :
+- Supplements du soir :
+  * Magnesium bisglycinate : [X mg]
+  * Zinc : [X mg]
+  * [Autre si pertinent]
+
+H-1 AVANT COUCHER :
+- FIN DES ECRANS (non negociable)
+- Activite calme : lecture papier, etirements doux, musique calme
+- Preparation chambre :
+  * Temperature : 18-19C (ouvre la fenetre 30 min avant si besoin)
+  * Obscurite totale (masque de sommeil si besoin)
+  * Silence (bouchons d'oreilles ou bruit blanc si voisins bruyants)
+
+H-0.5 AVANT COUCHER :
+- Routine hygiene
+- Douche tiede (PAS chaude) pour faire baisser la temperature centrale
+- Respiration de decompression : 4-7-8 (inspire 4s, bloque 7s, expire 8s) x 4
+
+AU LIT :
+- Heure de coucher cible : [X h] (basee sur son reveil souhaite + 5 cycles de 90 min)
+- Position : sur le dos ou sur le cote, jamais sur le ventre
+- Si pensees intrusives : ecrire 3 lignes dans un carnet puis fermer
+
+SI REVEIL NOCTURNE :
+- Pas de telephone
+- Pas de lumiere forte
+- Respiration lente
+- Si > 20 min eveille : se lever, activite calme, revenir quand fatigue
+
+INTERDICTIONS ABSOLUES LE SOIR :
+x Alcool (detruit le sommeil REM)
+x Repas lourd apres 21h
+x Discussion conflictuelle/stressante
+x Travail/emails apres 21h
+x Sport intense apres 20h
+
+Ce protocole doit etre applicable DES CE SOIR.
+`,
 
   "Protocole Digestion 14 Jours": `
 INSTRUCTIONS POUR "PROTOCOLE DIGESTION 14 JOURS" :
 
 Plan de RESET DIGESTIF en 14 jours avec liste d'aliments OK/NOK.
-Phase 1 : Élimination (J1-7)
-Phase 2 : Réparation (J8-14)
-Ce protocole est STRICT mais TEMPORAIRE.`,
+
+FORMAT OBLIGATOIRE :
+
+ PROTOCOLE DIGESTION 14 JOURS 
+Objectif : Calmer l'inflammation, reparer l'intestin, eliminer les intolerants
+
+PHASE 1 : ELIMINATION (Jour 1 a 7)
+
+ALIMENTS INTERDITS (liste stricte) :
+x Gluten (ble, orge, seigle, epeautre)
+x Produits laitiers de vache
+x Sucres ajoutes et edulcorants
+x Alcool (100% stop)
+x Aliments transformes/industriels
+x Huiles vegetales (tournesol, mais, soja)
+x Cafe (limite a 1/jour, apres un repas)
+x Legumineuses (temporairement)
+
+ALIMENTS AUTORISES :
++ Proteines : viande, poisson, oeufs
++ Legumes : tous (sauf pomme de terre en exces)
++ Fruits : 1-2 portions max, hors repas
++ Feculents : riz basmati, patate douce, quinoa
++ Graisses : huile olive, avocat, noix
++ Boissons : eau, tisanes
+
+STRUCTURE DES REPAS :
+Petit-dej : [exemple type]
+Dejeuner : [exemple type avec portions]
+Collation : [si necessaire]
+Diner : [exemple type, leger]
+
+REGLES D'OR :
+1. Macher 20-30 fois chaque bouchee
+2. Pas de liquide pendant le repas (30 min avant/apres)
+3. Manger assis, au calme, sans ecran
+4. Repas en 20 min minimum
+
+PHASE 2 : REPARATION (Jour 8 a 14)
+
+On continue l'elimination + on ajoute :
++ Glutamine : 5g matin a jeun
++ Probiotiques : [souche recommandee]
++ Bouillon d'os : 1 tasse/jour (collagene pour la paroi)
+
+REINTRODUCTION (Apres Jour 14) :
+1. Reintroduire UN aliment a la fois
+2. Attendre 48h et noter les symptomes
+3. Si reaction : eliminer 3 mois supplementaires
+4. Ordre de reintroduction : laitages ferments -> legumineuses -> gluten
+
+RESTAURANT / REPAS EXTERIEURS (regles) :
+- Choisir : grillades + legumes
+- Eviter : sauces, panures, plats en sauce
+- Demander : cuisson a l'huile d'olive
+- Boire : eau plate
+
+Ce protocole est STRICT mais TEMPORAIRE (14 jours). Apres, on assouplit.
+`,
 
   "Protocole Bureau Anti-Sedentarite": `
 INSTRUCTIONS POUR "PROTOCOLE BUREAU ANTI-SEDENTARITE" :
 
 MODE D'EMPLOI pour contrer les 8-10h assis par jour.
-Micro-pauses toutes les 45-60 min.
-Exercices correctifs quotidiens (10 min/jour).
-Ce protocole est VITAL pour débloquer ses hanches.`,
+
+FORMAT OBLIGATOIRE :
+
+ PROTOCOLE BUREAU ANTI-SEDENTARITE 
+Objectif : Reactiver ton corps malgre le travail de bureau
+
+ROUTINE MICRO-PAUSES (toutes les 45-60 min) :
+
+OPTION A - PAUSE DEBOUT (2 min) :
+1. Se lever
+2. 10 squats air
+3. 10 cercles de bras
+4. Marcher jusqu'a la fontaine et retour
+
+OPTION B - PAUSE HANCHES (3 min) :
+1. Debout, pied sur la chaise
+2. Etirement flechisseur hanche : 30s/cote
+3. Rotation thoracique : 5/cote
+
+OPTION C - PAUSE NUQUE (2 min) :
+1. Menton vers poitrine, 20s
+2. Oreille vers epaule, 20s/cote
+3. Regarder plafond, 20s
+4. 10 rotations douces
+
+EXERCICES CORRECTIFS QUOTIDIENS (10 min/jour) :
+A faire AVANT l'entrainement ou en rentrant du bureau
+
+EXERCICE 1 : Etirement psoas (90/90)
+- Position : genou au sol, autre pied devant
+- Serrer fessier du cote arriere
+- Lever le bras du meme cote
+- 60s par cote, respirer profondement
+
+EXERCICE 2 : Pont fessier avec pause
+- Allonge, pieds a plat
+- Monter les hanches
+- Tenir 5s en haut, serrer les fesses
+- 3x12
+
+EXERCICE 3 : Dead bug
+- Allonge, bras tendus vers plafond
+- Jambes a 90 degres
+- Etendre un bras + jambe opposee
+- Garder le dos colle au sol
+- 3x8 par cote
+
+EXERCICE 4 : Quadrupedie + rotation thoracique
+- A quatre pattes
+- Main derriere la tete
+- Ouvrir le coude vers le plafond
+- 10 par cote
+
+INSTALLATION POSTE DE TRAVAIL :
+- Ecran a hauteur des yeux
+- Coudes a 90 degres
+- Pieds a plat
+- Dossier soutenant les lombaires
+- Bureau debout si possible (alterner 30 min assis / 30 min debout)
+
+OBJECTIF NEAT (pas/jour) :
+- Minimum : 7 000 pas
+- Optimal : 10 000 pas
+- Strategies : escaliers, marche apres dejeuner, telephone debout
+
+APPLICATION :
+1. Met une alarme toutes les 60 min
+2. Fais les 10 min d'exercices en rentrant
+3. Track tes pas
+
+Ce protocole est VITAL pour debloquer tes hanches et sauver ton dos.
+`,
 
   "Protocole Entrainement Personnalise": `
 INSTRUCTIONS POUR "PROTOCOLE ENTRAINEMENT PERSONNALISE" :
 
-PROGRAMME DETAILLE basé sur ses données.
-Structure de séance, échauffement, exercices avec tempo et repos.
-Semaine type et progression sur 6-8 semaines.`,
+PROGRAMME DETAILLE base sur ses donnees.
 
+FORMAT OBLIGATOIRE :
+
+ PROTOCOLE ENTRAINEMENT PERSONNALISE 
+Objectif : [son objectif principal]
+Frequence : [X seances/semaine]
+Split : [type de split]
+
+STRUCTURE DE SEANCE :
+
+ECHAUFFEMENT (10 min - NON NEGOCIABLE) :
+1. Foam rolling zones tendues : 2 min
+2. Activation fessiers : 2 min
+   - Clam shells : 10/cote
+   - Pont fessier : 10 reps
+3. Mobilite specifique : 3 min
+   - [Exercices selon la seance]
+4. Rampe progressive : 3 min
+
+SEANCE A - [NOM] :
+Exercice 1 : [Nom]
+- Tempo : [X-X-X-X]
+- Series x Reps : [X x X]
+- Repos : [X sec]
+- Consigne : [point technique cle]
+
+Exercice 2 : [Nom]
+...
+(6-8 exercices par seance)
+
+FINISHER (optionnel) :
+[Circuit metabolique ou core]
+
+RETOUR AU CALME (5 min) :
+- Etirements statiques zones travaillees
+- Respiration diaphragmatique 2 min
+
+SEANCE B - [NOM] :
+[Meme format]
+
+SEANCE C - [NOM] :
+[Meme format]
+
+SEMAINE TYPE :
+Lundi : Seance A
+Mardi : Cardio Zone 2 (30 min) + Mobilite
+Mercredi : Seance B
+Jeudi : Repos actif ou cardio leger
+Vendredi : Seance C
+Samedi : Cardio ou sport plaisir
+Dimanche : Repos complet
+
+PROGRESSION :
+- Semaines 1-2 : Apprentissage des mouvements, tempo strict
+- Semaines 3-4 : Augmentation charge 2.5-5%
+- Semaines 5-6 : Introduction techniques d'intensification
+- Semaine 7 : Deload (-40% volume)
+- Reprise cycle
+
+SI STAGNATION :
+- Ajouter 1 serie
+- Varier le tempo
+- Changer l'angle
+- Augmenter le temps sous tension
+`,
+
+  // 
+  // PLAN CONCRET
+  // 
   "Plan Semaine par Semaine 30-60-90": `
 INSTRUCTIONS POUR "PLAN SEMAINE PAR SEMAINE 30-60-90" :
 
-PAS une projection, un PLAN D'ACTION détaillé.
-Phase 1 : Reset (S1-4)
-Phase 2 : Accélération (S5-8)
-Phase 3 : Transformation (S9-12)`,
+PAS une projection, un PLAN D'ACTION detaille.
+
+FORMAT OBLIGATOIRE :
+
+ PLAN D'ACTION 30-60-90 JOURS 
+
+PHASE 1 : RESET (Semaines 1-4)
+
+SEMAINE 1 - FONDATIONS :
+Lundi :
+- Matin : Implementer protocole matin anti-cortisol
+- Soir : Implementer protocole soir sommeil
+- Entrainement : Focus mobilite, pas d'intensite
+
+Mardi :
+- Debut protocole digestion 14 jours
+- Cardio Zone 2 : 30 min
+
+Mercredi :
+- Premiere seance muscu adapte
+- Pas plus de 45 min
+
+Jeudi :
+- Repos actif : marche 30 min
+- Mesurer : tour de taille, poids, energie matin /10
+
+Vendredi :
+- Seance muscu
+- Tracking : qualite sommeil /10
+
+Samedi :
+- Cardio au choix
+- Prep meals semaine 2
+
+Dimanche :
+- Repos total
+- Bilan semaine : [checklist]
+
+SEMAINE 2 - AJUSTEMENTS :
+[Si energie matin < 5/10 : prolonger phase sommeil]
+[Si ballonnements encore presents : verifier aliments suspects]
+- Augmenter intensite entrainement 10%
+- Continuer protocoles
+- Objectif : premiers signes de degonflage
+
+SEMAINES 3-4 - CONSOLIDATION :
+- Fin du reset digestif
+- Reintroduction progressive
+- Augmenter charge entrainement
+- Objectif fin S4 : -2kg, -2cm tour taille, energie 7/10
+
+PHASE 2 : ACCELERATION (Semaines 5-8)
+
+SEMAINE 5-6 :
+- Introduction carb cycling
+- Intensification entrainement (drop sets, rest-pause)
+- Ajout HIIT 1x/semaine
+- Tracking precis des macros
+
+SEMAINE 7-8 :
+- Deload semaine 7
+- Reprise semaine 8
+- Objectif fin S8 : -4kg, -4cm tour taille, energie 8/10
+
+SI PLATEAU (pas de perte depuis 2 semaines) :
+-> Reduire glucides de 20%
+-> Ajouter 1 seance cardio
+-> Verifier adherence protocoles
+
+PHASE 3 : TRANSFORMATION (Semaines 9-12)
+
+SEMAINE 9-10 :
+- Push final nutrition (deficit plus agressif si bien tolere)
+- Volume entrainement maximal
+- Focus : detail musculaire
+
+SEMAINE 11-12 :
+- Maintien
+- Photos comparatives
+- Objectif final : -6 a 8kg, -6cm tour taille, physique transforme
+
+ARBRE DE DECISION SI BLOCAGE :
+[Flowchart textuel avec decisions]
+`,
 
   "KPI et Tableau de Bord": `
 INSTRUCTIONS POUR "KPI ET TABLEAU DE BORD" :
 
-Dashboard MESURABLE pour tracker sa progression.
-Métriques quotidiennes et hebdomadaires.
-Règle des 3 rouges / 5 verts.
-Objectifs chiffrés à 30/60/90 jours.`,
+STRUCTURE :
+- Titre principal unique : "KPI ET TABLEAU DE BORD"
+- Rédige un paragraphe d'introduction expliquant l'objectif : mesurer pour progresser.
+
+SOUS-SECTIONS :
+
+1. Métriques quotidiennes à suivre
+Rédige en paragraphes narratifs les 5 métriques quotidiennes à mesurer chaque matin :
+- Fréquence cardiaque au repos (explique pourquoi et comment l'interpréter avec des phrases complètes)
+- Qualité du sommeil sur 10 (explique les critères avec des phrases)
+- Niveau d'énergie au réveil sur 10 (explique pourquoi c'est important avec des phrases)
+- Niveau de ballonnements sur 10 (explique la signification avec des phrases)
+- Café après 14h : Oui/Non (explique l'impact avec des phrases)
+
+Pour chaque métrique, explique les seuils (vert/jaune/rouge) avec des phrases complètes, pas seulement des indicateurs.
+
+2. Métriques hebdomadaires
+Rédige en paragraphes narratifs les métriques à mesurer chaque dimanche :
+- Poids et tendance (explique comment interpréter avec des phrases)
+- Tour de taille (explique la méthode et l'objectif avec des phrases)
+- Pas moyens par jour (explique les seuils avec des phrases)
+- Verres d'alcool (explique l'impact avec des phrases)
+- Taux de réalisation des séances (explique pourquoi c'est important avec des phrases)
+
+3. Règles d'interprétation
+Rédige en paragraphes narratifs les règles :
+- Si 3 KPI ou plus en rouge sur une semaine, explique ce qu'il faut faire et pourquoi avec des phrases complètes.
+- Si 5 KPI ou plus en vert sur 2 semaines consécutives, explique comment accélérer avec des phrases complètes.
+
+INTERDICTION : Pas de tableaux markdown, pas de formatage complexe. Uniquement du texte narratif avec des phrases complètes.
+
+| Jour | FC | Sommeil | Energie | Ballonnements | Cafe14h |
+||--|||||
+| L    |     |         |         |               |         |
+| M    |     |         |         |               |         |
+| M    |     |         |         |               |         |
+| J    |     |         |         |               |         |
+| V    |     |         |         |               |         |
+| S    |     |         |         |               |         |
+| D    |     |         |         |               |         |
+
+| Semaine | Poids | Tour taille | Pas/j | Alcool | Seances |
+||-|-|-|--||
+| S1      |       |             |       |        |         |
+| S2      |       |             |       |        |         |
+...
+
+OBJECTIFS CHIFFRES A 30/60/90 JOURS :
+30 jours : [metriques cibles personnalisees]
+60 jours : [metriques cibles personnalisees]
+90 jours : [metriques cibles personnalisees]
+`,
 
   "Stack Supplements Optimise": `
 INSTRUCTIONS POUR "STACK SUPPLEMENTS OPTIMISE" :
 
-Stack PRÉCIS avec dosages, timing, et marques.
-Priorité 1 : Fondamentaux (Magnésium, Omega-3, Vitamine D)
-Priorité 2 : Optimisation (Zinc, Ashwagandha)
-Priorité 3 : Performance (Créatine, Whey)
-Routine quotidienne résumée.`,
+Stack PRECIS avec dosages, timing, et marques.
+
+FORMAT OBLIGATOIRE :
+
+ STACK SUPPLEMENTS OPTIMISE 
+Base sur : [ses carences/besoins identifies]
+
+PRIORITE 1 - FONDAMENTAUX (commencer par ceux-la) :
+
+1. MAGNESIUM BISGLYCINATE
+- Pourquoi : [raison personnalisee]
+- Dosage : 300-400mg de magnesium elementaire
+- Timing : 30-60 min avant coucher
+- Marques : Nutrimuscle, Now Foods, Pure Encapsulations
+- Duree : permanent
+
+2. OMEGA-3 (EPA/DHA)
+- Pourquoi : [raison personnalisee]
+- Dosage : 2-3g d'EPA+DHA total (lire l'etiquette!)
+- Timing : pendant le repas le plus gras
+- Marques : Nutrimuscle, Nordic Naturals, Epax
+- Forme : triglycerides, pas ethyl ester
+- Duree : permanent
+
+3. VITAMINE D3 + K2
+- Pourquoi : [raison personnalisee - travail bureau]
+- Dosage : 3000-5000 UI D3 + 100-200mcg K2 MK-7
+- Timing : matin avec repas gras
+- Marques : Thorne, Now Foods
+- Duree : permanent (doser 25-OH vitamine D apres 3 mois)
+
+PRIORITE 2 - OPTIMISATION (ajouter apres 2-4 semaines) :
+
+4. ZINC PICOLINATE
+- Pourquoi : [raison personnalisee]
+- Dosage : 15-30mg
+- Timing : soir avec magnesium
+- Attention : ne pas depasser 30mg/jour
+- Duree : 3 mois, puis pause 1 mois
+
+5. ASHWAGANDHA KSM-66 (si stress eleve)
+- Pourquoi : [si applicable]
+- Dosage : 300-600mg
+- Timing : soir au diner
+- Duree : 8 semaines max, puis pause 4 semaines
+
+PRIORITE 3 - PERFORMANCE (optionnel) :
+
+6. CREATINE MONOHYDRATE
+- Dosage : 5g/jour (pas de phase de charge necessaire)
+- Timing : post-entrainement ou matin
+- Marques : Creapure (label de qualite)
+- Hydratation : +500ml eau/jour
+
+7. WHEY ISOLATE (si apport proteique insuffisant)
+- Dosage : 20-40g selon besoins
+- Timing : post-entrainement ou collation
+- Attention : si ballonnements, passer a whey hydrolysee ou proteines vegetales
+
+ROUTINE QUOTIDIENNE RESUME :
+
+MATIN (avec petit-dej) :
+- Vitamine D3 + K2
+- Omega-3 (partie 1)
+
+MIDI (avec dejeuner) :
+- Omega-3 (partie 2) si dose splitee
+- [Autres si applicable]
+
+SOIR (30 min avant coucher) :
+- Magnesium bisglycinate
+- Zinc
+- Ashwagandha (si applicable)
+
+BUDGET ESTIME :
+[Estimation cout mensuel]
+
+CE QU'IL NE FAUT PAS PRENDRE :
+x Pre-workout avec stimulants (si entrainement soir)
+x Multivitamines generiques (doses trop faibles)
+x Fat burners (inutiles et dangereux)
+`,
 
   "Synthese et Prochaines Etapes": `
 INSTRUCTIONS POUR "SYNTHESE ET PROCHAINES ETAPES" :
 
-C'est la CONCLUSION TRANSFORMATIONNELLE. Elle doit pousser à l'ACTION.
+CONCLUSION qui pousse a l'action.
 
-1. RÉSUMÉ EN 30 SECONDES :
-- Si le client ne lisait QUE cette section, il doit tout comprendre
-- 3-4 phrases qui résument l'essentiel de son profil
+FORMAT OBLIGATOIRE :
 
-2. FORCES MAJEURES (5-6 points) :
-- Liste ses VRAIS points forts (pas des généralités)
-- Ce sur quoi on va capitaliser
-- Format : + [Force] : [explication courte]
+ SYNTHESE FINALE 
 
-3. BLOCAGES IDENTIFIÉS (6-8 points) :
-- Les VRAIS freins à sa progression
-- Pas des généralités, des éléments SPÉCIFIQUES à son cas
-- Format : ✗ [Blocage] : [impact sur ses résultats]
+RESUME EN 30 SECONDES :
+[Prenom], voici ce que je retiens de ton audit :
 
-4. CE QUE TU FAIS DÈS DEMAIN (3 actions IMMÉDIATES) :
-- Pas dans 1 semaine, DEMAIN MATIN
-- Actions ultra-concrètes et applicables immédiatement
-- Une action sommeil, une action nutrition, une action mouvement
+FORCES (ce qui joue en ta faveur) :
++ [Force 1]
++ [Force 2]
++ [Force 3]
 
-5. RISQUES SI INACTION (à 6 mois et 1 an) :
-- Où il sera dans 6 mois s'il ne change RIEN ?
-- Où il sera dans 1 an ? (douleurs, santé, physique)
-- Ton direct mais pas alarmiste
+BLOCAGES IDENTIFIES (ce qu'on va corriger) :
+x [Blocage 1]
+x [Blocage 2]
+x [Blocage 3]
 
-6. RÉSULTATS SI APPLICATION (à 30, 60, 90 jours) :
-- Projections RÉALISTES et CONCRÈTES
-- Chiffres quand possible (tour de taille, énergie /10, force)
-- Le client doit SE VOIR évoluer
+TON POTENTIEL REEL :
+Actuellement : [X/10]
+Dans 90 jours : [Y/10]
 
-7. TON ENGAGEMENT (conclusion émotionnelle) :
-- Ce que tu lui promets si vous travaillez ensemble
-- Phrase de clôture puissante qui crée le lien
+CE QUE TU FAIS DES DEMAIN :
+1. [Action 1 - immediate]
+2. [Action 2 - immediate]
+3. [Action 3 - immediate]
 
-MINIMUM 50-60 LIGNES. Conclusion qui pousse à l'action IMMÉDIATE.`,
+RISQUES SI TU NE FAIS RIEN :
+- A 6 mois : [consequence 1]
+- A 1 an : [consequence 2]
+
+RESULTATS SI TU APPLIQUES :
+- A 30 jours : [resultat 1]
+- A 90 jours : [resultat 2]
+
+MON ENGAGEMENT :
+[Ta phrase finale d'engagement en tant que coach Achzod.]
+
+
+`
 };
 
 async function callGemini(prompt: string): Promise<string> {
   for (let attempt = 0; attempt < GEMINI_MAX_RETRIES; attempt++) {
     try {
       const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: GEMINI_TEMPERATURE,
           maxOutputTokens: GEMINI_MAX_TOKENS,
@@ -525,23 +945,18 @@ async function callGemini(prompt: string): Promise<string> {
       });
 
       const text = result.response.text() || "";
-      
-      // Réponse vide = erreur → force retry
+      // IMPORTANT: une réponse vide produit un audit "tronqué" (header/CTA sans sections).
+      // On force donc un retry si le modèle renvoie vide.
       if (!text.trim()) {
-        throw new Error("Gemini returned empty response");
+        throw new Error("Gemini returned an empty response");
       }
-      
       return text;
     } catch (error: any) {
-      console.log(
-        `[Gemini] Erreur tentative ${attempt + 1}/${GEMINI_MAX_RETRIES}: ${error.message || error}`,
-      );
+      console.log(`[Gemini] Erreur tentative ${attempt + 1}/${GEMINI_MAX_RETRIES}: ${error.message || error}`);
       if (attempt < GEMINI_MAX_RETRIES - 1) {
         const waitTime = GEMINI_SLEEP_BETWEEN * (attempt + 1) * 1000;
-        console.log(
-          `[Gemini] Attente ${waitTime / 1000}s avant nouvelle tentative...`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        console.log(`[Gemini] Attente ${waitTime / 1000}s avant nouvelle tentative...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
   }
@@ -553,61 +968,51 @@ async function callGemini(prompt: string): Promise<string> {
 export async function generateAuditTxt(
   clientData: ClientData,
   photoAnalysis?: PhotoAnalysis | null,
-  tier: AuditTier = "PREMIUM",
-  resumeAuditId?: string,
+  tier: AuditTier = 'PREMIUM',
+  resumeAuditId?: string
 ): Promise<string | null> {
   const startTime = Date.now();
-
-  const firstName = clientData["prenom"] || clientData["age"] || "Client";
-  const lastName = clientData["nom"] || "";
+  
+  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
   const auditId = resumeAuditId || generateAuditId();
   let cachedSections: { [key: string]: string } = {};
   let sectionsFromCache = 0;
-
+  
   if (resumeAuditId) {
     const cached = loadFromCache(resumeAuditId);
     if (cached) {
       cachedSections = cached.sections || {};
       sectionsFromCache = Object.keys(cachedSections).length;
-      console.log(
-        `[Cache] Reprise audit ${resumeAuditId} - ${sectionsFromCache} sections deja generees`,
-      );
+      console.log(`[Cache] Reprise audit ${resumeAuditId} - ${sectionsFromCache} sections deja generees`);
     }
   }
 
-  console.log(
-    `[Cache] ID Audit: ${auditId} (utilise cet ID pour reprendre si crash)`,
-  );
+  console.log(`[Cache] ID Audit: ${auditId} (utilise cet ID pour reprendre si crash)`);
 
   const dataStr = Object.entries(clientData)
     .filter(([_, v]) => v)
     .map(([k, v]) => `- ${k}: ${v}`)
-    .join("\n");
+    .join('\n');
 
-  let photoDataStr = "";
+  let photoDataStr = '';
   if (photoAnalysis) {
-    const formattedAnalysis = formatPhotoAnalysisForReport(
-      photoAnalysis,
-      firstName,
-    );
+    const formattedAnalysis = formatPhotoAnalysisForReport(photoAnalysis, firstName);
     photoDataStr = `\n\nRAPPORT D'EXPERTISE VISUELLE (A INTEGRER DANS TON RECIT) :\n${formattedAnalysis}`;
   } else {
-    photoDataStr =
-      "\n\nAUCUNE PHOTO FOURNIE - Ne pas inventer de donnees visuelles.";
+    photoDataStr = '\n\nAUCUNE PHOTO FOURNIE - Ne pas inventer de donnees visuelles.';
   }
 
   const fullDataStr = dataStr + photoDataStr;
 
   const auditParts: string[] = [];
-
+  
   const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
   auditParts.push(ctaDebut);
-  auditParts.push(
-    `\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`,
-  );
-  auditParts.push(`Genere le ${new Date().toLocaleString("fr-FR")}\n`);
+  auditParts.push(`\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`);
+  auditParts.push(`Genere le ${new Date().toLocaleString('fr-FR')}\n`);
 
   const cacheData: CacheData = {
     auditId,
@@ -616,7 +1021,7 @@ export async function generateAuditTxt(
     tier,
     sections: cachedSections,
     startedAt: new Date().toISOString(),
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: new Date().toISOString()
   };
 
   // Génération en PARALLÈLE pour la vitesse
@@ -624,12 +1029,13 @@ export async function generateAuditTxt(
     if (cachedSections[section]) {
       return { section, text: cachedSections[section], fromCache: true };
     }
-
+    
     const specificInstructions = SECTION_INSTRUCTIONS[section] || "";
 
-    const prompt = PROMPT_SECTION.replace("{section}", section)
-      .replace("{section_specific_instructions}", specificInstructions)
-      .replace("{data}", fullDataStr);
+    const prompt = PROMPT_SECTION
+      .replace('{section}', section)
+      .replace('{section_specific_instructions}', specificInstructions)
+      .replace('{data}', fullDataStr);
 
     const sectionText = await callGemini(prompt);
 
@@ -638,10 +1044,10 @@ export async function generateAuditTxt(
     }
 
     const cleanedText = sectionText
-      .replace(/\*\*/g, "")
-      .replace(/##/g, "")
-      .replace(/__/g, "")
-      .replace(/\*/g, "");
+      .replace(/\*\*/g, '')
+      .replace(/##/g, '')
+      .replace(/__/g, '')
+      .replace(/\*/g, '');
 
     // Sauvegarde immédiate dans le cache
     cacheData.sections[section] = cleanedText;
@@ -652,77 +1058,60 @@ export async function generateAuditTxt(
 
   const results = await Promise.all(sectionPromises);
 
-  // ⚠️ FIX: Si aucune section n'a été générée, échec total
-  const nonEmptySections = results.filter(r => r.text && r.text.trim().length > 0);
-  if (nonEmptySections.length === 0) {
-    console.error("[GeminiPremiumEngine] ECHEC: Aucune section générée (toutes vides)");
+  const nonEmptySections = results.filter(r => (r.text || "").trim().length > 0).length;
+  if (nonEmptySections === 0) {
+    console.error("[GeminiPremiumEngine] Aucune section n'a été générée (réponses vides). Audit annulé.");
     return null;
   }
-  console.log(`[GeminiPremiumEngine] ${nonEmptySections.length}/${SECTIONS.length} sections générées`);
 
   // Assemblage dans l'ordre original
   SECTIONS.forEach((section) => {
-    const res = results.find((r) => r.section === section);
+    const res = results.find(r => r.section === section);
     if (res && res.text) {
       auditParts.push(`\n${section.toUpperCase()}\n`);
       auditParts.push(res.text);
     }
   });
 
-  let fullAudit = auditParts.join("\n");
-
+  let fullAudit = auditParts.join('\n');
+  
   const ctaFin = getCTAFin(tier, PRICING.PREMIUM);
-  fullAudit += "\n\n" + ctaFin;
-
+  fullAudit += '\n\n' + ctaFin;
+  
   deleteCache(auditId);
-
+  
   const generationTime = Date.now() - startTime;
   const newSections = SECTIONS.length - sectionsFromCache;
-  console.log(
-    `\n[GeminiPremiumEngine] Audit genere en ${(generationTime / 1000).toFixed(1)}s (${newSections} nouvelles sections, ${sectionsFromCache} du cache)`,
-  );
-
+  console.log(`\n[GeminiPremiumEngine] Audit genere en ${(generationTime / 1000).toFixed(1)}s (${newSections} nouvelles sections, ${sectionsFromCache} du cache)`);
+  
   return fullAudit;
 }
 
 export async function generateAndConvertAudit(
   clientData: ClientData,
   photoAnalysis?: PhotoAnalysis | null,
-  tier: AuditTier = "PREMIUM",
-  resumeAuditId?: string,
+  tier: AuditTier = 'PREMIUM',
+  resumeAuditId?: string
 ): Promise<AuditResult> {
   const startTime = Date.now();
-
-  const firstName = clientData["prenom"] || clientData["age"] || "Client";
-  const lastName = clientData["nom"] || "";
+  
+  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const lastName = clientData['nom'] || '';
   const clientName = `${firstName} ${lastName}`.trim();
 
-  console.log(
-    `\n[GeminiPremiumEngine] Nouvelle demande d'audit pour ${firstName}`,
-  );
-  console.log(
-    `[GeminiPremiumEngine] Generation audit PREMIUM avec GEMINI pour ${clientName}...`,
-  );
+  console.log(`\n[GeminiPremiumEngine] Nouvelle demande d'audit pour ${firstName}`);
+  console.log(`[GeminiPremiumEngine] Generation audit PREMIUM avec GEMINI pour ${clientName}...`);
 
-  const txtContent = await generateAuditTxt(
-    clientData,
-    photoAnalysis,
-    tier,
-    resumeAuditId,
-  );
+  const txtContent = await generateAuditTxt(clientData, photoAnalysis, tier, resumeAuditId);
   if (!txtContent) {
-    console.log(
-      `[GeminiPremiumEngine] Echec generation TXT pour ${clientName}`,
-    );
+    console.log(`[GeminiPremiumEngine] Echec generation TXT pour ${clientName}`);
     return {
       success: false,
-      error: "Echec generation avec Gemini",
+      error: "Echec generation avec Gemini"
     };
   }
 
-  console.log(
-    `[GeminiPremiumEngine] Audit TXT genere (${txtContent.length} caracteres)`,
-  );
+  console.log(`[GeminiPremiumEngine] Audit TXT genere (${txtContent.length} caracteres)`);
 
   const generationTime = Date.now() - startTime;
 
@@ -733,8 +1122,8 @@ export async function generateAndConvertAudit(
     metadata: {
       generationTimeMs: generationTime,
       sectionsGenerated: SECTIONS.length,
-      modelUsed: GEMINI_MODEL,
-    },
+      modelUsed: GEMINI_MODEL
+    }
   };
 }
 
@@ -743,18 +1132,11 @@ export function listPendingAudits(): string[] {
   try {
     const files = fs.readdirSync(CACHE_DIR);
     return files
-      .filter((f) => f.startsWith("audit-") && f.endsWith(".json"))
-      .map((f) => f.replace("audit-", "").replace(".json", ""));
+      .filter(f => f.startsWith('audit-') && f.endsWith('.json'))
+      .map(f => f.replace('audit-', '').replace('.json', ''));
   } catch {
     return [];
   }
 }
 
-export {
-  SECTIONS,
-  SECTION_INSTRUCTIONS,
-  callGemini,
-  loadFromCache,
-  deleteCache,
-};
-
+export { SECTIONS, SECTION_INSTRUCTIONS, callGemini, loadFromCache, deleteCache };
