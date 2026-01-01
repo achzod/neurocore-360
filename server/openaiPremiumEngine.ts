@@ -75,7 +75,7 @@ async function callOpenAI(prompt: string): Promise<string> {
         model: OPENAI_MODEL,
         messages: [{ role: 'user', content: prompt }],
         temperature: OPENAI_TEMPERATURE,
-        max_tokens: OPENAI_MAX_TOKENS,
+        max_completion_tokens: OPENAI_MAX_TOKENS, // GPT-5.2 utilise max_completion_tokens au lieu de max_tokens
       });
 
       const text = response.choices[0]?.message?.content || '';
