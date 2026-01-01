@@ -67,36 +67,117 @@ const OPENAI_TEMPERATURE = OPENAI_CONFIG.OPENAI_TEMPERATURE;
 const OPENAI_MAX_TOKENS = OPENAI_CONFIG.OPENAI_MAX_TOKENS;
 const OPENAI_MAX_RETRIES = OPENAI_CONFIG.OPENAI_MAX_RETRIES;
 const OPENAI_SLEEP_BETWEEN = OPENAI_CONFIG.OPENAI_SLEEP_BETWEEN;
+const OPENAI_SECTION_CONCURRENCY =
+  (OPENAI_CONFIG as any).OPENAI_SECTION_CONCURRENCY ?? 3;
 
-async function callOpenAI(prompt: string): Promise<string> {
-  for (let attempt = 0; attempt < OPENAI_MAX_RETRIES; attempt++) {
+function parseResetToMs(v?: string): number | null {
+  if (!v) return null;
+  // Formats observés: "1s", "6m0s"
+  const m = v.match(/(?:(\d+)m)?(?:(\d+)s)?/);
+  if (!m) return null;
+  const mins = m[1] ? Number(m[1]) : 0;
+  const secs = m[2] ? Number(m[2]) : 0;
+  const total = (mins * 60 + secs) * 1000;
+  return Number.isFinite(total) && total > 0 ? total : null;
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function getHeader(headers: any, name: string): string | undefined {
+  if (!headers) return undefined;
+  const key = name.toLowerCase();
+  // Headers() (fetch style)
+  if (typeof headers.get === "function") {
+    return headers.get(name) ?? headers.get(key) ?? undefined;
+  }
+  // plain object
+  const direct = headers[name] ?? headers[key];
+  return typeof direct === "string" ? direct : undefined;
+}
+
+async function callOpenAI(
+  prompt: string,
+  opts?: { maxCompletionTokens?: number }
+): Promise<string> {
+  let fallbackDelayMs = Math.max(250, OPENAI_SLEEP_BETWEEN * 1000);
+
+  for (let attempt = 1; attempt <= OPENAI_MAX_RETRIES; attempt++) {
     try {
       const response = await openai.chat.completions.create({
         model: OPENAI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
         temperature: OPENAI_TEMPERATURE,
-        max_completion_tokens: OPENAI_MAX_TOKENS, // GPT-5.2 utilise max_completion_tokens au lieu de max_tokens
+        // GPT-5.2 utilise max_completion_tokens au lieu de max_tokens
+        max_completion_tokens: opts?.maxCompletionTokens ?? OPENAI_MAX_TOKENS,
       });
 
-      const text = response.choices[0]?.message?.content || '';
+      const text = response.choices[0]?.message?.content || "";
       if (!text.trim()) {
-        throw new Error('OpenAI returned an empty response');
+        throw new Error("OpenAI returned an empty response");
       }
       return text;
     } catch (error: any) {
+      const status = error?.status ?? error?.response?.status;
+      const headers = error?.headers ?? error?.response?.headers;
+
+      // 429: sleep "exact reset" si possible (tokens ou requests) + jitter
+      if (status === 429) {
+        const resetTokens = getHeader(headers, "x-ratelimit-reset-tokens");
+        const resetReqs = getHeader(headers, "x-ratelimit-reset-requests");
+        const resetMs = parseResetToMs(resetTokens || resetReqs || undefined);
+        const jitter = Math.floor(Math.random() * 250);
+
+        console.log(
+          `[OpenAI] 429 Rate limit (tentative ${attempt}/${OPENAI_MAX_RETRIES}) resetTokens=${resetTokens} resetReqs=${resetReqs}`
+        );
+
+        if (attempt < OPENAI_MAX_RETRIES) {
+          if (resetMs != null) {
+            await sleep(resetMs + jitter);
+          } else {
+            await sleep(fallbackDelayMs + jitter);
+            fallbackDelayMs = Math.min(fallbackDelayMs * 2, 60_000);
+          }
+          continue;
+        }
+      }
+
       console.log(
-        `[OpenAI] Erreur tentative ${attempt + 1}/${OPENAI_MAX_RETRIES}: ${error.message || error}`
+        `[OpenAI] Erreur tentative ${attempt}/${OPENAI_MAX_RETRIES}: ${error?.message || error}`
       );
-      if (attempt < OPENAI_MAX_RETRIES - 1) {
-        const waitTime = OPENAI_SLEEP_BETWEEN * (attempt + 1) * 1000;
-        console.log(`[OpenAI] Attente ${waitTime / 1000}s avant nouvelle tentative...`);
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+      if (attempt < OPENAI_MAX_RETRIES) {
+        const jitter = Math.floor(Math.random() * 250);
+        await sleep(fallbackDelayMs + jitter);
+        fallbackDelayMs = Math.min(fallbackDelayMs * 2, 60_000);
       }
     }
   }
 
-  console.log('[OpenAI] Echec apres toutes les tentatives');
-  return '';
+  console.log("[OpenAI] Echec apres toutes les tentatives");
+  return "";
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: Math.max(1, concurrency) }, async () => {
+    while (true) {
+      const i = nextIndex++;
+      if (i >= items.length) break;
+      results[i] = await fn(items[i], i);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
 }
 
 export async function generateAuditTxtWithOpenAI(
@@ -148,44 +229,53 @@ ${photoAnalysisStr}
   let fullAuditTxt = '';
   let newSectionsGenerated = 0;
 
-  const sectionPromises = SECTIONS.map(async (section) => {
-    if (cachedSections[section]) {
-      console.log(`[OpenAI] Section "${section}" chargee du cache.`);
-      return { section, text: cachedSections[section], fromCache: true };
+  const results = await mapWithConcurrency(
+    SECTIONS,
+    Number(OPENAI_SECTION_CONCURRENCY) || 3,
+    async (section) => {
+      if (cachedSections[section]) {
+        console.log(`[OpenAI] Section "${section}" chargee du cache.`);
+        return { section, text: cachedSections[section], fromCache: true };
+      }
+
+      console.log(`[OpenAI] Generation de la section "${section}"...`);
+      const specificInstructions = SECTION_INSTRUCTIONS[section] || "";
+
+      const prompt = PROMPT_SECTION.replace("{section}", section)
+        .replace("{section_specific_instructions}", specificInstructions)
+        .replace("{data}", fullDataStr);
+
+      // Cap par section (évite de “réserver” 8000 tokens * N sections en parallèle)
+      const sectionText = await callOpenAI(prompt, {
+        maxCompletionTokens: OPENAI_MAX_TOKENS,
+      });
+
+      if (!sectionText) {
+        return { section, text: "", fromCache: false };
+      }
+
+      const cleanedText = sectionText
+        .replace(/\*\*/g, "")
+        .replace(/##/g, "")
+        .replace(/__/g, "")
+        .replace(/\*/g, "");
+
+      // Sauvegarde immédiate dans le cache
+      cachedSections[section] = cleanedText;
+      saveToCache(auditId, {
+        auditId,
+        clientData,
+        photoAnalysis,
+        tier,
+        sections: cachedSections,
+        startedAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+      });
+      newSectionsGenerated++;
+
+      return { section, text: cleanedText, fromCache: false };
     }
-
-    console.log(`[OpenAI] Generation de la section "${section}"...`);
-    const specificInstructions = SECTION_INSTRUCTIONS[section] || '';
-
-    const prompt = PROMPT_SECTION.replace('{section}', section)
-      .replace('{section_specific_instructions}', specificInstructions)
-      .replace('{data}', fullDataStr);
-
-    const sectionText = await callOpenAI(prompt);
-
-    if (!sectionText) {
-      return { section, text: '', fromCache: false };
-    }
-
-    const cleanedText = sectionText.replace(/\*\*/g, '').replace(/##/g, '').replace(/__/g, '').replace(/\*/g, '');
-
-    // Sauvegarde immédiate dans le cache
-    cachedSections[section] = cleanedText;
-    saveToCache(auditId, {
-      auditId,
-      clientData,
-      photoAnalysis,
-      tier,
-      sections: cachedSections,
-      startedAt: new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
-    });
-    newSectionsGenerated++;
-
-    return { section, text: cleanedText, fromCache: false };
-  });
-
-  const results = await Promise.all(sectionPromises);
+  );
 
   const nonEmptySections = results.filter((r) => (r.text || '').trim().length > 0).length;
   if (nonEmptySections === 0) {
