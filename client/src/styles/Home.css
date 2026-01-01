@@ -1,0 +1,390 @@
+/* ============================================================
+   HOME PAGE - Carousels Certifications & Médias
+   ============================================================ */
+
+.home-page {
+  width: 100%;
+  background-color: #1a1a2e;
+  padding: 60px 0;
+}
+
+/* ============================================================
+   REVIEWS SECTION
+   ============================================================ */
+
+.reviews-section {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 80px 20px;
+  background-color: #1a1a2e;
+}
+
+.reviews-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.reviews-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.5px;
+}
+
+.reviews-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.reviews-rating {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.reviews-stars {
+  font-size: 1.5rem;
+  color: #fbbf24;
+  letter-spacing: 4px;
+}
+
+.reviews-count {
+  font-size: 1.1rem;
+  color: #9ca3af;
+}
+
+.reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.review-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.review-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.review-author {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.review-stars {
+  font-size: 1rem;
+  color: #fbbf24;
+  letter-spacing: 2px;
+}
+
+.review-text {
+  color: #d1d5db;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Responsive Reviews */
+@media (max-width: 768px) {
+  .reviews-section {
+    padding: 60px 20px;
+  }
+
+  .reviews-title {
+    font-size: 2rem;
+  }
+
+  .reviews-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* ============================================================
+   SECTION STYLES
+   ============================================================ */
+
+.carousel-section {
+  width: 100%;
+  padding: 40px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.carousel-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 0 20px;
+}
+
+.carousel-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.5px;
+}
+
+.carousel-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #10b981;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ============================================================
+   CAROUSEL CONTAINER avec dégradé fondu
+   ============================================================ */
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: 20px 0;
+}
+
+/* Masques dégradés sur les bords pour effet disparition */
+.carousel-container::before,
+.carousel-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 150px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.carousel-container::before {
+  left: 0;
+  background: linear-gradient(to right, #1a1a2e 0%, rgba(26, 26, 46, 0) 100%);
+}
+
+.carousel-container::after {
+  right: 0;
+  background: linear-gradient(to left, #1a1a2e 0%, rgba(26, 26, 46, 0) 100%);
+}
+
+/* ============================================================
+   TRACK ANIMATIONS
+   ============================================================ */
+
+.carousel-track {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+  width: fit-content;
+}
+
+/* Animation Certifications: DROITE vers GAUCHE (35s) */
+@keyframes scroll-certifications {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.certifications-track {
+  animation: scroll-certifications 35s linear infinite;
+}
+
+.certifications-track:hover {
+  animation-play-state: paused;
+}
+
+/* Animation Médias: GAUCHE vers DROITE (40s) - sens inverse */
+@keyframes scroll-media {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.media-track {
+  animation: scroll-media 40s linear infinite;
+}
+
+.media-track:hover {
+  animation-play-state: paused;
+}
+
+/* ============================================================
+   CAROUSEL ITEMS
+   ============================================================ */
+
+.carousel-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.carousel-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.carousel-logo {
+  max-width: 150px;
+  max-height: 80px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: brightness(0.9) contrast(1.1);
+  transition: filter 0.3s ease;
+}
+
+.carousel-item:hover .carousel-logo {
+  filter: brightness(1) contrast(1.2);
+}
+
+/* Badges plus petits */
+.badge-logo {
+  max-width: 120px;
+  max-height: 60px;
+}
+
+/* ============================================================
+   RESPONSIVE MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .home-page {
+    padding: 40px 0;
+  }
+
+  .carousel-section {
+    padding: 30px 0;
+  }
+
+  .carousel-header {
+    margin-bottom: 30px;
+  }
+
+  .carousel-title {
+    font-size: 1.5rem;
+  }
+
+  .carousel-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .carousel-container {
+    padding: 15px 0;
+  }
+
+  .carousel-container::before,
+  .carousel-container::after {
+    width: 80px;
+  }
+
+  .carousel-track {
+    gap: 40px;
+  }
+
+  .carousel-item {
+    padding: 15px 30px;
+  }
+
+  .carousel-logo {
+    max-width: 120px;
+    max-height: 60px;
+  }
+
+  .badge-logo {
+    max-width: 100px;
+    max-height: 50px;
+  }
+
+  /* Vitesses légèrement plus rapides sur mobile */
+  .certifications-track {
+    animation-duration: 30s;
+  }
+
+  .media-track {
+    animation-duration: 35s;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-title {
+    font-size: 1.25rem;
+  }
+
+  .carousel-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .carousel-track {
+    gap: 30px;
+  }
+
+  .carousel-item {
+    padding: 12px 20px;
+  }
+
+  .carousel-logo {
+    max-width: 100px;
+    max-height: 50px;
+  }
+
+  .badge-logo {
+    max-width: 80px;
+    max-height: 40px;
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITÉ - Réduire les animations si préféré
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-track {
+    animation: none;
+  }
+  
+  .certifications-track {
+    animation: none;
+  }
+  
+  .media-track {
+    animation: none;
+  }
+}
+

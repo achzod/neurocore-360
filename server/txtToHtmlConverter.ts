@@ -11,82 +11,70 @@ function escapeHtml(input: string): string {
 
 export function convertTxtToHtml(txtContent: string): string {
   const dashboard = formatTxtToDashboard(txtContent);
+  
+  const sectionsHTML = dashboard.sections.map(section => {
+    const lines = section.content.split('\n');
+    let inList = false;
 
-  const sectionsHTML = dashboard.sections
-    .map((section) => {
-      const lines = section.content.split("\n");
-      let inList = false;
+    const formattedContent = lines.map(line => {
+      let l = line.trim();
+      
+      l = l.replace(/\[[■□\s#=-]+\]\s*\d+\/\d+/, '');
+      l = l.replace(/^[=\-#*]{2,}/, '').replace(/[=\-#*]{2,}$/, '').trim();
+      
+      if (!l) {
+        if (inList) {
+          inList = false;
+          return "</ul>";
+        }
+        return '';
+      }
+      
+      if (l.match(/^[A-Z\s]{5,}:?$/) || (l.length < 40 && l.toUpperCase() === l && !l.includes('.'))) {
+        if (inList) {
+          inList = false;
+          return `</ul><h4 class="subsection-title">${escapeHtml(l.replace(':', ''))}</h4>`;
+        }
+        return `<h4 class="subsection-title">${escapeHtml(l.replace(':', ''))}</h4>`;
+      }
+      
+      if (l.startsWith('+ ') || l.startsWith('- ') || l.startsWith('• ')) {
+        const item = escapeHtml(l.substring(2).trim());
+        if (!inList) {
+          inList = true;
+          return `<ul><li>${item}</li>`;
+        }
+        return `<li>${item}</li>`;
+      }
+      
+      if (inList) {
+        inList = false;
+        return `</ul><p>${escapeHtml(l)}</p>`;
+      }
+      return `<p>${escapeHtml(l)}</p>`;
+    }).join('');
 
-      const formattedContent = lines
-        .map((line) => {
-          let l = line.trim();
-
-          l = l.replace(/\[[■□\s#=-]+\]\s*\d+\/\d+/, "");
-          l = l
-            .replace(/^[=\-#*]{2,}/, "")
-            .replace(/[=\-#*]{2,}$/, "")
-            .trim();
-
-          if (!l) {
-            if (inList) {
-              inList = false;
-              return "</ul>";
-            }
-            return "";
-          }
-
-          if (
-            l.match(/^[A-Z\s]{5,}:?$/) ||
-            (l.length < 40 && l.toUpperCase() === l && !l.includes("."))
-          ) {
-            if (inList) {
-              inList = false;
-              return `</ul><h4 class="subsection-title">${escapeHtml(l.replace(":", ""))}</h4>`;
-            }
-            return `<h4 class="subsection-title">${escapeHtml(l.replace(":", ""))}</h4>`;
-          }
-
-          if (l.startsWith("+ ") || l.startsWith("- ") || l.startsWith("• ")) {
-            const item = escapeHtml(l.substring(2).trim());
-            if (!inList) {
-              inList = true;
-              return `<ul><li>${item}</li>`;
-            }
-            return `<li>${item}</li>`;
-          }
-
-          if (inList) {
-            inList = false;
-            return `</ul><p>${escapeHtml(l)}</p>`;
-          }
-          return `<p>${escapeHtml(l)}</p>`;
-        })
-        .join("");
-
-      const safeContent = inList
-        ? `${formattedContent}</ul>`
-        : formattedContent;
-
-      return `
+    const safeContent = inList ? `${formattedContent}</ul>` : formattedContent;
+    
+    return `
       <div class="section-card">
         <div class="section-header">
           <h3 class="section-title">${escapeHtml(section.title)}</h3>
-          ${section.score ? `<span class="score-badge">${escapeHtml(String(section.score))}/100</span>` : ""}
+          ${section.score ? `<span class="score-badge">${escapeHtml(String(section.score))}/100</span>` : ''}
         </div>
         <div class="section-content">
           ${safeContent}
         </div>
       </div>
     `;
-    })
-    .join("");
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Audit NEUROCORE 360 - ${dashboard.clientName || "Rapport"}</title>
+  <title>Audit NEUROCORE 360 - ${dashboard.clientName || 'Rapport'}</title>
   <style>
     :root {
       --bg-primary: #1a1a2e;
@@ -148,22 +136,10 @@ export function convertTxtToHtml(txtContent: string): string {
       margin-bottom: 1rem;
       color: var(--text-primary);
     }
-    .section-content ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
     .section-content li {
       margin-left: 1.5rem;
       margin-bottom: 0.5rem;
       color: var(--text-secondary);
-      position: relative;
-    }
-    .section-content li::before {
-      content: "→";
-      position: absolute;
-      left: -1.2rem;
-      color: var(--accent);
     }
     .subsection-title {
       color: var(--accent);
@@ -182,14 +158,14 @@ export function convertTxtToHtml(txtContent: string): string {
   <div class="container">
     <header class="header">
       <h1>NEUROCORE 360</h1>
-      <p>Audit Metabolique Premium${dashboard.clientName ? ` - ${dashboard.clientName}` : ""}</p>
-      ${dashboard.generatedAt ? `<p>Genere le ${dashboard.generatedAt}</p>` : ""}
+      <p>Audit 360 Premium${dashboard.clientName ? ` - ${dashboard.clientName}` : ''}</p>
+      ${dashboard.generatedAt ? `<p>Genere le ${dashboard.generatedAt}</p>` : ''}
     </header>
-
+    
     <main>
       ${sectionsHTML}
     </main>
-
+    
     <footer class="footer">
       <p>Rapport genere par NEUROCORE 360 - Intelligence Artificielle</p>
     </footer>
@@ -200,4 +176,3 @@ export function convertTxtToHtml(txtContent: string): string {
 
 // Compat imports legacy (default + named)
 export default convertTxtToHtml;
-

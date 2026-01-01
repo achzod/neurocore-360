@@ -127,7 +127,7 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Partagez votre expérience avec cet audit métabolique..."
+            placeholder="Partagez votre expérience avec cet audit 360..."
             className="min-h-[120px] resize-none"
             data-testid="textarea-comment"
           />
@@ -174,3 +174,4 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
 }
 
 export default ReviewForm;
+

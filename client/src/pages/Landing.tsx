@@ -1,5 +1,4 @@
 import { Link } from "wouter";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +14,8 @@ import {
   Award,
   Check,
   Lock,
-  Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { BodyVisualization, NeuralNetwork } from "@/components/animations";
 
 import issaLogo from "@assets/ISSA+Logo+_+Vertical+_+for-white-background_1767172975495.webp";
 import pnLogo from "@assets/limage-19764_1767172975495.webp";
@@ -87,17 +84,18 @@ function MediaBar() {
   const mediaLogos = [
     "MarketWatch", "REUTERS", "Yahoo Finance", "FOX 40", "BENZINGA", "StreetInsider"
   ];
-  const allMedia = [...mediaLogos, ...mediaLogos];
+  // Dupliquer plusieurs fois pour remplir toute la largeur sans espaces vides
+  const allMedia = [...mediaLogos, ...mediaLogos, ...mediaLogos, ...mediaLogos];
 
   return (
-    <div className="overflow-hidden border-b border-border/20 bg-muted/30 py-4" data-testid="section-media-bar">
+    <div className="w-full overflow-hidden border-b border-border/20 bg-muted/30 py-4" data-testid="section-media-bar">
       <div className="mb-3 text-center text-[10px] font-medium uppercase tracking-[0.25em] text-muted-foreground/50">
-        Vu dans les médias
+        Recommandé par les médias
       </div>
-      <div className="relative">
+      <div className="relative w-full">
         <div className="absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-muted/30 to-transparent" />
         <div className="absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-muted/30 to-transparent" />
-        <div className="flex animate-scroll items-center gap-16 whitespace-nowrap">
+        <div className="flex animate-scroll items-center gap-16 whitespace-nowrap" style={{ width: 'fit-content' }}>
           {allMedia.map((name, idx) => (
             <span
               key={idx}
@@ -130,7 +128,7 @@ function HeroSection() {
             data-testid="badge-hero"
           >
             <Sparkles className="mr-2 h-3 w-3" />
-            AUDIT MÉTABOLIQUE COMPLET
+            AUDIT 360 COMPLET
           </Badge>
 
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl" data-testid="text-hero-title">
@@ -192,7 +190,6 @@ function TestimonialsSection() {
       name: "Alexandre T.", 
       age: 34,
       location: "Lyon",
-      date: "Septembre 2025",
       rating: 5, 
       title: "Bluffé par la précision",
       comment: "Honnêtement, je m'attendais à un truc générique comme tous les questionnaires santé en ligne. Là c'est autre chose. Le rapport a identifié une résistance à l'insuline que même mon médecin n'avait pas vue. J'ai ajusté mon timing de repas comme recommandé, et en 6 semaines j'ai perdu 4kg de gras sans rien changer d'autre. Le protocole de magnésium glycinate le soir a aussi réglé mes problèmes de sommeil.",
@@ -203,7 +200,6 @@ function TestimonialsSection() {
       name: "Camille R.", 
       age: 29,
       location: "Paris",
-      date: "Octobre 2025",
       rating: 5, 
       title: "Enfin des réponses après 3 ans de fatigue",
       comment: "Ça fait 3 ans que je galère avec une fatigue chronique. Médecins, prises de sang, thyroïde... tout était 'normal'. L'audit a mis le doigt sur un déficit en fer ferritine (alors que mon fer sérique était OK) et un déséquilibre cortisol. Les recommandations étaient hyper précises : fer bisglycinate à jeun, adaptogènes le matin. Au bout de 2 mois, je revis.",
@@ -214,7 +210,6 @@ function TestimonialsSection() {
       name: "Maxime D.", 
       age: 41,
       location: "Bordeaux",
-      date: "Octobre 2025",
       rating: 5, 
       title: "Mon coach ne comprend pas comment j'ai progressé",
       comment: "Je fais du CrossFit depuis 5 ans, j'étais en plateau depuis 18 mois. L'audit a révélé que mon ratio oméga 3/6 était catastrophique et que je sous-dosais mes glucides les jours d'entraînement. En suivant le protocole nutrition périodisée du rapport, j'ai PR mon deadlift de 15kg en 3 mois. Mon coach me demande ce que j'ai changé.",
@@ -225,7 +220,6 @@ function TestimonialsSection() {
       name: "Julie M.", 
       age: 36,
       location: "Marseille",
-      date: "Novembre 2025",
       rating: 5, 
       title: "Plus efficace que 2 ans de naturopathe",
       comment: "J'ai dépensé facilement 2000 euros chez des naturopathes ces dernières années. Des conseils vagues, des compléments random... Ici pour 79 euros j'ai eu un plan précis : quel complément, quel dosage, à quel moment, pendant combien de temps. Le suivi du cycle hormonal dans le rapport Elite c'est de l'or. SPM divisé par deux en 2 cycles.",
@@ -236,7 +230,6 @@ function TestimonialsSection() {
       name: "Thomas B.", 
       age: 45,
       location: "Toulouse",
-      date: "Novembre 2025",
       rating: 4, 
       title: "Très complet, demande de l'investissement",
       comment: "Le questionnaire est long, faut être honnête. Mais c'est justement ce qui fait la qualité du rapport. Chaque question a un sens. J'ai découvert que mes problèmes de concentration venaient probablement d'une inflammation chronique liée à mon alimentation. Le protocole anti-inflammatoire fonctionne, je mets 4 étoiles juste parce que j'aurais aimé plus de suivi après.",
@@ -247,7 +240,6 @@ function TestimonialsSection() {
       name: "Sarah L.", 
       age: 31,
       location: "Nantes",
-      date: "Décembre 2025",
       rating: 5, 
       title: "Le rapport a changé ma vision de la santé",
       comment: "Je pensais bien manger, bien dormir, bien m'entraîner. Le rapport m'a montré 3 angles morts majeurs : mon stress chronique qui plombait ma récupération, un déficit en vitamine D malgré mes sorties, et un microbiote déséquilibré (ballonnements que je normalisais). 4 mois plus tard, je dors mieux, je digère mieux, et j'ai pris 2kg de muscle.",
@@ -309,7 +301,7 @@ function TestimonialsSection() {
                           <span className="font-semibold">{review.name}</span>
                           <span className="text-xs text-muted-foreground">{review.age} ans</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">{review.location} - {review.date}</span>
+                        <span className="text-xs text-muted-foreground">{review.location}</span>
                       </div>
                     </div>
                     <Badge variant="outline" className="shrink-0 text-xs">
@@ -403,7 +395,7 @@ function PricingSection() {
                         <span className="text-sm">{feature}</span>
                       </li>
                     ))}
-                    {"lockedFeatures" in plan && (plan.lockedFeatures as readonly string[])?.map((feature, i) => (
+                    {"lockedFeatures" in plan && plan.lockedFeatures?.map((feature, i) => (
                       <li key={`locked-${i}`} className="flex items-start gap-2 text-muted-foreground">
                         <Lock className="mt-0.5 h-4 w-4 shrink-0" />
                         <span className="text-sm">{feature}</span>
@@ -430,122 +422,6 @@ function PricingSection() {
   );
 }
 
-function BodyAnalysisSection() {
-  const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
-  
-  const categories = [
-    { id: "metabolism", label: "Metabolisme", color: "hsl(160 84% 39%)" },
-    { id: "biomechanics", label: "Biomecanique", color: "hsl(280 70% 50%)" },
-    { id: "neurology", label: "Neurologie", color: "hsl(200 80% 50%)" },
-    { id: "cardio", label: "Cardio", color: "hsl(0 70% 50%)" },
-    { id: "hormones", label: "Hormones", color: "hsl(45 90% 50%)" },
-    { id: "immunity", label: "Immunite", color: "hsl(120 60% 45%)" },
-  ];
-
-  return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-background to-muted/30 py-20 lg:py-28" data-testid="section-body-analysis">
-      <div className="absolute inset-0 opacity-30">
-        <NeuralNetwork className="h-full w-full" />
-      </div>
-      
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <Badge variant="outline" className="mb-4">
-              Analyse corporelle interactive
-            </Badge>
-          </motion.div>
-          <motion.h2
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-          >
-            Cartographie complete de ton corps
-          </motion.h2>
-          <motion.p
-            className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            Survole les zones pour decouvrir les points d'analyse
-          </motion.p>
-        </div>
-
-        <div className="mt-12 grid gap-8 lg:grid-cols-2">
-          <motion.div
-            className="flex items-center justify-center"
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="relative h-[400px] w-full max-w-[300px]">
-              <BodyVisualization activeCategory={activeCategory} className="h-full w-full" />
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="flex flex-col justify-center gap-4"
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <p className="mb-4 text-muted-foreground">
-              Selectionne une categorie pour voir les zones analysees :
-            </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {categories.map((cat) => (
-                <motion.button
-                  key={cat.id}
-                  className={`rounded-lg border px-4 py-3 text-left transition-all ${
-                    activeCategory === cat.id 
-                      ? "border-primary bg-primary/10" 
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => setActiveCategory(activeCategory === cat.id ? undefined : cat.id)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  data-testid={`button-category-${cat.id}`}
-                >
-                  <div 
-                    className="mb-1 h-2 w-8 rounded-full"
-                    style={{ backgroundColor: cat.color }}
-                  />
-                  <span className="text-sm font-medium">{cat.label}</span>
-                </motion.button>
-              ))}
-            </div>
-            <Card className="mt-6">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Activity className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Analyse en temps reel</p>
-                    <p className="text-sm text-muted-foreground">
-                      Chaque zone est evaluee selon tes reponses
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function CTASection() {
   return (
     <section className="border-t border-border/30 bg-muted/20 py-16" data-testid="section-cta">
@@ -554,7 +430,7 @@ function CTASection() {
           Prêt à optimiser ta performance ?
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Commence ton audit métabolique gratuit maintenant. Résultats en 24h.
+          Commence ton audit 360 gratuit maintenant. Résultats en 24h.
         </p>
         <div className="mt-8">
           <Link href="/audit-complet/questionnaire">
@@ -578,7 +454,6 @@ export default function Landing() {
         <MediaBar />
         <HeroSection />
         <StatsSection />
-        <BodyAnalysisSection />
         <PricingSection />
         <TestimonialsSection />
         <CTASection />

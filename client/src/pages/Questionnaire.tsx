@@ -284,6 +284,7 @@ export default function Questionnaire() {
   const currentSection = QUESTIONNAIRE_SECTIONS[currentSectionIndex];
   const userSex = responses["sexe"] as string | undefined;
   const [sexConfirmed, setSexConfirmed] = useState(false);
+  const [prenomConfirmed, setPrenomConfirmed] = useState(false);
   const sectionQuestions = getQuestionsForSection(currentSection.id, userSex);
   const IconComponent = iconMap[currentSection.icon] || User;
 
@@ -317,6 +318,9 @@ export default function Questionnaire() {
     
     if (parsedResponses["sexe"]) {
       setSexConfirmed(true);
+    }
+    if (parsedResponses["prenom"]) {
+      setPrenomConfirmed(true);
     }
   }, []);
 
@@ -364,6 +368,10 @@ export default function Questionnaire() {
   };
 
   const handleNext = () => {
+    // Si on est dans la section 0 et qu'on n'a pas encore confirmé le prénom, ne pas avancer
+    if (currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed) {
+      return;
+    }
     if (currentSectionIndex < QUESTIONNAIRE_SECTIONS.length - 1) {
       setCurrentSectionIndex((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -377,6 +385,19 @@ export default function Questionnaire() {
   };
 
   const handlePrevious = () => {
+    // Si on est dans la section prénom, revenir au sexe
+    if (currentSectionIndex === 0 && prenomConfirmed) {
+      setPrenomConfirmed(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    // Si on est dans la section sexe, on ne peut pas revenir en arrière
+    if (currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed) {
+      setSexConfirmed(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    // Sinon, section précédente normale
     if (currentSectionIndex > 0) {
       setCurrentSectionIndex((prev) => prev - 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -394,6 +415,7 @@ export default function Questionnaire() {
     setPhotoData({});
     setCurrentSectionIndex(0);
     setSexConfirmed(false);
+    setPrenomConfirmed(false);
     window.location.reload();
   };
 
@@ -569,7 +591,7 @@ export default function Questionnaire() {
                   </motion.div>
                 )}
 
-                {/* Afficher seulement la question sexe si pas encore confirmé */}
+                {/* Afficher la question sexe si pas encore confirmé */}
                 {currentSectionIndex === 0 && !sexConfirmed ? (
                   <motion.div
                     key="sexe-question"
@@ -603,8 +625,41 @@ export default function Questionnaire() {
                       </Button>
                     )}
                   </motion.div>
+                ) : currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed ? (
+                  <motion.div
+                    key="prenom-question"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <Label className="text-base font-medium">
+                          Quel est ton prénom ?
+                          <span className="ml-1 text-destructive">*</span>
+                        </Label>
+                      </div>
+                      <QuestionField
+                        question={sectionQuestions.find(q => q.id === "prenom")!}
+                        value={responses["prenom"]}
+                        onChange={(value) => handleResponseChange("prenom", value)}
+                        onError={(msg) => toast({ title: "Erreur", description: msg, variant: "destructive" })}
+                      />
+                    </div>
+                    {responses["prenom"] && (responses["prenom"] as string).trim() !== "" && (
+                      <Button 
+                        onClick={() => setPrenomConfirmed(true)}
+                        className="w-full"
+                        data-testid="button-confirm-prenom"
+                      >
+                        Continuer
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    )}
+                  </motion.div>
                 ) : (
-                  sectionQuestions.filter(q => q.id !== "sexe" || currentSectionIndex !== 0).map((question, index) => (
+                  sectionQuestions.filter(q => q.id !== "sexe" && q.id !== "prenom" || currentSectionIndex !== 0).map((question, index) => (
                     <motion.div
                       key={question.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -635,18 +690,19 @@ export default function Questionnaire() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-8 flex items-center justify-between gap-4">
           <Button
             variant="outline"
             onClick={handlePrevious}
-            disabled={currentSectionIndex === 0}
+            disabled={currentSectionIndex === 0 && !sexConfirmed && !prenomConfirmed}
+            className="min-w-[120px]"
             data-testid="button-previous"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Précédent
           </Button>
 
-          <Button onClick={handleNext} data-testid="button-next">
+          <Button onClick={handleNext} className="min-w-[120px]" data-testid="button-next">
             {currentSectionIndex === QUESTIONNAIRE_SECTIONS.length - 1 ? (
               <>
                 Terminer

@@ -14,7 +14,7 @@ async function createProducts() {
   if (!premiumExists) {
     const premiumProduct = await stripe.products.create({
       name: 'Audit Premium',
-      description: 'Audit métabolique complet avec rapport détaillé de 20+ pages, plan d\'action personnalisé 30 jours, et accès à toutes les recommandations.',
+      description: 'Audit 360 complet avec rapport détaillé de 20+ pages, plan d\'action personnalisé 30 jours, et accès à toutes les recommandations.',
       metadata: {
         type: 'PREMIUM',
         category: 'audit',
