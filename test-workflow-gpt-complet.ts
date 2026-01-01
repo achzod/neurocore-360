@@ -112,27 +112,43 @@ async function waitForReport(auditId: string, maxWait: number = 20 * 60 * 1000):
   
   while (Date.now() - startTime < maxWait) {
     try {
-      const response = await fetch(`${BASE_URL}/api/audits/${auditId}`);
+      // Essayer d'abord l'endpoint de status du job
+      let response = await fetch(`${BASE_URL}/api/audits/${auditId}/narrative-status`);
+      let status: any = null;
       
       if (response.ok) {
-        const audit = await response.json();
-        const currentStatus = audit.reportDeliveryStatus || 'GENERATING';
+        status = await response.json();
+      } else {
+        // Fallback: vérifier directement l'audit
+        response = await fetch(`${BASE_URL}/api/audits/${auditId}`);
+        if (response.ok) {
+          const audit = await response.json();
+          status = {
+            status: audit.reportDeliveryStatus === 'SENT' ? 'completed' : 
+                   audit.reportDeliveryStatus === 'FAILED' ? 'failed' : 'generating',
+            progress: audit.reportDeliveryStatus === 'SENT' ? 100 : 50
+          };
+        }
+      }
+      
+      if (status) {
+        const currentStatus = status.status || 'unknown';
         
         if (currentStatus !== lastStatus) {
-          console.log(`   Status: ${currentStatus}`);
-          if (audit.reportGeneratedAt) {
-            console.log(`   Généré à: ${audit.reportGeneratedAt}`);
+          console.log(`   Status: ${currentStatus} (${status.progress || 0}%)`);
+          if (status.currentSection) {
+            console.log(`   Section: ${status.currentSection}`);
           }
           lastStatus = currentStatus;
         }
         
-        if (currentStatus === 'SENT' || currentStatus === 'COMPLETED') {
-          console.log(`   ✅ Rapport généré et envoyé avec succès !`);
+        if (currentStatus === 'completed') {
+          console.log(`   ✅ Rapport généré avec succès !`);
           return true;
         }
         
-        if (currentStatus === 'FAILED') {
-          console.log(`   ❌ Échec de génération`);
+        if (currentStatus === 'failed') {
+          console.log(`   ❌ Échec de génération: ${status.error || 'Unknown error'}`);
           return false;
         }
       }
