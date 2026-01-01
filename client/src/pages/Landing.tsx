@@ -32,6 +32,7 @@ import {
   Camera,
   CheckCircle2,
   Play,
+  Heart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { DNAHelix } from "@/components/animations/DNAHelix";
@@ -266,10 +267,98 @@ function DomainesSection() {
           })}
         </div>
 
-        {/* Animation BodyVisualization centrée en dessous */}
-        <div className="mt-16 flex justify-center">
-          <div className="h-64 w-64">
-            <BodyVisualization />
+      </div>
+    </section>
+  );
+}
+
+function BodyMappingSection() {
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  const categories = [
+    { id: "metabolism", name: "Métabolisme", color: "hsl(160 84% 39%)", borderColor: "border-green-500" },
+    { id: "biomechanics", name: "Biomécanique", color: "hsl(280 70% 50%)", borderColor: "border-purple-500" },
+    { id: "neurology", name: "Neurologie", color: "hsl(200 80% 50%)", borderColor: "border-blue-500" },
+    { id: "cardio", name: "Cardio", color: "hsl(0 70% 50%)", borderColor: "border-red-500" },
+    { id: "hormones", name: "Hormones", color: "hsl(45 90% 50%)", borderColor: "border-yellow-500" },
+    { id: "immunity", name: "Immunité", color: "hsl(120 60% 45%)", borderColor: "border-green-400" },
+  ];
+
+  return (
+    <section className="relative border-y border-border/30 bg-background py-16 lg:py-24" data-testid="section-body-mapping">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.05),transparent_70%)]" />
+      <div className="relative mx-auto max-w-6xl px-4">
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
+            Cartographie complète de ton corps
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground text-lg">
+            Survole les zones pour découvrir les points d'analyse
+          </p>
+        </div>
+
+        {/* Animation BodyVisualization au centre */}
+        <div className="flex justify-center mb-12">
+          <div className="h-[500px] w-[500px] max-w-full">
+            <BodyVisualization activeCategory={activeCategory || undefined} className="h-full w-full" />
+          </div>
+        </div>
+
+        {/* Boutons de catégories */}
+        <div className="mb-12">
+          <p className="text-center text-muted-foreground mb-6 text-sm font-medium">
+            Sélectionne une catégorie pour voir les zones analysées :
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-5xl mx-auto">
+            {categories.map((category) => {
+              const isActive = activeCategory === category.id;
+              return (
+                <motion.button
+                  key={category.id}
+                  onClick={() => setActiveCategory(isActive ? null : category.id)}
+                  className={`
+                    relative px-4 py-3 rounded-lg border-2 transition-all
+                    ${isActive 
+                      ? `${category.borderColor} border-2 bg-card shadow-lg` 
+                      : 'border-border bg-card/50 hover:border-border/80'
+                    }
+                  `}
+                  style={{
+                    borderColor: isActive ? category.color : undefined,
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div 
+                    className="text-sm font-semibold"
+                    style={{ color: isActive ? category.color : undefined }}
+                  >
+                    {category.name}
+                  </div>
+                  {isActive && (
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section analyse temps réel */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-lg bg-muted/50 border border-border/50">
+            <Heart className="w-5 h-5 text-primary" />
+            <div className="text-left">
+              <p className="font-semibold text-sm">Analyse en temps réel</p>
+              <p className="text-xs text-muted-foreground">
+                Chaque zone est évaluée selon tes réponses
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -640,6 +729,7 @@ export default function Landing() {
         <HeroSection />
         <StatsSection />
         <DomainesSection />
+        <BodyMappingSection />
         <ProcessSection />
         <PricingSection />
         <TestimonialsSection />
