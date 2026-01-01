@@ -287,6 +287,7 @@ export interface Review {
   id: string;
   auditId: string;
   userId?: string;
+  email?: string;
   rating: number;
   comment: string;
   status: ReviewStatusEnum;
@@ -298,6 +299,7 @@ export interface Review {
 export const insertReviewSchema = z.object({
   auditId: z.string(),
   userId: z.string().optional(),
+  email: z.string().email().optional(),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, "Le commentaire doit contenir au moins 10 caractères"),
 });
