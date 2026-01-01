@@ -850,8 +850,26 @@ export async function registerRoutes(
       
       // Requêtes SQL exécutées une par une pour éviter les problèmes de parsing
       const statements = [
-        // D'abord supprimer audits pour le recréer avec le bon schéma
-        `DROP TABLE IF EXISTS audits CASCADE`,
+        // Ajouter colonnes manquantes à audits si la table existe
+        `DO $$ BEGIN
+          IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'audits') THEN
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS user_id VARCHAR(36);
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS type VARCHAR(20);
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'COMPLETED';
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS responses JSONB DEFAULT '{}';
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS scores JSONB DEFAULT '{}';
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS narrative_report JSONB;
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_delivery_status VARCHAR(20) DEFAULT 'PENDING';
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_scheduled_for TIMESTAMP;
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_sent_at TIMESTAMP;
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+          END IF;
+        END $$`,
+        
+        // D'abord supprimer audits pour le recréer avec le bon schéma (si toujours pas bon)
+        // `DROP TABLE IF EXISTS audits CASCADE`,
         
         // Créer users
         `CREATE TABLE IF NOT EXISTS users (
