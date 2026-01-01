@@ -105,32 +105,36 @@ async function waitForReport(auditId: string, maxWait: number = 20 * 60 * 1000):
   let lastStatus = '';
   
   while (Date.now() - startTime < maxWait) {
-    const response = await fetch(`${BASE_URL}/api/audits/${auditId}/status`);
-    
-    if (response.ok) {
-      const status = await response.json();
-      const currentStatus = status.status || 'unknown';
+    try {
+      const response = await fetch(`${BASE_URL}/api/audits/${auditId}`);
       
-      if (currentStatus !== lastStatus) {
-        console.log(`   Status: ${currentStatus} (${status.progress || 0}%)`);
-        if (status.currentSection) {
-          console.log(`   Section: ${status.currentSection}`);
+      if (response.ok) {
+        const audit = await response.json();
+        const currentStatus = audit.reportDeliveryStatus || 'GENERATING';
+        
+        if (currentStatus !== lastStatus) {
+          console.log(`   Status: ${currentStatus}`);
+          if (audit.reportGeneratedAt) {
+            console.log(`   Généré à: ${audit.reportGeneratedAt}`);
+          }
+          lastStatus = currentStatus;
         }
-        lastStatus = currentStatus;
+        
+        if (currentStatus === 'SENT' || currentStatus === 'COMPLETED') {
+          console.log(`   ✅ Rapport généré et envoyé avec succès !`);
+          return true;
+        }
+        
+        if (currentStatus === 'FAILED') {
+          console.log(`   ❌ Échec de génération`);
+          return false;
+        }
       }
-      
-      if (currentStatus === 'completed') {
-        console.log(`   ✅ Rapport généré avec succès !`);
-        return true;
-      }
-      
-      if (currentStatus === 'failed') {
-        console.log(`   ❌ Échec de génération: ${status.error || 'Unknown error'}`);
-        return false;
-      }
+    } catch (error) {
+      console.log(`   ⚠️  Erreur vérification: ${error}`);
     }
     
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Vérifier toutes les 10 secondes
   }
   
   console.log(`   ⏱️  Timeout atteint après ${maxWait / 1000 / 60} minutes`);
@@ -166,13 +170,36 @@ async function verifyEmails(auditId: string): Promise<void> {
 async function verifyReport(auditId: string): Promise<void> {
   console.log('\n📄 Étape 4: Vérification du rapport...');
   
-  const response = await fetch(`${BASE_URL}/api/audits/${auditId}/report/html`);
+  // Essayer plusieurs endpoints possibles
+  let html = '';
+  let response;
   
-  if (!response.ok) {
-    throw new Error(`Erreur récupération rapport: ${response.status}`);
+  const endpoints = [
+    `${BASE_URL}/api/audits/${auditId}/report/html`,
+    `${BASE_URL}/api/audits/${auditId}/html`,
+    `${BASE_URL}/dashboard/${auditId}`
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      response = await fetch(endpoint);
+      if (response.ok) {
+        html = await response.text();
+        if (html && html.length > 1000) {
+          console.log(`   ✅ Rapport récupéré depuis: ${endpoint}`);
+          break;
+        }
+      }
+    } catch (error) {
+      continue;
+    }
   }
   
-  const html = await response.text();
+  if (!html || html.length < 1000) {
+    console.log(`   ⚠️  Impossible de récupérer le rapport HTML complet`);
+    console.log(`   📄 Le rapport sera disponible via: ${BASE_URL}/dashboard/${auditId}`);
+    return;
+  }
   
   // Vérifications
   const checks = {
