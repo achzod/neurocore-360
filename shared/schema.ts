@@ -234,28 +234,6 @@ export interface Question {
 }
 
 // Pricing Plans
-// Review
-export interface Review {
-  id: string;
-  auditId: string;
-  userId?: string;
-  email?: string;
-  rating: number; // 1-5
-  comment: string;
-  status: "pending" | "approved" | "rejected";
-  createdAt: string | Date;
-  reviewedAt?: string | Date;
-  reviewedBy?: string;
-}
-
-export const insertReviewSchema = z.object({
-  auditId: z.string(),
-  rating: z.number().min(1).max(5),
-  comment: z.string().min(10).max(1000),
-  email: z.string().email().optional(),
-});
-
-export type InsertReview = z.infer<typeof insertReviewSchema>;
 
 export const PRICING_PLANS = [
   {
