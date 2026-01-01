@@ -92,9 +92,7 @@ function MediaBar() {
       <div className="mb-3 text-center text-[10px] font-medium uppercase tracking-[0.25em] text-muted-foreground/50">
         Recommandé par les médias
       </div>
-      <div className="relative w-full">
-        <div className="absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-muted/30 to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-muted/30 to-transparent" />
+      <div className="relative w-full px-16">
         <div className="flex animate-scroll items-center gap-16 whitespace-nowrap" style={{ width: 'fit-content' }}>
           {allMedia.map((name, idx) => (
             <span
