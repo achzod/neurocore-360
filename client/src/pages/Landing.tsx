@@ -154,7 +154,7 @@ function HeroSection() {
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl" data-testid="text-hero-title">
             Décode ton système métabolique.
             <br />
-            <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-purple-400 to-purple-500 bg-clip-text text-transparent">
               Optimise ta performance.
             </span>
           </h1>
