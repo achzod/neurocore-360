@@ -529,7 +529,7 @@ function PricingSection() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-2 justify-items-center max-w-4xl mx-auto">
           {PRICING_PLANS.map((plan, index) => (
             <motion.div
               key={plan.id}

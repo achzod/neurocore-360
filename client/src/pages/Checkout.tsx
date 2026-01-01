@@ -120,7 +120,7 @@ export default function Checkout() {
           </p>
         </motion.div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-2 items-center justify-center max-w-3xl mx-auto">
+        <div className="mt-12 grid gap-6 lg:grid-cols-2 justify-items-center max-w-4xl mx-auto">
           {PRICING_PLANS.map((plan, index) => (
             <motion.div
               key={plan.id}
