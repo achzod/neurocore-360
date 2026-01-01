@@ -55,7 +55,8 @@ async function buildAll() {
     define: {
       "process.env.NODE_ENV": '"production"',
     },
-    minify: true,
+    minify: false,  // TEMP: désactivé pour debug stacktrace
+    sourcemap: true,
     external: externals,
     logLevel: "info",
   });
