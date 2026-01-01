@@ -91,15 +91,14 @@ export function BodyVisualization({ className = "", activeCategory }: BodyVisual
         />
 
         {bodyZones.map((zone, index) => {
-          // Si une catégorie est active, on montre seulement les zones de cette catégorie
-          // Sinon, on montre toutes les zones mais avec moins d'intensité
+          // Si une catégorie est active, seules les zones de cette catégorie sont animées et brillantes
+          // Sinon, toutes les zones sont visibles mais moins animées
           const isActive = !activeCategory || zone.category === activeCategory;
           const color = categoryColors[zone.category];
-          const shouldShow = !activeCategory || isActive;
           
           return (
-            <g key={zone.id} opacity={shouldShow ? 1 : 0.2}>
-              {/* Halo externe - seulement si actif */}
+            <g key={zone.id}>
+              {/* Halo externe pulsant - seulement si actif ET que la catégorie correspond */}
               {isActive && (
                 <motion.circle
                   cx={zone.cx}
@@ -107,76 +106,84 @@ export function BodyVisualization({ className = "", activeCategory }: BodyVisual
                   r="8"
                   fill="transparent"
                   stroke={color}
-                  strokeWidth="0.5"
+                  strokeWidth="1"
                   animate={{
-                    r: [8, 12, 8],
-                    opacity: [0.2, 0.4, 0.2],
+                    r: [8, 14, 8],
+                    opacity: [0.3, 0.6, 0.3],
                   }}
                   transition={{
                     duration: 2,
                     repeat: Infinity,
-                    delay: index * 0.15,
+                    delay: index * 0.2,
+                    ease: "easeInOut",
                   }}
                 />
               )}
               
-              {/* Cercle de pulse moyen */}
+              {/* Cercle de pulse moyen - seulement si actif */}
               {isActive && (
                 <motion.circle
                   cx={zone.cx}
                   cy={zone.cy}
-                  r="5"
+                  r="6"
                   fill={color}
                   animate={{
-                    r: [5, 7, 5],
-                    opacity: [0.3, 0.6, 0.3],
+                    r: [6, 9, 6],
+                    opacity: [0.4, 0.7, 0.4],
                   }}
                   transition={{
                     duration: 1.5,
                     repeat: Infinity,
-                    delay: index * 0.1,
+                    delay: index * 0.15,
+                    ease: "easeInOut",
                   }}
                 />
               )}
               
-              {/* Point central */}
+              {/* Point central - toujours visible mais animé seulement si actif */}
               <motion.circle
                 cx={zone.cx}
                 cy={zone.cy}
-                r={isActive ? "3" : "1.5"}
-                fill={isActive ? color : "hsl(var(--muted-foreground) / 0.4)"}
+                r={isActive ? "4" : "2"}
+                fill={isActive ? color : color}
+                opacity={isActive ? 1 : 0.3}
                 filter={isActive ? "url(#bodyGlow)" : undefined}
                 style={{ cursor: "pointer" }}
                 animate={isActive ? {
-                  scale: [1, 1.3, 1],
+                  scale: [1, 1.4, 1],
                   opacity: [0.9, 1, 0.9],
                 } : {
-                  opacity: [0.3, 0.5, 0.3],
+                  opacity: 0.3,
                 }}
-                transition={{
-                  duration: isActive ? 1.2 : 2,
+                transition={isActive ? {
+                  duration: 1.2,
                   repeat: Infinity,
-                  delay: index * 0.08,
+                  delay: index * 0.1,
+                  ease: "easeInOut",
+                } : {
+                  duration: 0.3,
                 }}
                 onMouseEnter={() => setHoveredZone(zone)}
                 onMouseLeave={() => setHoveredZone(null)}
-                whileHover={{ scale: isActive ? 1.5 : 1.2 }}
+                whileHover={{ scale: isActive ? 1.6 : 1.3 }}
               />
               
-              {/* Point blanc central - seulement si actif */}
+              {/* Point blanc central pulsant - seulement si actif */}
               {isActive && (
                 <motion.circle
                   cx={zone.cx}
                   cy={zone.cy}
-                  r="1"
+                  r="1.5"
                   fill="white"
                   animate={{
-                    opacity: [0.6, 1, 0.6],
+                    opacity: [0.7, 1, 0.7],
+                    scale: [1, 1.2, 1],
                   }}
                   transition={{
                     duration: 1,
                     repeat: Infinity,
-                    delay: index * 0.12,
+                    delay: index * 0.15,
+                    ease: "easeInOut",
                   }}
                 />
               )}
