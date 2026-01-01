@@ -43,7 +43,7 @@ const TEST_RESPONSES = {
 };
 
 // Photos de test (homme)
-const PHOTOS_DIR = path.join(process.cwd(), 'server', 'test-data', 'photos');
+const PHOTOS_DIR = path.join(process.cwd(), 'photos test');
 const PHOTO_FILES = ['homme1_front.jpg', 'homme1_side.jpg', 'homme1_back.jpg'];
 
 async function loadPhotos(): Promise<string[]> {
