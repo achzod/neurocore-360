@@ -1,0 +1,51 @@
+Voici le diagnostic détaillé après lecture du rapport neurocore-360-rapport-89e4ff95.html et ce qu’il faut corriger en priorité.
+Problèmes critiques constatés
+1) L’IA utilise encore des mensurations déclaratives (ratio taille/hanche, %BF, 85kg/180cm) alors que tu voulais baser la compo uniquement sur les photos.
+2) Photos ignorées / non consommées : texte “Pas de photos = stratégie basée sur poids/activité uniquement” → signe que l’analyse photo n’a pas été intégrée au prompt ou n’a pas été fournie.
+3) Hallucinations chiffrées : valeurs non mesurées (CRP, IL-6, cortisol +35%, glycémiques 180-200 mg/dL, etc.). Ça décrédibilise immédiatement.
+4) Style trop long, robotique, alarmiste : phrases de 10 lignes, répétitions (“stress élevé”, “cortisol” 30 fois), “catababolique” (faute), “criminellement bas”, etc.
+5) Markdown dans le HTML : le corps contient des “##” et des listes mal rendues (virgules + puces, phrases cassées).
+6) Mesures interdites encore citées : ratio, tours, %BF estimé, morphologie auto-déclarée.
+7) Recommandations trop nombreuses et verbeuses : 30 bullets par section, chiffres aléatoires, ton catastrophiste.
+8) Pas de gestion propre du “pas de photos” : au lieu de dire “données visuelles manquantes”, l’IA brode sur poids/activité.
+Correctifs à appliquer (backend)
+Prétraitement des réponses : garder taille, poids si tu en as besoin, mais filtrer AVANT prompt :
+À bloquer : masse-grasse, objectif-poids, evolution-poids, morphologie, zones-stockage, retention-eau, cellulite, tour_de_taille, tour_de_hanche, imc, ratio_taille_hanches.
+Utiliser l’objet filtré pour le prompt.
+Clause dure dans le prompt :
+.
+  INTERDIT : ne pas utiliser ni mentionner les mensurations déclarées (tours, %BF déclaré, ratios, morphotype auto-déclaré).  Pour l’anthropométrie, base-toi UNIQUEMENT sur l’analyse photo (photoAnalysis.*).  Si pas de photo : indique “Données visuelles non disponibles” et n’invente rien.
+Séparation Vision / Texte : si pas de photos, passer un flag photoAnalysis: null et exiger que l’IA n’infère aucune compo.
+Réduire le volume et la verbosité : limite chaque section à ~150-200 mots + 5 à 7 bullets actionnables max.
+Baisser la température (0.2-0.3) pour réduire l’emballement narratif et les hallucinations de chiffres.
+Pas de biomarqueurs inventés : interdire explicitement d’annoncer des valeurs de labos non mesurées (CRP, IL-6, T/C ratio, etc.). Autoriser seulement des tendances qualitatives (“probable”, “à vérifier via bilan”).
+Nettoyage Markdown : demander du texte brut/HTML propre, pas de “##” dans le corps.
+Correctifs à appliquer (contenu / style)
+Ton clinique, direct, humain : supprimer les métaphores alarmistes, phrases à rallonge. Pas de “criminellement bas”, pas de pourcentages improbables (GH -60% sans mesure, etc.).
+Pas de doublettes : éviter de répéter 4 fois “stress élevé + sommeil 6-7h”. Synthétiser.
+Recos courtes et chiffrées seulement quand justifiées : ex. “Magnésium bisglycinate 400 mg à 21h” OK. “GH -60%” NON.
+Si pas de photos : phrase claire “Données visuelles non disponibles (photos manquantes). Recommandations générales sans ciblage morphologique.”
+Limiter les hyper-précisions spéculatives : pas de “IL-6 à 3-5 pg/mL” sans data ; pas de “pic glycémique 180-200 mg/dL” sans capteur.
+Correctifs UI/HTML
+Retirer le markdown dans le corps (les “##” dans les sections, les virgules collées aux puces).
+Adapter l’UI si pas de photos : afficher un bandeau “Photos non fournies : analyse visuelle indisponible”.
+Raccourcir les sections : un paragraphe intro, un bloc “Ce qui nécessite ton attention” (3-5 puces), un bloc “Recommandations” (5-7 puces max).
+Synthèse des actions immédiates
+1) Filtrer les clés interdites (ci-dessus) avant le prompt.
+2) Mettre la clause “INTERDIT d’utiliser mensurations déclarées ; photos only ; si pas de photos → dire non disponible”.
+3) Passer la température à 0.2-0.3 et limiter la longueur par section.
+4) Supprimer toute mention de biomarqueurs/chiffres non mesurés.
+5) Nettoyer le markdown dans le HTML final.
+6) Si photoAnalysis est null → afficher explicitement l’absence de visuel au lieu de broder sur le poids.
+Quand tu as appliqué ces points, relance une génération : l’IA ne devra plus citer les ratios/tours/IMC déclaratifs, ni inventer des chiffres, et elle devra rester courte et lisible.
+recommence, dis lui CLAIREMENT que sections composition-corporelle et biomecanique et mobilité, on se BASE Sur les putain de photos 
+
+
+
+Voici ce qu’il faut dire (et coder) très clairement :
+1) Filtre d’entrée (dans le prétraitement) : garder taille/poids, mais retirer des données envoyées à l’IA :
+const BLOCKED_KEYS = [  "masse-grasse","objectif-poids","evolution-poids","morphologie",  "zones-stockage","retention-eau","cellulite",  "tour_de_taille","tour_de_hanche","imc","ratio_taille_hanches"];
+2) Clause dure dans le prompt (system ou user) :
+INTERDIT : ne pas utiliser ni mentionner les mensurations déclaratives (tours, %BF déclaré, ratios, morphotype auto-déclaré).Sections "Composition Corporelle" et "Biomécanique & Mobilité" : BASE-TOI UNIQUEMENT SUR LES PHOTOS (photoAnalysis.*).S’il n’y a PAS de photos : écris explicitement « Données visuelles non disponibles » et n’invente aucun ratio/mesure.
+3) Rendu UI : pour ces deux sections, si photoAnalysis est absent, affiche « Données visuelles non disponibles (photos manquantes) » et ne montre aucune mesure déclarative.
+Avec ça, l’IA ne doit plus jamais sortir de ratio/tour/IMC déclaratifs et doit se baser seulement sur les photos pour la compo et la biomécanique/mobilité.

@@ -1,0 +1,354 @@
+{
+  "user_profile": {
+    "sex": "male",
+    "age": 32,
+    "bodyweight_kg": 90,
+    "lean_mass_kg": 75,
+    "goals": [
+      "cardio",
+      "joints",
+      "sleep",
+      "cognition",
+      "lower_cortisol",
+      "raise_testosterone"
+    ],
+    "constraints": {
+      "preferred_shop": "iHerb",
+      "diet": "omnivore"
+    },
+    "meds": [],
+    "conditions": [],
+    "labs": {
+      "lipids": {
+        "triglycerides_mg_dl": 220,
+        "ldl_mg_dl": 135,
+        "hdl_mg_dl": 42
+      },
+      "hormones": {
+        "total_test_ng_dl": 420,
+        "free_test": "unknown",
+        "estradiol_pg_ml": "unknown"
+      },
+      "inflammation": {
+        "hs_crp_mg_l": "unknown"
+      }
+    }
+  },
+  "recommendation": {
+    "stack_core": [
+      {
+        "ingredient_id": "omega3_epa_dha",
+        "dose": {
+          "value": 2.0,
+          "unit": "g",
+          "range": true
+        },
+        "timing": [
+          "with_meal",
+          "split"
+        ],
+        "cycle": {
+          "on_weeks": 12,
+          "off_weeks": 0,
+          "notes": "Reassess fasting TG after 8–12 weeks."
+        },
+        "mechanism": "Dose-dependent TG lowering via reduced hepatic VLDL output + pro-resolving lipid mediators.",
+        "evidence_grade": "A",
+        "expected_impacts": [
+          "Triglycerides down (dose-dependent)",
+          "Inflammation tone improved"
+        ],
+        "risks": [
+          "Bleeding risk rises with higher doses; GI reflux"
+        ],
+        "interactions": [
+          "Anticoagulants/antiplatelets: caution"
+        ],
+        "label_check": [
+          "Must list EPA+DHA grams per serving",
+          "Prefer third-party tested; oxidation control"
+        ],
+        "iherb_search_terms": [
+          "omega 3 epa dha IFOS triglyceride"
+        ]
+      },
+      {
+        "ingredient_id": "magnesium_bisglycinate",
+        "dose": {
+          "value": 200,
+          "unit": "mg",
+          "range": true
+        },
+        "timing": [
+          "evening",
+          "pre_bed"
+        ],
+        "cycle": {
+          "on_weeks": 8,
+          "off_weeks": 0,
+          "notes": "Titrate to GI tolerance; stop if diarrhea."
+        },
+        "mechanism": "Relaxation + neuromuscular support; modest insomnia benefit in RCTs.",
+        "evidence_grade": "B",
+        "expected_impacts": [
+          "Sleep latency down",
+          "Night tension down"
+        ],
+        "risks": [
+          "Loose stool if too high"
+        ],
+        "interactions": [
+          "Separate from levothyroxine/quinolone/tetracycline antibiotics"
+        ],
+        "label_check": [
+          "Label must state ELEMENTAL magnesium mg"
+        ],
+        "iherb_search_terms": [
+          "magnesium bisglycinate elemental 200 mg"
+        ]
+      },
+      {
+        "ingredient_id": "glycine",
+        "dose": {
+          "value": 3,
+          "unit": "g",
+          "range": false
+        },
+        "timing": [
+          "pre_bed"
+        ],
+        "cycle": {
+          "on_weeks": 8,
+          "off_weeks": 0,
+          "notes": "Best for sleep quality + next-day fatigue; keep consistent."
+        },
+        "mechanism": "Supports sleep via thermoregulation + inhibitory neurotransmission.",
+        "evidence_grade": "B",
+        "expected_impacts": [
+          "Subjective sleep quality up",
+          "Next-day fatigue down"
+        ],
+        "risks": [
+          "GI upset if sensitive"
+        ],
+        "interactions": [],
+        "label_check": [
+          "Pure powder easiest to dose"
+        ],
+        "iherb_search_terms": [
+          "glycine powder"
+        ]
+      },
+      {
+        "ingredient_id": "glucosamine_sulfate",
+        "dose": {
+          "value": 1500,
+          "unit": "mg",
+          "range": false
+        },
+        "timing": [
+          "with_meal",
+          "split"
+        ],
+        "cycle": {
+          "on_weeks": 12,
+          "off_weeks": 2,
+          "notes": "Judge response at week 8–12; stop if no benefit."
+        },
+        "mechanism": "Cartilage matrix support; symptom modulation in some OA responders.",
+        "evidence_grade": "B",
+        "expected_impacts": [
+          "Knee discomfort down (if responder)"
+        ],
+        "risks": [
+          "GI",
+          "Allergy if shellfish sourced"
+        ],
+        "interactions": [
+          "Warfarin/coumarins: avoid unless supervised"
+        ],
+        "label_check": [
+          "Prefer sulfate form; avoid underdosed blends"
+        ],
+        "iherb_search_terms": [
+          "glucosamine sulfate 1500"
+        ]
+      }
+    ],
+    "stack_advanced": [
+      {
+        "ingredient_id": "ashwagandha",
+        "dose": {
+          "value": 300,
+          "unit": "mg",
+          "range": true
+        },
+        "timing": [
+          "with_meal",
+          "pre_bed_optional"
+        ],
+        "cycle": {
+          "on_weeks": 8,
+          "off_weeks": 2,
+          "notes": "Use standardized extract; stop if GI or mood flattening."
+        },
+        "mechanism": "Adaptogenic signaling; stress/anxiety and cortisol reductions shown in meta-analyses.",
+        "evidence_grade": "A",
+        "expected_impacts": [
+          "Stress down",
+          "Evening wind-down easier"
+        ],
+        "risks": [
+          "GI; rare liver issues reported"
+        ],
+        "interactions": [
+          "Thyroid meds/autoimmune context: caution"
+        ],
+        "label_check": [
+          "Require standardized withanolides"
+        ],
+        "iherb_search_terms": [
+          "KSM-66 Sensoril ashwagandha"
+        ]
+      },
+      {
+        "ingredient_id": "citicoline",
+        "dose": {
+          "value": 250,
+          "unit": "mg",
+          "range": true
+        },
+        "timing": [
+          "morning"
+        ],
+        "cycle": {
+          "on_weeks": 6,
+          "off_weeks": 2,
+          "notes": "If headaches: reduce dose or pause (cholinergic overload)."
+        },
+        "mechanism": "Cholinergic support + phospholipid synthesis; often cleaner than alpha-GPC.",
+        "evidence_grade": "B",
+        "expected_impacts": [
+          "Focus/mental clarity up"
+        ],
+        "risks": [
+          "Headache if too cholinergic"
+        ],
+        "interactions": [],
+        "label_check": [
+          "Dose must be explicit"
+        ],
+        "iherb_search_terms": [
+          "citicoline CDP-choline 250mg"
+        ]
+      },
+      {
+        "ingredient_id": "tongkat_ali",
+        "dose": {
+          "value": 200,
+          "unit": "mg",
+          "range": true
+        },
+        "timing": [
+          "morning",
+          "with_meal"
+        ],
+        "cycle": {
+          "on_weeks": 8,
+          "off_weeks": 2,
+          "notes": "Avoid late dosing; watch irritability."
+        },
+        "mechanism": "May improve stress hormone profile and support testosterone in some men under stress.",
+        "evidence_grade": "B",
+        "expected_impacts": [
+          "Energy/libido up",
+          "Cortisol tone improved"
+        ],
+        "risks": [
+          "Irritability, sleep disruption if late"
+        ],
+        "interactions": [
+          "Liver disease: caution"
+        ],
+        "label_check": [
+          "Require standardized extract (eurycomanone marker)"
+        ],
+        "iherb_search_terms": [
+          "tongkat ali standardized eurycomanone"
+        ]
+      }
+    ],
+    "optional_addons": [
+      {
+        "ingredient_id": "citrus_bergamot",
+        "dose": {
+          "value": 500,
+          "unit": "mg",
+          "range": true
+        },
+        "timing": [
+          "with_meal"
+        ],
+        "cycle": {
+          "on_weeks": 12,
+          "off_weeks": 0,
+          "notes": "Re-check lipids; product must be standardized."
+        },
+        "mechanism": "Polyphenols may modulate lipid metabolism and oxidative stress.",
+        "evidence_grade": "B",
+        "expected_impacts": [
+          "LDL/TG support (product-dependent)"
+        ],
+        "risks": [
+          "GI"
+        ],
+        "interactions": [],
+        "label_check": [
+          "Require standardized polyphenols/flavonoids"
+        ],
+        "iherb_search_terms": [
+          "bergamot polyphenolic fraction standardized"
+        ]
+      }
+    ],
+    "avoid_list": [
+      {
+        "ingredient_id": "niacin_highdose_avoid",
+        "reason": "Outcome trial data show no CV benefit when added to statins + higher serious adverse events; avoid unless clinician-directed."
+      },
+      {
+        "ingredient_id": "vitamin_e_highdose",
+        "reason": "Meta-analysis shows increased hemorrhagic stroke risk; avoid indiscriminate high-dose use."
+      },
+      {
+        "ingredient_id": "alpha_gpc",
+        "reason": "Observational stroke-risk association in one cohort; prefer citicoline unless strong reason and low CV risk."
+      },
+      {
+        "ingredient_id": "serrapeptase",
+        "reason": "Evidence inconsistent + bleeding-risk interactions; not worth it unless supervised and very specific use-case."
+      }
+    ],
+    "monitoring": {
+      "labs_to_consider": [
+        "Fasting lipid panel (TG/LDL/HDL)",
+        "25(OH)D",
+        "hs-CRP (optional)",
+        "If hormone goals: total T, free T, SHBG, estradiol (sensitive assay)"
+      ],
+      "symptoms_to_track": [
+        "Sleep latency/awakenings",
+        "Resting HR/subjective recovery",
+        "Joint pain score and function",
+        "Irritability/anxiety (especially with tongkat/tyrosine)"
+      ]
+    },
+    "shopping_rules": [
+      "Omega-3: buy by EPA+DHA grams per day, not fish oil mg; prefer third-party tested.",
+      "Magnesium: label must state ELEMENTAL mg; bisglycinate/glycinate preferred for sleep.",
+      "Melatonin (if used): micro-dose + third-party tested because OTC products can be mislabeled/contaminated.",
+      "Botanicals: require standardization markers (withanolides, eurycomanone, fulvic acids, crocins).",
+      "Avoid proprietary blends; you can't verify dosing or quality."
+    ]
+  }
+}

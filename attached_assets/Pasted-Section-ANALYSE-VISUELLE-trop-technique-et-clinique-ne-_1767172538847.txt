@@ -1,0 +1,70 @@
+Section "ANALYSE VISUELLE": trop technique et clinique, ne tutoie pas le client.
+Section "STACK DE SUPPLÉMENTS": présente ("PROTOCOLE SUPPLEMENTS PERSONNALISE"), mais formatée différemment et peut être moins visible.
+Vérifiant le code et corrigeant les instructions pour ces sections:
+Corrigeant les instructions pour que l'analyse visuelle et la biomécanique soient directes et personnelles (tutoiement):
+geminiPremiumEngine.ts
++13
+-8
+`,
+- TU TUTOIES TOUJOURS le client, style direct et incarné- Commence DIRECTEMENT par t'adresser au client (ex: "Thomas, on attaque un point crucial..." OU "Alors [prénom], parlons de ta sangle profonde...")- Analyse l'impact de SON historique sportif sur SA posture en lui parlant directement- Explique le rôle du TRANSVERSE ABDOMINAL vs grand droit en connectant ça à SES symptômes (douleurs dos, ventre qui ressort)- Détecte les signes d'antéversion/rétroversion pelvienne et explique-lui ce que ça signifie pour LUI
+geminiPremiumEngine.ts
++1
+        auditParts.push(supplementStackText);      }
+        auditParts.push(supplementStackText);        auditParts.push('\n'); // Ligne vide après la stack      }
+Corrigeant les instructions de l'analyse visuelle pour un ton plus direct et personnel :
+geminiPremiumEngine.ts
++13
+-8
+`,
+- TU TUTOIES TOUJOURS le client, style direct et incarné comme toutes les autres sections- Commence DIRECTEMENT par t'adresser au client (ex: "Thomas, je vais te décortiquer ce que je vois sur tes photos..." OU "Alors [prénom], analysons ensemble tes photos...")- Ne JAMAIS commencer par "Le client présente..." ou "ANALYSE CORPORELLE VISUELLE – CLIENT [NOM]" - c'est trop clinique- Analyse la STRUCTURE en lui parlant directement : "Tes clavicules...", "Ta cage thoracique...", "Le ratio de tes épaules..."- Analyse le DÉVELOPPEMENT MUSCULAIRE en étant précis et direct : "Tes deltoïdes...", "Tes pectoraux...", "Je vois que...", "Ce qui frappe..."
+Vérifiant la génération de la stack de suppléments. Le rapport montre "PROTOCOLE SUPPLEMENTS PERSONNALISE", généré par Gemini, alors que notre système devrait produire "STACK DE SUPPLÉMENTS". Ajoutant un en-tête plus visible pour cette section :
+supplementEngine.ts
++6
+-2
+  // STACK CORE
+    // Introduction directe et personnelle  lines.push("Allez, analysons maintenant ton protocole de suppléments personnalisé. Ce n'est pas une liste générique, c'est ta stack sur-mesure basée sur ton profil complet.\n");  // STACK CORE
+supplementEngine.ts
++2
+-1
+  if (tier === 'PREMIUM' && stack.stack_advanced && stack.stack_advanced.length > 0) {    lines.push("\n\n=== STACK AVANCÉ (Optionnel) ===");    stack.stack_advanced.forEach((item, idx) => {
+    lines.push("\n\n=== STACK AVANCÉ (Optionnel) ===");  if (tier === 'PREMIUM' && stack.stack_advanced && stack.stack_advanced.length > 0) {    lines.push("\n\nSTACK AVANCÉ");    lines.push("Une fois la fondation posée, ces compléments peuvent t'aider à passer au niveau supérieur :\n");    stack.stack_advanced.forEach((item, idx) => {
+supplementEngine.ts
++2
+-1
+  if (stack.optional_addons && stack.optional_addons.length > 0 && tier === 'PREMIUM') {    lines.push("\n\n=== COMPLÉMENTS OPTIONNELS ===");    stack.optional_addons.forEach((item, idx) => {
+    lines.push("\n\n=== COMPLÉMENTS OPTIONNELS ===");  if (stack.optional_addons && stack.optional_addons.length > 0 && tier === 'PREMIUM') {    lines.push("\n\nCOMPLÉMENTS OPTIONNELS");    lines.push("Ces suppléments peuvent apporter un plus selon tes besoins spécifiques :\n");    stack.optional_addons.forEach((item, idx) => {
+supplementEngine.ts
++2
+-1
+  if (stack.avoid_list && stack.avoid_list.length > 0) {    lines.push("\n\n=== À ÉVITER ===");    stack.avoid_list.forEach((item) => {
+    lines.push("\n\n=== À ÉVITER ===");  if (stack.avoid_list && stack.avoid_list.length > 0) {    lines.push("\n\nÀ ÉVITER");    lines.push("Ces produits ou ingrédients ne sont pas adaptés à ton profil actuel :\n");    stack.avoid_list.forEach((item) => {
+supplementEngine.ts
++17
+-6
+      if (item.dose) {
+      lines.push(`\n${idx + 1}. ${item.ingredient_id.replace(/_/g, ' ').toUpperCase()}`);      if (item.mechanism) {        lines.push(`   Pourquoi: ${item.mechanism}`);      }      if (item.dose) {
+Corrigeant le formatage pour l'aligner avec les changements:
+Résumé des corrections apportées:
+Corrections apportées
+1. Section "ANALYSE VISUELLE PHOTO FACE ET DOS"
+Problème: Style trop technique et clinique ("Le client présente...", "ANALYSE CORPORELLE VISUELLE"), ne tutoyait pas le client.
+Correction:
+Instructions mises à jour pour tutoyer le client directement
+Style direct et conversationnel ("Thomas, je vais te décortiquer...")
+Interdiction des formulations cliniques type "Le client présente..."
+Analyse approfondie et personnalisée (50-60 lignes minimum)
+Connexion directe aux symptômes du client
+2. Section "SANGLE PROFONDE / POSTURE LOMBAIRES"
+Problème: Style pas assez direct.
+Correction:
+Instructions mises à jour pour tutoyer directement
+Commencer par s'adresser directement au client
+Style expert mais accessible, conversationnel
+Analyse approfondie et personnalisée
+3. Stack de Suppléments
+Problème: Formatage peu visible ou pas assez clair.
+Correction:
+Ajout d'une introduction personnelle au début
+Titres simplifiés ("STACK FONDATION", "STACK AVANCÉ")
+Formatage amélioré avec traductions en français ("avec repas", "avant le coucher")
+Structure plus claire et plus lisible

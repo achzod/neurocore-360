@@ -1,0 +1,589 @@
+import { Link } from "wouter";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { PRICING_PLANS } from "@shared/schema";
+import {
+  Star,
+  Sparkles,
+  ArrowRight,
+  ChevronRight,
+  Shield,
+  Award,
+  Check,
+  Lock,
+  Activity,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { BodyVisualization, NeuralNetwork } from "@/components/animations";
+
+import issaLogo from "@assets/ISSA+Logo+_+Vertical+_+for-white-background_1767172975495.webp";
+import pnLogo from "@assets/limage-19764_1767172975495.webp";
+import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
+import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
+
+function CertificationsBar() {
+  const certifications = [
+    { name: "ISSA", subtitle: "CPT, Nutrition, Bodybuilding, Transformation", image: issaLogo, count: 4 },
+    { name: "NASM", subtitle: "CPT, CES, PES, FNS, WLS", image: nasmLogo, count: 5 },
+    { name: "Precision Nutrition", subtitle: "PN1 Certified Coach", image: pnLogo, count: 1 },
+    { name: "Pre-Script", subtitle: "Movement Assessment", image: preScriptLogo, count: 1 },
+  ];
+
+  const allCerts = [...certifications, ...certifications, ...certifications];
+
+  return (
+    <div className="relative overflow-hidden border-b border-primary/10 bg-gradient-to-r from-background via-primary/5 to-background py-6" data-testid="section-certifications-bar">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,hsl(var(--primary)/0.1),transparent_50%),radial-gradient(ellipse_at_right,hsl(var(--accent)/0.08),transparent_50%)]" />
+      
+      <div className="relative mb-4 flex items-center justify-center gap-3">
+        <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/50" />
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            11 Certifications Internationales
+          </span>
+          <Award className="h-4 w-4 text-primary" />
+        </div>
+        <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary/50" />
+      </div>
+
+      <div className="relative">
+        <div className="absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-background to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-background to-transparent" />
+        
+        <div className="flex animate-scroll-certs items-center gap-8">
+          {allCerts.map((cert, idx) => (
+            <div
+              key={idx}
+              className="group flex shrink-0 items-center gap-4 rounded-xl border border-primary/20 bg-gradient-to-br from-card/90 to-card/50 px-5 py-3 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+              data-testid={`certification-${idx}`}
+            >
+              <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-white shadow-inner">
+                <img src={cert.image} alt={cert.name} className="h-10 w-10 object-contain" />
+                <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-black/5" />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold tracking-wide">{cert.name}</span>
+                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
+                    x{cert.count}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">{cert.subtitle}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MediaBar() {
+  const mediaLogos = [
+    "MarketWatch", "REUTERS", "Yahoo Finance", "FOX 40", "BENZINGA", "StreetInsider"
+  ];
+  const allMedia = [...mediaLogos, ...mediaLogos];
+
+  return (
+    <div className="overflow-hidden border-b border-border/20 bg-muted/30 py-4" data-testid="section-media-bar">
+      <div className="mb-3 text-center text-[10px] font-medium uppercase tracking-[0.25em] text-muted-foreground/50">
+        Vu dans les médias
+      </div>
+      <div className="relative">
+        <div className="absolute left-0 top-0 z-10 h-full w-16 bg-gradient-to-r from-muted/30 to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-muted/30 to-transparent" />
+        <div className="flex animate-scroll items-center gap-16 whitespace-nowrap">
+          {allMedia.map((name, idx) => (
+            <span
+              key={idx}
+              className="text-sm font-medium text-muted-foreground/40 transition-colors hover:text-muted-foreground/70"
+              data-testid={`media-${idx}`}
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeroSection() {
+  return (
+    <section className="relative bg-background py-16 lg:py-24" data-testid="section-hero">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.08),transparent_70%)]" />
+      
+      <div className="relative mx-auto max-w-4xl px-4 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Badge 
+            variant="outline" 
+            className="mb-8 border-primary/50 bg-primary/10 px-4 py-1.5 text-primary"
+            data-testid="badge-hero"
+          >
+            <Sparkles className="mr-2 h-3 w-3" />
+            AUDIT MÉTABOLIQUE COMPLET
+          </Badge>
+
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl" data-testid="text-hero-title">
+            Décode ton système métabolique.
+            <br />
+            <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              Optimise ta performance.
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground" data-testid="text-hero-subtitle">
+            180+ biomarqueurs analysés en profondeur pour comprendre et optimiser ton métabolisme.
+          </p>
+
+          <div className="mt-10">
+            <Link href="/audit-complet/questionnaire">
+              <Button 
+                size="lg" 
+                className="gap-2 bg-primary px-8 text-lg hover:bg-primary/90"
+                data-testid="button-hero-cta"
+              >
+                LANCER L'ANALYSE
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function StatsSection() {
+  const stats = [
+    { value: "180+", label: "Questions" },
+    { value: "21", label: "Sections" },
+    { value: "15", label: "Domaines" },
+  ];
+
+  return (
+    <section className="border-y border-border/30 bg-muted/20 py-12" data-testid="section-stats">
+      <div className="mx-auto max-w-4xl px-4">
+        <div className="flex items-center justify-center gap-16 sm:gap-24">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="text-center" data-testid={`stat-${stat.label.toLowerCase()}`}>
+              <div className="text-4xl font-bold text-primary sm:text-5xl">{stat.value}</div>
+              <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TestimonialsSection() {
+  const reviews = [
+    { 
+      name: "Alexandre T.", 
+      age: 34,
+      location: "Lyon",
+      date: "Septembre 2025",
+      rating: 5, 
+      title: "Bluffé par la précision",
+      comment: "Honnêtement, je m'attendais à un truc générique comme tous les questionnaires santé en ligne. Là c'est autre chose. Le rapport a identifié une résistance à l'insuline que même mon médecin n'avait pas vue. J'ai ajusté mon timing de repas comme recommandé, et en 6 semaines j'ai perdu 4kg de gras sans rien changer d'autre. Le protocole de magnésium glycinate le soir a aussi réglé mes problèmes de sommeil.",
+      avatar: "A",
+      plan: "Premium"
+    },
+    { 
+      name: "Camille R.", 
+      age: 29,
+      location: "Paris",
+      date: "Octobre 2025",
+      rating: 5, 
+      title: "Enfin des réponses après 3 ans de fatigue",
+      comment: "Ça fait 3 ans que je galère avec une fatigue chronique. Médecins, prises de sang, thyroïde... tout était 'normal'. L'audit a mis le doigt sur un déficit en fer ferritine (alors que mon fer sérique était OK) et un déséquilibre cortisol. Les recommandations étaient hyper précises : fer bisglycinate à jeun, adaptogènes le matin. Au bout de 2 mois, je revis.",
+      avatar: "C",
+      plan: "Premium"
+    },
+    { 
+      name: "Maxime D.", 
+      age: 41,
+      location: "Bordeaux",
+      date: "Octobre 2025",
+      rating: 5, 
+      title: "Mon coach ne comprend pas comment j'ai progressé",
+      comment: "Je fais du CrossFit depuis 5 ans, j'étais en plateau depuis 18 mois. L'audit a révélé que mon ratio oméga 3/6 était catastrophique et que je sous-dosais mes glucides les jours d'entraînement. En suivant le protocole nutrition périodisée du rapport, j'ai PR mon deadlift de 15kg en 3 mois. Mon coach me demande ce que j'ai changé.",
+      avatar: "M",
+      plan: "Premium"
+    },
+    { 
+      name: "Julie M.", 
+      age: 36,
+      location: "Marseille",
+      date: "Novembre 2025",
+      rating: 5, 
+      title: "Plus efficace que 2 ans de naturopathe",
+      comment: "J'ai dépensé facilement 2000 euros chez des naturopathes ces dernières années. Des conseils vagues, des compléments random... Ici pour 79 euros j'ai eu un plan précis : quel complément, quel dosage, à quel moment, pendant combien de temps. Le suivi du cycle hormonal dans le rapport Elite c'est de l'or. SPM divisé par deux en 2 cycles.",
+      avatar: "J",
+      plan: "Premium"
+    },
+    { 
+      name: "Thomas B.", 
+      age: 45,
+      location: "Toulouse",
+      date: "Novembre 2025",
+      rating: 4, 
+      title: "Très complet, demande de l'investissement",
+      comment: "Le questionnaire est long, faut être honnête. Mais c'est justement ce qui fait la qualité du rapport. Chaque question a un sens. J'ai découvert que mes problèmes de concentration venaient probablement d'une inflammation chronique liée à mon alimentation. Le protocole anti-inflammatoire fonctionne, je mets 4 étoiles juste parce que j'aurais aimé plus de suivi après.",
+      avatar: "T",
+      plan: "Premium"
+    },
+    { 
+      name: "Sarah L.", 
+      age: 31,
+      location: "Nantes",
+      date: "Décembre 2025",
+      rating: 5, 
+      title: "Le rapport a changé ma vision de la santé",
+      comment: "Je pensais bien manger, bien dormir, bien m'entraîner. Le rapport m'a montré 3 angles morts majeurs : mon stress chronique qui plombait ma récupération, un déficit en vitamine D malgré mes sorties, et un microbiote déséquilibré (ballonnements que je normalisais). 4 mois plus tard, je dors mieux, je digère mieux, et j'ai pris 2kg de muscle.",
+      avatar: "S",
+      plan: "Premium"
+    },
+  ];
+
+  const renderStars = (rating: number) => (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`h-3.5 w-3.5 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`}
+        />
+      ))}
+    </div>
+  );
+
+  return (
+    <section className="py-16 lg:py-24" data-testid="section-testimonials">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="mb-12 text-center">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star key={star} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+              ))}
+            </div>
+            <span className="text-xl font-bold">4.8/5</span>
+            <span className="text-sm text-muted-foreground">(127 avis)</span>
+          </div>
+          <h2 className="text-2xl font-bold sm:text-3xl" data-testid="text-testimonials-title">
+            Ce qu'en disent mes clients
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            Des résultats concrets, mesurables, reproductibles
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {reviews.map((review, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: idx * 0.08 }}
+            >
+              <Card className="h-full border-border/50 bg-card/50" data-testid={`card-review-${idx}`}>
+                <CardContent className="flex h-full flex-col p-5">
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
+                        {review.avatar}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{review.name}</span>
+                          <span className="text-xs text-muted-foreground">{review.age} ans</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{review.location} - {review.date}</span>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="shrink-0 text-xs">
+                      {review.plan}
+                    </Badge>
+                  </div>
+                  
+                  <div className="mb-2 flex items-center gap-2">
+                    {renderStars(review.rating)}
+                  </div>
+                  
+                  <h4 className="mb-2 font-semibold text-foreground">{review.title}</h4>
+                  
+                  <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
+                    {review.comment}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PricingSection() {
+  return (
+    <section id="pricing" className="py-16 lg:py-24" data-testid="section-pricing">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="mb-12 text-center">
+          <Badge variant="outline" className="mb-4">
+            Tarification transparente
+          </Badge>
+          <h2 className="text-2xl font-bold sm:text-3xl" data-testid="text-pricing-title">
+            Choisis ton niveau d'analyse
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+            Tu décides après avoir rempli le questionnaire
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {PRICING_PLANS.map((plan, index) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="relative"
+            >
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                  <Badge className="gap-1 px-3 py-1">
+                    <Star className="h-3 w-3" />
+                    Le + populaire
+                  </Badge>
+                </div>
+              )}
+              {"bestValue" in plan && plan.bestValue && (
+                <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                  <Badge variant="secondary" className="gap-1 bg-accent px-3 py-1 text-accent-foreground">
+                    Best Value
+                  </Badge>
+                </div>
+              )}
+              <Card
+                className={`h-full ${
+                  plan.popular ? "border-primary ring-1 ring-primary" : ""
+                }`}
+                data-testid={`card-pricing-${plan.id}`}
+              >
+                <CardContent className="flex h-full flex-col p-6">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold">{plan.name}</h3>
+                    <p className="text-sm text-muted-foreground">{plan.subtitle}</p>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <span className="text-4xl font-bold">{plan.priceLabel}</span>
+                    {"coachingNote" in plan && plan.coachingNote && (
+                      <p className="mt-1 text-xs text-primary">{plan.coachingNote}</p>
+                    )}
+                  </div>
+
+                  <ul className="mb-6 flex-1 space-y-3">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                    {"lockedFeatures" in plan && (plan.lockedFeatures as readonly string[])?.map((feature, i) => (
+                      <li key={`locked-${i}`} className="flex items-start gap-2 text-muted-foreground">
+                        <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link href="/audit-complet/questionnaire">
+                    <Button 
+                      className="w-full" 
+                      variant={plan.popular ? "default" : "outline"}
+                      data-testid={`button-pricing-${plan.id}`}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BodyAnalysisSection() {
+  const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
+  
+  const categories = [
+    { id: "metabolism", label: "Metabolisme", color: "hsl(160 84% 39%)" },
+    { id: "biomechanics", label: "Biomecanique", color: "hsl(280 70% 50%)" },
+    { id: "neurology", label: "Neurologie", color: "hsl(200 80% 50%)" },
+    { id: "cardio", label: "Cardio", color: "hsl(0 70% 50%)" },
+    { id: "hormones", label: "Hormones", color: "hsl(45 90% 50%)" },
+    { id: "immunity", label: "Immunite", color: "hsl(120 60% 45%)" },
+  ];
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-background to-muted/30 py-20 lg:py-28" data-testid="section-body-analysis">
+      <div className="absolute inset-0 opacity-30">
+        <NeuralNetwork className="h-full w-full" />
+      </div>
+      
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Badge variant="outline" className="mb-4">
+              Analyse corporelle interactive
+            </Badge>
+          </motion.div>
+          <motion.h2
+            className="text-3xl font-bold tracking-tight sm:text-4xl"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+          >
+            Cartographie complete de ton corps
+          </motion.h2>
+          <motion.p
+            className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+          >
+            Survole les zones pour decouvrir les points d'analyse
+          </motion.p>
+        </div>
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-2">
+          <motion.div
+            className="flex items-center justify-center"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="relative h-[400px] w-full max-w-[300px]">
+              <BodyVisualization activeCategory={activeCategory} className="h-full w-full" />
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="flex flex-col justify-center gap-4"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <p className="mb-4 text-muted-foreground">
+              Selectionne une categorie pour voir les zones analysees :
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {categories.map((cat) => (
+                <motion.button
+                  key={cat.id}
+                  className={`rounded-lg border px-4 py-3 text-left transition-all ${
+                    activeCategory === cat.id 
+                      ? "border-primary bg-primary/10" 
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={() => setActiveCategory(activeCategory === cat.id ? undefined : cat.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  data-testid={`button-category-${cat.id}`}
+                >
+                  <div 
+                    className="mb-1 h-2 w-8 rounded-full"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  <span className="text-sm font-medium">{cat.label}</span>
+                </motion.button>
+              ))}
+            </div>
+            <Card className="mt-6">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Analyse en temps reel</p>
+                    <p className="text-sm text-muted-foreground">
+                      Chaque zone est evaluee selon tes reponses
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CTASection() {
+  return (
+    <section className="border-t border-border/30 bg-muted/20 py-16" data-testid="section-cta">
+      <div className="mx-auto max-w-2xl px-4 text-center">
+        <h2 className="text-2xl font-bold sm:text-3xl">
+          Prêt à optimiser ta performance ?
+        </h2>
+        <p className="mt-4 text-muted-foreground">
+          Commence ton audit métabolique gratuit maintenant. Résultats en 24h.
+        </p>
+        <div className="mt-8">
+          <Link href="/audit-complet/questionnaire">
+            <Button size="lg" className="gap-2 px-8" data-testid="button-cta-start">
+              Commencer l'analyse
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function Landing() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main>
+        <CertificationsBar />
+        <MediaBar />
+        <HeroSection />
+        <StatsSection />
+        <BodyAnalysisSection />
+        <PricingSection />
+        <TestimonialsSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </div>
+  );
+}

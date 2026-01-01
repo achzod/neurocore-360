@@ -1,0 +1,149 @@
+# 🔧 CORRECTIONS APPLIQUÉES - NEUROCORE 360
+
+## 🎯 PROBLÈMES IDENTIFIÉS ET RÉSOLUS
+
+### 1. ❌ PROBLÈME : SVG absents dans le HTML exporté
+
+**Cause racine** : L'interface `DashboardSection` et `AuditDashboardFormat` ne contenaient PAS les champs `score` et `global`.
+
+**Fichier** : `server/formatDashboard.ts`
+
+**Corrections appliquées** :
+
+```typescript
+// AVANT :
+export interface DashboardSection {
+  id: string;
+  title: string;
+  content: string;  // ❌ Pas de score
+  order: number;
+  category: 'executive' | 'analysis' | 'action' | 'transformation' | 'supplements';
+}
+
+export interface AuditDashboardFormat {
+  clientName: string;
+  generatedAt: string;
+  // ❌ Pas de global
+  sections: DashboardSection[];
+  ...
+}
+
+// APRÈS :
+export interface DashboardSection {
+  id: string;
+  title: string;
+  score: number;  // ✅ Ajouté
+  content: string;
+  order: number;
+  category: 'executive' | 'analysis' | 'action' | 'transformation' | 'supplements';
+}
+
+export interface AuditDashboardFormat {
+  clientName: string;
+  generatedAt: string;
+  global: number;  // ✅ Ajouté
+  sections: DashboardSection[];
+  ...
+}
+```
+
+**Extraction des scores depuis le texte** :
+
+```typescript
+// Ajout d'un regex pour capturer "Score : 65/100" ou "65%"
+const scoreMatch = content.match(/(?:Score\s*:?\s*)?(\d+)(?:\/100|%)/i);
+const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 65;
+
+// Calcul du score global
+const totalScore = sections.reduce((sum, s) => sum + s.score, 0);
+const global = sections.length > 0 ? Math.round(totalScore / sections.length) : 65;
+```
+
+---
+
+### 2. ❌ PROBLÈME : Gemini ne mettait PAS de score numérique dans les sections
+
+**Cause racine** : Le prompt ne spécifiait PAS explicitement qu'un score `XX/100` devait être ajouté.
+
+**Fichier** : `server/geminiPremiumEngine.ts`
+
+**Correction appliquée** :
+
+```typescript
+// AVANT :
+5. TON : Expert, direct, comme un chirurgien olympique.
+
+// APRÈS :
+5. SCORE OBLIGATOIRE : À la fin de CHAQUE section, ajoute une ligne "Score : XX/100" où XX est ton évaluation de cette dimension pour le client.
+6. TON : Expert, direct, comme un chirurgien olympique.
+```
+
+**Impact** : Maintenant Gemini DOIT ajouter `Score : 65/100` (ou autre) à la fin de chaque section.
+
+---
+
+### 3. ✅ VÉRIFICATION : `photoAnalysisAI.ts` est PARFAIT
+
+Le prompt d'analyse photo est ultra-détaillé et contient :
+- Composition corporelle (% BF, répartition, pattern hormonal)
+- Analyse musculaire (asymétries gauche/droite, déséquilibres)
+- Évaluation posturale biomécanique (tête, épaules, rachis, bassin, genoux)
+- Signes médicaux (peau, œdème, drapeaux rouges)
+
+**Aucune modification nécessaire.**
+
+---
+
+### 4. ✅ VÉRIFICATION : `exportService.ts` est PARFAIT
+
+Les fonctions SVG sont bien présentes et appelées :
+- Ligne 169 : `generateSVGGauge(section.score)` pour chaque section
+- Ligne 334 : `generateSVGGauge(dashboard.global)` pour le score global
+- Ligne 340 : `generateSVGRadar(scores)` pour le radar métabolique
+
+**Aucune modification nécessaire.**
+
+---
+
+## 📦 FICHIERS À UPLOADER SUR REPLIT (MIS À JOUR)
+
+### Dans `design/server/` :
+1. ✅ `types.ts`
+2. ✅ `geminiConfig.ts`
+3. ✅ **`geminiPremiumEngine.ts`** ← **MODIFIÉ** (ajout règle score obligatoire)
+4. ✅ `photoAnalysisAI.ts`
+5. ✅ `reportJobManager.ts`
+6. ✅ `exportService.ts`
+7. ✅ **`formatDashboard.ts`** ← **MODIFIÉ** (ajout `score` et `global`)
+8. ✅ `routes.ts`
+9. ✅ `cta.ts`
+
+### Dans `design/client/` :
+10. ✅ `AuditDetail.tsx`
+
+---
+
+## 🧪 TEST POST-DÉPLOIEMENT
+
+1. **Upload les 2 fichiers modifiés** : `formatDashboard.ts` et `geminiPremiumEngine.ts`
+2. **Générer un NOUVEL audit** avec photos (les anciens n'ont pas les scores)
+3. **Télécharger le HTML**
+4. **Vérifier** :
+   - Cherche `<svg` dans le HTML (devrait apparaître ~18 fois)
+   - Vérifie que chaque section a un score visible
+   - Vérifie que l'analyse photo mentionne composition corporelle, asymétries, etc.
+
+---
+
+## 🎯 RÉSUMÉ DES CHANGEMENTS
+
+| Fichier | Problème | Solution |
+|---------|----------|----------|
+| `formatDashboard.ts` | Pas de champs `score` et `global` | ✅ Ajout des champs + extraction via regex + calcul moyenne |
+| `geminiPremiumEngine.ts` | Gemini n'ajoutait pas de score numérique | ✅ Ajout règle "Score : XX/100 obligatoire" dans le prompt |
+| `exportService.ts` | ✅ OK | Aucune modification |
+| `photoAnalysisAI.ts` | ✅ OK | Aucune modification |
+
+---
+
+**Développé par ACHZOD - Neurocore 360**

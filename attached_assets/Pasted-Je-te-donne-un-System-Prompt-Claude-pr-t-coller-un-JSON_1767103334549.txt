@@ -1,0 +1,639 @@
+Je te donne :
+
+un System Prompt Claude prêt à coller
+
+un JSON schema de sortie (stack, dosages, timing, preuves, risques)
+
+une bibliothèque d’ingrédients par domaine (formes, actifs, doses, synergies, antagonismes, règles d’achat)
+
+1) SYSTEM PROMPT (Claude) — “Supplement Reco Engine (iHerb)”
+You are “Achzod Supplement Engine”: an evidence-weighted, safety-first supplement recommendation system for iHerb-buyable products.
+
+GOAL
+- Build domain-specific supplement stacks (cardio, joints, lower estrogen, lower cortisol, increase testosterone, sleep, neurotransmitter/cognition/mood).
+- Output MUST be strict JSON matching the provided schema.
+- Recommendations must be individualized based on user inputs (sex, age, bodyweight, lean mass if available, training load, sleep, symptoms, labs, meds, constraints).
+- Prioritize: safety > evidence > fit > simplicity > cost.
+- Avoid “bro-science” claims. If evidence is weak, label it clearly.
+- Never recommend prescription drugs, SARMs, prohormones, or illegal substances.
+- If the user is on TRT/AAS, explicitly adapt: do NOT “crash estrogen”; include red flags and suggest labs/medical supervision.
+
+INPUTS YOU WILL RECEIVE (example keys)
+- sex: "male"|"female"
+- age_years
+- bodyweight_kg
+- lean_mass_kg (optional)
+- goals: [ ...domains... ]
+- training: {volume, intensity, cardio, steps}
+- sleep: {duration, quality, awakenings}
+- symptoms: {libido, mood, anxiety, joint_pain, BP, lipids, etc.}
+- labs (optional): {lipids, fasting_glucose, hsCRP, testosterone, estradiol, SHBG, VitD, ferritin, thyroid, etc.}
+- meds: [ ... ] and contraindications
+- diet: {vegan, allergies}
+- budget_monthly_usd
+- preferences: {capsules_ok, powders_ok, stimulant_sensitive}
+- product_candidates (optional): list of iHerb items with Supplement Facts + link. If provided, rank and choose best.
+
+CORE RULES
+1) Use “minimal effective stack”: no more than 8 core items per domain; extras go into optional/experimental.
+2) Dosing:
+   - Prefer evidence-based fixed dosing (e.g., omega-3, magnesium, collagen).
+   - Where relevant, scale by bodyweight or lean mass:
+     * mg/kg BW for nutrients with BW response (e.g., EPA+DHA range, certain amino acids).
+     * If lean_mass_kg exists, prefer mg/kg LBM for performance/cognition amino acids.
+   - Always specify: daily dose, split doses, timing window, with/without food, cycle length.
+3) Safety gates:
+   - Anticoagulants/antiplatelets: flag nattokinase/serrapeptase/high-dose fish oil/vitamin E.
+   - SSRIs/MAOIs/serotonergics: flag 5-HTP, tryptophan, St John’s Wort, and interactions.
+   - Liver disease: caution with strong botanicals; propose labs if needed.
+4) Evidence labeling:
+   - evidence_grade: "A" (multiple RCT/meta), "B" (some RCTs), "C" (limited human), "D" (animal/in vitro/folk)
+   - Provide citations as identifiers (PMID/DOI/Journal link) in the JSON.
+5) iHerb purchase logic:
+   - Never hallucinate a specific product.
+   - If no product_candidates are provided, output iHerb_search_queries per ingredient (short, keyword heavy).
+   - If product_candidates are provided, choose best based on:
+     * active marker standardization (eurycomanone %, withanolides %, bergamot polyphenols %, etc.)
+     * correct units (e.g., Nattokinase in FU)
+     * third-party testing (USP/NSF/IFOS/ISO) when available
+     * avoid proprietary blends; avoid underdosed combos; avoid “pixie dust”
+     * prefer transparent Supplement Facts + clear form (salt/chelate)
+6) Output structure:
+   - For each domain: core_stack, optional_stack, avoid_list, interactions, monitoring_markers, expected_timeline, stop_rules.
+   - Include: “how_to_read_label” and “how_to_choose_on_iherb”.
+
+TONE
+- Direct, precise, not academic. No fluff. Explain mechanisms in simple language (but high-level).
+- If user asks for “elite/secret”: deliver advanced options, but clearly tag safety/evidence limitations.
+
+Now produce JSON only. No markdown, no extra text.
+
+2) FORMAT JSON — schema de sortie (strict)
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AchzodSupplementEngineOutput",
+  "type": "object",
+  "required": ["profile_summary", "global_rules", "domains"],
+  "properties": {
+    "profile_summary": {
+      "type": "object",
+      "required": ["sex", "age_years", "bodyweight_kg"],
+      "properties": {
+        "sex": { "type": "string", "enum": ["male", "female"] },
+        "age_years": { "type": "number" },
+        "bodyweight_kg": { "type": "number" },
+        "lean_mass_kg": { "type": ["number", "null"] },
+        "context_flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "global_rules": {
+      "type": "object",
+      "required": ["purchase_rules", "label_rules", "timing_rules", "safety_gates"],
+      "properties": {
+        "purchase_rules": { "type": "array", "items": { "type": "string" } },
+        "label_rules": { "type": "array", "items": { "type": "string" } },
+        "timing_rules": { "type": "array", "items": { "type": "string" } },
+        "safety_gates": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["domain", "core_stack", "optional_stack", "avoid_list", "interactions", "monitoring", "timeline"],
+        "properties": {
+          "domain": { "type": "string" },
+          "core_stack": { "$ref": "#/definitions/stackArray" },
+          "optional_stack": { "$ref": "#/definitions/stackArray" },
+          "avoid_list": { "type": "array", "items": { "type": "string" } },
+          "interactions": { "type": "array", "items": { "type": "string" } },
+          "monitoring": {
+            "type": "object",
+            "required": ["markers", "stop_rules"],
+            "properties": {
+              "markers": { "type": "array", "items": { "type": "string" } },
+              "stop_rules": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "timeline": {
+            "type": "object",
+            "required": ["expected_onset_days", "full_effect_weeks"],
+            "properties": {
+              "expected_onset_days": { "type": "number" },
+              "full_effect_weeks": { "type": "number" }
+            }
+          },
+          "iherb_search_queries": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "stackArray": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ingredient", "form", "actives", "dose", "timing", "cycle", "mechanism", "evidence_grade", "risks", "synergies", "antagonisms", "label_checks"],
+        "properties": {
+          "ingredient": { "type": "string" },
+          "form": { "type": "string" },
+          "actives": { "type": "array", "items": { "type": "string" } },
+          "dose": {
+            "type": "object",
+            "required": ["daily_amount", "units", "split", "scaling_note"],
+            "properties": {
+              "daily_amount": { "type": "string" },
+              "units": { "type": "string" },
+              "split": { "type": "string" },
+              "scaling_note": { "type": "string" }
+            }
+          },
+          "timing": { "type": "string" },
+          "cycle": { "type": "string" },
+          "mechanism": { "type": "string" },
+          "evidence_grade": { "type": "string", "enum": ["A", "B", "C", "D"] },
+          "citations": { "type": "array", "items": { "type": "string" } },
+          "risks": { "type": "array", "items": { "type": "string" } },
+          "synergies": { "type": "array", "items": { "type": "string" } },
+          "antagonisms": { "type": "array", "items": { "type": "string" } },
+          "label_checks": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
+
+3) BIBLIOTHÈQUE “EXHAUSTIVE” PAR DOMAINE (formes, doses, synergies, antagonismes, achat iHerb)
+RÈGLES D’ACHAT iHerb (le truc qui fait 80% de la diff)
+
+Zéro “proprietary blend”. Si le label cache les mg par ingrédient → tu peux pas doser, donc tu jettes.
+
+Unités correctes :
+
+Nattokinase = FU (fibrinolytic units), pas “mg” au hasard.
+
+Serrapeptase = souvent en SU / SPU, et idéalement enteric-coated (sinon, digestion partielle).
+
+Magnésium = tu veux les mg élémentaires, pas juste “magnesium bisglycinate 2000 mg” (ça veut rien dire si l’élémentaire est caché).
+
+Standardisation (herbes “élite”) :
+
+Tongkat = idéalement marqueur type eurycomanone (sinon tu sais pas ce que tu prends).
+
+Ashwagandha = % withanolides (et partie plante: racine vs feuille).
+
+Bergamot = bergamot polyphenolic fraction / polyphenols.
+
+Saffron = extrait standardisé (crocin/safranal selon fabricants).
+
+Qualité :
+
+Oméga-3 : vise un label/contrôle type IFOS/équivalent si dispo, et surtout EPA+DHA réellement chiffrés.
+
+Mélatonine : énorme variabilité sur le marché (dosage réel ≠ label dans des études) 
+JCSM
+ → si tu l’utilises, tu privilégies le sérieux + micro-dose.
+
+A) CARDIOVASCULAIRE (lipides, BP, endothélium, “sang trop épais”, inflammation)
+Tier A/B (efficace + exploitable)
+
+Omega-3 (EPA+DHA)
+
+Formes : TG/rTG > EE (souvent mieux toléré), huile poisson/krill
+
+Dose : 1–2 g/j EPA+DHA (bien-être/inflammation), 4 g/j pour triglycérides élevés (plutôt cadre médical) 
+AHA Journals
++2
+www.heart.org
++2
+
+Mécanisme : ↓TG (VLDL), modulation eicosanoïdes, membrane RBC/endothélium
+
+Synergies : bergamot, psyllium, CoQ10
+
+Antagonismes/risques : anticoagulants + très hautes doses = prudence
+
+Citrus Bergamot (BPF)
+
+Dose : souvent 500–1000 mg/j selon standardisation
+
+Mécanisme : polyphénols → amélioration profil lipidique (LDL/TG)
+
+Preuves : revue systématique humaine 
+PubMed
++1
+
+Label : “bergamot polyphenols / BPF”, pas “citrus complex” flou
+
+TMG / Betaine (homocystéine)
+
+Dose : 2–6 g/j (souvent 4–6 g/j pour effet) 
+PMC
+
+Mécanisme : donneur de méthyle → reméthylation homocystéine
+
+Synergies : B6/B9/B12 si homocystéine haute
+
+Attention : peut ↑TMAO chez certains profils; à surveiller si cardio fragile
+
+Plant sterols/stanols
+
+Dose : ~2 g/j → baisse LDL 
+European Food Safety Authority
++1
+
+Mécanisme : compétition absorption cholestérol intestinal
+
+Label : dose par portion claire (sinon inutile)
+
+Magnésium (citrate/glycinate/taurate)
+
+Dose : 200–400 mg/j élémentaire (split)
+
+Mécanisme : tonus vasculaire, conduction, stress
+
+Achat : “elemental magnesium” visible
+
+Tier “élite / spécial”
+
+Nattokinase (fluidité, BP léger)
+
+Dose typique : 2000 FU/j (souvent 1–2 caps)
+
+Preuves : revue systématique sur facteurs CV (BP surtout) 
+PMC
+
+Risques : anticoagulants/anti-plaquettaires → prudence, stop si bleus/saignements
+
+CoQ10 (ubiquinol)
+
+Dose : 100–200 mg/j (statines/fatigue)
+
+Mécanisme : mitochondries + protection LDL oxydée
+
+Aged garlic extract
+
+Dose : 600–1200 mg/j (standardisé)
+
+Mécanisme : NO, BP, anti-oxydant
+
+Taurine
+
+Dose : 1–3 g/j
+
+Mécanisme : modulation calcium, BP, système nerveux autonome
+
+Ce que ton moteur doit déconseiller en mode “cardio”
+
+Niacine haut dosage pour “HDL miracle” : gros essais → pas de bénéfice CV net + ↑ effets indésirables 
+New England Journal of Medicine
++1
+
+Vitamine E haute dose “anti-oxydant cardio” : ↑ risque AVC hémorragique dans méta-analyses 
+PMC
++1
+
+B) ARTICULAIRE (cartilage, synovie, douleur, tendons)
+Tier A/B (le vrai noyau dur)
+
+Glucosamine sulfate (GS)
+
+Dose : 1500 mg/j (souvent en 1 prise)
+
+Effets : douleur/fonction + possiblement structure (espace articulaire) 
+PubMed
+
+Achat : “sulfate” (pas HCl si tu veux coller aux datas historiques)
+
+Chondroïtine sulfate (CS)
+
+Dose : 800–1200 mg/j
+
+Effets : douleur/fonction (meta) 
+PubMed
+
+Synergie : GS + CS
+
+Acide hyaluronique oral (HA)
+
+Dose : 60–200 mg/j selon poids moléculaire/formulation
+
+Effets : douleur/fonction genou (essais + revues) 
+PubMed
++1
+
+Label : idéalement “low molecular weight” ou au moins dosage clair
+
+Collagène hydrolysé / peptides
+
+Dose : 10–15 g/j (peptides)
+
+Effets : support tissus conjonctifs/joints (revues récentes) 
+PMC
++1
+
+Timing : avec vitamine C (cofacteur collagène), 30–60 min avant charge tendineuse = logique pratique
+
+Tier “élite”
+
+UC-II (collagène type II non dénaturé)
+
+Dose : ~40 mg/j (faible dose, logique immuno-tolérance)
+
+Indication : raideur/flexibilité, genou
+
+MSM
+
+Dose : 1.5–3 g/j
+
+Mécanisme : soufre, inflammation
+
+Boswellia (AKBA)
+
+Dose : 100–250 mg/j d’AKBA selon extrait
+
+Mécanisme : 5-LOX
+
+Curcuminoïdes + pipérine / phytosome
+
+Dose : dépend forme (phytosome souvent plus bas)
+
+Mécanisme : NF-kB, COX/LOX
+
+Serrapeptase / Serratiopeptidase
+
+Dose “historique” : 5–10 mg 3x/j (ça varie) 
+PMC
++1
+
+Point achat : enteric-coated recommandé car enzyme sensible à l’acide gastrique (souvent formulée ainsi) 
+ResearchGate
+
+Réalité : littérature mitigée + long-term safety flou 
+ScienceDirect
+
+Risques : saignement surtout si combiné nattokinase/omega-3/vit E/aspirine
+
+C) BAISSER ŒSTROGÈNES (sans faire n’importe quoi)
+
+Ici ton moteur doit être intelligent : “baisser E2” n’est pas un objectif universel.
+
+Chez l’homme : trop haut = symptômes (rétention, gyno, mood), trop bas = libido cassée, douleurs articulaires, humeur pourrie.
+
+Chez la femme : selon phase cycle, contraception, SOPK, péri-méno… c’est un autre monde.
+
+Options “support métabolisme/clairance” (plutôt safe)
+
+DIM / I3C (crucifères)
+
+Dose : DIM 100–300 mg/j
+
+Mécanisme : modulation métabolites estrogéniques (2-OH vs 16-OH)
+
+Achat : dosage clair; évite combos sous-dosés
+
+Calcium D-Glucarate
+
+Dose : 500–1000 mg 1–2x/j
+
+Mécanisme : ↓ bêta-glucuronidase → aide élimination conjugués
+
+Fibres (psyllium)
+
+Dose : 5–10 g/j
+
+Mécanisme : capture bile/hormones, transit, ↓ réabsorption
+
+Boron (oui, ça touche aussi estradiol/testo)
+
+Dose : 3–10 mg/j (cycle)
+
+Données humaines : hausse FT + baisse E2 sur court terme dans une étude 
+PubMed
++1
+
+Risques : trop haut trop longtemps = pas le move; moteur doit cycler + monitor
+
+Options “plus agressives / plus fragiles”
+
+Zinc (utile surtout si déficit)
+
+Resveratrol / apigenin / chrysin : mécanismes in vitro (aromatase), mais translation humaine variable → classer C/D
+
+Interdits dans ton moteur : conseils de type “AI naturels” style létrozole-like. Non. Si E2 est vraiment problématique → labs + médecin.
+
+D) BAISSER CORTISOL (HPA axis, stress, overreaching)
+
+Ashwagandha (standardisée)
+
+Données : NIH ODS note baisse stress/anxiété/cortisol selon extraits/doses 
+Bureau des Suppléments Alimentaires
+
+Dose : souvent 300–600 mg/j extrait racine (selon % withanolides)
+
+Risques : sédation chez certains, prudence thyroïde/sédatifs
+
+Phosphatidylserine (PS)
+
+Données : 600 mg/j 10 jours → cortisol réponse exercice ↓ 
+PMC
+
+Dose : 300–600 mg/j selon contexte
+
+Timing : autour entraînement / période stress
+
+Tongkat Ali (Eurycoma longifolia)
+
+Données : 200 mg/j → cortisol ↓ et testo ↑ dans étude stress 
+PMC
+
+Label : standardisation recommandée (sinon loterie)
+
+Magnésium bisglycinate
+
+Sommeil/stress : essai récent bisglycinate sur sommeil 
+PMC
+
+Dose : 200–400 mg élémentaire/j
+
+L-theanine
+
+Relax sans “sedation sale”; utile surtout si hyper-activation
+
+E) AUGMENTER TESTO (sans te vendre du rêve)
+
+Le moteur doit faire :
+
+d’abord corriger les leviers : sommeil, déficit calories, alcool, stress, carences (D, zinc, magnésium).
+
+ensuite ajouter “boosters” avec standardisation.
+
+Vitamine D3
+
+Données : une RCT a trouvé hausse testo avec supplémentation, mais d’autres sont plus neutres selon population 
+PubMed
++1
+
+Dosing moteur : basé sur 25(OH)D si dispo; sinon prudence (1000–4000 IU/j) + contrôle
+
+Tongkat Ali (testo + stress) 
+PMC
+
+Purified Shilajit
+
+Données : 250 mg 2x/j 90 jours → TT/FT/DHEAS ↑ 
+PubMed
+
+Achat : “purified”, contaminants = sujet (métaux)
+
+Boron (FT ↑ / E2 ↓ court terme) 
+PubMed
++1
+
+Ashwagandha (testo via stress/sommeil) 
+Bureau des Suppléments Alimentaires
+
+Cistanche (tubulosa/deserticola)
+
+Données humaines limitées; préclinique/indications sur fonction sexuelle/fertilité surtout; classer C 
+PMC
++1
+
+Label : cherche “echinacoside / acteoside” si indiqué
+
+Mucuna pruriens
+
+Données chez infertiles : amélioration paramètres + steroidogenesis 
+PubMed
+
+Risque : riche en L-DOPA → effets neuro/interaction, à classer “fort impact / prudence”
+
+Fadogia agrestis
+
+“Hype” mais très peu de data humaine solide → classer D (et moteur doit le mettre “experimental + prudence”).
+
+F) SOMMEIL (latence, réveils, profondeur, “cerveau qui tourne”)
+
+Glycine
+
+3 g avant coucher : amélioration qualité subjective + somnolence diurne ↓; mécanisme = thermorégulation / architecture SWS 
+PMC
++1
+
+L-theanine
+
+Revue systématique/meta sur outcomes sommeil 
+ScienceDirect
++1
+
+Dose : 100–400 mg 30–60 min avant
+
+Magnésium bisglycinate
+
+Essai bisglycinate sur symptômes d’insomnie 
+PMC
+
+Dose : 200–400 mg élémentaire
+
+Mélatonine (outil, pas jouet)
+
+Problème : variabilité produit/dose réelle sur le marché 
+JCSM
+
+Moteur : micro-dose (0.3–1 mg) > méga-dose, et surtout achat qualité
+
+Apigénine / camomille / lemon balm / valerian / lavender oil
+
+Moteur doit choisir selon profil : anxieux vs circadien vs réveils
+
+GROS STOP : si quelqu’un prend SSRI/ISRS, ton moteur doit être parano sur les combos serotoninergiques (voir plus bas).
+
+G) NEUROTRANSMETTEURS / COGNITIF / DÉPRESSION (dopamine, acétylcholine, sérotonine, neuro-inflammation)
+Axe ACÉTYLCHOLINE (focus, mémoire)
+
+Citicoline (CDP-choline)
+
+Plus “clean” que certains choline-donors; bon candidat core
+
+Alpha-GPC
+
+Oui c’est puissant… mais ton moteur doit flag le signal de risque : association avec stroke dans une grosse cohorte 
+PMC
+
+Donc : pas “core”; plutôt “optional + screening CV + cycle”.
+
+Huperzine A
+
+Inhibiteur AChE : efficace mais “tranchant”, à cycler (risque rêves intenses, nausées)
+
+Axe DOPAMINE / DRIVE (fatigue mentale, apathie)
+
+L-Tyrosine
+
+Utile surtout en stress/sommeil court (précurseur catécholamines)
+
+DL-Phenylalanine (DLPA)
+
+D et L : dopamine + possible modulation endorphines (profil “mood/pain”)
+
+Mucuna pruriens
+
+L-DOPA → effet direct dopamine; puissant, mais interactions (psychiatrie, traitement dopaminergique)
+
+Axe SÉROTONINE / CALME (dépression, rumination)
+
+Safran (standardisé)
+
+Meta: effet comparable SSRI dans certains essais (selon analyse) 
+PubMed
+
+Profil : “mood lift” assez propre
+
+5-HTP (à manipuler comme une arme)
+
+Ton moteur doit mettre un WARNING massif : risque syndrome sérotoninergique avec SSRI + case report 
+PMC
+
+Donc : interdit si meds serotoninergiques. Cycle court. Dose prudente.
+
+Axe NEURO-INFLAMMATION / MITO
+
+Omega-3 (neuro-inflammation)
+
+Magnésium L-threonate (cognitif; plus cher)
+
+Acetyl-L-carnitine (ALCAR) (énergie mentale)
+
+Créatine (énergie neuronale, utile en cognition/humeur chez certains)
+
+“LITHIUM” (tu l’as cité)
+
+Lithium orotate : ton moteur doit le classer “expert-only + prudence + médical” (fenêtre thérapeutique étroite pour le lithium en général, interactions, reins/thyroïde). Pas un bonbon.
+
+Synergies / Antagonismes — exemples que ton moteur doit savoir gérer
+
+Nattokinase + Serrapeptase + Omega-3 + Vit E + Aspirine = cocktail “bleus/saignements” → réduire/éviter.
+
+5-HTP + SSRI/SNRI/MAOI/triptans/dextromethorphan = danger (syndrome sérotoninergique) 
+PMC
++1
+
+Alpha-GPC chez profil CV à risque : prudence vu association stroke 
+PMC
+
+Tongkat/Ashwagandha + sédatifs / thyroïde : ajuster.
+
+Comment ton moteur “décide” les doses (pratique)
+
+Fixe quand c’est fixe : bergamot, tongkat (200 mg/j étude) 
+PMC
+, shilajit (250 mg x2) 
+PubMed
+, glycine 3 g 
+PMC
+
+Élémentaire quand minéral (Mg).
+
+Scaled quand ça a du sens :
+
+acides aminés (tyrosine/glycine parfois), oméga-3 (par contexte TG/inflammation), fibres (par tolérance).

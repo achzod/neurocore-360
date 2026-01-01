@@ -1,0 +1,258 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { getAllResponsesFormatted, getSectionPromptData } from "./responsePreprocessor";
+import { analyzeBodyPhotosWithAI, PhotoAnalysisResult } from "./photoAnalysisAI";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+});
+
+type Responses = Record<string, unknown>;
+
+interface SupplementProtocol {
+  name: string;
+  dosage: string;
+  timing: string;
+  duration: string;
+  why: string;
+  brands: string[];
+  warnings?: string;
+}
+
+interface NarrativeSection {
+  id: string;
+  title: string;
+  score: number;
+  level: "excellent" | "bon" | "moyen" | "faible";
+  isPremium: boolean;
+  introduction: string;
+  whatIsWrong: string;
+  personalizedAnalysis: string;
+  recommendations: string;
+  supplements: SupplementProtocol[];
+  actionPlan: string;
+  scienceDeepDive: string;
+  teaser?: string;
+}
+
+export interface NarrativeReport {
+  global: number;
+  auditType: string;
+  heroSummary: string;
+  executiveNarrative: string;
+  globalDiagnosis: string;
+  sections: NarrativeSection[];
+  prioritySections: string[];
+  strengthSections: string[];
+  supplementStack: SupplementProtocol[];
+  lifestyleProtocol: string;
+  weeklyPlan: {
+    week1: string;
+    week2: string;
+    weeks3_4: string;
+    months2_3: string;
+  };
+  photoAnalysis?: {
+    summary: string;
+    postureAnalysis: string;
+    muscularAnalysis: string;
+    fatAnalysis: string;
+    recommendations: string[];
+    correctiveProtocol: string;
+    score: number;
+  };
+  conclusion: string;
+}
+
+const SECTION_CONFIG: Array<{id: string; title: string; premium: boolean; expert: string; focus: string}> = [
+  {
+    id: "profil-base",
+    title: "Profil de Base",
+    premium: false,
+    expert: "Médecin anti-âge spécialiste longévité",
+    focus: "Fenêtre hormonale selon âge, vieillissement biologique, NMN/NR/Resvératrol si >30 ans"
+  },
+  {
+    id: "composition-corporelle",
+    title: "Composition Corporelle",
+    premium: false,
+    expert: "Coach physique élite recomposition & Morpho-Anatomiste",
+    focus: "ANALYSE BASÉE UNIQUEMENT SUR LES PHOTOS. BF% estimé visuellement, ratio taille/hanches, stratégie recomp/cut/bulk adaptée à la morphologie, créatine 5g, déficit/surplus précis. Ignorer le poids déclaré si contradictoire avec le visuel."
+  },
+  {
+    id: "metabolisme-energie",
+    title: "Métabolisme & Énergie",
+    premium: false,
+    expert: "Spécialiste mitochondrial",
+    focus: "Flexibilité métabolique, crashes glycémiques, CoQ10 Ubiquinol 200mg, PQQ 20mg, ALCAR 1g"
+  },
+  {
+    id: "sommeil-recuperation",
+    title: "Sommeil & Récupération",
+    premium: true,
+    expert: "Neurologue spécialiste du sommeil (Matthew Walker style)",
+    focus: "Architecture du sommeil, rythme circadien, Glycine 3g, Magnésium Bisglycinate, Apigénine"
+  },
+  {
+    id: "cognition-stress",
+    title: "Cognition & Gestion du Stress",
+    premium: true,
+    expert: "Neurobiologiste (Andrew Huberman style)",
+    focus: "Neuroplasticité, cortisol, Alpha-GPC, L-Tyrosine, Ashwagandha KSM-66, protocoles NSDR"
+  },
+  {
+    id: "sante-hormonale",
+    title: "Santé Hormonale",
+    premium: true,
+    expert: "Endocrinologue fonctionnel",
+    focus: "Optimisation Testostérone/Oestrogènes, axe HPA, Tongkat Ali, Boron, Zinc Picolinate"
+  }
+];
+
+export async function generateNarrativeReport(responses: Responses, photoUrls: string[] = []): Promise<NarrativeReport> {
+  console.log("Génération du rapport narratif V2...");
+
+  // 1. Analyse des photos en parallèle si disponibles
+  let photoAnalysisResult: PhotoAnalysisResult | null = null;
+  if (photoUrls && photoUrls.length > 0) {
+    console.log("Analyse des photos en cours...");
+    try {
+      photoAnalysisResult = await analyzeBodyPhotosWithAI(photoUrls);
+    } catch (error) {
+      console.error("Erreur lors de l'analyse photo:", error);
+    }
+  }
+
+  // 2. Préparation des données pour le prompt
+  const formattedResponses = getAllResponsesFormatted(responses);
+  
+  // Intégration explicite de l'analyse photo dans les données contextuelles
+  let photoContext = "PAS DE PHOTOS FOURNIES.";
+  if (photoAnalysisResult) {
+    photoContext = `
+    RÉSULTATS DE L'ANALYSE PHOTO (PRIORITAIRE SUR LE DECLARATIF) :
+    - Distribution Graisseuse : ${JSON.stringify(photoAnalysisResult.fatDistribution)}
+    - Posture : ${JSON.stringify(photoAnalysisResult.posture)}
+    - Équilibre Musculaire : ${JSON.stringify(photoAnalysisResult.muscularBalance)}
+    - Signes Médicaux : ${JSON.stringify(photoAnalysisResult.medicalObservations)}
+    - Score Visuel Global : ${photoAnalysisResult.summary}
+    `;
+  }
+
+  const prompt = `
+    Tu es une équipe d'experts médicaux et sportifs de classe mondiale (Neurobiologiste, Endocrinologue, Coach Élite).
+    Ton but est de générer un rapport d'audit "NeuroCore 360" ULTRA-DÉTAILLÉ, CRITIQUE et ACTIONNABLE.
+    
+    CE RAPPORT NE DOIT PAS ÊTRE GÉNÉRIQUE. IL DOIT ÊTRE TRANCHANT, PRÉCIS ET PERSONNALISÉ.
+    Si les résultats sont mauvais, DIS-LE. Ne sois pas complaisant.
+    
+    CONTEXTE CLIENT :
+    ${formattedResponses}
+    
+    CONTEXTE VISUEL (PHOTOS) - CRUCIAL POUR LA PARTIE CORPORELLE :
+    ${photoContext}
+    
+    Génère un rapport JSON complet suivant la structure NarrativeReport définie.
+    
+    POUR CHAQUE SECTION :
+    - "whatIsWrong": Analyse brutale de ce qui ne va pas. Va au fond des choses.
+    - "personalizedAnalysis": Connecte les points entre symptômes, habitudes et biologie.
+    - "recommendations": Donne des protocoles précis (ex: "Protocol Andrew Huberman pour le matin..."). Pas de conseils vagues comme "Dormez mieux". Donne des protocoles : "Lumière solaire 10min au réveil", "Douche froide 3min à 11°C".
+    - "scienceDeepDive": Explique le mécanisme biologique (ex: "L'adénosine s'accumule...", "La résistance à l'insuline bloque la lipolyse...").
+    
+    POUR LA SECTION "Composition Corporelle" :
+    - BASE-TOI UNIQUEMENT SUR LES DONNÉES PHOTO FOURNIES CI-DESSUS SI ELLES EXISTENT.
+    - Si le client dit "je suis musclé" mais que les photos montrent du gras, CROIS LES PHOTOS.
+    
+    FORMAT DE SORTIE ATTENDU : JSON UNIQUEMENT.
+  `;
+
+  // Appel à Anthropic pour générer le JSON global ou section par section
+  // Pour la robustesse, on peut générer section par section, mais ici on va tenter une génération globale optimisée
+  // ou utiliser une structure similaire à ce qui existait probablement.
+  
+  // NOTE : Dans une implémentation réelle robuste, on itérerait sur SECTION_CONFIG pour générer chaque section indépendamment
+  // afin d'éviter les timeouts et d'avoir plus de détails.
+  
+  const sectionsPromises = SECTION_CONFIG.map(async (config) => {
+    return generateSection(config, formattedResponses, photoContext);
+  });
+  
+  const sections = await Promise.all(sectionsPromises);
+  
+  // Génération du résumé global et de la structure finale
+  const finalReport: NarrativeReport = {
+    global: calculateGlobalScore(sections),
+    auditType: "NeuroCore 360 Premium",
+    heroSummary: "Votre plan de transformation personnalisé.", // À générer dynamiquement
+    executiveNarrative: "Analyse exécutive...", // À générer
+    globalDiagnosis: "Diagnostic global...", // À générer
+    sections: sections,
+    prioritySections: sections.filter(s => s.score < 50).map(s => s.id),
+    strengthSections: sections.filter(s => s.score > 80).map(s => s.id),
+    supplementStack: extractAllSupplements(sections),
+    lifestyleProtocol: "Protocole lifestyle...", // À générer
+    weeklyPlan: {
+      week1: "Semaine 1 : Détox dopaminergique et ancrage circadien.",
+      week2: "Semaine 2 : Introduction du jeûne intermittent et optimisation mitochondriale.",
+      weeks3_4: "Semaines 3-4 : Intensification de l'entraînement et protocole de supplémentation complet.",
+      months2_3: "Mois 2-3 : Consolidation et adaptation métabolique."
+    },
+    conclusion: "Ce plan est un point de départ. La constance sera la clé.",
+    photoAnalysis: photoAnalysisResult ? {
+      summary: photoAnalysisResult.summary,
+      postureAnalysis: JSON.stringify(photoAnalysisResult.posture.issues),
+      muscularAnalysis: JSON.stringify(photoAnalysisResult.muscularBalance.weakAreas),
+      fatAnalysis: JSON.stringify(photoAnalysisResult.fatDistribution),
+      recommendations: photoAnalysisResult.recommendations.posturalCorrections,
+      correctiveProtocol: "Protocole correctif basé sur l'analyse visuelle...",
+      score: photoAnalysisResult.posture.overallScore * 10 // conversion en base 100
+    } : undefined
+  };
+  
+  return finalReport;
+}
+
+async function generateSection(config: any, context: string, photoContext: string): Promise<NarrativeSection> {
+  // Prompt spécifique pour chaque section
+  const sectionPrompt = `
+    Agis en tant que ${config.expert}.
+    Sujet : ${config.title}
+    Focus : ${config.focus}
+    
+    Analyse ce client :
+    ${context}
+    
+    ${config.id === 'composition-corporelle' ? `IMPORTANT - ANALYSE VISUELLE : ${photoContext}` : ''}
+    
+    Génère un JSON pour cette section (NarrativeSection). Soyez EXTRÊMEMENT DÉTAILLÉ et TECHNIQUE.
+  `;
+  
+  // Appel API (simulé ici par un appel réel à anthropic.messages.create)
+  const msg = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20241022", // Ou opus si besoin de plus de "smart"
+    max_tokens: 4000,
+    temperature: 0.7,
+    system: "Tu es un moteur de génération de rapports d'audit santé ultra-premium. Réponds en JSON pur.",
+    messages: [
+      { role: "user", content: sectionPrompt }
+    ]
+  });
+
+  const content = msg.content[0].type === 'text' ? msg.content[0].text : "";
+  // Extraction du JSON (nettoyage basique)
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]) as NarrativeSection;
+  }
+  
+  throw new Error(`Failed to parse JSON for section ${config.title}`);
+}
+
+function calculateGlobalScore(sections: NarrativeSection[]): number {
+  return Math.round(sections.reduce((acc, s) => acc + s.score, 0) / sections.length);
+}
+
+function extractAllSupplements(sections: NarrativeSection[]): SupplementProtocol[] {
+  return sections.flatMap(s => s.supplements || []);
+}

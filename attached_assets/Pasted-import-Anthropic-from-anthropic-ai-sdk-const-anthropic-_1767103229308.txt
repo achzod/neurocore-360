@@ -1,0 +1,167 @@
+import Anthropic from "@anthropic-ai/sdk";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+});
+
+export interface PhotoAnalysisResult {
+  fatDistribution: {
+    visceral: "faible" | "modere" | "eleve" | "tres-eleve";
+    subcutaneous: "faible" | "modere" | "eleve" | "tres-eleve";
+    zones: string[];
+    estimatedBF: string;
+    waistToHipRatio: string;
+  };
+  posture: {
+    headPosition: string;
+    shoulderAlignment: string;
+    spineAlignment: string;
+    pelvicTilt: string;
+    kneesAlignment: string;
+    overallScore: number;
+    issues: string[];
+  };
+  muscularBalance: {
+    upperBody: string;
+    lowerBody: string;
+    leftRightSymmetry: string;
+    anteriorPosterior: string;
+    weakAreas: string[];
+    strongAreas: string[];
+  };
+  medicalObservations: {
+    skinCondition: string[];
+    edemaPresence: string;
+    vascularSigns: string[];
+    potentialConcerns: string[];
+  };
+  recommendations: {
+    posturalCorrections: string[];
+    muscleGroupsToTarget: string[];
+    mobilityWork: string[];
+    medicalFollowUp: string[];
+  };
+  summary: string;
+  confidenceLevel: number;
+}
+
+export const PHOTO_ANALYSIS_PROMPT = `Tu es un Expert Kinésithérapeute, Coach Élite et Spécialiste en Analyse Morpho-Anatomique.
+Ta mission est d'effectuer une analyse visuelle STRICTE et APPROFONDIE des photos fournies.
+
+RÈGLE D'OR : TU DOIS TE BASER UNIQUEMENT SUR CE QUE TU VOIS SUR LES PHOTOS. N'INVENTE RIEN. NE SUPPOSE RIEN BASÉ SUR DES STATISTIQUES GÉNÉRALES. SI TU NE VOIS PAS, DIS QUE C'EST NON VISIBLE.
+
+Analyse chaque détail :
+1. Distribution des graisses : Regarde précisément où le gras est stocké (ventre, hanches, cuisses, bras). Estime le BF% VISUELLEMENT.
+2. Posture : Trace des lignes imaginaires. La tête est-elle en avant ? Les épaules enroulées ? Le bassin basculé ? Valgus/Varus aux genoux ?
+3. Équilibre musculaire : Compare gauche/droite et haut/bas. Identifie les muscles sous-développés ou dominants.
+4. Signes médicaux visibles : Varices, œdèmes, qualité de peau, cicatrices, vergetures (indiquant une prise/perte rapide).
+
+Ton analyse doit être CRITIQUE et SANS FILTRE. Le but est d'identifier les vrais problèmes pour corriger le physique.
+
+Reponds UNIQUEMENT avec ce JSON (pas de texte avant/après, pas de markdown) :
+{
+  "fatDistribution": {
+    "visceral": "faible|modere|eleve|tres-eleve",
+    "subcutaneous": "faible|modere|eleve|tres-eleve",
+    "zones": ["liste précise des zones de stockage visibles"],
+    "estimatedBF": "XX-YY%",
+    "waistToHipRatio": "estimation visuelle (ex: >0.9 ou <0.8)"
+  },
+  "posture": {
+    "headPosition": "description précise (ex: protraction marquée)",
+    "shoulderAlignment": "description précise (ex: épaule droite plus basse)",
+    "spineAlignment": "description précise (ex: hyperlordose lombaire visible)",
+    "pelvicTilt": "description précise (ex: antéversion)",
+    "kneesAlignment": "description précise (ex: valgus léger à gauche)",
+    "overallScore": 1-10,
+    "issues": ["liste des déséquilibres posturaux majeurs"]
+  },
+  "muscularBalance": {
+    "upperBody": "description développement",
+    "lowerBody": "description développement",
+    "leftRightSymmetry": "analyse symétrie",
+    "anteriorPosterior": "analyse chaîne ant/post",
+    "weakAreas": ["muscles en retard"],
+    "strongAreas": ["points forts"]
+  },
+  "medicalObservations": {
+    "skinCondition": ["observations"],
+    "edemaPresence": "oui/non et localisation",
+    "vascularSigns": ["varicosités, veines apparentes..."],
+    "potentialConcerns": ["points de vigilance santé visibles"]
+  },
+  "recommendations": {
+    "posturalCorrections": ["exercices correctifs spécifiques"],
+    "muscleGroupsToTarget": ["priorités hypertrophie/renforcement"],
+    "mobilityWork": ["zones à assouplir"],
+    "medicalFollowUp": ["si nécessaire"]
+  },
+  "summary": "Synthèse globale de l'analyse physique (max 3 phrases)",
+  "confidenceLevel": 1-10
+}`;
+
+export async function analyzeBodyPhotosWithAI(photoUrls: string[]): Promise<PhotoAnalysisResult> {
+  console.log(`Début analyse photo AI pour ${photoUrls.length} images...`);
+  
+  if (!photoUrls || photoUrls.length === 0) {
+    throw new Error("Aucune photo fournie pour l'analyse.");
+  }
+
+  const content: any[] = [{ type: "text", text: PHOTO_ANALYSIS_PROMPT }];
+
+  for (const url of photoUrls) {
+    try {
+        console.log(`Téléchargement image: ${url.substring(0, 50)}...`);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64 = buffer.toString('base64');
+        const mediaType = response.headers.get('content-type') || "image/jpeg";
+
+        // Validation basique du type mime
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const finalMediaType = validTypes.includes(mediaType) ? mediaType : 'image/jpeg';
+
+        content.push({
+            type: "image",
+            source: {
+                type: "base64",
+                media_type: finalMediaType,
+                data: base64
+            }
+        });
+    } catch (e) {
+        console.error(`Erreur lors du traitement de l'image ${url}:`, e);
+        // On continue avec les autres images si une échoue
+    }
+  }
+
+  if (content.length === 1) { // Seulement le prompt texte
+    throw new Error("Impossible de charger les images pour l'analyse.");
+  }
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: "claude-3-opus-20240229", // Opus est le meilleur pour la vision complexe
+      max_tokens: 2000,
+      messages: [{ role: "user", content: content }]
+    });
+
+    const responseText = msg.content[0].type === 'text' ? msg.content[0].text : "";
+    console.log("Réponse brute analyse photo:", responseText.substring(0, 200) + "...");
+
+    // Nettoyage JSON
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Pas de JSON valide trouvé dans la réponse");
+    }
+
+    return JSON.parse(jsonMatch[0]) as PhotoAnalysisResult;
+  } catch (error) {
+    console.error("Erreur API Anthropic (Vision):", error);
+    throw error;
+  }
+}

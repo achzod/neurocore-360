@@ -1,0 +1,37 @@
+{
+  "user_profile": {
+    "sex": "male",
+    "age": 32,
+    "bodyweight_kg": 90,
+    "lean_mass_kg": 75,
+    "goals": [
+      "cardio",
+      "joints",
+      "sleep",
+      "cognition",
+      "lower_cortisol",
+      "raise_testosterone"
+    ],
+    "constraints": {
+      "preferred_shop": "iHerb",
+      "diet": "omnivore"
+    },
+    "meds": [],
+    "conditions": [],
+    "labs": {
+      "lipids": {
+        "triglycerides_mg_dl": 220,
+        "ldl_mg_dl": 135,
+        "hdl_mg_dl": 42
+      },
+      "hormones": {
+        "total_test_ng_dl": 420,
+        "free_test": "unknown",
+        "estradiol_pg_ml": "unknown"
+      },
+      "inflammation": {
+        "hs_crp_mg_l": "unknown"
+      }
+    }
+  }
+}

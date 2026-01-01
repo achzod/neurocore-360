@@ -1,0 +1,43 @@
+Voici le rapport de correction (exhaustif, priorisé) après lecture du rapport gratuit :
+Bloqueurs principaux
+1) Photos non prises / non consommées
+La section “Analyse visuelle” sort des chiffres (BF 18-22%, posture) alors qu’aucune photo n’a été analysée (free plan).
+Action : si photoUrls est vide, forcer photoAnalysis = null et afficher “Données visuelles non disponibles (photos manquantes)”. Interdire toute estimation BF/ratio/posture/morpho dans ce cas.
+Mapping : pour la premium, s’assurer que photo-front, photo-side, photo-back sont mappés en tableau photoUrls avant l’appel.
+2) Mensurations déclaratives encore utilisées
+Le texte cite BF, distribution androïde, posture sans photos.
+Action prétraitement : conserver taille/poids, filtrer le reste :
+["masse-grasse","objectif-poids","evolution-poids","morphologie","zones-stockage","retention-eau","cellulite","tour_de_taille","tour_de_hanche","imc","ratio_taille_hanches"]
+Utiliser uniquement l’objet filtré pour le prompt.
+3) Hallucinations et ton robot/alarmiste
+Trop de chiffres inventés (CRP, GH -60%, glycémie 95-105, BF %).
+Actions prompt :
+Température 0.1–0.2, max_tokens plus bas.
+Clauses dures :
+“INTERDIT : ne pas utiliser ni mentionner les mensurations déclaratives (tours, %BF déclaré, ratios, morphotype auto-déclaré).”
+“Sections Composition Corporelle et Biomécanique & Mobilité : BASE UNIQUEMENT sur photoAnalysis.. Si pas de photo : écrire « Données visuelles non disponibles » et ne rien inventer.”
+“N’annonce aucun biomarqueur chiffré non mesuré (CRP, IL-6, cortisol, glycémie…). Parle en qualitatif ou propose un bilan.”
+“Longueur max par section : 150–200 mots + 5–7 puces actionnables.”
+4) Dashboard incohérent (et UI rapport)
+Domaines analysés 15 mais compteur 14 ailleurs ; points forts/a améliorer incohérents.
+Action : unifier la source de vérité des 15 domaines et les seuils (ex. Excellent ≥80, Bon 60–79, Moyen <60).
+Si pas de photo : badge “Visuel non disponible” sur Composition/Biomécanique et score masqué ou grisé.
+Corriger wording/accents (“Basé sur…”, “Voir le rapport détaillé”, “Profil équilibré”, “Métabolisme”, “Biomarqueurs”).
+Supprimer les bandeaux “temporary dev preview” en prod.
+5) Sections “Analyse en cours” vides
+Beaucoup de sections affichent “Analyse en cours” avec un score déjà calculé.
+Action : si le rapport est généré, injecter le texte ; sinon masquer la section ou afficher un message d’attente cohérent. Pas de placeholder robot.
+6) Recommandations trop longues et redondantes
+30 bullets, répétitions cortisol/sommeil.
+Action : limiter à 5–7 bullets par section, focus actions concrètes, pas de chiffres inventés.
+7) Plan gratuit vs premium
+En gratuit : pas de photos, pas de mesures fines → afficher clairement que c’est un aperçu, sections avancées verrouillées/teasées.
+En premium : photos obligatoires, composition/biomécanique issues de photoAnalysis.
+En élite : afficher historique et progression (non pertinent ici mais à garder en tête).
+Implémentation rapide (résumé)
+Prétraitement : filtre BLOCKED_KEYS ci-dessus, garde taille/poids.
+Mapping photos : [photo-front, photo-side, photo-back].filter(Boolean) → analyzeBodyPhotosWithAI; si vide → photoAnalysis=null.
+Prompt : clauses “INTERDIT”, “photos only”, “pas de biomarqueurs chiffrés”, longueur limitée. Température 0.1–0.2.
+UI : si photoAnalysis absent → “Données visuelles non disponibles (photos manquantes)”, pas de BF/ratio/posture affichés. Scores et compteurs alignés sur 15 domaines et seuils uniques.
+Nettoyage texte : ton clinique, concis, pas d’alertes catastrophistes ni de % inventés.
+Applique ces points et relance un rapport gratuit : tu ne devrais plus voir de BF/ratio/posture inventés ni de biomarqueurs halluciné, et le dashboard sera cohérent.

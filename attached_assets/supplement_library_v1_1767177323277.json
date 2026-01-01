@@ -1,0 +1,2835 @@
+{
+  "version": "1.0.0",
+  "updated_utc": "2025-12-31T07:30:18Z",
+  "global_buying_rules": [
+    "Prefer third-party tested (USP/NSF/Informed Choice) OR a batch COA showing heavy metals + microbiology.",
+    "Avoid proprietary blends. Demand exact dose per serving in mg/g/IU/FU/mcg.",
+    "Match clinically relevant forms: Mg glycinate/bisglycinate; K2 as MK-7; omega-3 by EPA+DHA grams; nattokinase by FU; UC-II 40 mg; shilajit purified with metals testing.",
+    "Botanicals must be standardized to actives (withanolides/eurycomanone/fulvic acids/crocins/bacosides). If not, default to 'skip'.",
+    "High-variance categories require extra quality policing: melatonin (esp gummies), shilajit, enzymes, exotic 'test boosters'."
+  ],
+  "hard_safety_gates": {
+    "bleeding_risk_or_blood_thinners_or_surgery": {
+      "block_ingredient_ids": [
+        "nattokinase",
+        "lumbrokinase",
+        "serrapeptase",
+        "vitamin_e_highdose",
+        "omega3_highdose",
+        "ginkgo",
+        "garlic_aged_extract_highdose",
+        "curcumin_bioavailable_highdose"
+      ],
+      "reason": "May increase bleeding risk or affect clotting pathways; requires clinician supervision."
+    },
+    "serotonergic_meds": {
+      "block_ingredient_ids": [
+        "5htp",
+        "l_tryptophan",
+        "st_johns_wort",
+        "dlpa_high",
+        "mucuna_pruriens_high"
+      ],
+      "reason": "Risk of serotonin toxicity or excessive monoamine activity with medication combinations."
+    },
+    "pregnancy_breastfeeding": {
+      "block_ingredient_ids": [
+        "tongkat_ali",
+        "shilajit_purified",
+        "cistanche",
+        "mucuna_pruriens",
+        "huperzine_a",
+        "nattokinase",
+        "lumbrokinase",
+        "serrapeptase"
+      ],
+      "reason": "Insufficient safety; avoid hormone-modulating / potent neuroactive / fibrinolytic agents."
+    },
+    "kidney_disease": {
+      "caution_ingredient_ids": [
+        "magnesium_bisglycinate",
+        "potassium_citrate",
+        "lithium_orotate_microdose"
+      ],
+      "reason": "Electrolyte handling and renal clearance concerns; medical review advised."
+    }
+  },
+  "domains": {
+    "cardiovascular": {
+      "ingredients": [
+        {
+          "ingredient_id": "omega3_epa_dha",
+          "domains": [
+            "cardiovascular",
+            "mood_depression",
+            "cognition"
+          ],
+          "forms": [
+            "fish oil triglyceride form",
+            "fish oil ethyl ester",
+            "krill phospholipid (lower EPA+DHA per gram)"
+          ],
+          "active_markers": [
+            "EPA_g",
+            "DHA_g",
+            "third_party_test"
+          ],
+          "dose_range": [
+            {
+              "min": 0.5,
+              "max": 2.0,
+              "unit": "g",
+              "note": "general support (EPA+DHA)"
+            },
+            {
+              "min": 2.0,
+              "max": 4.0,
+              "unit": "g",
+              "note": "TG-lowering territory; prefer prescription-grade when hyperTG"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Membrane lipid remodeling + pro-resolving mediators; dose-dependent triglyceride reduction by lowering hepatic VLDL output.",
+          "evidence_grade": "A",
+          "label_check": [
+            "Must list grams of EPA+DHA (not 'fish oil 1000 mg').",
+            "Prefer IFOS/COA with oxidation metrics if available."
+          ],
+          "risks": [
+            "Fishy reflux/GI; bleeding risk rises with higher doses esp with anticoagulants."
+          ],
+          "interactions": [
+            "Anticoagulants/antiplatelets: caution; surgery: stop per clinician."
+          ],
+          "refs": [
+            "AHA Science Advisory (2019); NIH ODS Omega-3 Fact Sheet"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "citrus_bergamot",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "bergamot polyphenolic fraction (BPF) standardized extract"
+          ],
+          "active_markers": [
+            "polyphenols_mg",
+            "standardization"
+          ],
+          "dose_range": [
+            {
+              "min": 150,
+              "max": 1000,
+              "unit": "mg",
+              "note": "standardization-dependent; verify actives"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Polyphenols may modulate lipid metabolism and oxidative stress; effect is product-quality sensitive.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Require standardized polyphenols/flavonoids; avoid vague 'bergamot powder 1000 mg'."
+          ],
+          "risks": [
+            "GI in some; variable quality across brands."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "plant_sterols_stanols",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "sterol esters",
+            "stanol esters"
+          ],
+          "active_markers": [
+            "g_per_day"
+          ],
+          "dose_range": [
+            {
+              "min": 1.5,
+              "max": 3.0,
+              "unit": "g",
+              "note": "LDL-lowering via reduced absorption"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Compete with intestinal cholesterol absorption → LDL reduction (best with meals).",
+          "evidence_grade": "A",
+          "label_check": [
+            "Dose must be in grams per day; avoid fairy-dust blends."
+          ],
+          "risks": [
+            "May slightly reduce carotenoid absorption—pair with colorful veg."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "fiber_psyllium",
+          "domains": [
+            "cardiovascular",
+            "lower_estrogen",
+            "mood_depression"
+          ],
+          "forms": [
+            "psyllium husk powder"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 5,
+              "max": 15,
+              "unit": "g",
+              "note": "start low to avoid bloating"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Viscous fiber reduces bile acid reabsorption → LDL support; improves glycemic excursions; supports regularity (estrogen clearance angle).",
+          "evidence_grade": "A",
+          "label_check": [
+            "Look for pure husk powder; drink water; separate from meds by 2+ hours."
+          ],
+          "risks": [
+            "Bloating if ramped too fast."
+          ],
+          "interactions": [
+            "May reduce absorption of meds/supps—separate timing."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "nattokinase",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "standardized nattokinase (prefer enteric protection)"
+          ],
+          "active_markers": [
+            "FU"
+          ],
+          "dose_range": [
+            {
+              "min": 2000,
+              "max": 4000,
+              "unit": "FU",
+              "note": "common studied range; higher = more bleeding risk"
+            }
+          ],
+          "timing": [
+            "away_from_food",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Fibrinolytic enzyme activity; supports thrombus breakdown pathways; evidence mixed but plausible.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Dose must be FU; prefer reputable standardization; avoid if on blood thinners unless clinician ok."
+          ],
+          "risks": [
+            "Bleeding risk; stop pre-surgery."
+          ],
+          "interactions": [
+            "Warfarin/DOACs/antiplatelets: avoid unless supervised."
+          ],
+          "refs": [
+            "Recent reviews/RCT summaries on nattokinase; unit FU is critical"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "lumbrokinase",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "lumbrokinase (earthworm-derived fibrinolytic enzyme)"
+          ],
+          "active_markers": [
+            "activity_units",
+            "standardization"
+          ],
+          "dose_range": [
+            {
+              "min": 0,
+              "max": 0,
+              "unit": "mg",
+              "note": "Doses vary by product activity units; engine requires product-specific units"
+            }
+          ],
+          "timing": [
+            "away_from_food",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Fibrinolytic enzyme; evidence mostly small trials, often adjunctive; heterogeneity is high.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Require activity units and clinical standardization; avoid sketchy sourcing."
+          ],
+          "risks": [
+            "Bleeding risk possible; allergy risk (biologic)."
+          ],
+          "interactions": [
+            "Anticoagulants/antiplatelets: avoid unless supervised."
+          ],
+          "refs": [
+            "Systematic review (2025) notes heterogeneity and limits"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "coq10_ubiquinol",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "ubiquinol (reduced)",
+            "ubiquinone"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 200,
+              "unit": "mg",
+              "note": "with fat meal for absorption"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Mitochondrial electron transport + antioxidant support; often used in statin-associated symptoms context.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer ubiquinol if older/absorption issues; oil softgel improves absorption."
+          ],
+          "risks": [],
+          "interactions": [
+            "Warfarin: possible interaction (monitor)."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "vitamin_e_highdose",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "alpha-tocopherol (varies)"
+          ],
+          "active_markers": [
+            "IU",
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 0,
+              "max": 0,
+              "unit": "IU",
+              "note": "Engine default: avoid high-dose vitamin E for CV due to hemorrhagic stroke signal"
+            }
+          ],
+          "timing": [],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "High-dose vitamin E shows differential stroke subtype effects; hemorrhagic stroke risk increased in meta-analysis.",
+          "evidence_grade": "A",
+          "label_check": [
+            "Engine default: avoid megadoses unless specific indication + clinician oversight."
+          ],
+          "risks": [
+            "Bleeding/hemorrhagic stroke risk signal at supplementation doses."
+          ],
+          "interactions": [],
+          "refs": [
+            "Schürks et al. 2010 meta-analysis"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "niacin_highdose_avoid",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "nicotinic acid / ER niacin"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 0,
+              "max": 0,
+              "unit": "mg",
+              "note": "Engine default: avoid for outcomes; trial showed no CV benefit + more adverse events"
+            }
+          ],
+          "timing": [],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Outcome trials (e.g., HPS2-THRIVE) show no major vascular benefit when added to statins and increased serious adverse events.",
+          "evidence_grade": "A",
+          "label_check": [
+            "If used, must be clinician-directed with liver/glucose monitoring; otherwise avoid."
+          ],
+          "risks": [
+            "Flushing, liver risk, glucose dysregulation, bleeding/infection signals in large trial."
+          ],
+          "interactions": [],
+          "refs": [
+            "HPS2-THRIVE NEJM 2014; Oxford CTSU summary"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "serrapeptase",
+          "domains": [
+            "cardiovascular",
+            "articulaire"
+          ],
+          "forms": [
+            "serratiopeptidase (enteric-coated preferred)"
+          ],
+          "active_markers": [
+            "activity_units_or_mg",
+            "enteric_coating"
+          ],
+          "dose_range": [
+            {
+              "min": 0,
+              "max": 0,
+              "unit": "mg",
+              "note": "Units vary; evidence inconsistent; engine treats as advanced with caution"
+            }
+          ],
+          "timing": [
+            "away_from_food"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Proteolytic enzyme marketed for inflammation; enteric protection improves gastric stability; clinical evidence is inconsistent and long-term safety unclear.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Prefer enteric-coated products; demand activity units and reputable manufacturing; avoid if bleeding risk."
+          ],
+          "risks": [
+            "Bleeding risk possible; GI upset."
+          ],
+          "interactions": [
+            "Anticoagulants/antiplatelets: avoid unless supervised."
+          ],
+          "refs": [
+            "Enteric stability studies; reviews noting limited evidence"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "garlic_aged_extract_highdose",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "aged garlic extract (odorless)"
+          ],
+          "active_markers": [
+            "allicin_potential_or_SAC"
+          ],
+          "dose_range": [
+            {
+              "min": 600,
+              "max": 2400,
+              "unit": "mg",
+              "note": "extract-specific; commonly 1.2–2.4 g/day split"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Supports endothelial function and modest BP/lipid effects; also antiplatelet tendency at higher doses.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer aged garlic extract with S-allyl cysteine (SAC) standardization; avoid 'garlic powder'."
+          ],
+          "risks": [
+            "Bleeding tendency in some; GI."
+          ],
+          "interactions": [
+            "Blood thinners/surgery: caution/avoid."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "beetroot_nitrates",
+          "domains": [
+            "cardiovascular",
+            "cognition"
+          ],
+          "forms": [
+            "beetroot juice powder standardized for nitrates"
+          ],
+          "active_markers": [
+            "nitrates_mg"
+          ],
+          "dose_range": [
+            {
+              "min": 300,
+              "max": 800,
+              "unit": "mg",
+              "note": "as nitrate; acute or chronic"
+            }
+          ],
+          "timing": [
+            "preworkout_optional",
+            "morning"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Raises NO availability → vasodilation and performance; may support BP in some responders.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Must declare nitrate content; raw beet powders often underpowered."
+          ],
+          "risks": [
+            "GI; red urine/stool (benign)."
+          ],
+          "interactions": [
+            "PDE5 inhibitors + nitrates: medical caution."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "taurine",
+          "domains": [
+            "cardiovascular",
+            "sleep",
+            "cognition"
+          ],
+          "forms": [
+            "taurine"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 1,
+              "max": 3,
+              "unit": "g",
+              "note": "split; can be calming"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "evening_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Osmoregulation, calcium handling, and GABA/glycine tone; may support BP and relaxation.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Pure powder/caps; avoid energy drink confounds."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "tmg_betaine",
+          "domains": [
+            "cardiovascular",
+            "cognition"
+          ],
+          "forms": [
+            "trimethylglycine (betaine anhydrous)"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 1.0,
+              "max": 3.0,
+              "unit": "g",
+              "note": "split; methylation/homocysteine angle"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Methyl donor supporting homocysteine remethylation; osmolyte; can support training performance in some.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Dose in grams; many products underdose."
+          ],
+          "risks": [
+            "Fishy body odor in rare high responders."
+          ],
+          "interactions": [
+            "If using multiple methyl donors (high folate/B12/SAMe), start low."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "citrulline",
+          "domains": [
+            "cardiovascular",
+            "cognition"
+          ],
+          "forms": [
+            "L-citrulline",
+            "citrulline malate (declare ratio)"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 3,
+              "max": 6,
+              "unit": "g",
+              "note": "NO support; split if GI"
+            }
+          ],
+          "timing": [
+            "preworkout_optional",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Arginine precursor → NO pathway support; perf and vascular tone support.",
+          "evidence_grade": "B",
+          "label_check": [
+            "If citrulline malate, must state ratio (2:1 etc)."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "berberine",
+          "domains": [
+            "cardiovascular"
+          ],
+          "forms": [
+            "berberine HCl"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 500,
+              "max": 1500,
+              "unit": "mg",
+              "note": "split with meals; GI-limited"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "AMPK signaling; glycemic and lipid improvements in some trials; interacts with drug metabolism.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Dose must be real; avoid underdosed blends."
+          ],
+          "risks": [
+            "GI; constipation/diarrhea."
+          ],
+          "interactions": [
+            "Interacts with many meds (CYP/P-gp); pregnancy: avoid."
+          ],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "articulaire": {
+      "ingredients": [
+        {
+          "ingredient_id": "glucosamine_sulfate",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "glucosamine sulfate (preferred)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 1500,
+              "max": 1500,
+              "unit": "mg",
+              "note": "daily; split if GI"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Cartilage matrix support; symptomatic benefit in some OA subgroups; response varies.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer sulfate form; avoid underdosed blends."
+          ],
+          "risks": [],
+          "interactions": [
+            "Warfarin/coumarins: INR interaction reports—avoid unless supervised."
+          ],
+          "refs": [
+            "Meta-analyses and interaction reports; INR case reports"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "chondroitin_sulfate",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "chondroitin sulfate"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 800,
+              "max": 1200,
+              "unit": "mg",
+              "note": "daily"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Supports cartilage hydration and anti-catabolic signaling; mixed evidence but can help OA symptoms.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Ensure true chondroitin mg; not 'joint complex' fluff."
+          ],
+          "risks": [],
+          "interactions": [
+            "Warfarin/coumarins: caution."
+          ],
+          "refs": [
+            "Knee OA trial/meta-analyses; warfarin interaction signals"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "hyaluronic_acid_oral",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "sodium hyaluronate (oral) low-MW or specified MW"
+          ],
+          "active_markers": [
+            "mg",
+            "molecular_weight"
+          ],
+          "dose_range": [
+            {
+              "min": 60,
+              "max": 240,
+              "unit": "mg",
+              "note": "evidence varies by MW; product quality matters"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "May support joint comfort and function; oral evidence growing but still variable; MW may matter.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Prefer brands stating MW + dose clearly; avoid tiny-dosed cosmetics-style products."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [
+            "Oral HA review 2024"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "collagen_peptides",
+          "domains": [
+            "articulaire",
+            "sleep"
+          ],
+          "forms": [
+            "hydrolyzed collagen peptides type I/III",
+            "specific collagen peptides (SCP)"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 10,
+              "max": 20,
+              "unit": "g",
+              "note": "daily; or 10–15 g pre-loading with vitamin C before tendon loading"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "preworkout_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Provides glycine/proline/hydroxyproline building blocks; can reduce joint pain and support connective tissue remodeling with training stimulus.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Look for grams per serving; many products underdose massively."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [
+            "RCTs and recent meta-analyses in knee OA"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "ucii_type2",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "undenatured type II collagen (UC-II)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 40,
+              "max": 40,
+              "unit": "mg",
+              "note": "fixed-dose immune-tolerance mechanism"
+            }
+          ],
+          "timing": [
+            "anytime"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Immune tolerance signaling (different mechanism than peptides).",
+          "evidence_grade": "B",
+          "label_check": [
+            "Must explicitly say 'undenatured type II' and 40 mg."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "msm",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "methylsulfonylmethane"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 1.5,
+              "max": 6.0,
+              "unit": "g",
+              "note": "split to reduce GI"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Sulfur donor; may reduce pain/stiffness and oxidative stress in some OA data.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Pure MSM is fine; dose is in grams not milligrams."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "curcumin_bioavailable",
+          "domains": [
+            "articulaire",
+            "cardiovascular"
+          ],
+          "forms": [
+            "curcumin phytosome",
+            "micellar curcumin",
+            "curcumin+piperine (interaction-prone)"
+          ],
+          "active_markers": [
+            "curcuminoids_mg"
+          ],
+          "dose_range": [
+            {
+              "min": 250,
+              "max": 1000,
+              "unit": "mg",
+              "note": "bioavailability system matters"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "NF-κB / inflammatory pathway modulation; can improve pain/function in OA contexts.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer delivery systems; avoid raw powder unless huge dose."
+          ],
+          "risks": [],
+          "interactions": [
+            "Anticoagulants/antiplatelets: caution; possible bleeding risk."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "boswellia_akba",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "Boswellia serrata standardized"
+          ],
+          "active_markers": [
+            "AKBA_percent_or_mg"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 300,
+              "unit": "mg",
+              "note": "depends on standardization"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "5-LOX pathway modulation; anti-inflammatory support for joint comfort.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Require AKBA or equivalent standardization."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "hmb",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "HMB free acid",
+            "HMB calcium salt"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 1.5,
+              "max": 3.0,
+              "unit": "g",
+              "note": "muscle protection/recovery; joint indirectly via tissue tolerance"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "May reduce muscle damage and improve recovery in some; indirect joint load tolerance benefit via better tissue resilience.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Look for 3 g/day total; avoid tiny blends."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "bromelain",
+          "domains": [
+            "articulaire"
+          ],
+          "forms": [
+            "bromelain (pineapple enzyme)"
+          ],
+          "active_markers": [
+            "GDU_or_MCU"
+          ],
+          "dose_range": [
+            {
+              "min": 200,
+              "max": 800,
+              "unit": "mg",
+              "note": "units matter more than mg"
+            }
+          ],
+          "timing": [
+            "away_from_food"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Proteolytic enzyme; anti-inflammatory and edema modulation in some contexts.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Prefer enzyme activity units (GDU/MCU)."
+          ],
+          "risks": [
+            "Bleeding risk mild; allergy."
+          ],
+          "interactions": [
+            "Blood thinners: caution."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "sam_e",
+          "domains": [
+            "articulaire",
+            "mood_depression"
+          ],
+          "forms": [
+            "S-adenosyl-L-methionine"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 400,
+              "max": 1600,
+              "unit": "mg",
+              "note": "start low; often split"
+            }
+          ],
+          "timing": [
+            "morning",
+            "with_meal_optional",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Methyl donor; can improve mood and OA pain in some trials; can be activating.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Stabilized SAMe form; enteric-coated often used."
+          ],
+          "risks": [
+            "Anxiety/insomnia at higher doses."
+          ],
+          "interactions": [
+            "SSRIs/MAOIs: caution; bipolar: avoid without clinician."
+          ],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "lower_estrogen": {
+      "ingredients": [
+        {
+          "ingredient_id": "dim",
+          "domains": [
+            "lower_estrogen"
+          ],
+          "forms": [
+            "DIM"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 300,
+              "unit": "mg",
+              "note": "aim: metabolism shift more than hard suppression"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Shifts estrogen metabolite pathways (2-OH vs 16-OH). Not a pharmaceutical aromatase inhibitor.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Avoid tiny 25 mg products; look for meaningful dose + clean excipients."
+          ],
+          "risks": [
+            "If E2 drops too far: libido/mood/joints may worsen."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "calcium_d_glucarate",
+          "domains": [
+            "lower_estrogen",
+            "cardiovascular"
+          ],
+          "forms": [
+            "calcium D-glucarate"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 500,
+              "max": 2000,
+              "unit": "mg",
+              "note": "split"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Supports glucuronidation and clearance pathways (evidence limited but plausible).",
+          "evidence_grade": "C",
+          "label_check": [
+            "Dose must be real; many caps are small."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "boron",
+          "domains": [
+            "lower_estrogen",
+            "raise_testosterone"
+          ],
+          "forms": [
+            "boron glycinate",
+            "boron citrate"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 3,
+              "max": 10,
+              "unit": "mg",
+              "note": "conservative; consider cycling"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 2,
+            "off_weeks": 2,
+            "notes": "Use short blocks if goal is E2/free T modulation; reassess."
+          },
+          "mechanism": "May influence SHBG/free T and inflammatory markers; short human data suggest E2 down and free T up, but extrapolation cautious.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Avoid mega-dose long term by default."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "zinc",
+          "domains": [
+            "lower_estrogen",
+            "raise_testosterone"
+          ],
+          "forms": [
+            "zinc bisglycinate",
+            "zinc picolinate"
+          ],
+          "active_markers": [
+            "mg_elemental"
+          ],
+          "dose_range": [
+            {
+              "min": 10,
+              "max": 30,
+              "unit": "mg",
+              "note": "if chronic >25 mg add copper 1–2 mg unless contraindicated"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Supports androgen signaling and overall endocrine function (especially if deficient).",
+          "evidence_grade": "B",
+          "label_check": [
+            "Must list ELEMENTAL zinc. If zinc ≥25 mg for >4–6 weeks, consider copper."
+          ],
+          "risks": [
+            "Nausea; copper deficiency risk if high-dose long-term."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "i3c",
+          "domains": [
+            "lower_estrogen"
+          ],
+          "forms": [
+            "indole-3-carbinol (I3C)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 200,
+              "max": 400,
+              "unit": "mg",
+              "note": "often used instead of/with DIM"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Precursor that can convert to DIM-like compounds; supports estrogen metabolite shifts.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Avoid random cabbage powders; use standardized."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "lower_cortisol": {
+      "ingredients": [
+        {
+          "ingredient_id": "ashwagandha",
+          "domains": [
+            "lower_cortisol",
+            "sleep",
+            "raise_testosterone"
+          ],
+          "forms": [
+            "KSM-66",
+            "Sensoril",
+            "standardized extract"
+          ],
+          "active_markers": [
+            "withanolides_percent"
+          ],
+          "dose_range": [
+            {
+              "min": 125,
+              "max": 600,
+              "unit": "mg",
+              "note": "6–8 weeks typical"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "pre_bed_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Adaptogenic signaling; meta-analyses show reduced stress/anxiety and lower cortisol levels in several trials.",
+          "evidence_grade": "A",
+          "label_check": [
+            "Require standardized withanolides; avoid random powders."
+          ],
+          "risks": [
+            "GI; rare liver issues reported; quality matters."
+          ],
+          "interactions": [],
+          "refs": [
+            "NIH ODS Ashwagandha fact sheet; recent meta-analyses"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "phosphatidylserine",
+          "domains": [
+            "lower_cortisol",
+            "cognition",
+            "sleep"
+          ],
+          "forms": [
+            "phosphatidylserine (PS)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 200,
+              "max": 400,
+              "unit": "mg",
+              "note": "often evening; stress-reactive users"
+            }
+          ],
+          "timing": [
+            "evening",
+            "pre_bed_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Stress response modulation; often used for evening cortisol flattening and sleep quality support.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Must be actual PS mg (not 'lecithin complex')."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "l_theanine",
+          "domains": [
+            "lower_cortisol",
+            "sleep",
+            "cognition"
+          ],
+          "forms": [
+            "L-theanine"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 400,
+              "unit": "mg",
+              "note": "as-needed calm focus or pre-bed"
+            }
+          ],
+          "timing": [
+            "as_needed",
+            "pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Promotes relaxed alertness; can reduce stress reactivity and improve sleep quality in some users.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Simple label; avoid blends that hide dosing."
+          ],
+          "risks": [
+            "Too sedating mentally in some at higher doses."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "rhodiola_rosea",
+          "domains": [
+            "lower_cortisol",
+            "cognition",
+            "mood_depression"
+          ],
+          "forms": [
+            "Rhodiola standardized extract"
+          ],
+          "active_markers": [
+            "rosavins_percent",
+            "salidroside_percent"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 400,
+              "unit": "mg",
+              "note": "morning; can be stimulating"
+            }
+          ],
+          "timing": [
+            "morning"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Adaptogen that may improve fatigue and stress tolerance; can feel 'stimmy' if overdosed.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Require rosavins/salidroside standardization."
+          ],
+          "risks": [
+            "Anxiety/insomnia if taken late or too high."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "magnesium_threonate",
+          "domains": [
+            "lower_cortisol",
+            "sleep",
+            "cognition"
+          ],
+          "forms": [
+            "magnesium L-threonate"
+          ],
+          "active_markers": [
+            "elemental_mg"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 200,
+              "unit": "mg",
+              "note": "elemental Mg; more for cognition/sleep feel than laxative forms"
+            }
+          ],
+          "timing": [
+            "evening",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Mg form marketed for CNS penetration; evidence mixed; some prefer for calm focus.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Check ELEMENTAL Mg; many labels hide it."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "raise_testosterone": {
+      "ingredients": [
+        {
+          "ingredient_id": "vitamin_d3",
+          "domains": [
+            "raise_testosterone",
+            "mood_depression",
+            "cardiovascular"
+          ],
+          "forms": [
+            "cholecalciferol"
+          ],
+          "active_markers": [
+            "IU"
+          ],
+          "dose_range": [
+            {
+              "min": 1000,
+              "max": 4000,
+              "unit": "IU",
+              "note": "better guided by 25(OH)D labs"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Steroid-hormone-like signaling; supports endocrine, immune, and mood functions; deficiency correction is high ROI.",
+          "evidence_grade": "A",
+          "label_check": [
+            "Prefer oil-based softgel/drop; avoid mega-dose long-term without labs."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "vitamin_k2_mk7",
+          "domains": [
+            "cardiovascular",
+            "raise_testosterone"
+          ],
+          "forms": [
+            "menaquinone-7 (MK-7)"
+          ],
+          "active_markers": [
+            "mcg"
+          ],
+          "dose_range": [
+            {
+              "min": 90,
+              "max": 200,
+              "unit": "mcg",
+              "note": "pairs with D3 in many protocols"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Supports calcium handling (vascular/bone axis).",
+          "evidence_grade": "B",
+          "label_check": [
+            "Must specify MK-7 micrograms; avoid vague 'K2 complex'."
+          ],
+          "risks": [],
+          "interactions": [
+            "Warfarin: do not use without clinician supervision."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "magnesium_bisglycinate",
+          "domains": [
+            "sleep",
+            "raise_testosterone",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "magnesium bisglycinate/glycinate"
+          ],
+          "active_markers": [
+            "elemental_mg"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 300,
+              "unit": "mg",
+              "note": "elemental; titrate to GI tolerance"
+            }
+          ],
+          "timing": [
+            "evening",
+            "pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Relaxation and neuromuscular support; modest insomnia improvements in RCTs; supports endocrine function if deficient.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Label must state ELEMENTAL magnesium mg."
+          ],
+          "risks": [
+            "Loose stool if too high; kidney disease caution."
+          ],
+          "interactions": [],
+          "refs": [
+            "RCT with 250 mg elemental magnesium for insomnia (2025)"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "tongkat_ali",
+          "domains": [
+            "raise_testosterone",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "Eurycoma longifolia standardized extract"
+          ],
+          "active_markers": [
+            "eurycomanone_standardization"
+          ],
+          "dose_range": [
+            {
+              "min": 200,
+              "max": 400,
+              "unit": "mg",
+              "note": "morning; often cycled"
+            }
+          ],
+          "timing": [
+            "morning",
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 8,
+            "off_weeks": 2,
+            "notes": "Cycle to reduce habituation and side effects; avoid late dosing."
+          },
+          "mechanism": "May improve stress hormone profile and support testosterone in some men, especially with stress/high cortisol context.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Non-negotiable: standardized extract (many products are just root powder)."
+          ],
+          "risks": [
+            "Irritability or sleep disruption if overdosed."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "shilajit_purified",
+          "domains": [
+            "raise_testosterone"
+          ],
+          "forms": [
+            "purified shilajit"
+          ],
+          "active_markers": [
+            "fulvic_acid_percent",
+            "heavy_metals_COA"
+          ],
+          "dose_range": [
+            {
+              "min": 250,
+              "max": 500,
+              "unit": "mg",
+              "note": "often split; RCT used 250 mg twice daily"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "May increase total and free testosterone and DHEAS in some human trials; quality is everything due to contamination risk.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Require COA for heavy metals + fulvic acid standardization."
+          ],
+          "risks": [
+            "Heavy metals if low-quality; avoid without testing."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "cistanche",
+          "domains": [
+            "raise_testosterone"
+          ],
+          "forms": [
+            "Cistanche standardized extract"
+          ],
+          "active_markers": [
+            "echinacoside_percent",
+            "acteoside_percent"
+          ],
+          "dose_range": [
+            {
+              "min": 300,
+              "max": 1000,
+              "unit": "mg",
+              "note": "advanced add-on; limited human data"
+            }
+          ],
+          "timing": [
+            "morning"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Traditionally used for energy/libido; limited human data; treat as advanced add-on with quality checks.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Require standardized actives; avoid random powder."
+          ],
+          "risks": [
+            "Overstimulation in sensitive users."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "maca_black",
+          "domains": [
+            "raise_testosterone",
+            "mood_depression"
+          ],
+          "forms": [
+            "black maca gelatinized"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 1.5,
+              "max": 3.0,
+              "unit": "g",
+              "note": "libido/energy support more than serum T"
+            }
+          ],
+          "timing": [
+            "morning",
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "More libido/energy and mood support than direct testosterone elevation; can help subjective performance.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer gelatinized maca for digestion; avoid proprietary blends."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "fadogia_agrestis_avoid",
+          "domains": [
+            "raise_testosterone"
+          ],
+          "forms": [
+            "fadogia agrestis"
+          ],
+          "active_markers": [
+            "unknown"
+          ],
+          "dose_range": [
+            {
+              "min": 0,
+              "max": 0,
+              "unit": "mg",
+              "note": "Engine default: avoid (human safety unknown)"
+            }
+          ],
+          "timing": [],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Mostly animal data; human safety and dosing not established.",
+          "evidence_grade": "D",
+          "label_check": [
+            "Default avoid."
+          ],
+          "risks": [
+            "Unknown toxicity and endocrine disruption potential."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "l_carnitine_l_tartrate",
+          "domains": [
+            "raise_testosterone",
+            "articulaire"
+          ],
+          "forms": [
+            "L-carnitine L-tartrate (LCLT)"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 1,
+              "max": 2,
+              "unit": "g",
+              "note": "training days; androgen receptor support claims in some data"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "preworkout_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "May support recovery and androgen receptor content in some contexts; also improves muscle damage markers.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Dose in grams; avoid tiny capsules unless multiple."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "sleep": {
+      "ingredients": [
+        {
+          "ingredient_id": "glycine",
+          "domains": [
+            "sleep",
+            "articulaire"
+          ],
+          "forms": [
+            "glycine powder"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 3,
+              "max": 3,
+              "unit": "g",
+              "note": "pre-bed"
+            }
+          ],
+          "timing": [
+            "pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Promotes sleep quality partly via thermoregulation and inhibitory signaling; human studies use 3 g before bedtime.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Pure powder; easy dosing."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [
+            "Yamadera 2007; Bannai 2012; mechanistic paper 2015"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "melatonin_microdose",
+          "domains": [
+            "sleep"
+          ],
+          "forms": [
+            "melatonin"
+          ],
+          "active_markers": [
+            "mg",
+            "third_party_test"
+          ],
+          "dose_range": [
+            {
+              "min": 0.1,
+              "max": 1.0,
+              "unit": "mg",
+              "note": "micro-dose for circadian support; avoid chronic high-dose"
+            }
+          ],
+          "timing": [
+            "30_90min_pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Circadian phase support and sleep onset; OTC products can be wildly mislabeled; prioritize tested brands and low dose.",
+          "evidence_grade": "A",
+          "label_check": [
+            "Prefer USP/NSF/third-party tested; avoid gummies unless tested; start at 0.1–0.3 mg."
+          ],
+          "risks": [
+            "Grogginess/vivid dreams; tolerance-like effects if abused; label variance risk."
+          ],
+          "interactions": [],
+          "refs": [
+            "Erland & Saxena 2017 content variability; NCCIH melatonin advisory"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "apigenin",
+          "domains": [
+            "sleep",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "apigenin (often from chamomile)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 25,
+              "max": 100,
+              "unit": "mg",
+              "note": "pre-bed; advanced add-on"
+            }
+          ],
+          "timing": [
+            "pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Flavone with GABAergic calming properties (evidence moderate; often anecdotal-driven).",
+          "evidence_grade": "C",
+          "label_check": [
+            "Avoid blends hiding dose."
+          ],
+          "risks": [
+            "Sedation; interactions possible with sedatives."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "lavender_oral",
+          "domains": [
+            "sleep",
+            "mood_depression"
+          ],
+          "forms": [
+            "oral lavender oil (standardized, e.g., Silexan-type)"
+          ],
+          "active_markers": [
+            "mg",
+            "standardization"
+          ],
+          "dose_range": [
+            {
+              "min": 80,
+              "max": 160,
+              "unit": "mg",
+              "note": "evening; anxiety-sleep overlap"
+            }
+          ],
+          "timing": [
+            "evening"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Anxiolytic effect in some trials; can improve sleep via anxiety reduction.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer standardized oral lavender oil products."
+          ],
+          "risks": [
+            "GI/burps in some."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "valerian",
+          "domains": [
+            "sleep"
+          ],
+          "forms": [
+            "valerian root extract"
+          ],
+          "active_markers": [
+            "mg",
+            "valerenic_acids"
+          ],
+          "dose_range": [
+            {
+              "min": 300,
+              "max": 600,
+              "unit": "mg",
+              "note": "30–60 min pre-bed"
+            }
+          ],
+          "timing": [
+            "pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "GABAergic calming; evidence mixed but can help sleep onset in some.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer extracts with valerenic acid info; avoid blends hiding dose."
+          ],
+          "risks": [
+            "Next-day grogginess in some."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "lemon_balm",
+          "domains": [
+            "sleep",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "Melissa officinalis extract"
+          ],
+          "active_markers": [
+            "rosmarinic_acid_percent"
+          ],
+          "dose_range": [
+            {
+              "min": 300,
+              "max": 900,
+              "unit": "mg",
+              "note": "evening"
+            }
+          ],
+          "timing": [
+            "evening",
+            "pre_bed_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Calming herb; anxiety-sleep overlap tool; often pairs with theanine/magnesium.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Require rosmarinic acid standardization when possible."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "cognition": {
+      "ingredients": [
+        {
+          "ingredient_id": "citicoline",
+          "domains": [
+            "cognition"
+          ],
+          "forms": [
+            "CDP-choline"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 250,
+              "max": 500,
+              "unit": "mg",
+              "note": "morning; avoid cholinergic overload"
+            }
+          ],
+          "timing": [
+            "morning"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Cholinergic + phospholipid support; often cleaner than alpha-GPC for some.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Dose must be clear; avoid blends."
+          ],
+          "risks": [
+            "Headache if too cholinergic."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "alpha_gpc",
+          "domains": [
+            "cognition"
+          ],
+          "forms": [
+            "alpha-GPC"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 300,
+              "max": 600,
+              "unit": "mg",
+              "note": "use-case specific; caution with CV risk"
+            }
+          ],
+          "timing": [
+            "morning",
+            "preworkout_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Potent choline donor; performance/cognition benefits for some. Observational data linked alpha‑GPC use to higher incident stroke risk in one cohort; newer data are mixed.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Avoid chronic daily use by default; prefer CDP-choline when possible; caution if CV risk high."
+          ],
+          "risks": [
+            "Headache, cholinergic side effects; potential vascular risk association."
+          ],
+          "interactions": [],
+          "refs": [
+            "JAMA Network Open cohort 2021; later studies mixed"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "huperzine_a",
+          "domains": [
+            "cognition"
+          ],
+          "forms": [
+            "Huperzia serrata extract"
+          ],
+          "active_markers": [
+            "mcg"
+          ],
+          "dose_range": [
+            {
+              "min": 50,
+              "max": 200,
+              "unit": "mcg",
+              "note": "cycle required"
+            }
+          ],
+          "timing": [
+            "morning",
+            "cycle_required"
+          ],
+          "cycle": {
+            "on_weeks": 3,
+            "off_weeks": 2,
+            "notes": "Avoid continuous long-term use; watch vivid dreams/bradycardia."
+          },
+          "mechanism": "Acetylcholinesterase inhibition (strong). Useful for specific cognitive targets but easy to overshoot.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Microgram dosing; must be cycled."
+          ],
+          "risks": [
+            "Nausea, vivid dreams, bradycardia in sensitive users."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "l_tyrosine",
+          "domains": [
+            "cognition",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "L-tyrosine"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 500,
+              "max": 2000,
+              "unit": "mg",
+              "note": "acute stress / sleep deprivation use"
+            }
+          ],
+          "timing": [
+            "morning",
+            "pre_stress_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Catecholamine precursor; best as an acute tool for stress resilience and performance under sleep loss.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer L-tyrosine over NALT unless specific rationale."
+          ],
+          "risks": [
+            "Anxiety/BP up in sensitive users."
+          ],
+          "interactions": [
+            "MAOI meds: avoid."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "dl_phenylalanine",
+          "domains": [
+            "cognition",
+            "mood_depression"
+          ],
+          "forms": [
+            "DL-phenylalanine (DLPA)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 500,
+              "max": 1500,
+              "unit": "mg",
+              "note": "advanced mood/pain modulation tool"
+            }
+          ],
+          "timing": [
+            "morning"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "D-isomer may affect endorphin/enkephalin breakdown; L-isomer is catecholamine precursor. Can boost drive but can overstimulate.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Start low; avoid if anxious or hypertensive."
+          ],
+          "risks": [
+            "Anxiety, insomnia."
+          ],
+          "interactions": [
+            "MAOI meds: avoid; serotonergic stacks: caution."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "mucuna_pruriens",
+          "domains": [
+            "cognition",
+            "mood_depression",
+            "raise_testosterone"
+          ],
+          "forms": [
+            "Mucuna standardized extract"
+          ],
+          "active_markers": [
+            "L_DOPA_mg_or_percent"
+          ],
+          "dose_range": [
+            {
+              "min": 100,
+              "max": 300,
+              "unit": "mg",
+              "note": "as L-DOPA equivalent; cycle; high caution"
+            }
+          ],
+          "timing": [
+            "morning",
+            "cycle_required"
+          ],
+          "cycle": {
+            "on_weeks": 4,
+            "off_weeks": 2,
+            "notes": "Use only for specific targets; monitor mood/impulsivity/sleep."
+          },
+          "mechanism": "Provides L-DOPA → dopamine pathway support; can be powerful, but tolerance and side effects are real.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Require L-DOPA standardization; avoid daily long-term; cycle."
+          ],
+          "risks": [
+            "Nausea, anxiety, dyskinesia-like symptoms in rare sensitive cases; impulsivity."
+          ],
+          "interactions": [
+            "Dopaminergic meds; psychiatric conditions: caution; serotonergic meds: caution."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "alpha_gpc_vs_citicoline_note",
+          "domains": [
+            "cognition"
+          ],
+          "forms": [
+            "N/A"
+          ],
+          "active_markers": [],
+          "dose_range": [
+            {
+              "min": 0,
+              "max": 0,
+              "unit": "mg",
+              "note": "not a supplement; engine logic note"
+            }
+          ],
+          "timing": [],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Engine logic: default to citicoline over alpha-GPC unless explicit reason and low CV risk profile.",
+          "evidence_grade": "A",
+          "label_check": [],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "acetyl_l_carnitine",
+          "domains": [
+            "cognition",
+            "mood_depression"
+          ],
+          "forms": [
+            "acetyl-L-carnitine (ALCAR)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 500,
+              "max": 2000,
+              "unit": "mg",
+              "note": "morning; can be activating"
+            }
+          ],
+          "timing": [
+            "morning",
+            "split_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Mitochondrial + acetyl donor; cognition and fatigue support; some depression data (esp older).",
+          "evidence_grade": "B",
+          "label_check": [
+            "Prefer acetyl form for brain targets."
+          ],
+          "risks": [
+            "Restlessness in sensitive users."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "panax_ginseng",
+          "domains": [
+            "cognition",
+            "raise_testosterone",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "Panax ginseng standardized extract"
+          ],
+          "active_markers": [
+            "ginsenosides_percent"
+          ],
+          "dose_range": [
+            {
+              "min": 200,
+              "max": 400,
+              "unit": "mg",
+              "note": "morning; cycle"
+            }
+          ],
+          "timing": [
+            "morning"
+          ],
+          "cycle": {
+            "on_weeks": 6,
+            "off_weeks": 2,
+            "notes": "Cycle to reduce overstimulation and habituation."
+          },
+          "mechanism": "Adaptogenic and cognitive performance support; can improve fatigue and subjective vitality; quality/standardization crucial.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Require ginsenosides standardization."
+          ],
+          "risks": [
+            "Insomnia if late; BP changes in sensitive."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    },
+    "mood_depression": {
+      "ingredients": [
+        {
+          "ingredient_id": "saffron_extract",
+          "domains": [
+            "mood_depression",
+            "lower_cortisol"
+          ],
+          "forms": [
+            "standardized saffron extract"
+          ],
+          "active_markers": [
+            "crocins_or_safranal_standardization",
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 28,
+              "max": 30,
+              "unit": "mg",
+              "note": "often 30 mg/day; can split"
+            }
+          ],
+          "timing": [
+            "with_meal",
+            "split_optional"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Modulates monoamines and inflammatory/oxidative pathways; meta-analyses show similar symptom reduction to SSRIs in several mild–moderate depression trials.",
+          "evidence_grade": "A",
+          "label_check": [
+            "Must be standardized extract, not culinary powder."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [
+            "2025 meta-analysis saffron vs SSRIs"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "probiotics_targeted",
+          "domains": [
+            "mood_depression",
+            "sleep"
+          ],
+          "forms": [
+            "multi-strain probiotic (strain-listed)"
+          ],
+          "active_markers": [
+            "CFU",
+            "strain_list"
+          ],
+          "dose_range": [
+            {
+              "min": 10,
+              "max": 50,
+              "unit": "billion_CFU",
+              "note": "choose by strain evidence; 8–12 weeks"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Gut–brain axis modulation; meta-analyses suggest modest improvements in depressive symptoms in some groups; strain-specific effects vary.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Must list strains and CFU at end-of-shelf-life; avoid 'probiotic blend' with no details."
+          ],
+          "risks": [
+            "Bloating early; immunocompromised caution."
+          ],
+          "interactions": [],
+          "refs": [
+            "2025/2024 meta-analyses on probiotics and depression"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "5htp",
+          "domains": [
+            "mood_depression",
+            "sleep"
+          ],
+          "forms": [
+            "5-HTP (Griffonia simplicifolia)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 50,
+              "max": 200,
+              "unit": "mg",
+              "note": "pre-bed; do NOT combine with serotonergic meds"
+            }
+          ],
+          "timing": [
+            "pre_bed"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Serotonin precursor; can help sleep/mood in some contexts but interaction risk is the main limiter.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Hard-block if serotonergic meds present; start low; avoid stacking with other serotonin boosters."
+          ],
+          "risks": [
+            "Nausea; serotonin toxicity risk in combinations."
+          ],
+          "interactions": [
+            "SSRI/SNRI/MAOI/triptans/linezolid: avoid."
+          ],
+          "refs": [
+            "NIH/clinical references on serotonin syndrome risk"
+          ],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "lithium_orotate_microdose",
+          "domains": [
+            "mood_depression"
+          ],
+          "forms": [
+            "lithium orotate (microdose)"
+          ],
+          "active_markers": [
+            "elemental_lithium_mg"
+          ],
+          "dose_range": [
+            {
+              "min": 1,
+              "max": 5,
+              "unit": "mg",
+              "note": "elemental lithium; high caution"
+            }
+          ],
+          "timing": [
+            "evening"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Potential neuroprotective signaling; supplement-level evidence limited. Treat as advanced, not casual.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Must specify ELEMENTAL lithium. Avoid if kidney/thyroid issues or on lithium Rx."
+          ],
+          "risks": [
+            "Thyroid/kidney considerations."
+          ],
+          "interactions": [
+            "Diuretics/NSAIDs/lithium Rx: avoid; kidney disease: avoid."
+          ],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "dlpa_high",
+          "domains": [
+            "mood_depression",
+            "cognition"
+          ],
+          "forms": [
+            "DL-phenylalanine (DLPA)"
+          ],
+          "active_markers": [
+            "mg"
+          ],
+          "dose_range": [
+            {
+              "min": 1000,
+              "max": 2000,
+              "unit": "mg",
+              "note": "high-dose category for safety gate logic"
+            }
+          ],
+          "timing": [],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "High-dose catecholamine/endorphin modulation can be too activating; reserved for advanced cases.",
+          "evidence_grade": "C",
+          "label_check": [
+            "Start low; don't jump to high-dose."
+          ],
+          "risks": [],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        },
+        {
+          "ingredient_id": "creatine_monohydrate",
+          "domains": [
+            "mood_depression",
+            "cognition"
+          ],
+          "forms": [
+            "creatine monohydrate"
+          ],
+          "active_markers": [
+            "g"
+          ],
+          "dose_range": [
+            {
+              "min": 3,
+              "max": 5,
+              "unit": "g",
+              "note": "daily; can support brain energy"
+            }
+          ],
+          "timing": [
+            "with_meal"
+          ],
+          "cycle": {
+            "on_weeks": 0,
+            "off_weeks": 0,
+            "notes": ""
+          },
+          "mechanism": "Supports cellular energy buffering; emerging data for mood support (adjunct) and cognition under stress/sleep deprivation.",
+          "evidence_grade": "B",
+          "label_check": [
+            "Monohydrate only; dose in grams."
+          ],
+          "risks": [
+            "Water retention; GI if dumped all at once."
+          ],
+          "interactions": [],
+          "refs": [],
+          "notes": ""
+        }
+      ]
+    }
+  }
+}

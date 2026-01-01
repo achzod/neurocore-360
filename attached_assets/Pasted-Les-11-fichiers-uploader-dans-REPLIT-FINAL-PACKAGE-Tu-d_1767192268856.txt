@@ -1,0 +1,26 @@
+Les 11 fichiers à uploader (dans REPLIT_FINAL_PACKAGE)
+Tu dois remplacer les fichiers existants par ceux présents dans le dossier que j'ai créé. Voici ce qu'ils font :
+Côté Serveur (server/)
+geminiPremiumEngine.ts : Le cerveau de l'IA. Mis à jour pour générer du storytelling profond, supprimer les tirets inutiles et ajouter les graphiques cliniques (émojis/radar).
+geminiConfig.ts : Configuré sur Gemini 2.5 Pro pour une narration humaine.
+photoAnalysisAI.ts : Le moteur de vision qui analyse tes photos de face/dos/profil.
+reportJobManager.ts : Le chef d'orchestre qui lie les photos du questionnaire à l'analyse de l'IA.
+formatDashboard.ts : Nettoie le texte brut pour un affichage propre sur le site.
+exportService.ts : Génère le PDF/HTML de luxe avec les checkmarks vertes.
+routes.ts : Gère les appels API et filtre les doublons de texte.
+cta.ts : Nettoyé pour n'avoir qu'un seul CTA final puissant.
+types.ts : Contient la structure des 18 nouvelles sections.
+Côté Client (client/src/)
+pages/AuditDetail.tsx : La page du dashboard. Mise à jour pour afficher le récit fluide et le "Executive Summary" en pleine largeur.
+components/ReportSection.tsx : Le composant qui transforme le texte de l'IA en paragraphes élégants avec des icônes.
+🤖 Instructions à donner à l'agent Replit
+Copie et colle ce texte à l'agent Replit après avoir uploadé les fichiers :
+> "Je viens d'uploader 11 fichiers mis à jour pour passer à la version V4 Pro de Neurocore.
+>
+> Voici tes instructions :
+> 1. Déploie ces fichiers dans leurs dossiers respectifs (server/ et client/src/).
+> 2. Assure-toi que la dépendance @google/generative-ai est bien installée.
+> 3. Vérifie que le moteur utilise bien gemini-2.5-pro (configuré dans geminiConfig.ts).
+> 4. Le dashboard doit maintenant afficher 18 sections narratives au lieu des anciens blocs.
+> 5. Le bouton de téléchargement HTML doit utiliser la nouvelle fonction de mise en page de luxe dans exportService.ts.
+> 6. Relance le serveur et vérifie qu'il n'y a pas d'erreur au démarrage."

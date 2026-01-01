@@ -1,0 +1,47 @@
+je vois plusieurs problèmes visibles sur le dashboard. Voici un rapport clair et les corrections à appliquer.
+Erreurs et incohérences affichées
+Nombre de domaines : le bandeau dit 15 domaines, mais “Domaines analysés” affiche 14. À harmoniser (15 partout si c’est la vérité).
+Points forts / À améliorer : affichés “12” et “0”, alors que l’historique montre 13 points forts. Vérifier la règle de calcul et la source de données.
+Historique : trois audits le même jour (30 décembre 2025) avec des scores/points forts différents. Probable duplication ou tri/merge incorrect.
+CTA et wording :
+“Voir le rapport detaille” → “Voir le rapport détaillé”
+“Base sur l’analyse de 15 domaines metaboliques” → “Basé sur l’analyse de 15 domaines métaboliques”
+“Profil equilibre” → “Profil équilibré”
+Insights rapides : “OK” + “Profil équilibré” alors que tu soulignes des axes à corriger ailleurs. Le message n’est pas aligné avec les priorités.
+Sections “Priorités d’amélioration” : vide (“0”) mais le message “Tous tes domaines sont au-dessus de 60%” est plat. Si aucune alerte, mieux vaut masquer ou afficher un message pertinent (“Aucune alerte majeure détectée, mais voici les 2 axes à gagner +5 pts”).
+Graph radar : les 15 labels apparaissent, mais la carte “Domaines analysés” n’est pas cohérente avec la valeur 14. De plus, certaines labels sont coupés (“Metabolisme” sans accent).
+Consistance des scores : bandeau global 74% = “Bon”, mais plusieurs cartes “Excellent”. Les seuils de labels (“Excellent”, “Bon”, “Moyen”) doivent être homogènes partout (ex. Excellent ≥80, Bon 60-79, Moyen <60).
+Dev preview banner : “This is a temporary development preview...” → à retirer en prod.
+Plan de correction (côté frontend)
+1) Harmoniser les sources et règles :
+domainesAnalyses = longueur de la liste des domaines (doit être 15 partout).
+pointsForts = nombre de domaines au-dessus d’un seuil unique (ex. ≥75). AAmeliorer = domaines sous un seuil (ex. <60). Les mêmes seuils pilotent les libellés “Excellent/Bon/Moyen”.
+2) Wording et accents :
+“Basé sur l’analyse de 15 domaines métaboliques”
+“Voir le rapport détaillé”
+“Profil équilibré”
+“Métabolisme”, “Biomarqueurs”, “Analyse complète”
+3) États vides / cohérence :
+Si AAmeliorer = 0, masquer la carte ou afficher “Aucune alerte majeure. Pistes de gain : …”
+Historique : dédupliquer par ID, trier par date, afficher la date/heure ou la version (premium/gratuit) clairement.
+4) Alignement visuel :
+Radar : s’assurer que les 15 domaines et les valeurs proviennent de la même source ; si un domaine est manquant, griser ou afficher “Non évalué”.
+Boutons : “Nouvel audit” clair, “Analyse Premium” alignée avec l’état (si déjà premium, afficher “Déjà en Premium” ou “Régénérer l’audit”).
+5) Accessibilité et lisibilité :
+Contrastes OK, mais ajouter des tooltips sur les scores (“Excellent ≥80”, etc.).
+Corriger les césures/accents dans les labels.
+Plan de correction (côté backend / données)
+S’assurer que le payload du rapport contient toujours les 15 domaines et leurs scores. Si une section est absente (ex. pas de photo), la marquer explicitement comme “Non évaluée” pour éviter les NaN ou les décalages de comptage.
+Définir une table de seuils unique (labels et couleurs) et la réutiliser côté front.
+Nettoyer l’historique : un seul audit par ID/date, pas de doublons.
+Si photos manquantes : mention explicite pour la composition/biomécanique, et ne pas inventer de mesures.
+Prochaine étape
+Mets à jour le calcul et l’affichage des compteurs (domaines, points forts, à améliorer) pour qu’ils correspondent aux 15 domaines et aux mêmes seuils partout.
+Corrige le wording et les accents.
+Ajuste l’historique (tri/déduplication) et les messages d’état vides.
+Retire la bannière “temporary development preview” en prod.
+Si tu veux, je te prépare un diff front rapide pour :
+Harmoniser les compteurs et les libellés “Excellent/Bon/Moyen”
+Corriger les textes et accents
+Gérer l’état “pas de photo” sur les sections concernées
+Nettoyer l’historique (tri/dédoublonnage)

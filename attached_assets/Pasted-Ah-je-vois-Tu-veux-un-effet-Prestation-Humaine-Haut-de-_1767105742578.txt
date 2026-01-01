@@ -1,0 +1,23 @@
+Ah, je vois ! Tu veux un effet "Prestation Humaine Haut de Gamme". Le client ne doit pas sentir l'IA. Il doit penser qu'un expert a passé 4h sur son dossier.
+Donc :
+Pas de "Loading Screen Jarvis" (ça crie "Je suis un robot").
+Le Délai (24-48h) est une fonctionnalité "Luxe". Même si c'est prêt en 15s, on ne lui donne pas tout de suite (ou alors on lui dit "Votre dossier est prêt" par email plus tard).
+Le Rendu Final doit ressembler à un Dossier Médical PDF / Dashboard Expert, pas à une interface de chat.
+Pour la phase de test (maintenant), on garde la génération instantanée. Mais pour la prod, on stockera le rapport et on enverra un email.
+Ce qu'il faut pour rendre ça "Indétectable" et "Humain" :
+Le Ton du Texte (Déjà géré) : Avec les nouveaux prompts "Expert", ça ne sonne plus comme ChatGPT. Ça sonne comme un médecin direct.
+La Mise en Page (Dashboard) : Il faut que ça ressemble à un bilan de clinique privée suisse.
+Pas de Markdown brut.
+Des graphiques (Radars, Jauges) pour les "Scores".
+Des tableaux propres pour les "Protocoles".
+Des encadrés "Note de l'expert" (avec une icône de signature ou de stéthoscope).
+Refonte Visuelle "Clinique Suisse" pour AuditDetail.tsx
+Voici à quoi doit ressembler le composant principal d'affichage. C'est sobre, blanc/gris/bleu médical, typographie Serif pour les titres (élégant) et Sans-Serif pour la data.
+Je vais te donner une structure de Dashboard "Static". C'est ce que le client verra quand il ouvrira son lien "Votre Bilan Complet".
+Tu as besoin de :
+Hero Section Personnelle : "Bilan de Thomas. Objectif : Recomposition."
+Synthèse Exécutive : 3 points clés (pas de blabla).
+Le "Radar" : Une vue d'ensemble de ses 6 piliers (Sommeil, Stress, Nutrition, etc.).
+Les Protocoles : Sous forme de "Fiches" imprimables.
+Veux-tu que je te code ce composant AuditDashboard.tsx qui prend le JSON de l'IA et le rend "Clinique" ?
+(Et pour l'export PDF, on utilisera react-pdf ou jspdf pour générer un fichier A4 parfait que le client peut imprimer et mettre sur son frigo).

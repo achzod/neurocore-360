@@ -1,0 +1,89 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { getAllResponsesFormatted } from "./responsePreprocessor";
+import { analyzeBodyPhotosWithAI, PhotoAnalysisResult } from "./photoAnalysisAI";
+import { SAFETY_GATES, IHERB_RULES, SUPPLEMENT_LIBRARY } from "./expertProtocols";
+
+const anthropic = new Anthropic({
+  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+});
+
+// Le System Prompt EXACT que tu m'as donné
+const SYSTEM_PROMPT = `You are “Achzod Supplement Engine”: an evidence-weighted, safety-first supplement recommendation system for iHerb-buyable products.
+
+GOAL
+- Build domain-specific supplement stacks (cardio, joints, lower estrogen, lower cortisol, increase testosterone, sleep, neurotransmitter/cognition/mood).
+- Output MUST be strict JSON matching the provided schema.
+- Recommendations must be individualized based on user inputs.
+- Prioritize: safety > evidence > fit > simplicity > cost.
+- Avoid “bro-science” claims. If evidence is weak, label it clearly.
+- Never recommend prescription drugs, SARMs, prohormones, or illegal substances.
+- If the user is on TRT/AAS, explicitly adapt: do NOT “crash estrogen”; include red flags and suggest labs/medical supervision.
+
+CORE RULES (Applied from library):
+1) Use “minimal effective stack”: no more than 8 core items per domain.
+2) Dosing: Prefer evidence-based fixed dosing. Scale by BW where relevant.
+3) Safety gates: Check anticoagulants, SSRIs, Liver disease constraints.
+4) Evidence labeling: Grade A/B/C/D.
+5) iHerb purchase logic: Never hallucinate. Look for standardizations (e.g., eurycomanone %, withanolides %).
+
+OUTPUT JSON ONLY. NO MARKDOWN.`;
+
+export async function generateNarrativeReport(responses: any, photoUrls: string[] = []) {
+  console.log("Génération Audit Premium V3 (Engine: Achzod Supplement Engine)...");
+
+  // 1. Analyse Photo
+  let photoAnalysisResult: PhotoAnalysisResult | null = null;
+  if (photoUrls && photoUrls.length > 0) {
+    try {
+      photoAnalysisResult = await analyzeBodyPhotosWithAI(photoUrls);
+    } catch (error) {
+      console.error("Erreur analyse photo:", error);
+    }
+  }
+
+  // 2. Contexte Utilisateur enrichi
+  const userProfile = getAllResponsesFormatted(responses);
+  const expertContext = {
+    safety_gates: SAFETY_GATES,
+    iherb_rules: IHERB_RULES,
+    library_snapshot: SUPPLEMENT_LIBRARY
+  };
+
+  const fullPrompt = `
+    USER PROFILE:
+    ${userProfile}
+
+    PHOTO ANALYSIS (PRIORITY):
+    ${photoAnalysisResult ? JSON.stringify(photoAnalysisResult) : "No photos provided."}
+
+    EXPERT KNOWLEDGE BASE INJECTION:
+    ${JSON.stringify(expertContext)}
+
+    GENERATE FULL AUDIT JSON NOW MATCHING THE "AchzodSupplementEngineOutput" SCHEMA.
+  `;
+
+  // 3. Appel Claude Opus (le plus intelligent pour ce niveau de complexité)
+  const msg = await anthropic.messages.create({
+    model: "claude-3-opus-20240229", 
+    max_tokens: 4000,
+    temperature: 0.4, // Plus bas pour la rigueur JSON et médicale
+    system: SYSTEM_PROMPT,
+    messages: [
+      { role: "user", content: fullPrompt }
+    ]
+  });
+
+  const content = msg.content[0].type === 'text' ? msg.content[0].text : "";
+  
+  // Extraction et validation JSON
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found");
+    return JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.error("JSON Parsing Error:", e);
+    console.log("Raw Output:", content.substring(0, 500));
+    throw new Error("Failed to generate valid JSON audit.");
+  }
+}

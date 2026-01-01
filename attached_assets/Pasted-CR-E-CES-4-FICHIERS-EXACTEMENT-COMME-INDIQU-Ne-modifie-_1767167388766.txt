@@ -1,0 +1,982 @@
+CRÉE CES 4 FICHIERS EXACTEMENT COMME INDIQUÉ. Ne modifie rien, copie tel quel.
+
+==========================================
+FICHIER 1: server/config.ts
+==========================================
+
+/**
+ * NEUROCORE 360 - Configuration centralisée
+ */
+
+export const CONFIG = {
+  // Gemini API
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || "AIzaSyCYpRQifyhMTFu-q0dihbomcOdB0eaogc4",
+  GEMINI_MODEL: "gemini-3-pro-preview",
+  GEMINI_TEMPERATURE: 0.85,
+  GEMINI_MAX_TOKENS: 8000,
+  GEMINI_MAX_RETRIES: 3,
+  GEMINI_SLEEP_BETWEEN: 5,
+
+  // Server
+  PORT: process.env.PORT || 3000,
+  NODE_ENV: process.env.NODE_ENV || 'development',
+};
+
+// Tiers d'audit
+export const AUDIT_TIERS = {
+  FREE: {
+    name: 'Gratuit',
+    price: 0,
+    sectionsUnlocked: [
+      'Introduction',
+      'Moment Révélation',
+      'Cause Racine en 3 phrases',
+      'Radar Profil actuel et Profil optimisé'
+    ],
+    sectionsTeaser: [
+      'Analyse visuelle photo face et dos',
+      'Nutrition & métabolisme',
+      'Sommeil & biohacking',
+      'Axes hormonaux & bilans',
+      'Feuille de Route en 6 Points',
+      'Projection 30/60/90 jours'
+    ],
+    sectionsLocked: [
+      'Sangle profonde / posture lombaires',
+      'Analyse entraînement',
+      'Cardio',
+      'Digestion & tolérances',
+      'Ton Potentiel Inexploité',
+      'Ce qui va changer si on travaille ensemble',
+      'Réassurance émotionnelle',
+      'Synthèse clinique globale et Conclusion transformationnelle'
+    ]
+  },
+  PREMIUM: {
+    name: 'Premium',
+    price: 49,
+    sectionsUnlocked: 'ALL'
+  },
+  ELITE: {
+    name: 'Elite',
+    price: 149,
+    sectionsUnlocked: 'ALL',
+    extras: ['Appel 30min', 'Suivi 7 jours', 'Plan personnalisé PDF']
+  }
+};
+
+
+==========================================
+FICHIER 2: server/types.ts
+==========================================
+
+/**
+ * NEUROCORE 360 - Types TypeScript
+ */
+
+export type AuditTier = 'FREE' | 'PREMIUM' | 'ELITE';
+
+export interface ClientData {
+  // Profil
+  prenom?: string;
+  nom?: string;
+  age?: string;
+  sexe?: string;
+  taille?: string;
+  poids?: string;
+  objectif?: string;
+  'type-travail'?: string;
+  'niveau-activite'?: string;
+  'antecedents-medicaux'?: string[];
+  medicaments?: string;
+  allergies?: string[];
+
+  // Composition
+  'tour-taille'?: string;
+  'tour-hanches'?: string;
+  'masse-grasse'?: string;
+  'objectif-poids'?: string;
+  'evolution-poids'?: string;
+  morphologie?: string;
+  'zones-stockage'?: string[];
+  'retention-eau'?: string;
+  cellulite?: string;
+
+  // Métabolisme
+  'energie-matin'?: string;
+  'energie-apres-midi'?: string;
+  'energie-soir'?: string;
+  'coups-fatigue'?: string;
+  'heure-fatigue'?: string;
+  frilosite?: string;
+  transpiration?: string;
+  metabolisme?: string;
+  'envies-sucre'?: string;
+  'frequence-faim'?: string;
+
+  // Nutrition
+  'nb-repas'?: string;
+  'petit-dejeuner'?: string;
+  'type-petit-dejeuner'?: string;
+  'tracking-calories'?: string;
+  'estimation-calories'?: string;
+  'proteines-jour'?: string;
+  'eau-jour'?: string;
+  'regime-particulier'?: string;
+  supplements?: string[];
+  'repas-exterieur'?: string;
+
+  // Digestion
+  'qualite-digestion'?: string;
+  ballonnements?: string;
+  transit?: string;
+  reflux?: string;
+  intolerances?: string[];
+  probiotiques?: string;
+  'aliments-fermentes'?: string;
+  antibiotiques?: string;
+  selles?: string;
+  'douleurs-abdominales'?: string;
+
+  // Activité
+  'frequence-sport'?: string;
+  'types-activites'?: string[];
+  'duree-seance'?: string;
+  'intensite-entrainement'?: string;
+  'qualite-recuperation'?: string;
+  courbatures?: string;
+  'evolution-performances'?: string;
+  blessures?: string[];
+  echauffement?: string;
+  etirements?: string;
+
+  // Sommeil
+  'heures-sommeil'?: string;
+  'qualite-sommeil'?: string;
+  'heure-coucher'?: string;
+  'heure-lever'?: string;
+  'temps-endormissement'?: string;
+  'reveils-nuit'?: string;
+  'repos-reveil'?: string;
+  sieste?: string;
+  'ecrans-avant-dormir'?: string;
+  'temperature-chambre'?: string;
+
+  // HRV Cardiaque
+  'mesure-hrv'?: string;
+  'hrv-moyenne'?: string;
+  'fc-repos'?: string;
+  'tension-arterielle'?: string;
+  'montre-connectee'?: string;
+  'type-montre'?: string;
+  palpitations?: string;
+  essoufflement?: string;
+
+  // Biomarqueurs
+  'bilan-sanguin'?: string;
+  glycemie?: string;
+  cholesterol?: string;
+  'vitamine-d'?: string;
+  'fer-ferritine'?: string;
+  thyroide?: string;
+  testosterone?: string;
+  inflammation?: string;
+  'marqueurs-hepatiques'?: string;
+  'marqueurs-renaux'?: string;
+
+  // Hormones Stress
+  'niveau-stress'?: string;
+  'sources-stress'?: string[];
+  'gestion-stress'?: string[];
+  anxiete?: string;
+  'fluctuation-humeurs'?: string;
+  libido?: string;
+  'symptomes-cortisol'?: string[];
+  'symptomes-thyroidiens'?: string[];
+  'cycle-menstruel'?: string;
+  motivation?: string;
+
+  // Lifestyle
+  'cafes-jour'?: string;
+  'heure-dernier-cafe'?: string;
+  'alcool-semaine'?: string;
+  tabac?: string;
+  cannabis?: string;
+  'temps-ecran'?: string;
+  'exposition-soleil'?: string;
+  'temps-nature'?: string;
+  meditation?: string;
+  'douches-froides'?: string;
+
+  // Biomécanique
+  'douleurs-chroniques'?: string[];
+  'posture-travail'?: string;
+  'heures-assis'?: string;
+  mobilite?: string;
+  'squat-complet'?: string;
+  'toucher-orteils'?: string;
+  asymetries?: string;
+  'travail-mobilite'?: string;
+  'foam-roller'?: string;
+  'kine-osteo'?: string;
+
+  // Psychologie
+  tca?: string;
+  'type-tca'?: string[];
+  'relation-nourriture'?: string;
+  'episodes-depressifs'?: string;
+  'symptomes-psy'?: string[];
+  traumatismes?: string;
+  'impact-traumatismes'?: string;
+  'estime-soi'?: string;
+  'motivation-profonde'?: string;
+  modele?: string;
+  blocages?: string[];
+  soutien?: string;
+  'suivi-psy'?: string;
+  'objectif-transformation'?: string;
+
+  // Neuro
+  concentration?: string;
+  memoire?: string;
+  'brouillard-mental'?: string;
+  humeur?: string;
+  procrastination?: string;
+  impulsivite?: string;
+  creativite?: string;
+  apprentissage?: string;
+
+  [key: string]: any;
+}
+
+export interface PhotoAnalysis {
+  available: boolean;
+  fatDistribution?: {
+    pattern: 'androide' | 'gynoide' | 'mixte';
+    zones: string[];
+    severity: 'legere' | 'moderee' | 'importante';
+  };
+  muscleBalance?: {
+    hautCorps: number;
+    basCorps: number;
+    symmetrie: number;
+    groupesAvance: string[];
+    groupesRetard: string[];
+  };
+  postureIssues?: {
+    epaules: string;
+    bassin: string;
+    colonne: string;
+    asymetries: string[];
+  };
+  structureOsseuse?: {
+    largeurEpaules: string;
+    cageThoracique: string;
+    ratioEpaulesTaille: string;
+  };
+}
+
+export interface AuditSection {
+  id: string;
+  title: string;
+  content: string;
+  score?: number;
+  isUnlocked: boolean;
+  isTeaser: boolean;
+  teaserPreview?: string;
+}
+
+export interface AuditResult {
+  success: boolean;
+  tier: AuditTier;
+  sections: AuditSection[];
+  fullTxt?: string;
+  clientName?: string;
+  globalScore?: number;
+  error?: string;
+  metadata?: {
+    generationTimeMs: number;
+    sectionsGenerated: number;
+    modelUsed: string;
+  };
+}
+
+export type SectionName =
+  | "Introduction"
+  | "Analyse visuelle photo face et dos"
+  | "Sangle profonde / posture lombaires"
+  | "Analyse entraînement"
+  | "Cardio"
+  | "Nutrition & métabolisme"
+  | "Sommeil & biohacking"
+  | "Digestion & tolérances"
+  | "Axes hormonaux & bilans"
+  | "Moment Révélation"
+  | "Cause Racine en 3 phrases"
+  | "Radar Profil actuel et Profil optimisé"
+  | "Ton Potentiel Inexploité"
+  | "Feuille de Route en 6 Points"
+  | "Projection 30/60/90 jours"
+  | "Ce qui va changer si on travaille ensemble"
+  | "Réassurance émotionnelle"
+  | "Synthèse clinique globale et Conclusion transformationnelle";
+
+
+==========================================
+FICHIER 3: server/geminiPremiumEngine.ts
+==========================================
+
+/**
+ * NEUROCORE 360 - Moteur de génération Gemini
+ * Système d'audit PREMIUM avec version FREE (teasing) et PAID (complet)
+ */
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { CONFIG, AUDIT_TIERS } from './config';
+import { ClientData, PhotoAnalysis, AuditResult, AuditSection, SectionName, AuditTier } from './types';
+
+const genAI = new GoogleGenerativeAI(CONFIG.GEMINI_API_KEY);
+
+// ============================================================
+// SECTIONS DE L'AUDIT
+// ============================================================
+const SECTIONS: SectionName[] = [
+  "Introduction",
+  "Analyse visuelle photo face et dos",
+  "Sangle profonde / posture lombaires",
+  "Analyse entraînement",
+  "Cardio",
+  "Nutrition & métabolisme",
+  "Sommeil & biohacking",
+  "Digestion & tolérances",
+  "Axes hormonaux & bilans",
+  "Moment Révélation",
+  "Cause Racine en 3 phrases",
+  "Radar Profil actuel et Profil optimisé",
+  "Ton Potentiel Inexploité",
+  "Feuille de Route en 6 Points",
+  "Projection 30/60/90 jours",
+  "Ce qui va changer si on travaille ensemble",
+  "Réassurance émotionnelle",
+  "Synthèse clinique globale et Conclusion transformationnelle"
+];
+
+// ============================================================
+// PROMPT MAÎTRE
+// ============================================================
+const PROMPT_SECTION = `Tu es Achzod, coach sportif d'élite avec 11 certifications internationales, expert en biomécanique, nutrition, hormones, préparation physique et biohacking.
+
+Tu rédiges un audit expert 100% personnalisé, profondément humain, indétectable comme IA, avec un ton direct, précis, incarné, analytique et ultra vivant.
+
+Section à rédiger : {section}
+
+🔥 RÈGLES ABSOLUES :
+
+Style :
+- Humain, jamais robotique ou scolaire
+- Variation de rythmes : phrases courtes/longues, pauses..., asides, métaphores simples
+- Style conversationnel expert : proximité + exigence
+- Tu tutoies toujours
+- Chaud, direct, incarné comme si tu parlais face à face
+- Analyse chirurgicale mais accessible
+- Images concrètes, pas de jargon inutile
+
+Contenu :
+- NE JAMAIS INVENTER : analyse uniquement ce que le client a vraiment dit, montré ou laissé entendre
+- Connecte TOUT : sommeil ↔ cortisol ↔ entraînement ↔ plateaux ↔ digestion ↔ énergie ↔ stress ↔ biomécanique
+- Explique SCIENTIFIQUEMENT ET EN PROFONDEUR :
+  * Les mécanismes physiologiques précis (hormones, enzymes, neurotransmetteurs, cascades métaboliques)
+  * Les chiffres, ratios, seuils cliniques quand pertinent
+  * Les interactions complexes entre systèmes (thyroïde ↔ cortisol ↔ leptine ↔ insuline)
+  * Les adaptations métaboliques (downregulation, upregulation, sensibilité réceptorielle)
+  * Les cascades de conséquences (cause → effet 1 → effet 2 → effet 3 → plateau actuel)
+- Précise toujours : forces / blocages / risques futurs / à recadrer / à optimiser / mécanismes sous-jacents
+- TRÈS long, riche, détaillé, scientifiquement robuste - minimum 40-50 lignes par section analytique
+- Comme si tu avais passé 3h à décortiquer son dossier avec des marqueurs et des notes partout
+
+Scoring (pour sections d'analyse classiques uniquement) :
+- Format obligatoire : "Score : X/10" sur une ligne séparée
+- Sections AVEC score : Introduction, Analyse visuelle, Sangle profonde, Analyse entraînement, Cardio, Nutrition, Sommeil, Digestion, Axes hormonaux, Synthèse
+- Sections SANS score : Moment Révélation, Cause Racine, Radar Profil, Potentiel Inexploité, Feuille de Route, Projection, Ce qui va changer, Réassurance
+- Jamais de score inventé, toujours basé sur les vraies données
+
+Format :
+- Texte brut (pas de HTML, PAS DE MARKDOWN DU TOUT - pas de **, pas de ##, pas de _, pas de *)
+- NE JAMAIS répéter le titre de la section au début du contenu (commencer DIRECTEMENT par l'analyse)
+- Minimum 40-50 lignes pour les sections d'analyse
+- Utiliser des graphiques ASCII TRÈS visuels pour illustrer les points clés
+- JAMAIS de formatage markdown - juste du texte brut descriptif et fluide
+
+📊 RÈGLES GRAPHIQUES ASCII OBLIGATOIRES :
+- Chaque graphique doit être sur PLUSIEURS lignes séparées
+- Toujours précéder un graphique d'une ligne vide
+- Format pour les jauges :
+
+  Nom de la métrique : [■■■■■■□□□□] 6/10
+
+- Format pour les listes visuelles :
+
+  ✓ Point positif explicite
+  ✗ Point négatif explicite
+  → Action à prendre
+
+- NE JAMAIS mettre les graphiques dans une phrase continue
+- Les graphiques doivent être VISUELLEMENT séparés du texte
+
+⚠️ L'objectif : que le client ait l'impression que le vrai Achzod a regardé ses photos, connu son quotidien, compris la personne derrière les réponses.
+
+{section_specific_instructions}
+
+Données du client :
+{data}
+`;
+
+// ============================================================
+// INSTRUCTIONS SPÉCIFIQUES PAR SECTION
+// ============================================================
+const SECTION_INSTRUCTIONS: Record<string, string> = {
+  "Introduction": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "INTRODUCTION" :
+- Accroche PUISSANTE dès la première ligne - le client doit se sentir vu, compris
+- Résume son profil de manière personnalisée (âge, stats, objectifs, situation)
+- Identifie le PARADOXE de sa situation (pourquoi il bloque malgré ses efforts)
+- Crée une connexion émotionnelle tout en montrant ton expertise
+- Annonce ce que l'audit va révéler
+- Minimum 35-40 lignes, ton chaud et direct
+- Score à la fin basé sur la qualité globale du profil initial
+`,
+
+  "Analyse visuelle photo face et dos": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "ANALYSE VISUELLE" :
+
+⚠️ SI AUCUNE PHOTO FOURNIE : Commence par "Analyse visuelle non disponible - aucune photo fournie." puis décris ce que tu AURAIS analysé et pourquoi c'est important. Termine par une incitation à uploader des photos pour un audit complet. (15-20 lignes max)
+
+SI PHOTOS DISPONIBLES :
+- Analyse la STRUCTURE : clavicules, cage thoracique, largeur d'épaules, ratio épaules/taille
+- Analyse le DÉVELOPPEMENT MUSCULAIRE : quels groupes sont en avance, en retard, asymétries
+- Analyse la COMPOSITION CORPORELLE : estimation du taux de gras, pattern de stockage (abdominal, obliques, etc.)
+- Analyse la POSTURE visible : épaules en avant, bassin, colonne
+- INTERPRÈTE ce que ça signifie pour son métabolisme et ses hormones
+- Relie le pattern de stockage aux hypothèses hormonales (cortisol, insuline, œstrogènes)
+- Minimum 45-50 lignes très détaillées
+- Donne un score basé sur le développement musculaire et la composition
+`,
+
+  "Sangle profonde / posture lombaires": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "SANGLE PROFONDE / POSTURE" :
+- Analyse l'impact de son historique sportif sur sa posture
+- Explique le rôle du TRANSVERSE ABDOMINAL vs grand droit
+- Détecte les signes d'antéversion/rétroversion pelvienne
+- Explique les CASCADES : psoas raccourci → lordose → compression diaphragme → respiration superficielle → cortisol → stockage
+- Lie la posture à l'esthétique abdominale (ventre qui ressort même sans gras)
+- Propose des hypothèses sur les fléchisseurs de hanche, fessiers endormis
+- Minimum 40-45 lignes avec explications biomécaniques
+- Score basé sur la qualité posturale estimée
+`,
+
+  "Analyse entraînement": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "ANALYSE ENTRAÎNEMENT" :
+- Analyse son SPLIT actuel (volume, fréquence, type)
+- Identifie les ERREURS probables : tempo non contrôlé, pas de périodisation, même routine depuis trop longtemps
+- Explique l'ADAPTATION NEURALE et pourquoi le corps ne répond plus
+- Parle de stress mécanique vs stress métabolique
+- Analyse le ratio Push/Pull et les déséquilibres potentiels
+- Propose des hypothèses sur ce qui manque : techniques d'intensification, variations, périodisation en blocs
+- Minimum 45-50 lignes très techniques
+- Score basé sur la qualité du programme actuel
+`,
+
+  "Cardio": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "CARDIO" :
+- Analyse sa pratique cardio actuelle (ou son absence)
+- Explique ce que le cardio apporte VRAIMENT : sensibilité insuline, biogenèse mitochondriale, flexibilité métabolique
+- Différencie LISS, HIIT, NEAT et leurs effets
+- Calcule son TDEE estimé avec son activité professionnelle
+- Explique pourquoi le cardio n'est pas l'ennemi de la masse musculaire (bien dosé)
+- Recommandations précises : type, durée, fréquence, timing
+- Minimum 40-45 lignes
+- Score basé sur l'optimisation de son activité cardio
+`,
+
+  "Nutrition & métabolisme": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "NUTRITION & MÉTABOLISME" :
+- Analyse PRÉCISÉMENT ce qu'il mange (selon ses réponses)
+- Calcule ses BESOINS : BMR, TDEE, macros optimaux (protéines, glucides, lipides)
+- Identifie les ERREURS de timing : glucides au mauvais moment, fenêtre anabolique ratée
+- Explique le CARB CYCLING et pourquoi c'est pertinent pour lui
+- Analyse sa supplémentation actuelle et ce qui manque (oméga-3, etc.)
+- Parle de sensibilité à l'insuline, partitionnement des nutriments
+- Minimum 50-60 lignes TRÈS détaillées avec chiffres
+- Score basé sur la qualité nutritionnelle actuelle
+`,
+
+  "Sommeil & biohacking": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "SOMMEIL & BIOHACKING" :
+- Analyse sa qualité de sommeil (durée, réveils, qualité)
+- Explique le rôle de la GH pendant le sommeil profond (phases N3)
+- Parle des cycles de 90 min et de l'importance du nombre de cycles
+- Si réveils nocturnes : hypothèses (cortisol, hypoglycémie, environnement)
+- Analyse sa prise de mélatonine si applicable (dosage, cycling)
+- Propose des "hacks" simples mais efficaces : lumière matinale, température, écrans
+- Lie sommeil et récupération musculaire / hormones
+- Minimum 40-45 lignes
+- Score basé sur la qualité du sommeil
+`,
+
+  "Digestion & tolérances": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "DIGESTION & TOLÉRANCES" :
+- Analyse son transit (rapide/lent) et ce que ça signifie
+- Si ballonnements : hypothèses sur les causes (FODMAPs, lactose, fibres, protéines mal digérées)
+- Analyse l'impact de la caféine sur la digestion
+- Parle du microbiote et de son rôle
+- Analyse ses probiotiques s'il en prend
+- Propose des solutions : enzymes digestives, trempage des oléagineux, mâcher plus, etc.
+- Lie digestion et absorption des nutriments
+- Minimum 40-45 lignes
+- Score basé sur la santé digestive
+`,
+
+  "Axes hormonaux & bilans": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "AXES HORMONAUX & BILANS" :
+- Insiste sur l'IMPORTANCE CRITIQUE d'un bilan sanguin
+- Liste TOUS les marqueurs à analyser : testostérone totale/libre, SHBG, cortisol, insuline à jeun, TSH/T3/T4, vitamine D, profil lipidique
+- Pour CHAQUE marqueur : explique ce qu'il mesure, les valeurs optimales, ce qu'un déséquilibre cause
+- Relie ses symptômes actuels (plateau, stockage abdominal) aux hypothèses hormonales
+- Donne les fourchettes PRÉCISES (pas juste "normal" mais les chiffres)
+- Minimum 50-55 lignes très techniques
+- Score basé sur le niveau de données disponibles (bas s'il n'a pas fait de bilan)
+`,
+
+  "Moment Révélation": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "MOMENT RÉVÉLATION" :
+- Rédige UN SEUL paragraphe COURT (4-6 phrases max), PERCUTANT, TRANSFORMATIONNEL
+- C'est LE moment où tout s'éclaire pour le client
+- Révèle la VRAIE raison de son blocage en connectant tous les éléments
+- Format type : "Voilà ce que personne ne t'a jamais dit..."
+- Ton : révélation, prise de conscience brutale mais bienveillante
+- PAS de liste, PAS de score, PAS de développement long
+- DIRECT et IMPACTANT - phrases courtes et percutantes
+`,
+
+  "Cause Racine en 3 phrases": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "CAUSE RACINE EN 3 PHRASES" :
+- Rédige EXACTEMENT 3 phrases courtes et ULTRA SIMPLES
+- Chaque phrase = 1 ligne maximum
+- Format type :
+  Phrase 1: "Tu ne manques pas de [ce qu'il pense être le problème]."
+  Phrase 2: "C'est [CAUSE PRÉCISE basée sur les vraies données] qui créent le plateau."
+  Phrase 3: "Quand on débloque ça, ton corps repart."
+- ULTRA LISIBLE, ULTRA CLAIR
+- Le client doit comprendre en 5 secondes
+- PAS de paragraphes longs, PAS de développement
+`,
+
+  "Radar Profil actuel et Profil optimisé": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "RADAR PROFIL ACTUEL ET PROFIL OPTIMISÉ" :
+- NE JAMAIS répéter le titre de la section dans le contenu
+- Commence DIRECTEMENT par le contenu visuel
+- Crée un GRAPHIQUE RADAR ASCII très visuel avec les 8 dimensions
+- Les 8 dimensions OBLIGATOIRES : Stress / Métabolisme / Hormones / Sommeil / Entraînement / Digestion / Biomécanique / Énergie
+- Format OBLIGATOIRE pour le graphique ASCII :
+
+📊 PROFIL ACTUEL :
+           Stress [■■■■■■□□□□] 6/10
+       Métabolisme [■■■■■□□□□□] 5/10
+         Hormones [■■■■■□□□□□] 5/10
+          Sommeil [■■■■□□□□□□] 4/10
+     Entraînement [■■■■■■■□□□] 7/10
+        Digestion [■■■■■■□□□□] 6/10
+     Biomécanique [■■■■■■■□□□] 7/10
+          Énergie [■■■■■■□□□□] 6/10
+
+- Ensuite explique brièvement chaque dimension
+- Puis montre le PROFIL OPTIMISÉ (90 jours) au même format ASCII
+- Montre le GAP pour déclencher l'achat
+- PAS de score global pour cette section
+`,
+
+  "Ton Potentiel Inexploité": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "TON POTENTIEL INEXPLOITÉ" :
+- NE JAMAIS répéter le titre dans le contenu
+- Commence DIRECTEMENT par une JAUGE TEXTUELLE visuelle de 0% à 100%
+- Format obligatoire :
+  "Jauge de Potentiel : [■■■■□□□□□□] 40%"
+- Explique où le client se situe AUJOURD'HUI (basé sur vraies données)
+- Puis décris VISUELLEMENT ce que représente chaque palier :
+
+  +20% [■■□□□□□□□□]
+  → Changements concrets : [liste 2-3 bénéfices]
+
+  +40% [■■■■□□□□□□]
+  → Transformation visible : [liste 2-3 bénéfices]
+
+  +60% [■■■■■■□□□□]
+  → Niveau élite : [liste 2-3 bénéfices]
+
+- Personnalisé selon SON profil
+- PAS de score global
+- Crée l'envie d'exploiter ce potentiel caché
+`,
+
+  "Feuille de Route en 6 Points": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "FEUILLE DE ROUTE EN 6 POINTS" :
+- Structure OBLIGATOIRE en EXACTEMENT 6 points numérotés :
+  1️⃣ Correction nerveuse & sommeil
+  2️⃣ Optimisation hormonale naturelle
+  3️⃣ Reprogrammation métabolique
+  4️⃣ Stratégie nutritionnelle personnalisée
+  5️⃣ Plan d'entraînement calibré selon biomécanique
+  6️⃣ Routine anti-inflammation & récupération
+- Pour CHAQUE point : 4-6 lignes expliquant PRÉCISÉMENT comment tu vas l'appliquer À CE CLIENT
+- Basé sur ses VRAIES données (pas de générique!)
+- Format clair, numéroté, actionnable
+- Minimum 35-40 lignes au total
+`,
+
+  "Projection 30/60/90 jours": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "PROJECTION 30/60/90 JOURS" :
+- NE JAMAIS répéter le titre dans le contenu
+- Format OBLIGATOIRE - 3 sections avec DÉTAILS :
+
+🗓️ DANS 30 JOURS (4 semaines) :
+[4-5 changements concrets et mesurables]
+
+🗓️ DANS 60 JOURS (8 semaines) :
+[4-5 transformations majeures]
+
+🗓️ DANS 90 JOURS (12 semaines) :
+[4-5 résultats finaux - transformation complète]
+
+- Utilise les émojis 🗓️ pour chaque palier
+- Projections RÉALISTES et PERSONNALISÉES (basées sur SES vraies données)
+- Le client doit SE VOIR évoluer concrètement
+- Inclure : poids, % gras, force, énergie, visuel, confiance
+- PAS de score
+- Minimum 25-30 lignes
+`,
+
+  "Ce qui va changer si on travaille ensemble": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "CE QUI VA CHANGER SI ON TRAVAILLE ENSEMBLE" :
+- Structure en DEUX parties : AUJOURD'HUI vs DANS 90 JOURS
+- AUJOURD'HUI : décris sa réalité actuelle (frustration, questions, doutes)
+- DANS 90 JOURS : décris sa vie transformée (physique, mental, confiance)
+- Très CONCRET, très HUMAIN, très ÉMOTIONNEL
+- Le client doit se VOIR dans le futur
+- Parle de SA vie, SON quotidien, SES blocages spécifiques
+- Crée le lien émotionnel et l'envie d'acheter
+- Minimum 30-35 lignes
+- Pas de score
+`,
+
+  "Réassurance émotionnelle": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "RÉASSURANCE ÉMOTIONNELLE" :
+- Le client doit sentir :
+  ✓ Qu'il n'a pas "échoué"
+  ✓ Qu'il n'est pas en échec
+  ✓ Que ce qu'il vit est NORMAL et EXPLICABLE
+  ✓ Qu'il y a une LOGIQUE à tout ça
+  ✓ Que TU MAÎTRISES la situation et tu peux l'aider
+- Ton chaleureux, proche, expert mais empathique
+- Rassure sans être condescendant
+- Montre que tu COMPRENDS vraiment sa situation
+- Valorise ses EFFORTS déjà fournis
+- Basé sur ses vraies données (réassurance personnalisée)
+- Minimum 25-30 lignes
+- Pas de score
+`,
+
+  "Synthèse clinique globale et Conclusion transformationnelle": `
+📌 INSTRUCTIONS SPÉCIFIQUES POUR "SYNTHÈSE CLINIQUE GLOBALE" :
+- RÉCAPITULE tout l'audit de manière structurée :
+  ◆ FORCES MAJEURES : liste ses points forts (5-6 points)
+  ◆ AXES D'OPTIMISATION : liste les corrections à faire (6-8 points)
+  ◆ RISQUES SI RIEN NE CHANGE : ce qui va se passer s'il ne fait rien
+  ◆ POTENTIEL RÉEL : ce qu'il peut atteindre avec le bon accompagnement
+  ◆ TON ENGAGEMENT : ce que tu lui promets si vous travaillez ensemble
+- Conclusion puissante qui pousse à l'action
+- Minimum 40-45 lignes
+- Score final basé sur l'ensemble du profil
+`
+};
+
+// ============================================================
+// PROMPT TEASER (pour sections bloquées en version FREE)
+// ============================================================
+const PROMPT_TEASER = `Tu es Achzod. Génère un TEASER de 3-4 lignes pour cette section : {section}
+
+Le teaser doit :
+- Montrer que tu as ANALYSÉ ses données (cite 1-2 éléments spécifiques)
+- Créer de la CURIOSITÉ (qu'est-ce qu'il va découvrir ?)
+- Terminer par "🔓 Débloque l'analyse complète pour découvrir..."
+- Maximum 4 lignes, ton accrocheur
+
+Données client :
+{data}
+`;
+
+// ============================================================
+// FONCTION APPEL GEMINI
+// ============================================================
+async function callGemini(prompt: string): Promise<string> {
+  const model = genAI.getGenerativeModel({ model: CONFIG.GEMINI_MODEL });
+
+  for (let attempt = 0; attempt < CONFIG.GEMINI_MAX_RETRIES; attempt++) {
+    try {
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: CONFIG.GEMINI_TEMPERATURE,
+          maxOutputTokens: CONFIG.GEMINI_MAX_TOKENS,
+        },
+      });
+      return result.response.text();
+    } catch (error: any) {
+      console.log(`⚠️ Gemini erreur (${attempt + 1}/${CONFIG.GEMINI_MAX_RETRIES}): ${error.message}`);
+      if (attempt < CONFIG.GEMINI_MAX_RETRIES - 1) {
+        await new Promise(r => setTimeout(r, CONFIG.GEMINI_SLEEP_BETWEEN * (attempt + 1) * 1000));
+      }
+    }
+  }
+  return "";
+}
+
+// ============================================================
+// NETTOYAGE MARKDOWN
+// ============================================================
+function cleanMarkdown(text: string): string {
+  return text
+    .replace(/\*\*/g, '')
+    .replace(/##/g, '')
+    .replace(/__/g, '')
+    .replace(/\*/g, '');
+}
+
+// ============================================================
+// DÉTERMINER LE STATUT D'UNE SECTION SELON LE TIER
+// ============================================================
+function getSectionStatus(section: string, tier: AuditTier): { isUnlocked: boolean; isTeaser: boolean } {
+  if (tier === 'PREMIUM' || tier === 'ELITE') {
+    return { isUnlocked: true, isTeaser: false };
+  }
+
+  const freeTier = AUDIT_TIERS.FREE;
+  
+  if (freeTier.sectionsUnlocked.includes(section)) {
+    return { isUnlocked: true, isTeaser: false };
+  }
+  
+  if (freeTier.sectionsTeaser.includes(section)) {
+    return { isUnlocked: false, isTeaser: true };
+  }
+  
+  return { isUnlocked: false, isTeaser: false };
+}
+
+// ============================================================
+// GÉNÉRER UNE SECTION
+// ============================================================
+async function generateSection(
+  section: SectionName,
+  clientData: ClientData,
+  photoAnalysis: PhotoAnalysis | null,
+  tier: AuditTier
+): Promise<AuditSection> {
+  const { isUnlocked, isTeaser } = getSectionStatus(section, tier);
+
+  // Préparer les données
+  const dataStr = Object.entries(clientData)
+    .filter(([_, v]) => v)
+    .map(([k, v]) => `- ${k}: ${v}`)
+    .join('\n');
+
+  const photoStr = photoAnalysis?.available
+    ? `\n\nANALYSE PHOTO DISPONIBLE:\n${JSON.stringify(photoAnalysis, null, 2)}`
+    : '\n\nAUCUNE PHOTO FOURNIE.';
+
+  const fullData = dataStr + photoStr;
+
+  // Section complète (débloquée)
+  if (isUnlocked) {
+    const instructions = SECTION_INSTRUCTIONS[section] || '';
+    const prompt = PROMPT_SECTION
+      .replace('{section}', section)
+      .replace('{section_specific_instructions}', instructions)
+      .replace('{data}', fullData);
+
+    const content = await callGemini(prompt);
+    const cleanContent = cleanMarkdown(content);
+
+    // Extraire le score si présent
+    const scoreMatch = cleanContent.match(/Score\s*:\s*(\d+(?:[.,]\d+)?)\s*\/\s*10/i);
+    const score = scoreMatch ? parseFloat(scoreMatch[1].replace(',', '.')) : undefined;
+
+    return {
+      id: section.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+      title: section,
+      content: cleanContent,
+      score,
+      isUnlocked: true,
+      isTeaser: false
+    };
+  }
+
+  // Section teaser (aperçu qui donne envie)
+  if (isTeaser) {
+    const prompt = PROMPT_TEASER
+      .replace('{section}', section)
+      .replace('{data}', fullData);
+
+    const teaserContent = await callGemini(prompt);
+
+    return {
+      id: section.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+      title: section,
+      content: '',
+      isUnlocked: false,
+      isTeaser: true,
+      teaserPreview: cleanMarkdown(teaserContent)
+    };
+  }
+
+  // Section complètement bloquée
+  return {
+    id: section.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+    title: section,
+    content: '',
+    isUnlocked: false,
+    isTeaser: false,
+    teaserPreview: `🔒 Cette section est réservée aux membres Premium.\n\nDécouvre ton analyse ${section} complète avec toutes les recommandations personnalisées.`
+  };
+}
+
+// ============================================================
+// GÉNÉRATION COMPLÈTE
+// ============================================================
+export async function generateAudit(
+  clientData: ClientData,
+  photoAnalysis: PhotoAnalysis | null,
+  tier: AuditTier = 'FREE'
+): Promise<AuditResult> {
+  const startTime = Date.now();
+  const clientName = `${clientData.prenom || 'Client'} ${clientData.nom || ''}`.trim();
+
+  console.log(`\n🔄 Génération audit ${tier} pour ${clientName}...`);
+
+  const sections: AuditSection[] = [];
+  let fullTxt = `=== AUDIT COMPLET - ${clientName.toUpperCase()} ===\n`;
+
+  for (let i = 0; i < SECTIONS.length; i++) {
+    const section = SECTIONS[i];
+    const { isUnlocked } = getSectionStatus(section, tier);
+
+    process.stdout.write(`  [${i + 1}/${SECTIONS.length}] ${section}... `);
+
+    const auditSection = await generateSection(section, clientData, photoAnalysis, tier);
+    sections.push(auditSection);
+
+    if (isUnlocked && auditSection.content) {
+      fullTxt += `\n${'='.repeat(60)}\n${section.toUpperCase()}\n${'='.repeat(60)}\n`;
+      fullTxt += auditSection.content;
+    }
+
+    console.log(isUnlocked ? '✓' : '🔒');
+
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
+  // Calculer score global
+  const scoredSections = sections.filter(s => s.score !== undefined);
+  const globalScore = scoredSections.length > 0
+    ? Math.round(scoredSections.reduce((acc, s) => acc + (s.score || 0), 0) / scoredSections.length * 10) / 10
+    : undefined;
+
+  return {
+    success: true,
+    tier,
+    sections,
+    fullTxt: tier !== 'FREE' ? fullTxt : undefined,
+    clientName,
+    globalScore,
+    metadata: {
+      generationTimeMs: Date.now() - startTime,
+      sectionsGenerated: sections.filter(s => s.isUnlocked).length,
+      modelUsed: CONFIG.GEMINI_MODEL
+    }
+  };
+}
+
+export { SECTIONS, callGemini };
+
+
+==========================================
+FICHIER 4: server/index.ts
+==========================================
+
+/**
+ * NEUROCORE 360 - Serveur Express
+ */
+
+import express from 'express';
+import cors from 'cors';
+import { CONFIG, AUDIT_TIERS } from './config';
+import { generateAudit } from './geminiPremiumEngine';
+import { ClientData, PhotoAnalysis, AuditTier } from './types';
+
+const app = express();
+
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    service: 'NEUROCORE 360',
+    gemini: { model: CONFIG.GEMINI_MODEL, ready: true },
+    tiers: Object.keys(AUDIT_TIERS)
+  });
+});
+
+// Génération audit
+app.post('/api/generate-audit', async (req, res) => {
+  try {
+    const { clientData, photoAnalysis, tier = 'FREE' } = req.body as {
+      clientData: ClientData;
+      photoAnalysis?: PhotoAnalysis | null;
+      tier?: AuditTier;
+    };
+
+    if (!clientData) {
+      return res.status(400).json({ success: false, error: 'clientData requis' });
+    }
+
+    const result = await generateAudit(clientData, photoAnalysis || null, tier);
+    res.json(result);
+  } catch (error: any) {
+    console.error('❌ Erreur:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Info tiers
+app.get('/api/tiers', (req, res) => {
+  res.json(AUDIT_TIERS);
+});
+
+const PORT = CONFIG.PORT;
+app.listen(PORT, () => {
+  console.log(`\n🚀 NEUROCORE 360 sur port ${PORT}`);
+  console.log(`📊 Gemini: ${CONFIG.GEMINI_MODEL}`);
+  console.log(`🔑 API Key: ${CONFIG.GEMINI_API_KEY ? '✓' : '✗'}\n`);
+});
+
+
+==========================================
+APRÈS CRÉATION DES FICHIERS :
+
+1. npm install @google/generative-ai express cors dotenv
+2. npm install -D typescript ts-node @types/node @types/express @types/cors
+3. Créer .env avec : GEMINI_API_KEY=AIzaSyCYpRQifyhMTFu-q0dihbomcOdB0eaogc4
+4. npm run dev
+
+==========================================

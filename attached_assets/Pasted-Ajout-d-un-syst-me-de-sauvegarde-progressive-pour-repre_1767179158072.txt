@@ -1,0 +1,43 @@
+Ajout d'un système de sauvegarde progressive pour reprendre là où ça s'est arrêté :
+Ajout d'un système de sauvegarde progressive pour reprendre là où ça s'est arrêté :
+geminiPremiumEngine.ts
++2
+import { GoogleGenerativeAI } from '@google/generative-ai';import { CONFIG } from './config';
+import { GoogleGenerativeAI } from '@google/generative-ai';import * as fs from 'fs';import * as path from 'path';import { CONFIG } from './config';
+geminiPremiumEngine.ts
++80
+// ============================================================
+// ============================================================// SYSTÈME DE CACHE POUR SAUVEGARDE PROGRESSIVE// ============================================================const CACHE_DIR = path.join(process.cwd(), '.cache');
+Vérifiant l'état actuel du fichier avant de reprendre les modifications :
+Les fonctions de cache existent déjà. Mettant à jour generateAuditTxt pour les utiliser :
+geminiPremiumEngine.ts
++51
+-5
+  tier: AuditTier = 'PREMIUM'): Promise<string | null> {
+  tier: AuditTier = 'PREMIUM'  tier: AuditTier = 'PREMIUM',  auditId?: string // ID pour reprendre une génération): Promise<string | null> {
+.gitignore(new)
++20
+# Cache.cache/*.cache# Node
+Système de sauvegarde progressive ajouté. Rédaction d'un document expliquant son fonctionnement :
+REPRISE_GENERATION.md(new)
++58
+# 🔄 Système de Reprise de Génération## ✅ PROBLÈME RÉSOLUSi le serveur plante ou redémarre pendant la génération, **tu ne perds plus rien** ! Les sections déjà générées sont sauvegardées automatiquement.
+Système de sauvegarde progressive ajouté.
+Ce qui a été fait
+Cache automatique : Chaque section générée est sauvegardée immédiatement dans .cache/audit-{ID}.json
+Reprise : Si le serveur plante, tu peux reprendre avec l'ID d'audit affiché dans les logs
+Optimisation : Les sections déjà générées sont chargées depuis le cache (pas de régénération)
+Nettoyage : Le cache est supprimé automatiquement après génération complète réussie
+Comment ça marche maintenant
+Si ça plante à la section 12/19 :
+Les 12 sections sont sauvegardées
+L'ID d'audit est affiché dans les logs
+Tu relances avec l'ID → il ne génère que les 7 sections manquantes
+Si tout se passe bien :
+Tout est généré normalement
+Le cache est supprimé à la fin
+Fichiers créés/modifiés
+server/geminiPremiumEngine.ts : Système de cache intégré
+.gitignore : Dossier .cache/ ignoré
+docs/REPRISE_GENERATION.md : Documentation du système
+Tu ne perdras plus de travail si le serveur plante.
