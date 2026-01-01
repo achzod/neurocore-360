@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
-import { sendMagicLinkEmail, sendReportReadyEmail } from "./emailService";
+import { sendMagicLinkEmail, sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAudit } from "./geminiPremiumEngine";
 import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
@@ -103,10 +103,17 @@ export async function registerRoutes(
 
       await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
       
+      // Récupérer l'audit pour avoir le clientName
+      const completedAudit = await storage.getAudit(auditId);
+      const clientName = completedAudit?.narrativeReport?.clientName || email.split('@')[0];
+      
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (emailSent) {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
         console.log(`[Auto] Report ready and email sent for audit ${auditId}`);
+        
+        // Envoyer email admin en copie
+        await sendAdminEmailNewAudit(email, clientName, auditType, auditId);
       } else {
         console.error(`[Auto] Report ready but email FAILED for audit ${auditId} - check SendPulse config`);
         await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });

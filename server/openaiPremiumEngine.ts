@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Module de génération d'audits avec OpenAI GPT-4o
+ * NEUROCORE 360 - Module de génération d'audits avec OpenAI GPT-5.2-2025-12-11
  * Adapté de geminiPremiumEngine.ts - Réutilise les mêmes sections et prompts
  */
 
@@ -9,18 +9,8 @@ import * as path from 'path';
 import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from './types';
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { OPENAI_CONFIG } from './openaiConfig';
-// On doit exporter ces constantes depuis geminiPremiumEngine d'abord
-// Pour l'instant, on les redéfinit ici (même structure que Gemini)
-import { 
-  SECTIONS as GEMINI_SECTIONS,
-  SECTION_INSTRUCTIONS as GEMINI_SECTION_INSTRUCTIONS,
-  PROMPT_SECTION as GEMINI_PROMPT_SECTION
-} from './geminiPremiumEngine';
-
-// Réutiliser directement (ils doivent être exportés de geminiPremiumEngine)
-const SECTIONS = GEMINI_SECTIONS;
-const SECTION_INSTRUCTIONS = GEMINI_SECTION_INSTRUCTIONS;
-const PROMPT_SECTION = GEMINI_PROMPT_SECTION;
+// Réutiliser les sections et instructions de Gemini (exportées)
+import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION } from './geminiPremiumEngine';
 
 // Cache system (identique à Gemini)
 const CACHE_DIR = path.join(process.cwd(), '.cache-openai');
