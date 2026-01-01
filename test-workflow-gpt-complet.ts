@@ -71,7 +71,15 @@ async function createAudit(): Promise<string> {
   const photos = await loadPhotos();
   console.log(`   Photos chargées: ${photos.length}/3`);
   
-  const response = await fetch(`${BASE_URL}/api/audits`, {
+  // Ajouter les photos dans les responses
+  const responsesWithPhotos = {
+    ...TEST_RESPONSES,
+    photoFront: photos[0] || '',
+    photoSide: photos[1] || '',
+    photoBack: photos[2] || ''
+  };
+  
+  const response = await fetch(`${BASE_URL}/api/audit/create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,9 +87,7 @@ async function createAudit(): Promise<string> {
     body: JSON.stringify({
       email: TEST_EMAIL,
       type: 'PREMIUM',
-      responses: TEST_RESPONSES,
-      scores: {},
-      photos: photos
+      responses: responsesWithPhotos
     }),
   });
   
