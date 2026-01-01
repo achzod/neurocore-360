@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { PRICING_PLANS } from "@shared/schema";
+import { PRICING_PLANS, QUESTIONNAIRE_SECTIONS } from "@shared/schema";
 import {
   Star,
   Sparkles,
@@ -14,8 +14,28 @@ import {
   Award,
   Check,
   Lock,
+  User,
+  Scale,
+  Zap,
+  Apple,
+  Beaker,
+  Dumbbell,
+  Moon,
+  Heart,
+  Timer,
+  TestTube,
+  Activity,
+  Coffee,
+  Bone,
+  HeartHandshake,
+  Brain,
+  Camera,
+  CheckCircle2,
+  Play,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { DNAHelix } from "@/components/animations/DNAHelix";
+import { BodyVisualization } from "@/components/animations/BodyVisualization";
 
 import issaLogo from "@assets/ISSA+Logo+_+Vertical+_+for-white-background_1767172975495.webp";
 import pnLogo from "@assets/limage-19764_1767172975495.webp";
@@ -176,6 +196,173 @@ function StatsSection() {
               <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Icône mapping pour les domaines
+const iconMap: Record<string, typeof User> = {
+  User,
+  Scale,
+  Zap,
+  Apple,
+  Beaker,
+  Dumbbell,
+  Moon,
+  Heart,
+  Timer,
+  TestTube,
+  Activity,
+  Coffee,
+  Bone,
+  HeartHandshake,
+  Brain,
+  Camera,
+};
+
+function DomainesSection() {
+  return (
+    <section id="domaines" className="relative border-y border-border/30 bg-background py-16 lg:py-24" data-testid="section-domaines">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.05),transparent_70%)]" />
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="mb-12 text-center">
+          <Badge variant="outline" className="mb-4 border-primary/50 bg-primary/10 text-primary">
+            Analyse Complète
+          </Badge>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" data-testid="text-domaines-title">
+            15 Domaines d'Analyse
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+            Une approche holistique couvrant tous les aspects de ton métabolisme, ta biomécanique et ta santé globale
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {QUESTIONNAIRE_SECTIONS.map((section, idx) => {
+            const IconComponent = iconMap[section.icon] || User;
+            return (
+              <motion.div
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+              >
+                <Card className="h-full border-border/50 bg-card/50 transition-all hover:border-primary/50 hover:shadow-lg">
+                  <CardContent className="flex items-start gap-4 p-6">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <IconComponent className="h-6 w-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{section.title}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Animation BodyVisualization centrée en dessous */}
+        <div className="mt-16 flex justify-center">
+          <div className="h-64 w-64">
+            <BodyVisualization />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProcessSection() {
+  const steps = [
+    {
+      step: 1,
+      title: "Questionnaire Complet",
+      description: "180+ questions sur 15 domaines : métabolisme, hormones, nutrition, biomécanique...",
+      icon: CheckCircle2,
+    },
+    {
+      step: 2,
+      title: "Analyse IA Avancée",
+      description: "Notre IA Gemini analyse tes réponses et tes photos pour créer un profil complet",
+      icon: Brain,
+    },
+    {
+      step: 3,
+      title: "Rapport Personnalisé",
+      description: "Reçois un rapport détaillé de 20+ pages avec scores, recommandations et plan d'action",
+      icon: Award,
+    },
+    {
+      step: 4,
+      title: "Plan d'Action Concret",
+      description: "Protocoles précis : suppléments, nutrition, exercices, timing... Tout est détaillé",
+      icon: CheckCircle2,
+    },
+  ];
+
+  return (
+    <section id="process" className="relative border-y border-border/30 bg-muted/20 py-16 lg:py-24" data-testid="section-process">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="mb-12 text-center">
+          <Badge variant="outline" className="mb-4">
+            Simple & Efficace
+          </Badge>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" data-testid="text-process-title">
+            Comment ça marche ?
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+            En 4 étapes simples, découvre les leviers d'optimisation de ton métabolisme
+          </p>
+        </div>
+
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step, idx) => {
+            const IconComponent = step.icon;
+            return (
+              <motion.div
+                key={step.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                className="relative"
+              >
+                <Card className="h-full border-border/50 bg-card/50 text-center">
+                  <CardContent className="p-6">
+                    <div className="mb-4 flex justify-center">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                        {step.step}
+                      </div>
+                    </div>
+                    <div className="mb-4 flex justify-center">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <IconComponent className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <h3 className="mb-2 text-lg font-semibold">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  </CardContent>
+                </Card>
+                {idx < steps.length - 1 && (
+                  <div className="absolute -right-4 top-1/2 hidden -translate-y-1/2 lg:block">
+                    <ChevronRight className="h-6 w-6 text-muted-foreground/30" />
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Animation DNA en dessous */}
+        <div className="mt-16 flex justify-center">
+          <div className="h-48 w-24">
+            <DNAHelix />
+          </div>
         </div>
       </div>
     </section>
@@ -452,6 +639,8 @@ export default function Landing() {
         <MediaBar />
         <HeroSection />
         <StatsSection />
+        <DomainesSection />
+        <ProcessSection />
         <PricingSection />
         <TestimonialsSection />
         <CTASection />

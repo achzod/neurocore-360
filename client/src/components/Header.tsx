@@ -71,7 +71,7 @@ export function Header() {
                   className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                   data-testid="link-pricing"
                 >
-                  Tarifs
+                  Prix
                 </a>
               </>
             )}
@@ -87,6 +87,14 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Bouton Homepage visible partout sauf landing */}
+            {location !== "/" && location !== "/audit-complet" && (
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="gap-2" data-testid="button-homepage">
+                  Accueil
+                </Button>
+              </Link>
+            )}
             <ThemeToggle />
             
             {userEmail ? (
@@ -168,7 +176,7 @@ export function Header() {
                     className="text-sm font-medium text-muted-foreground"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Tarifs
+                    Prix
                   </a>
                 </>
               )}
