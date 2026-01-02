@@ -1,6 +1,6 @@
 import { generateAndConvertAudit } from "./geminiPremiumEngine";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
-import { generateExportHTMLFromTxt } from "./exportService";
+import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData } from "./types";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
@@ -298,9 +298,9 @@ async function generateReportAsync(
     // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML
     // et sauvegardé dans la DB. Sinon le client voit "COMPLETED" mais pas de rapport.
     
-    // Convert TXT to HTML with SVG charts
-    console.log(`[ReportJobManager] Converting TXT to HTML for ${auditId}...`);
-    const reportHtml = generateExportHTMLFromTxt(result.txt || '', auditId, photos);
+    // Convert TXT to HTML with Premium Design (Ultrahuman-style)
+    console.log(`[ReportJobManager] Converting TXT to Premium HTML for ${auditId}...`);
+    const reportHtml = generatePremiumHTMLFromTxt(result.txt || '', auditId, photos, responses as Record<string, unknown>);
     
     if (!reportHtml || reportHtml.length < 1000) {
       throw new Error(`HTML generation failed or too short (${reportHtml?.length || 0} chars)`);
