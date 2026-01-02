@@ -26,9 +26,9 @@ import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
  */
 
 const STUCK_JOB_THRESHOLD_MS = 10 * 60 * 1000;
-// La génération OpenAI (multi-sections) peut dépasser 8 minutes avec throttling (anti-TPM burst).
-// On augmente la limite pour éviter les échecs systématiques.
-const AI_CALL_TIMEOUT_MS = 20 * 60 * 1000;
+// La génération OpenAI (multi-sections) peut être longue (429 + retries + cache).
+// 20 min reste parfois trop court : on passe à 45 min pour permettre la fin + envoi email.
+const AI_CALL_TIMEOUT_MS = 45 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 
 const activeGenerations = new Set<string>();

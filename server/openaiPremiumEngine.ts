@@ -115,6 +115,7 @@ async function callOpenAI(
 
       const text = response.choices[0]?.message?.content || "";
       if (!text.trim()) {
+        // Certaines réponses peuvent arriver vides (transient). On traite ça comme retryable.
         throw new Error("OpenAI returned an empty response");
       }
       return text;
@@ -150,7 +151,11 @@ async function callOpenAI(
 
       if (attempt < OPENAI_MAX_RETRIES) {
         const jitter = Math.floor(Math.random() * 250);
-        await sleep(fallbackDelayMs + jitter);
+        // Si la réponse est vide, on ne backoff pas trop (sinon ça rallonge artificiellement la génération)
+        const msg = String(error?.message || "");
+        const isEmpty = msg.includes("empty response");
+        const delay = isEmpty ? Math.min(1000, fallbackDelayMs) : fallbackDelayMs;
+        await sleep(delay + jitter);
         fallbackDelayMs = Math.min(fallbackDelayMs * 2, 60_000);
       }
     }

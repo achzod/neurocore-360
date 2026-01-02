@@ -89,7 +89,8 @@ export async function registerRoutes(
   });
 
   async function processReportAndSendEmail(auditId: string, email: string, auditType: string) {
-    const maxWait = 20 * 60 * 1000;
+    // La génération peut être longue (throttling 429 + génération multi-sections)
+    const maxWait = 45 * 60 * 1000;
     const startTime = Date.now();
     
     const waitForCompletion = async (): Promise<boolean> => {
