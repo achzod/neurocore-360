@@ -698,7 +698,7 @@ const STATIC_REVIEWS = [
 // BENTO TESTIMONIALS
 function BentoTestimonialsSection() {
   const [allReviews, setAllReviews] = useState<any[]>([]);
-  const [visibleCount, setVisibleCount] = useState(12);
+  const [visibleCount, setVisibleCount] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchReviews = async () => {
@@ -729,7 +729,7 @@ function BentoTestimonialsSection() {
 
   const reviews = allReviews.slice(0, visibleCount);
   const hasMore = visibleCount < allReviews.length;
-  const showMore = () => setVisibleCount(prev => Math.min(prev + 12, allReviews.length));
+  const showMore = () => setVisibleCount(prev => Math.min(prev + 5, allReviews.length));
 
   const formatDate = (dateString: string | Date): string => {
     const date = new Date(dateString);
