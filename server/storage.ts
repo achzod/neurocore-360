@@ -473,7 +473,7 @@ export class PgStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const result = await pool.query(
-      "INSERT INTO users (id, email, name) VALUES ($1, $2, $3) RETURNING *",
+      "INSERT INTO users (id, email, name, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING *",
       [id, insertUser.email, insertUser.name || null]
     );
     const row = result.rows[0];
