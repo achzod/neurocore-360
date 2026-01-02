@@ -967,11 +967,16 @@ export class PgStorage implements IStorage {
   }
 
   async hasUserLeftReview(auditId: string): Promise<boolean> {
-    const result = await pool.query(
-      "SELECT 1 FROM reviews WHERE audit_id = $1 LIMIT 1",
-      [auditId]
-    );
-    return result.rows.length > 0;
+    try {
+      const result = await pool.query(
+        "SELECT 1 FROM reviews WHERE audit_id = $1 LIMIT 1",
+        [auditId]
+      );
+      return result.rows.length > 0;
+    } catch {
+      // Table reviews doesn't exist yet, return false
+      return false;
+    }
   }
 }
 

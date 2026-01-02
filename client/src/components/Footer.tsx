@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { AchzodMonogram } from "./AchzodLogo";
 import { SiInstagram, SiYoutube, SiFacebook } from "react-icons/si";
-import { motion } from "framer-motion";
 
 export function Footer() {
   return (
@@ -116,36 +115,6 @@ export function Footer() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Giant Blurred Brand Text - Ultrahuman Style */}
-      <div className="relative mt-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-10 pointer-events-none" />
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          viewport={{ once: true }}
-          className="relative flex justify-center items-center py-8"
-        >
-          <motion.h2
-            animate={{
-              filter: ["blur(0px)", "blur(2px)", "blur(0px)"],
-              opacity: [0.15, 0.25, 0.15],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="text-[12vw] sm:text-[10vw] md:text-[8vw] font-black tracking-tighter text-white/20 whitespace-nowrap select-none"
-            style={{
-              textShadow: "0 0 80px rgba(16, 185, 129, 0.3), 0 0 120px rgba(16, 185, 129, 0.1)",
-            }}
-          >
-            NEUROCORE 360°
-          </motion.h2>
-        </motion.div>
       </div>
     </footer>
   );

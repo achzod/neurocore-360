@@ -46,6 +46,59 @@ import pnLogo from "@assets/limage-19764_1767172975495.webp";
 import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
+// Giant Brand Text with Ultrahuman-style blur effect
+function GiantBrandText() {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <section className="relative overflow-hidden bg-background py-12 md:py-20">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.08),transparent_60%)]" />
+
+      <motion.div
+        className="relative flex justify-center items-center cursor-pointer select-none"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <motion.h1
+          animate={{
+            filter: isHovered ? "blur(0px)" : "blur(8px)",
+            scale: isHovered ? 1.02 : 1,
+            opacity: isHovered ? 1 : 0.4,
+          }}
+          transition={{
+            duration: 0.5,
+            ease: "easeOut",
+          }}
+          className="text-[15vw] sm:text-[12vw] md:text-[10vw] font-black tracking-tighter text-foreground whitespace-nowrap"
+          style={{
+            textShadow: isHovered
+              ? "0 0 60px rgba(16, 185, 129, 0.5), 0 0 100px rgba(16, 185, 129, 0.3), 0 0 150px rgba(16, 185, 129, 0.15)"
+              : "0 0 80px rgba(16, 185, 129, 0.2), 0 0 120px rgba(16, 185, 129, 0.1)",
+          }}
+        >
+          NEUROCORE<span className="text-primary">360°</span>
+        </motion.h1>
+      </motion.div>
+
+      {/* Subtitle that appears on hover */}
+      <motion.p
+        animate={{
+          opacity: isHovered ? 1 : 0,
+          y: isHovered ? 0 : 10,
+        }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="text-center mt-4 text-muted-foreground text-lg"
+      >
+        L'audit métabolique le plus complet du marché
+      </motion.p>
+    </section>
+  );
+}
+
 // Bento Grid Styles - hewarsaber inspired
 const bentoStyles = {
   container: "grid gap-4 p-4 md:p-6 lg:p-8",
@@ -1009,6 +1062,7 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
+        <GiantBrandText />
         <CertificationsBar />
         <MediaBar />
         <BentoHeroSection />
