@@ -9,8 +9,9 @@ import * as path from 'path';
 import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from './types';
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { OPENAI_CONFIG } from './openaiConfig';
+import { getCTADebut, getCTAFin, PRICING } from './cta';
 // Réutiliser les sections et instructions de Gemini (exportées)
-import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION } from './geminiPremiumEngine';
+import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier } from './geminiPremiumEngine';
 
 // Cache system (identique à Gemini)
 const CACHE_DIR = path.join(process.cwd(), '.cache-openai');
@@ -64,11 +65,14 @@ const openai = new OpenAI({
 
 const OPENAI_MODEL = OPENAI_CONFIG.OPENAI_MODEL;
 const OPENAI_TEMPERATURE = OPENAI_CONFIG.OPENAI_TEMPERATURE;
-const OPENAI_MAX_TOKENS = OPENAI_CONFIG.OPENAI_MAX_TOKENS;
+// ⚠️ Important: capper la sortie par section pour éviter de cramer le TPM
+// et réduire les chances de réponses vides / instables.
+const OPENAI_MAX_COMPLETION_TOKENS_PER_SECTION =
+  (OPENAI_CONFIG as any).OPENAI_MAX_TOKENS_PER_SECTION ?? OPENAI_CONFIG.OPENAI_MAX_TOKENS ?? 1500;
 const OPENAI_MAX_RETRIES = OPENAI_CONFIG.OPENAI_MAX_RETRIES;
 const OPENAI_SLEEP_BETWEEN = OPENAI_CONFIG.OPENAI_SLEEP_BETWEEN;
 const OPENAI_SECTION_CONCURRENCY =
-  (OPENAI_CONFIG as any).OPENAI_SECTION_CONCURRENCY ?? 3;
+  (OPENAI_CONFIG as any).OPENAI_SECTION_CONCURRENCY ?? (OPENAI_CONFIG as any).OPENAI_CONCURRENCY_LIMIT ?? 2;
 
 function parseResetToMs(v?: string): number | null {
   if (!v) return null;
@@ -110,7 +114,8 @@ async function callOpenAI(
         messages: [{ role: "user", content: prompt }],
         temperature: OPENAI_TEMPERATURE,
         // GPT-5.2 utilise max_completion_tokens au lieu de max_tokens
-        max_completion_tokens: opts?.maxCompletionTokens ?? OPENAI_MAX_TOKENS,
+        max_completion_tokens:
+          opts?.maxCompletionTokens ?? OPENAI_MAX_COMPLETION_TOKENS_PER_SECTION,
       });
 
       const text = response.choices[0]?.message?.content || "";
@@ -217,6 +222,13 @@ export async function generateAuditTxtWithOpenAI(
   // ⚠️ IMPORTANT: Ne jamais injecter les photos base64 (ou autres blobs) dans le prompt.
   // Les réponses du questionnaire peuvent contenir photoFront/photoSide/photoBack en data URL,
   // ce qui explose la limite de tokens d'entrée (272k).
+  const truncateMiddle = (s: string, max: number): string => {
+    if (s.length <= max) return s;
+    const head = Math.max(200, Math.floor(max * 0.7));
+    const tail = Math.max(80, max - head - 20);
+    return `${s.slice(0, head)} ...[tronque]... ${s.slice(-tail)}`;
+  };
+
   const sanitizeClientDataForPrompt = (data: ClientData): Record<string, unknown> => {
     const out: Record<string, unknown> = {};
     const MAX_VALUE_CHARS = Number(process.env.OPENAI_MAX_VALUE_CHARS ?? "2000");
@@ -241,16 +253,22 @@ export async function generateAuditTxtWithOpenAI(
       if (typeof v === "string") {
         const s = v.trim();
         if (!s) continue;
-        if (s.startsWith("data:image/") || s.length > MAX_VALUE_CHARS) continue;
-        out[k] = s;
+        // data URL => on skip (trop lourd)
+        if (s.startsWith("data:image/")) continue;
+        // Trop long => on TRONQUE (on ne drop pas, sinon on "zappe" des réponses)
+        out[k] = s.length > MAX_VALUE_CHARS ? truncateMiddle(s, MAX_VALUE_CHARS) : s;
         continue;
       }
 
       // Arrays/objects: stringify mais cap
       try {
         const str = Array.isArray(v) || typeof v === "object" ? JSON.stringify(v) : String(v);
-        if (!str || str.length > MAX_VALUE_CHARS) continue;
-        out[k] = Array.isArray(v) || typeof v === "object" ? v : str;
+        if (!str) continue;
+        if (str.length > MAX_VALUE_CHARS) {
+          out[k] = truncateMiddle(str, MAX_VALUE_CHARS);
+        } else {
+          out[k] = Array.isArray(v) || typeof v === "object" ? v : str;
+        }
       } catch {
         // ignore
       }
@@ -276,11 +294,17 @@ ANALYSE PHOTO POSTURALE:
 ${photoAnalysisStr}
 `;
 
-  let fullAuditTxt = '';
+  const auditParts: string[] = [];
+  const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
+  auditParts.push(ctaDebut);
+  auditParts.push(`\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`);
+  auditParts.push(`Genere le ${new Date().toLocaleString('fr-FR')}\n`);
+
   let newSectionsGenerated = 0;
+  const sectionsToGenerate = getSectionsForTier(tier);
 
   const results = await mapWithConcurrency(
-    SECTIONS,
+    sectionsToGenerate,
     Number(OPENAI_SECTION_CONCURRENCY) || 3,
     async (section) => {
       if (cachedSections[section]) {
@@ -297,7 +321,7 @@ ${photoAnalysisStr}
 
       // Cap par section (évite de “réserver” 8000 tokens * N sections en parallèle)
       const sectionText = await callOpenAI(prompt, {
-        maxCompletionTokens: OPENAI_MAX_TOKENS,
+        maxCompletionTokens: OPENAI_MAX_COMPLETION_TOKENS_PER_SECTION,
       });
 
       if (!sectionText) {
@@ -334,12 +358,18 @@ ${photoAnalysisStr}
   }
 
   // Assemblage dans l'ordre original
-  SECTIONS.forEach((section) => {
+  sectionsToGenerate.forEach((section) => {
     const res = results.find((r) => r.section === section);
     if (res && res.text) {
-      fullAuditTxt += `\n\n${section}\n\n${res.text}`;
+      auditParts.push(`\n${section.toUpperCase()}\n`);
+      auditParts.push(res.text);
     }
   });
+
+  const ctaFin = getCTAFin(tier, PRICING.PREMIUM);
+  auditParts.push('\n\n' + ctaFin);
+
+  const fullAuditTxt = auditParts.join('\n');
 
   const generationTime = Date.now() - startTime;
   console.log(
@@ -383,7 +413,7 @@ export async function generateAndConvertAuditWithOpenAI(
     clientName: clientName,
     metadata: {
       generationTimeMs: generationTime,
-      sectionsGenerated: SECTIONS.length,
+      sectionsGenerated: getSectionsForTier(tier).length,
       modelUsed: OPENAI_CONFIG.OPENAI_MODEL,
     },
   };

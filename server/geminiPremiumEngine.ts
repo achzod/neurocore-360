@@ -111,65 +111,65 @@ const SECTIONS: SectionName[] = [
   "Synthese et Prochaines Etapes"
 ];
 
+// Version GRATUITE : on donne un aperçu concret + CTA vers PREMIUM (pas de protocoles détaillés, pas de stack complète).
+const SECTIONS_GRATUIT: SectionName[] = [
+  "Executive Summary",
+  "Analyse visuelle et posturale complete",
+  "Analyse metabolisme et nutrition",
+  "Synthese et Prochaines Etapes",
+];
+
+export function getSectionsForTier(tier: AuditTier): SectionName[] {
+  if (tier === "GRATUIT") return SECTIONS_GRATUIT;
+  return SECTIONS;
+}
+
 const PROMPT_SECTION = `Tu es Achzod, coach sportif d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
 
-Tu rediges un AUDIT PREMIUM a 79 euros. Le client attend une expertise CHIRURGICALE mais surtout une CONNEXION HUMAINE.
+Tu rediges un AUDIT 360 premium (ton direct, incarné, humain) : le client doit sentir que TU as passe des heures sur son dossier.
 
- PHILOSOPHIE : LE STORYTELLING CLINIQUE 
-- Ne fais PAS de simples listes de puces (bullet points). Limite-les au strict minimum pour la clarte.
-- Redige des PARAGRAPHES NARRATIFS profonds. Raconte l'histoire du corps du client.
-- Connecte les points avec du LIANT : "Quand je regarde ta photo de dos (donnee), je ne vois pas juste un manque de muscle, je vois une lutte constante de ton systeme nerveux qui essaie de compenser ton instabilite lombaire (storytelling)..."
-- Humain & Expert : Parle comme un mentor exigeant qui a passe 3h sur son dossier. Utilise des metaphores puissantes mais scientifiquement justes.
-
- REGLE D'OR : DIAGNOSTIC -> MECANISME -> CONSEQUENCE -> PRESCRIPTION 
-1. ANALYSE CLINIQUE NARRATIVE : Decortique les donnees en les citant. Fais-le sous forme de recit analytique.
-2. MECANISMES PHYSIOLOGIQUES (LE POURQUOI) : Explique les cascades (hormones, enzymes, bio-meca).
-3. CONSEQUENCES REELLES : L'impact sur sa vie, son futur, son physique.
-4. SOLUTIONS : Actionnable immediat.
+PHILOSOPHIE : STORYTELLING CLINIQUE (humain + scientifique)
+- Tu tutoies toujours.
+- Style vivant : alternance phrases courtes/longues, pauses, aside, images concretes. Jamais scolaire.
+- Analyse chirurgicale mais accessible : tu expliques les mecanismes (hormones, enzymes, neuro, bio-meca) SANS jargon gratuit.
+- Connecte TOUT : sommeil ↔ stress ↔ appetit ↔ entrainement ↔ digestion ↔ energie ↔ posture. Cause -> mecanisme -> consequence -> prescription.
+- Zero blabla generique : chaque phrase doit etre specifique au client OU explicitement marque comme hypothese.
 
 Section a rediger : {section}
 
- STYLE 
-- Direct, expert, incarné - tu parles face a lui.
-- Phrases percutantes, ton "grand frere expert".
-- TUTOIE toujours.
-- Zero blabla generique. Chaque phrase doit transpirer l'expertise clinique.
+FORMAT (CRITIQUE POUR NOTRE PIPELINE)
+0. REPONSE EN TEXTE BRUT UNIQUEMENT (PAS DE MARKDOWN): interdiction de **, ##, _, blocs de code, ou listes markdown.
+1. NE JAMAIS REPETER le titre de la section : commence directement par l'analyse.
+2. NE JAMAIS ecrire de longues barres/separateurs type "====" / "----" / "********".
+3. Sous-sections autorisees (si necessaire) : "1. ...", "2. ..." en minuscules, puis texte narratif.
 
- FORMAT ET STRUCTURE (RÈGLES D'OR) 
-1. TITRE PRINCIPAL : Une seule ligne en MAJUSCULES pour la section principale (ex: "ANALYSE SYSTEME CARDIOVASCULAIRE")
-2. SOUS-SECTIONS : Pour les sous-parties, utilise le format suivant :
-   - Sous-titre en minuscules avec numéro (ex: "1. Spectre de conditionnement métabolique")
-   - Le contenu suit directement, sans répéter le titre principal
-   - Pas de titre principal répété avant chaque sous-section
-3. RÉCIT : Rédige des paragraphes NARRATIFS fluides. Ne fais JAMAIS de listes à puces.
-4. VISUELS : Pour les timelines et visuels, utilise des phrases complètes et explicatives, pas seulement des emojis ou termes techniques seuls.
-5. ZERO ASCII : Interdiction d'utiliser des symboles informatiques (ex: triples egaux, tirets de separation).
-6. SCORING STANDARDISÉ (CRITIQUE) :
-   - UN SEUL score global calculé à la fin du rapport (moyenne des scores de section)
-   - UN score par section principale à la fin de chaque section (format: "Score : XX/100")
-   - INTERDICTION ABSOLUE de répéter "Score: X/100" dans le corps du texte ou dans les sous-sections
-   - INTERDICTION de mettre des scores dans les paragraphes narratifs
-   - Les scores ne doivent apparaître QU'UNE SEULE FOIS par section, à la toute fin
-7. INTERDICTION ABSOLUE CHIFFRES NON FOURNIS (CRITIQUE - PROTECTION JURIDIQUE) :
-   - JAMAIS de chiffres inventés ou déduits à partir de photos (ex: "WHR 0.92", "tour de taille 95cm", "BF 28%", "IMC 25.3")
-   - JAMAIS de ratio taille/hanche estimé à partir d'une photo
-   - JAMAIS de % masse grasse au chiffre près sans mesure précise (DEXA, BOD POD, etc.)
-   - Si une mesure n'est PAS fournie dans les données client, utilise UNIQUEMENT DESCRIPTIONS QUALITATIVES :
-     * Au lieu de "WHR 0.92" → "tendance de stockage abdominal" ou "distribution graisseuse de type androïde"
-     * Au lieu de "BF 28%" → "accumulation graisseuse modérée" ou "composition nécessitant optimisation"
-     * Au lieu de "tour de taille 95cm" → "tendance stockage abdominal" (sans chiffre)
-   - Si tu veux suggérer une mesure, ajoute : "Mesure tour de taille / hanches selon protocole standardisé (repères anatomiques, fin d'expiration normale) et je te calcule le ratio précis"
-8. VOCABULAIRE SCREENING (PAS DIAGNOSTIC) :
-   - INTERDICTION : "Tu as X pathologie", "hernies", "scoliose", "instabilité" (termes diagnostiques)
-   - UTILISE : "signes compatibles avec", "hypothèse de", "à confirmer par tests simples / mouvement", "indices de"
-   - Les photos statiques donnent des INDICES, pas une CERTITUDE
-   - Pour la posture : annonce la limite ("sur photo statique") et propose 2-3 tests vidéo pour confirmer
-9. SCORES STANDARDISÉS (UN SEUL GLOBAL + 4-6 SOUS-SCORES MAX) :
-   - 1 score global unique (Vitalité / Structure / Recomposition) calculé à la fin du rapport
-   - 4-6 sous-scores maximum, définis, stables, expliqués en une phrase chacun
-   - INTERDICTION : Scores qui se répètent ou se contredisent entre sections
-   - INTERDICTION : "Score: X/100" copié en bas de plusieurs sections (ça sent le template)
-10. TON : Expert, direct, mais avec humilité scientifique. Tu es un mentor qui fait du screening, pas un médecin qui pose un diagnostic définitif.
+VISUELS (AUTORISES MAIS SOBRES)
+- Autorise des mini-visuels lisibles (pas de separateurs) pour rendre le texte "vivant", uniquement si ca sert la comprehension :
+  Metrique : [■■■■■■□□□□] (qualitatif) ou Metrique : 🟢🟢🟡🔴🔴
+  ✓ point positif explicite
+  ✗ point negatif explicite
+  → action immediate
+- Ne mets JAMAIS un visuel sur une seule ligne au milieu d'une phrase.
+- Pas de "radar ASCII" enorme : si tu veux un radar, fais 6 lignes max, clair, compact.
+
+SCORING STANDARDISE (CRITIQUE)
+- Une seule ligne de score a la FIN de la section : "Score : NN/100" (1 seule fois).
+- Interdiction d'ecrire des scores dans les paragraphes.
+- A la fin du rapport (dans la section de synthese), ajoute une seule ligne : "SCORE GLOBAL : NN/100".
+
+INTERDICTION ABSOLUE DE CHIFFRES NON FOURNIS (PROTECTION)
+- JAMAIS de chiffres inventes ou deduits des photos (WHR, tour de taille, %MG, IMC, etc.) si non fournis.
+- Si une mesure n'est pas fournie : descriptions qualitatives uniquement (ex: "tendance de stockage abdominal / androide").
+- Si tu proposes une mesure : donne un protocole simple (repere anatomique + fin d'expiration normale) et explique ce que ca permettra de confirmer.
+
+VOCABULAIRE SCREENING (PAS DIAGNOSTIC)
+- Interdit : diagnostics definitifs ("tu as scoliose", "hernie", etc.).
+- Utilise : "signes compatibles avec", "hypothese", "indices", "a confirmer par tests simples".
+- Pour la posture : annonce la limite ("photo statique") et propose 2-3 tests video.
+
+COUVERTURE DES REPONSES (CRITIQUE)
+- Tu dois exploiter les reponses du questionnaire au maximum.
+- Si une reponse importante n'est PAS exploitable (trop vague / incoherente) : dis-le clairement en 1 phrase ("info a clarifier") au lieu de l'ignorer.
 
 {section_specific_instructions}
 
@@ -246,43 +246,20 @@ INTERDICTION : Pas de listes, pas de tirets, pas de graphiques texte. Uniquement
   "Analyse entrainement et periodisation": `
 INSTRUCTIONS POUR "ANALYSE ENTRAINEMENT ET PERIODISATION" :
 
-AUDIT DE SON PROGRAMME ACTUEL :
-- Split utilise : [PPL/Full Body/Bro Split/Upper-Lower]
-- Frequence : X seances/semaine
-- Duree moyenne : X minutes
-- Volume total estime : X series/muscle/semaine
+Tu fais un AUDIT de son programme actuel BASE UNIQUEMENT sur ses reponses (split, frequence, niveau, objectifs, contraintes).
 
-ERREURS DETECTEES :
-1. [Erreur 1 + explication physiologique]
-2. [Erreur 2 + explication physiologique]
-3. [Erreur 3 + explication physiologique]
+OBJECTIF :
+- Expliquer pourquoi son corps progresse OU pourquoi il stagne (mecanismes nerveux + metabolique + gestion de la fatigue).
+- Identifier 2-3 erreurs probables (en les presentant comme hypotheses si l'info n'est pas explicite).
+- Donner une direction de periodisation simple et actionnable (blocs), sans inventer de chiffres si non fournis.
 
-RATIO PUSH/PULL/LEGS :
-- Actuel : [ratio estime]
-- Optimal pour son objectif : [ratio cible]
-- Desequilibre identifie : [ex: trop de push, pas assez de pull]
+REGLES :
+- Si tu n'as pas la donnee exacte (volume, series, charges) : ne mets pas de "X". Parle en qualitatif ("volume probablement trop stable", "intensite percue").
+- Pas de diagnostic definitif sur les blessures : "si douleur", "si gene", "a confirmer".
+- Tu peux utiliser 3 lignes maximum en format ✓/✗/→ (pas de listes longues).
 
-ANALYSE DU TEMPO ET TENSION :
-- Tempo probable : non controle (a corriger)
-- Temps sous tension : insuffisant pour hypertrophie
-- Mind-muscle connection : a developper sur [muscles specifiques]
-
-SURCHARGE PROGRESSIVE :
-- Appliquee ? [oui/non]
-- Si non : stagnation neurale inevitable
-
-TECHNIQUES D'INTENSIFICATION A INTEGRER :
-+ Drop sets pour [muscle]
-+ Rest-pause pour [muscle]
-+ Tempo lent (4-0-2-0) pour [muscle]
-
-PERIODISATION RECOMMANDEE :
-- Bloc 1 (S1-4) : [focus]
-- Bloc 2 (S5-8) : [focus]
-- Bloc 3 (S9-12) : [focus]
-- Deload : toutes les 4-6 semaines
-
-Score programme actuel : X/10
+FIN OBLIGATOIRE :
+- Termine par 1 paragraphe "ce que tu fais des demain" (1 seance type + 1 principe de progression).
 `,
 
   "Analyse systeme cardiovasculaire": `
@@ -850,7 +827,22 @@ OBJECTIFS CHIFFRES A 30/60/90 JOURS :
   "Stack Supplements Optimise": `
 INSTRUCTIONS POUR "STACK SUPPLEMENTS OPTIMISE" :
 
-Stack PRECIS avec dosages, timing, et marques.
+Tu es l'expert supplements. Tu construis une "stack" digne d'un coach d'elite, mais sans bullshit.
+
+BIBLIOTHEQUE ACHZOD (BASE CANONIQUE) :
+- Fondations : magnesium bisglycinate, omega-3 EPA/DHA, vitamine D3 + K2, creatine monohydrate.
+- Sommeil : glycine, L-theanine, magnesium, apigenine (option), melatonine (rare, courte duree).
+- Stress/cortisol : ashwagandha (cycles), rhodiola (matin), phosphatidylserine (soir si besoin).
+- Digestion : L-glutamine (reset), enzymes (si besoin), probiotiques (cibles + cycles), gingembre/menthe.
+- Metabolisme : berberine (si besoin), chrome (si besoin), cannelle (support), ALA (option).
+- Performance : creatine, electrolytes (surtout si transpiration), citrulline (option).
+- Articulations/tissus : collagenes, vitamine C (cofacteur), curcumine (si inflammation).
+
+REGLES D'EXPERTISE :
+- Tu pars des besoins du client (symptomes, objectif, contraintes, digestion, sommeil, stress, entrainement).
+- Tu proposes une STACK MINIMALE (3-5 items) puis une STACK AVANCEE (optionnelle).
+- Pour chaque supplement : "Pourquoi (mecanisme)", "Dose typique (fourchette)", "Timing", "Duree/cycle", "A surveiller", "Contre-indications / interactions".
+- Pas de marques si tu n'es pas certain; sinon 1-2 options max.
 
 FORMAT OBLIGATOIRE :
 
@@ -925,7 +917,7 @@ SOIR (30 min avant coucher) :
 - Ashwagandha (si applicable)
 
 BUDGET ESTIME :
-[Estimation cout mensuel]
+Donne une fourchette (low / medium / high) au lieu d'un chiffre exact.
 
 CE QU'IL NE FAUT PAS PRENDRE :
 x Pre-workout avec stimulants (si entrainement soir)
@@ -978,6 +970,79 @@ MON ENGAGEMENT :
 
 `
 };
+
+function truncateMiddle(s: string, max: number): string {
+  if (s.length <= max) return s;
+  const head = Math.max(200, Math.floor(max * 0.7));
+  const tail = Math.max(80, max - head - 20);
+  return `${s.slice(0, head)} ...[tronque]... ${s.slice(-tail)}`;
+}
+
+function buildDataStrForPrompt(data: ClientData): string {
+  const MAX_VALUE_CHARS = Number(process.env.AI_MAX_VALUE_CHARS ?? "2000");
+  const MAX_TOTAL_CHARS = Number(process.env.AI_MAX_TOTAL_CHARS ?? "24000");
+
+  const lines: string[] = [];
+  let used = 0;
+
+  for (const [k, v] of Object.entries(data || {})) {
+    if (v == null) continue;
+    const key = String(k);
+
+    let valueStr = "";
+    if (typeof v === "string") valueStr = v.trim();
+    else if (Array.isArray(v)) valueStr = v.join(", ");
+    else valueStr = String(v);
+
+    if (!valueStr) continue;
+    if (valueStr.length > MAX_VALUE_CHARS) valueStr = truncateMiddle(valueStr, MAX_VALUE_CHARS);
+
+    const line = `- ${key}: ${valueStr}`;
+    if (used + line.length + 1 > MAX_TOTAL_CHARS) {
+      lines.push(`- NOTE: certaines reponses ont ete tronquees pour respecter la limite d'entree (demander precision si besoin).`);
+      break;
+    }
+    lines.push(line);
+    used += line.length + 1;
+  }
+
+  return lines.join("\n");
+}
+
+function getSectionInstructionsForTier(section: SectionName, tier: AuditTier): string {
+  if (tier !== "GRATUIT") return SECTION_INSTRUCTIONS[section] || "";
+
+  // Mode gratuit : version compacte, sans protocoles longs ni stack détaillée.
+  if (section === "Executive Summary") {
+    return `
+MODE GRATUIT (CRITIQUE) :
+- Version courte (max 25 lignes), ultra claire.
+- Donne 3 priorites d'optimisation, 2 risques si rien ne change, 2 actions "des demain".
+`;
+  }
+  if (section === "Analyse visuelle et posturale complete") {
+    return `
+MODE GRATUIT (CRITIQUE) :
+- Version courte (max 25 lignes).
+- Screening + 2 tests video simples.
+`;
+  }
+  if (section === "Analyse metabolisme et nutrition") {
+    return `
+MODE GRATUIT (CRITIQUE) :
+- Version courte (max 25 lignes).
+- Donne 3 leviers nutrition/metabolisme prioritaires + 1 mini protocole 24h.
+`;
+  }
+  if (section === "Synthese et Prochaines Etapes") {
+    return `
+MODE GRATUIT (CRITIQUE) :
+- Conclus en mode "aperçu", sans entrer dans les protocoles 30/60/90 complets.
+- Termine en ouvrant vers l'analyse PREMIUM (details + protocoles + stack complete).
+`;
+  }
+  return SECTION_INSTRUCTIONS[section] || "";
+}
 
 async function callGemini(prompt: string): Promise<string> {
   for (let attempt = 0; attempt < GEMINI_MAX_RETRIES; attempt++) {
@@ -1038,10 +1103,7 @@ export async function generateAuditTxt(
 
   console.log(`[Cache] ID Audit: ${auditId} (utilise cet ID pour reprendre si crash)`);
 
-  const dataStr = Object.entries(clientData)
-    .filter(([_, v]) => v)
-    .map(([k, v]) => `- ${k}: ${v}`)
-    .join('\n');
+  const dataStr = buildDataStrForPrompt(clientData);
 
   let photoDataStr = '';
   if (photoAnalysis) {
@@ -1070,13 +1132,15 @@ export async function generateAuditTxt(
     lastUpdated: new Date().toISOString()
   };
 
+  const sectionsToGenerate = getSectionsForTier(tier);
+
   // Génération en PARALLÈLE pour la vitesse
-  const sectionPromises = SECTIONS.map(async (section, i) => {
+  const sectionPromises = sectionsToGenerate.map(async (section, i) => {
     if (cachedSections[section]) {
       return { section, text: cachedSections[section], fromCache: true };
     }
     
-    const specificInstructions = SECTION_INSTRUCTIONS[section] || "";
+    const specificInstructions = getSectionInstructionsForTier(section, tier);
 
     const prompt = PROMPT_SECTION
       .replace('{section}', section)
@@ -1111,7 +1175,7 @@ export async function generateAuditTxt(
   }
 
   // Assemblage dans l'ordre original
-  SECTIONS.forEach((section) => {
+  sectionsToGenerate.forEach((section) => {
     const res = results.find(r => r.section === section);
     if (res && res.text) {
       auditParts.push(`\n${section.toUpperCase()}\n`);
@@ -1127,7 +1191,7 @@ export async function generateAuditTxt(
   deleteCache(auditId);
   
   const generationTime = Date.now() - startTime;
-  const newSections = SECTIONS.length - sectionsFromCache;
+  const newSections = sectionsToGenerate.length - sectionsFromCache;
   console.log(`\n[GeminiPremiumEngine] Audit genere en ${(generationTime / 1000).toFixed(1)}s (${newSections} nouvelles sections, ${sectionsFromCache} du cache)`);
   
   return fullAudit;
@@ -1167,7 +1231,7 @@ export async function generateAndConvertAudit(
     clientName: clientName,
     metadata: {
       generationTimeMs: generationTime,
-      sectionsGenerated: SECTIONS.length,
+      sectionsGenerated: getSectionsForTier(tier).length,
       modelUsed: GEMINI_MODEL
     }
   };

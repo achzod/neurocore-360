@@ -25,9 +25,9 @@ import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
  * - For HA/multi-instance, would need distributed job queue (Redis, SQS, etc.)
  */
 
-const STUCK_JOB_THRESHOLD_MS = 10 * 60 * 1000;
 // La génération OpenAI (multi-sections) peut être longue (429 + retries + cache).
-// 20 min reste parfois trop court : on passe à 45 min pour permettre la fin + envoi email.
+// On doit donc éviter de considérer le job comme "stuck" tant que la génération est en cours.
+const STUCK_JOB_THRESHOLD_MS = 45 * 60 * 1000;
 const AI_CALL_TIMEOUT_MS = 45 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 
@@ -199,11 +199,31 @@ async function generateReportAsync(
     console.log(`[ReportJobManager] Calling GPT-5.2-2025-12-11 engine for ${auditId}`);
     
     // Utiliser GPT-5.2-2025-12-11 pour la génération
-    const result = await withTimeout(
+    const generationPromise = withTimeout(
       generateAndConvertAuditWithOpenAI(responses as ClientData, photoAnalysis, auditType as any, auditId),
       AI_CALL_TIMEOUT_MS,
       `GPT-5.2-2025-12-11 report generation for ${auditId}`
     );
+
+    // Heartbeat: éviter le faux "stuck" (et donner une progression visible)
+    const heartbeatIntervalMs = 2 * 60 * 1000; // toutes les 2 minutes
+    const heartbeat = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      // Progression "douce" de 20 -> 90 sur toute la fenêtre de timeout
+      const pct = Math.min(90, 20 + Math.floor((elapsed / AI_CALL_TIMEOUT_MS) * 70));
+      storage
+        .createOrUpdateReportJob({
+          auditId,
+          status: "generating" as ReportJobStatusEnum,
+          currentSection: "Génération du rapport expert... (en cours)",
+          progress: pct,
+        })
+        .catch(() => {
+          // best-effort
+        });
+    }, heartbeatIntervalMs);
+
+    const result = await generationPromise.finally(() => clearInterval(heartbeat));
 
     if (!result.success) {
       throw new Error(result.error || "GPT-5.2-2025-12-11 generation failed");

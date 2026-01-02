@@ -1,5 +1,7 @@
 import puppeteer from "puppeteer";
 import { formatTxtToDashboard } from "./formatDashboard";
+import { getCTADebut, getCTAFin, PRICING } from "./cta";
+import type { AuditTier } from "./types";
 
 // ==========================================
 // CONFIGURATION DESIGN SYSTEM (Homepage)
@@ -252,6 +254,24 @@ function generateSVGRadar(scores: Record<string, number>): string {
 
 export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?: string[]): string {
   const dashboard = formatTxtToDashboard(txt);
+
+  // Fallback CTA : si le modèle a "oublié" les CTAs dans le TXT, on les injecte quand même.
+  // (nécessaire pour éviter "CTA début/fin manquants" dans le HTML)
+  const inferTierFromTxt = (t: string): AuditTier => {
+    const lower = t.toLowerCase();
+    if (lower.includes("analyse gratuite") || lower.includes("infos importantes")) return "GRATUIT";
+    if (lower.includes("analyse premium") || lower.includes("rappel important")) return "PREMIUM";
+    // Par défaut on considère PREMIUM (sinon on sous-livre)
+    return "PREMIUM";
+  };
+
+  const inferredTier = inferTierFromTxt(txt);
+  if (!dashboard.ctaDebut || !dashboard.ctaDebut.trim()) {
+    dashboard.ctaDebut = getCTADebut(inferredTier, PRICING.PREMIUM);
+  }
+  if (!dashboard.ctaFin || !dashboard.ctaFin.trim()) {
+    dashboard.ctaFin = getCTAFin(inferredTier, PRICING.PREMIUM);
+  }
   
   // Extraire les scores réels
   const scores: Record<string, number> = {};
