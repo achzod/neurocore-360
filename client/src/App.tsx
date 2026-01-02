@@ -18,6 +18,7 @@ import Verify from "@/pages/auth/Verify";
 import MentionsLegales from "@/pages/MentionsLegales";
 import CGV from "@/pages/CGV";
 import TestAudit from "@/pages/TestAudit";
+import FAQ from "@/pages/FAQ";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/auth/verify" component={Verify} />
       <Route path="/mentions-legales" component={MentionsLegales} />
       <Route path="/cgv" component={CGV} />
+      <Route path="/faq" component={FAQ} />
       <Route path="/test" component={TestAudit} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/reviews" component={AdminReviews} />
