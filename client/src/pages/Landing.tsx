@@ -99,7 +99,7 @@ function UltrahumanHero() {
               }}
               aria-hidden="true"
             >
-              Décode ton<br />métabolisme
+              Hack ta biologie.<br />Débloque ta performance.
             </h1>
 
             {/* Layer 2: SHARP - magnified area around cursor (100% crisp, revealed by mask) */}
@@ -114,7 +114,7 @@ function UltrahumanHero() {
                 maskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
               }}
             >
-              Décode ton<br />métabolisme
+              Hack ta biologie.<br />Débloque ta performance.
             </h1>
 
             {/* Layer 3: Cursor dot - stylized point at mouse position */}
@@ -146,7 +146,7 @@ function UltrahumanHero() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="mt-8 text-white/50 text-base sm:text-lg max-w-md"
           >
-            180+ questions. 15 domaines. Un rapport personnalisé de 40+ pages pour comprendre et optimiser ta performance.
+            Analyse neuro-endocrinienne complète. Pas de "mange mieux". Des protocoles cliniques basés sur tes biomarqueurs, ton HRV, et ta flexibilité métabolique.
           </motion.p>
 
           {/* CTA */}
