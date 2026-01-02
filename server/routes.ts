@@ -1390,19 +1390,13 @@ export async function registerRoutes(
       // Create 2 abandoned questionnaires
       await storage.saveProgress({
         email: "achkou+abandon1@gmail.com",
-        currentSection: "5",
-        totalSections: "14",
-        percentComplete: "35",
+        currentSection: 4,
         responses: { sexe: "homme", prenom: "TestAbandon1" },
-        status: "IN_PROGRESS",
       });
       await storage.saveProgress({
         email: "achkou+abandon2@gmail.com",
-        currentSection: "9",
-        totalSections: "14",
-        percentComplete: "64",
+        currentSection: 8,
         responses: { sexe: "femme", prenom: "TestAbandon2" },
-        status: "IN_PROGRESS",
       });
       results.push("2 abandons créés");
 
