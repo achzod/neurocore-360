@@ -209,10 +209,55 @@ export async function generateAuditTxtWithOpenAI(
 
   console.log(`[Cache OpenAI] ID Audit: ${auditId} (utilise cet ID pour reprendre si crash)`);
 
-  const dataStr = Object.entries(clientData)
-    .filter(([_, v]) => v)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n');
+  // ⚠️ IMPORTANT: Ne jamais injecter les photos base64 (ou autres blobs) dans le prompt.
+  // Les réponses du questionnaire peuvent contenir photoFront/photoSide/photoBack en data URL,
+  // ce qui explose la limite de tokens d'entrée (272k).
+  const sanitizeClientDataForPrompt = (data: ClientData): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    const MAX_VALUE_CHARS = Number(process.env.OPENAI_MAX_VALUE_CHARS ?? "2000");
+
+    for (const [k, v] of Object.entries(data || {})) {
+      if (v == null) continue;
+
+      const key = String(k).toLowerCase();
+      // Champs photo / blobs
+      if (
+        key.includes("photo") ||
+        key.includes("image") ||
+        key === "photos" ||
+        key === "photoFront".toLowerCase() ||
+        key === "photoSide".toLowerCase() ||
+        key === "photoBack".toLowerCase()
+      ) {
+        continue;
+      }
+
+      // Si c'est une string data URL ou trop longue -> skip
+      if (typeof v === "string") {
+        const s = v.trim();
+        if (!s) continue;
+        if (s.startsWith("data:image/") || s.length > MAX_VALUE_CHARS) continue;
+        out[k] = s;
+        continue;
+      }
+
+      // Arrays/objects: stringify mais cap
+      try {
+        const str = Array.isArray(v) || typeof v === "object" ? JSON.stringify(v) : String(v);
+        if (!str || str.length > MAX_VALUE_CHARS) continue;
+        out[k] = Array.isArray(v) || typeof v === "object" ? v : str;
+      } catch {
+        // ignore
+      }
+    }
+    return out;
+  };
+
+  const safeClientData = sanitizeClientDataForPrompt(clientData);
+  const dataStr = Object.entries(safeClientData)
+    .filter(([_, v]) => v !== undefined && v !== null && String(v).trim().length > 0)
+    .map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`)
+    .join("\n");
 
   const photoAnalysisStr = photoAnalysis
     ? formatPhotoAnalysisForReport(photoAnalysis)
