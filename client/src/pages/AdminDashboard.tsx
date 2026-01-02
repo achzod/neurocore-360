@@ -28,6 +28,10 @@ import {
   Power,
   ToggleLeft,
   ToggleRight,
+  Megaphone,
+  Gift,
+  Crown,
+  Timer,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -54,6 +58,7 @@ interface Audit {
   type: string;
   status: string;
   reportDeliveryStatus: string;
+  reportSentAt?: string;
   createdAt: string;
   completedAt?: string;
 }
@@ -90,7 +95,7 @@ export default function AdminDashboard() {
   });
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
-  const [activeTab, setActiveTab] = useState("audits");
+  const [activeTab, setActiveTab] = useState("relances");
   const [audits, setAudits] = useState<Audit[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [incompleteQuestionnaires, setIncompleteQuestionnaires] = useState<IncompleteQuestionnaire[]>([]);
@@ -106,6 +111,7 @@ export default function AdminDashboard() {
     maxUses: "",
     expiresAt: "",
   });
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,6 +276,46 @@ export default function AdminDashboard() {
         variant: "destructive",
       });
     }
+  };
+
+  const sendSequenceEmail = async (auditId: string, emailType: string, emailLabel: string) => {
+    setSendingEmailId(`${auditId}-${emailType}`);
+    try {
+      const response = await fetch("/api/admin/send-sequence-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auditId, emailType }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Email envoyé !",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.error || "Impossible d'envoyer l'email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer l'email",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
+  // Helper function to calculate days since report sent
+  const getDaysSinceSent = (reportSentAt?: string) => {
+    if (!reportSentAt) return null;
+    const sentDate = new Date(reportSentAt);
+    const now = new Date();
+    return Math.floor((now.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   // Fetch all data on mount for tab counts
@@ -479,23 +525,260 @@ export default function AdminDashboard() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="relances" className="gap-2">
+              <Megaphone className="w-4 h-4" />
+              Relances
+            </TabsTrigger>
             <TabsTrigger value="audits" className="gap-2">
               <FileText className="w-4 h-4" />
               Analyses envoyées ({audits.filter(a => a.reportDeliveryStatus === "SENT").length})
             </TabsTrigger>
             <TabsTrigger value="incomplete" className="gap-2">
               <UserX className="w-4 h-4" />
-              Abandons questionnaire ({incompleteQuestionnaires.length})
+              Abandons ({incompleteQuestionnaires.length})
             </TabsTrigger>
             <TabsTrigger value="reviews" className="gap-2">
               <Star className="w-4 h-4" />
-              Avis en attente ({reviews.length})
+              Avis ({reviews.length})
             </TabsTrigger>
             <TabsTrigger value="promo" className="gap-2">
               <Tag className="w-4 h-4" />
-              Codes promo ({promoCodes.filter(p => p.isActive).length})
+              Codes promo
             </TabsTrigger>
           </TabsList>
+
+          {/* Tab: Relances */}
+          <TabsContent value="relances">
+            <div className="space-y-8">
+              {/* Section: Abandons questionnaire */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-orange-500/10">
+                    <UserX className="w-5 h-5 text-orange-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Abandons questionnaire</h3>
+                    <p className="text-sm text-muted-foreground">Relancer avec code ANALYSE20 (-20%)</p>
+                  </div>
+                  <Badge variant="secondary" className="ml-auto">{incompleteQuestionnaires.length}</Badge>
+                </div>
+                {incompleteQuestionnaires.length === 0 ? (
+                  <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun abandon</CardContent></Card>
+                ) : (
+                  <div className="grid gap-3">
+                    {incompleteQuestionnaires.slice(0, 5).map((q) => (
+                      <Card key={q.id}>
+                        <CardContent className="py-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{q.email}</p>
+                            <p className="text-sm text-muted-foreground">{q.percentComplete}% complété</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedAuditId(q.id);
+                              setCtaSubject("Ton audit NEUROCORE 360 t'attend + Code -20% !");
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire NEUROCORE 360 mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setShowCtaModal(true);
+                            }}
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            Relancer
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: GRATUIT - Upsell Premium */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <Gift className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Analyses GRATUITES</h3>
+                    <p className="text-sm text-muted-foreground">Upsell Premium avec code ANALYSE20 (-20%)</p>
+                  </div>
+                  <Badge variant="secondary" className="ml-auto">
+                    {audits.filter(a => a.type === "GRATUIT" && a.reportDeliveryStatus === "SENT").length}
+                  </Badge>
+                </div>
+                {audits.filter(a => a.type === "GRATUIT" && a.reportDeliveryStatus === "SENT").length === 0 ? (
+                  <Card><CardContent className="py-8 text-center text-muted-foreground">Aucune analyse gratuite</CardContent></Card>
+                ) : (
+                  <div className="grid gap-3">
+                    {audits.filter(a => a.type === "GRATUIT" && a.reportDeliveryStatus === "SENT").slice(0, 5).map((audit) => {
+                      const days = getDaysSinceSent(audit.reportSentAt);
+                      return (
+                        <Card key={audit.id}>
+                          <CardContent className="py-3 flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{audit.email}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {days !== null ? `Envoyé il y a ${days} jour${days > 1 ? 's' : ''}` : 'Envoyé'}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="default"
+                              disabled={sendingEmailId === `${audit.id}-GRATUIT_UPSELL`}
+                              onClick={() => sendSequenceEmail(audit.id, "GRATUIT_UPSELL", "Upsell")}
+                            >
+                              {sendingEmailId === `${audit.id}-GRATUIT_UPSELL` ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Send className="w-4 h-4 mr-2" />
+                                  Envoyer Upsell
+                                </>
+                              )}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: PREMIUM J+7 */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Crown className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">PREMIUM J+7</h3>
+                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching NEUROCORE20 (-20%)</p>
+                  </div>
+                  <Badge variant="secondary" className="ml-auto">
+                    {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 7).length}
+                  </Badge>
+                </div>
+                {(() => {
+                  const j7Audits = audits.filter(a =>
+                    (a.type === "PREMIUM" || a.type === "ELITE") &&
+                    a.reportDeliveryStatus === "SENT" &&
+                    getDaysSinceSent(a.reportSentAt) !== null &&
+                    getDaysSinceSent(a.reportSentAt)! >= 7
+                  );
+                  return j7Audits.length === 0 ? (
+                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Premium/Elite de +7 jours</CardContent></Card>
+                  ) : (
+                    <div className="grid gap-3">
+                      {j7Audits.slice(0, 5).map((audit) => {
+                        const days = getDaysSinceSent(audit.reportSentAt);
+                        return (
+                          <Card key={audit.id}>
+                            <CardContent className="py-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={audit.type === "ELITE" ? "default" : "secondary"}>
+                                  {audit.type}
+                                </Badge>
+                                <div>
+                                  <p className="font-medium">{audit.email}</p>
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Timer className="w-3 h-3" />
+                                    J+{days}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="bg-purple-600 hover:bg-purple-700"
+                                disabled={sendingEmailId === `${audit.id}-PREMIUM_J7`}
+                                onClick={() => sendSequenceEmail(audit.id, "PREMIUM_J7", "J+7")}
+                              >
+                                {sendingEmailId === `${audit.id}-PREMIUM_J7` ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Send className="w-4 h-4 mr-2" />
+                                    CTA J+7
+                                  </>
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Section: PREMIUM J+14 */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">PREMIUM J+14 (Dernière chance)</h3>
+                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - NEUROCORE20</p>
+                  </div>
+                  <Badge variant="secondary" className="ml-auto">
+                    {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 14).length}
+                  </Badge>
+                </div>
+                {(() => {
+                  const j14Audits = audits.filter(a =>
+                    (a.type === "PREMIUM" || a.type === "ELITE") &&
+                    a.reportDeliveryStatus === "SENT" &&
+                    getDaysSinceSent(a.reportSentAt) !== null &&
+                    getDaysSinceSent(a.reportSentAt)! >= 14
+                  );
+                  return j14Audits.length === 0 ? (
+                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Premium/Elite de +14 jours</CardContent></Card>
+                  ) : (
+                    <div className="grid gap-3">
+                      {j14Audits.slice(0, 5).map((audit) => {
+                        const days = getDaysSinceSent(audit.reportSentAt);
+                        return (
+                          <Card key={audit.id}>
+                            <CardContent className="py-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={audit.type === "ELITE" ? "default" : "secondary"}>
+                                  {audit.type}
+                                </Badge>
+                                <div>
+                                  <p className="font-medium">{audit.email}</p>
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Timer className="w-3 h-3" />
+                                    J+{days}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="bg-amber-600 hover:bg-amber-700"
+                                disabled={sendingEmailId === `${audit.id}-PREMIUM_J14`}
+                                onClick={() => sendSequenceEmail(audit.id, "PREMIUM_J14", "J+14")}
+                              >
+                                {sendingEmailId === `${audit.id}-PREMIUM_J14` ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Send className="w-4 h-4 mr-2" />
+                                    CTA J+14
+                                  </>
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </TabsContent>
 
           <TabsContent value="audits">
             <div className="flex items-center justify-between mb-6">
