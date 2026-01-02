@@ -21,6 +21,8 @@ import {
   UserX,
   AlertTriangle,
   Percent,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -62,12 +64,30 @@ interface IncompleteQuestionnaire {
   lastActivityAt: string;
 }
 
+const ADMIN_PASSWORD = "badboy007";
+
 export default function AdminDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem("admin_auth") === "true";
+  });
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
   const [activeTab, setActiveTab] = useState("audits");
   const [audits, setAudits] = useState<Audit[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [incompleteQuestionnaires, setIncompleteQuestionnaires] = useState<IncompleteQuestionnaire[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("admin_auth", "true");
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+    }
+  };
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [showCtaModal, setShowCtaModal] = useState(false);
   const [selectedAuditId, setSelectedAuditId] = useState<string | null>(null);
@@ -265,6 +285,53 @@ export default function AdminDashboard() {
       <Badge variant={variants[status] || "outline"}>{status}</Badge>
     );
   };
+
+  // Login screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md px-4"
+        >
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <ShieldCheck className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Admin Dashboard</CardTitle>
+              <p className="text-muted-foreground">Accès réservé</p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Entrez le mot de passe"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={`pl-10 ${passwordError ? "border-red-500" : ""}`}
+                    />
+                  </div>
+                  {passwordError && (
+                    <p className="text-sm text-red-500">Mot de passe incorrect</p>
+                  )}
+                </div>
+                <Button type="submit" className="w-full">
+                  Accéder au dashboard
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
