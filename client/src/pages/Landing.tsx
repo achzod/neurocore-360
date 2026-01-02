@@ -134,46 +134,55 @@ function UltrahumanHero() {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            {/* Layer 1: GHOST - blurred text behind (always visible, fades on hover) */}
+            {/* Layer 1: BASE - blurred text (always visible) */}
             <h1
               className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[5.5vw] font-black leading-[0.95] tracking-tighter absolute inset-0 select-none pointer-events-none"
               style={{
                 color: "hsl(160, 84%, 39%)",
-                filter: `blur(${isHovered ? 25 : 14}px)`,
-                opacity: isHovered ? 0 : 0.45,
-                transform: "translate(1px, 1px)",
-                transition: "filter 400ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+                filter: "blur(6px)",
+                opacity: 0.6,
               }}
               aria-hidden="true"
             >
-              Décode ton<br />métabolisme<span style={{ color: "rgba(255,255,255,0.3)" }}>.</span>
+              Décode ton<br />métabolisme
             </h1>
 
-            {/* Layer 2: SHARP - main text (held back by default, snaps to crisp on hover) */}
+            {/* Layer 2: SHARP - magnified area around cursor */}
             <h1
               className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[5.5vw] font-black leading-[0.95] tracking-tighter relative z-10"
               style={{
                 color: "hsl(160, 84%, 39%)",
-                filter: `blur(${isHovered ? 0 : 1}px)`,
-                opacity: isHovered ? 1 : 0.65,
-                transform: `translateY(${isHovered ? -3 : 1}px) scale(${isHovered ? 1.012 : 0.995})`,
-                textShadow: isHovered ? "0 4px 30px rgba(16, 185, 129, 0.4)" : "none",
-                letterSpacing: isHovered ? "-0.02em" : "-0.03em",
-                transition: "all 350ms cubic-bezier(0.34, 1.56, 0.64, 1)", // overshoot curve
+                filter: "blur(6px)",
+                opacity: 0.6,
+                WebkitMaskImage: isHovered ? `radial-gradient(circle 100px at var(--x) var(--y), black 40%, transparent 100%)` : "none",
+                maskImage: isHovered ? `radial-gradient(circle 100px at var(--x) var(--y), black 40%, transparent 100%)` : "none",
               }}
             >
-              Décode ton<br />métabolisme<span className="text-white">.</span>
+              <span style={{ filter: "blur(0px)", display: "inline-block" }}>
+                Décode ton<br />métabolisme
+              </span>
             </h1>
 
-            {/* Layer 3: Spotlight - follows mouse (radial gradient at --x --y) */}
-            <div
-              className="absolute inset-0 pointer-events-none z-20 rounded-2xl"
-              style={{
-                background: "radial-gradient(circle 200px at var(--x) var(--y), rgba(255, 255, 255, 0.12), transparent 60%)",
-                opacity: isHovered ? 1 : 0,
-                transition: "opacity 250ms ease-out",
-              }}
-            />
+            {/* Layer 3: Cursor dot - stylized point at mouse position */}
+            {isHovered && (
+              <div
+                className="absolute pointer-events-none z-30"
+                style={{
+                  left: "var(--x)",
+                  top: "var(--y)",
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <div className="relative">
+                  {/* Outer glow */}
+                  <div className="absolute w-12 h-12 bg-primary/30 rounded-full blur-xl -translate-x-1/2 -translate-y-1/2" />
+                  {/* Inner dot */}
+                  <div className="absolute w-3 h-3 bg-primary rounded-full -translate-x-1/2 -translate-y-1/2 shadow-lg shadow-primary/50" />
+                  {/* Center point */}
+                  <div className="absolute w-1 h-1 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Subtitle */}
