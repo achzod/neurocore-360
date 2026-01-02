@@ -46,30 +46,29 @@ import pnLogo from "@assets/limage-19764_1767172975495.webp";
 import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
-// Ultrahuman-style Hero with spotlight, glow, lift effects
+// Ultrahuman-style Hero: Text LEFT, Phone RIGHT, 3-layer hover effect
 function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
-  const cardRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
 
-  // Update CSS variables on pointermove with rAF
+  // Spotlight: update CSS vars on pointermove
   useEffect(() => {
     let rafId: number;
-    const card = cardRef.current;
-    if (!card) return;
+    const el = textRef.current;
+    if (!el) return;
 
-    const handlePointerMove = (e: PointerEvent) => {
+    const onMove = (e: PointerEvent) => {
       rafId = requestAnimationFrame(() => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        card.style.setProperty("--x", `${x}px`);
-        card.style.setProperty("--y", `${y}px`);
+        const rect = el.getBoundingClientRect();
+        el.style.setProperty("--x", `${e.clientX - rect.left}px`);
+        el.style.setProperty("--y", `${e.clientY - rect.top}px`);
       });
     };
 
-    card.addEventListener("pointermove", handlePointerMove);
+    el.addEventListener("pointermove", onMove);
     return () => {
-      card.removeEventListener("pointermove", handlePointerMove);
+      el.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(rafId);
     };
   }, []);
@@ -120,181 +119,208 @@ function UltrahumanHero() {
   const current = tabContent[activeTab];
 
   return (
-    <section className="relative min-h-[85vh] overflow-hidden bg-black flex flex-col items-center justify-center px-4 py-8">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_50%)]" />
+    <section className="relative min-h-[90vh] overflow-hidden bg-black">
+      {/* Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.1),transparent_50%)]" />
 
-      {/* Hero Card with 3-layer Ultrahuman hover effect */}
-      <div
-        ref={cardRef}
-        className="uh-card relative z-10 mb-6 px-12 py-8 rounded-3xl cursor-pointer group"
-        style={{ "--x": "50%", "--y": "50%" } as React.CSSProperties}
-      >
-        {/* Layer 1: Glow/Aura - blurred halo behind */}
-        <div className="absolute -inset-4 rounded-3xl bg-primary/20 blur-3xl opacity-0 group-hover:opacity-60 transition-opacity duration-300 -z-20" />
+      <div className="relative max-w-7xl mx-auto px-6 py-16 flex flex-col lg:flex-row items-center justify-between gap-12 min-h-[90vh]">
 
-        {/* Layer 2: Glass card background */}
-        <div className="absolute inset-0 rounded-3xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] group-hover:border-white/[0.1] group-hover:bg-white/[0.04] transition-all duration-300 -z-10" />
+        {/* LEFT: Text with Ultrahuman 3-layer hover */}
+        <div className="flex-1 flex flex-col justify-center">
+          <div
+            ref={textRef}
+            className="relative cursor-pointer select-none"
+            style={{ "--x": "0px", "--y": "0px" } as React.CSSProperties}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {/* Layer 1: GHOST - blurred text behind */}
+            <h1
+              className="text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[6vw] font-black leading-[0.95] tracking-tighter absolute inset-0 select-none pointer-events-none transition-all duration-500"
+              style={{
+                color: "rgba(16, 185, 129, 0.4)",
+                filter: isHovered ? "blur(20px)" : "blur(12px)",
+                opacity: isHovered ? 0.2 : 0.5,
+                transform: "translate(2px, 2px)",
+              }}
+              aria-hidden="true"
+            >
+              Décode ton<br />métabolisme<span className="text-white/30">.</span>
+            </h1>
 
-        {/* Layer 3: Spotlight - follows mouse via CSS vars */}
-        <div
-          className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none -z-5"
-          style={{
-            background: "radial-gradient(circle 200px at var(--x) var(--y), rgba(16, 185, 129, 0.15), transparent 50%)",
-          }}
-        />
+            {/* Layer 2: SHARP - main text */}
+            <motion.h1
+              animate={{
+                opacity: isHovered ? 1 : 0.7,
+                scale: isHovered ? 1.01 : 0.99,
+                y: isHovered ? -4 : 2,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 25,
+                mass: 0.8,
+              }}
+              className="text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[6vw] font-black leading-[0.95] tracking-tighter relative z-10"
+            >
+              <span className="text-primary">Décode ton</span>
+              <br />
+              <span className="text-primary">métabolisme</span>
+              <span className="text-white">.</span>
+            </motion.h1>
 
-        {/* Text content with lift effect */}
-        <div className="transform transition-transform duration-300 ease-out group-hover:-translate-y-1">
-          <h1 className="text-[6vw] sm:text-[5vw] md:text-[4vw] lg:text-[3.5vw] font-bold leading-[1.1] tracking-tight text-center">
-            <span className="text-primary">Décode ton</span>
-            <br />
-            <span className="text-primary">métabolisme</span>
-            <span className="text-white">.</span>
-          </h1>
+            {/* Layer 3: Spotlight - follows mouse */}
+            <div
+              className="absolute inset-0 pointer-events-none z-20 transition-opacity duration-300"
+              style={{
+                background: "radial-gradient(circle 250px at var(--x) var(--y), rgba(16, 185, 129, 0.12), transparent 60%)",
+                opacity: isHovered ? 1 : 0,
+              }}
+            />
+          </div>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mt-8 text-white/50 text-base sm:text-lg max-w-md"
+          >
+            180+ questions. 15 domaines. Un rapport personnalisé de 40+ pages pour comprendre et optimiser ta performance.
+          </motion.p>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="mt-8"
+          >
+            <Link href="/audit-complet/questionnaire">
+              <button className="group relative px-8 py-4 rounded-full bg-primary hover:bg-primary/90 text-black font-semibold text-base transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/30">
+                <div className="absolute -inset-1 bg-primary/40 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+                <span className="flex items-center gap-3">
+                  Lancer mon audit
+                  <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                </span>
+              </button>
+            </Link>
+          </motion.div>
         </div>
-      </div>
 
-      {/* Phone Mockup - Smaller */}
-      <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-[200px] sm:max-w-[220px] md:max-w-[240px]"
-      >
-        <div className="relative mx-auto">
-          {/* Phone shell */}
-          <div className="relative rounded-[2rem] bg-gradient-to-b from-zinc-700 to-zinc-900 p-1.5 shadow-xl shadow-primary/10 group">
-            {/* Glow on phone hover */}
-            <div className="absolute -inset-4 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+        {/* RIGHT: Phone Mockup - BIG */}
+        <motion.div
+          initial={{ opacity: 0, x: 50, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="flex-1 flex justify-center lg:justify-end"
+        >
+          <div className="relative w-[280px] sm:w-[320px] md:w-[360px] lg:w-[380px]">
+            {/* Glow behind phone */}
+            <div className="absolute -inset-8 bg-primary/15 blur-3xl rounded-full -z-10" />
 
-            <div className="rounded-[1.75rem] bg-black p-0.5">
-              <div className="relative rounded-[1.5rem] bg-gradient-to-b from-zinc-900 to-black overflow-hidden aspect-[9/19]">
-                {/* Status bar */}
-                <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-2 text-white/70 text-[8px] z-20">
-                  <span className="font-medium">9:41</span>
-                  <div className="w-3 h-1.5 border border-white/50 rounded-sm">
-                    <div className="w-2/3 h-full bg-primary rounded-sm" />
-                  </div>
-                </div>
-
-                {/* Dynamic Island */}
-                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-5 bg-black rounded-full z-30" />
-
-                {/* Content */}
-                <div className="pt-10 px-3 h-full flex flex-col">
-                  <div className="mb-2">
-                    <p className="text-white/50 text-[8px]">Bonsoir, Achzod</p>
-                    <p className="text-white/30 text-[7px]">Ton rapport NEUROCORE</p>
+            {/* Phone shell */}
+            <div className="relative rounded-[3rem] bg-gradient-to-b from-zinc-600 to-zinc-900 p-2 shadow-2xl shadow-black/50">
+              <div className="rounded-[2.5rem] bg-black p-1">
+                <div className="relative rounded-[2.25rem] bg-gradient-to-b from-zinc-900 to-black overflow-hidden aspect-[9/19]">
+                  {/* Status bar */}
+                  <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-3 text-white/70 text-[10px] z-20">
+                    <span className="font-medium">9:41</span>
+                    <div className="w-5 h-2.5 border border-white/50 rounded-sm">
+                      <div className="w-3/4 h-full bg-primary rounded-sm" />
+                    </div>
                   </div>
 
-                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex-1 flex flex-col items-center justify-center -mt-2"
-                  >
-                    <div className="inline-flex items-center gap-0.5 bg-white/10 rounded-full px-2 py-0.5 text-[7px] text-white/60 mb-1">
-                      {current.title} <ChevronRight className="w-2 h-2" />
+                  {/* Dynamic Island */}
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-30" />
+
+                  {/* Content */}
+                  <div className="pt-14 px-5 h-full flex flex-col">
+                    <div className="mb-4">
+                      <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
+                      <p className="text-white/40 text-xs">Voici ton rapport NEUROCORE</p>
                     </div>
 
                     <motion.div
-                      animate={{ scale: [1, 1.015, 1] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                      className="text-4xl font-bold text-white tracking-tighter"
+                      key={activeTab}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="flex-1 flex flex-col items-center justify-center"
                     >
-                      {current.value}
+                      <div className="inline-flex items-center gap-1 bg-white/10 rounded-full px-4 py-1.5 text-xs text-white/70 mb-3">
+                        {current.title} <ChevronRight className="w-3 h-3" />
+                      </div>
+
+                      <motion.div
+                        animate={{ scale: [1, 1.02, 1] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        className="text-7xl font-bold text-white tracking-tighter"
+                      >
+                        {current.value}
+                      </motion.div>
+
+                      <div className="mt-3 inline-flex items-center gap-1.5 bg-primary/20 rounded-full px-4 py-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-primary text-sm font-medium">{current.subtitle}</span>
+                      </div>
                     </motion.div>
 
-                    <div className="mt-1 inline-flex items-center gap-0.5 bg-primary/20 rounded-full px-2 py-0.5">
-                      <TrendingUp className="w-2 h-2 text-primary" />
-                      <span className="text-primary text-[7px] font-medium">{current.subtitle}</span>
-                    </div>
-                  </motion.div>
-
-                  {/* Details */}
-                  <motion.div
-                    key={`d-${activeTab}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="bg-white/5 rounded-xl p-2 mb-2"
-                  >
-                    {current.details.map((item, idx) => (
-                      <div key={idx} className="mb-1.5 last:mb-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-white/60 text-[7px]">{item.label}</span>
-                          <span className="text-primary text-[7px]">{item.value}{activeTab === "rapport" ? "" : "/100"}</span>
+                    {/* Details */}
+                    <motion.div
+                      key={`d-${activeTab}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-white/5 rounded-2xl p-4 mb-4"
+                    >
+                      {current.details.map((item, idx) => (
+                        <div key={idx} className="mb-3 last:mb-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-white/70 text-xs">{item.label}</span>
+                            <span className="text-primary text-xs font-medium">{item.value}{activeTab === "rapport" ? "" : "/100"}</span>
+                          </div>
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${activeTab === "rapport" ? Math.min(item.value * 4, 100) : item.value}%` }}
+                              transition={{ duration: 0.7, delay: idx * 0.1 }}
+                              className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
+                            />
+                          </div>
                         </div>
-                        <div className="h-0.5 bg-white/10 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${activeTab === "rapport" ? Math.min(item.value * 4, 100) : item.value}%` }}
-                            transition={{ duration: 0.6, delay: idx * 0.08 }}
-                            className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </motion.div>
-
-                  {/* Nav tabs */}
-                  <div className="bg-white/5 rounded-xl p-1 mb-1.5">
-                    <div className="flex items-center justify-around">
-                      {[
-                        { id: "scores", icon: Activity, label: "SCORES" },
-                        { id: "domaines", icon: Layers, label: "DOMAINES" },
-                        { id: "rapport", icon: Brain, label: "RAPPORT" },
-                        { id: "plan", icon: Target, label: "PLAN" },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                          className={`flex flex-col items-center gap-0 px-1.5 py-1 rounded-lg transition-all duration-200 ${
-                            activeTab === tab.id ? "bg-white/10 scale-105" : "hover:bg-white/5"
-                          }`}
-                        >
-                          <tab.icon className={`w-3 h-3 ${activeTab === tab.id ? "text-primary" : "text-white/30"}`} />
-                          <span className={`text-[5px] ${activeTab === tab.id ? "text-primary" : "text-white/30"}`}>{tab.label}</span>
-                        </button>
                       ))}
+                    </motion.div>
+
+                    {/* Nav tabs */}
+                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-2 mb-3">
+                      <div className="flex items-center justify-around">
+                        {[
+                          { id: "scores", icon: Activity, label: "SCORES" },
+                          { id: "domaines", icon: Layers, label: "DOMAINES" },
+                          { id: "rapport", icon: Brain, label: "RAPPORT" },
+                          { id: "plan", icon: Target, label: "PLAN" },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
+                              activeTab === tab.id ? "bg-white/10" : "hover:bg-white/5"
+                            }`}
+                          >
+                            <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary" : "text-white/40"}`} />
+                            <span className={`text-[9px] font-medium ${activeTab === tab.id ? "text-primary" : "text-white/40"}`}>{tab.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Description */}
-      <motion.p
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="text-center text-white/50 text-xs sm:text-sm max-w-md mt-6 px-4 z-10"
-      >
-        15 domaines analysés. 180+ questions. Rapport personnalisé de 40+ pages.
-      </motion.p>
-
-      {/* CTA with Ultrahuman hover */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        className="mt-6 z-10"
-      >
-        <Link href="/audit-complet/questionnaire">
-          <button className="group relative px-6 py-3 rounded-full text-sm bg-primary hover:bg-primary/90 text-black font-semibold transition-all duration-250 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25">
-            {/* Button glow */}
-            <div className="absolute -inset-1 bg-primary/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
-            <span className="flex items-center gap-2">
-              Lancer mon audit
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </button>
-        </Link>
-      </motion.div>
+      </div>
     </section>
   );
 }
