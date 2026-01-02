@@ -48,7 +48,6 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
 // Ultrahuman-style Hero: Text LEFT, Phone RIGHT, 3-layer hover effect
 function UltrahumanHero() {
-  const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
   const [isHovered, setIsHovered] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
 
@@ -72,51 +71,6 @@ function UltrahumanHero() {
       cancelAnimationFrame(rafId);
     };
   }, []);
-
-  const tabContent = {
-    scores: {
-      title: "Score Global",
-      value: "78",
-      subtitle: "+12 pts ce mois",
-      details: [
-        { label: "Métabolisme", value: 85 },
-        { label: "Sommeil", value: 72 },
-        { label: "Nutrition", value: 81 },
-      ]
-    },
-    domaines: {
-      title: "15 Domaines",
-      value: "15",
-      subtitle: "analysés en profondeur",
-      details: [
-        { label: "Hormones", value: 68 },
-        { label: "Digestion", value: 91 },
-        { label: "Énergie", value: 77 },
-      ]
-    },
-    rapport: {
-      title: "Ton Rapport",
-      value: "40+",
-      subtitle: "pages personnalisées",
-      details: [
-        { label: "Recommandations", value: 24 },
-        { label: "Protocoles", value: 8 },
-        { label: "Suppléments", value: 12 },
-      ]
-    },
-    plan: {
-      title: "Plan d'Action",
-      value: "90",
-      subtitle: "jours de protocole",
-      details: [
-        { label: "Phase 1", value: 100 },
-        { label: "Phase 2", value: 45 },
-        { label: "Phase 3", value: 0 },
-      ]
-    }
-  };
-
-  const current = tabContent[activeTab];
 
   return (
     <section className="relative min-h-[90vh] overflow-hidden bg-black">
@@ -239,83 +193,235 @@ function UltrahumanHero() {
                   {/* Dynamic Island */}
                   <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-30" />
 
-                  {/* Content */}
-                  <div className="pt-14 px-5 h-full flex flex-col">
-                    <div className="mb-4">
-                      <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
-                      <p className="text-white/40 text-xs">Voici ton rapport NEUROCORE</p>
-                    </div>
+                  {/* Status bar stays on top */}
 
-                    <motion.div
-                      key={activeTab}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="flex-1 flex flex-col items-center justify-center"
-                    >
-                      <div className="inline-flex items-center gap-1 bg-white/10 rounded-full px-4 py-1.5 text-xs text-white/70 mb-3">
-                        {current.title} <ChevronRight className="w-3 h-3" />
-                      </div>
+                  {/* Infinite Scroll Content - Screen Area */}
+                  <div className="absolute inset-0 rounded-[2.25rem] overflow-hidden pt-12">
+                    <style>{`
+                      @keyframes scrollUp {
+                        0% { transform: translateY(0); }
+                        100% { transform: translateY(-50%); }
+                      }
+                      .scroll-container {
+                        animation: scrollUp 35s linear infinite;
+                      }
+                    `}</style>
 
-                      <motion.div
-                        animate={{ scale: [1, 1.02, 1] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                        className="text-7xl font-bold text-white tracking-tighter"
-                      >
-                        {current.value}
-                      </motion.div>
+                    <div className="scroll-container">
+                      {/* Content Block 1 */}
+                      <div className="w-full">
+                        <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
+                          <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
+                          <p className="text-white/40 text-xs">Voici ton rapport NEUROCORE</p>
+                        </div>
 
-                      <div className="mt-3 inline-flex items-center gap-1.5 bg-primary/20 rounded-full px-4 py-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-primary text-sm font-medium">{current.subtitle}</span>
-                      </div>
-                    </motion.div>
-
-                    {/* Details */}
-                    <motion.div
-                      key={`d-${activeTab}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="bg-white/5 rounded-2xl p-4 mb-4"
-                    >
-                      {current.details.map((item, idx) => (
-                        <div key={idx} className="mb-3 last:mb-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-white/70 text-xs">{item.label}</span>
-                            <span className="text-primary text-xs font-medium">{item.value}{activeTab === "rapport" ? "" : "/100"}</span>
-                          </div>
-                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${activeTab === "rapport" ? Math.min(item.value * 4, 100) : item.value}%` }}
-                              transition={{ duration: 0.7, delay: idx * 0.1 }}
-                              className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
-                            />
+                        <div className="px-5 py-6 bg-black">
+                          <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-3xl p-6 border border-primary/30">
+                            <p className="text-white/50 text-xs mb-2 text-center">SCORE GLOBAL</p>
+                            <div className="text-6xl font-bold text-white text-center">78</div>
+                            <div className="mt-3 flex justify-center">
+                              <div className="inline-flex items-center gap-1.5 bg-primary/30 rounded-full px-4 py-1.5">
+                                <TrendingUp className="w-3 h-3 text-primary" />
+                                <span className="text-primary text-xs font-medium">+12 pts</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </motion.div>
 
-                    {/* Nav tabs */}
-                    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-2 mb-3">
-                      <div className="flex items-center justify-around">
-                        {[
-                          { id: "scores", icon: Activity, label: "SCORES" },
-                          { id: "domaines", icon: Layers, label: "DOMAINES" },
-                          { id: "rapport", icon: Brain, label: "RAPPORT" },
-                          { id: "plan", icon: Target, label: "PLAN" },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
-                              activeTab === tab.id ? "bg-white/10" : "hover:bg-white/5"
-                            }`}
-                          >
-                            <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary" : "text-white/40"}`} />
-                            <span className={`text-[9px] font-medium ${activeTab === tab.id ? "text-primary" : "text-white/40"}`}>{tab.label}</span>
-                          </button>
-                        ))}
+                        <div className="px-5 py-4 bg-black space-y-3">
+                          {[
+                            { label: "Métabolisme", value: 85, color: "bg-emerald-500" },
+                            { label: "Sommeil", value: 72, color: "bg-blue-500" },
+                            { label: "Nutrition", value: 81, color: "bg-amber-500" },
+                            { label: "Énergie", value: 77, color: "bg-purple-500" },
+                          ].map((m, i) => (
+                            <div key={i} className="bg-white/5 rounded-xl p-3">
+                              <div className="flex justify-between mb-1.5">
+                                <span className="text-white/70 text-xs">{m.label}</span>
+                                <span className="text-primary text-xs">{m.value}/100</span>
+                              </div>
+                              <div className="h-1.5 bg-white/10 rounded-full">
+                                <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="px-5 py-6 bg-gradient-to-b from-black to-zinc-900">
+                          <h3 className="text-white text-base font-semibold mb-3">15 Domaines</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {["Hormones", "Cardio", "Digestion", "Thyroïde", "Posture", "Immunité"].map((d, i) => (
+                              <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-center">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 mx-auto mb-1.5 flex items-center justify-center">
+                                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                                </div>
+                                <p className="text-white/70 text-[9px]">{d}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-zinc-900">
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <Brain className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="text-white text-xs font-medium">Ton Rapport</h4>
+                                <p className="text-white/50 text-[10px]">40+ pages</p>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              {["24 Recommandations", "8 Protocoles", "12 Suppléments"].map((item, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  <span className="text-white/70 text-[10px]">{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-black">
+                          <h3 className="text-white text-base font-semibold mb-3">Plan 90j</h3>
+                          <div className="space-y-2.5">
+                            {[
+                              { phase: "Phase 1", progress: 100 },
+                              { phase: "Phase 2", progress: 45 },
+                              { phase: "Phase 3", progress: 0 },
+                            ].map((p, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3">
+                                <div className="flex justify-between mb-1.5">
+                                  <span className="text-primary text-xs font-medium">{p.phase}</span>
+                                  <span className="text-white/50 text-[10px]">{p.progress}%</span>
+                                </div>
+                                <div className="h-1.5 bg-white/10 rounded-full">
+                                  <div className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full" style={{ width: `${p.progress}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-gradient-to-b from-black to-zinc-900">
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Biomarkers", "Suppléments", "Exercices", "Nutrition"].map((c, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3 text-center">
+                                <Target className="w-6 h-6 text-primary mx-auto mb-1.5" />
+                                <p className="text-white/70 text-[10px]">{c}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Content Block 2 - Duplicate for seamless loop */}
+                      <div className="w-full">
+                        <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
+                          <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
+                          <p className="text-white/40 text-xs">Voici ton rapport NEUROCORE</p>
+                        </div>
+
+                        <div className="px-5 py-6 bg-black">
+                          <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-3xl p-6 border border-primary/30">
+                            <p className="text-white/50 text-xs mb-2 text-center">SCORE GLOBAL</p>
+                            <div className="text-6xl font-bold text-white text-center">78</div>
+                            <div className="mt-3 flex justify-center">
+                              <div className="inline-flex items-center gap-1.5 bg-primary/30 rounded-full px-4 py-1.5">
+                                <TrendingUp className="w-3 h-3 text-primary" />
+                                <span className="text-primary text-xs font-medium">+12 pts</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-4 bg-black space-y-3">
+                          {[
+                            { label: "Métabolisme", value: 85, color: "bg-emerald-500" },
+                            { label: "Sommeil", value: 72, color: "bg-blue-500" },
+                            { label: "Nutrition", value: 81, color: "bg-amber-500" },
+                            { label: "Énergie", value: 77, color: "bg-purple-500" },
+                          ].map((m, i) => (
+                            <div key={i} className="bg-white/5 rounded-xl p-3">
+                              <div className="flex justify-between mb-1.5">
+                                <span className="text-white/70 text-xs">{m.label}</span>
+                                <span className="text-primary text-xs">{m.value}/100</span>
+                              </div>
+                              <div className="h-1.5 bg-white/10 rounded-full">
+                                <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="px-5 py-6 bg-gradient-to-b from-black to-zinc-900">
+                          <h3 className="text-white text-base font-semibold mb-3">15 Domaines</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {["Hormones", "Cardio", "Digestion", "Thyroïde", "Posture", "Immunité"].map((d, i) => (
+                              <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-center">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 mx-auto mb-1.5 flex items-center justify-center">
+                                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                                </div>
+                                <p className="text-white/70 text-[9px]">{d}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-zinc-900">
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <Brain className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="text-white text-xs font-medium">Ton Rapport</h4>
+                                <p className="text-white/50 text-[10px]">40+ pages</p>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              {["24 Recommandations", "8 Protocoles", "12 Suppléments"].map((item, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  <span className="text-white/70 text-[10px]">{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-black">
+                          <h3 className="text-white text-base font-semibold mb-3">Plan 90j</h3>
+                          <div className="space-y-2.5">
+                            {[
+                              { phase: "Phase 1", progress: 100 },
+                              { phase: "Phase 2", progress: 45 },
+                              { phase: "Phase 3", progress: 0 },
+                            ].map((p, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3">
+                                <div className="flex justify-between mb-1.5">
+                                  <span className="text-primary text-xs font-medium">{p.phase}</span>
+                                  <span className="text-white/50 text-[10px]">{p.progress}%</span>
+                                </div>
+                                <div className="h-1.5 bg-white/10 rounded-full">
+                                  <div className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full" style={{ width: `${p.progress}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 pb-10 bg-gradient-to-b from-black to-zinc-900">
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Biomarkers", "Suppléments", "Exercices", "Nutrition"].map((c, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3 text-center">
+                                <Target className="w-6 h-6 text-primary mx-auto mb-1.5" />
+                                <p className="text-white/70 text-[10px]">{c}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
