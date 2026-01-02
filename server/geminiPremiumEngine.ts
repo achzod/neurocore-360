@@ -11,6 +11,8 @@ import * as path from 'path';
 import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from './types';
 import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
+import { calculateScoresFromResponses } from "./analysisEngine";
+import { generateSupplementsSectionText } from "./supplementEngine";
 
 // 
 // SYSTÈME DE CACHE POUR SAUVEGARDE PROGRESSIVE
@@ -827,22 +829,11 @@ OBJECTIFS CHIFFRES A 30/60/90 JOURS :
   "Stack Supplements Optimise": `
 INSTRUCTIONS POUR "STACK SUPPLEMENTS OPTIMISE" :
 
-Tu es l'expert supplements. Tu construis une "stack" digne d'un coach d'elite, mais sans bullshit.
-
-BIBLIOTHEQUE ACHZOD (BASE CANONIQUE) :
-- Fondations : magnesium bisglycinate, omega-3 EPA/DHA, vitamine D3 + K2, creatine monohydrate.
-- Sommeil : glycine, L-theanine, magnesium, apigenine (option), melatonine (rare, courte duree).
-- Stress/cortisol : ashwagandha (cycles), rhodiola (matin), phosphatidylserine (soir si besoin).
-- Digestion : L-glutamine (reset), enzymes (si besoin), probiotiques (cibles + cycles), gingembre/menthe.
-- Metabolisme : berberine (si besoin), chrome (si besoin), cannelle (support), ALA (option).
-- Performance : creatine, electrolytes (surtout si transpiration), citrulline (option).
-- Articulations/tissus : collagenes, vitamine C (cofacteur), curcumine (si inflammation).
-
-REGLES D'EXPERTISE :
-- Tu pars des besoins du client (symptomes, objectif, contraintes, digestion, sommeil, stress, entrainement).
-- Tu proposes une STACK MINIMALE (3-5 items) puis une STACK AVANCEE (optionnelle).
-- Pour chaque supplement : "Pourquoi (mecanisme)", "Dose typique (fourchette)", "Timing", "Duree/cycle", "A surveiller", "Contre-indications / interactions".
-- Pas de marques si tu n'es pas certain; sinon 1-2 options max.
+NOTE SYSTEME :
+Cette section est generee a partir de la bibliotheque de complements (moteur supplements) pour garantir :
+- Zero hallucination
+- Coherence avec tes gates de securite
+- Reutilisation de ta base canonique
 
 FORMAT OBLIGATOIRE :
 
@@ -1138,6 +1129,19 @@ export async function generateAuditTxt(
   const sectionPromises = sectionsToGenerate.map(async (section, i) => {
     if (cachedSections[section]) {
       return { section, text: cachedSections[section], fromCache: true };
+    }
+
+    // ✅ Stack supplements : on la génère depuis la bibliothèque (pas via l'IA)
+    if (section === "Stack Supplements Optimise" && tier !== "GRATUIT") {
+      const scores = calculateScoresFromResponses(clientData as any);
+      const generated = generateSupplementsSectionText({
+        responses: clientData as any,
+        globalScore: typeof scores?.global === "number" ? scores.global : undefined,
+      });
+
+      cacheData.sections[section] = generated;
+      saveToCache(auditId, cacheData);
+      return { section, text: generated, fromCache: false };
     }
     
     const specificInstructions = getSectionInstructionsForTier(section, tier);

@@ -10,6 +10,8 @@ import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from '
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { OPENAI_CONFIG } from './openaiConfig';
 import { getCTADebut, getCTAFin, PRICING } from './cta';
+import { calculateScoresFromResponses } from "./analysisEngine";
+import { generateSupplementsSectionText } from "./supplementEngine";
 // Réutiliser les sections et instructions de Gemini (exportées)
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier } from './geminiPremiumEngine';
 
@@ -310,6 +312,29 @@ ${photoAnalysisStr}
       if (cachedSections[section]) {
         console.log(`[OpenAI] Section "${section}" chargee du cache.`);
         return { section, text: cachedSections[section], fromCache: true };
+      }
+
+      // ✅ Stack supplements : générée depuis la bibliothèque (pas via OpenAI)
+      if (section === "Stack Supplements Optimise" && tier !== "GRATUIT") {
+        const scores = calculateScoresFromResponses(clientData as any);
+        const generated = generateSupplementsSectionText({
+          responses: clientData as any,
+          globalScore: typeof scores?.global === "number" ? scores.global : undefined,
+        });
+
+        cachedSections[section] = generated;
+        saveToCache(auditId, {
+          auditId,
+          clientData,
+          photoAnalysis,
+          tier,
+          sections: cachedSections,
+          startedAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+        });
+        newSectionsGenerated++;
+
+        return { section, text: generated, fromCache: false };
       }
 
       console.log(`[OpenAI] Generation de la section "${section}"...`);

@@ -705,3 +705,117 @@ export function formatSupplementForReport(supp: SupplementProtocolAdvanced): {
     iherb_search: supp.iherb_search_query || ""
   };
 }
+
+function toStringArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map(String).map(s => s.trim()).filter(Boolean);
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (!s) return [];
+    // séparateurs courants
+    return s
+      .split(/[,;\n]/g)
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+  if (v == null) return [];
+  return [String(v)].map(s => s.trim()).filter(Boolean);
+}
+
+function uniqueByName(list: SupplementProtocolAdvanced[]): SupplementProtocolAdvanced[] {
+  const seen = new Set<string>();
+  const out: SupplementProtocolAdvanced[] = [];
+  for (const s of list) {
+    const key = s.ingredient.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  return out;
+}
+
+/**
+ * Génère le texte "STACK SUPPLEMENTS OPTIMISE" directement depuis la bibliothèque.
+ * Objectif : zéro hallucination, cohérence, et intégration de tes règles d'achat/sécurité.
+ * IMPORTANT : retourne du texte brut (pas de markdown).
+ */
+export function generateSupplementsSectionText(input: {
+  responses: Record<string, unknown>;
+  globalScore?: number;
+}): string {
+  const responses = input.responses || {};
+  const meds = [
+    ...toStringArray(responses["medicaments"]),
+    ...toStringArray(responses["medications"]),
+  ];
+
+  // Heuristique simple : plus le score global est bas, plus on autorise d'items.
+  const baseScore =
+    typeof input.globalScore === "number" && Number.isFinite(input.globalScore)
+      ? Math.max(30, Math.min(90, input.globalScore))
+      : 55;
+
+  // On compose une stack robuste (fondations + cibles fréquentes).
+  const domains = [
+    "sleep",
+    "cortisol_stress",
+    "performance",
+    "cardiovascular",
+    "neurotransmitters",
+    "testosterone",
+    "joints",
+  ];
+
+  const all = domains.flatMap((domain) => selectSupplementsForDomain(domain, baseScore, responses, meds));
+  const picked = uniqueByName(all);
+
+  // Formattage lisible (sans tableaux / markdown).
+  const lines: string[] = [];
+  lines.push("Base sur : tes reponses + tes priorites + tes contraintes + gates securite.");
+  lines.push("");
+
+  lines.push("PRIORITE 0 - REGLES D'ACHAT (NON NEGOCIABLES) :");
+  lines.push(`+ ${IHERB_RULES.zero_proprietary_blends}`);
+  lines.push(`+ ${IHERB_RULES.correct_units.magnesium}`);
+  lines.push(`+ ${IHERB_RULES.correct_units.omega3}`);
+  lines.push(`+ ${IHERB_RULES.standardization_required.ashwagandha}`);
+  lines.push(`+ ${IHERB_RULES.standardization_required.tongkat_ali}`);
+  lines.push("");
+
+  lines.push("SECURITE - GATES (SI MEDICAMENTS / RISQUES) :");
+  if (meds.length > 0) {
+    lines.push(`+ Medicaments declares : ${meds.join(", ")}`);
+    lines.push(`+ Interactions sensibles (exemples) : ${SAFETY_GATES.ssri_maoi_interactions.join(" | ")}`);
+  } else {
+    lines.push("+ Aucun medicament declare. Si c'est faux, stop: on adapte la stack avant de commencer.");
+  }
+  lines.push("");
+
+  lines.push("STACK CIBLEE (SELECTIONNEE DANS LA BIBLIOTHEQUE ACHZOD) :");
+  if (picked.length === 0) {
+    lines.push("Je ne propose pas de stack avancee pour l'instant : ton profil ne l'exige pas OU les infos sont insuffisantes.");
+    lines.push("Concentre-toi sur les fondations (sommeil, proteines, hydratation, entrainement) 14 jours, puis on re-evalue.");
+    return lines.join("\n");
+  }
+
+  picked.slice(0, 10).forEach((supp, idx) => {
+    const f = formatSupplementForReport(supp);
+    lines.push("");
+    lines.push(`${idx + 1}. ${f.name}`);
+    lines.push(`Dosage : ${f.dosage}`);
+    lines.push(`Timing : ${f.timing}`);
+    lines.push(`Duree / cycle : ${f.duration}`);
+    lines.push(`Pourquoi : ${f.why}`);
+    if (f.warnings) lines.push(`A surveiller : ${f.warnings}`);
+    lines.push(`Qualite label : ${f.brands.join(" | ")}`);
+    if (f.iherb_search) lines.push(`Recherche iHerb : ${f.iherb_search}`);
+    lines.push(`Evidence : ${f.evidence}`);
+  });
+
+  lines.push("");
+  lines.push("CE QU'IL NE FAUT PAS FAIRE :");
+  lines.push("+ Empiler 10 produits d'un coup. Ajoute 1 supplement tous les 3-4 jours.");
+  lines.push("+ Acheter des blends opaques / sous-dosees.");
+  lines.push("+ Melanger des produits 'stimulants' si ton sommeil/stress est deja fragile.");
+
+  return lines.join("\n");
+}
