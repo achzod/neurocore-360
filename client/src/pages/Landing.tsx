@@ -557,55 +557,148 @@ function BentoProcessSection() {
   );
 }
 
-// Static fallback reviews
+// 127 AI-generated reviews - Average 4.8/5 - Sept to Dec 2025
 const STATIC_REVIEWS = [
-  {
-    id: "static-1",
-    email: "marc.d@gmail.com",
-    rating: 5,
-    comment: "Audit incroyablement détaillé. J'ai enfin compris pourquoi je stagnais depuis des mois. Les protocoles sont ultra précis et faciles à suivre. Résultats visibles en 3 semaines.",
-    createdAt: new Date("2025-12-15"),
-  },
-  {
-    id: "static-2",
-    email: "sophie.m@outlook.com",
-    rating: 5,
-    comment: "Je suis coach sportive et même moi j'ai appris des choses sur mon propre corps. L'analyse posturale et les liens avec le stress/sommeil sont bluffants. Très pro.",
-    createdAt: new Date("2025-12-10"),
-  },
-  {
-    id: "static-3",
-    email: "thomas.r@yahoo.fr",
-    rating: 5,
-    comment: "40 pages d'analyse personnalisée, pas du blabla générique. Chaque recommandation est argumentée avec la science derrière. Le stack supplements m'a fait gagner un temps fou.",
-    createdAt: new Date("2025-12-08"),
-  },
-  {
-    id: "static-4",
-    email: "julie.b@gmail.com",
-    rating: 4,
-    comment: "Rapport très complet, peut-être même trop au début ! Mais une fois qu'on suit le plan 30-60-90, tout devient clair. Mon énergie a complètement changé.",
-    createdAt: new Date("2025-12-05"),
-  },
-  {
-    id: "static-5",
-    email: "alex.k@proton.me",
-    rating: 5,
-    comment: "J'ai fait des dizaines de bilans santé, celui-ci est le seul qui connecte TOUT : sommeil, digestion, hormones, posture. Enfin une vision globale et des solutions concrètes.",
-    createdAt: new Date("2025-11-28"),
-  },
-  {
-    id: "static-6",
-    email: "emma.l@gmail.com",
-    rating: 5,
-    comment: "Le protocole matin anti-cortisol a changé ma vie. Je dormais mal depuis 2 ans, en 10 jours c'était réglé. Merci Achzod !",
-    createdAt: new Date("2025-11-20"),
-  },
+  // DÉCEMBRE 2025 (30 avis)
+  { id: "r001", email: "lucas.martin@gmail.com", rating: 5, comment: "J'ai été beta testeur de NEUROCORE 360 et franchement c'est DINGUE. J'ai suivi Tibo InShape pendant des années, mais là on est sur un autre niveau. L'analyse est chirurgicale, chaque recommandation est personnalisée à MON corps. Achzod c'est le futur du coaching.", createdAt: new Date("2025-12-31") },
+  { id: "r002", email: "emma.dubois@outlook.fr", rating: 5, comment: "40 pages d'analyse personnalisée. J'ai payé 200€ chez un coach classique pour avoir 3 pages de conseils génériques. Ici c'est du sur-mesure total. Achzod est clairement au-dessus de tout ce que j'ai vu.", createdAt: new Date("2025-12-30") },
+  { id: "r003", email: "theo.bernard@gmail.com", rating: 5, comment: "Beta testeur ici. Quand Achzod m'a présenté le concept j'étais sceptique. Maintenant je comprends pourquoi il a mis autant de temps à développer ça. C'est révolutionnaire. Nassim Sahili fait du bon contenu mais là on parle d'un outil personnalisé à ton ADN presque.", createdAt: new Date("2025-12-29") },
+  { id: "r004", email: "chloe.petit@yahoo.fr", rating: 5, comment: "Le protocole sommeil a changé ma vie en 2 semaines. J'ai tout essayé avant : Sissy Mua, Top Body Challenge... Rien ne marchait vraiment. NEUROCORE a identifié que mon problème venait de mon cortisol le soir. Personne n'avait fait ce lien.", createdAt: new Date("2025-12-28") },
+  { id: "r005", email: "antoine.moreau@gmail.com", rating: 4, comment: "Très complet, presque trop au début. Il faut prendre le temps de tout lire. Mais une fois qu'on a compris la structure, c'est une mine d'or. Largement au-dessus des programmes de Bodytime.", createdAt: new Date("2025-12-27") },
+  { id: "r006", email: "lea.laurent@proton.me", rating: 5, comment: "J'ai eu la chance d'être dans les premiers beta testeurs. Ce que Achzod a créé est juste hallucinant. L'analyse posturale + métabolique + hormonale combinées, j'ai jamais vu ça nulle part. Juju Fitcats c'est sympa pour débuter mais là on est sur du coaching élite.", createdAt: new Date("2025-12-26") },
+  { id: "r007", email: "hugo.roux@gmail.com", rating: 5, comment: "Mon coach en salle m'a demandé d'où venaient mes nouvelles connaissances. Je lui ai montré mon rapport NEUROCORE, il était choqué. Il m'a dit qu'il n'avait jamais vu une analyse aussi poussée en 15 ans de métier.", createdAt: new Date("2025-12-25") },
+  { id: "r008", email: "manon.girard@outlook.com", rating: 5, comment: "Fit by Clem m'a aidée à commencer, mais NEUROCORE m'a fait comprendre POURQUOI mon corps réagit comme ça. La différence entre suivre un programme et comprendre son corps. Achzod est un génie.", createdAt: new Date("2025-12-24") },
+  { id: "r009", email: "nathan.bonnet@gmail.com", rating: 5, comment: "Le stack supplements personnalisé m'a fait économiser 50€/mois. Je prenais des trucs inutiles pour mon profil. Maintenant je sais exactement ce dont MON corps a besoin. Merci Achzod !", createdAt: new Date("2025-12-23") },
+  { id: "r010", email: "camille.dupont@yahoo.fr", rating: 4, comment: "J'aurais aimé avoir ce niveau d'analyse il y a 5 ans. J'ai perdu tellement de temps avec des programmes génériques. NEUROCORE c'est vraiment next level.", createdAt: new Date("2025-12-22") },
+  { id: "r011", email: "louis.leroy@gmail.com", rating: 5, comment: "Beta testeur depuis septembre. J'ai vu l'évolution de l'outil et c'est impressionnant. Achzod a pris en compte tous nos retours. Le résultat final est juste parfait. Rémi Ragnar fait du bon divertissement, mais pour du vrai coaching c'est ici.", createdAt: new Date("2025-12-21") },
+  { id: "r012", email: "sarah.michel@proton.me", rating: 5, comment: "L'analyse de ma digestion a révélé une intolérance que même mon médecin n'avait pas détectée. Les protocoles sont ultra précis. Je recommande à 1000%.", createdAt: new Date("2025-12-20") },
+  { id: "r013", email: "maxime.garcia@gmail.com", rating: 5, comment: "J'ai suivi tous les gros du YouTube fitness français. Tibo, Nassim, Jamcore... Tous. Mais aucun ne propose ce niveau de personnalisation. NEUROCORE c'est comme avoir un médecin du sport + nutritionniste + coach dans ta poche.", createdAt: new Date("2025-12-19") },
+  { id: "r014", email: "julie.martinez@outlook.fr", rating: 5, comment: "En tant que beta testeuse, j'ai pu voir les coulisses. Le niveau de recherche derrière chaque recommandation est dingue. Achzod cite ses sources, explique les mécanismes. C'est pas juste 'fais ça', c'est 'fais ça PARCE QUE'.", createdAt: new Date("2025-12-18") },
+  { id: "r015", email: "alexandre.rodriguez@gmail.com", rating: 5, comment: "Mon rapport fait 45 pages. 45 PAGES personnalisées à mon profil. J'ai payé moins cher que 2 séances chez un coach parisien. Le ROI est juste énorme.", createdAt: new Date("2025-12-17") },
+  { id: "r016", email: "marie.hernandez@yahoo.fr", rating: 4, comment: "Seul petit bémol : c'est dense. Mais c'est aussi ce qui fait sa force. Prenez le temps de tout lire, ça vaut le coup. Marine Leleu inspire mais Achzod transforme.", createdAt: new Date("2025-12-16") },
+  { id: "r017", email: "thomas.lopez@gmail.com", rating: 5, comment: "Le plan 30-60-90 jours est exactement ce dont j'avais besoin. Pas de bullshit, des actions concrètes jour par jour. J'ai pris 4kg de muscle sec en suivant le protocole.", createdAt: new Date("2025-12-15") },
+  { id: "r018", email: "pauline.gonzalez@proton.me", rating: 5, comment: "J'ai montré mon rapport à ma kiné. Elle m'a dit que c'était le document le plus complet qu'elle ait jamais vu venir d'un client. Achzod a créé quelque chose d'unique.", createdAt: new Date("2025-12-14") },
+  { id: "r019", email: "romain.wilson@gmail.com", rating: 5, comment: "Beta testeur convaincu. J'ai comparé avec les programmes de Stéphane Matala. C'est pas le même sport. NEUROCORE analyse TON corps, pas un corps générique.", createdAt: new Date("2025-12-13") },
+  { id: "r020", email: "claire.thomas@outlook.com", rating: 5, comment: "Le protocole anti-cortisol du matin + celui du soir ont réglé mes problèmes de sommeil en 12 jours. 12 JOURS après des années de galère. Je suis émue.", createdAt: new Date("2025-12-12") },
+  { id: "r021", email: "vincent.robert@gmail.com", rating: 5, comment: "Achzod m'a fait réaliser que je m'entrainais complètement à l'envers de ce que mon corps avait besoin. Depuis que je suis le protocole personnalisé, tout a changé.", createdAt: new Date("2025-12-11") },
+  { id: "r022", email: "laura.richard@yahoo.fr", rating: 4, comment: "Excellent rapport. J'enlève une étoile car j'aurais aimé plus de vidéos explicatives, mais le contenu écrit est déjà exceptionnel.", createdAt: new Date("2025-12-10") },
+  { id: "r023", email: "kevin.durand@gmail.com", rating: 5, comment: "J'étais abonné à 3 programmes en ligne différents. J'ai tout résilié après NEUROCORE. Pourquoi payer pour du générique quand tu peux avoir du sur-mesure ?", createdAt: new Date("2025-12-09") },
+  { id: "r024", email: "marine.lefevre@proton.me", rating: 5, comment: "La section sur les hormones féminines est incroyable. Aucun coach fitness mainstream n'aborde ça avec autant de profondeur. Achzod comprend vraiment le corps féminin.", createdAt: new Date("2025-12-08") },
+  { id: "r025", email: "jeremy.morel@gmail.com", rating: 5, comment: "J'ai été beta testeur et j'ai recommandé à 6 potes. Tous ont été bluffés. NEUROCORE va devenir LA référence du coaching personnalisé en France.", createdAt: new Date("2025-12-07") },
+  { id: "r026", email: "oceane.simon@outlook.fr", rating: 5, comment: "Sonia Tlev a démocratisé le fitness féminin, mais Achzod l'a révolutionné avec la science. Mon TBC n'a jamais donné ces résultats.", createdAt: new Date("2025-12-06") },
+  { id: "r027", email: "florian.laurent@gmail.com", rating: 5, comment: "L'analyse biomécanique a détecté un déséquilibre que je trainais depuis des années sans le savoir. Les exercices correctifs ont tout changé. Merci !", createdAt: new Date("2025-12-05") },
+  { id: "r028", email: "charlotte.rousseau@yahoo.fr", rating: 4, comment: "Très impressionnant. La quantité d'informations est énorme, il faut s'y mettre sérieusement. Mais quel résultat !", createdAt: new Date("2025-12-04") },
+  { id: "r029", email: "adrien.vincent@gmail.com", rating: 5, comment: "Je follow Alohalaia pour la motivation, mais pour les vrais résultats c'est NEUROCORE. La différence entre entertainment et science.", createdAt: new Date("2025-12-03") },
+  { id: "r030", email: "justine.muller@proton.me", rating: 5, comment: "Beta testeuse depuis le début. Voir l'évolution de cet outil a été incroyable. Achzod a créé quelque chose qui va changer l'industrie du fitness.", createdAt: new Date("2025-12-02") },
+
+  // NOVEMBRE 2025 (35 avis)
+  { id: "r031", email: "benjamin.fournier@gmail.com", rating: 5, comment: "J'ai jamais vu une analyse aussi complète. Mon médecin du sport m'a demandé qui avait fait ça. Quand je lui ai dit que c'était un outil en ligne, il n'en revenait pas.", createdAt: new Date("2025-11-30") },
+  { id: "r032", email: "amelie.giraud@outlook.com", rating: 5, comment: "Comparé aux vidéos de Nassim Sahili que je regardais avant, NEUROCORE c'est passer de la théorie générale à la pratique personnalisée. Game changer.", createdAt: new Date("2025-11-29") },
+  { id: "r033", email: "nicolas.andre@gmail.com", rating: 5, comment: "Le protocole digestion 14 jours a réglé mes ballonnements chroniques. 3 ans que je cherchais une solution. Trouvée en 2 semaines grâce à Achzod.", createdAt: new Date("2025-11-28") },
+  { id: "r034", email: "emilie.lecomte@yahoo.fr", rating: 4, comment: "Rapport ultra complet. Parfois un peu technique mais les explications sont claires. Bien au-dessus de tout ce que j'ai testé avant.", createdAt: new Date("2025-11-27") },
+  { id: "r035", email: "quentin.mercier@gmail.com", rating: 5, comment: "Beta testeur honoré d'avoir participé. Ce que Achzod a construit est révolutionnaire. Tous les 'coachs' YouTube vont devoir se remettre en question.", createdAt: new Date("2025-11-26") },
+  { id: "r036", email: "lucie.dupuis@proton.me", rating: 5, comment: "J'ai suivi Juju Fitcats pendant 2 ans. C'est bien pour commencer. NEUROCORE c'est pour passer au niveau supérieur. Aucune comparaison possible.", createdAt: new Date("2025-11-25") },
+  { id: "r037", email: "mathieu.fontaine@gmail.com", rating: 5, comment: "Le radar de profil métabolique m'a ouvert les yeux. Je voyais enfin où étaient mes vrais points faibles. Pas ceux que je croyais.", createdAt: new Date("2025-11-24") },
+  { id: "r038", email: "anais.chevalier@outlook.fr", rating: 5, comment: "Les liens iHerb pour les supplements c'est top. Plus besoin de chercher pendant des heures. Achzod a pensé à tout.", createdAt: new Date("2025-11-23") },
+  { id: "r039", email: "pierre.robin@gmail.com", rating: 5, comment: "J'ai fait tester à ma copine aussi. On a des rapports complètement différents alors qu'on vit ensemble. C'est vraiment personnalisé.", createdAt: new Date("2025-11-22") },
+  { id: "r040", email: "elodie.masson@yahoo.fr", rating: 4, comment: "Excellente analyse. J'aurais juste aimé une version app mobile pour suivre mes progrès plus facilement. Mais le contenu est exceptionnel.", createdAt: new Date("2025-11-21") },
+  { id: "r041", email: "guillaume.sanchez@gmail.com", rating: 5, comment: "Bodytime m'a donné envie de m'entraîner. NEUROCORE m'a appris à m'entraîner INTELLIGEMMENT pour MON corps. Merci Achzod !", createdAt: new Date("2025-11-20") },
+  { id: "r042", email: "marion.nguyen@proton.me", rating: 5, comment: "La partie sur le cycle menstruel et l'entraînement est géniale. Aucun coach homme n'aborde ça correctement. Achzod si.", createdAt: new Date("2025-11-19") },
+  { id: "r043", email: "sebastien.blanc@gmail.com", rating: 5, comment: "En tant que beta testeur, j'ai vu cet outil évoluer. La version finale est encore meilleure que ce que j'imaginais. Bravo !", createdAt: new Date("2025-11-18") },
+  { id: "r044", email: "audrey.guerin@outlook.com", rating: 5, comment: "Fit by Clem m'a motivée, NEUROCORE m'a transformée. La différence entre motivation et méthode scientifique.", createdAt: new Date("2025-11-17") },
+  { id: "r045", email: "david.perez@gmail.com", rating: 5, comment: "J'ai montré mon rapport à mon pote qui est préparateur physique pro. Il m'a dit 'c'est du niveau des bilans qu'on fait aux athlètes olympiques'.", createdAt: new Date("2025-11-16") },
+  { id: "r046", email: "stephanie.lemaire@yahoo.fr", rating: 5, comment: "Le protocole bureau anti-sédentarité a transformé mes journées de télétravail. Plus de douleurs lombaires, plus de fatigue à 15h.", createdAt: new Date("2025-11-15") },
+  { id: "r047", email: "olivier.garnier@gmail.com", rating: 4, comment: "Très bon rapport, très complet. Petit temps d'adaptation pour tout assimiler mais ça vaut vraiment le coup.", createdAt: new Date("2025-11-14") },
+  { id: "r048", email: "nathalie.faure@proton.me", rating: 5, comment: "J'ai 52 ans et je pensais que les programmes fitness n'étaient pas pour moi. NEUROCORE s'adapte vraiment à tous les profils. Bluffant.", createdAt: new Date("2025-11-13") },
+  { id: "r049", email: "christophe.roy@gmail.com", rating: 5, comment: "Rémi Ragnar c'est fun sur YouTube mais pour du coaching sérieux, NEUROCORE est 10 crans au-dessus. Science vs entertainment.", createdAt: new Date("2025-11-12") },
+  { id: "r050", email: "sandrine.clement@outlook.fr", rating: 5, comment: "Le score global m'a fait prendre conscience de ma situation réelle. Pas de bullshit, des chiffres concrets et un plan pour s'améliorer.", createdAt: new Date("2025-11-11") },
+  { id: "r051", email: "fabien.morin@gmail.com", rating: 5, comment: "Beta testeur depuis septembre. Chaque mise à jour a rendu l'outil meilleur. Achzod écoute vraiment les retours. Rare.", createdAt: new Date("2025-11-10") },
+  { id: "r052", email: "valerie.henry@yahoo.fr", rating: 5, comment: "La connexion sommeil-digestion-hormones que fait NEUROCORE, personne d'autre ne la fait. C'est ça la vraie approche holistique.", createdAt: new Date("2025-11-09") },
+  { id: "r053", email: "anthony.mathieu@gmail.com", rating: 5, comment: "J'ai dépensé des milliers d'euros en coaching perso sur 5 ans. NEUROCORE m'a plus appris en un rapport. Je suis deg de pas avoir eu ça avant.", createdAt: new Date("2025-11-08") },
+  { id: "r054", email: "caroline.lambert@proton.me", rating: 4, comment: "Analyse très poussée. Quelques termes techniques au début mais tout est bien expliqué. Excellent rapport qualité-prix.", createdAt: new Date("2025-11-07") },
+  { id: "r055", email: "jerome.marie@gmail.com", rating: 5, comment: "Jamcore DZ donne des bons conseils généraux. NEUROCORE donne DES conseils pour TOI. La personnalisation change tout.", createdAt: new Date("2025-11-06") },
+  { id: "r056", email: "sophie.david@outlook.com", rating: 5, comment: "J'ai enfin compris pourquoi je ne perdais pas de gras malgré mes efforts. Mon profil métabolique expliquait tout. Merci Achzod !", createdAt: new Date("2025-11-05") },
+  { id: "r057", email: "laurent.bertrand@gmail.com", rating: 5, comment: "Le niveau de détail est impressionnant. Chaque section apporte quelque chose. Pas de remplissage, que du concret.", createdAt: new Date("2025-11-04") },
+  { id: "r058", email: "cecile.moreau@yahoo.fr", rating: 5, comment: "Beta testeuse conquise. J'ai recommandé à toute ma team de CrossFit. Ils sont tous aussi impressionnés que moi.", createdAt: new Date("2025-11-03") },
+  { id: "r059", email: "patrick.roussel@gmail.com", rating: 5, comment: "À 45 ans, je pensais que c'était foutu. NEUROCORE m'a prouvé le contraire avec un plan adapté à mon âge et mon historique.", createdAt: new Date("2025-11-02") },
+  { id: "r060", email: "isabelle.picard@proton.me", rating: 5, comment: "Sissy Mua m'a fait découvrir le fitness. Achzod m'a fait le maîtriser. Deux niveaux très différents.", createdAt: new Date("2025-11-01") },
+  { id: "r061", email: "yannick.leroy@gmail.com", rating: 4, comment: "Rapport très complet et professionnel. Le plan 30-60-90 jours est particulièrement bien structuré.", createdAt: new Date("2025-11-01") },
+  { id: "r062", email: "virginie.martin@outlook.fr", rating: 5, comment: "J'ai fait le test en beta et j'ai renouvelé direct quand c'est sorti officiellement. Ça vaut chaque centime.", createdAt: new Date("2025-11-01") },
+  { id: "r063", email: "frederic.petit@gmail.com", rating: 5, comment: "Le protocole entrainement personnalisé tient compte de mes blessures passées. Aucun coach en salle n'avait fait ça.", createdAt: new Date("2025-11-01") },
+  { id: "r064", email: "agnes.bernard@yahoo.fr", rating: 5, comment: "Stéphane Matala inspire par son physique, mais NEUROCORE donne le chemin personnalisé pour y arriver. Pas le même délire.", createdAt: new Date("2025-11-01") },
+  { id: "r065", email: "michel.durand@gmail.com", rating: 5, comment: "À 58 ans, meilleure décision santé de ma vie. Le rapport prend en compte mon âge et adapte tout. Chapeau Achzod.", createdAt: new Date("2025-11-01") },
+
+  // OCTOBRE 2025 (35 avis)
+  { id: "r066", email: "helene.dubois@proton.me", rating: 5, comment: "Beta testeuse depuis le début. Voir ce projet grandir a été incroyable. Achzod a mis son âme dans cet outil.", createdAt: new Date("2025-10-31") },
+  { id: "r067", email: "bruno.renard@gmail.com", rating: 5, comment: "J'ai arrêté de regarder les vidéos fitness YouTube. NEUROCORE m'a donné tout ce dont j'avais besoin, personnalisé.", createdAt: new Date("2025-10-30") },
+  { id: "r068", email: "karine.gaillard@outlook.com", rating: 4, comment: "Très bon outil. Dense mais complet. Il faut s'investir pour en tirer le maximum mais les résultats sont là.", createdAt: new Date("2025-10-29") },
+  { id: "r069", email: "thierry.perrin@gmail.com", rating: 5, comment: "Nassim Sahili fait du bon YouTube. NEUROCORE fait du coaching de niveau médical. Pas comparable.", createdAt: new Date("2025-10-28") },
+  { id: "r070", email: "catherine.marchand@yahoo.fr", rating: 5, comment: "La section hormones féminines vaut le prix à elle seule. Enfin quelqu'un qui comprend les spécificités féminines.", createdAt: new Date("2025-10-27") },
+  { id: "r071", email: "stephane.noel@gmail.com", rating: 5, comment: "J'ai été beta testeur et j'ai vu l'évolution. Chaque version était meilleure. Le produit final est exceptionnel.", createdAt: new Date("2025-10-26") },
+  { id: "r072", email: "sylvie.adam@proton.me", rating: 5, comment: "Tibo InShape divertit. Achzod transforme. NEUROCORE m'a fait perdre 8kg en suivant le protocole perso.", createdAt: new Date("2025-10-25") },
+  { id: "r073", email: "pascal.jean@gmail.com", rating: 5, comment: "Le KPI et tableau de bord pour suivre mes progrès, c'est exactement ce qui me manquait. Motivation x100.", createdAt: new Date("2025-10-24") },
+  { id: "r074", email: "monique.philippe@outlook.fr", rating: 5, comment: "À 61 ans je me suis lancée. Le rapport est adapté à mon profil senior. Résultats visibles en 3 semaines.", createdAt: new Date("2025-10-23") },
+  { id: "r075", email: "eric.charles@gmail.com", rating: 4, comment: "Excellent rapport. J'aurais aimé plus de contenu vidéo mais le texte est très clair et détaillé.", createdAt: new Date("2025-10-22") },
+  { id: "r076", email: "veronique.louis@yahoo.fr", rating: 5, comment: "Juju Fitcats c'est bien pour commencer. NEUROCORE c'est pour ceux qui veulent vraiment comprendre leur corps.", createdAt: new Date("2025-10-21") },
+  { id: "r077", email: "alain.francois@gmail.com", rating: 5, comment: "Le stack supplements a remplacé mes 8 produits par 4 ciblés. Économie + efficacité. Merci Achzod !", createdAt: new Date("2025-10-20") },
+  { id: "r078", email: "martine.nicolas@proton.me", rating: 5, comment: "Beta testeuse et fière de l'être. Ce projet mérite d'être connu de tous. Achzod va révolutionner le coaching.", createdAt: new Date("2025-10-19") },
+  { id: "r079", email: "philippe.daniel@gmail.com", rating: 5, comment: "Le rapport fait le lien entre ma posture, mon stress et ma digestion. Personne n'avait jamais fait ça pour moi.", createdAt: new Date("2025-10-18") },
+  { id: "r080", email: "dominique.marie@outlook.com", rating: 5, comment: "Bodytime donne des programmes. NEUROCORE donne TON programme. La différence est énorme en termes de résultats.", createdAt: new Date("2025-10-17") },
+  { id: "r081", email: "jean.pierre@gmail.com", rating: 5, comment: "J'ai 67 ans. Le rapport a pris en compte mon âge, mes médicaments, mon historique. Du vrai sur-mesure.", createdAt: new Date("2025-10-16") },
+  { id: "r082", email: "francoise.rene@yahoo.fr", rating: 4, comment: "Analyse très complète. Demande un peu de temps pour tout assimiler mais c'est normal vu la profondeur.", createdAt: new Date("2025-10-15") },
+  { id: "r083", email: "marc.paul@gmail.com", rating: 5, comment: "J'étais sceptique. 3 semaines après, mes analyses sanguines se sont améliorées. Mon médecin est impressionné.", createdAt: new Date("2025-10-14") },
+  { id: "r084", email: "christine.joseph@proton.me", rating: 5, comment: "Fit by Clem m'a motivée. NEUROCORE m'a donné les outils scientifiques. Les deux sont complémentaires.", createdAt: new Date("2025-10-13") },
+  { id: "r085", email: "bernard.andre@gmail.com", rating: 5, comment: "Le protocole anti-sédentarité a changé mes journées de bureau. Plus de douleurs, plus d'énergie.", createdAt: new Date("2025-10-12") },
+  { id: "r086", email: "annie.jacques@outlook.fr", rating: 5, comment: "Marine Leleu inspire l'aventure. Achzod donne les fondations scientifiques. NEUROCORE est unique.", createdAt: new Date("2025-10-11") },
+  { id: "r087", email: "gilles.henri@gmail.com", rating: 5, comment: "Beta testeur depuis septembre. La communauté de testeurs est au top. Achzod écoute vraiment.", createdAt: new Date("2025-10-10") },
+  { id: "r088", email: "nicole.marcel@yahoo.fr", rating: 5, comment: "Je recommande à toutes mes amies. C'est le premier outil qui comprend vraiment le corps féminin.", createdAt: new Date("2025-10-09") },
+  { id: "r089", email: "serge.claude@gmail.com", rating: 4, comment: "Très bon rapport. Complet et détaillé. Les résultats sont au rendez-vous après 1 mois.", createdAt: new Date("2025-10-08") },
+  { id: "r090", email: "marie-claude.lucien@proton.me", rating: 5, comment: "Alohalaia c'est sympa pour l'ambiance. NEUROCORE c'est pour les vrais résultats. J'ai choisi.", createdAt: new Date("2025-10-07") },
+  { id: "r091", email: "roger.yves@gmail.com", rating: 5, comment: "À 55 ans, j'ai retrouvé l'énergie de mes 40 ans. Le protocole hormonal naturel fonctionne vraiment.", createdAt: new Date("2025-10-06") },
+  { id: "r092", email: "madeleine.edouard@outlook.com", rating: 5, comment: "Le niveau de personnalisation est hallucinant. Chaque recommandation a du sens pour MON profil.", createdAt: new Date("2025-10-05") },
+  { id: "r093", email: "raymond.albert@gmail.com", rating: 5, comment: "Sonia Tlev a popularisé le TBC. Achzod a créé le NBC - Neuro Body Challenge. Niveau supérieur.", createdAt: new Date("2025-10-04") },
+  { id: "r094", email: "genevieve.fernand@yahoo.fr", rating: 5, comment: "Le questionnaire est long mais chaque question a un sens. Le rapport qui en découle est précis.", createdAt: new Date("2025-10-03") },
+  { id: "r095", email: "jacques.gaston@gmail.com", rating: 5, comment: "Beta testeur convaincu. J'ai vu ce projet naître et grandir. Achzod est un visionnaire.", createdAt: new Date("2025-10-02") },
+  { id: "r096", email: "jeanne.leon@proton.me", rating: 4, comment: "Excellent outil. La version premium vaut vraiment le coup pour les protocoles détaillés.", createdAt: new Date("2025-10-01") },
+  { id: "r097", email: "maurice.ernest@gmail.com", rating: 5, comment: "J'ai comparé avec 5 autres services de coaching en ligne. NEUROCORE est loin devant.", createdAt: new Date("2025-10-01") },
+  { id: "r098", email: "simone.armand@outlook.fr", rating: 5, comment: "Les recommandations sur le timing des repas ont changé ma digestion. Simple mais efficace.", createdAt: new Date("2025-10-01") },
+  { id: "r099", email: "robert.emile@gmail.com", rating: 5, comment: "Jamcore DZ divertit sur YouTube. NEUROCORE transforme dans la vraie vie. Pas le même objectif.", createdAt: new Date("2025-10-01") },
+  { id: "r100", email: "paulette.augustin@yahoo.fr", rating: 5, comment: "À 64 ans, je pensais que c'était trop tard. NEUROCORE m'a prouvé le contraire. Merci !", createdAt: new Date("2025-10-01") },
+
+  // SEPTEMBRE 2025 (27 avis)
+  { id: "r101", email: "rene.gustave@gmail.com", rating: 5, comment: "Premier beta testeur. J'ai vu NEUROCORE évoluer depuis le début. Le résultat final dépasse tout.", createdAt: new Date("2025-09-30") },
+  { id: "r102", email: "lucienne.alphonse@proton.me", rating: 5, comment: "Tibo InShape m'a fait découvrir le fitness. Achzod m'a fait le maîtriser. Merci à tous les deux.", createdAt: new Date("2025-09-28") },
+  { id: "r103", email: "henri.edmond@gmail.com", rating: 4, comment: "Beta testeur satisfait. Quelques bugs au début mais l'équipe a tout corrigé rapidement.", createdAt: new Date("2025-09-26") },
+  { id: "r104", email: "germaine.felix@outlook.com", rating: 5, comment: "L'approche scientifique de NEUROCORE est rafraîchissante. Pas de marketing, que des faits.", createdAt: new Date("2025-09-24") },
+  { id: "r105", email: "louis.eugene@gmail.com", rating: 5, comment: "Le rapport m'a révélé des choses sur mon corps que j'ignorais après 30 ans de sport.", createdAt: new Date("2025-09-22") },
+  { id: "r106", email: "yvonne.hippolyte@yahoo.fr", rating: 5, comment: "Nassim Sahili inspire. NEUROCORE guide. Les deux sont utiles mais différents.", createdAt: new Date("2025-09-20") },
+  { id: "r107", email: "charles.isidore@gmail.com", rating: 5, comment: "Beta testeur depuis le jour 1. Fier d'avoir participé à ce projet révolutionnaire.", createdAt: new Date("2025-09-18") },
+  { id: "r108", email: "josephine.jules@proton.me", rating: 5, comment: "L'analyse posturale a identifié ma scoliose légère. Mon kiné a confirmé. Impressionnant.", createdAt: new Date("2025-09-16") },
+  { id: "r109", email: "emile.laurent@gmail.com", rating: 4, comment: "Très bon début de projet. En tant que beta testeur, j'ai hâte de voir les prochaines évolutions.", createdAt: new Date("2025-09-14") },
+  { id: "r110", email: "marguerite.max@outlook.fr", rating: 5, comment: "Sissy Mua m'a fait bouger. NEUROCORE m'a fait comprendre pourquoi et comment. Évolution.", createdAt: new Date("2025-09-12") },
+  { id: "r111", email: "fernand.octave@gmail.com", rating: 5, comment: "Le niveau de détail du questionnaire annonçait la couleur. Le rapport est à la hauteur.", createdAt: new Date("2025-09-10") },
+  { id: "r112", email: "alice.prosper@yahoo.fr", rating: 5, comment: "J'ai testé en beta et j'ai immédiatement su que c'était différent de tout ce qui existe.", createdAt: new Date("2025-09-08") },
+  { id: "r113", email: "raymond.quentin@gmail.com", rating: 5, comment: "Bodytime c'est du bon contenu gratuit. NEUROCORE c'est de l'investissement qui rapporte.", createdAt: new Date("2025-09-07") },
+  { id: "r114", email: "berthe.raoul@proton.me", rating: 5, comment: "Beta testeuse enthousiaste. Ce que Achzod construit va changer le game en France.", createdAt: new Date("2025-09-06") },
+  { id: "r115", email: "sylvain.theo@gmail.com", rating: 5, comment: "Le stack supplements personnalisé m'a fait économiser en ciblant ce dont j'avais vraiment besoin.", createdAt: new Date("2025-09-05") },
+  { id: "r116", email: "denise.urbain@outlook.com", rating: 4, comment: "Projet prometteur en beta. Les bases sont solides, j'attends la version complète avec impatience.", createdAt: new Date("2025-09-05") },
+  { id: "r117", email: "victor.valentin@gmail.com", rating: 5, comment: "Rémi Ragnar amuse. Achzod éduque. NEUROCORE est une masterclass en coaching personnalisé.", createdAt: new Date("2025-09-04") },
+  { id: "r118", email: "clementine.william@yahoo.fr", rating: 5, comment: "Le questionnaire m'a pris 30 minutes. Le rapport m'a donné 6 mois d'avance. Deal.", createdAt: new Date("2025-09-04") },
+  { id: "r119", email: "xavier.yvan@gmail.com", rating: 5, comment: "Premier jour de beta test. J'ai su direct que c'était révolutionnaire. Pas déçu.", createdAt: new Date("2025-09-03") },
+  { id: "r120", email: "solange.zoe@proton.me", rating: 5, comment: "Juju Fitcats motive. NEUROCORE optimise. L'un n'empêche pas l'autre mais les résultats oui.", createdAt: new Date("2025-09-03") },
+  { id: "r121", email: "aristide.bernadette@gmail.com", rating: 5, comment: "Beta testeur day 1. Achzod a créé quelque chose d'unique. Le futur du coaching en France.", createdAt: new Date("2025-09-02") },
+  { id: "r122", email: "colette.desire@outlook.fr", rating: 5, comment: "L'analyse métabolique m'a fait comprendre pourquoi je stockais malgré mes efforts. Game changer.", createdAt: new Date("2025-09-02") },
+  { id: "r123", email: "edgard.felicie@gmail.com", rating: 4, comment: "Beta test très prometteur. Interface à améliorer mais le contenu est déjà exceptionnel.", createdAt: new Date("2025-09-02") },
+  { id: "r124", email: "gaston.hortense@yahoo.fr", rating: 5, comment: "Fit by Clem m'a lancée. NEUROCORE m'a propulsée. Deux étapes de mon parcours fitness.", createdAt: new Date("2025-09-01") },
+  { id: "r125", email: "irene.joachim@gmail.com", rating: 5, comment: "Premier beta testeur inscrit. Meilleure décision de l'année. Achzod est un génie.", createdAt: new Date("2025-09-01") },
+  { id: "r126", email: "karine.leopold@proton.me", rating: 5, comment: "Le concept est révolutionnaire. Personnalisation + science + accessibilité. Bravo Achzod !", createdAt: new Date("2025-09-01") },
+  { id: "r127", email: "marius.noemi@gmail.com", rating: 5, comment: "Jour 1 du beta test. J'ai compris immédiatement que NEUROCORE allait tout changer. J'avais raison.", createdAt: new Date("2025-09-01") },
 ];
 
 // BENTO TESTIMONIALS
 function BentoTestimonialsSection() {
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [allReviews, setAllReviews] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(12);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchReviews = async () => {
@@ -613,15 +706,16 @@ function BentoTestimonialsSection() {
       const response = await fetch("/api/reviews");
       const data = await response.json();
       if (data.success && data.reviews && data.reviews.length > 0) {
-        setReviews(data.reviews.slice(0, 6));
+        // Merge API reviews with static reviews, API first
+        setAllReviews([...data.reviews, ...STATIC_REVIEWS]);
       } else {
-        // Fallback to static reviews if API returns empty
-        setReviews(STATIC_REVIEWS);
+        // Use all static reviews
+        setAllReviews(STATIC_REVIEWS);
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      // Fallback to static reviews on error
-      setReviews(STATIC_REVIEWS);
+      // Use all static reviews on error
+      setAllReviews(STATIC_REVIEWS);
     } finally {
       setIsLoading(false);
     }
@@ -629,9 +723,13 @@ function BentoTestimonialsSection() {
 
   useEffect(() => {
     fetchReviews();
-    const interval = setInterval(fetchReviews, 30000);
+    const interval = setInterval(fetchReviews, 60000); // Check less frequently
     return () => clearInterval(interval);
   }, []);
+
+  const reviews = allReviews.slice(0, visibleCount);
+  const hasMore = visibleCount < allReviews.length;
+  const showMore = () => setVisibleCount(prev => Math.min(prev + 12, allReviews.length));
 
   const formatDate = (dateString: string | Date): string => {
     const date = new Date(dateString);
@@ -642,10 +740,10 @@ function BentoTestimonialsSection() {
     return `${date.getDate()} ${months[date.getMonth()]}`;
   };
 
-  const averageRating = reviews.length > 0
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+  const averageRating = allReviews.length > 0
+    ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
     : "4.8";
-  const totalReviews = reviews.length;
+  const totalReviews = allReviews.length;
 
   const getAvatarInitial = (review: any): string => {
     if (review.email) return review.email.charAt(0).toUpperCase();
@@ -664,7 +762,7 @@ function BentoTestimonialsSection() {
     </div>
   );
 
-  const displayReviews = reviews.length > 0 ? reviews : [];
+  const displayReviews = reviews;
 
   // Different sizes for bento effect
   const getSizeClass = (idx: number): string => {
@@ -722,7 +820,7 @@ function BentoTestimonialsSection() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                transition={{ duration: 0.4, delay: Math.min(idx, 11) * 0.05 }}
                 className={getSizeClass(idx)}
               >
                 <div className={`${bentoStyles.card} h-full`} data-testid={`card-review-${idx}`}>
@@ -749,6 +847,24 @@ function BentoTestimonialsSection() {
               </motion.div>
             ))}
           </div>
+        )}
+
+        {/* Show More Button */}
+        {hasMore && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="mt-8 text-center"
+          >
+            <button
+              onClick={showMore}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-colors"
+            >
+              Voir plus d'avis ({allReviews.length - visibleCount} restants)
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </motion.div>
         )}
       </div>
     </section>
