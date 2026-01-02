@@ -1286,6 +1286,48 @@ export function generateExportHTMLFromTxt(
       ${generateSVGRadar(scores)}
     </div>
 
+    <!-- Section Avis - Demande de review -->
+    <div style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 20px; padding: 40px; margin: 48px auto; max-width: 700px; text-align: center;">
+      <div style="margin-bottom: 20px;">
+        <span style="font-size: 2.5rem;">⭐</span>
+      </div>
+      <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 12px;">
+        Ton avis compte enormement
+      </h3>
+      <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.7; margin-bottom: 24px;">
+        Tu viens de recevoir ton audit NEUROCORE 360.<br>
+        Prends 30 secondes pour noter ton experience et aider d'autres personnes a decouvrir cet outil.
+      </p>
+
+      <!-- 5 Stars Visual -->
+      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;">
+        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#0B0B0F"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#0B0B0F"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#0B0B0F"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#0B0B0F"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#0B0B0F"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+      </div>
+
+      <div style="background: rgba(251, 191, 36, 0.15); border-radius: 12px; padding: 16px 24px; display: inline-block;">
+        <p style="color: #fbbf24; font-weight: 700; margin: 0; font-size: 0.95rem;">
+          Connecte-toi a ton dashboard pour laisser ton avis
+        </p>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0;">
+          neurocore-360.onrender.com/dashboard
+        </p>
+      </div>
+    </div>
+
     <!-- CTA Premium - Coaching avec déduction NEUROCORE -->
     <div style="max-width: 1100px; margin: 48px auto 60px; padding: 0 16px;">
 

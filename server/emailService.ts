@@ -100,11 +100,8 @@ export async function sendReportReadyEmail(
               <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 16px; text-align: center;">
                 J'ai termine l'analyse complete de ton profil metabolique a travers les 15 domaines de sante.
               </p>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 16px; text-align: center;">
+              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
                 Decouvre tes scores, recommandations personnalisees et protocoles de supplements.
-              </p>
-              <p style="color: #fbbf24; font-size: 15px; line-height: 1.7; margin: 0 0 32px; text-align: center; font-weight: 600; background-color: rgba(251, 191, 36, 0.1); padding: 12px; border-radius: 8px;">
-                ⭐ Apres avoir consulte ton rapport, n'oublie pas de laisser ton avis et de noter sur 5 etoiles !
               </p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
@@ -115,6 +112,25 @@ export async function sendReportReadyEmail(
                   </td>
                 </tr>
               </table>
+
+              <!-- Review CTA Section -->
+              <div style="margin-top: 32px; padding: 24px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.3);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td align="center">
+                      <div style="font-size: 28px; margin-bottom: 12px;">⭐⭐⭐⭐⭐</div>
+                      <h3 style="color: #fbbf24; font-size: 18px; font-weight: 700; margin: 0 0 8px;">Ton avis compte !</h3>
+                      <p style="color: #a3a3a3; font-size: 14px; margin: 0 0 16px; line-height: 1.5;">
+                        Apres avoir consulte ton rapport, prends 30 secondes pour noter ton experience.<br>
+                        Ton retour aide d'autres personnes a decouvrir NEUROCORE 360.
+                      </p>
+                      <a href="${dashboardLink}#review" style="display: inline-block; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #0a0a0a; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 700;">
+                        Laisser mon avis
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
               <div style="margin-top: 32px; padding: 20px; background-color: #262626; border-radius: 10px;">
                 <p style="color: #a3a3a3; font-size: 13px; margin: 0 0 8px; text-align: center;">
                   Si le bouton ne fonctionne pas, copie ce lien :
