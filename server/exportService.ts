@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer";
 import { formatTxtToDashboard } from "./formatDashboard";
 import { getCTADebut, getCTAFin, PRICING } from "./cta";
+import { generateEnhancedSupplementsHTML } from "./supplementEngine";
 import type { AuditTier } from "./types";
 
 // ==========================================
@@ -256,9 +257,17 @@ function generateSVGRadar(scores: Record<string, number>): string {
   `;
 }
 
-export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?: string[]): string {
+export function generateExportHTMLFromTxt(
+  txt: string,
+  auditId: string,
+  photos?: string[],
+  clientResponses?: Record<string, unknown>
+): string {
   const dashboard = formatTxtToDashboard(txt);
   const firstName = (dashboard.clientName || "Client").trim().split(/\s+/)[0] || "Client";
+
+  // Store clientResponses for supplements generation
+  (dashboard as any).clientResponses = clientResponses || {};
   const hasPhotos = Boolean(photos && photos.length > 0);
 
   const truncateAtWord = (s: string, max: number) => {
@@ -338,8 +347,24 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
   ` : '';
 
   const sectionsHTML = dashboard.sections.map(section => {
-    const lines = section.content.split('\n');
-    const formattedContent = lines.map(line => {
+    // Check if this is a supplements section - use enhanced HTML
+    const isSupplementsSection = section.category === "supplements" ||
+                                  section.title.toLowerCase().includes("supplement") ||
+                                  section.title.toLowerCase().includes("stack");
+
+    let formattedContent: string;
+
+    if (isSupplementsSection) {
+      // Use the enhanced supplements HTML from library
+      formattedContent = generateEnhancedSupplementsHTML({
+        responses: (dashboard as any).clientResponses || {},
+        globalScore: dashboard.global,
+        firstName: dashboard.clientName?.split(' ')[0] || 'Client',
+      });
+    } else {
+      // Standard content formatting
+      const lines = section.content.split('\n');
+      formattedContent = lines.map(line => {
       let l = line.trim();
       
       // Nettoyage
@@ -387,7 +412,8 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       }
 
       return `<p>${l}</p>`;
-    }).join('');
+      }).join('');
+    }
 
     const level = section.score > 0 ? getScoreLevel(section.score) : "";
     const color = section.score > 0 ? getScoreColor(section.score) : "var(--text-muted)";
@@ -1656,15 +1682,25 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
 </html>`;
 }
 
-export function generateExportHTML(report: any, auditId: string, photos?: string[]): string {
+export function generateExportHTML(
+  report: any,
+  auditId: string,
+  photos?: string[],
+  clientResponses?: Record<string, unknown>
+): string {
   if (report.txt) {
-    return generateExportHTMLFromTxt(report.txt, auditId, photos);
+    return generateExportHTMLFromTxt(report.txt, auditId, photos, clientResponses);
   }
   return "Ancien format non supporté";
 }
 
-export async function generateExportPDF(report: any, auditId: string, photos?: string[]): Promise<Buffer> {
-  const html = generateExportHTML(report, auditId, photos);
+export async function generateExportPDF(
+  report: any,
+  auditId: string,
+  photos?: string[],
+  clientResponses?: Record<string, unknown>
+): Promise<Buffer> {
+  const html = generateExportHTML(report, auditId, photos, clientResponses);
   
   let browser = null;
   try {

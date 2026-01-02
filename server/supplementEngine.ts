@@ -738,6 +738,197 @@ function uniqueByName(list: SupplementProtocolAdvanced[]): SupplementProtocolAdv
  * Objectif : zéro hallucination, cohérence, et intégration de tes règles d'achat/sécurité.
  * IMPORTANT : retourne du texte brut (pas de markdown).
  */
+// iHerb promo code
+const IHERB_PROMO_CODE = "KAN0746";
+const IHERB_BASE_URL = "https://ae.iherb.com/search?kw=";
+
+function generateIHerbLink(searchQuery: string): string {
+  const encoded = encodeURIComponent(searchQuery);
+  return `${IHERB_BASE_URL}${encoded}&rcode=${IHERB_PROMO_CODE}`;
+}
+
+/**
+ * Generates enhanced HTML for supplements section with detailed explanations,
+ * mechanisms, dosage protocols, and iHerb links with promo code.
+ */
+export function generateEnhancedSupplementsHTML(input: {
+  responses: Record<string, unknown>;
+  globalScore?: number;
+  firstName?: string;
+}): string {
+  const responses = input.responses || {};
+  const firstName = input.firstName || "Client";
+  const meds = [
+    ...toStringArray(responses["medicaments"]),
+    ...toStringArray(responses["medications"]),
+  ];
+
+  const baseScore =
+    typeof input.globalScore === "number" && Number.isFinite(input.globalScore)
+      ? Math.max(30, Math.min(90, input.globalScore))
+      : 55;
+
+  const domains = [
+    "sleep",
+    "cortisol_stress",
+    "performance",
+    "cardiovascular",
+    "neurotransmitters",
+    "testosterone",
+    "joints",
+  ];
+
+  const all = domains.flatMap((domain) => selectSupplementsForDomain(domain, baseScore, responses, meds));
+  const picked = uniqueByName(all);
+
+  if (picked.length === 0) {
+    return `
+      <div class="supplements-empty">
+        <p>Ton profil actuel ne necessite pas de stack avancee.</p>
+        <p>Concentre-toi sur les fondations : sommeil de qualite, proteines adequates, hydratation optimale et entrainement regulier pendant 14 jours.</p>
+        <p>Ensuite, on reevaluera ensemble.</p>
+      </div>
+    `;
+  }
+
+  const supplementCards = picked.slice(0, 8).map((supp, idx) => {
+    const iherbLink = supp.iherb_search_query ? generateIHerbLink(supp.iherb_search_query) : null;
+    const evidenceColor = supp.evidence_grade === "A" ? "#22c55e" :
+                          supp.evidence_grade === "B" ? "#3b82f6" :
+                          supp.evidence_grade === "C" ? "#f59e0b" : "#9ca3af";
+
+    return `
+      <div class="supplement-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+          <div>
+            <span style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">#${idx + 1}</span>
+            <h4 style="font-size: 1.25rem; font-weight: 700; color: var(--text); margin: 8px 0 4px 0;">${supp.ingredient}</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">${supp.form}</p>
+          </div>
+          <div style="text-align: right;">
+            <span style="background: ${evidenceColor}; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">Grade ${supp.evidence_grade}</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <h5 style="font-size: 0.85rem; font-weight: 700; color: #8b5cf6; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">POURQUOI CE COMPLEMENT ?</h5>
+          <p style="font-size: 0.95rem; color: var(--text); line-height: 1.6; margin: 0;">${supp.mechanism}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+          <div style="background: rgba(34, 197, 94, 0.1); border-radius: 10px; padding: 12px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #22c55e; text-transform: uppercase;">Dosage</span>
+            <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 4px 0 0 0;">${supp.dose.daily_amount} ${supp.dose.units}</p>
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 2px 0 0 0;">${supp.dose.split}</p>
+          </div>
+          <div style="background: rgba(59, 130, 246, 0.1); border-radius: 10px; padding: 12px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #3b82f6; text-transform: uppercase;">Timing</span>
+            <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 4px 0 0 0;">${supp.timing}</p>
+          </div>
+          <div style="background: rgba(139, 92, 246, 0.1); border-radius: 10px; padding: 12px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #8b5cf6; text-transform: uppercase;">Cycle</span>
+            <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 4px 0 0 0;">${supp.cycle}</p>
+          </div>
+          <div style="background: rgba(249, 115, 22, 0.1); border-radius: 10px; padding: 12px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #f97316; text-transform: uppercase;">Scaling</span>
+            <p style="font-size: 0.85rem; color: var(--text); margin: 4px 0 0 0;">${supp.dose.scaling_note}</p>
+          </div>
+        </div>
+
+        ${supp.synergies.length > 0 ? `
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: #22c55e;">SYNERGIES :</span>
+          <span style="font-size: 0.85rem; color: var(--text-secondary);"> ${supp.synergies.join(", ")}</span>
+        </div>
+        ` : ""}
+
+        ${supp.risks.length > 0 ? `
+        <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 12px;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: #ef4444;">A SURVEILLER :</span>
+          <p style="font-size: 0.85rem; color: var(--text); margin: 4px 0 0 0;">${supp.risks.join(" | ")}</p>
+        </div>
+        ` : ""}
+
+        <div style="background: rgba(139, 92, 246, 0.05); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+          <h5 style="font-size: 0.8rem; font-weight: 700; color: #8b5cf6; margin: 0 0 8px 0;">COMMENT LIRE L'ETIQUETTE</h5>
+          <ul style="margin: 0; padding-left: 18px; font-size: 0.85rem; color: var(--text);">
+            ${supp.label_checks.map(check => `<li style="margin-bottom: 4px;">${check}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">
+          <strong>Evidence :</strong> ${supp.citations.join(", ")}
+        </div>
+
+        ${iherbLink ? `
+        <a href="${iherbLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: transform 0.2s, box-shadow 0.2s;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          Acheter sur iHerb (-5% avec code KAN0746)
+        </a>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
+
+  const buyingRulesHTML = `
+    <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(249, 115, 22, 0.05) 100%); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: #ef4444; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        REGLES D'ACHAT NON NEGOCIABLES
+      </h4>
+      <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; color: var(--text); line-height: 1.8;">
+        <li><strong>Zero blend proprietaire :</strong> ${IHERB_RULES.zero_proprietary_blends}</li>
+        <li><strong>Magnesium :</strong> ${IHERB_RULES.correct_units.magnesium}</li>
+        <li><strong>Omega-3 :</strong> ${IHERB_RULES.quality_markers.omega3}</li>
+        <li><strong>Ashwagandha :</strong> ${IHERB_RULES.standardization_required.ashwagandha}</li>
+        <li><strong>Tongkat Ali :</strong> ${IHERB_RULES.standardization_required.tongkat_ali}</li>
+      </ul>
+    </div>
+  `;
+
+  const safetyHTML = meds.length > 0 ? `
+    <div style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 179, 8, 0.05) 100%); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: #f97316; margin: 0 0 12px 0;">SECURITE - MEDICAMENTS DECLARES</h4>
+      <p style="font-size: 0.9rem; color: var(--text); margin: 0 0 8px 0;"><strong>Tes medicaments :</strong> ${meds.join(", ")}</p>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">La stack ci-dessous a ete filtree pour eviter les interactions connues. En cas de doute, consulte ton medecin.</p>
+    </div>
+  ` : "";
+
+  const protocolHTML = `
+    <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 24px; margin-top: 24px;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: #3b82f6; margin: 0 0 16px 0;">PROTOCOLE D'INTRODUCTION</h4>
+      <div style="display: grid; gap: 12px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">1</span>
+          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Introduis UN seul supplement tous les 3-4 jours pour identifier les effets individuels</p>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">2</span>
+          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Commence par les basiques : Magnesium, Vitamine D, Omega-3</p>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">3</span>
+          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Note tes ressentis dans un journal (energie, sommeil, humeur)</p>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">4</span>
+          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Reevalue apres 4-6 semaines avant d'ajouter des supplements avances</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="supplements-section-enhanced">
+      ${buyingRulesHTML}
+      ${safetyHTML}
+      <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0 0 20px 0;">Ta Stack Personnalisee</h3>
+      ${supplementCards}
+      ${protocolHTML}
+    </div>
+  `;
+}
+
 export function generateSupplementsSectionText(input: {
   responses: Record<string, unknown>;
   globalScore?: number;
