@@ -62,6 +62,7 @@ export interface IStorage {
 
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
   saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress>;
+  getAllIncompleteProgress(): Promise<QuestionnaireProgress[]>;
 
   createMagicToken(email: string): Promise<string>;
   verifyMagicToken(token: string): Promise<string | null>;
@@ -205,6 +206,12 @@ export class MemStorage implements IStorage {
 
     this.progress.set(input.email, progress);
     return progress;
+  }
+
+  async getAllIncompleteProgress(): Promise<QuestionnaireProgress[]> {
+    return Array.from(this.progress.values())
+      .filter(p => p.status === "IN_PROGRESS")
+      .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
   }
 
   private calculateScores(responses: Record<string, unknown>): Record<string, number> {
@@ -499,6 +506,23 @@ export class PgStorage implements IStorage {
         lastActivityAt: row.last_activity_at,
       };
     }
+  }
+
+  async getAllIncompleteProgress(): Promise<QuestionnaireProgress[]> {
+    const result = await pool.query(
+      "SELECT * FROM questionnaire_progress WHERE status = 'IN_PROGRESS' ORDER BY last_activity_at DESC"
+    );
+    return result.rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      currentSection: parseInt(row.current_section),
+      totalSections: parseInt(row.total_sections),
+      percentComplete: parseInt(row.percent_complete),
+      responses: row.responses,
+      status: row.status,
+      startedAt: row.started_at,
+      lastActivityAt: row.last_activity_at,
+    }));
   }
 
   async createMagicToken(email: string): Promise<string> {

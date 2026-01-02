@@ -18,6 +18,9 @@ import {
   Eye,
   Calendar,
   Mail,
+  UserX,
+  AlertTriangle,
+  Percent,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -48,10 +51,22 @@ interface Audit {
   completedAt?: string;
 }
 
+interface IncompleteQuestionnaire {
+  id: string;
+  email: string;
+  currentSection: number;
+  totalSections: number;
+  percentComplete: number;
+  status: string;
+  startedAt: string;
+  lastActivityAt: string;
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("audits");
   const [audits, setAudits] = useState<Audit[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [incompleteQuestionnaires, setIncompleteQuestionnaires] = useState<IncompleteQuestionnaire[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [showCtaModal, setShowCtaModal] = useState(false);
@@ -98,11 +113,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchIncompleteQuestionnaires = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/admin/incomplete-questionnaires");
+      const data = await response.json();
+      if (data.success) {
+        setIncompleteQuestionnaires(data.questionnaires);
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les questionnaires incomplets",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "audits") {
       fetchAudits();
-    } else {
+    } else if (activeTab === "reviews") {
       fetchPendingReviews();
+    } else if (activeTab === "incomplete") {
+      fetchIncompleteQuestionnaires();
     }
   }, [activeTab]);
 
@@ -244,6 +280,10 @@ export default function AdminDashboard() {
           <TabsList className="mb-6">
             <TabsTrigger value="audits">Audits</TabsTrigger>
             <TabsTrigger value="reviews">Avis en attente</TabsTrigger>
+            <TabsTrigger value="incomplete" className="gap-2">
+              <UserX className="w-4 h-4" />
+              Abandons ({incompleteQuestionnaires.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="audits">
@@ -428,6 +468,123 @@ export default function AdminDashboard() {
                     </Card>
                   </motion.div>
                 ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Tab: Questionnaires incomplets */}
+          <TabsContent value="incomplete">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold">Questionnaires abandonnés</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Utilisateurs ayant commencé mais pas terminé le questionnaire
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={fetchIncompleteQuestionnaires}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                Actualiser
+              </Button>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : incompleteQuestionnaires.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-green-500 mb-4" />
+                  <h3 className="text-xl font-semibold">Aucun abandon</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Tous les utilisateurs ont terminé leur questionnaire
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {incompleteQuestionnaires.map((q, index) => {
+                  const lastActive = new Date(q.lastActivityAt);
+                  const daysSinceActive = Math.floor((Date.now() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+                  const isRecent = daysSinceActive < 1;
+                  const isStale = daysSinceActive > 7;
+
+                  return (
+                    <motion.div
+                      key={q.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Card className={isRecent ? "border-amber-500/50" : isStale ? "border-red-500/30" : ""}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                  <Mail className="w-4 h-4" />
+                                  {q.email}
+                                </CardTitle>
+                                <Badge variant={isRecent ? "default" : isStale ? "destructive" : "secondary"}>
+                                  {isRecent ? "Récent" : isStale ? "Froid" : "Tiède"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  Commencé le {new Date(q.startedAt).toLocaleDateString("fr-FR")}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  Dernière activité: {daysSinceActive === 0 ? "Aujourd'hui" : `il y a ${daysSinceActive}j`}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Percent className="w-4 h-4 text-primary" />
+                                <span className="text-2xl font-bold text-primary">{q.percentComplete}%</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Section {q.currentSection + 1}/{q.totalSections}
+                              </p>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {/* Progress bar */}
+                          <div className="mb-4">
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary transition-all"
+                                style={{ width: `${q.percentComplete}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <Button
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => {
+                                setSelectedAuditId(q.id);
+                                setCtaSubject("Ton audit NEUROCORE 360 t'attend !");
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire NEUROCORE 360 mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setShowCtaModal(true);
+                              }}
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              Relancer par email
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>

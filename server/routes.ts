@@ -86,6 +86,17 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get all incomplete questionnaires
+  app.get("/api/admin/incomplete-questionnaires", async (req, res) => {
+    try {
+      const incomplete = await storage.getAllIncompleteProgress();
+      res.json({ success: true, questionnaires: incomplete });
+    } catch (error) {
+      console.error("Error fetching incomplete questionnaires:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   const createAuditBodySchema = z.object({
     email: z.string().email(),
     type: z.enum(["GRATUIT", "PREMIUM", "ELITE"]),

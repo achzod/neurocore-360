@@ -43,6 +43,7 @@ import {
   Upload,
   AlertCircle,
   X,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
@@ -343,12 +344,62 @@ export default function Questionnaire() {
       });
     },
     onSuccess: () => {
-      toast({
-        title: "Progression sauvegardée",
-        description: "Tu peux reprendre ton questionnaire à tout moment.",
-      });
+      // Silent save - no toast to avoid interrupting the user
     },
   });
+
+  // Auto-save every 30 seconds if email is submitted
+  useEffect(() => {
+    if (!emailSubmitted || !email) return;
+
+    const autoSaveInterval = setInterval(() => {
+      if (Object.keys(responses).length > 0) {
+        saveProgressMutation.mutate();
+      }
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [emailSubmitted, email, responses, currentSectionIndex]);
+
+  // Save on section change
+  useEffect(() => {
+    if (emailSubmitted && email && Object.keys(responses).length > 0) {
+      saveProgressMutation.mutate();
+    }
+  }, [currentSectionIndex]);
+
+  // Motivational messages based on progress
+  const getMotivationalMessage = (): { title: string; message: string } | null => {
+    if (totalProgress >= 75 && totalProgress < 80) {
+      return {
+        title: "Tu y es presque !",
+        message: "Plus que quelques questions et tu auras accès à ton analyse personnalisée complète."
+      };
+    }
+    if (totalProgress >= 50 && totalProgress < 55) {
+      return {
+        title: "Mi-parcours atteint !",
+        message: "Tu avances super bien. Ces infos vont me permettre de créer un audit vraiment sur-mesure."
+      };
+    }
+    if (totalProgress >= 25 && totalProgress < 30) {
+      return {
+        title: "Excellent départ !",
+        message: "Continue comme ça. Chaque réponse compte pour ton analyse."
+      };
+    }
+    return null;
+  };
+
+  // Time estimate
+  const getTimeEstimate = (): string => {
+    const remainingSections = QUESTIONNAIRE_SECTIONS.length - currentSectionIndex - 1;
+    const minutesPerSection = 1.5; // Average
+    const remainingMinutes = Math.ceil(remainingSections * minutesPerSection);
+    if (remainingMinutes <= 1) return "Moins d'1 min";
+    if (remainingMinutes <= 5) return `~${remainingMinutes} min`;
+    return `~${remainingMinutes} min`;
+  };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,6 +553,11 @@ export default function Questionnaire() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Time estimate */}
+              <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>{getTimeEstimate()} restantes</span>
+              </div>
               <div className="hidden sm:block">
                 <Progress value={totalProgress} className="w-32" />
               </div>
@@ -509,7 +565,13 @@ export default function Questionnaire() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => saveProgressMutation.mutate()}
+                onClick={() => {
+                  saveProgressMutation.mutate();
+                  toast({
+                    title: "Sauvegardé !",
+                    description: "Ta progression est enregistrée.",
+                  });
+                }}
                 disabled={saveProgressMutation.isPending}
                 data-testid="button-save-progress"
               >
@@ -527,6 +589,18 @@ export default function Questionnaire() {
               </Button>
             </div>
           </div>
+
+          {/* Motivational message */}
+          {getMotivationalMessage() && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mt-3 rounded-lg bg-primary/10 border border-primary/20 px-4 py-2"
+            >
+              <p className="text-sm font-medium text-primary">{getMotivationalMessage()?.title}</p>
+              <p className="text-xs text-primary/80">{getMotivationalMessage()?.message}</p>
+            </motion.div>
+          )}
         </div>
       </div>
 
