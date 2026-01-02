@@ -137,13 +137,6 @@ export default function Checkout() {
                   </Badge>
                 </div>
               )}
-              {"bestValue" in plan && plan.bestValue && (
-                <div className="absolute -top-4 left-1/2 z-10 -translate-x-1/2">
-                  <Badge variant="secondary" className="gap-1 bg-accent px-3 py-1 text-accent-foreground">
-                    Best Value
-                  </Badge>
-                </div>
-              )}
               <Card
                 className={`h-full cursor-pointer transition-all ${
                   selectedPlan === plan.id

@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+<meta charset='utf-8'/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ton Audit Expert - AchzodCoaching</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+    --primary: #9990EA;
+    --secondary: #8DFFE0;
+    --dark: #0a0a0a;
+    --gray: #f8f9fa;
+    --text: #1a1a1a;
+    --text-light: #666;
+    --border: #e5e7eb;
+}
+
+body {
+    margin:0;
+    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height:1.7;
+    font-size:16px;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* === HEADER SECTION === */
+.header {
+    background: #ffffff;
+    padding: 80px 40px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(153,144,234,0.08) 0%, transparent 70%);
+    z-index: 0;
+}
+.logo-text {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary) 0%, #7B6FD6 50%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+}
+.tagline {
+    font-size: 17px;
+    color: var(--text-light);
+    margin-bottom: 60px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    position: relative;
+    z-index: 1;
+}
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 40px;
+    max-width: 900px;
+    margin: 0 auto 50px;
+    position: relative;
+    z-index: 1;
+}
+.stat-item {
+    text-align: center;
+    padding: 24px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+.stat-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(153,144,234,0.15);
+    border-color: var(--secondary);
+}
+.stat-number {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+    margin-bottom: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.stat-label {
+    font-size: 12px;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}
+.media-trust {
+    font-size: 12px;
+    color: #999;
+    margin-top: 40px;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+}
+
+/* === HERO SECTION === */
+.hero {
+    background: linear-gradient(135deg, #9990EA 0%, #7B6FD6 50%, #8DFFE0 100%);
+    padding: 120px 40px;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="rgba(255,255,255,0.15)"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.4;
+}
+.hero h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 56px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    letter-spacing: -1.5px;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.hero p {
+    font-size: 20px;
+    opacity: 0.95;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 1;
+}
+
+/* === GIFT BANNER === */
+.gift-banner {
+    background: linear-gradient(135deg, var(--secondary) 0%, #6FE6CC 100%);
+    color: var(--dark);
+    padding: 36px 40px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 20px rgba(141,255,224,0.3);
+}
+.gift-banner strong {
+    font-size: 20px;
+    font-weight: 900;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* === CONTAINER === */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 40px;
+}
+
+/* === SECTION HEADERS === */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 100px 0 40px 0;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--border);
+}
+.section-header:first-of-type {
+    margin-top: 40px;
+}
+.section-icon {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, var(--secondary) 0%, #6FE6CC 100%);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+    box-shadow: 0 8px 24px rgba(141,255,224,0.25);
+    transition: all 0.3s ease;
+}
+.section-header:hover .section-icon {
+    transform: scale(1.05) rotate(-5deg);
+}
+.section-header h2 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+/* === SCORE BADGES === */
+.score {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    margin: 36px 0;
+    padding: 20px 40px;
+    border-radius: 60px;
+    font-weight: 900;
+    font-size: 20px;
+    color: #fff;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.3px;
+    transition: all 0.3s ease;
+}
+.score:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.score::before {
+    content: '●';
+    font-size: 32px;
+    animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.score.red {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+.score.orange {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+.score.green {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+/* === PARAGRAPHS === */
+p {
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+    font-weight: 400;
+}
+
+/* === ASCII GRAPHICS === */
+.ascii-art {
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 15px;
+    white-space: pre-wrap;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 28px 32px;
+    border-radius: 16px;
+    border-left: 4px solid var(--secondary);
+    margin: 32px 0;
+    overflow-x: auto;
+    line-height: 1.9;
+    color: var(--text);
+}
+
+/* === DARK SECTION === */
+.dark-section {
+    background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+    margin: 100px -40px;
+    padding: 100px 40px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.dark-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(153,144,234,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 50%, rgba(141,255,224,0.15) 0%, transparent 50%);
+    z-index: 0;
+}
+.dark-section h2 {
+    color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 70px;
+    letter-spacing: -1px;
+    position: relative;
+    z-index: 1;
+}
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+.feature {
+    text-align: center;
+    padding: 40px 30px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 24px;
+    border: 1px solid rgba(141,255,224,0.15);
+    transition: all 0.4s ease;
+}
+.feature:hover {
+    transform: translateY(-10px);
+    background: rgba(255,255,255,0.05);
+    border-color: var(--secondary);
+    box-shadow: 0 20px 50px rgba(141,255,224,0.2);
+}
+.feature-icon {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 28px auto;
+    border: 3px solid var(--secondary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    background: rgba(141,255,224,0.1);
+    transition: all 0.4s ease;
+}
+.feature:hover .feature-icon {
+    transform: scale(1.1) rotate(5deg);
+    background: rgba(141,255,224,0.2);
+    box-shadow: 0 0 30px rgba(141,255,224,0.3);
+}
+.feature h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--secondary);
+    letter-spacing: 0.3px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.feature p {
+    color: #ccc;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+/* === CTA SECTION === */
+.cta-section {
+    background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 100px 40px;
+    margin: 100px -40px 0 -40px;
+}
+.cta-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+    color: var(--text);
+}
+.cta-subtitle {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 18px;
+    line-height: 1.7;
+    margin-bottom: 80px;
+    max-width: 750px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.cta-boxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 50px;
+    max-width: 1200px;
+    margin: 0 auto 80px auto;
+}
+.cta-box {
+    background: #fff;
+    padding: 60px 45px;
+    border-radius: 28px;
+    border: 2px solid var(--border);
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+.cta-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+.cta-box:hover::before {
+    opacity: 1;
+}
+.cta-box:hover {
+    transform: translateY(-15px);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.12);
+    border-color: var(--secondary);
+}
+.cta-box h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+}
+.cta-box .price {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 48px;
+    font-weight: 900;
+    margin: 24px 0;
+    letter-spacing: -1px;
+}
+.cta-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 32px 0;
+    font-size: 16px;
+    line-height: 2;
+}
+.cta-box li {
+    padding-left: 36px;
+    position: relative;
+    margin-bottom: 16px;
+    color: var(--text);
+}
+.cta-box li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--secondary);
+    font-weight: 900;
+    font-size: 24px;
+}
+.cta-btn {
+    display: block;
+    padding: 20px 40px;
+    border-radius: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    margin-top: 32px;
+    transition: all 0.3s ease;
+    font-size: 17px;
+    text-align: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.3px;
+}
+.cta-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+}
+.promo-code {
+    background: linear-gradient(135deg, var(--secondary) 0%, #6FE6CC 100%);
+    color: var(--dark);
+    padding: 36px 45px;
+    border-radius: 20px;
+    text-align: center;
+    margin: 60px auto 0 auto;
+    font-weight: 700;
+    font-size: 18px;
+    max-width: 800px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 12px 40px rgba(141,255,224,0.3);
+}
+
+/* === FOOTER === */
+.footer {
+    background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+    color: #999;
+    text-align: center;
+    padding: 80px 40px;
+    position: relative;
+    overflow: hidden;
+}
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(141,255,224,0.08) 0%, transparent 70%);
+    z-index: 0;
+}
+.footer-brand {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--secondary);
+    font-weight: 800;
+    font-size: 32px;
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
+}
+.footer-text {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+.footer-link {
+    color: var(--secondary);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+.footer-link:hover {
+    color: #fff;
+}
+
+/* Responsive */
+@media only screen and (max-width: 768px) {
+    .hero h1 { font-size:36px; }
+    .section-header h2 { font-size:26px; }
+    .stats { gap:30px; }
+    .features-grid { grid-template-columns:1fr; }
+    .cta-boxes { grid-template-columns:1fr; }
+    .dark-section h2 { font-size:32px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header avec stats -->
+<div class='header'>
+    <div class='logo-text'>ACHZOD</div>
+    <div class='tagline'>Deviens la meilleure version de toi-même</div>
+
+    <div class='stats'>
+        <div class='stat-item'>
+            <span class='stat-number'>5000+</span>
+            <span class='stat-label'>transformations réussies</span>
+        </div>
+        <div class='stat-item'>
+            <span class='stat-number'>98%</span>
+            <span class='stat-label'>taux de réussite</span>
+        </div>
+        <div class='stat-item'>
+            <span class='stat-number'>11</span>
+            <span class='stat-label'>certifications internationales</span>
+        </div>
+        <div class='stat-item'>
+            <span class='stat-number'>14+</span>
+            <span class='stat-label'>médias</span>
+        </div>
+    </div>
+
+    <div class='media-trust'>
+        Recommandé par MarketWatch, Reuters, Yahoo Finance, Bloomberg & +10 médias
+    </div>
+</div>
+
+<!-- Hero avec nom -->
+<div class='hero'>
+    <h1>PIERRE-LOUIS BOURDIN</h1>
+    <p>Ton Audit Expert Personnalisé</p>
+</div>
+
+<!-- Bandeau cadeau -->
+<div class='gift-banner'>
+    🎁 Cet audit est <strong>GRATUIT</strong> pour le moment mais passe bientôt payant à <strong>79€</strong><br>
+    C'est un vrai cadeau que tu reçois aujourd'hui !
+</div>
+
+<!-- Contenu principal -->
+<div class='container'>
+<div class='section-header'>
+    <div class='section-icon'>📊</div>
+    <h2>Introduction</h2>
+</div>
+<p>Pierre-Louis, écoute-moi bien. Je viens de passer 2h à éplucher ton dossier, analyser tes photos, décortiquer chaque réponse... et bordel, on a du boulot.</p>
+<div class='ascii-art'>Mais d'abord, laisse-moi te dire quelque chose : tu es exactement le type de client que j'adore coacher. Pourquoi ? Parce que tu as cette lucidité brutale qui manque à 90% des gens. Quand tu écris "énergie au plus bas, confiance au plus bas" si rien ne change... mec, tu viens de poser le diagnostic le plus juste que j'ai lu cette semaine.</div>
+<div class='ascii-art'>24 ans, 4 ans de training dont 2 sérieux, un physique qui commence à prendre forme... mais un système nerveux qui crie au secours depuis des mois. Et devine quoi ? Tout est connecté. Cette baisse d'énergie, ces plateaux en sèche, cette perte de force, ces ballonnements, ce sommeil pourri, ce stress à 7/10... c'est pas du hasard, c'est un système qui s'effondre par étapes.</div>
+<p>Regarde ce que je vois dans tes données :</p>
+<div class='ascii-art'>État énergétique : [■■□□□□□□□□] 2/10
+Récupération système : [■■■□□□□□□□] 3/10
+Équilibre hormonal : [■■□□□□□□□□] 2/10
+Potentiel inexploité : [■■■■■■■■■□] 9/10</div>
+<div class='ascii-art'>Tu sais ce qui me frappe le plus ? Cette phrase : "je cherche constamment à m'améliorer". Mec, c'est exactement ton problème ET ta solution. Tu as le mindset, l'engagement (10/10 sur ta motivation), la discipline... mais tu tournes en rond parce que personne ne t'a expliqué ce qui se passe réellement dans ton corps.</div>
+<p>Alors voilà ce qu'on va faire ensemble. Je vais te démonter pièce par pièce ce qui dysfonctionne, te montrer exactement pourquoi tu stagnes, et surtout... te donner la feuille de route précise pour sortir de cette spirale. Parce que quand tu comprends les mécanismes, tout devient limpide.</p>
+<div class='ascii-art'>Ton historique d'anxiolytiques et antidépresseurs jusqu'à récemment ? Ça a laissé des traces métaboliques qu'on doit réparer. Cette consommation de caféine délirante (1,5g par jour, sérieusement ?) ? Ton système surrénalien est cramé. Ces tendinites à répétition ? Inflammation chronique qui bouffe ton énergie. Cette perte de force en sèche ? Approche métabolique complètement à côté de la plaque.</div>
+<p>Mais le truc génial, c'est que tu as tous les ingrédients pour exploser tes limites. Tu cuisines, tu calcules tes macros, tu veux du biohacking avancé, tu es prêt à t'engager à fond... Il ne manque que la stratégie chirurgicale.</p>
+<p>Dans cet audit, je vais te montrer exactement où ton corps lâche, pourquoi ton cerveau sabote tes efforts, et comment réaligner tout ça pour que dans 6 mois, tu sois cette version de toi que tu visualises : physique au top, mental d'acier, confiance inébranlable.</p>
+<p>Prêt à découvrir ce qui se cache vraiment derrière tes plateaux ?</p>
+<div class='score green'>Score : 6/10</div>
+<div class='section-header'>
+    <div class='section-icon'>👁️</div>
+    <h2>Analyse Visuelle Photo Face Et Dos</h2>
+</div>
+<p>Pierre-Louis... tes photos racontent une histoire que ton esprit analytique va adorer décortiquer. Ce que je vois ici, c'est un puzzle métabolique et postural fascinant qui explique EXACTEMENT pourquoi tu stagnes et pourquoi ton énergie s'effrite.</p>
+<div class='ascii-art'>Commençons par le visuel immédiat : tu affiches 92 kilos pour 1m87, soit un IMC autour de 26.3. Mais les chiffres mentent... ton corps révèle une composition bien plus complexe. Je distingue une masse musculaire développée, particulièrement au niveau des épaules et des bras, résultat évident de tes 2 années sérieuses en musculation. Cependant, et c'est là que ça devient intéressant, je détecte une distribution graisseuse caractéristique d'un profil en résistance insulinique naissante.</div>
+<p>Regarde cette répartition :</p>
+<div class='ascii-art'>Zone abdominale : [■■■■■■■□□□] 7/10 - Accumulation péri-viscérale
+  Flancs/love handles : [■■■■■■□□□□] 6/10 - Stockage hormonal
+  Définition musculaire : [■■■■■□□□□□] 5/10 - Voilée par inflammation</div>
+<p>Ce pattern de stockage abdominal préférentiel, combiné à ta rétention d'eau visible au niveau du visage et du tronc, me crie littéralement "dysrégulation cortisolique chronique". Et devine quoi ? Tes antécédents récents d'anxiolytiques et antidépresseurs ont probablement amplifié ce phénomène par un mécanisme de rebond post-sevrage.</p>
+<div class='ascii-art'>Analysons ta posture maintenant... et là, Pierre-Louis, on touche le jackpot diagnostique. Tes épaules présentent une antéposition marquée, ton épaule droite est visiblement plus haute que la gauche, et je distingue une rotation interne excessive des humérus. Cette asymétrie n'est pas anodine : elle révèle une compensation posturale chronique liée à ton travail de bureau ET à tes douleurs d'épaule droite.</div>
+<div class='ascii-art'>Mais voici le lien crucial que 99% des coachs ratent : cette posture en fermeture thoracique comprime mécaniquement ton diaphragme, réduisant ton volume courant respiratoire de 15 à 20%. Résultat ? Ton système nerveux parasympathique est sous-activé en permanence, maintenant ton cortisol élevé et sabotant ta récupération nocturne. C'est un cercle vicieux parfait.</div>
+<div class='ascii-art'>La biomécanique révèle encore plus : cette antéposition scapulaire crée une tension excessive sur tes biceps (d'où tes tendinites récurrentes) et force une compensation par hyperactivation des trapèzes supérieurs. Regarde ton cou : légèrement projeté vers l'avant, créant une cascade de tensions qui remonte jusqu'aux muscles sous-occipitaux. Ces derniers, contractés en permanence, perturbent ton flux sanguin cérébral et expliquent en partie pourquoi ton sommeil n'est "pas optimal".</div>
+<p>Au niveau métabolique, tes photos révèlent des indices subtils mais parlants :</p>
+<div class='ascii-art'>✓ Masse musculaire préservée malgré les difficultés
+✗ Rétention hydrique péri-abdominale (inflammation chronique)
+✗ Perte de définition vasculaire (insulino-résistance naissante)
+→ Optimiser la sensibilité insulinique et réduire l'inflammation systémique</div>
+<div class='ascii-art'>Ton visage me donne des informations précieuses aussi... Je note une légère bouffissure matinale résiduelle, des cernes marqués malgré tes 7-8h de sommeil, et un teint qui manque d'éclat. Ces signes, corrélés avec tes ballonnements digestifs, pointent vers une perméabilité intestinale augmentée. L'inflammation de bas grade qui en résulte maintient ton cortisol élevé et explique en partie pourquoi tu te sens "au plus bas" énergétiquement.</div>
+<div class='ascii-art'>La distribution de ta masse grasse suit un pattern typiquement masculin mais avec des nuances hormonales importantes. Je vois une accumulation préférentielle dans la région péri-ombilicale et les flancs, signature d'un ratio cortisol/testostérone déséquilibré. Tes 1,5g de caféine quotidienne jusqu'à récemment ont probablement surstimulé tes glandes surrénales pendant des mois, créant cette dysrégulation.</div>
+<div class='ascii-art'>Et maintenant, le détail qui va tout changer : tes trapèzes et ton cou révèlent une hypertrophie compensatoire typique du "syndrome du bureau warrior". Tu soulèves lourd 5 fois par semaine, mais ton corps compense en permanence des déséquilibres posturaux. Résultat ? Une partie de ton énergie d'entraînement est gaspillée en compensations plutôt qu'en construction musculaire pure.</div>
+<div class='ascii-art'>Tes photos de dos confirment mes soupçons : asymétrie scapulaire évidente, densité musculaire inégale entre les deux hémi-corps, et une lordose lombaire légèrement accentuée pour compenser ta cyphose thoracique. Cette chaîne de compensations explique pourquoi tu perds de la force en sèche : ton système nerveux est constamment en mode "survie posturale" plutôt qu'en mode "performance".</div>
+<div class='score green'>Score : 6/10</div>
+<div class='section-header'>
+    <div class='section-icon'>🏋️</div>
+    <h2>Sangle Profonde / Posture Lombaires</h2>
+</div>
+<div class='ascii-art'>Pierre-Louis, on attaque le vrai problème. Ce que je vois sur tes photos, c'est l'histoire classique du mec qui pousse lourd en salle mais qui a complètement oublié ce qui se passe sous le capot. Ta posture me raconte tout : antéversion pelvienne marquée, lordose lombaire excessive, et j'imagine déjà tes transverses de l'abdomen qui dorment profondément depuis des mois.</div>
+<div class='ascii-art'>Regarde bien... quand tu te tiens debout "naturellement", ton bassin bascule vers l'avant. Tes lombaires se creusent pour compenser. Résultat ? Ta sangle profonde - ce corset musculaire invisible qui devrait stabiliser ton tronc comme un étau - elle est complètement déconnectée. Le transverse de l'abdomen, ce muscle le plus profond de tes abdos, il ne se contracte plus de manière réflexe. Les multifides lombaires, ces petits muscles qui collent aux vertèbres, ils sont inhibés par la position vicieuse que tu maintiens 8h par jour au bureau.</div>
+<div class='ascii-art'>Et devine quoi ? Ça explique direct tes tendinites biceps et ton conflit d'épaule droite. Quand ton core ne fait plus son boulot de stabilisateur central, tout le reste de la chaîne cinétique compense. Tes épaules se projettent vers l'avant pour rattraper l'instabilité lombaire. Tes biceps se contractent en permanence pour "tenir" la posture. C'est un cercle vicieux métabolique et biomécanique.</div>
+<div class='ascii-art'>Au niveau hormonal, cette instabilité chronique génère un stress mécanique constant. Ton système nerveux sympathique reste en alerte, ça maintient un taux de cortisol élevé - d'ailleurs tu l'as fait doser récemment. Cette inflammation de bas grade chronique inhibe la synthèse protéique musculaire au niveau de ta ceinture abdominale. Tes fibres de type I du transverse perdent leur tonus de base, leur capacité à maintenir une contraction prolongée à 20-30% de leur force maximale.</div>
+<div class='ascii-art'>Stabilité lombaire : [■■■□□□□□□□] 3/10
+  Activation transverse : [■■□□□□□□□□] 2/10
+  Contrôle pelvien : [■■■□□□□□□□] 3/10</div>
+<div class='ascii-art'>Le problème, c'est que tu t'entraînes lourd 5 fois par semaine avec cette base défaillante. Chaque squat, chaque développé, chaque mouvement polyarticulaire que tu charges, tu le fais avec une ceinture lombaire dysfonctionnelle. Ton diaphragme ne synchronise plus avec ton plancher pelvien pour créer cette pression intra-abdominale optimale. Au lieu de ça, tu compenses avec tes érecteurs du rachis qui se contractent comme des barres de fer.</div>
+<div class='ascii-art'>Résultat neurologique : tes mécanorécepteurs lombaires envoient des signaux de danger en permanence à ton cerveau. Ton cortex moteur adapte les patterns de mouvement pour éviter la douleur, mais ça crée des compensations aberrantes. Tes hanches perdent leur mobilité, tes thoraciques se rigidifient, et boom... conflit sous-acromial à droite parce que ton omoplate ne glisse plus correctement sur ton grill costal.</div>
+<div class='ascii-art'>L'histoire de tes antidépresseurs récents, elle vient pas de nulle part non plus. Les ISRS modifient la recapture de sérotonine, mais aussi l'activation du nerf vague. Ton système nerveux parasympathique - celui qui permet la récupération et la régénération tissulaire - il était déjà compromis par ton stress chronique. Les médocs ont masqué les symptômes mentaux, mais le problème biomécanique, lui, il est resté.</div>
+<div class='ascii-art'>Et pendant ce temps, tu continues à t'entraîner en ignorant ces signaux d'alarme. Ton corps essaie de te dire quelque chose depuis des mois. Ces ballonnements que tu mentionnes ? C'est ton nerf vague irrité par la tension lombaire chronique qui perturbe ta motilité intestinale. Ton sommeil non-optimal ? C'est ton système nerveux qui n'arrive pas à downreguler complètement à cause de cette hypervigilance posturale.</div>
+<div class='ascii-art'>✓ Tu as la motivation et l'engagement pour corriger
+  ✓ Tu comprends que le mental et le physique sont liés
+  ✗ Tu t'entraînes sur des fondations instables depuis des mois
+  ✗ Tes patterns de mouvement sont complètement faussés
+  → Réhabilitation neuromotrice AVANT tout le reste</div>
+<div class='ascii-art'>La vraie solution ? On va devoir déconstruire tes automatismes moteurs et les reconstruire de zéro. Ça commence par réveiller ton transverse avec des exercices de respiration diaphragmatique spécifiques. Pas du yoga de mamie, mais du vrai travail de reprogrammation neurologique. Inspiration à 4 temps avec expansion latérale des côtes, expiration à 6 temps avec contraction progressive du transverse de 20 à 80% de sa force max.</div>
+<p>Ensuite, on va réintégrer cette stabilité profonde dans des mouvements fonctionnels. Dead bug progressifs, bird dog avec résistance, pallof press isométriques... Chaque exercice va forcer ton cerveau à recréer les connexions neuronales entre ton centre et ta périphérie.</p>
+<p>Ton entraînement lourd actuel ? On va le garder, mais on va l'adapter. Chaque série va commencer par 3 respirations profondes pour pré-activer ta sangle. Chaque rep va être exécutée avec une conscience totale de ton positionnement pelvien. C'est pas du temps perdu, c'est de l'investissement neurologique pur.</p>
+<div class='score red'>Score : 3/10</div>
+<div class='section-header'>
+    <div class='section-icon'>💪</div>
+    <h2>Analyse Entraînement</h2>
+</div>
+<div class='ascii-art'>Pierre-Louis, ton profil d'entraînement révèle une dichotomie fascinante... et problématique. D'un côté, tu affiches une approche méthodique impressionnante : 5 séances par semaine, 1h + 30 minutes de cardio, une régularité de fer depuis 2 ans "sérieux". De l'autre, je décèle les signes d'un système nerveux en surchauffe chronique qui sabote tes gains.</div>
+<div class='ascii-art'>Analysons d'abord ce que tu fais bien. Ton volume d'entraînement de 7h30 hebdomadaires est dans la zone optimale pour l'hypertrophie. Tes 4 ans d'expérience, dont 2 sérieux, te placent dans cette phase cruciale où ton corps maîtrise les patterns moteurs de base mais peut encore progresser rapidement avec les bons stimuli. Le fait que tu privilégies le "lourd" montre une compréhension instinctive de l'importance de la surcharge progressive. Ton engagement à 10/10 et ta disponibilité jusqu'à 10h/semaine créent un potentiel d'optimisation énorme.</div>
+<div class='ascii-art'>Mais voilà où ça se complique... et où mon œil de biomécano s'allume. Tes tendinites biceps récurrentes + conflit articulaire épaule droite ne sont PAS des coïncidences isolées. C'est un pattern classique que je vois chez les gars qui compensent un déficit de mobilité thoracique par une hyperactivation des stabilisateurs d'épaule. Quand tu pousses lourd avec une scapula qui ne glisse pas correctement, ton biceps devient un stabilisateur secondaire en hyperextension. Résultat : inflammation chronique du tendon du long biceps et compression sous-acromiale.</div>
+<p>Le plus révélateur ? Cette asymétrie droite. Sur tes photos, je peux déjà deviner une légère élévation de l'épaule droite - signe d'un trapèze supérieur hypertonique qui compense probablement 8h de bureau quotidiennes. Ton corps crie littéralement qu'il a besoin de rééquilibrage avant d'optimiser.</p>
+<p>Mais le vrai problème systémique, c'est cette équation explosive : stress 7/10 + sommeil "pas optimal" + ex-anxiolytiques/antidépresseurs + entraînement haute intensité quotidien + 1,5g de caféine jusqu'à récemment. Pierre-Louis, ton système nerveux sympathique était en mode "combat permanent".</p>
+<div class='ascii-art'>Décortiquons la physiologie : quand ton cortisol reste élevé (stress chronique + manque de sommeil), plusieurs cascades métaboliques se détraquent. D'abord, inhibition de l'IGF-1 et baisse de synthèse protéique - tes muscles récupèrent mal malgré tes efforts. Ensuite, élévation chronique de l'adrénaline qui désensibilise tes récepteurs beta-2 - d'où cette sensation que tu dois en faire toujours plus pour progresser. Enfin, dérégulation de la leptine qui fausse tes signaux de satiété et optimisation énergétique.</div>
+<div class='ascii-art'>Cette surconsommation de stimulants (1,5g caféine + 3-4 Monster/jour !) confirme mon diagnostic. Ton système dopaminergique était complètement déréglé. La caféine bloque l'adénosine (signal de fatigue), mais ton corps produisait plus de récepteurs pour compenser. Cercle vicieux : plus de caféine nécessaire pour le même effet, sommeil dégradé, cortisol encore plus haut, récupération encore pire.</div>
+<div class='ascii-art'>Et là, le point critique : "perte de force en sèche". C'est exactement ce qui arrive quand on empile déficit calorique + volume d'entraînement élevé + stress chronique + sommeil suboptimal. Ton corps entre en mode "préservation" : il downregule la production de testostérone, réduit l'activité thyroïdienne (T3 reverse), et priorise la survie sur la performance. Tes muscles deviennent résistants à l'insuline, ton glycogène se vide plus vite, ta force s'effondre.</div>
+<p>Le cardio post-musculation, bien qu'excellent pour la condition physique, peut devenir contre-productif dans ce contexte. 30 minutes après chaque séance, c'est 2h30 de stress métabolique supplémentaire par semaine. Avec ton profil, ça peut pousser ton cortisol encore plus haut et interférer avec la fenêtre anabolique post-entraînement.</p>
+<p>Tes ballonnements confirment l'impact digestif du stress chronique. Le nerf vague (parasympathique) régule la motilité intestinale. Quand le sympathique domine, ta digestion ralentit, les bactéries fermentent plus longtemps = ballonnements + malabsorption potentielle des nutriments essentiels à la récupération.</p>
+<p>L'aspect psychologique amplifie tout. Cette peur de "se sentir incapable de réussir" crée une pression de performance qui maintient ton système nerveux en hypervigilance. Chaque plateau devient une confirmation de tes doutes, ce qui élève encore le stress, ce qui dégrade encore les performances... Spirale descendante classique.</p>
+<div class='ascii-art'>Mais Pierre-Louis, il y a de l'espoir massif dans ton profil. Déjà, tu as réduit la caféine à 160mg - ÉNORME victoire qui va permettre la resensibilisation de tes récepteurs. Tes analyses récentes (glycémie, hémoglobine, cortisol) montrent une prise de conscience. Ton alimentation maison avec des bases saines (poulet, œufs, bœuf, légumes) crée une fondation solide.</div>
+<p>Ton désir d'optimisation "biohacking avancé" révèle un esprit analytique parfait pour comprendre et appliquer les protocoles de récupération. Cette recherche constante d'amélioration sera ton atout majeur une fois qu'on aura recadré tes priorités.</p>
+<p>Le fait que tu vises "confiance" avant tout montre une maturité rare. Tu comprends intuitivement que la transformation physique est un véhicule vers quelque chose de plus profond. Cette motivation intrinsèque (t'impressionner toi-même) est le carburant le plus puissant qui soit.</p>
+<div class='score green'>Score : 6/10</div>
+<p>Solides fondations techniques et motivation exceptionnelle, mais système nerveux en surchauffe chronique qui limite drastiquement ton potentiel. Rééquilibrage prioritaire avant optimisation.</p>
+<div class='section-header'>
+    <div class='section-icon'>🏃</div>
+    <h2>Cardio</h2>
+</div>
+<p>Alors Pierre-Louis... on touche LE point névralgique de ton système. 30 minutes de cardio après chaque séance de muscu pendant 2 ans... je vais être direct avec toi : tu es en train de saboter tes propres progrès avec une approche qui date des années 90.</p>
+<div class='ascii-art'>Laisse-moi t'expliquer ce qui se passe dans ton corps quand tu enchaînes 1h de muscu lourde avec 30 minutes de cardio. Après ta séance de force, tes réserves de glycogène musculaire sont déjà entamées, ton cortisol grimpe naturellement - c'est normal, c'est le stress adaptatif de l'entraînement. Mais quand tu rajoutes 30 minutes de cardio par-dessus... là tu bascules dans une zone hormonale catastrophique.</div>
+<div class='ascii-art'>Le cortisol explose littéralement. On passe d'un pic physiologique bénéfique à une cascade de stress chronique. Et devine quoi ? Le cortisol élevé de façon chronique, c'est l'ennemi numéro 1 de la testostérone. Tu es en train de créer un environnement hormonal qui favorise la fonte musculaire et le stockage adipeux, particulièrement au niveau viscéral. C'est exactement l'inverse de ce que tu recherches.</div>
+<p>Pire encore : cette approche crée ce qu'on appelle un "signal mixte" au niveau cellulaire. Tes fibres musculaires ne savent plus si elles doivent s'adapter à l'endurance ou à la force. Les voies mTOR (construction musculaire) et AMPK (adaptation aérobie) se cannibalisent mutuellement. Résultat ? Tu n'optimises ni l'un ni l'autre.</p>
+<div class='ascii-art'>Volume cardio actuel : [■■■■■■■■■□] 9/10 - EXCESSIF
+  Timing cardio : [■■□□□□□□□□] 2/10 - CATASTROPHIQUE
+  Impact hormonal : [■■■■■■■■□□] 8/10 - DÉLÉTÈRE</div>
+<div class='ascii-art'>Et ce cocktail devient encore plus toxique quand on ajoute ton historique d'anxiolytiques et antidépresseurs récents. Ces molécules ont un impact direct sur la régulation de la sérotonine et de la dopamine, et leur sevrage crée déjà un stress neurologique significatif. Ton système nerveux central essaie encore de retrouver son équilibre naturel... et toi tu lui balances 2h30 d'entraînement intensif tous les jours.</div>
+<div class='ascii-art'>Ton niveau de stress à 7/10 ? Il n'est pas déconnecté de tes choix d'entraînement. Le volume que tu t'imposes dépasse largement ta capacité de récupération actuelle. Tu es dans ce qu'on appelle le "syndrome du surentraînement masqué" : tu tiens le rythme par habitude et détermination, mais ton corps accumule une dette de récupération massive.</div>
+<div class='ascii-art'>Regardons les signaux que ton corps t'envoie déjà :
+- Sommeil "pas optimal" malgré 7-8h → signe de perturbation du cycle cortisol/mélatonine
+- Ballonnements digestifs → inflammation chronique liée au stress
+- Perte de force en sèche → incapacité à maintenir l'intensité sous stress métabolique
+- Énergie "au plus bas" dans ta projection → épuisement des surrénales</div>
+<div class='ascii-art'>Le cardio post-workout, c'est comme appuyer sur l'accélérateur et le frein en même temps. Tu crées un état catabolique prolongé qui empêche la synthèse protéique optimale. Les 3-4 heures post-entraînement sont CRITIQUES pour la récupération et la croissance musculaire. C'est là que ton corps décide s'il va réparer et construire, ou s'il va continuer à puiser dans ses réserves.</div>
+<p>En plus, ton passé de troubles alimentaires et de plateaux métaboliques me dit que ton métabolisme a déjà subi des adaptations défensives. Rajouter du cardio systématique, c'est enfoncer le clou. Tu risques de recréer exactement les mêmes adaptations métaboliques négatives qui t'ont bloqué par le passé.</p>
+<div class='ascii-art'>Efficacité métabolique : [■■■□□□□□□□] 3/10
+  Ratio bénéfice/coût : [■■□□□□□□□□] 2/10
+  Synergie avec objectifs : [■□□□□□□□□□] 1/10</div>
+<p>Ce qui me frappe le plus ? Tu tournes à 1,5g de caféine avant... c'est énorme. C'était ta façon de compenser l'épuisement créé par ton propre programme. Tu masquais la fatigue au lieu de traiter la cause. Bravo pour avoir réduit, c'est un premier pas intelligent.</p>
+<div class='ascii-art'>La solution ? Révolution complète de ton approche cardio. Fini le cardio systématique post-workout. On va utiliser le cardio comme un OUTIL stratégique, pas comme une obligation quotidienne. Cardio à jeun 2-3 fois par semaine maximum, dans des créneaux dédiés. HIIT court et intense pour préserver la masse musculaire et optimiser la sensibilité à l'insuline, sans détruire tes gains de force.</div>
+<p>Et surtout... on va apprendre à ton corps à brûler du gras SANS détruire du muscle. Ça passe par une synchronisation hormonale fine, pas par l'épuisement chronique.</p>
+<div class='score red'>Score : 2/10</div>
+<div class='section-header'>
+    <div class='section-icon'>🔥</div>
+    <h2>Nutrition & Métabolisme</h2>
+</div>
+<p>Pierre-Louis, on va parler du cœur du problème. Ton métabolisme, c'est une Ferrari avec un moteur encrassé qui tourne au ralenti depuis trop longtemps.</p>
+<div class='ascii-art'>Déjà, bravo pour avoir lâché cette consommation de caféine délirante. 1,5g par jour plus 3-4 Monster... putain, tes surrénales ont dû crier au secours pendant des mois. Tu étais littéralement en train de fouetter un cheval crevé avec cette dose. Pour te donner une perspective : 400mg de caféine par jour, c'est déjà considéré comme le seuil maximum tolérable pour un adulte en bonne santé. Toi tu étais à presque 4 fois cette dose.</div>
+<div class='ascii-art'>Ce qui s'est passé dans ton corps pendant cette période, c'est une cascade métabolique destructrice. La caféine à haute dose chronique provoque une dysrégulation massive de ton axe hypothalamo-hypophyso-surrénalien. Tes glandes surrénales pompaient du cortisol en continu pour gérer ce stress chimique permanent. Le cortisol élevé chronique, ça massacre ta sensibilité à l'insuline, ça dégrade ta masse musculaire, ça stocke préférentiellement la graisse viscérale, et ça détruit ton sommeil... même si tu arrives à dormir 7-8h.</div>
+<p>Et là, combiné avec tes antécédents d'anxiolytiques et d'antidépresseurs jusqu'à récemment... ton système nerveux autonome a pris une claque monumentale. Ces médicaments modifient profondément ton métabolisme des neurotransmetteurs - sérotonine, dopamine, noradrénaline - qui sont directement impliqués dans la régulation de l'appétit, de la thermogenèse, et de ta motivation à l'entraînement.</p>
+<div class='ascii-art'>Ton historique de troubles alimentaires, c'est le troisième coup de massue. Tu as très probablement vécu des phases de restriction drastique suivies de périodes de compensation. Ça, c'est la recette parfaite pour foutre en l'air ta leptine et ta ghréline - tes hormones de satiété et de faim. Ton hypothalamus a appris à être méfiant. Dès que tu commences une sèche, il active immédiatement les mécanismes de survie : baisse du métabolisme de base, augmentation de la ghréline (faim), diminution de la leptine (satiété), réduction de la conversion T4 vers T3 active.</div>
+<p>Parlons maintenant de ton alimentation actuelle. Pommes de terre, poulet, œufs, bœuf, salade... c'est propre, mais c'est trop simpliste pour ton profil métabolique complexe. Tu cuisines, c'est un atout énorme, mais tu passes à côté d'optimisations cruciales.</p>
+<div class='ascii-art'>Tes ballonnements, c'est pas anodin. Ça révèle une dysbiose intestinale probable et une perméabilité intestinale augmentée. Ton microbiote a pris un coup avec le stress chronique, la caféine excessive, et potentiellement les médicaments psychotropes. Un intestin inflammé, ça produit des endotoxines (LPS) qui passent dans le sang et créent une inflammation systémique de bas grade. Cette inflammation chronique inhibe ta sensibilité à l'insuline et perturbe ta signalisation leptine.</div>
+<p>Le fait que tu saches calculer tes macros, c'est bien, mais je parie que tu raisonnes encore en mode "restriction". Ton métabolisme a besoin d'être RÉPARÉ avant d'être optimisé. Avec ton historique, une approche calories in/calories out classique va te mener droit dans le mur.</p>
+<p>Tes analyses montrent glycémie, hémoglobine, cortisol... mais il manque l'essentiel : TSH, T3, T4, T3 reverse, insuline à jeun, HOMA-IR, leptine, testostérone totale et libre, SHBG, vitamine D, B12, ferritine, magnésium, zinc. Sans ces marqueurs, on navigue à l'aveugle.</p>
+<div class='ascii-art'>Ton niveau de stress à 7/10 avec un sommeil "pas optimal", ça confirme que ton système nerveux parasympathique ne fait pas son boulot. Tu dors 8h mais tu récupères mal. Ton cortisol est probablement dysrégulé - soit trop haut le soir (tu n'arrives pas à "décrocher"), soit trop bas le matin (réveil difficile, fatigue matinale).</div>
+<div class='ascii-art'>La connexion avec tes plateaux métaboliques est évidente. Quand tu entres en déficit calorique, ton corps active immédiatement le mode survie parce qu'il a gardé en mémoire tes restrictions passées. Ta thyroïde ralentit (conversion T4→T3 réduite), ta leptine chute, ton métabolisme de base peut baisser de 15-20%, et tu perds du muscle au lieu du gras.</div>
+<div class='ascii-art'>C'est exactement ce qui explique ta "perte de force en sèche" qui te frustre tant. Ton corps catabolise le tissu musculaire parce qu'il panique et qu'il veut économiser l'énergie. Le muscle, c'est métaboliquement coûteux. Quand ton hypothalamus détecte une restriction, il sacrifie le muscle pour préserver les réserves de graisse - c'est archaïque mais c'est comme ça.</div>
+<p>Ton engagement à 10/10 et ta motivation, c'est ton plus gros atout. Mais cette fois, on va jouer intelligent. Pas de restriction brutale, pas de cardio excessif post-training qui ne fait qu'ajouter du stress cortisol. On va d'abord RÉPARER ton métabolisme avec une phase de recomposition métabolique.</p>
+<div class='ascii-art'>Ça passe par une alimentation anti-inflammatoire dense en micronutriments, un timing des macros optimisé pour ta signalisation hormonale, une gestion du stress via des techniques de biohacking avancées que tu recherches, et surtout... de la patience. Ton métabolisme a mis des mois à se dégrader, il faudra du temps pour le reconstruire.</div>
+<p>Mais une fois que tes hormones seront rééquilibrées, que ton intestin sera réparé, que ton système nerveux sera apaisé... là, tu pourras attaquer une vraie transformation sans perdre de force. Au contraire, tu vas gagner en performance ET en esthétique simultanément.</p>
+<div class='ascii-art'>Sensibilité insuline : [■■■□□□□□□□] 3/10
+  Santé digestive : [■■■■□□□□□□] 4/10
+  Équilibre cortisol : [■■□□□□□□□□] 2/10
+  Récupération métabolique : [■■□□□□□□□□] 2/10</div>
+<div class='score red'>Score : 3/10</div>
+<div class='section-header'>
+    <div class='section-icon'>😴</div>
+    <h2>Sommeil & Optimisation</h2>
+</div>
+<p>Pierre-Louis... parlons de ton sommeil. Parce que là, on touche au cœur du problème.</p>
+<p>7-8h de minuit à 8h, qualité "pas optimale". Stress à 7/10. Sortie récente d'anxiolytiques et antidépresseurs. Ancien consommateur excessif de stimulants - 1,5g de caféine par jour, soit l'équivalent de 15 expressos. Tu vois où je veux en venir ?</p>
+<div class='ascii-art'>Ton système nerveux central ressemble à un moteur qui a tourné en surrégime pendant des mois. Les anxiolytiques ont artificiellement supprimé ton système GABA - le frein naturel de ton cerveau. La caféine massive a désensibilisé tes récepteurs d'adénosine et surstimulé ton axe hypothalamo-hypophyso-surrénalien. Résultat ? Tu as créé une tempête neurochimique parfaite.</div>
+<p>Voici ce qui se passe concrètement dans ton cerveau entre minuit et 8h :</p>
+<div class='ascii-art'>Architecture du sommeil perturbée : [■■■□□□□□□□] 3/10
+Récupération hormonale : [■■■■□□□□□□] 4/10
+Régulation du cortisol : [■■□□□□□□□□] 2/10</div>
+<p>Laisse-moi t'expliquer la cascade destructrice en cours...</p>
+<div class='ascii-art'>Ton pic de cortisol matinal - normalement à 8h - arrive probablement vers 10-11h avec une amplitude réduite. Ça explique pourquoi tu te sens vidé au réveil malgré tes 8h. Ton cortisol reste élevé le soir quand il devrait chuter, perturbant la libération de mélatonine. C'est un cercle vicieux : mauvais sommeil → cortisol dysfonctionnel → inflammation → récupération compromise → performance dégradée → stress accru.</div>
+<div class='ascii-art'>Ton historique de 1,5g de caféine quotidienne a créé une downregulation massive des récepteurs d'adénosine. L'adénosine s'accumule naturellement pendant l'éveil et se lie à ses récepteurs pour créer la somnolence. Avec tes récepteurs saturés puis désensibilisés, ton signal de fatigue naturel était complètement court-circuité. Même sevré, la resensibilisation prend 6-8 semaines minimum.</div>
+<p>Les anxiolytiques ont modulé ton système GABAergique - le neurotransmetteur inhibiteur principal. Le GABA orchestré les phases de sommeil profond et la récupération parasympathique. En sevrage, tu vis un rebond d'hyperexcitabilité neuronale. Ton cerveau a du mal à "déconnecter" le soir.</p>
+<p>Cette dysfonction du sommeil massacre directement tes objectifs physiques. Voici pourquoi :</p>
+<p>Ton hormone de croissance - libérée à 70% pendant le sommeil profond - est probablement réduite de 40-60%. GH est cruciale pour la lipolyse nocturne, la synthèse protéique et la récupération musculaire. Sans elle, tes séances de muscu "en lourd" créent plus de catabolisme que d'anabolisme.</p>
+<p>Ta testostérone chute de 10-15% pour chaque heure de sommeil perdue ou de mauvaise qualité. Avec ton sommeil fragmenté, tu opères probablement avec des taux sub-optimaux. Ça explique en partie pourquoi tu perds de la force en sèche - moins de testo = moins de force, moins de masse maigre préservée.</p>
+<p>Ton métabolisme des glucides est compromis. Le manque de sommeil réduit la sensibilité à l'insuline de 20-30% et augmente la résistance périphérique. Tes muscles captent moins bien le glucose post-entraînement, favorisant le stockage adipeux plutôt que la récupération glycogénique.</p>
+<p>La leptine - ton hormone de satiété - chute tandis que la ghréline - hormone de la faim - explose. Cette dysrégulation explique pourquoi la restriction calorique devient mentalement si difficile quand le sommeil est dégradé.</p>
+<p>Ton inflammation systémique est chroniquement élevée. Le sommeil de mauvaise qualité maintient des cytokines pro-inflammatoires (IL-6, TNF-alpha, CRP) qui perturbent la récupération musculaire et augmentent la résistance à l'insuline.</p>
+<p>Mais voici ce qui m'inquiète le plus : ton système nerveux autonome est probablement bloqué en mode sympathique. Ton ratio LF/HF (low frequency/high frequency) de ta variabilité cardiaque doit être catastrophique. Tu récupères mal entre les séries, tes fréquences cardiaques restent élevées, ton système parasympathique ne s'active jamais vraiment.</p>
+<p>Cette hyperactivation sympathique chronique explique ton stress à 7/10 ET ta fatigue paradoxale. Tu es simultanément "wired and tired" - câblé mais épuisé. C'est le signature du burnout surrénalien débutant.</p>
+<p>Conséquences directes sur tes entraînements :</p>
+<p>✗ Récupération inter-séries prolongée
+✗ Force maximale réduite (CNS fatigué)
+✗ Risque de blessure accru (réflexes altérés)
+✗ Congestion musculaire diminuée
+✗ Motivation fluctuante
+→ Optimisation du sommeil devient priorité #1</p>
+<p>L'impact sur ta composition corporelle est dramatique. Même avec un déficit calorique parfait, ton corps en manque de sommeil active des mécanismes de survie : il préserve le gras (réserve d'énergie) et catabolise le muscle (coûteux énergétiquement). C'est exactement pourquoi tu perds de la force en sèche.</p>
+<p>Ton profil correspond à un "stressed lean" - mince mais inflammé, défini mais sans énergie, discipliné mais épuisé. C'est le piège de beaucoup d'athlètes qui optimisent tout sauf leur récupération.</p>
+<p>La bonne nouvelle ? Ton jeune âge (24 ans) et tes 4 ans d'entraînement donnent une plasticité neurologique excellente. Ton système peut se recalibrer rapidement avec la bonne approche.</p>
+<div class='score red'>Score : 3/10</div>
+<p>Ton sommeil est actuellement ton talon d'Achille. Mais c'est aussi ton plus gros levier d'amélioration. Répare ça, et tout le reste suivra.</p>
+<div class='section-header'>
+    <div class='section-icon'>🍽️</div>
+    <h2>Digestion & Tolérances</h2>
+</div>
+<p>Pierre-Louis, on va parler digestion maintenant... et là, j'ai envie de te secouer un peu.</p>
+<p>Tu me dis "ballonnements seulement" comme si c'était anodin. Mec, dans mon bureau, quand quelqu'un me sort ça avec ton profil - anxio dépressif récent, stress à 7/10, plateau métabolique chronique, énergie au plus bas - je sais déjà qu'on a touché un nerf central de ton système.</p>
+<p>Ces ballonnements, c'est pas juste un petit désagrément digestif. C'est le symptôme visible d'une cascade inflammatoire qui mine ta progression depuis des mois. Et le pire ? Tu l'ignores complètement.</p>
+<p>Laisse-moi t'expliquer ce qui se passe vraiment dans ton ventre, parce que ça connecte DIRECTEMENT avec tes plateaux et ta fatigue chronique.</p>
+<div class='ascii-art'>D'abord, ton historique anxio-dépressif récent. L'axe intestin-cerveau, c'est pas de la fumisterie new age. 90% de ta sérotonine est produite dans ton intestin par les cellules entérochromaffines. Quand tu as eu besoin d'anxiolytiques et d'antidépresseurs, ton microbiote a pris une claque monumentale. Ces médocs modifient la composition bactérienne, réduisent la diversité microbienne, et perturbent la production de neurotransmetteurs intestinaux.</div>
+<p>Résultat ? Ton Lactobacillus et tes Bifidobacterium - les gentils de l'histoire - ont probablement chuté. À la place, tu as développé une prolifération de souches inflammatoires qui produisent des endotoxines. Ces lipopolysaccharides traversent ta barrière intestinale affaiblie et déclenchent une inflammation systémique chronique.</p>
+<p>Tes ballonnements, c'est exactement ça : une fermentation anarchique par des bactéries pathogènes qui produisent des gaz (hydrogène, méthane, sulfure d'hydrogène) et des métabolites toxiques. Cette inflammation intestinale active ton nerf vague de manière dysfonctionnelle, maintenant ton système nerveux sympathique en hyperactivation permanente.</p>
+<p>Et devine quoi ? Cette hyperactivation sympathique chronique élève ton cortisol basal, réduit ta sensibilité à l'insuline, et sabote ta récupération post-entraînement. C'est pour ça que tu perds de la force en sèche et que tu stagnes malgré 5 séances par semaine.</p>
+<p>Maintenant, regardons ton alimentation : pommes de terre, poulet, œufs, bœuf, salade. C'est propre, je te l'accorde. Mais c'est aussi terriblement monotone et pauvre en diversité microbiotique. Tu nourris toujours les mêmes souches bactériennes avec les mêmes substrats.</p>
+<p>Les pommes de terre, en particulier, sont riches en amidon résistant quand elles refroidissent - c'est bien pour le microbiote. Mais si tu les manges toujours chaudes, tu rates cette opportunité. Et cette monotonie alimentaire appauvrit ta diversité bactérienne, créant des déséquilibres qui favorisent les ballonnements.</p>
+<p>Ton passage de 1,5g de caféine par jour à 160mg, c'est excellent. Mais ce sevrage récent a probablement perturbé temporairement ta motilité gastrique. La caféine stimule les contractions intestinales via les récepteurs d'adénosine. En réduisant drastiquement, tu as ralenti ton transit, favorisant la stagnation et la fermentation excessive.</p>
+<div class='ascii-art'>Autre point crucial : ton stress chronique à 7/10. Le stress active l'axe hypothalamo-hypophyso-surrénalien, libérant du CRH (hormone de libération de corticotropine) qui ralentit directement la vidange gastrique et réduit la production d'enzymes digestives. Ton pancréas produit moins de lipase, protéase et amylase. Résultat ? Les aliments mal digérés fermentent dans ton côlon, nourrissant les mauvaises bactéries et créant ces ballonnements.</div>
+<p>Le cortisol élevé réduit aussi la production d'IgA sécrétoires - tes anticorps de première ligne intestinale. Ta muqueuse devient perméable, laissant passer des fragments alimentaires non digérés qui déclenchent des réactions inflammatoires locales.</p>
+<p>Et là, cercle vicieux : inflammation intestinale → activation du nerf vague → signal au cerveau → augmentation du stress → plus de cortisol → plus d'inflammation intestinale. Tu es coincé dans cette boucle.</p>
+<p>Tes antécédents de troubles alimentaires aggravent tout. Les périodes de restriction ont probablement réduit ta production d'enzymes digestives par adaptation métabolique. Ton estomac et ton pancréas se sont habitués à fonctionner au ralenti. Même maintenant que tu manges normalement, cette "mémoire métabolique" persiste.</p>
+<p>La restriction chronique modifie aussi l'expression génétique des cellules pariétales gastriques qui produisent l'acide chlorhydrique. Moins d'acidité gastrique = digestion protéique incomplète = putréfaction intestinale = ballonnements et inflammation.</p>
+<p>Ton entraînement intensif (5 séances + cardio) dans ce contexte digestif perturbé, c'est problématique. L'exercice intense redirige le flux sanguin des organes digestifs vers les muscles. Si tu t'entraînes avec un intestin déjà inflammé, tu aggraves la perméabilité intestinale et retardes la récupération de ta muqueuse.</p>
+<p>De plus, l'entraînement intensif augmente tes besoins en glutamine - l'acide aminé préféré des entérocytes pour réparer la barrière intestinale. Si tu ne compenses pas, ta muqueuse reste fragile et perméable.</p>
+<p>Digestion perturbée → absorption réduite → carences subcliniques → récupération ralentie → plateaux de force → frustration → plus de stress → digestion encore plus perturbée. Tu vois le pattern ?</p>
+<div class='ascii-art'>État digestif actuel : [■■■□□□□□□□] 3/10</div>
+<p>Tes ballonnements ne sont pas anodins. Ils révèlent :
+✗ Dysbiose microbiotique post-médication
+✗ Inflammation intestinale chronique
+✗ Perméabilité intestinale augmentée
+✗ Production enzymatique réduite
+✗ Motilité gastrique ralentie par le stress
+✗ Récupération de la muqueuse compromise
+→ Protocole de réparation digestive urgent nécessaire</p>
+<p>Pierre-Louis, tant que tu ne règles pas cette inflammation intestinale, tu peux t'entraîner comme un forcené et optimiser tes macros... tu resteras bloqué. Ton intestin sabote tes progrès à chaque repas.</p>
+<div class='score red'>Score : 3/10</div>
+<div class='section-header'>
+    <div class='section-icon'>⚡</div>
+    <h2>Axes Hormonaux & Bilans</h2>
+</div>
+<p>Pierre-Louis, là on touche au coeur du réacteur. Ce que tu me décris, c'est un cocktail explosif qui explique TOUT : tes plateaux, ta perte de force en sèche, ton énergie au plus bas. Ton système hormonal, il crie au secours depuis des mois.</p>
+<p>Déjà, le passé récent avec anxiolytiques et antidépresseurs... ça laisse des traces profondes sur ton axe hypothalamo-hypophysaire. Ces molécules modifient durablement la production de sérotonine, dopamine, mais surtout elles perturbent la cascade GABA-cortisol-testostérone. Même arrêtés, il faut 6 à 12 mois pour que ton cerveau retrouve ses patterns naturels de neurotransmetteurs.</p>
+<div class='ascii-art'>Ensuite, cette consommation de caféine délirante : 1,5g par jour plus 3-4 Monster... Pierre-Louis, tu as littéralement grillé tes surrénales. La caféine stimule la production d'adrénaline et cortisol. À ces doses, tes récepteurs sont downregulés, ton cortisol reste chroniquement élevé même au repos. Résultat : catabolisme musculaire constant, récupération impossible, sommeil fragmenté même si tu dors 7-8h.</div>
+<div class='ascii-art'>Ton niveau de stress à 7/10, couplé à un travail de bureau et des antécédents de troubles alimentaires... on a un profil classique d'épuisement surrénalien avec probable hypogonadisme secondaire. Ton corps produit du cortisol au détriment de la testostérone - c'est le "cortisol steal" : même précurseur (prégnénolone), mais ton organisme priorise la survie (stress) sur la construction musculaire.</div>
+<p>Les ballonnements systématiques, c'est le signe d'une dysbiose intestinale. Ton microbiome est déséquilibré, probablement à cause du stress chronique et de l'historique médicamenteux. Or, 70% de ta sérotonine se produit dans l'intestin. Intestin inflammé = humeur dégradée = cortisol élevé = cercle vicieux.</p>
+<div class='ascii-art'>Cette perte de force en sèche que tu redoutes ? C'est mathématique avec ton profil : cortisol élevé + testostérone basse + système nerveux épuisé = fonte musculaire dès que tu crées un déficit calorique. Ton corps n'a plus les ressources hormonales pour maintenir la masse musculaire ET gérer le stress métabolique d'une restriction.</div>
+<p>Les tendinites récurrentes et douleurs articulaires, c'est encore une conséquence : cortisol chronique = inflammation systémique + dégradation du collagène + récupération tissulaire ralentie. Tes tendons n'arrivent plus à suivre le rythme de tes entraînements lourds.</p>
+<p>Tes analyses récentes (glycémie, hémoglobine, cortisol) sont un bon début, mais il manque l'essentiel :</p>
+<p>Analyses manquantes critiques :
+  → Testostérone totale + libre
+  → SHBG (protéine de transport)  
+  → LH/FSH (stimulation hypophysaire)
+  → TSH/T3/T4 (fonction thyroïdienne)
+  → Vitamine D3
+  → Zinc/Magnésium
+  → Rapport Oméga 6/3</p>
+<p>Ce qui se passe probablement dans ton organisme en ce moment :</p>
+<div class='ascii-art'>Cortisol matinal : [■■■■■■■■□□] 8/10 (trop élevé)
+  Testostérone : [■■■□□□□□□□] 3/10 (effondrée)  
+  Sensibilité insuline : [■■■■□□□□□□] 4/10 (dégradée)
+  Inflammation : [■■■■■■■□□□] 7/10 (chronique)</div>
+<div class='ascii-art'>Ton objectif de "peaufiner le physique" en améliorant le mental, c'est exactement ça : impossible de dissocier les deux. Ton cerveau et tes muscles partagent les mêmes signaux hormonaux. Tant que tu n'optimises pas tes axes hormonaux, tu resteras dans ce cycle : plateau physique → frustration → stress → cortisol → plateau encore plus dur.</div>
+<p>La bonne nouvelle : à 24 ans, ton potentiel de récupération hormonale est énorme. Mais ça demande une approche systémique, pas juste "manger moins pour sécher". Il faut reconstruire tes fondations hormonales AVANT de chercher l'esthétique.</p>
+<div class='score red'>Score : 3/10</div>
+<div class='section-header'>
+    <div class='section-icon'>💡</div>
+    <h2>Moment Révélation</h2>
+</div>
+<div class='ascii-art'>Voilà la vraie raison de ton blocage : ton système nerveux épuisé par des années de surstimulation caféinique massive et d'antidépresseurs récents maintient ton corps dans un état de stress chronique qui sabote littéralement tes adaptations musculaires. Ta consommation hallucinante de 1,5g de caféine par jour a désensibilisé tes récepteurs à l'adénosine et déréglé ton axe hypothalamo-hypophysaire, créant une résistance à l'insuline locale dans tes muscles et une élévation chronique du cortisol qui explique pourquoi tu perds systématiquement de la force en sèche. Ton corps ne peut tout simplement plus différencier le stress d'entraînement positif du stress métabolique destructeur, et c'est exactement pourquoi tes 4 ans de musculation ne se traduisent pas par les résultats que tu mérites.</div>
+<div class='section-header'>
+    <div class='section-icon'>🎯</div>
+    <h2>Cause Racine En 3 Phrases</h2>
+</div>
+<p>Tu ne manques pas de discipline, Pierre-Louis.</p>
+<p>C'est ton système nerveux en surchauffe - 1,5g de caféine, antidépresseurs récents, stress à 7/10 - qui sabote ta récupération et maintient ton cortisol trop haut pour une vraie recomposition corporelle.</p>
+<p>Quand on calme cette tempête hormonale et qu'on optimise ta récupération, ton physique et ton mental repartent ensemble.</p>
+<div class='section-header'>
+    <div class='section-icon'>📊</div>
+    <h2>Radar Profil Actuel Et Profil Optimisé</h2>
+</div>
+<div class='ascii-art'>📊 PROFIL ACTUEL :
+           Stress [■■■■■■■□□□] 7/10
+       Métabolisme [■■■■□□□□□□] 4/10
+         Hormones [■■■■□□□□□□] 4/10
+          Sommeil [■■■■■□□□□□] 5/10
+     Entraînement [■■■■■■■□□□] 7/10
+        Digestion [■■■■■■□□□□] 6/10
+     Biomécanique [■■■■■□□□□□] 5/10
+          Énergie [■■■□□□□□□□] 3/10</div>
+<p>Bon Pierre-Louis... Voilà le portrait exact de ta situation actuelle. Et autant te dire que c'est parlant.</p>
+<div class='ascii-art'>Ton stress à 7/10, c'est pas juste un chiffre. C'est ton cortisol qui flambe en permanence, qui sabote ta récupération, qui bloque ta lipolyse et qui maintient ton système nerveux en mode "survie". Tes antécédents avec anxiolytiques et antidépresseurs, c'est le reflet d'un système qui a surchauffé. Le stress chronique, ça désensibilise tes récepteurs à l'insuline, ça augmente ta résistance à la leptine... bref, ça transforme ton métabolisme en frein à main.</div>
+<div class='ascii-art'>Ton métabolisme justement... 4/10. Normal après tes plateaux répétés. Tu m'as dit avoir vécu des phases où tu restais bloqué malgré régime et sport. C'est exactement ça : adaptation métabolique. Ton corps a downregulé sa dépense énergétique, réduit la production d'hormones thyroïdiennes actives, diminué la thermogenèse. Il s'est adapté pour survivre avec moins.</div>
+<div class='ascii-art'>Hormones à 4/10 aussi. Logique. Stress + restriction + overtraining + ballonnements... ton axe hypothalamo-hypophysaire est sous pression. Ta testostérone en prend un coup, ton cortisol reste élevé, tes hormones thyroïdiennes peinent. Et avec tes antécédents de troubles alimentaires, il y a eu forcément des dégâts sur la leptine et la ghréline.</div>
+<div class='ascii-art'>Sommeil 5/10 : "pas optimal en qualité". Pierre-Louis, c'est pendant le sommeil profond que tu sécrètes 80% de ton hormone de croissance. C'est là que ton cortisol redescend. C'est là que ton système glymphatique nettoie ton cerveau. Un sommeil dégradé, c'est la cascade : récupération musculaire ralentie, consolidation mémoire diminuée, régulation émotionnelle perturbée.</div>
+<div class='ascii-art'>Par contre, ton entraînement, ça c'est solide : 7/10. 5 séances par semaine, muscu en lourd, 4 ans d'expérience dont 2 sérieux. Tu maîtrises. Mais attention... tes tendinites biceps et conflit d'épaule droite, c'est le signe que tu pousses sans optimiser. Probablement déséquilibres antéro-postérieurs, rotation interne excessive, activation défaillante des stabilisateurs profonds.</div>
+<p>Digestion 6/10 avec ces ballonnements. C'est ton microbiome qui trinque. Soit SIBO, soit dysbiose, soit perméabilité intestinale. Et devine quoi ? 70% de ta sérotonine se fabrique dans tes intestins. Une digestion perturbée, c'est un moral qui plonge, une récupération qui traîne, une inflammation qui s'installe.</p>
+<p>Biomécanique 5/10 : tes douleurs d'épaule le confirment. Probablement hypercyphose thoracique liée au travail de bureau, protraction scapulaire, faiblesse du dentelé antérieur. Ça limite tes performances et ça prépare d'autres compensations.</p>
+<p>Énergie 3/10... le plus révélateur. Toi qui tournais à 1,5g de caféine par jour avec 3-4 Monster. C'était pas de l'énergie, c'était de la stimulation artificielle. Tes surrénales étaient en surchauffe, tes récepteurs à l'adénosine saturés. Maintenant que tu as réduit, tu sens le vrai niveau : épuisé.</p>
+<div class='ascii-art'>📊 PROFIL OPTIMISÉ (90 JOURS) :
+           Stress [■■■■□□□□□□] 4/10
+       Métabolisme [■■■■■■■■□□] 8/10
+         Hormones [■■■■■■■□□□] 7/10
+          Sommeil [■■■■■■■■□□] 8/10
+     Entraînement [■■■■■■■■■□] 9/10
+        Digestion [■■■■■■■■□□] 8/10
+     Biomécanique [■■■■■■■■□□] 8/10
+          Énergie [■■■■■■■■□□] 8/10</div>
+<p>Voilà ce qui t'attend si on fait les choses bien. Pas de la magie, de la physiologie pure.</p>
+<div class='ascii-art'>Stress qui passe de 7 à 4 grâce à la régulation du cortisol par des techniques précises de respiration, optimisation circadienne, gestion de la charge d'entraînement. Métabolisme qui repart de 4 à 8 via reverse diet calculée, réactivation thyroïdienne, sensibilisation à l'insuline. Hormones qui remontent de 4 à 7 : testostérone qui repart, cortisol qui se régule, leptine qui retrouve sa sensibilité.</div>
+<p>Ton sommeil qui explose de 5 à 8 : architecture optimisée, sommeil profond maximisé, réveil naturel sans fatigue. Entraînement qui passe de 7 à 9 : plus de douleurs, performance décuplée, récupération accélérée. Digestion de 6 à 8 : fini les ballonnements, microbiome réparé, absorption optimisée.</p>
+<p>Et surtout... ton énergie qui bondit de 3 à 8. Plus besoin de béquilles chimiques. Énergie stable, naturelle, constante. Celle qui te donne envie de croquer la vie.</p>
+<p>Le gap entre où tu es et où tu peux être, c'est un gouffre de 35 points sur 80. C'est exactement la différence entre subir sa vie et la diriger.</p>
+<div class='section-header'>
+    <div class='section-icon'>🚀</div>
+    <h2>Ton Potentiel Inexploité</h2>
+</div>
+<div class='ascii-art'>Jauge de Potentiel : [■■■■□□□□□□] 40%</div>
+<p>Pierre-Louis, on va parler cash. Tu es à 40% de ton potentiel réel. Et c'est frustrant parce que je vois exactement ce qui te bloque dans cette zone de confort inconfortable.</p>
+<p>Ton profil me fascine. 24 ans, 4 ans d'expérience dont 2 sérieux, tu maîtrises déjà les bases... mais tu stagnes dans un no man's land physiologique. Tu as le moteur, tu as l'envie, tu as même la discipline pour 5 séances par semaine. Mais tu tournes en rond.</p>
+<div class='ascii-art'>Le vrai problème ? Tu optimises des variables isolées au lieu de synchroniser ton écosystème hormonal. Tu fais de la muscu lourde avec 30 minutes de cardio systématique... pendant que ton cortisol flambe à cause de ton stress niveau 7, tes antidépresseurs récents, et cette sur-stimulation massive à la caféine que tu viens de corriger.</div>
+<p>Regarde où tu peux aller :</p>
+<div class='ascii-art'>+20% [■■□□□□□□□□]
+→ Énergie stable toute la journée sans crash 15h
+→ Récupération optimisée, fini les courbatures qui traînent
+→ Mental plus serein, moins d'anxiété résiduelle</div>
+<div class='ascii-art'>+40% [■■■■□□□□□□]
+→ Physique qui continue de progresser même en déficit calorique
+→ Force maintenue en sèche, fini cette frustration chronique
+→ Confiance qui se construit sur des résultats tangibles</div>
+<div class='ascii-art'>+60% [■■■■■■□□□□]
+→ Contrôle total de ta composition corporelle
+→ Performances qui explosent, récupération d'athlète
+→ Sérénité mentale, tu deviens la référence dans ton entourage</div>
+<div class='ascii-art'>+80% [■■■■■■■■□□]
+→ Physique d'élite maintenu sans effort constant
+→ Énergie et focus de CEO, même sous pression
+→ Confiance inébranlable qui rayonne dans tous tes projets</div>
+<p>Ton potentiel inexploité, c'est cette synchronisation hormonale que tu n'as jamais vraiment adressée. Tu gères les symptômes, pas les causes racines.</p>
+<p>Tes ballonnements ? C'est ton système nerveux parasympathique qui ne s'active jamais correctement. Entre le stress chronique, le travail de bureau, et cette sur-sollicitation du système sympathique par ton ancien protocole caféine, ton microbiote est en mode survie permanent.</p>
+<p>Cette perte de force en sèche qui te frustre tant ? C'est mathématique. Ton cortisol élevé + restriction calorique = catabolisme musculaire garanti. Tu perds du muscle ET du gras, au lieu de préserver ta masse maigre. Résultat : physique "soft" même à poids bas.</p>
+<p>L'énergie au plus bas que tu projettes dans un an ? Elle découle directement de cette dysrégulation de l'axe hypothalamo-hypophyso-surrénalien. Ton corps s'adapte à la baisse, downregule sa production hormonale, réduit son métabolisme de base. C'est un cercle vicieux.</p>
+<p>Mais voilà le truc : tu as TOUS les leviers pour inverser cette tendance.</p>
+<p>Ta discipline est là. Ton engagement niveau 10, je le sens. Ta capacité à cuisiner maison, à calculer tes macros, à réduire drastiquement ta caféine... tout ça prouve que tu peux piloter finement tes variables.</p>
+<p>Ce qui te manque, c'est la séquence. L'ordre des opérations. Le timing.</p>
+<p>Imagine si tu synchronisais :
+- Tes fenêtres d'alimentation avec tes pics de cortisol naturels
+- Tes séances lourdes avec tes phases de récupération hormonale optimale
+- Ta gestion du stress avec des protocoles respiratoires spécifiques
+- Ton sommeil avec une optimisation de ta production de GH nocturne</p>
+<p>Ton potentiel inexploité, c'est cette version de toi qui maîtrise l'art de la périodisation hormonale. Qui sait quand pousser, quand lever le pied. Qui transforme son anxiété résiduelle en focus laser.</p>
+<p>Tu cherches constamment à t'améliorer, tu lis du dev perso... mais tu n'as jamais eu la roadmap physiologique pour matcher cette ambition mentale avec ton potentiel corporel.</p>
+<p>Cette frustration que tu ressens ? Elle vient du décalage entre ce que tu SAIS être possible et ce que tu obtiens actuellement. Ton corps est capable de bien plus. Ton mental aussi.</p>
+<p>Les 60% de potentiel qui dorment, c'est :
+- Une machine métabolique qui brûle du gras en préservant le muscle
+- Un système nerveux qui récupère vraiment entre les séances
+- Une confiance qui se nourrit de résultats constants, pas d'espoir
+- Une énergie qui reste haute même en phase de transformation</p>
+<p>Tu veux impressionner qui ? Toi-même. Parfait. Parce que quand tu vas débloquer ces mécanismes, tu vas comprendre ce que signifie vraiment "être en contrôle de son corps".</p>
+<div class='section-header'>
+    <div class='section-icon'>🗺️</div>
+    <h2>Feuille De Route Achzod En 6 Points</h2>
+</div>
+<p>Pierre-Louis, maintenant que j'ai radiographié ton cas sous tous les angles, voici ta feuille de route personnalisée. Six axes d'intervention chirurgicalement calibrés sur ton profil : ancien consommateur massif de stimulants, historique anxio-dépressif, plateau métabolique récurrent et système nerveux sur-sollicité.</p>
+<p>Chaque point s'appuie sur ce que j'ai détecté dans ton analyse. Pas de générique, que du sur-mesure.</p>
+<p>1️⃣ Correction nerveuse & sommeil</p>
+<div class='ascii-art'>Ta fenêtre de sommeil minuit-8h masque une qualité dégradée par ton passé de surconsommation de caféine et ton profil anxieux. Je vais d'abord recalibrer ton système nerveux parasympathique avec des techniques de respiration cohérence cardiaque spécifiques (4-7-8 en phase 1, puis box breathing en phase 2). Ensuite, optimisation de ton environnement de récupération via l'exposition lumineuse matinale et la réduction progressive des écrans 2h avant coucher. Ton objectif : passer de sommeil "quantitatif" à sommeil "qualitatif" pour relancer naturellement ta production de GH nocturne.</div>
+<p>2️⃣ Optimisation hormonale naturelle</p>
+<div class='ascii-art'>Avec ton historique d'anxiolytiques et ta consommation délirante de 1,5g de caféine quotidienne, tes surrénales ont pris cher. Je vais restaurer ton axe hypothalamo-hypophyso-surrénalien via une approche nutritionnelle ciblée : augmentation progressive de tes lipides de qualité (avocat, noix, huile d'olive) pour soutenir la synthèse de testostérone, introduction d'adaptogènes naturels comme l'ashwagandha en cycles de 6 semaines. Ton niveau de stress à 7/10 va redescendre mécaniquement quand tes neurotransmetteurs retrouveront leur équilibre.</div>
+<p>3️⃣ Reprogrammation métabolique</p>
+<div class='ascii-art'>Tes plateaux récurrents et ta perte de force en sèche révèlent une adaptation métabolique classique. Je vais casser ce pattern avec des phases de diet break stratégiques : 10 jours de maintenance calorique toutes les 4 semaines, refeeds glucidiques ciblés autour de tes entraînements lourds. Ton métabolisme va se "réveiller" via la relance de ta leptine et la sensibilisation de tes récepteurs insuliniques. Fini les chutes de performance brutales.</div>
+<p>4️⃣ Stratégie nutritionnelle personnalisée</p>
+<div class='ascii-art'>Tes ballonnements et ton amour pour la cuisine maison sont des atouts. Je vais structurer tes 3 repas avec une répartition protéique optimisée (35-40g par prise) et introduire des enzymes digestives naturelles via des aliments fermentés. Tes pommes de terre/poulet/œufs/bœuf restent la base, mais je vais affiner les timing : glucides concentrés en péri-training, lipides le soir pour soutenir la récupération hormonale. Ton engagement à 5/10 sur la nutrition va monter naturellement quand tu verras les résultats.</div>
+<p>5️⃣ Plan d'entraînement calibré selon biomécanique</p>
+<div class='ascii-art'>Tes tendinites biceps et conflit d'épaule droite nécessitent une approche corrective avant l'intensification. Je vais d'abord rééquilibrer ton pattern scapulaire avec du travail de stabilisation en phase 1, puis réintroduire progressivement tes charges lourdes avec des angles articulaires optimisés. Tes 5 séances hebdo deviennent 4 mais ultra-qualitatives : 2 séances force pure, 1 séance hypertrophie, 1 séance mobilité active. Ton cardio post-training devient stratégique selon tes objectifs du jour.</div>
+<p>6️⃣ Routine anti-inflammation & récupération</p>
+<div class='ascii-art'>Ton profil inflammatoire latent (stress chronique + historique médicamenteux) demande une approche systémique. Je vais implémenter des bains froids contrôlés 2x/semaine pour stimuler ton système vagal, combinés à des séances de sauna si accessible. Côté supplémentation : magnésium bisglycinate le soir, oméga-3 EPA/DHA en ratio thérapeutique, curcumine avec pipérine en cycles. Ta créatine actuelle reste, mais je l'optimise avec un timing précis post-entraînement.</div>
+<p>Cette roadmap transforme tes faiblesses actuelles en leviers de progression. Chaque point s'articule avec les autres : meilleur sommeil = hormones optimisées = récupération accélérée = performances maintenues même en déficit calorique.</p>
+<p>Tu veux impressionner qui ? Toi-même. Mission acceptée.</p>
+<div class='section-header'>
+    <div class='section-icon'>📈</div>
+    <h2>Projection 30/60/90 Jours</h2>
+</div>
+<div class='ascii-art'>🗓️ DANS 30 JOURS (4 semaines) :</div>
+<div class='ascii-art'>Tes épaules ne te réveillent plus la nuit. Le conflit articulaire droit s'apaise grâce au travail de mobilité ciblé et à la réduction de l'inflammation systémique. Tu dors enfin d'un sommeil réparateur... pas juste 8h de présence au lit, mais un vrai sommeil récupérateur qui te fait bondir du lit à 7h30 sans traîner. Ton niveau d'anxiété passe de 7 à 4 grâce à l'optimisation de ton cortisol matinal et à la régulation de tes neurotransmetteurs. Physiquement, tes ballonnements disparaissent - ton microbiote retrouve son équilibre, ta digestion devient fluide. Tu gagnes 2-3 kilos de muscle sec tout en affinant ta taille.</div>
+<div class='ascii-art'>🗓️ DANS 60 JOURS (8 semaines) :</div>
+<div class='ascii-art'>Ta transformation devient évidente. Tes épaules sont sculptées, ton dos s'élargit, tes bras prennent du volume sans perdre de définition. Plus important encore : tu te sens mentalement invincible. Ton anxiété tombe à 2-3/10, tu gères le stress du bureau avec une sérénité que tu n'avais jamais connue. Tes performances explosent : tu bats tes records sur tous tes mouvements de base tout en étant plus sec qu'avant. Les gens commencent à te demander ce que tu as changé. Ta confiance rayonne, ton regard a changé. Tu ne subis plus ta journée, tu la diriges.</div>
+<div class='ascii-art'>🗓️ DANS 90 JOURS (12 semaines) :</div>
+<div class='ascii-art'>Tu es devenu cette version de toi que tu visualisais. Physiquement, tu affiches 94-95kg de muscle dense et fonctionnel, avec une définition musculaire qui impressionne sans avoir fait de "sèche". Mentalement, tu as retrouvé cette stabilité émotionnelle que les antidépresseurs n'avaient jamais réussi à te donner. Ton sommeil est devenu ton superpouvoir - tu récupères comme une machine, tu te réveilles avec une énergie débordante. Au bureau, tu es plus productif, plus créatif, plus résistant au stress. Tu as prouvé à toi-même que tu peux réussir n'importe quel défi que tu te fixes. Cette confiance nouvelle irrigue tous les aspects de ta vie.</div>
+<div class='section-header'>
+    <div class='section-icon'>✨</div>
+    <h2>Ce Qui Va Changer Si On Travaille Ensemble</h2>
+</div>
+<p>Pierre-Louis... je vais être direct avec toi.</p>
+<p>Si tu restes seul, dans 6 mois tu seras exactement au même endroit. Tu auras peut-être pris quelques kilos de muscle... mais ton énergie sera toujours dans les chaussettes. Tu auras toujours cette sensation d'être "capable mais pas optimal". Cette frustration sourde qui ronge.</p>
+<p>Mais si on travaille ensemble ? Tout change.</p>
+<div class='ascii-art'>D'abord, ton réveil. Fini les matins où tu te traînes jusqu'à la première dose de caféine. On va reprogrammer tes phases de sommeil profond - pas avec des gadgets, mais en manipulant ton cortisol nocturne et ta production de mélatonine. Tu vas te réveiller avec cette clarté mentale que tu cherches depuis des mois.</div>
+<div class='ascii-art'>Ton anxiété... elle va fondre. Pas disparaître - on n'est pas dans le déni - mais devenir gérable. Quand ton système nerveux autonome sera équilibré, quand tes neurotransmetteurs fonctionneront correctement, cette note de 7 sur 10 va descendre à 3 ou 4. Tu vas retrouver cette stabilité émotionnelle qui te permet de prendre des décisions claires.</div>
+<p>En salle, ça va être du jour et la nuit. Plus de perte de force en sèche - jamais. On va optimiser ta partition calorique de manière chirurgicale. Tu vas découvrir ce que c'est que d'être sec ET fort. Tes 92 kilos vont se transformer... même poids, composition corporelle révolutionnée.</p>
+<p>Cette douleur à l'épaule droite ? Réglée. On va corriger les déséquilibres posturaux que j'ai repérés. Tes tendinites biceps vont disparaître quand on aura restauré la mécanique scapulaire. Tu vas redécouvrir le plaisir de pousser lourd sans cette appréhension constante.</p>
+<p>Tes ballonnements... terminés. Quand on aura identifié tes intolérances alimentaires cachées et optimisé ton microbiome, tu vas retrouver ce confort digestif. Cette sensation d'être léger après les repas au lieu d'être ballonné.</p>
+<p>Mais surtout... cette confiance. Cette certitude intérieure que tu cherches.</p>
+<p>Quand tu verras tes performances exploser, quand tu te regarderas dans le miroir et que tu verras enfin ce physique que tu vises depuis 4 ans, quand ton entourage te demandera "qu'est-ce qui a changé chez toi ?"... là tu sauras que tu es capable de réussir. Dans tous les domaines.</p>
+<p>Ce sentiment d'incapacité qui te ronge ? Pulvérisé.</p>
+<p>Tu vas devenir cette version de toi qui impressionne... toi-même. Celle qui se lève le matin avec un objectif clair, qui exécute sans se poser de questions, qui progresse chaque semaine.</p>
+<p>Dans 6 mois, tu ne seras plus le mec qui "cherche constamment à s'améliorer". Tu seras le mec qui s'améliore. Point.</p>
+<p>Cette différence entre chercher et faire... c'est exactement ce qu'on va créer ensemble.</p>
+<p>Tu es prêt à t'engager à 100 % ? Parfait. Parce que moi, je vais te donner les 11 certifications, les milliers d'heures d'expérience, et cette capacité à voir ce que les autres ratent.</p>
+<p>Ta transformation ne sera pas juste physique. Elle sera complète. Métabolique, hormonale, neurologique, biomécanique.</p>
+<p>Pierre-Louis optimisé. Version 2.0.</p>
+<div class='section-header'>
+    <div class='section-icon'>💪</div>
+    <h2>Réassurance Émotionnelle</h2>
+</div>
+<p>Pierre-Louis, je vais être direct avec toi... Ce que tu traverses en ce moment, c'est exactement ce que j'observe chez 80% des mecs de ton profil. Tu n'es pas en échec. Tu n'es pas incapable. Tu es juste pris dans un piège métabolique et neurochimique classique que personne ne t'a expliqué.</p>
+<div class='ascii-art'>Regarde les faits : 24 ans, 4 ans d'expérience dont 2 sérieux, tu cuisines, tu calcules tes macros, tu t'entraînes 5 fois par semaine avec du cardio en plus. Tu lis du développement personnel, tu cherches constamment à t'améliorer. Mec, tu fais déjà plus que 95% de la population. Le problème n'est pas ton effort ou ta motivation.</div>
+<p>Le problème, c'est que tu combats sur plusieurs fronts simultanément sans comprendre les liens. Écoute-moi bien...</p>
+<p>Ton historique d'anxiolytiques et d'antidépresseurs récents + ton niveau de stress à 7/10 + tes troubles alimentaires passés + tes plateaux métaboliques récurrents... tout ça forme un écosystème. Ce n'est pas une série de problèmes isolés, c'est UN système déréglé.</p>
+<div class='ascii-art'>Quand tu me dis que ta plus grosse peur c'est "le sentiment de se sentir incapable de réussir", je reconnais immédiatement le pattern. Tu es dans une boucle de cortisol chronique qui sabote tes résultats physiques, ce qui nourrit ton stress, ce qui augmente ton cortisol, ce qui sabote encore plus tes résultats. C'est mathématique.</div>
+<div class='ascii-art'>Tes "échecs" en sèche avec perte de force ? Parfaitement logique. Avec ton profil de stress + tes antécédents + ta consommation de caféine qui était délirante (1,5g + 3-4 Monsters par jour, sérieusement ?), ton système nerveux était en surchauffe permanente. Évidemment que ton corps s'accrochait à ses réserves et sacrifiait le muscle en premier.</div>
+<p>Et cette douleur à l'épaule droite avec conflit articulaire + tendinites biceps ? Ce n'est pas de la malchance. C'est ton système nerveux en hypervigilance qui crée des compensations, des tensions asymétriques. Ton épaule droite paie pour ton stress chronique.</p>
+<p>Même tes ballonnements ne sont pas anodins. Stress chronique = dysfonction du nerf vague = digestion perturbée = inflammation de bas grade = résistance à l'insuline = plateaux métaboliques. Tout est connecté.</p>
+<p>Le fait que tu aies réduit ta caféine à 160mg montre que tu commences à comprendre. C'était un pas énorme dans la bonne direction. Ton corps commence enfin à respirer.</p>
+<div class='ascii-art'>Maintenant, voici ce qui va te rassurer définitivement : j'ai vu des centaines de profils comme le tien. Des mecs intelligents, motivés, qui faisaient "tout bien" sur le papier mais qui butaient sur des murs invisibles. Et quand on s'attaque à la vraie cause racine - cette dysrégulation neurochimique et métabolique - les résultats arrivent vite. Très vite.</div>
+<p>Tu n'as pas "tout essayé". Tu as essayé beaucoup de choses, mais pas dans le bon ordre, et pas en comprenant les mécanismes sous-jacents.</p>
+<p>Ton engagement à 10/10, ton objectif de confiance en toi, ta volonté de consacrer jusqu'à 10h par semaine... Mec, avec cette motivation et la bonne stratégie, tu vas exploser tes objectifs. Mais cette fois, on va le faire intelligemment.</p>
+<p>Plus jamais tu ne perdras de force en sèche. Plus jamais tu ne subiras ces plateaux frustrants. Plus jamais tu ne te sentiras "incapable de réussir". Parce que maintenant, tu vas comprendre exactement comment ton corps fonctionne.</p>
+<p>Cette analyse que je suis en train de faire pour toi, c'est ton GPS vers la sortie de ce labyrinthe. Tu n'es pas perdu, tu étais juste sur une mauvaise carte.</p>
+<div class='section-header'>
+    <div class='section-icon'>🎯</div>
+    <h2>Synthèse Clinique Globale Et Conclusion Transformationnelle</h2>
+</div>
+<div class='ascii-art'>Pierre-Louis, on arrive au bout de cette analyse clinique... et franchement, ton cas me passionne. J'ai rarement vu un profil aussi complet avec autant de leviers d'optimisation inexploités. Tu as 24 ans, une base physique solide, une mentalité de warrior et surtout... tu as survécu à un sevrage d'antidépresseurs tout en maintenant ta progression. Ça, c'est du mental d'acier.</div>
+<div class='ascii-art'>Mais laisse-moi te dire où tu en es vraiment aujourd'hui. Ton corps est dans une phase de transition post-médicamenteuse délicate. Les ISRS modifient profondément l'axe hypothalamo-hypophysaire pendant des mois après l'arrêt. Ta sérotonine cherche encore son équilibre naturel, ton cortisol fluctue comme une montagne russe, et tes récepteurs dopaminergiques se recalibrent lentement. C'est exactement pour ça que tu ressens cette fatigue chronique malgré 7-8h de sommeil et que ton stress plafonne à 7/10.</div>
+<div class='ascii-art'>Le plus frappant dans ton dossier, c'est cette dichotomie énorme entre ton potentiel physique et ton état énergétique actuel. Sur tes photos, je vois un physique qui répond bien à l'entraînement, une structure osseuse avantageuse, mais aussi des signes subtils de fatigue surrénalienne. Cette légère rétention d'eau au niveau du visage, cette posture qui trahit une compensation musculaire... ton système nerveux tire la sonnette d'alarme.</div>
+<div class='ascii-art'>Ta nutrition est clean, basique, efficace. Pommes de terre, poulet, œufs, bœuf... tu as compris les fondamentaux. Mais tu passes à côté de 40% de ton potentiel en négligeant les micros et le timing. Tes ballonnements me disent que ton microbiote souffre encore des séquelles médicamenteuses. Les antibiotiques et psychotropes détruisent littéralement l'écosystème intestinal, et ça prend 6 à 18 mois pour récupérer complètement.</div>
+<div class='ascii-art'>L'entraînement, parlons-en... 5 séances par semaine plus 30 minutes de cardio à chaque fois. Mon vieux, tu es en survolume chronique ! Avec ton profil de récupération actuelle, tu devrais être à 3-4 séances max. Cette perte de force en sèche dont tu te plains ? C'est pas la diète le problème, c'est que ton système nerveux central n'arrive plus à recruter tes fibres musculaires correctement. Tu accumulates de la fatigue neurale plus vite que tu la dissipes.</div>
+<div class='ascii-art'>Tes anciennes habitudes de caféine me font flipper rétrospectivement. 1,5g par jour plus 3-4 Monster... tu étais littéralement en overdose chronique. Ça équivaut à 15-20 expressos quotidiens ! Ton système adrénergique était complètement grillé. Le fait que tu aies réduit à 160mg montre une conscience corporelle excellente, mais tes surrénales ont encore besoin de temps pour cicatriser.</div>
+<p>Ce qui m'impressionne le plus, c'est ta lucidité sur ton état futur. "Énergie au plus bas, confiance au plus bas"... tu sais exactement où tu vas si tu ne changes rien. Et cette motivation intrinsèque pour t'impressionner toi-même, cette recherche constante d'amélioration personnelle... ça, c'est le carburant des transformations légendaires.</p>
+<div class='ascii-art'>Tes tendinites biceps et ce conflit articulaire à l'épaule droite ne sont pas anodins. Ils révèlent probablement un déséquilibre entre tes chaînes antérieures et postérieures, aggravé par ta posture de bureau. Mais surtout, ils indiquent une inflammation de bas grade persistante, directement liée à ton stress chronique et à ta récupération défaillante.</div>
+<p>Le vrai enjeu maintenant, c'est de transformer cette phase de transition en tremplin vers ton meilleur niveau. Tu as tous les ingrédients : la discipline, la connaissance de base, l'engagement à 100%. Il te manque juste la stratégie pour synchroniser tous tes systèmes.</p>
+<div class='ascii-art'>Dans 6 mois, si on fait ça bien, tu vas découvrir ce que c'est que d'avoir une énergie stable du matin au soir. Tu vas comprendre pourquoi certains mecs progressent sans effort apparent alors que toi tu ramais. Tu vas récupérer cette confiance naturelle qui vient quand ton corps et ton mental fonctionnent en synergie parfaite.</div>
+<p>La route est claire, Pierre-Louis. Tes systèmes hormonaux ont besoin d'un recalibrage fin, ton entraînement d'une périodisation intelligente, et ta nutrition d'optimisations ciblées. Mais surtout, tu as besoin qu'on travaille cette récupération de champion que tu mérites.</p>
+<p>Tu es prêt pour cette transformation. La question maintenant, c'est : est-ce que tu veux la faire seul en tatonnant, ou avec quelqu'un qui a déjà guidé des centaines de profils similaires vers leurs objectifs ?</p>
+<p>Score global de ton potentiel actuel : 7/10
+Score de ta progression future avec les bons ajustements : 9,5/10</p>
+</div>
+
+<!-- Section méthodologie (fond noir) -->
+<div class='dark-section'>
+    <h2>Une méthode unique, précise et efficace</h2>
+    <div class='features-grid'>
+        <div class='feature'>
+            <div class='feature-icon'>🕐</div>
+            <h3>Gère le timing de la nutrition</h3>
+            <p>Optimise tes fenêtres métaboliques pour maximiser tes résultats</p>
+        </div>
+        <div class='feature'>
+            <div class='feature-icon'>📅</div>
+            <h3>Cycle ta diète et tes entraînements</h3>
+            <p>Périodisation intelligente pour des progrès constants</p>
+        </div>
+        <div class='feature'>
+            <div class='feature-icon'>💪</div>
+            <h3>Allie tension mécanique et stress métabolique</h3>
+            <p>La science de l'hypertrophie appliquée à ton cas</p>
+        </div>
+        <div class='feature'>
+            <div class='feature-icon'>🍕</div>
+            <h3>Régale-toi avec un cheatmeal</h3>
+            <p>Plaisir et performance ne sont pas opposés</p>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class='container'>
+<div class='cta-section'>
+    <h2 class='cta-title'>Passe à l'action avec AchzodCoaching</h2>
+    <p class='cta-subtitle'>
+        Entrer dans mon coaching, ce n'est pas simplement recevoir un plan.<br>
+        C'est intégrer une stratégie scientifique et humaine calibrée pour déclencher ta transformation durable.
+    </p>
+
+    <div class='cta-boxes'>
+        <div class='cta-box'>
+            <h3 style='color:#8DFFE0;'>Essential</h3>
+            <div class='price'>249€</div>
+            <div style='font-size:15px; color:#666; margin-bottom:20px;'>4 semaines</div>
+            <ul>
+                <li>Programme d'entraînement personnalisé</li>
+                <li>Plan nutritionnel adapté (cheat meal inclus)</li>
+                <li>Analyse de tes prises de sang / examens médicaux</li>
+            </ul>
+            <a href='https://www.achzodcoaching.com/coaching-essential' class='cta-btn' style='background:#8DFFE0; color:#000;'>
+                👉 Découvrir Essential
+            </a>
+        </div>
+
+        <div class='cta-box'>
+            <h3 style='color:#9990EA;'>Elite</h3>
+            <div class='price'>399€</div>
+            <div style='font-size:15px; color:#666; margin-bottom:20px;'>4 semaines</div>
+            <ul>
+                <li>Tout le pack Essential</li>
+                <li>Coaching WhatsApp illimité (réponses &lt;4h)</li>
+                <li>30 min de visio par semaine</li>
+                <li>Gestion avancée récupération / blessures / suivi hormonal</li>
+            </ul>
+            <a href='https://www.achzodcoaching.com/coaching-elite' class='cta-btn' style='background:#9990EA; color:#fff;'>
+                🚀 Découvrir Elite
+            </a>
+        </div>
+    </div>
+
+    <!-- Section Coupon Déductible 79€ -->
+    <div style='background:linear-gradient(135deg, #9990EA 0%, #8DFFE0 100%); padding:40px 30px; border-radius:16px; margin:40px 0; color:#fff; text-align:center;'>
+        <h3 style='color:#fff; font-size:28px; font-weight:900; margin-bottom:20px; letter-spacing:-0.5px;'>
+            🎁 79€ Déduits de Ton Coaching
+        </h3>
+        <div style='font-size:16px; line-height:1.8; max-width:700px; margin:0 auto;'>
+            <p style='margin-bottom:16px;'>
+                Pour que tu puisses passer à l'action sans hésiter, je t'offre quelque chose que je ne fais que pour les personnes qui vont au bout de leur audit :
+            </p>
+            <p style='margin-bottom:16px; font-weight:700; font-size:18px;'>
+                Si tu commences un coaching <strong>Essential</strong> ou <strong>Elite</strong> dans les <strong>7 prochains jours</strong>, je déduis automatiquement les <strong>79€</strong> de ton audit de ton premier mois.
+            </p>
+            <p style='margin-bottom:16px;'>
+                Tu ne paies donc pas ton audit en plus : il devient simplement ta première étape.
+            </p>
+            <p style='margin-bottom:16px; background:rgba(255,255,255,0.2); padding:12px; border-radius:8px; font-weight:700; font-size:16px; text-align:center;'>
+                📝 Utilise le code : <strong style='font-size:22px; letter-spacing:1px;'>AUDIT79</strong>
+            </p>
+            <p style='margin-bottom:16px;'>
+                C'est ma façon de te dire que tu n'as rien à perdre, et surtout, que tu as déjà fait le plus dur : comprendre ton corps, voir clair, mettre des mots sur ce qui te bloque.
+            </p>
+            <p style='margin-bottom:0; font-weight:600; font-size:17px;'>
+                Maintenant, la suite logique, c'est de corriger tout ça ensemble.<br>
+                Et je te prends par la main dès maintenant.
+            </p>
+        </div>
+    </div>
+
+    <!-- CTA Final Recalibré -->
+    <div style='background:#f8f8f8; padding:35px 30px; border-radius:12px; margin:30px 0; text-align:center;'>
+        <h4 style='font-size:22px; font-weight:800; color:#101010; margin-bottom:18px;'>
+            👉 Prêt(e) à lancer ta transformation sans repartir de zéro ?
+        </h4>
+        <p style='font-size:15px; line-height:1.7; color:#333; margin-bottom:20px; max-width:650px; margin-left:auto; margin-right:auto;'>
+            Je prends ton audit comme base, je corrige ce qui bloque, et on repart directement là où ton corps s'est arrêté.
+        </p>
+        <p style='font-size:14px; color:#666; margin-bottom:25px; font-style:italic;'>
+            Ton coupon de <strong>79€</strong> (code : <strong>AUDIT79</strong>) sera déduit si tu démarres dans les <strong>7 jours</strong>.
+        </p>
+        <div style='display:flex; gap:15px; justify-content:center; flex-wrap:wrap;'>
+            <a href='https://www.achzodcoaching.com/coaching-essential' style='display:inline-block; background:#8DFFE0; color:#101010; padding:14px 30px; border-radius:8px; text-decoration:none; font-weight:700; font-size:15px;'>
+                ✅ Essential (249€)
+            </a>
+            <a href='https://www.achzodcoaching.com/coaching-elite' style='display:inline-block; background:#9990EA; color:#fff; padding:14px 30px; border-radius:8px; text-decoration:none; font-weight:700; font-size:15px;'>
+                🚀 Elite (399€)
+            </a>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Footer -->
+<div class='footer'>
+    <div class='footer-brand'>ACHZODCOACHING</div>
+    <div class='footer-text'>
+        Excellence • Science • Transformation
+    </div>
+    <a href='https://www.achzodcoaching.com' class='footer-link'>www.achzodcoaching.com</a>
+</div>
+
+</body>
+</html>

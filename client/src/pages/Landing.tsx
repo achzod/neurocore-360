@@ -33,10 +33,8 @@ import {
   Camera,
   CheckCircle2,
   Play,
-  Heart,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { DNAHelix } from "@/components/animations/DNAHelix";
 import { BodyVisualization } from "@/components/animations/BodyVisualization";
 
@@ -631,13 +629,6 @@ function PricingSection() {
                   <Badge className="gap-1 px-3 py-1">
                     <Star className="h-3 w-3" />
                     Le + populaire
-                  </Badge>
-                </div>
-              )}
-              {"bestValue" in plan && plan.bestValue && (
-                <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-                  <Badge variant="secondary" className="gap-1 bg-accent px-3 py-1 text-accent-foreground">
-                    Best Value
                   </Badge>
                 </div>
               )}

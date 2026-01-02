@@ -102,6 +102,28 @@ function extractGeneratedAt(txtContent: string): string {
   return new Date().toLocaleString('fr-FR');
 }
 
+function extractGlobalScoreFromTxt(txtContent: string): number | null {
+  const re = /SCORE\s+GLOBAL\s*:?\s*(\d{1,3})\s*\/\s*100/gi;
+  let m: RegExpExecArray | null = null;
+  let last: number | null = null;
+  while ((m = re.exec(txtContent)) !== null) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n)) last = Math.max(0, Math.min(100, Math.round(n)));
+  }
+  return last;
+}
+
+function extractSectionScoreFromContent(content: string): number | null {
+  const re = /Score\s*:?\s*(\d{1,3})\s*\/\s*100/gi;
+  let m: RegExpExecArray | null = null;
+  let last: number | null = null;
+  while ((m = re.exec(content)) !== null) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n)) last = Math.max(0, Math.min(100, Math.round(n)));
+  }
+  return last;
+}
+
 function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefined {
   if (type === 'debut') {
     // Chercher "RAPPEL IMPORTANT" ou "INFOS IMPORTANTES"
@@ -231,24 +253,32 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
       resumeExecutif = content;
     }
     
-    // Extraire le score de la section si présent
-    // Cherche des patterns comme "Score : 65/100" ou "Score: 65%" ou juste "65/100"
-    const scoreMatch = content.match(/(?:Score\s*:?\s*)?(\d+)(?:\/100|%)/i);
-    const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 65; // Score par défaut si non trouvé
+    // Score: uniquement si explicitement formaté "Score : NN/100".
+    // Pour éviter l'incohérence perçue: pas de score affiché sur Executive Summary / protocoles / supplements.
+    const extracted = extractSectionScoreFromContent(content);
+    const score = category === 'analysis' ? (extracted ?? 0) : 0;
+    const finalScore = category === 'executive' ? 0 : score;
     
     sections.push({
       id: sectionId,
       title: title,
-      score: score,
+      score: finalScore,
       content: content,
       order: i,
       category
     });
   }
   
-  // Calculer le score global comme moyenne des scores des sections
-  const totalScore = sections.reduce((sum, s) => sum + s.score, 0);
-  const global = sections.length > 0 ? Math.round(totalScore / sections.length) : 65;
+  // Score global: privilégier "SCORE GLOBAL : NN/100" si présent.
+  // Sinon: moyenne des sections d'analyse scorées (pas les protocoles).
+  const extractedGlobal = extractGlobalScoreFromTxt(txtContent);
+  const analysisScores = sections
+    .filter(s => s.category === 'analysis' && s.score > 0)
+    .map(s => s.score);
+  const avgAnalysis = analysisScores.length > 0
+    ? Math.round(analysisScores.reduce((a, b) => a + b, 0) / analysisScores.length)
+    : 65;
+  const global = extractedGlobal ?? avgAnalysis;
   
   return {
     clientName,

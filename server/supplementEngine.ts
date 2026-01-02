@@ -776,7 +776,7 @@ export function generateSupplementsSectionText(input: {
   lines.push("PRIORITE 0 - REGLES D'ACHAT (NON NEGOCIABLES) :");
   lines.push(`+ ${IHERB_RULES.zero_proprietary_blends}`);
   lines.push(`+ ${IHERB_RULES.correct_units.magnesium}`);
-  lines.push(`+ ${IHERB_RULES.correct_units.omega3}`);
+  lines.push(`+ ${IHERB_RULES.quality_markers.omega3}`);
   lines.push(`+ ${IHERB_RULES.standardization_required.ashwagandha}`);
   lines.push(`+ ${IHERB_RULES.standardization_required.tongkat_ali}`);
   lines.push("");

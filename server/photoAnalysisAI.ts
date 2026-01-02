@@ -314,15 +314,15 @@ export function formatPhotoAnalysisForReport(analysis: PhotoAnalysisResult, pren
   // Si WHR contient un chiffre (0.XX), ne pas l'afficher
   if (whrStr && !whrStr.includes("Non") && !whrStr.includes("disponible")) {
     if (whrStr.match(/0\.\d+/)) {
-      // C'est un chiffre inventé, utiliser pattern hormonal à la place
-      report += `Distribution graisseuse : ${analysis.fatDistribution.hormonalPattern || "tendance de stockage abdominal (analyse visuelle)"}. `;
+      // C'est un chiffre, ne pas l'afficher. On remplace par une tendance qualitative.
+      report += `Distribution graisseuse : tendance de stockage abdominal (analyse visuelle, sans mesure au ruban). `;
     } else {
       // C'est déjà une description qualitative
       report += `Distribution graisseuse : ${whrStr}. `;
     }
   } else {
-    // Utiliser pattern hormonal comme fallback
-    report += `Distribution graisseuse : ${analysis.fatDistribution.hormonalPattern || "analyse basée sur photos statiques"}. `;
+    // Fallback qualitatif
+    report += `Distribution graisseuse : analyse basée sur photos statiques. `;
   }
   report += `\n\nIMPORTANT : Analyse basée sur photos statiques. Pour mesures précises (tour de taille/hanches selon protocole standardisé, % masse grasse), utilise repères anatomiques et équipements validés.\n\n`;
   

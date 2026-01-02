@@ -79,6 +79,10 @@ export interface Audit {
   responses: Record<string, unknown>;
   scores: Record<string, number>;
   narrativeReport?: unknown;
+  // Optionnels: utilisés pour cache/traçabilité (peuvent être absents selon stockage)
+  reportTxt?: string;
+  reportHtml?: string;
+  reportGeneratedAt?: string | Date;
   reportDeliveryStatus: ReportDeliveryStatusEnum;
   reportScheduledFor?: string | Date;
   reportSentAt?: string | Date;

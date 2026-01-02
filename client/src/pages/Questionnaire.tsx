@@ -647,7 +647,7 @@ export default function Questionnaire() {
                         onError={(msg) => toast({ title: "Erreur", description: msg, variant: "destructive" })}
                       />
                     </div>
-                    {responses["prenom"] && (responses["prenom"] as string).trim() !== "" && (
+                    {String(responses["prenom"] ?? "").trim().length > 0 && (
                       <Button 
                         onClick={() => setPrenomConfirmed(true)}
                         className="w-full"

@@ -3,6 +3,7 @@ import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
 import { generateExportHTMLFromTxt } from "./exportService";
 import { storage } from "./storage";
 import type { ClientData } from "./types";
+import { OPENAI_CONFIG } from "./openaiConfig";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
@@ -32,6 +33,47 @@ const AI_CALL_TIMEOUT_MS = 45 * 60 * 1000;
 const MAX_RETRY_ATTEMPTS = 3;
 
 const activeGenerations = new Set<string>();
+let shutdownHooksInstalled = false;
+
+function installShutdownHooksOnce() {
+  if (shutdownHooksInstalled) return;
+  shutdownHooksInstalled = true;
+
+  const handleShutdown = async (signal: string) => {
+    try {
+      const ids = Array.from(activeGenerations);
+      if (ids.length === 0) {
+        process.exit(0);
+        return;
+      }
+
+      console.log(`[ReportJobManager] ${signal} reçu: requeue best-effort de ${ids.length} job(s) actifs...`);
+      await Promise.race([
+        (async () => {
+          for (const auditId of ids) {
+            try {
+              // Marquer "pending" pour reprise au prochain boot (resumePendingJobs)
+              await storage.createOrUpdateReportJob({
+                auditId,
+                status: "pending" as ReportJobStatusEnum,
+                currentSection: "Interruption (redeploy). Reprise automatique en cours...",
+              });
+              await storage.updateAudit(auditId, { reportDeliveryStatus: "PENDING" as any });
+            } catch {
+              // best-effort
+            }
+          }
+        })(),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
+    } finally {
+      process.exit(0);
+    }
+  };
+
+  process.on("SIGTERM", () => void handleShutdown("SIGTERM"));
+  process.on("SIGINT", () => void handleShutdown("SIGINT"));
+}
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -68,6 +110,7 @@ export async function startReportGeneration(
   auditType: string
 ): Promise<ReportJob> {
   console.log(`[ReportJobManager] startReportGeneration called for audit ${auditId}`);
+  installShutdownHooksOnce();
   
   if (activeGenerations.has(auditId)) {
     console.log(`[ReportJobManager] Job ${auditId} already running in-memory, returning existing`);
@@ -166,6 +209,19 @@ async function generateReportAsync(
       ].filter(Boolean) as string[];
     }
     
+    // P0 fail-fast : pas de génération premium sans 3 photos (face/profil/dos)
+    const needsPhotos = photos.length < 3;
+    if (needsPhotos) {
+      console.error(`[ReportJobManager] Photos insuffisantes pour ${auditId} (${photos.length}/3). Rapport non généré.`);
+      await storage.failReportJob(auditId, "NEED_PHOTOS");
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "NEED_PHOTOS" as any });
+      activeGenerations.delete(auditId);
+      return;
+    } else {
+      // Log guardrail
+      console.log(`[ReportJobManager] Photos OK pour ${auditId} (count=${photos.length})`);
+    }
+
     let photoAnalysis = null;
     if (photos.length > 0) {
       console.log(`[ReportJobManager] ${photos.length} photos detectees, lancement analyse vision...`);
@@ -179,7 +235,12 @@ async function generateReportAsync(
       
       try {
         const { analyzeBodyPhotosWithAI } = await import("./photoAnalysisAI");
-        photoAnalysis = await analyzeBodyPhotosWithAI(photos);
+        // API attendue: { front, side, back }
+        photoAnalysis = await analyzeBodyPhotosWithAI({
+          front: photos[0],
+          side: photos[1],
+          back: photos[2],
+        } as any);
         console.log(`[ReportJobManager] Analyse vision terminee - confiance: ${photoAnalysis.confidenceLevel}%`);
       } catch (visionError) {
         console.error(`[ReportJobManager] Erreur analyse vision:`, visionError);
@@ -234,23 +295,31 @@ async function generateReportAsync(
       throw new Error(result.error || "GPT-5.2-2025-12-11 generation failed");
     }
 
-    const report = {
-      txt: result.txt,
-      clientName: result.clientName,
-      metadata: result.metadata
-    };
-
     await storage.completeReportJob(auditId);
     
     // Convert TXT to HTML with SVG charts and store both for traceability + caching
     const reportHtml = generateExportHTMLFromTxt(result.txt || '', auditId, photos);
+    const report = {
+      txt: result.txt,
+      html: reportHtml,
+      clientName: result.clientName,
+      metadata: result.metadata
+    };
     
     await storage.updateAudit(auditId, {
       narrativeReport: report,
-      reportTxt: result.txt,
-      reportHtml: reportHtml,
       reportGeneratedAt: new Date(),
       reportDeliveryStatus: "READY",
+    });
+
+    // Traçabilité: conserver CHAQUE version générée (TXT + HTML) dans une table dédiée
+    await storage.createReportArtifact({
+      auditId,
+      tier: String(auditType || "PREMIUM"),
+      engine: "openai",
+      model: OPENAI_CONFIG.OPENAI_MODEL,
+      txt: String(result.txt || ""),
+      html: String(reportHtml || ""),
     });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);

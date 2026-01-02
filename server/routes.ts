@@ -29,6 +29,35 @@ export async function registerRoutes(
       return `http://localhost:${process.env.PORT || 5000}`;
     }
   }
+
+  function extractPhotosFromAudit(audit: any): string[] {
+    const out: string[] = [];
+    // 1) audit.photos (si jamais on a un tableau)
+    if (audit?.photos && Array.isArray(audit.photos)) {
+      out.push(...audit.photos.filter((p: any) => typeof p === "string" && p.trim().length > 0));
+    }
+    // 2) audit.responses (flux principal)
+    const r = audit?.responses || {};
+    const maybe = [r.photoFront, r.photoSide, r.photoBack].filter((p: any) => typeof p === "string" && p.trim().length > 0);
+    out.push(...(maybe as string[]));
+    // 3) legacy champs directs
+    const legacy = [audit?.photoFront, audit?.photoSide, audit?.photoBack].filter((p: any) => typeof p === "string" && p.trim().length > 0);
+    out.push(...(legacy as string[]));
+
+    // Nettoyage: éviter les doublons
+    const uniq = Array.from(new Set(out));
+    return uniq;
+  }
+
+  function sanitizeUserText(input: unknown, maxLen: number): string {
+    const s = typeof input === "string" ? input : String(input ?? "");
+    return s
+      .replace(/\u0000/g, "")
+      .replace(/</g, "")
+      .replace(/>/g, "")
+      .trim()
+      .slice(0, maxLen);
+  }
   
   app.post("/api/questionnaire/save-progress", async (req, res) => {
     try {
@@ -63,9 +92,24 @@ export async function registerRoutes(
     responses: z.record(z.unknown()),
   });
 
+  const hasThreePhotos = (responses: Record<string, unknown>): boolean => {
+    const pics = [
+      (responses as any)?.photoFront,
+      (responses as any)?.photoSide,
+      (responses as any)?.photoBack,
+    ];
+    const valid = pics.filter((p) => typeof p === "string" && p.trim().length > 100);
+    return valid.length === 3;
+  };
+
   app.post("/api/audit/create", async (req, res) => {
     try {
       const data = createAuditBodySchema.parse(req.body);
+      // P0: Exiger 3 photos pour PREMIUM/ELITE
+      if (data.type !== "GRATUIT" && !hasThreePhotos(data.responses)) {
+        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires (face, profil, dos)" });
+        return;
+      }
       const audit = await storage.createAudit({
         userId: "",
         type: data.type,
@@ -117,7 +161,7 @@ export async function registerRoutes(
       
       // Récupérer l'audit pour avoir le clientName
       const completedAudit = await storage.getAudit(auditId);
-      const clientName = completedAudit?.narrativeReport?.clientName || email.split('@')[0];
+      const clientName = (completedAudit as any)?.narrativeReport?.clientName || email.split('@')[0];
       
       console.log(`[Email] Sending report ready email to ${email} for audit ${auditId}`);
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
@@ -494,6 +538,15 @@ export async function registerRoutes(
           reportSentAt: new Date() 
         });
         console.log(`[Resend] Email sent successfully to ${audit.email}`);
+
+        // Copie admin (trace + monitoring)
+        try {
+          const clientName = (audit as any)?.narrativeReport?.clientName || audit.email.split("@")[0];
+          await sendAdminEmailNewAudit(audit.email, clientName, audit.type, auditId);
+        } catch (e) {
+          console.error(`[Resend] Admin email failed (best-effort):`, e);
+        }
+
         res.json({ 
           success: true, 
           message: `Email envoye a ${audit.email}`,
@@ -565,8 +618,8 @@ export async function registerRoutes(
         return;
       }
 
-      // Récupérer les photos de l'audit pour les passer à l'export
-      const photos = [audit.photoFront, audit.photoSide, audit.photoBack].filter(Boolean) as string[];
+      // Récupérer les photos depuis responses (flux principal)
+      const photos = extractPhotosFromAudit(audit);
 
       const pdf = await generateExportPDF(narrativeReport, auditId, photos);
       res.setHeader("Content-Type", "application/pdf");
@@ -593,10 +646,11 @@ export async function registerRoutes(
         return;
       }
 
-      // Récupérer les photos de l'audit pour les passer à l'export
-      const photos = [audit.photoFront, audit.photoSide, audit.photoBack].filter(Boolean) as string[];
+      // Récupérer les photos depuis responses (flux principal)
+      const photos = extractPhotosFromAudit(audit);
 
-      const html = generateExportHTML(narrativeReport, auditId, photos);
+      // Si l'HTML a déjà été stocké en base, on le renvoie directement (persistance)
+      const html = narrativeReport.html || generateExportHTML(narrativeReport, auditId, photos);
       res.setHeader("Content-Type", "text/html");
       res.setHeader("Content-Disposition", `attachment; filename=neurocore-360-${auditId.slice(0, 8)}.html`);
       res.send(html);
@@ -621,7 +675,7 @@ export async function registerRoutes(
         return;
       }
 
-      const photos = [audit.photoFront, audit.photoSide, audit.photoBack].filter(Boolean) as string[];
+      const photos = extractPhotosFromAudit(audit);
 
       await streamAuditZip({
         res,
@@ -731,8 +785,18 @@ export async function registerRoutes(
 
   app.post("/api/review", async (req, res) => {
     try {
-      const data = insertReviewSchema.parse(req.body);
-      const review = await reviewStorage.createReview(data);
+      const parsed = insertReviewSchema.parse(req.body);
+      const audit = await storage.getAudit(parsed.auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      const data = {
+        ...parsed,
+        comment: sanitizeUserText(parsed.comment, 1000),
+        email: parsed.email ? sanitizeUserText(parsed.email, 255) : undefined,
+      };
+      const review = await reviewStorage.createReview(data as any);
       res.json({ success: true, review });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -746,8 +810,18 @@ export async function registerRoutes(
 
   app.post("/api/submit-review", async (req, res) => {
     try {
-      const data = insertReviewSchema.parse(req.body);
-      const review = await reviewStorage.createReview(data);
+      const parsed = insertReviewSchema.parse(req.body);
+      const audit = await storage.getAudit(parsed.auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      const data = {
+        ...parsed,
+        comment: sanitizeUserText(parsed.comment, 1000),
+        email: parsed.email ? sanitizeUserText(parsed.email, 255) : undefined,
+      };
+      const review = await reviewStorage.createReview(data as any);
       res.json({ success: true, review });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -861,6 +935,9 @@ export async function registerRoutes(
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS responses JSONB DEFAULT '{}';
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS scores JSONB DEFAULT '{}';
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS narrative_report JSONB;
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_txt TEXT;
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_html TEXT;
+            ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_generated_at TIMESTAMP;
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_delivery_status VARCHAR(20) DEFAULT 'PENDING';
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_scheduled_for TIMESTAMP;
             ALTER TABLE audits ADD COLUMN IF NOT EXISTS report_sent_at TIMESTAMP;
@@ -890,11 +967,26 @@ export async function registerRoutes(
           responses JSONB NOT NULL DEFAULT '{}',
           scores JSONB NOT NULL DEFAULT '{}',
           narrative_report JSONB,
+          report_txt TEXT,
+          report_html TEXT,
+          report_generated_at TIMESTAMP,
           report_delivery_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
           report_scheduled_for TIMESTAMP,
           report_sent_at TIMESTAMP,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           completed_at TIMESTAMP
+        )`,
+
+        // Historique: une ligne par génération (TXT+HTML)
+        `CREATE TABLE IF NOT EXISTS report_artifacts (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          audit_id VARCHAR(36) NOT NULL,
+          tier VARCHAR(20) NOT NULL,
+          engine VARCHAR(30) NOT NULL,
+          model VARCHAR(80) NOT NULL,
+          txt TEXT NOT NULL,
+          html TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
         
         // Autres tables
@@ -957,6 +1049,8 @@ export async function registerRoutes(
         // Index
         `CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email)`,
         `CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_report_artifacts_audit_id ON report_artifacts(audit_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_report_artifacts_created_at ON report_artifacts(created_at)`,
         `CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`,
         `CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`,
         `CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id)`,

@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEUROCORE 360 - TEST GPT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    
+  :root[data-theme="dark"] {
+    /* Surfaces Material Design style (Oura/Ultrahuman) */
+    --bg: #0B0B0F;
+    --surface-0: #121212;
+    --surface-1: #1E1E1E;
+    --surface-2: #242424;
+    --surface-3: #2E2E2E;
+    
+    /* Legacy compatibility */
+    --background: #0B0B0F;
+    --card-bg: #121212;
+    
+    /* Texte */
+    --text: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.65);
+    --text-faint: rgba(255,255,255,0.42);
+    --text-primary: rgba(255,255,255,0.92);
+    --text-secondary: rgba(255,255,255,0.65);
+    
+    /* Accent (limité, désaturé) */
+    --primary: #5eead4; /* Teal désaturé */
+    --primary-glow: rgba(94, 234, 212, 0.3);
+    --accent-ok: #34d399; /* Vert doux (OK uniquement) */
+    --accent-warning: #f59e0b; /* Ambre doux (à corriger uniquement) */
+    --secondary: #9F8CFF; /* Violet */
+    
+    /* Bordure */
+    --border: rgba(255,255,255,0.06);
+    --accent-gradient: linear-gradient(to right, #5eead4, #34d399);
+  }
+
+  :root[data-theme="light"] {
+    /* Surfaces Material Design style */
+    --bg: #ffffff;
+    --surface-0: #f8fafc;
+    --surface-1: #f1f5f9;
+    --surface-2: #e2e8f0;
+    --surface-3: #cbd5e1;
+    
+    /* Legacy compatibility */
+    --background: #ffffff;
+    --card-bg: #f8fafc;
+    
+    /* Texte */
+    --text: #0f172a;
+    --text-muted: #475569;
+    --text-faint: #64748b;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    
+    /* Accent */
+    --primary: #0d9488; /* Teal-600 */
+    --primary-glow: rgba(13, 148, 136, 0.3);
+    --accent-ok: #059669; /* Vert */
+    --accent-warning: #d97706; /* Ambre */
+    --secondary: #7c3aed; /* Violet-600 */
+    
+    /* Bordure */
+    --border: rgba(0, 0, 0, 0.1);
+    --accent-gradient: linear-gradient(to right, #0d9488, #059669);
+  }
+
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--background);
+      background-image: url("data:image/svg+xml,%3Csvg width='28' height='49' viewBox='0 0 28 49' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z' fill='%235eead4' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* TYPOGRAPHY */
+    h1, h2, h3, h4 { color: var(--text-primary); letter-spacing: -0.02em; }
+    p { margin-bottom: 1.5rem; color: var(--text-secondary); font-weight: 300; font-size: 1.05rem; }
+    strong { color: var(--primary); font-weight: 600; }
+
+    /* HERO SECTION */
+    .hero {
+      position: relative;
+      background: radial-gradient(circle at top right, rgba(94, 234, 212, 0.1), transparent 40%),
+                  linear-gradient(to bottom, #111, #0a0a0a);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 60px 40px;
+      margin-bottom: 60px;
+      overflow: hidden;
+      text-align: center;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0.5;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(94, 234, 212, 0.1);
+      border: 1px solid rgba(94, 234, 212, 0.3);
+      border-radius: 100px;
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      box-shadow: 0 0 20px rgba(94, 234, 212, 0.2);
+    }
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(to bottom, var(--text-primary), var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .client-name {
+      font-size: 1.5rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* GLOBAL STATS */
+    .global-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .stat-card h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    /* OURA STYLE DASHBOARD COMPONENTS */
+    
+    /* Hero Score Ring (Oura style) */
+    .hero-score-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+    .hero-score-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .hero-score-phrase {
+      font-size: 16px;
+      color: var(--text);
+      max-width: 400px;
+      text-align: center;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+    
+    /* Contributors Cards (3 causes racines) */
+    .contributors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin: 32px 0;
+    }
+    .contributor-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .contributor-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .contributor-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    .contributor-impact {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .contributor-action {
+      font-size: 13px;
+      color: var(--primary);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    /* KPI Tiles (4-6 max) */
+    .kpi-tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+    .kpi-tile {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .kpi-tile-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-tile-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .kpi-tile-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .kpi-tile.priority-high {
+      border-color: var(--accent-warning);
+    }
+    .kpi-tile.priority-ok {
+      border-color: var(--accent-ok);
+    }
+    
+    /* Plan 3 Phases */
+    .plan-phases {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin: 32px 0;
+    }
+    .phase-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .phase-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .phase-bullets {
+      list-style: none;
+      padding: 0;
+    }
+    .phase-bullets li {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 10px;
+      padding-left: 20px;
+      position: relative;
+    }
+    .phase-bullets li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    
+    /* Bloc "À confirmer" (tests vidéo) */
+    .confirm-block {
+      background: var(--surface-2);
+      border: 1px solid var(--accent-warning);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 32px 0;
+    }
+    .confirm-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-warning);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .confirm-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    
+    /* Accordéon pour sections détaillées */
+    .accordion-section {
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .accordion-header {
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+    .accordion-header:hover {
+      background: var(--surface-2);
+    }
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .accordion-content.open {
+      max-height: 5000px;
+    }
+    .accordion-body {
+      padding: 0 20px 20px 20px;
+    }
+    
+    /* Badge Priorité */
+    .priority-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .priority-badge.high {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--accent-warning);
+    }
+    .priority-badge.medium {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+    .priority-badge.low {
+      background: rgba(94, 234, 212, 0.2);
+      color: var(--primary);
+    }
+
+    /* SECTIONS */
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      margin-bottom: 40px;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .section-card:hover {
+      border-color: rgba(94, 234, 212, 0.3);
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+    .section-header {
+      padding: 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: linear-gradient(to right, rgba(255,255,255,0.02), transparent);
+    }
+    .section-category {
+      font-size: 0.7rem;
+      color: var(--primary);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      max-width: 80%;
+    }
+    .score-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .score-level {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      margin-top: 5px;
+    }
+
+    .section-content {
+      padding: 40px;
+    }
+
+    /* CONTENT ELEMENTS */
+    .subsection-title {
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      border-left: 3px solid var(--primary);
+      padding-left: 15px;
+      margin: 40px 0 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .insight-box {
+      background: rgba(94, 234, 212, 0.05);
+      border: 1px solid rgba(94, 234, 212, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 30px 0;
+      font-size: 1rem;
+      color: #e2e8f0;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: #cbd5e1;
+    }
+    .list-item .icon {
+      color: var(--text-secondary);
+      font-size: 20px;
+      margin-top: 2px;
+    }
+    .list-item.positive .icon {
+      color: var(--primary);
+    }
+
+    .kpi-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+    }
+    .kpi-label { color: var(--text-secondary); }
+    .kpi-value { color: var(--text-primary); font-weight: 700; }
+
+    .photos-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+    .photo-container {
+      aspect-ratio: 3/4;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .photo-container img {
+      width: 100%; height: 100%; object-fit: cover;
+      opacity: 0.8;
+      transition: opacity 0.5s;
+    }
+    .photo-container:hover img { opacity: 1; }
+    
+    .footer {
+      text-align: center;
+      padding: 80px 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+    }
+    
+    /* THEME SELECTOR */
+    .theme-selector {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .theme-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .theme-btn:hover {
+      background: rgba(94, 234, 212, 0.1);
+      color: var(--primary);
+    }
+    .theme-btn.active {
+      background: var(--primary);
+      color: var(--background);
+    }
+    
+    /* TABLE OF CONTENTS */
+    .toc-container {
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 999;
+      max-width: 280px;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .toc-container.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .toc-toggle {
+      position: fixed;
+      left: 20px;
+      top: 20px;
+      z-index: 1000;
+      width: 48px;
+      height: 48px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--primary);
+      font-size: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: all 0.2s ease;
+    }
+    .toc-toggle:hover {
+      background: var(--primary);
+      color: var(--background);
+      transform: scale(1.05);
+    }
+    .toc-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-list {
+      list-style: none;
+    }
+    .toc-item {
+      margin-bottom: 8px;
+    }
+    .toc-link {
+      display: block;
+      padding: 8px 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      line-height: 1.4;
+    }
+    .toc-link:hover {
+      background: rgba(94, 234, 212, 0.1);
+      color: var(--primary);
+      transform: translateX(4px);
+    }
+    .toc-link.active {
+      background: rgba(94, 234, 212, 0.2);
+      color: var(--primary);
+      font-weight: 600;
+      border-left: 3px solid var(--primary);
+    }
+    
+    @media (max-width: 1200px) {
+      .toc-container {
+        max-width: 240px;
+      }
+    }
+    
+    @media (max-width: 968px) {
+      .toc-container,
+      .toc-toggle {
+        display: none;
+      }
+      .theme-selector {
+        top: 10px;
+        right: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2.5rem; }
+      .global-stats { grid-template-columns: 1fr; }
+      .photos-grid { grid-template-columns: 1fr; }
+      .section-header { flex-direction: column; gap: 20px; }
+      .container { padding: 20px; }
+    }
+
+    @media print {
+      body { background: white; color: black; }
+      .hero, .card, .section-card, .stat-card { 
+        background: white; color: black; border: 1px solid #ccc; box-shadow: none; 
+      }
+      h1, h2, h3, h4, p, strong { color: black !important; }
+      .hero-badge { border-color: black; color: black; }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <!-- Theme Selector -->
+  <div class="theme-selector">
+    <button class="theme-btn active" data-theme="dark">🌙 Dark</button>
+    <button class="theme-btn" data-theme="light">☀️ Light</button>
+  </div>
+  
+  <!-- Table of Contents Toggle -->
+  <button class="toc-toggle" id="toc-toggle" aria-label="Afficher la table des matières">📑</button>
+  
+  <!-- Table of Contents -->
+  <nav class="toc-container" id="toc-container">
+    <div class="toc-title">Table des matières</div>
+    <ul class="toc-list">
+      
+        <li class="toc-item">
+          <a href="#executive-summary" class="toc-link" data-section="executive-summary">EXECUTIVE SUMMARY</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#analyse-visuelle-et-posturale-complete" class="toc-link" data-section="analyse-visuelle-et-posturale-complete">ANALYSE VISUELLE ET POSTURALE COMPLETE</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#analyse-biomecanique-et-sangle-profonde" class="toc-link" data-section="analyse-biomecanique-et-sangle-profonde">ANALYSE BIOMECANIQUE ET SANGLE PROFONDE</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#analyse-entrainement-et-periodisation" class="toc-link" data-section="analyse-entrainement-et-periodisation">ANALYSE ENTRAINEMENT ET PERIODISATION</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#analyse-systeme-cardiovasculaire" class="toc-link" data-section="analyse-systeme-cardiovasculaire">ANALYSE SYSTEME CARDIOVASCULAIRE</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#analyse-sommeil-et-recuperation" class="toc-link" data-section="analyse-sommeil-et-recuperation">ANALYSE SOMMEIL ET RECUPERATION</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#protocole-matin-anticortisol" class="toc-link" data-section="protocole-matin-anticortisol">PROTOCOLE MATIN ANTI-CORTISOL</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#protocole-soir-verrouillage-sommeil" class="toc-link" data-section="protocole-soir-verrouillage-sommeil">PROTOCOLE SOIR VERROUILLAGE SOMMEIL</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#protocole-digestion-14-jours" class="toc-link" data-section="protocole-digestion-14-jours">PROTOCOLE DIGESTION 14 JOURS</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#protocole-bureau-antisedentarite" class="toc-link" data-section="protocole-bureau-antisedentarite">PROTOCOLE BUREAU ANTI-SEDENTARITE</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#stack-supplements-optimise" class="toc-link" data-section="stack-supplements-optimise">STACK SUPPLEMENTS OPTIMISE</a>
+        </li>
+      
+        <li class="toc-item">
+          <a href="#synthese-et-prochaines-etapes" class="toc-link" data-section="synthese-et-prochaines-etapes">SYNTHESE ET PROCHAINES ETAPES</a>
+        </li>
+      
+    </ul>
+  </nav>
+  
+  <div class="container">
+    
+    <!-- Hero Header Compact (Oura style) -->
+    <header class="hero" style="padding: 40px 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
+        <div>
+          <span class="hero-badge">Diagnostic express en 30 secondes</span>
+          <h1 style="font-size: 2rem; margin: 12px 0 8px 0;">TEST GPT</h1>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">
+            Généré le 02/01/2026 06:57:55 • ID: 42c4f783
+          </p>
+        </div>
+      </div>
+      
+      <!-- Hero Score Ring (Oura style) -->
+      <div class="hero-score-container">
+        <div class="hero-score-label">Score Global</div>
+        
+    <svg width="240" height="280" viewBox="0 0 240 280">
+      <defs>
+        <filter id="glow-69">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12" />
+      <circle cx="120" cy="120" r="100" fill="none" stroke="#3b82f6" stroke-width="12" 
+        stroke-dasharray="628.3185307179587" stroke-dashoffset="194.7787445225672" stroke-linecap="round" 
+        transform="rotate(-90 120 120)" filter="url(#glow-69)" />
+      <text x="120" y="112" font-size="56" font-family="Inter, sans-serif" font-weight="800" fill="var(--text)" text-anchor="middle">69</text>
+      <text x="120" y="144" font-size="14" font-family="Inter, sans-serif" font-weight="700" fill="#3b82f6" text-anchor="middle" letter-spacing="0.1em">MOYEN</text>
+    </svg>
+  
+        <p class="hero-score-phrase">
+          Amélioration significative possible
+        </p>
+      </div>
+      
+      <!-- Notice importante (anti-hallucination) -->
+      <p style="font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 24px; padding: 12px; background: var(--surface-1); border-radius: 8px;">
+        📸 Analyse basée sur photos statiques. Posture confirmée par tests vidéo simples.
+      </p>
+    </header>
+
+    <!-- 3 Cartes Causes Racines (Contributors) -->
+    
+        <div class="contributors-grid">
+          
+            <div class="contributor-card">
+              <div class="contributor-title">Cause racine 1</div>
+              <div class="contributor-impact">Si je ne devais te donner qu’une seule action qui débloque 80%: verrouiller une “ancre de récupération” quotidienne, non...</div>
+              <div class="contributor-action">→ Voir détails ci-dessous</div>
+            </div>
+          
+            <div class="contributor-card">
+              <div class="contributor-title">Cause racine 2</div>
+              <div class="contributor-impact">Tu n’es pas “faible” ou “pas discipliné”</div>
+              <div class="contributor-action">→ Voir détails ci-dessous</div>
+            </div>
+          
+            <div class="contributor-card">
+              <div class="contributor-title">Cause racine 3</div>
+              <div class="contributor-impact">Tu es en mode survie intermittent</div>
+              <div class="contributor-action">→ Voir détails ci-dessous</div>
+            </div>
+          
+        </div>
+      
+
+    <!-- KPI Tiles (4-6) -->
+    
+        <div class="kpi-tiles-grid">
+          
+            <div class="kpi-tile priority-high">
+              <div class="kpi-tile-label">Compo</div>
+              <div class="kpi-tile-value">15<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">VISUELLE ET POSTURALE COMPLETE</div>
+            </div>
+          
+            <div class="kpi-tile priority-ok">
+              <div class="kpi-tile-label">Posture</div>
+              <div class="kpi-tile-value">71<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">BIOMECANIQUE ET SANGLE PROFONDE</div>
+            </div>
+          
+            <div class="kpi-tile priority-ok">
+              <div class="kpi-tile-label">Force</div>
+              <div class="kpi-tile-value">78<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">ENTRAINEMENT ET PERIODISATION</div>
+            </div>
+          
+            <div class="kpi-tile priority-ok">
+              <div class="kpi-tile-label">Cardio</div>
+              <div class="kpi-tile-value">74<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">SYSTEME CARDIOVASCULAIRE</div>
+            </div>
+          
+            <div class="kpi-tile priority-medium">
+              <div class="kpi-tile-label">Récup</div>
+              <div class="kpi-tile-value">62<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">SOMMEIL ET RECUPERATION</div>
+            </div>
+          
+            <div class="kpi-tile priority-ok">
+              <div class="kpi-tile-label">AUTO</div>
+              <div class="kpi-tile-value">78<span style="font-size: 14px; color: var(--text-muted);">/100</span></div>
+              <div class="kpi-tile-desc">SYNTHESE ET PROCHAINES ETAPES</div>
+            </div>
+          
+        </div>
+      
+
+    
+
+    <!-- Plan d'action en 3 phases -->
+    
+
+    <!-- Bloc "À confirmer" (tests vidéo) -->
+    <div class="confirm-block">
+      <div class="confirm-title">
+        ⚠️ À confirmer par tests vidéo
+      </div>
+      <div class="confirm-text">
+        L'analyse posturale est basée sur des photos statiques. Pour confirmer les hypothèses et affiner le diagnostic, des tests vidéo simples sont recommandés :
+        <br><br>
+        <strong>Tests recommandés :</strong> Squat de profil, mouvement d'épaule (flexion/extension), test de mobilité hanche.
+        <br><br>
+        Ces tests permettront de valider les observations et d'ajuster les recommandations spécifiques.
+      </div>
+    </div>
+
+    <!-- Radar Graphique (Profil Métabolique) -->
+    <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin: 32px 0; text-align: center;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em;">Profil Métabolique</h3>
+      
+    <svg width="400" height="400" viewBox="0 0 400 400">
+      <polygon points="200,165 230.31088913245534,182.5 230.31088913245534,217.5 200,235 169.68911086754466,217.5 169.68911086754463,182.50000000000003" fill="none" stroke="#262626" stroke-width="1" opacity="0.5" /><polygon points="200,130 260.6217782649107,165 260.6217782649107,235 200,270 139.3782217350893,235.00000000000003 139.37822173508926,165.00000000000006" fill="none" stroke="#262626" stroke-width="1" opacity="0.5" /><polygon points="200,95 290.93266739736606,147.5 290.93266739736606,252.5 200,305 109.06733260263395,252.50000000000003 109.0673326026339,147.50000000000006" fill="none" stroke="#262626" stroke-width="1" opacity="0.5" /><polygon points="200,60 321.2435565298214,130 321.24355652982143,270 200,340 78.75644347017861,270.00000000000006 78.75644347017854,130.00000000000009" fill="none" stroke="#262626" stroke-width="1" opacity="0.5" />
+      <line x1="200" y1="200" x2="200" y2="60" stroke="#333" stroke-width="1" opacity="0.3" /><line x1="200" y1="200" x2="321.2435565298214" y2="130" stroke="#333" stroke-width="1" opacity="0.3" /><line x1="200" y1="200" x2="321.24355652982143" y2="270" stroke="#333" stroke-width="1" opacity="0.3" /><line x1="200" y1="200" x2="200" y2="340" stroke="#333" stroke-width="1" opacity="0.3" /><line x1="200" y1="200" x2="78.75644347017861" y2="270.00000000000006" stroke="#333" stroke-width="1" opacity="0.3" /><line x1="200" y1="200" x2="78.75644347017854" y2="130.00000000000009" stroke="#333" stroke-width="1" opacity="0.3" />
+      
+    <polygon points="200,193 218.1865334794732,189.5 275.1710050484893,243.39999999999998 200,299.4 110.27976816793218,251.80000000000004 105.43002590673926,145.40000000000006" fill="rgba(94, 234, 212, 0.2)" stroke="#5eead4" stroke-width="2.5" stroke-linejoin="round" />
+    <circle cx="200" cy="193" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" /><circle cx="218.1865334794732" cy="189.5" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" /><circle cx="275.1710050484893" cy="243.39999999999998" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" /><circle cx="200" cy="299.4" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" /><circle cx="110.27976816793218" cy="251.80000000000004" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" /><circle cx="105.43002590673926" cy="145.40000000000006" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" />
+  
+      <text x="200" y="20" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="middle">SUPPLE</text><text x="355.88457268119896" y="110" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="start">VISUELLE E</text><text x="355.88457268119896" y="290" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="start">SOMMEIL ET</text><text x="200" y="380" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="middle">BIOMECANIQ</text><text x="44.11542731880107" y="290.00000000000006" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="end">SYSTEME CA</text><text x="44.11542731880098" y="110.00000000000011" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="end">ENTRAINEME</text>
+    </svg>
+  
+    </div>
+
+    
+    <div class="cta-box cta-debut" style="max-width: 900px; margin: 40px auto 60px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.05) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: center;">
+      <h3 style="color: var(--primary); font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.1em;">🎯 Rappel Important</h3>
+      <div style="color: var(--text-primary); font-size: 1.05rem; line-height: 1.8; white-space: pre-line; text-align: left;">RAPPEL IMPORTANT
+Tu consultes ton analyse PREMIUM NEUROCORE 360 complete.
+IMPORTANT : Si tu decides de prendre un coaching avec moi apres cette analyse, le montant que tu as paye pour cette analyse (79EUR) sera DEDUIT A 100% du prix du coaching.
+CODE PROMO COACHING : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)
+Pour toute question ou pour discuter de ton accompagnement :
+Email: coaching@achzodcoaching.com
+Site: achzodcoaching.com</div>
+    </div>
+    
+
+    <!-- Sections Détaillées (Accordéon) -->
+    <div style="margin-top: 48px;">
+      <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text); margin-bottom: 32px; text-transform: uppercase; letter-spacing: 0.05em;">Détails de l'analyse</h2>
+      
+      <div class="accordion-section" id="executive-summary">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">EXECUTIVE SUMMARY</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #5eead440);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#5eead4" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="69.11503837897544" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">80</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #5eead4">OPTIMAL</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">−</span>
+          </div>
+        </div>
+        <div class="accordion-content open">
+          <div class="accordion-body">
+            <p>Tu n’es pas “faible” ou “pas discipliné”. Tu es en mode survie intermittent. Pas en permanence… mais assez souvent pour saboter exactement ce que tu veux: perdre de la graisse abdominale tout en construisant du muscle. Ton corps alterne entre deux états: jours “ok” où tu avances, puis jours “vides” où tu compenses (moins d’intensité, plus de fringales, moins de NEAT, moins de récup). Et ce yo-yo physiologique suffit à bloquer la recomposition corporelle.</p><p>Premier verrou: sommeil + récupération. 6–7h, sur le papier, ça “passe”. En réalité, chez un homme de 30 ans qui s’entraîne 4–5 fois/semaine en PPL (volume + stress mécanique + stress nerveux), c’est souvent juste en dessous du seuil qui permet de garder un système nerveux stable et une bonne sensibilité à l’insuline. Quand la récup est “parfois insuffisante”, ça veut dire: certains entraînements sont payés plus tard. Le corps devient prudent. Il augmente la perception d’effort, baisse l’envie de bouger hors salle, et te donne une énergie “variable selon les jours”. Ça, c’est typique d’un axe stress-récup qui oscille. Et quand ça oscille, la perte de graisse abdominale est la première à ralentir (zone très sensible au contexte hormonal: cortisol/sommeil/insuline). Hypothèse très probable: tu fais “assez” pour fatiguer ton système, mais pas assez pour récupérer de façon reproductible.</p><p>Deuxième verrou: stress modéré + motivation élevée mais fluctuante. Ton profil est celui du mec qui sait se mettre des grosses claques quand il est motivé… puis qui se retrouve à gérer les conséquences quand la journée est chargée ou que la nuit a été moyenne. Le stress “modéré” n’est pas un chiffre, c’est un bruit de fond. Et ce bruit de fond, combiné à un entraînement fréquent, peut maintenir une activation sympathique trop longue: tu t’entraînes, tu performes, mais tu redescends mal. Résultat: sommeil moins profond, digestion plus sensible, appétit moins prévisible, et énergie qui fait le yoyo. C’est exactement le terrain “survie”: ton corps privilégie la sécurité (stockage, rétention, économie d’énergie) plutôt que l’optimisation (construction musculaire + déstockage abdominal).</p><p>Troisième verrou: digestion. “Occasionnellement ballonnements”, ce n’est pas dramatique, mais c’est un signal. Souvent, c’est la signature d’un système digestif qui tolère globalement bien… sauf quand tu cumules: repas pris vite, timing compressé (temps limité le matin), stress, fibres/protéines mal réparties, et parfois trop de “volume alimentaire” autour de l’entraînement. Le ventre gonflé n’est pas juste esthétique: c’est un indicateur que le parasympathique (le mode repos-digestion) n’a pas la place. Et si tu ne digères pas parfaitement, tu n’assimiles pas parfaitement. Donc tu peux avoir l’impression de “bien manger” tout en ayant un rendement anabolique moyen certains jours. Et là, tu te retrouves à pousser plus fort à l’entraînement pour compenser… ce qui renforce le cycle.</p><div class="kpi-row"><span class="kpi-label">Vitalité </span><span class="kpi-value"> 🔴🔴🟡🟢🟢 3/5</span></div><div class="kpi-row"><span class="kpi-label">Récupération </span><span class="kpi-value"> 🔴🔴🔴🟡🟢 2/5</span></div><div class="kpi-row"><span class="kpi-label">Stress/charge mentale </span><span class="kpi-value"> 🔴🔴🟡🟢🟢 3/5</span></div><div class="kpi-row"><span class="kpi-label">Digestion </span><span class="kpi-value"> 🔴🟡🟢🟢🟢 4/5</span></div><div class="kpi-row"><span class="kpi-label">Cohérence entraînement ↔ récup </span><span class="kpi-value"> 🔴🔴🔴🟡🟢 2/5</span></div><h4 class="subsection-title">1. LE LEVIER D’ÉLITE</h4><p>Si je ne devais te donner qu’une seule action qui débloque 80%: verrouiller une “ancre de récupération” quotidienne, non négociable, centrée sur le sommeil (et tout ce qui le rend profond).</p><p>Concrètement: tu arrêtes d’essayer de gagner la bataille avec plus de volonté à la salle. Tu la gagnes en rendant ton système nerveux prévisible. Ton entraînement PPL 4–5x/semaine, tu peux le garder. Mais il doit devenir “rentable”. Et la rentabilité, c’est: tu récupères assez pour que chaque séance soit un stimulus, pas une dette.</p><p>→ Action immédiate (simple, faisable même avec un matin court): choisis une heure de coucher cible réaliste et fixe-la 5 soirs sur 7, avec une descente nerveuse de 20 minutes (lumière basse + écran coupé ou filtré + respiration lente ou marche très douce). Pourquoi ça marche: tu diminues l’activation sympathique, tu facilites l’endormissement, tu améliores la qualité du sommeil profond. Conséquence attendue: énergie plus stable, meilleure gestion de l’appétit, meilleure tolérance au déficit calorique, meilleure synthèse musculaire post-training.</p><p>Info à clarifier (important): “6–7h” ne me dit pas si tu t’endors vite, si tu te réveilles la nuit, et si tu te lèves frais. J’ai besoin de: temps d’endormissement moyen, réveils nocturnes (oui/non), et sensation au réveil (cassé/neutre/frais). Sans ça, je ne peux pas calibrer finement le levier sommeil.</p><h4 class="subsection-title">2. LA PROJECTION MÉTABOLIQUE (30 JOURS)</h4><p>Si tu appliques ce levier proprement pendant 30 jours, ton corps va sortir du mode survie intermittent et entrer dans un mode “construction + déstockage” beaucoup plus stable. Attends-toi à:</p><p>✓ énergie moins aléatoire: moins de jours “à plat”, plus de jours “propres”</p><p>✓ entraînements plus constants: meilleure qualité de reps, meilleure tolérance au volume, moins besoin de te cramer pour sentir que tu as travaillé</p><p>✓ appétit plus prévisible: moins de fringales “post-journée stressante”, meilleure capacité à tenir un léger déficit sans obsession</p><p>✓ digestion plus calme: moins de ballonnements liés au stress et à la prise alimentaire rapide</p><p>✓ recomposition plus visible au niveau abdominal (pas magique, mais plus logique): quand le stress baisse et que le sommeil s’approfondit, tu deviens plus sensible à l’insuline et tu gères mieux le stockage autour du ventre</p><p>Hypothèse réaliste: si tu continues à t’entraîner dur avec une récup “parfois insuffisante”, tu vas rester dans un entre-deux: tu construis un peu, tu perds un peu, mais surtout tu stagnes visuellement au ventre et tu alternes les semaines “fortes” et “moyennes”. En 30 jours, on veut casser ce pattern.</p><p>Score : 71/100</p><h4 class="subsection-title">SCORE GLOBAL  71/100</h4>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="analyse-visuelle-et-posturale-complete">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">ANALYSE VISUELLE ET POSTURALE COMPLETE</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #ef444440);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#ef4444" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="293.7389131106457" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">15</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #ef4444">CRITIQUE</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Je vais être totalement transparent avec toi: je ne peux pas faire une “analyse visuelle et posturale complète” au sens strict, parce que tu n’as fourni aucune photo. Et en posture, sans visuel, tout ce que je pourrais dire serait du roman. Donc là, je fais ce que ferait un coach sérieux: je pose un cadre, je te dis exactement ce que je vais regarder dès que tu m’envoies les clichés, et je te donne des tests simples pour qu’on ne reste pas bloqués.</p><p>Info à clarifier: il me manque les 3 photos indispensables (face, profil, dos) en lumière propre, et idéalement une courte vidéo de marche. Sans ça, je ne peux pas “mapper” tes asymétries, ton bassin, tes omoplates, ni relier tes signes mécaniques à ton stress/sommeil/digestion de manière fiable.</p><h4 class="subsection-title">1. CE QUE JE VAIS LIRE SUR TES PHOTOS (ET POURQUOI ÇA COMPTE POUR TA GRAISSE ABDOMINALE)</h4><p>Tu me dis: homme, 30 ans, objectif perte de graisse abdominale + gain de muscle, stress modéré, énergie variable, sommeil 6-7h, ballonnements occasionnels, récup parfois insuffisante. Rien que cette triade (sommeil un peu court + stress + récup limite) peut laisser une signature très classique: appétit plus “nerveux”, stockage plus facile au niveau abdominal, et une posture qui se met en mode protection.</p><p>Le lien n’est pas magique, il est mécanique et hormonal à la fois:</p><p>Quand ton système est souvent en “alerte modérée”, tu respires plus haut, tu recrutes plus le cou/haut des trapèzes, tu compresses un peu la cage, tu “verrouilles” le tronc. Résultat: la sangle abdominale ne joue plus son rôle de ceinture dynamique, et tu te retrouves avec plus de forces de cisaillement sur la zone lombaire quand tu pousses/tires/charges (surtout sur PPL avec 4-5 séances/sem). La tensegrité myofasciale, c’est exactement ça: un corps tenu par des tensions réparties. Si certaines zones tirent trop (fléchisseurs de hanche, pectoraux, érecteurs lombaires), d’autres zones lâchent (abdos profonds, fessiers, dentelé antérieur). Et cette répartition de tensions change ton mouvement… donc ton recrutement musculaire… donc ton rendu esthétique et ta capacité à sécher “au ventre”.</p><p>Important: la graisse abdominale, c’est aussi une signature endocrinienne possible, mais je ne te collerai jamais une étiquette. Je parle en indices. Chez un homme, une tendance au stockage abdominal peut être compatible avec: charge de stress chronique, sommeil insuffisant, densité de pas trop basse, digestion/ballonnements qui entretiennent une pression intra-abdominale, et parfois un entraînement “fort mais nerveux” (beaucoup d’intensité, pas assez de parasympathique). Tes données pointent vers une hypothèse cohérente: ton système alterne entre jours “on” et jours “off”, ce qui crée une variabilité d’énergie et peut te pousser à compenser (café, intensité, moins de récup), et cette boucle-là se voit souvent sur la posture.</p><h4 class="subsection-title">2. PROTOCOLE PHOTO: CE QUE TU M’ENVOIES POUR QUE JE TE FASSE UN VRAI MAPPING</h4><p>Je veux 3 photos statiques, pieds nus, short, torse nu si possible (sinon t-shirt moulant), appareil à hauteur du nombril, à 2-3 mètres, lumière de face.</p><p>Photo 1: de face, posture “naturelle” (ne te redresse pas exprès). Je vais regarder:</p><p>✓ alignement tête-cage-bassin, si la tête part en avant</p><p>✓ hauteur des épaules et des clavicules (indice de dominance trapèzes/élévateurs)</p><p>✓ rotation des bras (paumes tournées vers l’arrière ou neutres)</p><p>✓ ligne des hanches (bassin qui “tombe” d’un côté)</p><p>✓ genoux qui rentrent/sortent (chaîne hanche-pied)</p><p>Photo 2: de profil, même consigne. Là je lis:</p><p>✓ cage “empilée” sur le bassin ou cage qui fuit vers l’avant</p><p>✓ bas du dos: tendance à cambrer ou à s’aplatir (screening, pas diagnostic)</p><p>✓ position du bassin (indices d’antéversion/rétroversion)</p><p>✓ genou verrouillé, pied en avant du centre de masse</p><p>C’est la photo clé pour estimer les forces de cisaillement potentielles sur lombaires et genoux en squat/hinge.</p><p>Photo 3: de dos. Je vais regarder:</p><p>✓ omoplates: symétrie, “ailes” (scapula qui décolle) ou bascule</p><p>✓ ligne de la colonne (indices compatibles avec rotation, à confirmer)</p><p>✓ bassin: PSIS (les “petites fossettes”) au même niveau ou non</p><p>✓ appuis: talon qui s’écrase, pied qui part en dehors</p><p>Et là je le redis: une photo statique ment parfois. Un appui, une respiration, une tension, et tu as l’air “tordu” alors que tu bouges bien. Donc je te demande aussi 2-3 mini-vidéos, 10-15 secondes chacune.</p><h4 class="subsection-title">3. TESTS VIDÉO SIMPLES (POUR CONFIRMER, PAS POUR IMAGINER)</h4><p>Vidéo A: marche de profil, 10 mètres aller-retour, rythme normal. Je regarde si tu “portes” ta marche avec les hanches (fessiers) ou avec le bas du dos/cuisse, et si la cage reste empilée.</p><p>Vidéo B: 5 squats au poids du corps, de face et de profil. Je regarde genoux, bassin, thorax. Si tes genoux rentrent, si tu bascules bassin, si tu perds la voûte plantaire. Ça me dit où part la force et où se crée le cisaillement.</p><p>Vidéo C: hip hinge contre un mur (tu recules les hanches vers le mur sans plier trop les genoux), 5 reps de profil. Ça me dit si tes ischios/fessiers “prennent” le mouvement ou si c’est le bas du dos qui fait tout.</p><h4 class="subsection-title">4. CE QUE JE SOUPÇONNE (HYPOTHÈSES) AU VU DE TON QUESTIONNAIRE, EN ATTENDANT LES PHOTOS</h4><p>Hypothèse 1: pattern “stress-respiration haute” certains jours.</p><p>Indices compatibles: stress modéré, énergie variable, sommeil 6-7h, récup insuffisante. Quand tu dors un peu court, ton corps compense: plus de tonus sympathique, respiration plus haute, plus de tension cervicale. Mécaniquement, ça tire sur la cage, ça change la position des omoplates, et ça peut te donner un push/pull très “épaules/trapèzes” au lieu de pec/dos profond. Conséquence: tu forces, tu progresses, mais tu récupères moins bien et ton ventre reste “en défense”.</p><p>Hypothèse 2: pression abdominale/digestion qui influence la posture.</p><p>Ballonnements occasionnels: ce n’est pas juste un inconfort. Un ventre distendu augmente la pression, pousse la cage à s’ouvrir, et beaucoup de gars compensent en cambrant un peu ou en écartant les côtes. Ça change la tensegrité: abdos profonds moins efficaces, lombaires qui stabilisent à leur place. Conséquence possible: tu peux te sentir fort sur les mouvements, mais “raide” et parfois vidé.</p><p>Hypothèse 3: PPL 4-5/sem + temps limité le matin = échauffement écourté.</p><p>Je le vois tout le temps: tu arrives, tu charges, tu fais le boulot. Mais sans préparation respiratoire/mobilité active, tu entres dans la séance déjà “serré”. Conséquence: scapulas moins mobiles, hanches moins disponibles, et le corps choisit des raccourcis. Ces raccourcis, sur le long terme, c’est exactement ce qui finit par limiter la recomposition (tu recrutes moins les bons muscles, tu crées plus de fatigue nerveuse que de stimulus musculaire propre).</p><h4 class="subsection-title">5. MESURES UTILES (SANS INVENTER) POUR OBJECTIVER TA “SIGNATURE”</h4><p>Si tu veux qu’on sorte du ressenti et qu’on relie proprement posture ↔ graisse abdominale ↔ stress, voilà ce que je te demande.</p><p>Mesure tour de taille / hanches selon protocole standardisé (repères anatomiques, fin d’expiration normale) et je te calcule le ratio précis.</p><p>Tour de taille: ruban horizontal au niveau du nombril (et idéalement une deuxième mesure au point le plus étroit si tu veux comparer), debout, sans rentrer le ventre, à la fin d’une expiration normale.</p><p>Hanches: au point le plus large des fessiers.</p><p>Ça ne sert pas à te juger. Ça sert à suivre la tendance: est-ce que la zone abdominale répond quand on améliore sommeil, respiration, et plan d’entraînement.</p><h4 class="subsection-title">6. MICRO-PRESCRIPTION IMMÉDIATE (EN ATTENDANT LES PHOTOS)</h4><p>→ Avant chaque séance (2 minutes, chrono): 5 respirations nasales lentes en position debout, mains sur les côtes, objectif “côtes qui s’ouvrent sur les côtés” et pas les épaules qui montent. Puis 10 hip hinges lents sans charge, juste pour “rappeler” aux hanches qu’elles pilotent.</p><p>Pourquoi: tu réduis le tonus de protection, tu remets la cage sur le bassin, tu diminues les forces de cisaillement inutiles, et tu améliores le recrutement fessiers/abdos profonds. C’est du biohacking mécanique, simple, rentable.</p><p>Dès que tu m’envoies les 3 photos + les 3 vidéos, je te fais le mapping précis: chaîne dominante, zones qui sur-travaillent, zones qui sous-performent, et surtout comment ça influence ton entraînement PPL et ta perte de graisse abdominale.</p><p>Score : 15/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="analyse-biomecanique-et-sangle-profonde">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">ANALYSE BIOMECANIQUE ET SANGLE PROFONDE</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #3b82f640);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#3b82f6" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="100.21680564951441" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">71</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #3b82f6">OPTIMAL</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Tu veux perdre de la graisse abdominale tout en gagnant du muscle, tu t’entraînes souvent, et pourtant ton énergie te joue au yo-yo. Je ne vais pas te parler “posture parfaite” façon manuel. Sans photos, je ne peux pas te dire comment ton bassin “a l’air” au repos. Par contre, je peux déjà lire un schéma très fréquent chez les mecs en PPL intermédiaires: tu charges, tu progresses, mais la sangle profonde n’est pas le chef d’orchestre. Elle est l’assistant qu’on a oublié d’embaucher. Résultat: certaines journées tu es une machine, d’autres tu as l’impression que “le bas du dos” fait le travail à la place de tout le monde.</p><h4 class="subsection-title">1. DIAGNOSTIC DE TENSEGRITÉ (PSOAS ↔ DIAPHRAGME ↔ SANGLE PROFONDE)</h4><p>Je veux que tu imagines ton tronc comme une tente de randonnée. Pas une pile de muscles. Une tente. Le diaphragme, c’est le toit qui monte et descend. Le plancher pelvien, c’est le sol qui répond. Et entre les deux, tu as une colonne qui n’est pas censée “tenir” par rigidité, mais par pression interne, comme une canette fermée: tant que la pression est gérée, ça tient, ça absorbe, ça transmet.</p><p>Le psoas, lui, ce n’est pas juste “le fléchisseur de hanche”. Dans ce système, c’est un hauban profond qui relie tes jambes à ta colonne, et qui dialogue en permanence avec ta respiration. Quand tu es stressé modérément, que tu dors 6-7h, que ta récup est parfois insuffisante, ton système nerveux a tendance à préférer la stratégie “protection”: respiration plus haute, plus courte, diaphragme qui bouge moins en amplitude, cage thoracique qui devient un peu plus rigide. Hypothèse très plausible chez toi: ce pattern rend la pression intra-abdominale moins stable. Et si la pression est instable, le corps va chercher des haubans “de secours”.</p><p>C’est là que le psoas se met souvent à sur-assurer. Il devient le câble trop tendu. Ça peut donner une sensation de hanches “serrées”, une bascule du bassin difficile à contrôler, et surtout une transmission de force moins propre sur les mouvements jambes et tirages lourds. Et ce qui est vicieux, c’est que tu peux être fort quand même. Simplement, tu es fort en compensant. Ça coûte plus cher au système. Ça explique très bien une énergie variable selon les jours: tu n’es pas juste “fatigué”, tu es parfois en mode économie nerveuse, parfois en mode suractivation.</p><p>✓ Point positif: ton niveau intermédiaire et ta fréquence 4-5/semaine te donnent assez d’expositions pour recâbler ça vite si on met les bons rituels.</p><p>✗ Point à surveiller: stress + sommeil moyen + récup parfois insuffisante = diaphragme et sangle profonde plus souvent “débranchés” que tu ne le crois, surtout le matin (ton créneau contraint).</p><h4 class="subsection-title">2. MÉCANISMES DE DÉFAILLANCE: POURQUOI LE BAS DU DOS PREND (AMNÉSIE DES FESSIERS)</h4><p>Le bas du dos ne “lâche” pas parce qu’il est faible. Il prend parce qu’il est disponible. Et parce que le cerveau adore ce qui est disponible.</p><p>Quand les fessiers sont inhibés, ce n’est pas un jugement moral, c’est un phénomène neurologique. Ton cerveau choisit des chemins rapides. Si, au quotidien, tu es assis, hanches en flexion, psoas raccourci en position, respiration plus haute, alors au moment où tu veux produire de l’extension de hanche (deadlift, hip hinge, squat, fentes, même leg press), le système peut préférer recruter les extenseurs lombaires et les ischios en premier, au lieu d’allumer fort le grand fessier. Le grand fessier est puissant, mais il est “cher” en coordination: il demande un bon bassin, une bonne pression intra-abdominale, une cage thoracique qui ne fuit pas vers l’avant, et une hanche qui sait bouger sans que la colonne compense.</p><p>La conséquence est mécanique et nerveuse à la fois. Mécanique: tu crées de la force avec une charnière qui n’est pas faite pour être le moteur principal. Nerveuse: à chaque rep où ton bas du dos “sauve”, tu renforces le câblage. Ton cerveau apprend: “ok, pour me lever, je cambre et je tire”. Et plus tu t’entraînes, plus tu deviens bon… à ce pattern. Jusqu’au jour où la récup est limite, où tu dors un peu moins, où tu stresses un peu plus, et là, la stratégie protection monte d’un cran. Le bas du dos devient la victime collatérale parce que c’est lui qui gère la stabilité quand la pression et les fessiers ne font pas leur boulot.</p><p>Lien direct avec ton objectif “graisse abdominale”: ce n’est pas que la posture fait stocker la graisse. C’est plus subtil. Un système nerveux qui tourne souvent en protection respire moins bas, récupère moins bien, et gère moins bien l’appétit et la dépense. Hypothèse: tes ballonnements occasionnels peuvent aussi participer au problème de pression. Un ventre distendu ou une digestion irritée change la façon dont tu “pousses” et dont tu respires. Si la sangle profonde n’est pas coordonnée, tu compenses en rigidifiant le haut ou en cambrant.</p><p>Info à clarifier: je n’ai pas tes sensations à l’entraînement (où tu “sens” le travail sur squat/hinge, si tu as des tensions de hanches, si tu cambrer sur développé couché, si tu as des crampes ischios). Ça change la précision du plan.</p><h4 class="subsection-title">3. RÉÉDUCATION NEUROLOGIQUE: RECÂBLER LA PRESSION ET RALLUMER LES FESSIERS (STOMACH VACUUM + ACTIVATION CIBLÉE)</h4><p>On ne “renforce” pas la sangle profonde comme on fait des curls. On réapprend un timing. C’est une intégration neurologique: respiration, pression, bassin, hanche.</p><p>Le stomach vacuum, bien fait, n’est pas un concours de ventre rentré. C’est une éducation du transverse et de la gestion de pression. Scientifiquement, tu cherches à recruter le transverse et les obliques profonds pour créer une ceinture active autour de l’abdomen, pendant que le diaphragme reste fonctionnel. Si tu fais un vacuum en bloquant la respiration et en crispant le haut, tu rates la cible. La cible, c’est: cage thoracique qui descend un peu, bas des côtes qui se “range”, bassin neutre ou légèrement rétroversé sans écraser le bas du dos, et une sensation de gainage circulaire, comme si tu resserrais une ceinture d’un cran.</p><p>Ce que je te prescris, c’est une séquence courte, matinale (vu ton temps limité) et surtout reproductible, qui sert d’interrupteur avant tes séances PPL. Tu vas la voir comme un “boot” du système.</p><p>D’abord, tu réinstalles le diaphragme. Tu cherches une inspiration qui ouvre les flancs et le bas du dos, pas seulement le sternum. Puis une expiration longue qui fait descendre les côtes. Ce n’est pas du yoga, c’est un reset de la mécanique de pression. Quand tu expires long, tu actives davantage le système parasympathique et tu facilites le recrutement du transverse; ton cerveau comprend: “on est en contrôle”. Et quand le cerveau sent le contrôle, il lâche la stratégie protection.</p><p>Ensuite, tu places un vacuum doux en fin d’expiration, quelques secondes, sans crispation de la nuque ni des épaules. L’idée est de sentir une “aspiration” sous le nombril et une stabilité 360°, comme si ton tronc devenait un cylindre. Tu ne cherches pas à creuser au maximum. Tu cherches la qualité: stable, silencieux, sans tremblement excessif. C’est là que tu crées le pont diaphragme-transverse.</p><p>Enfin, tu allumes les fessiers sans que les lombaires volent le mouvement. L’activation ciblée utile chez un intermédiaire comme toi, c’est celle qui impose une consigne au bassin: extension de hanche avec bassin stable, côtes rangées, pression maintenue. Si tu sens les ischios crisper ou le bas du dos se contracter avant les fessiers, tu t’es trompé de chemin nerveux. On ajuste l’amplitude, on ralentit, on remet une expiration avant de pousser. Tu veux que le cerveau associe: expiration longue → pression → hanche qui s’étend → fessier qui prend. Pas l’inverse.</p><p>Deux tests vidéo simples à me fournir (si tu veux que je verrouille l’analyse sans photo statique):</p><p>Tu te filmes de profil sur 5 reps de hip hinge à vide (mains sur les hanches ou avec un bâton le long de la colonne) pour voir si tu hinges ou si tu “plis le dos”.</p><p>Tu te filmes de face sur 5 reps de squat au poids du corps, lent, pour voir le contrôle bassin-genou-pied et la stratégie respiratoire (côtes qui s’ouvrent, bassin qui fuit).</p><p>Et un protocole de mesure utile (sans chiffres imposés): tour de taille au niveau du nombril, fin d’expiration normale, toujours le matin. Pas pour te juger. Pour objectiver si la perte de graisse abdominale suit la bonne pente, indépendamment des fluctuations de glycogène et de ballonnements.</p><p>→ Action immédiate: avant chaque séance (ou le matin les jours off), fais 3 minutes de reset respiration/pression + 2 minutes d’activation fessiers contrôlée. Si tu le fais 4-5 fois/semaine, tu changes plus ta biomécanique en 3-4 semaines que beaucoup en 6 mois de “plus lourd”.</p><p>Score : 71/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="analyse-entrainement-et-periodisation">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">ANALYSE ENTRAINEMENT ET PERIODISATION</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #3b82f640);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#3b82f6" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="76.026542216873" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">78</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #3b82f6">OPTIMAL</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Tu as choisi un classique efficace: PPL, 4–5 séances/semaine, 1h–1h30. Pour un intermédiaire, c’est une base solide… à une condition: que la fatigue soit pilotée. Et c’est là que ton dossier “parle” entre les lignes.</p><p>Ton contexte, c’est: sommeil 6–7h, stress modéré, énergie variable, récupération parfois insuffisante, motivation élevée mais fluctuante, entraînement le matin avec temps limité. Ça ressemble à un moteur performant… mais avec une alimentation en carburant irrégulière et parfois un filtre encrassé. Résultat: certains jours tu tires fort, d’autres jours tu subis la séance.</p><p>Le PPL, quand il marche, c’est parce qu’il crée un bon compromis entre fréquence (tu ré-exposes souvent les muscles) et spécialisation (tu peux pousser fort sur des patterns). Mais chez toi, avec énergie variable + sommeil pas toujours “plein”, le risque numéro 1 n’est pas le split en lui-même. C’est la distribution de l’intensité et la stabilité du stimulus. Si tes séances “bon jour” sont très dures et tes séances “mauvais jour” deviennent du bricolage, ton système nerveux vit en montagnes russes: une journée tu recrutes haut, tu montes l’adrénaline, tu te sens puissant; le lendemain la même charge mentale + le même volume te coûtent plus cher, et tu compenses avec des séries en plus, ou des tempos, ou des finisseurs. Classique. Et c’est là que la récupération “parfois insuffisante” devient un plafond.</p><p>Pour ton objectif double (perte de graisse + gain de muscle), la règle biologique est simple: tu veux un signal musculaire fréquent et de qualité, mais sans créer un coût de fatigue qui te pousse à manger au hasard, à moins bouger le reste de la journée, et à dormir encore moins bien. Le problème, c’est que la fatigue ne vient pas que des poids. Elle vient du trio: volume perçu + intensité perçue + stress de vie. Et toi, tu as déjà un stress modéré et un sommeil qui n’est pas toujours “réparateur long”. Donc ton quota de fatigue totale est plus bas que celui d’un mec qui dort 8h30 stable.</p><p>Ce que je lis comme hypothèse principale (à confirmer car tu ne m’as pas donné ton volume exact, tes charges, ni ta proximité de l’échec): ton programme est probablement trop stable dans sa structure, mais trop instable dans son exécution. Même split, même durée, mais effort réel qui varie beaucoup. Ça te donne deux effets pervers:</p><p>1) Progression floue. Si tu ne sais pas quand tu dois pousser et quand tu dois “construire”, tu stagnes sur les mouvements clés ou tu progresses par à-coups.</p><p>2) Fatigue qui s’accumule en silence. Tu n’as “aucune blessure”, très bien. Mais l’absence de blessure ne veut pas dire récupération optimale; ça veut souvent dire que tu gères… jusqu’au jour où les performances baissent, l’appétit devient erratique, et la motivation “fluctuante” se transforme en procrastination.</p><p>Deuxième hypothèse: avec le temps limité le matin, tu fais peut-être des séances denses, peu de repos, beaucoup d’exos. C’est tentant parce que tu veux “rentabiliser” l’heure. Mais en hypertrophie, si tu compresses trop, tu transformes une séance musculaire en séance cardio-déguisée: tu brûles, tu transpires, tu sors rincé… mais la tension mécanique de qualité (celle qui construit le muscle) peut baisser. Et si tu cherches la perte de graisse abdominale, ce type de fatigue peut aussi augmenter les fringales plus tard (stress + cortisol + baisse de contrôle alimentaire), surtout avec 6–7h de sommeil.</p><p>Troisième hypothèse liée à ta digestion: ballonnements occasionnels. Ce n’est pas “grave” en soi, mais ça peut devenir un frein de performance le matin (inconfort, respiration moins libre, gainage moins efficace, sensation de lourdeur). Et un détail biomécanique important: si ta respiration est perturbée (ballonnements, stress, manque de sommeil), ton tronc stabilise moins bien; tu “pousses” et tu “tires” avec des compensations. Pas de blessure aujourd’hui, mais potentiellement moins de transfert sur les gros patterns (squat/hinge/press/row) et donc moins de progression.</p><p>✓ Points forts: fréquence 4–5/sem + niveau intermédiaire + split PPL = gros potentiel de recomposition</p><p>✗ Risques probables: fatigue mal pilotée (sommeil/énergie variable) + séances trop denses le matin + effort trop souvent proche de l’échec</p><p>→ Priorité: rendre l’effort planifié (jours lourds vs jours “technique/pump”), et intégrer une semaine de décharge régulière</p><p>Direction de périodisation (simple, actionnable, sans chiffres inventés):</p><h4 class="subsection-title">1. BLOC “RECONSTRUCTION DU SIGNAL” (COURT)</h4><p>Objectif: stabiliser l’énergie et la qualité de répétition. Tu gardes ton PPL, mais tu standardises l’intensité: tu arrêtes de transformer chaque séance en test. Tu laisses volontairement une marge sur la plupart des séries (tu dois finir avec la sensation “j’aurais pu en refaire un peu proprement”). Mécanisme: tu réduis la dette nerveuse, tu récupères mieux, et paradoxalement tu peux progresser plus régulièrement parce que la technique reste solide. Pour la perte de graisse, ça aide aussi: moins de fatigue centrale = meilleure NEAT (tu bouges plus spontanément) et moins de compensation alimentaire.</p><h4 class="subsection-title">2. BLOC “PROGRESSION STRUCTURÉE”</h4><p>Objectif: remettre des semaines où tu pousses vraiment, mais sur un nombre limité de mouvements (les piliers). Là, tu choisis tes 1–2 exos principaux par séance, et c’est eux qui portent la progression. Les accessoires servent à compléter sans te cramer. Mécanisme: tu crées une surcharge progressive lisible, sans exploser la récupération.</p><h4 class="subsection-title">3. BLOC “DÉCHARGE / CONSOLIDATION”</h4><p>Objectif: baisser le stress d’entraînement pour laisser le tissu conjonctif, le système nerveux et le sommeil “rattraper”. Chez toi c’est clé, parce que “récupération parfois insuffisante” + “énergie variable” sont des signaux que le corps n’encaisse pas indéfiniment. Une décharge bien placée te fait souvent repartir plus sec et plus fort (meilleure sensibilité à l’entraînement, meilleur contrôle de l’appétit).</p><p>Info à clarifier (parce que ça conditionne tout le diagnostic): sur tes séries “dures”, tu vas à quel point près de l’échec, et est-ce que tu notes tes perfs (charges/répétitions) sur les mouvements principaux? Sans ça, je ne peux pas confirmer si tu stagnes par manque de surcharge ou par excès de fatigue.</p><p>ce que tu fais des demain:</p><p>Séance type (matin, efficace, sans te griller): une Push “pilier + complément”.</p><p>Tu démarres par 1 mouvement principal de poussée (développé couché ou incliné ou militaire selon ton historique) en te concentrant sur des reps propres, respiration calée, repos suffisant pour répéter une vraie performance. Ensuite 1 tirage léger de stabilité/scapula (oui, même sur Push, pour garder les épaules heureuses), puis 2 accessoires ciblés (épaules et triceps) avec exécution lente et amplitude contrôlée. Tu finis par un court travail “core” anti-extension/anti-rotation pour verrouiller le bassin et améliorer le transfert sur tes presses.</p><p>Principe de progression: tu ne changes qu’une variable à la fois. Tant que la technique reste identique, tu cherches à faire un peu mieux que la dernière fois sur le mouvement principal (un peu plus de reps à charge identique, ou un peu plus lourd à reps identiques). Si tu arrives fatigué (mauvaise nuit, énergie basse), tu gardes la séance mais tu réduis l’ambition: même mouvements, meilleure qualité, et tu t’arrêtes plus tôt. Tu construis la régularité. C’est elle qui te donnera le muscle… et la perte de gras qui tient.</p><p>Score : 78/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="analyse-systeme-cardiovasculaire">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">ANALYSE SYSTEME CARDIOVASCULAIRE</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #3b82f640);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#3b82f6" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="89.84954989266808" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">74</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #3b82f6">OPTIMAL</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <h4 class="subsection-title">ANALYSE SYSTEME CARDIOVASCULAIRE</h4><h4 class="subsection-title">1. POSITIONNEMENT MÉTABOLIQUE</h4><p>À 30 ans, avec 4-5 séances/semaine en PPL et 2-5 ans d’expérience, tu n’es clairement pas dans la case “sédentaire”. Ton corps connaît l’effort, la tension mécanique, l’organisation en split, et ça, c’est déjà une base solide. Mais je ne te place pas non plus dans la case “athlète métabolique”. Pourquoi ? Parce que ton profil raconte une histoire très précise: tu as une bonne présence à l’entraînement, mais ton système “énergie + récup” n’est pas stabilisé. Tu me dis énergie variable selon les jours, sommeil 6-7h, récupération parfois insuffisante, stress modéré, motivation élevée mais fluctuante. C’est typiquement le tableau d’un moteur performant… alimenté de façon irrégulière, avec parfois un filtre à air un peu encrassé. Tu avances, mais pas toujours avec la même qualité de carburant.</p><p>Ton objectif “perte de graisse + gain de muscle”, et spécifiquement la graisse abdominale, met le système cardiovasculaire au centre du jeu, pas en option. Parce que la graisse abdominale, très souvent, c’est moins une question de “volonté” que de contexte interne: stress, sommeil, sensibilité à l’insuline, rythme circadien, et capacité à oxyder les graisses au quotidien. Et là, tes signaux “énergie variable” + “récup parfois insuffisante” sont des indices compatibles avec un socle aérobie pas encore assez solide pour amortir la charge de la musculation et du quotidien.</p><p>Ton split PPL sur 1h-1h30, 4-5 fois/semaine, c’est exigeant. Si derrière le système cardio est juste “suffisant”, tu tiens par la motivation. Quand la motivation baisse, tout baisse: l’intensité, la qualité technique, la dépense totale, puis l’appétit peut devenir plus erratique, puis le sommeil se fragilise… et tu te retrouves à forcer avec un système nerveux qui compense. Le résultat? Tu peux continuer à progresser en charges, mais la recomposition corporelle (perdre du gras tout en gardant/augmentant le muscle) devient plus lente, plus “capricieuse”.</p><p>Je note aussi un détail qui n’en est pas un: temps limité le matin. Ça influence énormément la construction cardio, parce que la plupart des gens finissent par “caser” le cardio n’importe où, ou le supprimer. Or, ton système cardiovasculaire, c’est ton amortisseur. Sans amortisseur, chaque séance jambes ou dos devient plus coûteuse pour ton système nerveux, et tu payes ça en récupération, en sommeil, et parfois en digestion (ballonnements occasionnels = souvent corrélé à stress/rythme/respiration et redistribution du flux sanguin).</p><p>Info à clarifier: tu ne m’as pas donné ta fréquence cardiaque au repos, ni une mesure simple de ton essoufflement sur effort facile. Sans ça, je peux positionner ton profil de façon qualitative, mais pas calibrer finement la priorité cardio.</p><h4 class="subsection-title">2. RÉCIT CLINIQUE CARDIOVASCULAIRE</h4><p>La fréquence cardiaque au repos, c’est un peu ton “baromètre de charge interne”. Pas un verdict. Un signal. Quand elle est basse et stable, ça raconte souvent un système parasympathique qui sait reprendre la main: tu récupères, tu digères, tu dors mieux, tu gères mieux les variations de stress. Quand elle est plus haute que d’habitude, ou instable d’un jour à l’autre, c’est souvent un indice que le corps est en mode “je compense”: manque de sommeil, stress, inflammation, trop d’intensité, pas assez d’aérobie, ou tout ça ensemble.</p><p>Dans ton cas, avec sommeil 6-7h et récup parfois insuffisante, l’hypothèse la plus probable, c’est que ta fréquence cardiaque au repos (si on la mesurait) serait parfois “correcte”, parfois plus haute les semaines chargées. Et ce yo-yo, il colle parfaitement à “énergie variable”. Ton système cardio ne sert pas juste à courir: il sert à livrer de l’oxygène, à évacuer du CO2, à tamponner l’acidité, à gérer la température, et même à aider la récupération musculaire via la perfusion. Quand il est sous-dimensionné, tu peux t’entraîner… mais tu récupères comme si tu avais toujours un petit bruit de fond de fatigue.</p><p>Maintenant, la différence cruciale: “faire du cardio” versus “construire tes mitochondries”.</p><p>Faire du cardio, c’est transpirer, monter le cœur, brûler des calories sur le moment. C’est la vision la plus courante. Utile, mais superficielle si c’est mal dosé.</p><p>Construire tes mitochondries, c’est bâtir des centrales énergétiques plus nombreuses et plus efficaces dans tes muscles (et même dans certains tissus métaboliques). C’est une adaptation lente, structurante. Et c’est elle qui change ton quotidien: meilleur niveau d’énergie, meilleure gestion de l’appétit, meilleure sensibilité à l’insuline, meilleure capacité à “utiliser” la graisse comme carburant, meilleure récupération entre les séries, et souvent une meilleure tolérance au volume d’entraînement en muscu.</p><p>Quand tu fais uniquement du cardio “dur” (trop vite, trop haut, trop souvent), tu crées un stress systémique supplémentaire. Ça peut être contre-productif pour toi, surtout avec sommeil pas toujours optimal et stress modéré. Tu rajoutes une dette. Tu brûles, mais tu ne construis pas forcément.</p><p>À l’inverse, quand tu fais du cardio en Zone 2, tu construis. Tu mets le corps dans une intensité où il y a assez d’oxygène pour que la filière aérobie fasse le travail proprement. C’est là que les enzymes liées à l’oxydation des graisses s’expriment davantage, que la densité mitochondriale peut augmenter, et que ton corps apprend à produire beaucoup d’énergie sans déclencher l’alarme générale.</p><p>La Zone 2, concrètement, c’est l’effort où tu peux parler en phrases complètes, mais tu sens que tu travailles. Tu pourrais tenir longtemps. Tu respires plus fort, mais tu n’es pas en panique. C’est l’allure du “je pourrais continuer 45 minutes, mais je ne suis pas en balade”. Et c’est exactement cette zone qui devient le socle de la combustion des graisses, pas parce que c’est magique, mais parce que c’est l’intensité où tu entraînes ton corps à utiliser les lipides de façon efficace, durable, et répétable.</p><p>Exemple concret: si tu fais 20 minutes très dures, tu vas surtout taper dans des carburants rapides (glycogène), créer beaucoup de métabolites, et demander une grosse récupération. Tu peux perdre des calories, oui. Mais derrière, tu peux avoir plus faim, plus de fatigue, et une séance PPL le lendemain moins qualitative.</p><p>Si tu fais 35-45 minutes en Zone 2, tu ne sors pas détruit. Tu sors “mieux”. Tu as chauffé le système, amélioré la circulation, entraîné la machinerie aérobie. Et ce gain-là, tu le récupères en muscu: entre les séries tu récupères plus vite, tu maintiens mieux tes performances sur la séance entière, tu gères mieux les semaines à 4-5 entraînements.</p><p>Dans ton objectif “perte de graisse abdominale”, la Zone 2 a aussi un rôle indirect très puissant: elle baisse le bruit de fond du stress. Pas toujours immédiatement, mais au fil des semaines. Un système aérobie plus robuste = un système nerveux qui revient plus facilement au calme. Et quand le corps revient au calme, le sommeil se consolide, la digestion se détend (les ballonnements occasionnels sont souvent pires quand tu restes coincé en mode “sympathique”), et l’appétit devient plus prévisible. Tout est connecté.</p><p>Ce que je veux éviter pour toi, vu tes contraintes de temps le matin, c’est le piège du “cardio alibi”: 10 minutes au hasard, trop vite, entre deux obligations, qui te fatigue sans te construire. Si on met du cardio, il doit être chirurgical: la bonne intensité, la bonne durée, la bonne place par rapport à tes séances PPL, et une progression qui respecte ta récup.</p><p>Actions de mesure (pour arrêter de piloter à l’instinct):</p><p>→ Fréquence cardiaque au repos: au réveil, avant café, allongé puis assis, 3 jours de suite. Note la valeur et surtout la tendance.</p><p>→ Test Zone 2 simple sans matériel: marche rapide ou vélo où tu peux parler en phrases complètes pendant 30 minutes. Si tu finis en ayant l’impression d’avoir “fait une séance dure”, c’était trop haut. Si tu pouvais chanter, trop bas.</p><p>→ Si tu as une montre: on calibrera une fourchette de Zone 2 à partir de ton ressenti + respiration, plutôt que de te donner un chiffre au hasard (interdit et inutile sans données).</p><p>✓ Point positif: ta régularité en muscu et ton niveau intermédiaire te donnent un corps déjà “répondant”.</p><p>✗ Point limitant: énergie variable + récup parfois insuffisante = indice qu’il manque un socle aérobie stable et/ou que le stress/sommeil grignotent ta capacité d’adaptation.</p><p>→ Action immédiate: intégrer 2 blocs Zone 2 courts et propres par semaine (même 25-35 min), placés pour soutenir la récup, pas la saboter.</p><p>Score : 74/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="analyse-sommeil-et-recuperation">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">ANALYSE SOMMEIL ET RECUPERATION</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #f59e0b40);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#f59e0b" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="131.31857292005336" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">62</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #f59e0b">MOYEN</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Tu dors 6-7h. Sur le papier, ça “passe”. Dans la vraie vie, avec 4-5 entraînements PPL/semaine, un stress modéré, une énergie qui fait le yo-yo et une récupération parfois insuffisante… 6-7h devient une zone grise. Pas catastrophique, mais pas assez stable pour construire du muscle tout en asséchant l’abdomen.</p><p>Je vais te décrire ce que je vois comme scénario nocturne le plus cohérent avec tes signaux. Ce n’est pas un diagnostic médical, c’est un diagnostic de dynamique hormonale probable, à confirmer par quelques observations simples.</p><h4 class="subsection-title">1. LE RYTHME CIRCADIEN DÉRÉGLÉ</h4><p>Ton profil “énergie variable selon les jours” + “récupération parfois insuffisante” + “temps limité le matin” me fait penser à un classique moderne : tu te lèves avec le cerveau encore dans le brouillard, et tu commences à vraiment te sentir vivant plus tard dans la journée. Puis le soir… tu te sens plus “branché”. Plus lucide. Parfois même plus motivé.</p><p>C’est souvent la signature d’une courbe de cortisol inversée ou aplatie.</p><p>Normalement, le cortisol est ton starter interne. Il doit monter avant le réveil, te donner une montée de vigilance, puis redescendre progressivement. Chez toi (hypothèse), il fait l’inverse ou il reste trop haut trop tard. Résultat : le matin, tu es là physiquement, mais ton système nerveux n’a pas reçu le “top départ” propre. Tu compenses. Café, rush, scroll, musique, stress mental, ou juste l’inertie.</p><p>Et le soir, quand enfin la pression retombe, ton cerveau récupère de la bande passante. Sauf que cette “clarté tardive” est un piège. Elle te donne l’impression que tu fonctionnes mieux la nuit… mais elle repousse l’endormissement, ou elle rend le sommeil plus léger. Tu dors, oui. Mais tu ne récupères pas comme tu pourrais.</p><p>Le stress modéré joue ici un rôle sournois. Ce n’est pas forcément le stress “émotion”. C’est aussi le stress de charge globale : entraînements fréquents, objectifs ambitieux, digestion parfois ballonnée, journées où tu dois être efficace alors que tu n’as pas ton temps le matin. Le corps additionne tout. Il ne fait pas la différence entre un deadline, un entraînement jambes lourd, et une nuit un peu trop courte. Pour lui, c’est juste “demande énergétique”.</p><p>Quand cette demande se répète, ton axe hypothalamo-hypophyso-surrénalien (le circuit cerveau → glandes surrénales) apprend une mauvaise habitude : rester en vigilance en fin de journée, parce que c’est là que tu as “tenu bon” et que tu as fini ce que tu devais faire. Ton corps devient très bon… à ne pas décrocher.</p><p>Conséquence directe : tu peux te coucher avec de la fatigue musculaire, mais avec un cerveau qui négocie encore. Et si tu t’endors quand même, le sommeil est plus fragmenté ou moins profond. Tu te réveilles “pas cassé”, mais pas rechargé. Et le lendemain, tu repars avec une dette.</p><p>Info à clarifier : à quelle heure tu te couches et tu te lèves la plupart des jours, et surtout si tu as des réveils nocturnes ou un endormissement long. Sans ça, je ne peux pas distinguer entre “sommeil court” et “sommeil parasité”.</p><h4 class="subsection-title">2. LA CHIMIE DU SOMMEIL PROFOND</h4><p>Le muscle, la perte de gras, l’humeur, la faim… tout ça se joue beaucoup dans une fenêtre : les premières heures de la nuit, quand le sommeil profond est censé dominer.</p><p>Deux hormones sont au centre du jeu.</p><p>La mélatonine, d’abord. Elle ne t’endort pas comme un somnifère. Elle donne le signal biologique que “la nuit commence”. Elle synchronise. Elle prépare le terrain : baisse de température corporelle, frein sur l’éveil, bascule vers la réparation.</p><p>Ensuite, l’hormone de croissance (GH). Elle est libérée en gros pulsations pendant le sommeil profond, surtout en début de nuit. C’est un peu ton chantier nocturne : réparation des tissus, soutien de la synthèse protéique, meilleure gestion des substrats énergétiques, et un environnement plus favorable à la recomposition corporelle.</p><p>Le problème, c’est que la GH aime deux choses : un vrai sommeil profond, et un système nerveux qui accepte de lâcher.</p><p>Si ton cortisol reste trop haut le soir, c’est comme dormir avec une alarme en mode “veille”. Tu peux être inconscient, mais ton corps reste sur le qui-vive. Dans cette ambiance, le sommeil profond se fait grignoter. Pas forcément visible au réveil, mais visible dans la récupération.</p><p>Et c’est là que la lumière bleue vient pirater le cerveau.</p><p>L’exposition aux écrans le soir (hypothèse, mais ultra fréquente) envoie un signal direct à ta rétine, puis à ton noyau suprachiasmatique, l’horloge centrale. Message reçu : “il fait jour”. Le cerveau retarde la mélatonine. Tu te sens moins somnolent, tu repousses naturellement l’heure du coucher, ou tu t’endors mais avec une architecture de sommeil moins efficace.</p><p>Ce piratage n’est pas juste “psychologique”. C’est biochimique. Tu te retrouves avec une mélatonine plus tardive et parfois plus basse, et une fenêtre de GH moins optimale. En clair : tu dors, mais tu n’actives pas pleinement le mode réparation.</p><p>Ajoute à ça un détail qui compte pour toi : ballonnements occasionnels. Quand la digestion n’est pas calme le soir, elle peut maintenir une activation sympathique légère, ou provoquer des micro-réveils. Parfois tu ne t’en souviens pas. Mais ton système nerveux, lui, s’en souvient. Et le sommeil profond est le premier à trinquer.</p><p>→ Action immédiate simple (sans gadget) : pendant 7 jours, observe deux choses dans un carnet ou notes : heure d’extinction des écrans et sensation au réveil (clarté mentale de 0 à 10). Tu verras vite si ton cerveau est “retardé” par l’environnement du soir.</p><h4 class="subsection-title">3. CONSÉQUENCES SUR LE PHYSIQUE</h4><p>Tu veux perdre de la graisse abdominale et gagner du muscle. Le sommeil est le multiplicateur silencieux… ou le saboteur discret.</p><p>Quand le sommeil profond est amputé, la réparation musculaire ralentit. Pas parce que “le muscle ne pousse pas”, mais parce que le ratio signal/anabolisme se dégrade. Tu t’entraînes 4-5 fois par semaine, donc tu crées des micro-lésions et tu envoies un signal de progression. Sauf que la nuit, au lieu d’avoir une équipe complète de réparation, tu as une équipe réduite. Tu récupères “assez” pour refaire une séance, mais pas assez pour surcompenser. Et là, tu stagnes, ou tu progresses par à-coups. Motivation élevée… puis fluctuante. Ça colle.</p><p>Côté graisse abdominale, le mécanisme est brutal et très logique.</p><p>Si le cortisol est trop haut trop tard, il favorise une disponibilité énergétique rapide. Le corps se prépare à gérer une menace, pas à optimiser un six-pack. Et un cortisol mal timé influence aussi l’insuline et l’appétit : plus de fringales, plus de recherche de sucre ou de gras le soir, ou une sensation de “je mérite un truc”. Même sans excès énorme, ça suffit à maintenir une petite dérive calorique sur la semaine.</p><p>En parallèle, le manque de sommeil ou le sommeil de mauvaise qualité dérègle deux hormones de l’appétit : la leptine (satieté) et la ghréline (faim). Tu ne te rends pas forcément compte que tu manges plus. Tu te rends juste compte que tu résistes moins. Et sur un objectif perte de gras, la résistance compte autant que la discipline.</p><p>Le ventre, lui, est une zone très réceptive au contexte hormonal. Pas parce que tu “stockes forcément” là, mais parce que le stress chronique, même modéré, et le sommeil imparfait favorisent une tendance à la rétention et au stockage central chez beaucoup d’hommes. C’est une hypothèse cohérente avec ton objectif “graisse abdominale” et ton ressenti de récupération variable.</p><p>Dernier point : entraînement PPL avec 4-5 séances. C’est efficace. Mais c’est exigeant. Si tu cumules charge mécanique + volume + intensité, sans sommeil solide, tu te retrouves dans un entre-deux : tu stimules beaucoup, tu récupères moyen. Tu peux alors ressentir des journées “on” et “off”, exactement comme tu l’as écrit. Ton énergie devient une loterie. Et une loterie, c’est l’ennemi de la recomposition corporelle.</p><p>✓ Point positif : tu n’as pas de blessures, motivation souvent élevée, et une routine d’entraînement déjà sérieuse. Le levier sommeil va te donner un rendement énorme.</p><p>✗ Point négatif : 6-7h instables + récupération parfois insuffisante = terrain parfait pour cortisol tardif, sommeil profond amputé, et stagnation ventre/muscle.</p><p>→ Action immédiate : pendant 10 jours, vise une heure de coucher fixe (même le week-end) et une dernière heure “basse stimulation” (lumière tamisée, pas d’écran proche des yeux si possible). Ensuite seulement, on ajuste training/nutrition, parce que là tu auras une base hormonale plus propre.</p><p>Score : 62/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="protocole-matin-anticortisol">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">PROTOCOLE MATIN ANTI-CORTISOL</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #5eead440);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#5eead4" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="48.38052686528283" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">86</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #5eead4">ELITE</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Tu veux perdre de la graisse abdominale tout en construisant du muscle, avec 4-5 séances PPL/semaine. Donc tu joues sur deux tableaux qui tirent parfois dans des directions opposées: performance (besoin de carburant + récupération) et déficit énergétique (fat loss). Dans ce contexte, ton matin devient soit ton meilleur allié… soit le moment où tu poses une dette hormonale que tu paies à 16h-22h (fringales, envie de sucre, baisse de motivation, entraînement “mou”, sommeil plus léger).</p><p>Chez toi, je note trois leviers qui se parlent en boucle:</p><p>✓ Stress modéré + énergie variable: typique d’un cortisol qui “déborde” un peu ou qui est mal calé (pas forcément trop haut tout le temps, mais mal rythmé).</p><p>✗ Sommeil 6-7h: c’est “ok sur le papier”, mais si la qualité n’est pas stable, ton corps compense avec du cortisol et de l’adrénaline pour te tenir réveillé. Résultat: tu peux être productif… mais pas serein.</p><p>✗ Ballonnements occasionnels: souvent un signe que le système digestif n’aime pas les matins pressés (café trop tôt, petit-déj sucré, alimentation avalée vite, respiration haute). Et digestion perturbée = signal de “menace” pour le corps = cortisol plus facile à déclencher.</p><p>L’objectif du protocole n’est pas de “faire baisser le cortisol”. C’est de le remettre à sa place: un pic franc le matin (énergie, vigilance), puis une descente progressive. Quand tu rates ça, ton corps garde du cortisol plus tard dans la journée, et là tu stockes plus facilement au niveau abdominal (surtout si tu es en déficit) et tu récupères moins bien de tes séances.</p><p>Info à clarifier (parce que ça change tout): à quelle heure tu te réveilles en semaine, et est-ce que tu prends un café dans la première demi-heure? Avec ton “temps limité le matin”, je t’ai construit une version efficace, compressible, sans fioriture.</p><h4 class="subsection-title">PROTOCOLE MATIN ANTI-CORTISOL</h4><p>Objectif : Resynchroniser ton pic de cortisol le MATIN (ou il doit etre)</p><h4 class="subsection-title">REVEIL (T+0) </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Pas de snooze (chaque snooze = confusion circadienne)</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Premiere action : assis au bord du lit, 6 respirations lentes par le nez (inspire 4 sec, expire 6 sec), mains sur le bas des côtes pour sentir que ça descend (pas dans les épaules)</span>
+          </div>
+        <p>T+0 a T+5 min :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Hydratation : 500ml eau + 1 pincee de sel (ou sel fin) + (optionnel) un filet de citron si tu aimes</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Mouvement : 10 squats au poids du corps + 10 rotations d’épaules lentes + 20 pas de marche dans l’appart (l’idée: faire circuler, pas “faire du sport”)</span>
+          </div>
+        <p>T+5 a T+15 min :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Lumiere : 10 min dehors si possible, visage exposé à la lumière (pas besoin de regarder le soleil), PAS de lunettes de soleil</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Si pas de soleil : Lampe 10 000 lux a 30cm pendant 10 min</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Pendant ces 10 min: marche lente ou immobile, mais pas d’écran (tu “donnes l’heure” à ton cerveau)</span>
+          </div>
+        <p>T+15 a T+45 min :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Douche : 2-3 min chaude normale, puis 30 sec eau froide sur nuque et haut du dos (pas besoin d’être héroïque; l’objectif est un signal nerveux bref et propre)</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Habillage</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Mini-check mental (10 sec) : tu choisis 1 priorité du jour, pas 12. Le cortisol adore les listes infinies.</span>
+          </div>
+        <p>T+45 a T+60 min - PETIT-DEJEUNER :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>ZERO sucre, ZERO fruit, ZERO jus</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Proteines obligatoires : 30-40g de protéines (objectif simple: “dose muscu” dès le matin pour calmer l’appétit et stabiliser l’énergie)</span>
+          </div>
+        <p>Sources: 4 œufs entiers, ou 200-250g de skyr/fromage blanc, ou 1 shake whey (30-35g) + un aliment solide à côté si possible</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Graisses saines : huile d’olive, avocat, oléagineux (amandes/noix), jaune d’œuf</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Exemples de petit-dej :</span>
+          </div>
+        <p>Option 1 : Omelette “anti-crash”</p><p>4 œufs + épinards (ou légumes surgelés) + 1 c. à soupe huile d’olive + sel/poivre. Si tu as faim: ajoute 1 yaourt nature à côté.</p><p>Option 2 : Bol express stable</p><p>250g skyr ou fromage blanc + 30g noix/amandes + cannelle. (Si tu veux du goût sans sucre: zeste de citron ou cacao non sucré.)</p><p>Option 3 : Version “temps ultra limité”</p><p>1 whey (30-35g) dans eau + 2 œufs durs (préparés la veille) + 1 poignée d’amandes. Simple, transportable, zéro pic glycémique.</p><p>T+60 a T+90 min :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Premier cafe SEULEMENT apres ce delai</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Pourquoi : le café trop tôt se superpose au pic naturel de cortisol et perturbe l’adénosine, ce qui augmente le risque de coup de barre et de cravings plus tard</span>
+          </div>
+        <h4 class="subsection-title">INTERDICTIONS ABSOLUES LE MATIN </h4><p>x Pas de telephone au lit</p><p>x Pas de reseaux sociaux avant 10h</p><p>x Pas de nouvelles/infos negatives</p><p>x Pas de reunion stressante avant 10h si possible</p><p>DUREE D'APPLICATION : 21 jours minimum pour reset circadien</p><p>Score : 86/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="protocole-soir-verrouillage-sommeil">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">PROTOCOLE SOIR VERROUILLAGE SOMMEIL</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #5eead440);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#5eead4" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">100</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #5eead4">ELITE</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Tu dors 6-7h. Sur le papier, “ça passe”. Dans la vraie vie, avec 4-5 entraînements/semaine, une perte de graisse ciblée (abdominale) et une énergie “variable”, c’est souvent là que ça coince: tu avances, puis tu stagnes, puis tu forces… et ta récup devient “parfois insuffisante”. Ton système nerveux fait le yo-yo.</p><p>Je te traduis ce qui se joue en coulisses, simplement:</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Stress modéré + motivation fluctuante = cortisol et adrénaline qui restent “allumés” plus tard que tu ne le crois. Résultat: tu t’endors peut-être, mais la qualité (N3 profond + REM) est moins dense. Tu te réveilles “pas cassé”… mais pas chargé non plus.</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Digestion avec ballonnements occasionnels: si le dîner est trop lourd/trop tard, ton corps choisit “digérer” au lieu de “réparer”. Le sommeil profond baisse, la température interne reste plus haute, et tu payes le lendemain (faim plus difficile à contrôler, énergie instable, entraînement moins propre).</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Objectif perte de graisse + gain de muscle: tu as besoin d’un sommeil qui verrouille la sensibilité à l’insuline, la leptine/ghréline (appétit), la testostérone et l’hormone de croissance nocturne. Pas besoin d’être parfait. Mais besoin d’être régulier.</span>
+          </div>
+        <p>Info à clarifier (important pour ajuster au millimètre): ton heure de réveil habituelle en semaine + l’heure à laquelle tu t’entraînes quand tu t’entraînes le soir. Là, je te donne une version applicable dès ce soir, puis on ajustera l’heure de coucher cible.</p><h4 class="subsection-title">PROTOCOLE SOIR VERROUILLAGE SOMMEIL</h4><p>Objectif : Preparer ton corps au sommeil PROFOND (N3 + REM)</p><h4 class="subsection-title">H-3 AVANT COUCHER </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Dernier repas : Proteines + legumes, glucides moderes</span>
+          </div>
+        <p>Exemple simple et efficace (anti-ballonements): une protéine facile à digérer (poisson blanc, œufs, poulet) + légumes cuits (pas une montagne de crudités) + une portion de glucides “calmes” si tu t’entraînes (riz/pommes de terre/avoine selon tolérance). L’idée: rassasier sans gonfler.</p><p>Si tu sais que certains aliments te ballonnent (hypothèse fréquente): réduis le combo “très fibreux + très gras” le soir. C’est le duo qui fermente et ralentit.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Fin de l'entrainement si tu t'entraines le soir</span>
+          </div>
+        <p>Si tu t’entraînes tard: termine au plus tard H-3. Sinon ton système nerveux reste en mode “combat”, même si tu es fatigué.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Fin de la cafeine a 14h (rappel)</span>
+          </div>
+        <p>Même si tu “sens” que ça ne te fait rien: la caféine peut rester dans le sang et fragmenter le sommeil profond. Avec une énergie variable, tu as tout à gagner à couper net tôt.</p><h4 class="subsection-title">H-2 AVANT COUCHER </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Baisser les lumieres principales</span>
+          </div>
+        <p>Tu envoies un signal clair au cerveau: “la journée se termine”. Ça fait monter la mélatonine naturellement, et ça aide aussi la digestion à se calmer.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Activer le mode "Night Shift" sur tous les ecrans</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>OU lunettes anti-lumiere bleue (filtrant 100% des bleus)</span>
+          </div>
+        <p>Si tu gardes un écran, même en mode night shift, la luminosité + la stimulation mentale suffisent souvent à maintenir un niveau d’éveil. Le but ici n’est pas “anti-tech”, c’est “anti-activation”.</p><p>H-1.5 AVANT COUCHER :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Supplements du soir :</span>
+          </div>
+        <p>Magnesium bisglycinate : [X mg]</p><p>Zinc : [X mg]</p><p>Autre si pertinent : Glycine : [X g]</p><p>Je ne mets pas de dosage au hasard: il me manque tes habitudes (suppléments actuels, sensibilité digestive, alimentation, tolérance). Donc on fait propre:</p><p>→ Action immédiate (ce soir sans risque): pas de supplément nouveau si tu n’as jamais testé. On verrouille d’abord la routine.</p><p>→ Si tu veux intégrer dès cette semaine: dis-moi ce que tu prends déjà et si tu as déjà eu des troubles digestifs avec le magnésium. Je te donne alors un dosage précis et progressif, orienté sommeil + récupération musculaire.</p><p>Pourquoi ces options:</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Magnésium bisglycinate: aide à baisser l’excitabilité nerveuse (moins de “cerveau qui tourne”), soutien de la relaxation musculaire.</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Zinc: utile si apports alimentaires insuffisants, mais peut donner nausées chez certains à jeun.</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Glycine: souvent intéressante quand l’endormissement est ok mais que le sommeil est “pas réparateur” (hypothèse cohérente avec ton énergie variable).</span>
+          </div>
+        <h4 class="subsection-title">H-1 AVANT COUCHER </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>FIN DES ECRANS (non negociable)</span>
+          </div>
+        <p>C’est le verrou n°1 pour toi. Motivation fluctuante = tu as besoin de règles simples, pas de négociations quotidiennes.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Activite calme : lecture papier, etirements doux, musique calme</span>
+          </div>
+        <p>Étirements doux = pas une séance de mobilité agressive. Juste de quoi dire à ton corps: “on descend”.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Preparation chambre :</span>
+          </div>
+        <p>Temperature : 18-19C (ouvre la fenetre 30 min avant si besoin)</p><p>Obscurite totale (masque de sommeil si besoin)</p><p>Silence (bouchons d'oreilles ou bruit blanc si voisins bruyants)</p><p>Le froid léger + obscurité, c’est une combinaison qui favorise la chute de température centrale. Et cette chute, c’est un des interrupteurs biologiques du sommeil profond.</p><p>H-0.5 AVANT COUCHER :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Routine hygiene</span>
+          </div>
+        <p>Fais-la toujours dans le même ordre. Ton cerveau adore les séquences: ça devient un “couloir” vers le sommeil.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Douche tiede (PAS chaude) pour faire baisser la temperature centrale</span>
+          </div>
+        <p>Tiède, pas glacée. Le but est d’aider la thermorégulation, pas de te réveiller.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Respiration de decompression : 4-7-8 (inspire 4s, bloque 7s, expire 8s) x 4</span>
+          </div>
+        <p>Si tu sens que 7s de blocage te stresse, adapte (hypothèse possible): garde l’expiration plus longue que l’inspiration, c’est ça le vrai levier parasympathique.</p><h4 class="subsection-title">AU LIT </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Heure de coucher cible : [X h] (basee sur son reveil souhaite + 5 cycles de 90 min)</span>
+          </div>
+        <p>Il me manque ton heure de réveil. Donc ce soir, tu fais simple:</p><p>→ Action immédiate: choisis une heure fixe de réveil demain, puis remonte de 7h30 (5 cycles) pour ton heure de coucher cible. Si tu sais que tu es plutôt “7h” en ce moment, vise 7h30 avant de viser 8h. On construit, on ne fantasme pas.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Position : sur le dos ou sur le cote, jamais sur le ventre</span>
+          </div>
+        <p>Sur le ventre, tu forces souvent la nuque et le bas du dos, et tu peux augmenter les micro-réveils. On évite.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Si pensees intrusives : ecrire 3 lignes dans un carnet puis fermer</span>
+          </div>
+        <p>Pas un journal intime. Trois lignes. “Ce que je dois retenir / ce que je ferai demain / ce qui peut attendre.” Tu décharges le cerveau sur papier.</p><h4 class="subsection-title">SI REVEIL NOCTURNE </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Pas de telephone</span>
+          </div>
+        <p>Un regard = une claque de lumière + stimulation + dopamine. Et tu repars pour un tour.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Pas de lumiere forte</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Respiration lente</span>
+          </div>
+        <p>Inspire tranquille, expire plus long. Tu guides ton système nerveux comme on ralentit une voiture en descente.</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Si > 20 min eveille : se lever, activite calme, revenir quand fatigue</span>
+          </div>
+        <p>Rester au lit à lutter = tu conditionnes ton lit à l’éveil. On casse ça tout de suite.</p><h4 class="subsection-title">INTERDICTIONS ABSOLUES LE SOIR </h4><p>x Alcool (detruit le sommeil REM)</p><p>x Repas lourd apres 21h</p><p>x Discussion conflictuelle/stressante</p><p>x Travail/emails apres 21h</p><p>x Sport intense apres 20h</p><p>Dernier point, très “toi” au vu du profil: temps limité le matin.</p><p>Donc on ne mise pas sur une routine matinale compliquée pour compenser. On mise sur un soir carré. Parce que c’est le soir qui décide de ton énergie du lendemain, de ta faim, et de la qualité de ton training. Et donc… de ta recomposition (perte de gras + muscle).</p><p>✓ Points forts: motivation élevée, fréquence d’entraînement régulière, aucune blessure déclarée (donc marge de progression énorme si la récup suit)</p><p>✗ Point faible actuel: sommeil pas assez verrouillé pour soutenir une recomposition durable + énergie trop variable</p><p>→ Action immédiate (ce soir): coupure écrans H-1 + chambre froide/obscure + dîner “simple à digérer”</p><p>Score : 78/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="protocole-digestion-14-jours">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">PROTOCOLE DIGESTION 14 JOURS</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #5eead440);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#5eead4" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">100</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #5eead4">ELITE</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Tu me dis “ballonnements occasionnels”, pas d’intolérances identifiées, une énergie qui joue au yo-yo, 6-7h de sommeil, stress modéré, et entraînement PPL 4-5 fois/semaine. Le tableau typique du gars qui “encaisse” beaucoup… et dont le système digestif finit parfois par lever la main.</p><p>Je te pose le mécanisme, simplement: quand tu t’entraînes souvent avec une récup “parfois insuffisante”, ton corps arbitre. Il met du budget sur: muscles, système nerveux, vigilance. Et il coupe ailleurs. La digestion est une des premières à se faire rationner, parce qu’elle n’est pas “urgente” pour survivre à une journée stressante. Résultat: moins d’acide gastrique (donc protéines moins bien préparées), vidange gastrique plus lente ou chaotique, fermentation plus facile (ballonnements), et parfois une perméabilité intestinale qui augmente un peu (pas une maladie, juste une barrière qui devient plus “irritable”). Et derrière, ça se connecte à tout: sommeil moins profond ↔ appétit plus instable ↔ choix alimentaires plus impulsifs ↔ digestion plus chargée ↔ énergie plus variable. Le serpent se mord la queue.</p><p>Info à clarifier (parce que là tu ne me l’as pas donné et ça change tout): tes ballonnements arrivent plutôt après quels repas (gros repas du soir? produits laitiers? pain/pâtes? repas rapides avalés)? Et est-ce que tu as aussi des signes associés: rots, reflux, gaz, selles irrégulières, sensation de lourdeur? Sans ça, je te fais un protocole “propre”, mais je le garde volontairement standardisé et très mesurable.</p><p>Objectif : Calmer l'inflammation, reparer l'intestin, eliminer les intolerants</p><p>PHASE 1 : ELIMINATION (Jour 1 a 7)</p><p>L’idée n’est pas de te “punir”. C’est un reset court: on enlève ce qui irrite le plus souvent, on simplifie la digestion, on stabilise la glycémie, et on observe. Ton signal de réussite: ventre plus plat après repas, moins de gaz, énergie plus stable, faim plus prévisible.</p><p>ALIMENTS INTERDITS (liste stricte) :</p><p>x Gluten (ble, orge, seigle, epeautre)</p><p>x Produits laitiers de vache</p><p>x Sucres ajoutes et edulcorants</p><p>x Alcool (100% stop)</p><p>x Aliments transformes/industriels</p><p>x Huiles vegetales (tournesol, mais, soja)</p><p>x Cafe (limite a 1/jour, apres un repas)</p><p>x Legumineuses (temporairement)</p><p>Pourquoi je suis strict là-dessus, dans ton cas (ballonnements + énergie variable): gluten/laitages/sucres/ultra-transformés, c’est le combo qui augmente facilement la fermentation, l’appel d’eau intestinal, et l’inflammation de bas grade chez beaucoup de gens. Et les huiles riches en oméga-6 + les plats industriels, c’est le terreau parfait pour une digestion “lourde” et une récupération moins propre. Le café à jeun, surtout si tu es pressé le matin, peut aussi te donner un faux “boost” tout en aggravant l’irritation gastrique et en déréglant la motricité intestinale. Donc on le cadre, on ne le diabolise pas.</p><h4 class="subsection-title">ALIMENTS AUTORISES </h4>
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Proteines : viande, poisson, oeufs</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Legumes : tous (sauf pomme de terre en exces)</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Fruits : 1-2 portions max, hors repas</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Feculents : riz basmati, patate douce, quinoa</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Graisses : huile olive, avocat, noix</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Boissons : eau, tisanes</span>
+          </div>
+        <p>Note perso: vu ton objectif recomposition (perte de graisse + muscle), on garde des protéines à chaque repas. Elles stabilisent la glycémie, réduisent les cravings, et t’aident à récupérer de ton PPL. Les féculents choisis (riz basmati/patate douce/quinoa) sont là pour alimenter l’entraînement sans charger la digestion comme le feraient certains pains/pâtes + sauces + produits laitiers.</p><h4 class="subsection-title">STRUCTURE DES REPAS </h4><p>Petit-dej : omelette 2-4 oeufs (selon faim) + légumes faciles (épinards, courgette, champignons) cuits à l’huile d’olive. Si tu dois aller vite: oeufs durs préparés la veille + un reste de riz basmati. Café: seulement après avoir mangé, si tu le prends.</p><p>Dejeuner : assiette simple, “propre” et répétable: 1 paume et demie à 2 paumes de poulet/boeuf/poisson + 2 poings de légumes cuits (digestes) + 1 poing de riz basmati ou quinoa + 1-2 cuillères d’huile d’olive/avocat. Sel OK (souvent ça améliore l’énergie à l’entraînement si tu transpires).</p><p>Collation : seulement si nécessaire (et je préfère que tu n’en aies pas besoin). Option 1: 1 fruit hors repas (banane ou kiwi) + une poignée de noix. Option 2: 2 oeufs durs. Option 3: reste de viande/poisson. Si tu ballonnes facilement, commence par la version “protéines seules”.</p><p>Diner : plus léger, digestion-friendly: poisson ou viande maigre + légumes cuits (carottes, courgettes, haricots verts) + un petit féculent si entraînement le soir (un peu de riz/patate douce). Si entraînement plus tôt dans la journée et que tu veux accélérer la perte de graisse, tu peux réduire le féculent au dîner et garder surtout protéines + légumes + huile d’olive.</p><h4 class="subsection-title">REGLES D'OR </h4><p>1. Macher 20-30 fois chaque bouchee</p><p>2. Pas de liquide pendant le repas (30 min avant/apres)</p><p>3. Manger assis, au calme, sans ecran</p><p>4. Repas en 20 min minimum</p><p>Je te le dis franchement: chez toi, “temps limité le matin” + stress modéré, c’est la recette parfaite pour manger vite, debout, cerveau ailleurs. Et la digestion, c’est un sport parasympathique. Si tu manges comme si tu étais poursuivi, ton corps digère comme si tu étais poursuivi. Donc ces règles ne sont pas du folklore: elles remettent du nerf vague, de la salivation (enzymes), et une séquence digestive normale.</p><p>→ Action immédiate (dès jour 1): 5 respirations lentes avant de manger (inspiration 4s, expiration 6-8s). Ça te met en “mode digestion” en moins d’une minute, et souvent ça réduit les ballonnements sans rien changer d’autre.</p><p>PHASE 2 : REPARATION (Jour 8 a 14)</p><p>Là on garde l’élimination, et on ajoute de quoi “réparer” et stabiliser la barrière intestinale. On ne cherche pas la perfection, on cherche la cohérence.</p><p>On continue l'elimination + on ajoute :</p>
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Glutamine : 5g matin a jeun</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Probiotiques : Lactobacillus rhamnosus GG + Bifidobacterium lactis (idéalement un produit multi-souches incluant ces deux-là)</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Bouillon d'os : 1 tasse/jour (collagene pour la paroi)</span>
+          </div>
+        <p>Pourquoi ces ajouts: la glutamine est un carburant pour les cellules intestinales (entérocytes). Chez les sportifs, elle peut être plus sollicitée (stress d’entraînement + stress de vie). Les probiotiques: je ne te promets pas un miracle, mais ces souches sont parmi les plus documentées sur confort digestif et barrière. Le bouillon d’os/collagène: ce n’est pas “magique”, mais c’est un apport simple en acides aminés (glycine, proline) qui colle bien à un objectif réparation + récupération.</p><p>Hypothèse à tester: si tu sens que les probiotiques te ballonnent au début, tu réduis la dose de moitié pendant 3 jours, puis tu remontes. Ça arrive chez certains profils sensibles.</p><p>REINTRODUCTION (Apres Jour 14) :</p><p>1. Reintroduire UN aliment a la fois</p><p>2. Attendre 48h et noter les symptomes</p><p>3. Si reaction : eliminer 3 mois supplementaires</p><p>4. Ordre de reintroduction : laitages ferments -> legumineuses -> gluten</p><p>Concrètement, tu notes 4 choses pendant la réintroduction (simple, efficace): ballonnements, transit, énergie, qualité du sommeil. Parce que parfois la réaction n’est pas “digestive” mais nerveuse (sommeil fragmenté) ou inflammatoire (fatigue, fringales).</p><p>RESTAURANT / REPAS EXTERIEURS (regles) :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Choisir : grillades + legumes</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Eviter : sauces, panures, plats en sauce</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Demander : cuisson a l'huile d'olive</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Boire : eau plate</span>
+          </div>
+        <p>Astuce terrain: au restau, le piège numéro 1 ce n’est pas le “gluten évident”. C’est les sauces, marinades sucrées, et les huiles de cuisson. Tu fais simple, tu gagnes.</p><p>Ce protocole est STRICT mais TEMPORAIRE (14 jours). Apres, on assouplit.</p><p>Mini-suivi (pour que tu saches si ça marche, sans te prendre la tête):</p><p>✓ après repas: ventre plus calme, moins de pression</p><p>✓ entraînement: énergie moins “pile ou face”</p><p>✓ fin de journée: moins de cravings sucrés</p><p>✗ si constipation/ralentissement net: augmente légumes cuits + un peu plus d’eau en dehors des repas, et garde une portion de féculent au dîner 2-3 jours</p><p>Score : 78/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="protocole-bureau-antisedentarite">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">PROTOCOLE BUREAU ANTI-SEDENTARITE</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #3b82f640);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#3b82f6" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="76.026542216873" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">78</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #3b82f6">OPTIMAL</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Ton vrai adversaire, là, ce n’est pas ton PPL. Ce n’est même pas ton alimentation “flexible”. C’est l’inertie silencieuse des 8-10h assis (hypothèse, parce que tu ne m’as pas donné ton volume exact de bureau). Elle te vole de l’énergie, elle rigidifie tes hanches, elle met tes fessiers “en veille”, elle pousse ta cage thoracique à se fermer, et derrière… tu arrives à l’entraînement avec un corps qui doit d’abord se “ré-animer” avant de performer.</p><p>Et ça se connecte à tout ce que tu m’as écrit:</p><p>✓ Stress modéré + sommeil 6-7h: ton système nerveux n’a pas une grosse marge. Plus tu restes immobile, plus ton cerveau perçoit “fatigue” même si tu n’as pas bougé. Résultat: énergie variable, motivation fluctuante.</p><p>✓ Objectif perte de graisse abdominale: l’immobilité chronique baisse ton NEAT (ta dépense hors entraînement). Tu peux t’entraîner 4-5 fois/semaine et quand même stagner si le reste de la journée est “statique”.</p><p>✓ Ballonnements occasionnels: rester assis longtemps + respiration haute (fréquent au bureau) peut réduire le massage naturel du diaphragme sur le système digestif. Ça ne crée pas tout, mais ça peut amplifier le ressenti “ventre gonflé” certains jours.</p><p>✓ Récup parfois insuffisante: le bureau n’est pas “repos”. C’est une contrainte posturale. Si tu accumules de la raideur + faible circulation, tu récupères moins bien, et tes séances tirent plus sur le mental.</p><p>Info à clarifier: tu ne m’as pas donné ton nombre de pas/jour actuel, ni la durée réelle passée assis. Sans ça, je ne peux pas calibrer finement l’objectif NEAT et le niveau d’agressivité des micro-pauses.</p><h4 class="subsection-title">PROTOCOL BUREAU ANTI-SEDENTARITE</h4><p>Objectif : Reactiver ton corps malgre le travail de bureau</p><p>ROUTINE MICRO-PAUSES (toutes les 45-60 min) :</p><p>OPTION A - PAUSE DEBOUT (2 min) :</p><p>1. Se lever</p><p>2. 10 squats air</p><p>3. 10 cercles de bras</p><p>4. Marcher jusqu'a la fontaine et retour</p><p>Je veux que tu la voies comme un “reset circulatoire” et articulaire. Les squats air relancent chevilles-genoux-hanches, et surtout réveillent les fessiers (eux, ce sont tes amortisseurs et tes stabilisateurs). Les cercles de bras rouvrent le haut du dos et remettent les omoplates dans le jeu, ce qui te servira directement sur tes jours push/pull. La marche, même courte, c’est la pompe veineuse des mollets: tu renvoies le sang vers le cœur, tu remontes l’oxygénation, et souvent l’énergie remonte sans café.</p><p>OPTION B - PAUSE HANCHES (3 min) :</p><p>1. Debout, pied sur la chaise</p><p>2. Etirement flechisseur hanche : 30s/cote</p><p>3. Rotation thoracique : 5/cote</p><p>Celle-ci, c’est ton antidote “hanches bloquées + bas du dos qui compense”. Quand les fléchisseurs de hanche restent raccourcis (assis), ton bassin a tendance à se placer en position défavorable pour bien recruter les fessiers. Conséquence fréquente: sur les legs, tu sens plus les quadris et le bas du dos que les fessiers; sur la posture, tu te tiens moins “grand”; sur la marche, tu raccourcis l’amplitude. La rotation thoracique, elle, évite que tout le mouvement parte des lombaires quand tu te tournes, et redonne de la mobilité à la cage thoracique (respiration plus ample, épaules moins “enroulées”).</p><p>OPTION C - PAUSE NUQUE (2 min) :</p><p>1. Menton vers poitrine, 20s</p><p>2. Oreille vers epaule, 20s/cote</p><p>3. Regarder plafond, 20s</p><p>4. 10 rotations douces</p><p>Là, on protège ton “poste de commandement”. Bureau = tête en avant (souvent), trapèzes qui montent, mâchoire serrée sans t’en rendre compte. Ça crée un bruit de fond nerveux: tu te sens plus fatigué, moins concentré, plus irritable, parfois même faim “bizarre” (le cerveau confond stress/fatigue avec besoin d’énergie rapide). Important: tout doit rester doux. Si une direction déclenche un point de douleur net ou une sensation de pincement, tu réduis l’amplitude.</p><p>EXERCICES CORRECTIFS QUOTIDIENS (10 min/jour) :</p><p>A faire AVANT l'entrainement ou en rentrant du bureau</p><p>L’idée n’est pas d’ajouter “une séance de plus”. C’est de rendre tes séances PPL plus rentables et ta récup plus stable. Tu vas arrêter de gaspiller 15-20 minutes de début d’entraînement à te sentir rouillé.</p><p>EXERCICE 1 : Etirement psoas (90/90)</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Position : genou au sol, autre pied devant</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Serrer fessier du cote arriere</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Lever le bras du meme cote</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>60s par cote, respirer profondement</span>
+          </div>
+        <p>Point clé: le serrage du fessier n’est pas un détail. C’est lui qui met la hanche en extension “propre” et évite de cambrer pour tricher. Respire lentement, et cherche une expiration qui descend les côtes (ça calme le système nerveux et ça aide la hanche à lâcher).</p><p>EXERCICE 2 : Pont fessier avec pause</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Allonge, pieds a plat</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Monter les hanches</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Tenir 5s en haut, serrer les fesses</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>3x12</span>
+          </div>
+        <p>Je veux une pause qui te force à “sentir” les fessiers, pas les ischios qui crampent. Si tu sens surtout les ischios: rapproche légèrement les talons des fesses, pense “rétroversion légère du bassin” (comme si tu voulais rapprocher pubis et nombril), et garde les côtes basses.</p><p>EXERCICE 3 : Dead bug</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Allonge, bras tendus vers plafond</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Jambes a 90 degres</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Etendre un bras + jambe opposee</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Garder le dos colle au sol</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>3x8 par cote</span>
+          </div>
+        <p>Ça, c’est ton assurance lombaire. Quand ton tronc sait verrouiller sans rigidité, tes mouvements PPL deviennent plus efficaces: meilleure transmission de force, moins de compensation, meilleure tolérance à la charge. Règle d’or: si ton bas du dos se décolle, tu réduis l’amplitude. Qualité > ego.</p><p>EXERCICE 4 : Quadrupedie + rotation thoracique</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>A quatre pattes</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Main derriere la tete</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Ouvrir le coude vers le plafond</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>10 par cote</span>
+          </div>
+        <p>Tu vas sentir que ça “décolle” entre les omoplates. C’est exactement ce qu’on veut pour que tes tirages et développés ne se fassent pas avec une cage thoracique verrouillée. Et bonus: respiration plus ample, souvent moins de tension cervicale.</p><h4 class="subsection-title">INSTALLATION POSTE DE TRAVAIL </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Ecran a hauteur des yeux</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Coudes a 90 degres</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Pieds a plat</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Dossier soutenant les lombaires</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Bureau debout si possible (alterner 30 min assis / 30 min debout)</span>
+          </div>
+        <p>Sans photo, je ne peux pas te dire si tu es plutôt “effondré” ou plutôt “cambré”, donc je te donne le réglage robuste. Détail qui change tout: soutien lombaire léger (serviette roulée si besoin). Pas pour te coincer, mais pour te rappeler une colonne “empilée”. Et si tu alternes assis/debout, évite le piège du bureau debout où tu te cambres et tu verrouilles les genoux: debout = genoux souples, appuis répartis, côtes basses.</p><p>OBJECTIF NEAT (pas/jour) :</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Minimum : 7 000 pas</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Optimal : 10 000 pas</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Strategies : escaliers, marche apres dejeuner, telephone debout</span>
+          </div>
+        <p>Comme ton objectif est recomposition (perdre du gras tout en gagnant du muscle), le NEAT est ton levier “invisible” qui ne crame pas ta récup. Et pour ton énergie variable, marcher après déjeuner est souvent un hack simple: meilleure digestion, moins de coup de barre, meilleure glycémie perçue (hypothèse, mais très fréquent).</p><h4 class="subsection-title">APPLICATION </h4><p>1. Met une alarme toutes les 60 min</p><p>2. Fais les 10 min d'exercices en rentrant</p><p>3. Track tes pas</p><p>Je te donne une version “temps limité le matin”: si tu n’as pas la place mentale le matin, fais uniquement les micro-pauses + 10 minutes le soir. Et si un jour tu rates, tu ne compenses pas par une séance plus longue: tu reviens juste au protocole le lendemain. La constance bat l’intensité ici.</p><p>Pour rendre ça mesurable sans inventer de chiffres: pendant 7 jours, note (1) pas/jour, (2) nombre de micro-pauses faites, (3) énergie perçue en fin de journée (faible/moyenne/bonne). On verra noir sur blanc le lien sédentarité ↔ énergie ↔ motivation.</p><p>Score : 78/100</p>
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="stack-supplements-optimise">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">STACK SUPPLEMENTS OPTIMISE</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #ef444440);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#ef4444" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="328.2964323001334" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">5</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #ef4444">CRITIQUE</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <p>Base sur : tes reponses + tes priorites + tes contraintes + gates securite.</p><h4 class="subsection-title">PRIORITE 0 - REGLES D'ACHAT (NON NEGOCIABLES) </h4>
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Si le label cache les mg par ingredient = jeter</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>mg elementaires, pas mg total sel</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>undefined</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>withanolides % (5%+ racine)</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>eurycomanone % (idealement 2%+)</span>
+          </div>
+        <h4 class="subsection-title">SECURITE - GATES (SI MEDICAMENTS / RISQUES) </h4>
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Aucun medicament declare. Si c'est faux, stop: on adapte la stack avant de commencer.</span>
+          </div>
+        <p>STACK CIBLEE (SELECTIONNEE DANS LA BIBLIOTHEQUE ACHZOD) :</p><p>1. Glycine (Acide amine)</p><p>Dosage : 3g g</p><p>Timing : 30-60min avant coucher</p><p>Duree / cycle : Permanent</p><p>Pourquoi : Abaissement temperature corporelle, augmentation SWS</p><p>A surveiller : Aucun notable</p><p>Qualite label : Glycine pure | 3g minimum par dose</p><p>Recherche iHerb : glycine powder 3g</p><p>Evidence : Grade A - PMID: 22293292, PMID: 17299616</p><p>2. Magnesium Bisglycinate (Chelate bisglycinate)</p><p>Dosage : 300-400mg mg elementaire</p><p>Timing : 1-2h avant coucher</p><p>Duree / cycle : Permanent</p><p>Pourquoi : Relaxation GABA-ergique, glycine bonus</p><p>A surveiller : Selles molles</p><p>Qualite label : Bisglycinate | Elemental Mg</p><p>Recherche iHerb : magnesium bisglycinate 400mg</p><p>Evidence : Grade A - PMID: 34883514</p><p>3. Ashwagandha KSM-66 (Extrait racine standardise withanolides)</p><p>Dosage : 300-600mg mg</p><p>Timing : Matin et/ou soir</p><p>Duree / cycle : 8 semaines ON, 2 semaines OFF</p><p>Pourquoi : Modulation axe HPA, reduction cortisol, adaptogene</p><p>A surveiller : Sedation possible; Thyroide: peut augmenter T4; Grossesse: eviter</p><p>Qualite label : KSM-66 ou Sensoril | 5%+ withanolides | Root extract pas feuille</p><p>Recherche iHerb : ashwagandha KSM-66 600mg</p><p>Evidence : Grade A - PMID: 32021735 meta-analyse</p><p>4. L-Theanine (Acide amine)</p><p>Dosage : 200-400mg mg</p><p>Timing : Matin avec cafe ou soir pour relaxation</p><p>Duree / cycle : Permanent</p><p>Pourquoi : Augmentation ondes alpha, GABA, relaxation sans sedation</p><p>A surveiller : Aucun notable</p><p>Qualite label : L-Theanine pur | Suntheanine patente bonus</p><p>Recherche iHerb : l-theanine 200mg suntheanine</p><p>Evidence : Grade A - PMID: 30707852 meta</p><p>5. Creatine Monohydrate (Monohydrate Creapure)</p><p>Dosage : 5g g</p><p>Timing : Post-entrainement avec glucides</p><p>Duree / cycle : Permanent</p><p>Pourquoi : Regeneration ATP via phosphocreatine, +5-15% force</p><p>A surveiller : Hydratation obligatoire; Retention eau intramusculaire normale</p><p>Qualite label : Creapure certifie | Monohydrate pur</p><p>Recherche iHerb : creatine monohydrate creapure 5g</p><p>Evidence : Grade A - PMID: 12945830</p><p>6. Citrulline Malate (Malate 2:1)</p><p>Dosage : 6-8g g</p><p>Timing : 30-45min avant entrainement</p><p>Duree / cycle : Jours d'entrainement</p><p>Pourquoi : Augmentation NO, vasodilatation, +15% volume sanguin musculaire</p><p>A surveiller : Troubles digestifs si trop; Reduire a 6g si sensible</p><p>Qualite label : Citrulline malate 2:1 | Pas L-citrulline seul si dose faible</p><p>Recherche iHerb : citrulline malate 2:1</p><p>Evidence : Grade A - PMID: 20386132</p><p>7. Omega-3 EPA+DHA (Triglyceride/rTG (pas ethyl ester))</p><p>Dosage : 2-4g g EPA+DHA combines</p><p>Timing : Avec dejeuner et diner (repas gras)</p><p>Duree / cycle : Permanent</p><p>Pourquoi : Reduit TG via VLDL, modulation eicosanoides, membrane RBC/endothelium</p><p>A surveiller : Anticoagulants + dose >3g = prudence saignement; Reflux si mauvaise qualite</p><p>Qualite label : IFOS certified | EPA+DHA total visible | TG form pas EE</p><p>Recherche iHerb : omega 3 triglyceride IFOS</p><p>Evidence : Grade A - AHA 2019 Guidelines, REDUCE-IT trial NEJM</p><p>8. Magnesium Taurate/Glycinate (Chelate (pas oxide))</p><p>Dosage : 300-400mg mg elementaire</p><p>Timing : Soir ou split</p><p>Duree / cycle : Permanent</p><p>Pourquoi : Tonus vasculaire, conduction cardiaque, relaxation</p><p>A surveiller : Selles molles si trop</p><p>Qualite label : Elemental magnesium visible | Glycinate/Taurate pas oxide</p><p>Recherche iHerb : magnesium glycinate elemental</p><p>Evidence : Grade A - PMID: 28668998</p><p>9. Citicoline CDP-Choline (CDP-Choline)</p><p>Dosage : 250-500mg mg</p><p>Timing : Matin, avec ou sans nourriture</p><p>Duree / cycle : Permanent ou cycles 8 semaines</p><p>Pourquoi : Precurseur acetylcholine + phosphatidylcholine, neuroprotection</p><p>A surveiller : Rare: maux de tete</p><p>Qualite label : CDP-Choline ou Cognizin | Dose adequate</p><p>Recherche iHerb : citicoline cognizin 250mg</p><p>Evidence : Grade A - PMID: 25904163</p><p>10. Safran Standardise (Extrait stigmates)</p><p>Dosage : 30mg mg</p><p>Timing : Matin et soir</p><p>Duree / cycle : 8-12 semaines</p><p>Pourquoi : Modulation serotonine, comparable SSRI dans essais</p><p>A surveiller : Grossesse: eviter; Prix eleve</p><p>Qualite label : Saffron extract standardise | Crocin % visible</p><p>Recherche iHerb : saffron extract 30mg</p><p>Evidence : Grade A - PMID: 24987035 meta-analyse</p><h4 class="subsection-title">CE QU'IL NE FAUT PAS FAIRE </h4>
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Empiler 10 produits d'un coup. Ajoute 1 supplement tous les 3-4 jours.</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Acheter des blends opaques / sous-dosees.</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Melanger des produits 'stimulants' si ton sommeil/stress est deja fragile.</span>
+          </div>
+        
+          </div>
+        </div>
+      </div>
+    
+      <div class="accordion-section" id="synthese-et-prochaines-etapes">
+        <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
+          <div style="flex: 1;">
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">SYNTHESE ET PROCHAINES ETAPES</h3>
+          </div>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+              
+    <svg width="140" height="140" viewBox="0 0 140 140" style="filter: drop-shadow(0 0 10px #3b82f640);">
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#262626" stroke-width="8" />
+      <circle cx="70" cy="70" r="55" fill="none" stroke="#3b82f6" stroke-width="8" 
+        stroke-dasharray="345.57519189487726" stroke-dashoffset="76.026542216873" stroke-linecap="round" transform="rotate(-90 70 70)" />
+      <text x="70" y="80" font-size="28" font-family="Inter, sans-serif" font-weight="800" fill="#ffffff" text-anchor="middle">78</text>
+    </svg>
+  
+              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: #3b82f6">OPTIMAL</span>
+            </div>
+            <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">+</span>
+          </div>
+        </div>
+        <div class="accordion-content ">
+          <div class="accordion-body">
+            <h4 class="subsection-title">SYNTHESE FINALE</h4><h4 class="subsection-title">RESUME EN 30 SECONDES </h4><p>Test, voici ce que je retiens de ton audit :</p><p>Tu es dans un profil “intermédiaire sérieux” : tu t’entraînes souvent, tu as déjà une structure (PPL), tu veux recomposition (perdre du gras tout en construisant du muscle). Le vrai frein, ce n’est pas ta volonté. C’est ton système: sommeil un peu court, récupération parfois insuffisante, énergie et motivation en dents de scie, et une digestion qui signale parfois “trop de charge / pas assez de marge”. Tant que ces curseurs restent instables, ton corps alterne entre deux modes: “je performe” puis “je compense”. Et la graisse abdominale adore ce scénario, parce qu’elle est très sensible au stress, au manque de sommeil et aux variations d’apport/activité.</p><p>FORCES (ce qui joue en ta faveur) :</p>
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Tu as de la fréquence et une vraie base d’entraînement (4-5 séances/semaine, 2-5 ans d’expérience): c’est un moteur énorme pour une recomposition.</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Objectif clair et préférences alimentaires flexibles: tu ne te mets pas en cage, donc tu peux tenir un plan réaliste.</span>
+          </div>
+        
+          <div class="list-item positive">
+            <span class="material-icons icon">check_circle</span>
+            <span>Zéro blessure déclarée: on peut charger intelligemment, progresser, et mettre l’accent sur la performance sans devoir “jouer petit bras”.</span>
+          </div>
+        <p>BLOCAGES IDENTIFIES (ce qu'on va corriger) :</p><p>x Sommeil 6-7h + récupération “parfois insuffisante” = terrain parfait pour une énergie variable, une faim plus impulsive, et des séances inégales. Mécaniquement: moins de sommeil → cortisol plus haut et plus long dans la journée → sensibilité à l’insuline moins bonne + envie de sucre/gras plus forte → stockage abdominal plus facile (ce n’est pas une fatalité, mais c’est un biais).</p><p>x Temps limité le matin + motivation fluctuante = tu dépends trop de ta “forme du jour”. Résultat: tu fais de bonnes semaines… puis des semaines moyennes. Le physique suit la moyenne, pas tes pics.</p><p>x Ballonnements occasionnels = indice que ton système digestif n’est pas toujours aligné avec ta charge d’entraînement et/ou tes choix alimentaires (quantités, vitesse de prise, fibres mal placées, édulcorants, repas trop volumineux, stress). Hypothèse: quand la récup descend, la digestion est souvent la première à se dérégler (le corps met l’énergie ailleurs).</p><h4 class="subsection-title">TON POTENTIEL REEL </h4><p>Actuellement : 6/10</p><p>Dans 90 jours : 8/10</p><h4 class="subsection-title">CE QUE TU FAIS DES DEMAIN </h4><p>1. Tu verrouilles un “socle sommeil” minimal, pas parfait, mais constant.</p><p>→ Action immédiate: choisis une heure de coucher cible réaliste et tiens-la 5 soirs/7. Tu ne cherches pas la magie, tu cherches la régularité. Objectif: te réveiller avec une énergie moins “roulette russe”.</p><p>2. Tu rends tes matins inattaquables (temps limité = stratégie, pas excuse).</p><p>→ Action immédiate: prépare la veille un petit-déj protéiné rapide OU un plan “à emporter” (option shaker + fruit + oléagineux, ou yaourt/fromage blanc + flocons + fruit). Le but n’est pas la perfection nutritionnelle, c’est d’éviter le trou noir de la matinée qui finit en grignotage ou en repas trop gros.</p><p>3. Tu stabilises la récupération sans réduire ton ambition.</p><p>→ Action immédiate: garde ton PPL, mais impose une règle simple: si ton énergie est “basse” ce jour-là, tu réduis le volume (moins de séries) plutôt que de forcer sale. Tu protèges la qualité d’exécution et tu sors de la séance en te sentant mieux qu’en entrant. C’est ça qui te fait progresser sans cramer ton système.</p><p>Info à clarifier (important, parce que là je ne peux pas être chirurgical):</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Nutrition actuelle: apports protéiques, structure des repas, alcool, grignotage, répartition sur la journée.</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Cardio/NEAT: nombre de pas ou activité quotidienne hors salle (c’est souvent le levier #1 pour la perte de gras abdominal sans casser la récup).</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Charges et progression sur tes mouvements clés (pour vérifier si le PPL est optimisé ou juste “occupant”).</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Digestion: à quels moments tu ballonnes (matin/soir), quels aliments, et à quelle fréquence réelle.</span>
+          </div>
+        <h4 class="subsection-title">RISQUES SI TU NE FAIS RIEN </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>A 6 mois : tu vas probablement rester dans un cycle “bon mois / mois moyen”, avec une recomposition lente, une fatigue qui s’accumule en silence, et des performances qui stagnent malgré 4-5 séances.</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>A 1 an : tu risques d’être encore en guerre contre la graisse abdominale, non pas parce que tu ne t’entraînes pas assez, mais parce que ton corps n’aura jamais un environnement stable pour lâcher du gras tout en construisant du muscle (stress/sommeil/récup = frein chronique).</span>
+          </div>
+        <h4 class="subsection-title">RESULTATS SI TU APPLIQUES </h4>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>A 30 jours : énergie plus stable, séances plus constantes, moins d’écarts “réflexes”, digestion plus calme (souvent le premier signal que le système se remet à respirer).</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>A 90 jours : recomposition visible (taille plus “propre” qualitativement, meilleure densité musculaire), progression plus régulière sur tes mouvements, et surtout: tu ne dépendras plus autant de ta motivation. Tu seras sur un rail.</span>
+          </div>
+        <h4 class="subsection-title">MON ENGAGEMENT </h4><p>Je ne vais pas te vendre du rêve: je te construis un plan qui colle à ta vraie vie, je te corrige au millimètre quand il faut, et je te simplifie le reste. Tu fais ta part avec constance, je m’occupe de transformer ça en résultats mesurables, semaine après semaine.</p><p>Score : 78/100</p><h4 class="subsection-title">SCORE GLOBAL  78/100</h4><p>PRET A TRANSFORMER CES INSIGHTS EN RESULTATS CONCRETS ?</p><p>Tu as maintenant entre les mains une analyse complete et personnalisee de ton profil metabolique.</p><p>-> SI TU VEUX ALLER PLUS LOIN : COACHING PERSONNALISE</p>
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Accompagnement sur-mesure base sur cette analyse</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Ajustements en temps reel selon tes retours</span>
+          </div>
+        
+          <div class="list-item ">
+            <span class="material-icons icon">arrow_right</span>
+            <span>Support continu pour maximiser tes resultats</span>
+          </div>
+        <p>BONUS : Le montant que tu as paye pour cette analyse (79EUR) est DEDUIT A 100% du prix du coaching.</p><p>CODE PROMO : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)</p><p>Contacte-moi pour discuter de ton accompagnement :</p><p>Email: coaching@achzodcoaching.com</p><p>Site: achzodcoaching.com</p><p>Rapport genere par ACHZOD - NEUROCORE 360</p>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+
+    
+    <div class="cta-box cta-fin" style="max-width: 900px; margin: 60px auto 40px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.15) 0%, rgba(94, 234, 212, 0.08) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: center;">
+      <h3 style="color: var(--primary); font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.1em;">🚀 Prêt à Transformer Ces Insights ?</h3>
+      <div style="color: var(--text-primary); font-size: 1.1rem; line-height: 1.9; white-space: pre-line; text-align: left;">Tu as maintenant entre les mains une analyse complete et personnalisee de ton profil metabolique.
+
+-> SI TU VEUX ALLER PLUS LOIN : COACHING PERSONNALISE
+   - Accompagnement sur-mesure base sur cette analyse
+   - Ajustements en temps reel selon tes retours
+   - Support continu pour maximiser tes resultats
+   
+   BONUS : Le montant que tu as paye pour cette analyse (79EUR) est DEDUIT A 100% du prix du coaching.
+   
+   CODE PROMO : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)
+
+Contacte-moi pour discuter de ton accompagnement :
+Email: coaching@achzodcoaching.com
+   
+Site: achzodcoaching.com
+
+---
+Rapport genere par ACHZOD - NEUROCORE 360</div>
+    </div>
+    
+
+    <!-- Formulaire d'avis -->
+    <div id="review-form-container" style="max-width: 700px; margin: 60px auto; padding: 40px; background: var(--card-bg); border: 1px solid var(--primary); border-radius: 24px;">
+      <h3 style="color: var(--text-primary); margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 700;">⭐ Ton avis compte !</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 32px; text-align: center; font-size: 1.05rem;">Donne ton avis sur cette analyse pour m'aider à améliorer mes services</p>
+      
+      <form id="review-form" style="display: flex; flex-direction: column; gap: 24px;">
+        <input type="hidden" id="audit-id" value="42c4f783-31ab-4852-95b3-9c0a5450d686" />
+        
+        <div>
+          <label style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Note sur 5 étoiles *</label>
+          <div id="rating-stars" style="display: flex; gap: 8px; justify-content: center; font-size: 2.5rem; cursor: pointer;">
+            <span data-rating="1" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="2" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="3" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="4" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+            <span data-rating="5" style="color: #404040; transition: color 0.2s, transform 0.2s;">★</span>
+          </div>
+          <input type="hidden" id="rating-value" name="rating" required />
+        </div>
+        
+        <div>
+          <label for="comment" style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Ton commentaire *</label>
+          <textarea 
+            id="comment" 
+            name="comment" 
+            required 
+            minlength="10" 
+            maxlength="1000"
+            placeholder="Partage ton expérience avec cette analyse..."
+            style="width: 100%; min-height: 140px; padding: 16px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem; resize: vertical;"
+          ></textarea>
+          <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Minimum 10 caractères</small>
+        </div>
+        
+        <div>
+          <label for="email" style="color: var(--text-primary); display: block; margin-bottom: 12px; font-weight: 600; font-size: 1.05rem;">Email (optionnel)</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email"
+            placeholder="ton@email.com"
+            style="width: 100%; padding: 14px 16px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: inherit; font-size: 1rem;"
+          />
+        </div>
+        
+        <button 
+          type="submit"
+          style="background: linear-gradient(135deg, var(--primary) 0%, #059669 100%); color: white; padding: 16px 32px; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 4px 20px rgba(94, 234, 212, 0.3);"
+          onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+        >
+          Envoyer mon avis
+        </button>
+        
+        <div id="review-success" style="display: none; padding: 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--primary); border-radius: 12px; color: var(--primary); text-align: center; font-weight: 500;">
+          ✅ Merci pour ton avis ! Il sera examiné avant publication.
+        </div>
+        
+        <div id="review-error" style="display: none; padding: 20px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; color: #fca5a5; text-align: center; font-weight: 500;">
+          ❌ Erreur lors de l'envoi. Réessaie plus tard.
+        </div>
+      </form>
+    </div>
+
+    <footer class="footer">
+      <p>Rapport généré par <strong>NEUROCORE 360</strong> - par ACHZOD</p>
+      <p>Expertise certifiée • Science appliquée • Résultats mesurables</p>
+    </footer>
+
+  </div>
+  
+  <script>
+    (function() {
+      // Theme Management
+      const savedTheme = localStorage.getItem('report-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      const themeButtons = document.querySelectorAll('.theme-btn');
+      themeButtons.forEach(btn => {
+        if (btn.dataset.theme === savedTheme) {
+          btn.classList.add('active');
+        }
+        btn.addEventListener('click', () => {
+          const theme = btn.dataset.theme;
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('report-theme', theme);
+          themeButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+      
+      // Table of Contents Management
+      const tocToggle = document.getElementById('toc-toggle');
+      const tocContainer = document.getElementById('toc-container');
+      const tocLinks = document.querySelectorAll('.toc-link');
+      
+      if (tocToggle && tocContainer) {
+        tocToggle.addEventListener('click', () => {
+          tocContainer.classList.toggle('visible');
+        });
+        
+        // Close TOC when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!tocContainer.contains(e.target) && !tocToggle.contains(e.target)) {
+            tocContainer.classList.remove('visible');
+          }
+        });
+        
+        // Smooth scroll for TOC links
+        tocLinks.forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('href').substring(1);
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) {
+              const offsetTop = targetSection.offsetTop - 100;
+              window.scrollTo({
+                top: offsetTop,
+                behavior: 'smooth'
+              });
+              tocContainer.classList.remove('visible');
+            }
+          });
+        });
+        
+        // Highlight active section in TOC on scroll
+        const sections = document.querySelectorAll('.section-card');
+        const observerOptions = {
+          root: null,
+          rootMargin: '-100px 0px -66% 0px',
+          threshold: 0
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const id = entry.target.id;
+              tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.section === id) {
+                  link.classList.add('active');
+                }
+              });
+            }
+          });
+        }, observerOptions);
+        
+        sections.forEach(section => observer.observe(section));
+      }
+      
+      // Review Form
+      const form = document.getElementById('review-form');
+      const ratingStars = document.getElementById('rating-stars');
+      const ratingInput = document.getElementById('rating-value');
+      const commentInput = document.getElementById('comment');
+      const emailInput = document.getElementById('email');
+      const successDiv = document.getElementById('review-success');
+      const errorDiv = document.getElementById('review-error');
+      let selectedRating = 0;
+      
+      // Gestion des étoiles
+      const stars = ratingStars.querySelectorAll('span');
+      stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+          selectedRating = index + 1;
+          ratingInput.value = selectedRating;
+          updateStars();
+        });
+        star.addEventListener('mouseenter', () => {
+          if (!selectedRating) {
+            highlightStars(index + 1);
+          }
+        });
+      });
+      ratingStars.addEventListener('mouseleave', () => {
+        if (!selectedRating) {
+          stars.forEach(s => s.style.color = '#404040');
+        } else {
+          updateStars();
+        }
+      });
+      
+      function updateStars() {
+        stars.forEach((star, index) => {
+          if (index < selectedRating) {
+            star.style.color = '#fbbf24';
+            star.style.transform = 'scale(1.1)';
+          } else {
+            star.style.color = '#404040';
+            star.style.transform = 'scale(1)';
+          }
+        });
+      }
+      
+      function highlightStars(count) {
+        stars.forEach((star, index) => {
+          if (index < count) {
+            star.style.color = '#fbbf24';
+            star.style.transform = 'scale(1.05)';
+          } else {
+            star.style.color = '#404040';
+            star.style.transform = 'scale(1)';
+          }
+        });
+      }
+      
+      // Soumission du formulaire
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        successDiv.style.display = 'none';
+        errorDiv.style.display = 'none';
+        
+        if (!selectedRating) {
+          alert('Veuillez sélectionner une note');
+          return;
+        }
+        
+        const auditId = document.getElementById('audit-id').value;
+        if (!auditId) {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = '❌ ID audit manquant';
+          return;
+        }
+        
+        // Obtenir l'URL de base - utiliser l'URL du serveur si fichier local
+        let baseUrl = window.location.origin;
+        if (baseUrl === 'null' || baseUrl.startsWith('file://')) {
+          // Si fichier ouvert localement, utiliser l'URL du serveur
+          baseUrl = 'https://neurocore-360.onrender.com';
+        }
+        
+        const formData = {
+          auditId: auditId,
+          rating: selectedRating,
+          comment: commentInput.value.trim(),
+          email: emailInput.value.trim() || undefined
+        };
+        
+        try {
+          const response = await fetch(baseUrl + '/api/review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            successDiv.style.display = 'block';
+            form.reset();
+            selectedRating = 0;
+            updateStars();
+            ratingStars.style.pointerEvents = 'none';
+            commentInput.disabled = true;
+            emailInput.disabled = true;
+            form.querySelector('button[type="submit"]').disabled = true;
+          } else {
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = data.error || 'Erreur lors de l\'envoi';
+          }
+        } catch (error) {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = '❌ Erreur réseau. Réessaie plus tard.';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -42,34 +42,34 @@ const CSS_VARIABLES_DARK = `
 
 const CSS_VARIABLES_LIGHT = `
   :root[data-theme="light"] {
-    /* Surfaces Material Design style */
-    --bg: #ffffff;
-    --surface-0: #f8fafc;
-    --surface-1: #f1f5f9;
-    --surface-2: #e2e8f0;
-    --surface-3: #cbd5e1;
-    
+    /* Palette "homepage": beige / crème / violet / noir */
+    --bg: #F6F1E8;
+    --surface-0: #FFF8EF;
+    --surface-1: #F6EFE4;
+    --surface-2: #EFE6D9;
+    --surface-3: #E6DBC9;
+
     /* Legacy compatibility */
-    --background: #ffffff;
-    --card-bg: #f8fafc;
-    
+    --background: #F6F1E8;
+    --card-bg: #FFF8EF;
+
     /* Texte */
-    --text: #0f172a;
-    --text-muted: #475569;
-    --text-faint: #64748b;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    
+    --text: #0B0B0F;
+    --text-muted: rgba(11, 11, 15, 0.72);
+    --text-faint: rgba(11, 11, 15, 0.55);
+    --text-primary: #0B0B0F;
+    --text-secondary: rgba(11, 11, 15, 0.72);
+
     /* Accent */
-    --primary: #0d9488; /* Teal-600 */
-    --primary-glow: rgba(13, 148, 136, 0.3);
-    --accent-ok: #059669; /* Vert */
-    --accent-warning: #d97706; /* Ambre */
-    --secondary: #7c3aed; /* Violet-600 */
-    
+    --primary: #6D28D9; /* Violet profond */
+    --primary-glow: rgba(109, 40, 217, 0.22);
+    --accent-ok: #16a34a;
+    --accent-warning: #b45309;
+    --secondary: #111827; /* Noir doux */
+
     /* Bordure */
-    --border: rgba(0, 0, 0, 0.1);
-    --accent-gradient: linear-gradient(to right, #0d9488, #059669);
+    --border: rgba(11, 11, 15, 0.12);
+    --accent-gradient: linear-gradient(to right, #6D28D9, #111827);
   }
 `;
 
@@ -202,7 +202,7 @@ function generateSVGRadar(scores: Record<string, number>): string {
     }).join('')}
   `;
 
-  // Labels - amélioration avec abréviations intelligentes
+    // Labels - utiliser des abréviations lisibles (pas de troncature agressive)
   const labelMap: Record<string, string> = {
     'ANALYSE VISU': 'VISUEL',
     'ANALYSE SYST': 'CARDIO',
@@ -223,7 +223,7 @@ function generateSVGRadar(scores: Record<string, number>): string {
     'SYNTHESE': 'SYNTH'
   };
   
-  const labelsHtml = categories.map((cat, i) => {
+    const labelsHtml = categories.map((cat, i) => {
     const angle = i * angleStep - Math.PI / 2;
     const r = radius + 40;
     const x = center + r * Math.cos(angle);
@@ -231,15 +231,15 @@ function generateSVGRadar(scores: Record<string, number>): string {
     const textAnchor = Math.cos(angle) > 0.1 ? "start" : Math.cos(angle) < -0.1 ? "end" : "middle";
     
     // Chercher une abréviation dans le map
-    let label = cat.toUpperCase().substring(0, 10);
-    for (const [key, abbr] of Object.entries(labelMap)) {
-      if (cat.toUpperCase().startsWith(key)) {
-        label = abbr;
-        break;
+      let label = cat.toUpperCase();
+      for (const [key, abbr] of Object.entries(labelMap)) {
+        if (cat.toUpperCase().startsWith(key)) {
+          label = abbr;
+          break;
+        }
       }
-    }
-    
-    return `<text x="${x}" y="${y}" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="${textAnchor}">${label}</text>`;
+      
+      return `<text x="${x}" y="${y}" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="${textAnchor}">${label}</text>`;
   }).join('');
 
   return `
@@ -254,6 +254,16 @@ function generateSVGRadar(scores: Record<string, number>): string {
 
 export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?: string[]): string {
   const dashboard = formatTxtToDashboard(txt);
+  const firstName = (dashboard.clientName || "Client").trim().split(/\s+/)[0] || "Client";
+  const hasPhotos = Boolean(photos && photos.length > 0);
+
+  const truncateAtWord = (s: string, max: number) => {
+    const t = String(s || "").trim().replace(/\s+/g, " ");
+    if (t.length <= max) return t;
+    const cut = t.slice(0, max);
+    const lastSpace = cut.lastIndexOf(" ");
+    return (lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trim() + "…";
+  };
 
   // Fallback CTA : si le modèle a "oublié" les CTAs dans le TXT, on les injecte quand même.
   // (nécessaire pour éviter "CTA début/fin manquants" dans le HTML)
@@ -298,6 +308,11 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       // Nettoyage
       l = l.replace(/\[[■□\s#=-]+\]\s*\d+\/\d+/, '');
       l = l.replace(/^[=\-#*]{2,}/, '').replace(/[=\-#*]{2,}$/, '').trim();
+      // Suppression hard des emojis/ASCII résiduels (standard premium clinique)
+      l = l.replace(/[🟢🟡🔴🧬🛡️📸🎯🚀⭐✅❌⚠️🌙☀️📑]/g, '').trim();
+      l = l.replace(/\s{2,}/g, ' ').trim();
+      // Supprimer toute mention "info à clarifier" côté rendu client
+      if (l.toLowerCase().includes("info a clarifier")) return '';
       
       if (!l) return '';
 
@@ -314,11 +329,6 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
         return `<h4 class="subsection-title">${l.replace(':', '')}</h4>`;
       }
 
-      // Points d'attention
-      if (l.startsWith('🟢') || l.startsWith('🔴') || l.startsWith('🟡') || l.startsWith('🧬') || l.startsWith('🛡️')) {
-        return `<div class="insight-box">${l}</div>`;
-      }
-      
       // KPI Boxes (pour le dashboard final)
       if (l.includes(' : ') && (l.includes('🔴') || l.includes('🟢'))) {
          const parts = l.split(':');
@@ -327,7 +337,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
 
       // Listes
       if (l.startsWith('+ ') || l.startsWith('- ') || l.startsWith('• ') || l.startsWith('! ')) {
-        const icon = l.startsWith('!') ? '⚠️' : l.startsWith('+') ? 'check_circle' : 'arrow_right';
+        const icon = l.startsWith('!') ? 'warning' : l.startsWith('+') ? 'check_circle' : 'arrow_right';
         const isCheck = l.startsWith('+');
         return `
           <div class="list-item ${isCheck ? 'positive' : ''}">
@@ -340,25 +350,34 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       return `<p>${l}</p>`;
     }).join('');
 
-    const level = getScoreLevel(section.score);
-    const color = getScoreColor(section.score);
+    const level = section.score > 0 ? getScoreLevel(section.score) : "";
+    const color = section.score > 0 ? getScoreColor(section.score) : "var(--text-muted)";
 
     // Accordéon style Oura (par défaut fermé, sauf Executive Summary)
     const isExecutive = section.title.toUpperCase().includes('EXECUTIVE SUMMARY');
     const isDefaultOpen = isExecutive;
+    // Pas de score affiché sur l'Executive Summary
+    const showScore = section.category === "analysis" && section.score > 0 && !isExecutive;
+    const categoryLabel =
+      section.category === "executive" ? "SYNTHÈSE" :
+      section.category === "action" ? "PROTOCOLE" :
+      section.category === "supplements" ? "SUPPLEMENTS" :
+      "ANALYSE";
     
     return `
       <div class="accordion-section" id="${section.id}">
         <div class="accordion-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.accordion-icon').textContent = this.nextElementSibling.classList.contains('open') ? '−' : '+'">
           <div style="flex: 1;">
-            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">ANALYSE & STRATÉGIE</span>
+            <span class="section-category" style="font-size: 0.7rem; color: var(--primary); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px;">${categoryLabel}</span>
             <h3 class="section-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0;">${section.title}</h3>
           </div>
           <div style="display: flex; align-items: center; gap: 16px;">
-            <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
-              ${generateSVGGauge(section.score)}
-              <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: ${color}">${level}</span>
-            </div>
+            ${showScore ? `
+              <div class="score-badge" style="display: flex; flex-direction: column; align-items: center;">
+                ${generateSVGGauge(section.score)}
+                <span class="score-level" style="font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; margin-top: 5px; color: ${color}">${level}</span>
+              </div>
+            ` : ``}
             <span class="accordion-icon" style="font-size: 24px; font-weight: 700; color: var(--primary); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--surface-2);">${isDefaultOpen ? '−' : '+'}</span>
           </div>
         </div>
@@ -407,8 +426,8 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     /* HERO SECTION */
     .hero {
       position: relative;
-      background: radial-gradient(circle at top right, rgba(94, 234, 212, 0.1), transparent 40%),
-                  linear-gradient(to bottom, #111, #0a0a0a);
+      background: radial-gradient(circle at top right, var(--primary-glow), transparent 45%),
+                  linear-gradient(to bottom, var(--surface-1), var(--surface-0));
       border: 1px solid var(--border);
       border-radius: 24px;
       padding: 60px 40px;
@@ -868,7 +887,15 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       color: var(--background);
     }
     
-    /* TABLE OF CONTENTS */
+    /* TABLE OF CONTENTS (toujours visible + animée) */
+    @keyframes tocIn {
+      from { opacity: 0; transform: translateY(-50%) translateX(-8px); }
+      to { opacity: 1; transform: translateY(-50%) translateX(0); }
+    }
+    @keyframes tocActivePulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+      50% { box-shadow: 0 0 18px var(--primary-glow); }
+    }
     .toc-container {
       position: fixed;
       left: 20px;
@@ -883,13 +910,19 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 4px 30px rgba(0,0,0,0.4);
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-    .toc-container.visible {
       opacity: 1;
       visibility: visible;
+      animation: tocIn 420ms ease both;
+      transition: width 0.2s ease, padding 0.2s ease;
+    }
+    .toc-container.minimized {
+      width: 64px;
+      max-width: 64px;
+      padding: 10px;
+    }
+    .toc-container.minimized .toc-title,
+    .toc-container.minimized .toc-list {
+      display: none;
     }
     .toc-toggle {
       position: fixed;
@@ -951,6 +984,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       color: var(--primary);
       font-weight: 600;
       border-left: 3px solid var(--primary);
+      animation: tocActivePulse 2.2s ease-in-out infinite;
     }
     
     @media (max-width: 1200px) {
@@ -988,15 +1022,24 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     }
   </style>
 </head>
-<body data-theme="dark">
+<body data-theme="light">
   <!-- Theme Selector -->
   <div class="theme-selector">
-    <button class="theme-btn active" data-theme="dark">🌙 Dark</button>
-    <button class="theme-btn" data-theme="light">☀️ Light</button>
+    <button class="theme-btn" data-theme="dark">Dark</button>
+    <button class="theme-btn active" data-theme="light">Light</button>
   </div>
   
-  <!-- Table of Contents Toggle -->
-  <button class="toc-toggle" id="toc-toggle" aria-label="Afficher la table des matières">📑</button>
+  <!-- Règles métaboliques clés -->
+  <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin: 32px 0;">
+    <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Règles métaboliques</h3>
+    <ul style="color: var(--text-muted); line-height: 1.6; margin-left: 16px;">
+      <li>Si les abdos ne sont pas visibles : pas de glucides dans les 4h après le réveil (priorité protéines + lipides).</li>
+      <li>Si surpoids : fenêtre alimentaire 16/8 (12h-20h) pour stabiliser l’insuline et améliorer la combustion.</li>
+    </ul>
+  </div>
+
+  <!-- Table of Contents Toggle (réduire / agrandir) -->
+  <button class="toc-toggle" id="toc-toggle" aria-label="Réduire / agrandir la table des matières">≡</button>
   
   <!-- Table of Contents -->
   <nav class="toc-container" id="toc-container">
@@ -1016,13 +1059,14 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     <header class="hero" style="padding: 40px 30px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
         <div>
-          <span class="hero-badge">Diagnostic express en 30 secondes</span>
-          <h1 style="font-size: 2rem; margin: 12px 0 8px 0;">${dashboard.clientName}</h1>
-          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">
-            Généré le ${dashboard.generatedAt} • ID: ${auditId.substring(0, 8)}
+          <span class="hero-badge">AUDIT 360 PREMIUM</span>
+          <h1 style="font-size: 2.2rem; margin: 12px 0 8px 0;">${dashboard.clientName}</h1>
+          <p style="font-size: 0.95rem; color: var(--text-muted); margin: 0;">
+            Généré le ${dashboard.generatedAt}${dashboard.clientName ? '' : ''} • Email: ${dashboard.clientName ? (dashboard.clientName.includes('@') ? dashboard.clientName : 'non fourni') : 'non fourni'}
           </p>
         </div>
       </div>
+      <p style="font-size: 1rem; color: var(--text); margin: 8px 0 0 0;">Salut ${firstName}. Voici ton audit 360, clair, actionnable, sans blabla.</p>
       
       <!-- Hero Score Ring (Oura style) -->
       <div class="hero-score-container">
@@ -1035,7 +1079,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       
       <!-- Notice importante (anti-hallucination) -->
       <p style="font-size: 12px; color: var(--text-faint); text-align: center; margin-top: 24px; padding: 12px; background: var(--surface-1); border-radius: 8px;">
-        📸 Analyse basée sur photos statiques. Posture confirmée par tests vidéo simples.
+        Analyse basée sur photos statiques. Posture confirmée par tests vidéo simples.
       </p>
     </header>
 
@@ -1074,7 +1118,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
           ${causes.slice(0, 3).map((cause, i) => `
             <div class="contributor-card">
               <div class="contributor-title">Cause racine ${i + 1}</div>
-              <div class="contributor-impact">${cause.trim().substring(0, 120)}${cause.length > 120 ? '...' : ''}</div>
+              <div class="contributor-impact">${truncateAtWord(cause, 160)}</div>
               <div class="contributor-action">→ Voir détails ci-dessous</div>
             </div>
           `).join('')}
@@ -1170,30 +1214,41 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       `;
     })()}
 
-    <!-- Bloc "À confirmer" (tests vidéo) -->
+    <!-- Prochaine étape guidée (premium, sans "il manque") -->
     <div class="confirm-block">
-      <div class="confirm-title">
-        ⚠️ À confirmer par tests vidéo
-      </div>
+      <div class="confirm-title">À confirmer avec un professionnel</div>
       <div class="confirm-text">
-        L'analyse posturale est basée sur des photos statiques. Pour confirmer les hypothèses et affiner le diagnostic, des tests vidéo simples sont recommandés :
-        <br><br>
-        <strong>Tests recommandés :</strong> Squat de profil, mouvement d'épaule (flexion/extension), test de mobilité hanche.
-        <br><br>
-        Ces tests permettront de valider les observations et d'ajuster les recommandations spécifiques.
+        ${hasPhotos
+          ? `Si une anomalie posturale ou articulaire est suspectée, fais valider par un kiné ou un ostéo avant toute décision.`
+          : `Ajoute 3 photos (face / profil / dos) pour finaliser l’analyse visuelle, puis fais valider par un kiné/ostéo si besoin.`}
       </div>
     </div>
 
     <!-- Radar Graphique (Profil Métabolique) -->
     <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin: 32px 0; text-align: center;">
-      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em;">Profil Métabolique</h3>
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em;">Profil 360</h3>
       ${generateSVGRadar(scores)}
     </div>
 
     ${dashboard.ctaDebut ? `
-    <div class="cta-box cta-debut" style="max-width: 900px; margin: 40px auto 60px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.05) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: center;">
-      <h3 style="color: var(--primary); font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.1em;">🎯 Rappel Important</h3>
-      <div style="color: var(--text-primary); font-size: 1.05rem; line-height: 1.8; white-space: pre-line; text-align: left;">${dashboard.ctaDebut.replace(/\n\n/g, '\n').trim()}</div>
+    <div class="cta-box cta-debut" style="max-width: 900px; margin: 40px auto 60px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.08) 0%, rgba(94, 234, 212, 0.03) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: left;">
+      <h3 style="color: var(--text); font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em;">Étape suivante</h3>
+      <p style="color: var(--text-muted); margin: 0 0 18px 0;">On transforme l’audit en résultats mesurables.</p>
+      <div style="display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 16px;">
+        <div style="padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-1);">
+          <div style="font-weight: 700; color: var(--text); margin-bottom: 6px;">Coaching individuel</div>
+          <div style="color: var(--text-muted); font-size: 0.95rem;">Audit déduit à 100% du prix du coaching.</div>
+        </div>
+        <div style="padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-1);">
+          <div style="font-weight: 700; color: var(--text); margin-bottom: 6px;">Code promo neurocore20</div>
+          <div style="color: var(--text-muted); font-size: 0.95rem;">-25% sur Essential Elite et Private Lab.</div>
+        </div>
+      </div>
+      <div style="color: var(--text-primary); font-size: 1.02rem; line-height: 1.85; white-space: pre-line; margin-bottom: 16px;">${dashboard.ctaDebut.replace(/\n\n/g, '\n').trim()}</div>
+      <div style="margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="https://neurocore-360.onrender.com/audit-complet/checkout" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 12px; font-weight: 800; letter-spacing: 0.02em; color: white; text-decoration: none; background: var(--accent-gradient);">Réserver maintenant</a>
+        <a href="https://neurocore-360.onrender.com/" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 12px; font-weight: 700; color: var(--text); text-decoration: none; border: 1px solid var(--border); background: var(--surface-1);">Voir les offres</a>
+      </div>
     </div>
     ` : ''}
 
@@ -1204,15 +1259,30 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     </div>
 
     ${dashboard.ctaFin ? `
-    <div class="cta-box cta-fin" style="max-width: 900px; margin: 60px auto 40px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.15) 0%, rgba(94, 234, 212, 0.08) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: center;">
-      <h3 style="color: var(--primary); font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.1em;">🚀 Prêt à Transformer Ces Insights ?</h3>
-      <div style="color: var(--text-primary); font-size: 1.1rem; line-height: 1.9; white-space: pre-line; text-align: left;">${dashboard.ctaFin.replace(/={3,}/g, '').replace(/PROCHAINES ETAPES|PRET A TRANSFORMER.*\?/g, '').trim()}</div>
+    <div class="cta-box cta-fin" style="max-width: 900px; margin: 60px auto 40px; padding: 40px; background: linear-gradient(135deg, rgba(94, 234, 212, 0.12) 0%, rgba(94, 234, 212, 0.05) 100%); border: 2px solid var(--primary); border-radius: 24px; text-align: left;">
+      <h3 style="color: var(--text); font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.08em;">Coaching (option)</h3>
+      <p style="color: var(--text-muted); margin: 0 0 18px 0;">On sécurise l’exécution, on évite les erreurs, on accélère.</p>
+      <div style="display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 16px;">
+        <div style="padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-1);">
+          <div style="font-weight: 700; color: var(--text); margin-bottom: 6px;">Déduction 100%</div>
+          <div style="color: var(--text-muted); font-size: 0.95rem;">Les 79€ de l’audit sont déduits du coaching.</div>
+        </div>
+        <div style="padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-1);">
+          <div style="font-weight: 700; color: var(--text); margin-bottom: 6px;">Code neurocore20</div>
+          <div style="color: var(--text-muted); font-size: 0.95rem;">-25% sur Essential Elite et Private Lab.</div>
+        </div>
+      </div>
+      <div style="color: var(--text-primary); font-size: 1.05rem; line-height: 1.9; white-space: pre-line; margin-bottom: 16px;">${dashboard.ctaFin.replace(/={3,}/g, '').replace(/PROCHAINES ETAPES|PRET A TRANSFORMER.*\?/g, '').trim()}</div>
+      <div style="margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="https://neurocore-360.onrender.com/audit-complet/checkout" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 12px; font-weight: 800; letter-spacing: 0.02em; color: white; text-decoration: none; background: var(--accent-gradient);">Passer au coaching</a>
+        <a href="https://neurocore-360.onrender.com/" style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 12px; font-weight: 700; color: var(--text); text-decoration: none; border: 1px solid var(--border); background: var(--surface-1);">Revoir les offres</a>
+      </div>
     </div>
     ` : ''}
 
     <!-- Formulaire d'avis -->
     <div id="review-form-container" style="max-width: 700px; margin: 60px auto; padding: 40px; background: var(--card-bg); border: 1px solid var(--primary); border-radius: 24px;">
-      <h3 style="color: var(--text-primary); margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 700;">⭐ Ton avis compte !</h3>
+      <h3 style="color: var(--text-primary); margin-bottom: 16px; text-align: center; font-size: 1.8rem; font-weight: 800;">Ton avis compte</h3>
       <p style="color: var(--text-secondary); margin-bottom: 32px; text-align: center; font-size: 1.05rem;">Donne ton avis sur cette analyse pour m'aider à améliorer mes services</p>
       
       <form id="review-form" style="display: flex; flex-direction: column; gap: 24px;">
@@ -1265,11 +1335,11 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
         </button>
         
         <div id="review-success" style="display: none; padding: 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--primary); border-radius: 12px; color: var(--primary); text-align: center; font-weight: 500;">
-          ✅ Merci pour ton avis ! Il sera examiné avant publication.
+          Merci. Ton avis sera examiné avant publication.
         </div>
         
         <div id="review-error" style="display: none; padding: 20px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; color: #fca5a5; text-align: center; font-weight: 500;">
-          ❌ Erreur lors de l'envoi. Réessaie plus tard.
+          Erreur lors de l'envoi. Réessaie plus tard.
         </div>
       </form>
     </div>
@@ -1284,7 +1354,7 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
   <script>
     (function() {
       // Theme Management
-      const savedTheme = localStorage.getItem('report-theme') || 'dark';
+      const savedTheme = localStorage.getItem('report-theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
       
       const themeButtons = document.querySelectorAll('.theme-btn');
@@ -1307,15 +1377,13 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       const tocLinks = document.querySelectorAll('.toc-link');
       
       if (tocToggle && tocContainer) {
+        // Toujours visible: on propose seulement un mode "réduit"
+        const savedMin = localStorage.getItem('report-toc-min') === '1';
+        if (savedMin) tocContainer.classList.add('minimized');
+
         tocToggle.addEventListener('click', () => {
-          tocContainer.classList.toggle('visible');
-        });
-        
-        // Close TOC when clicking outside
-        document.addEventListener('click', (e) => {
-          if (!tocContainer.contains(e.target) && !tocToggle.contains(e.target)) {
-            tocContainer.classList.remove('visible');
-          }
+          tocContainer.classList.toggle('minimized');
+          localStorage.setItem('report-toc-min', tocContainer.classList.contains('minimized') ? '1' : '0');
         });
         
         // Smooth scroll for TOC links
@@ -1330,13 +1398,12 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
                 top: offsetTop,
                 behavior: 'smooth'
               });
-              tocContainer.classList.remove('visible');
             }
           });
         });
         
         // Highlight active section in TOC on scroll
-        const sections = document.querySelectorAll('.section-card');
+        const sections = document.querySelectorAll('.accordion-section');
         const observerOptions = {
           root: null,
           rootMargin: '-100px 0px -66% 0px',

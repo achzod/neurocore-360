@@ -145,14 +145,9 @@ FORMAT (CRITIQUE POUR NOTRE PIPELINE)
 2. NE JAMAIS ecrire de longues barres/separateurs type "====" / "----" / "********".
 3. Sous-sections autorisees (si necessaire) : "1. ...", "2. ..." en minuscules, puis texte narratif.
 
-VISUELS (AUTORISES MAIS SOBRES)
-- Autorise des mini-visuels lisibles (pas de separateurs) pour rendre le texte "vivant", uniquement si ca sert la comprehension :
-  Metrique : [■■■■■■□□□□] (qualitatif) ou Metrique : 🟢🟢🟡🔴🔴
-  ✓ point positif explicite
-  ✗ point negatif explicite
-  → action immediate
-- Ne mets JAMAIS un visuel sur une seule ligne au milieu d'une phrase.
-- Pas de "radar ASCII" enorme : si tu veux un radar, fais 6 lignes max, clair, compact.
+ZERO EMOJI / ZERO ASCII (CRITIQUE)
+- Interdit : emojis, puces emoji, barres ASCII type [■■■■□□], "✓/✗", separateurs, pictos.
+- Si tu veux rendre un point "scannable" : fais-le en FRANCAIS, court, propre, sans symboles.
 
 SCORING STANDARDISE (CRITIQUE)
 - Une seule ligne de score a la FIN de la section : "Score : NN/100" (1 seule fois).
@@ -171,7 +166,7 @@ VOCABULAIRE SCREENING (PAS DIAGNOSTIC)
 
 COUVERTURE DES REPONSES (CRITIQUE)
 - Tu dois exploiter les reponses du questionnaire au maximum.
-- Si une reponse importante n'est PAS exploitable (trop vague / incoherente) : dis-le clairement en 1 phrase ("info a clarifier") au lieu de l'ignorer.
+- Si une reponse importante n'est PAS exploitable (trop vague / incoherente) : transforme ca en "PROCHAINE ETAPE GUIDEE" (workflow) au lieu de le dire comme un manque.
 
 {section_specific_instructions}
 
@@ -189,7 +184,7 @@ INSTRUCTIONS POUR "EXECUTIVE SUMMARY" :
 C'est la pièce maîtresse. Elle doit être BRUTALE et CLINIQUE.
 
 1. LE DIAGNOSTIC D'AUTORITÉ :
-Explique en 3 paragraphes pourquoi le corps du client est en mode "Survie". Utilise uniquement des émojis pour les scores (ex: Vitalité : 🔴🔴🔴🟡🟢 3/5). INTERDICTION de faire des barres avec des carrés .
+Explique en 3 paragraphes pourquoi le corps du client est en mode "Survie". Zéro emoji, zéro visuel.
 
 2. LE LEVIER D'ÉLITE :
 Quelle est l'action unique qui va déverrouiller 80% des résultats ?
@@ -1101,7 +1096,7 @@ export async function generateAuditTxt(
     const formattedAnalysis = formatPhotoAnalysisForReport(photoAnalysis, firstName);
     photoDataStr = `\n\nRAPPORT D'EXPERTISE VISUELLE (A INTEGRER DANS TON RECIT) :\n${formattedAnalysis}`;
   } else {
-    photoDataStr = '\n\nAUCUNE PHOTO FOURNIE - Ne pas inventer de donnees visuelles.';
+    photoDataStr = '\n\nPHOTOS NON DISPONIBLES : fais une analyse prudente, puis propose une PROCHAINE ETAPE GUIDEE (upload) + 2-3 tests video simples. Ne te justifie pas.';
   }
 
   const fullDataStr = dataStr + photoDataStr;
@@ -1209,7 +1204,17 @@ export async function generateAndConvertAudit(
 ): Promise<AuditResult> {
   const startTime = Date.now();
   
-  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const firstName = (() => {
+    const direct =
+      (clientData as any)?.prenom ??
+      (clientData as any)?.firstName ??
+      (clientData as any)?.firstname ??
+      (clientData as any)?.name;
+    if (typeof direct === "string" && direct.trim()) return direct.trim().split(/\s+/)[0];
+    const email = (clientData as any)?.email;
+    if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
+    return "Client";
+  })();
   const lastName = clientData['nom'] || '';
   const clientName = `${firstName} ${lastName}`.trim();
 

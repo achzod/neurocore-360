@@ -36,6 +36,17 @@ export interface MagicToken {
   expiresAt: Date;
 }
 
+export interface ReportArtifact {
+  id: string;
+  auditId: string;
+  tier: string;
+  engine: string;
+  model: string;
+  txt: string;
+  html: string;
+  createdAt: Date;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -62,6 +73,9 @@ export interface IStorage {
   completeReportJob(auditId: string): Promise<void>;
   failReportJob(auditId: string, error: string): Promise<void>;
   deleteReportJob(auditId: string): Promise<void>;
+
+  // Traçabilité: conserver CHAQUE version générée (TXT + HTML)
+  createReportArtifact(input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }): Promise<ReportArtifact>;
 }
 
 export class MemStorage implements IStorage {
@@ -69,12 +83,14 @@ export class MemStorage implements IStorage {
   private audits: Map<string, Audit>;
   private progress: Map<string, QuestionnaireProgress>;
   private magicTokens: Map<string, MagicToken>;
+  private reportArtifacts: ReportArtifact[];
 
   constructor() {
     this.users = new Map();
     this.audits = new Map();
     this.progress = new Map();
     this.magicTokens = new Map();
+    this.reportArtifacts = [];
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -222,9 +238,62 @@ export class MemStorage implements IStorage {
   async completeReportJob(_auditId: string): Promise<void> {}
   async failReportJob(_auditId: string, _error: string): Promise<void> {}
   async deleteReportJob(_auditId: string): Promise<void> {}
+
+  async createReportArtifact(
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
+  ): Promise<ReportArtifact> {
+    const createdAt = input.createdAt ?? new Date();
+    const art: ReportArtifact = {
+      id: randomUUID(),
+      auditId: input.auditId,
+      tier: input.tier,
+      engine: input.engine,
+      model: input.model,
+      txt: input.txt,
+      html: input.html,
+      createdAt,
+    };
+    this.reportArtifacts.push(art);
+    return art;
+  }
 }
 
 export class PgStorage implements IStorage {
+  private auditColumnsCache: Set<string> | null = null;
+  private ensuredArtifactsTable = false;
+
+  private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
+    if (this.auditColumnsCache) return this.auditColumnsCache;
+    const res = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'audits'`
+    );
+    this.auditColumnsCache = new Set((res.rows || []).map((r: any) => String(r.column_name)));
+    return this.auditColumnsCache;
+  }
+
+  private async ensureReportArtifactsTable(): Promise<void> {
+    if (this.ensuredArtifactsTable) return;
+    try {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS report_artifacts (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          audit_id VARCHAR(36) NOT NULL,
+          tier VARCHAR(20) NOT NULL,
+          engine VARCHAR(30) NOT NULL,
+          model VARCHAR(80) NOT NULL,
+          txt TEXT NOT NULL,
+          html TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`
+      );
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_report_artifacts_audit_id ON report_artifacts(audit_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_report_artifacts_created_at ON report_artifacts(created_at)`);
+      this.ensuredArtifactsTable = true;
+    } catch {
+      // best-effort
+      this.ensuredArtifactsTable = true;
+    }
+  }
   async getUser(id: string): Promise<User | undefined> {
     const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
     if (result.rows.length === 0) return undefined;
@@ -302,6 +371,21 @@ export class PgStorage implements IStorage {
     const values: unknown[] = [];
     let paramIndex = 1;
 
+    // Colonnes optionnelles (report_txt/html/generated_at) : inclure seulement si elles existent
+    const cols = await this.ensureAuditColumnsLoaded();
+    if ((data as any).reportTxt !== undefined && cols.has("report_txt")) {
+      updates.push(`report_txt = $${paramIndex++}`);
+      values.push((data as any).reportTxt ?? null);
+    }
+    if ((data as any).reportHtml !== undefined && cols.has("report_html")) {
+      updates.push(`report_html = $${paramIndex++}`);
+      values.push((data as any).reportHtml ?? null);
+    }
+    if ((data as any).reportGeneratedAt !== undefined && cols.has("report_generated_at")) {
+      updates.push(`report_generated_at = $${paramIndex++}`);
+      values.push((data as any).reportGeneratedAt ?? null);
+    }
+
     if (data.reportDeliveryStatus !== undefined) {
       updates.push(`report_delivery_status = $${paramIndex++}`);
       values.push(data.reportDeliveryStatus);
@@ -318,10 +402,39 @@ export class PgStorage implements IStorage {
     if (updates.length === 0) return this.getAudit(id);
 
     values.push(id);
-    const result = await pool.query(
-      `UPDATE audits SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`,
-      values
-    );
+    let result;
+    try {
+      result = await pool.query(
+        `UPDATE audits SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`,
+        values
+      );
+    } catch (e: any) {
+      // Si la DB n'a pas encore les colonnes (rollout), on retente sans elles (best-effort)
+      if (e?.code === "42703" || String(e?.message || "").includes("column") && String(e?.message || "").includes("does not exist")) {
+        const strippedUpdates: string[] = [];
+        const strippedValues: unknown[] = [];
+        let idx = 1;
+
+        for (const [k, v] of [
+          ["report_delivery_status", data.reportDeliveryStatus],
+          ["report_sent_at", data.reportSentAt],
+          ["narrative_report", (data as any).narrativeReport],
+        ] as const) {
+          if (v !== undefined) {
+            strippedUpdates.push(`${k} = $${idx++}`);
+            strippedValues.push(k === "narrative_report" ? JSON.stringify(v) : v);
+          }
+        }
+        if (strippedUpdates.length === 0) return this.getAudit(id);
+        strippedValues.push(id);
+        result = await pool.query(
+          `UPDATE audits SET ${strippedUpdates.join(", ")} WHERE id = $${idx} RETURNING *`,
+          strippedValues
+        );
+      } else {
+        throw e;
+      }
+    }
 
     if (result.rows.length === 0) return undefined;
     return this.rowToAudit(result.rows[0]);
@@ -424,11 +537,42 @@ export class PgStorage implements IStorage {
       responses: row.responses,
       scores: row.scores,
       narrativeReport: row.narrative_report,
+      reportTxt: row.report_txt ?? undefined,
+      reportHtml: row.report_html ?? undefined,
+      reportGeneratedAt: row.report_generated_at ?? undefined,
       reportDeliveryStatus: row.report_delivery_status,
       reportScheduledFor: row.report_scheduled_for,
       reportSentAt: row.report_sent_at,
       createdAt: row.created_at,
       completedAt: row.completed_at,
+    };
+  }
+
+  async createReportArtifact(
+    input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }
+  ): Promise<ReportArtifact> {
+    await this.ensureReportArtifactsTable();
+    const id = randomUUID();
+    const createdAt = input.createdAt ?? new Date();
+    try {
+      await pool.query(
+        `INSERT INTO report_artifacts (id, audit_id, tier, engine, model, txt, html, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [id, input.auditId, input.tier, input.engine, input.model, input.txt, input.html, createdAt]
+      );
+    } catch (e: any) {
+      // best-effort, ne pas casser le workflow si la DB refuse (quota, taille, etc.)
+      console.error("[ReportArtifact] Insert failed (best-effort):", e?.message || e);
+    }
+    return {
+      id,
+      auditId: input.auditId,
+      tier: input.tier,
+      engine: input.engine,
+      model: input.model,
+      txt: input.txt,
+      html: input.html,
+      createdAt,
     };
   }
 
