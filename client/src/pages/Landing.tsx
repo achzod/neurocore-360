@@ -147,6 +147,29 @@ function BentoHeroSection() {
     <section className="relative bg-background py-8 lg:py-12" data-testid="section-hero">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.08),transparent_50%)]" />
 
+      {/* Beta Banner */}
+      <div className="relative mx-auto max-w-7xl px-4 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex justify-center"
+        >
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/30 backdrop-blur-sm">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+            </span>
+            <span className="text-sm font-semibold text-amber-200/90 tracking-wide">
+              En Beta Test depuis Septembre 2025
+            </span>
+            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs px-2 py-0.5">
+              127 testeurs
+            </Badge>
+          </div>
+        </motion.div>
+      </div>
+
       <div className="relative mx-auto max-w-7xl px-4">
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:grid-rows-[auto_auto_auto]">
@@ -266,31 +289,8 @@ const iconMap: Record<string, typeof User> = {
   Camera,
 };
 
-// BENTO DOMAINES - Variable size cards
+// BENTO DOMAINES - Clean 5-column grid
 function BentoDomainesSection() {
-  // Assign sizes to create visual interest
-  const getSizeClass = (idx: number): string => {
-    // Pattern: Large, Small, Small, Medium, Small, Large...
-    const pattern = [
-      "md:col-span-4 md:row-span-2", // Large
-      "md:col-span-4",               // Medium
-      "md:col-span-4",               // Medium
-      "md:col-span-6",               // Wide
-      "md:col-span-6",               // Wide
-      "md:col-span-4",               // Medium
-      "md:col-span-4",               // Medium
-      "md:col-span-4",               // Medium
-      "md:col-span-6 md:row-span-2", // Large wide
-      "md:col-span-6",               // Wide
-      "md:col-span-4",               // Medium
-      "md:col-span-4",               // Medium
-      "md:col-span-4",               // Medium
-      "md:col-span-8",               // Extra wide
-      "md:col-span-4",               // Medium
-    ];
-    return pattern[idx % pattern.length];
-  };
-
   return (
     <section id="domaines" className="relative border-y border-border/30 bg-background py-12 lg:py-16" data-testid="section-domaines">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.03),transparent_70%)]" />
@@ -309,34 +309,32 @@ function BentoDomainesSection() {
           </p>
         </div>
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+        {/* Clean Grid - 5 columns on desktop, 3 on tablet, 2 on mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {QUESTIONNAIRE_SECTIONS.map((section, idx) => {
             const IconComponent = iconMap[section.icon] || User;
-            const sizeClass = getSizeClass(idx);
-            const isLarge = sizeClass.includes("row-span-2");
 
             return (
               <motion.div
                 key={section.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: idx * 0.03 }}
-                className={sizeClass}
+                transition={{ duration: 0.3, delay: idx * 0.02 }}
               >
-                <div className={`${bentoStyles.card} h-full flex ${isLarge ? 'flex-col justify-between' : 'items-start gap-4'} ${isLarge ? 'p-8' : 'p-5'}`}>
-                  <div className={`flex ${isLarge ? 'h-14 w-14' : 'h-10 w-10'} shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary`}>
-                    <IconComponent className={isLarge ? "h-7 w-7" : "h-5 w-5"} />
+                <div className="group relative h-full rounded-2xl border border-border/50 bg-card/60 p-4 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/5">
+                  {/* Icon */}
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                    <IconComponent className="h-5 w-5" />
                   </div>
-                  <div className={isLarge ? "mt-auto" : "flex-1"}>
-                    <h3 className={`font-semibold text-foreground tracking-[-0.01em] ${isLarge ? 'text-xl mb-2' : 'text-sm'}`}>
-                      {section.title}
-                    </h3>
-                    <p className={`text-muted-foreground ${isLarge ? 'text-sm' : 'text-xs'} line-clamp-2`}>
-                      {section.description}
-                    </p>
-                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-semibold text-sm text-foreground tracking-[-0.01em] leading-tight">
+                    {section.title}
+                  </h3>
+
+                  {/* Subtle accent line */}
+                  <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
               </motion.div>
             );
