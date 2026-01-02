@@ -149,25 +149,23 @@ function generateSVGGauge(score: number): string {
 
 function generateSVGRadar(scores: Record<string, number>): string {
   let categories = Object.keys(scores);
-  
-  // Simplifier le radar : limiter à 6 catégories maximum pour meilleure lisibilité
+
+  // Limiter à 6 catégories max
   if (categories.length > 6) {
-    categories = categories
-      .sort((a, b) => (scores[a] || 0) - (scores[b] || 0)) // Trier par score croissant
-      .slice(0, 6); // Prendre les 6 premiers (scores les plus faibles = axes d'amélioration)
+    categories = categories.slice(0, 6);
   }
-  
+
   const numCategories = categories.length;
   if (numCategories === 0) {
-    return `<svg width="400" height="400" viewBox="0 0 400 400"><text x="200" y="200" font-size="14" fill="#94a3b8" text-anchor="middle">Scores en cours d'analyse</text></svg>`;
+    return `<div style="text-align: center; padding: 40px; color: var(--text-muted);">Scores en cours d'analyse</div>`;
   }
 
-  const size = 400;
+  const size = 500;
   const center = size / 2;
-  const radius = (size / 2) * 0.7;
+  const radius = 160;
   const angleStep = (Math.PI * 2) / numCategories;
 
-  // Background grid - moins de niveaux pour plus de clarté
+  // Background grid
   const gridLevels = [0.25, 0.5, 0.75, 1];
   const gridHtml = gridLevels.map(level => {
     const r = radius * level;
@@ -175,16 +173,16 @@ function generateSVGRadar(scores: Record<string, number>): string {
       const angle = i * angleStep - Math.PI / 2;
       return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
     }).join(' ');
-    return `<polygon points="${points}" fill="none" stroke="#262626" stroke-width="1" opacity="0.5" />`;
+    return `<polygon points="${points}" fill="none" stroke="var(--border)" stroke-width="1" />`;
   }).join('');
 
-  // Axis
+  // Axes
   const axisHtml = categories.map((_, i) => {
     const angle = i * angleStep - Math.PI / 2;
-    return `<line x1="${center}" y1="${center}" x2="${center + radius * Math.cos(angle)}" y2="${center + radius * Math.sin(angle)}" stroke="#333" stroke-width="1" opacity="0.3" />`;
+    return `<line x1="${center}" y1="${center}" x2="${center + radius * Math.cos(angle)}" y2="${center + radius * Math.sin(angle)}" stroke="var(--border)" stroke-width="1" />`;
   }).join('');
 
-  // Score polygon
+  // Score polygon avec animation
   const points = categories.map((cat, i) => {
     const score = scores[cat] || 0;
     const angle = i * angleStep - Math.PI / 2;
@@ -192,61 +190,67 @@ function generateSVGRadar(scores: Record<string, number>): string {
     return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
   }).join(' ');
 
-  const polygonHtml = `
-    <polygon points="${points}" fill="rgba(94, 234, 212, 0.2)" stroke="#5eead4" stroke-width="2.5" stroke-linejoin="round" />
-    ${categories.map((cat, i) => {
-      const score = scores[cat] || 0;
-      const angle = i * angleStep - Math.PI / 2;
-      const r = radius * (score / 100);
-      return `<circle cx="${center + r * Math.cos(angle)}" cy="${center + r * Math.sin(angle)}" r="5" fill="#5eead4" stroke="#0a0a0a" stroke-width="2" />`;
-    }).join('')}
-  `;
-
-    // Labels - utiliser des abréviations lisibles (pas de troncature agressive)
-  const labelMap: Record<string, string> = {
-    'ANALYSE VISU': 'VISUEL',
-    'ANALYSE SYST': 'CARDIO',
-    'ANALYSE META': 'METABO',
-    'ANALYSE BIOM': 'BIOMEC',
-    'ANALYSE ENT': 'ENTRAIN',
-    'ANALYSE SOMM': 'SOMMEIL',
-    'ANALYSE DIG': 'DIGEST',
-    'ANALYSE AXE': 'HORMONE',
-    'PROTOCOLE MATIN': 'MATIN',
-    'PROTOCOLE SOIR': 'SOIR',
-    'PROTOCOLE DIG': 'DIGEST',
-    'PROTOCOLE BUR': 'BUREAU',
-    'PROTOCOLE ENT': 'ENTRAIN',
-    'PLAN SEMAINE': 'PLAN',
-    'KPI ET TAB': 'KPI',
-    'STACK SUPP': 'SUPPLE',
-    'SYNTHESE': 'SYNTH'
-  };
-  
-    const labelsHtml = categories.map((cat, i) => {
+  // Points interactifs avec scores
+  const dotsHtml = categories.map((cat, i) => {
+    const score = scores[cat] || 0;
     const angle = i * angleStep - Math.PI / 2;
-    const r = radius + 40;
+    const r = radius * (score / 100);
     const x = center + r * Math.cos(angle);
     const y = center + r * Math.sin(angle);
-    const textAnchor = Math.cos(angle) > 0.1 ? "start" : Math.cos(angle) < -0.1 ? "end" : "middle";
-    
-    // Chercher une abréviation dans le map
-      let label = cat.toUpperCase();
-      for (const [key, abbr] of Object.entries(labelMap)) {
-        if (cat.toUpperCase().startsWith(key)) {
-          label = abbr;
-          break;
-        }
-      }
-      
-      return `<text x="${x}" y="${y}" font-size="12" font-family="Inter, sans-serif" font-weight="700" fill="#ffffff" text-anchor="${textAnchor}">${label}</text>`;
+    return `
+      <g class="radar-point" style="cursor: pointer;">
+        <circle cx="${x}" cy="${y}" r="8" fill="var(--primary)" stroke="var(--bg)" stroke-width="3" />
+        <title>${cat}: ${score}/100</title>
+      </g>
+    `;
+  }).join('');
+
+  // Labels avec scores
+  const labelsHtml = categories.map((cat, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const labelRadius = radius + 50;
+    const x = center + labelRadius * Math.cos(angle);
+    const y = center + labelRadius * Math.sin(angle);
+    const score = scores[cat] || 0;
+
+    // Text anchor basé sur la position
+    let textAnchor = "middle";
+    let dx = 0;
+    if (Math.cos(angle) > 0.3) { textAnchor = "start"; dx = 5; }
+    else if (Math.cos(angle) < -0.3) { textAnchor = "end"; dx = -5; }
+
+    return `
+      <g>
+        <text x="${x + dx}" y="${y - 8}" font-size="13" font-family="Inter, system-ui, sans-serif" font-weight="700" fill="var(--text)" text-anchor="${textAnchor}">${cat.toUpperCase()}</text>
+        <text x="${x + dx}" y="${y + 10}" font-size="18" font-family="Inter, system-ui, sans-serif" font-weight="800" fill="var(--primary)" text-anchor="${textAnchor}">${score}</text>
+      </g>
+    `;
   }).join('');
 
   return `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <svg width="100%" height="400" viewBox="0 0 ${size} ${size}" style="max-width: 500px; margin: 0 auto; display: block;">
+      <style>
+        .radar-polygon {
+          fill: rgba(94, 234, 212, 0.15);
+          stroke: var(--primary);
+          stroke-width: 3;
+          transition: all 0.3s ease;
+        }
+        .radar-polygon:hover {
+          fill: rgba(94, 234, 212, 0.25);
+        }
+        .radar-point circle {
+          transition: all 0.2s ease;
+        }
+        .radar-point:hover circle {
+          r: 12;
+          fill: #34d399;
+        }
+      </style>
       ${gridHtml}
       ${axisHtml}
-      ${polygonHtml}
+      <polygon class="radar-polygon" points="${points}" />
+      ${dotsHtml}
       ${labelsHtml}
     </svg>
   `;
