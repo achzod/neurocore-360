@@ -206,18 +206,23 @@ async function generateReportAsync(
     );
 
     // Heartbeat: éviter le faux "stuck" (et donner une progression visible)
-    const heartbeatIntervalMs = 2 * 60 * 1000; // toutes les 2 minutes
+    // ⚠️ Important: interval court pour ne PAS rester bloqué visuellement à 20%.
+    // Et utiliser updateReportJobProgress() pour rafraîchir last_progress_at.
+    const heartbeatIntervalMs = 15 * 1000; // toutes les 15 secondes
+    let lastHeartbeatPct = 20;
     const heartbeat = setInterval(() => {
       const elapsed = Date.now() - startTime;
       // Progression "douce" de 20 -> 90 sur toute la fenêtre de timeout
       const pct = Math.min(90, 20 + Math.floor((elapsed / AI_CALL_TIMEOUT_MS) * 70));
+      if (pct <= lastHeartbeatPct) return;
+      lastHeartbeatPct = pct;
+
       storage
-        .createOrUpdateReportJob({
+        .updateReportJobProgress(
           auditId,
-          status: "generating" as ReportJobStatusEnum,
-          currentSection: "Génération du rapport expert... (en cours)",
-          progress: pct,
-        })
+          pct,
+          `Génération du rapport expert... (${pct}%)`
+        )
         .catch(() => {
           // best-effort
         });
