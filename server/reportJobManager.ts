@@ -295,10 +295,19 @@ async function generateReportAsync(
       throw new Error(result.error || "GPT-5.2-2025-12-11 generation failed");
     }
 
-    await storage.completeReportJob(auditId);
+    // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML
+    // et sauvegardé dans la DB. Sinon le client voit "COMPLETED" mais pas de rapport.
     
-    // Convert TXT to HTML with SVG charts and store both for traceability + caching
+    // Convert TXT to HTML with SVG charts
+    console.log(`[ReportJobManager] Converting TXT to HTML for ${auditId}...`);
     const reportHtml = generateExportHTMLFromTxt(result.txt || '', auditId, photos);
+    
+    if (!reportHtml || reportHtml.length < 1000) {
+      throw new Error(`HTML generation failed or too short (${reportHtml?.length || 0} chars)`);
+    }
+    
+    console.log(`[ReportJobManager] HTML generated: ${reportHtml.length} chars for ${auditId}`);
+    
     const report = {
       txt: result.txt,
       html: reportHtml,
@@ -306,11 +315,16 @@ async function generateReportAsync(
       metadata: result.metadata
     };
     
+    // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED
     await storage.updateAudit(auditId, {
       narrativeReport: report,
+      reportTxt: result.txt || '',
+      reportHtml: reportHtml,
       reportGeneratedAt: new Date(),
       reportDeliveryStatus: "READY",
     });
+    
+    console.log(`[ReportJobManager] Report saved to audit ${auditId}`);
 
     // Traçabilité: conserver CHAQUE version générée (TXT + HTML) dans une table dédiée
     await storage.createReportArtifact({
@@ -322,8 +336,11 @@ async function generateReportAsync(
       html: String(reportHtml || ""),
     });
 
+    // ✅ MAINTENANT on peut marquer comme COMPLETED (après que tout soit sauvegardé)
+    await storage.completeReportJob(auditId);
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[ReportJobManager] Generation COMPLETED for ${auditId} in ${duration}s`);
+    console.log(`[ReportJobManager] Generation COMPLETED for ${auditId} in ${duration}s (HTML: ${reportHtml.length} chars)`);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

@@ -640,17 +640,26 @@ export async function registerRoutes(
         return;
       }
       
+      // Priorité: reportHtml direct > narrativeReport.html > génération à la volée
       const narrativeReport = audit.narrativeReport as any;
-      if (!narrativeReport) {
-        res.status(400).json({ error: "Rapport non disponible" });
+      let html = (audit as any).reportHtml || narrativeReport?.html;
+      
+      if (!html) {
+        // Fallback: génération à la volée si pas de HTML stocké
+        if (!narrativeReport) {
+          res.status(400).json({ error: "Rapport non disponible (génération en cours ou échouée)" });
+          return;
+        }
+        const photos = extractPhotosFromAudit(audit);
+        html = generateExportHTML(narrativeReport, auditId, photos);
+      }
+      
+      if (!html || html.length < 500) {
+        res.status(400).json({ error: "Rapport HTML invalide ou trop court" });
         return;
       }
 
-      // Récupérer les photos depuis responses (flux principal)
-      const photos = extractPhotosFromAudit(audit);
-
-      // Si l'HTML a déjà été stocké en base, on le renvoie directement (persistance)
-      const html = narrativeReport.html || generateExportHTML(narrativeReport, auditId, photos);
+      console.log(`[Export HTML] Serving ${html.length} chars for audit ${auditId}`);
       res.setHeader("Content-Type", "text/html");
       res.setHeader("Content-Disposition", `attachment; filename=neurocore-360-${auditId.slice(0, 8)}.html`);
       res.send(html);
