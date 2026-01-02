@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,12 +46,34 @@ import pnLogo from "@assets/limage-19764_1767172975495.webp";
 import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
-// Ultrahuman-style Hero Section with giant green text + phone mockup
+// Ultrahuman-style Hero with spotlight, glow, lift effects
 function UltrahumanHero() {
-  const [isHovered, setIsHovered] = useState(false);
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
+  const textRef = useRef<HTMLDivElement>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isTextHovered, setIsTextHovered] = useState(false);
 
-  // Different content for each tab
+  // Spotlight effect - track mouse position with rAF
+  useEffect(() => {
+    let rafId: number;
+    const handleMouseMove = (e: MouseEvent) => {
+      rafId = requestAnimationFrame(() => {
+        if (textRef.current) {
+          const rect = textRef.current.getBoundingClientRect();
+          setMousePos({
+            x: ((e.clientX - rect.left) / rect.width) * 100,
+            y: ((e.clientY - rect.top) / rect.height) * 100,
+          });
+        }
+      });
+    };
+    window.addEventListener("pointermove", handleMouseMove);
+    return () => {
+      window.removeEventListener("pointermove", handleMouseMove);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   const tabContent = {
     scores: {
       title: "Score Global",
@@ -65,8 +87,8 @@ function UltrahumanHero() {
     },
     domaines: {
       title: "15 Domaines",
-      value: "12",
-      subtitle: "domaines optimisés",
+      value: "15",
+      subtitle: "analysés en profondeur",
       details: [
         { label: "Hormones", value: 68 },
         { label: "Digestion", value: 91 },
@@ -98,122 +120,129 @@ function UltrahumanHero() {
   const current = tabContent[activeTab];
 
   return (
-    <section className="relative min-h-[95vh] overflow-hidden bg-black flex flex-col items-center justify-center px-4 py-12">
+    <section className="relative min-h-[85vh] overflow-hidden bg-black flex flex-col items-center justify-center px-4 py-8">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.12),transparent_50%)]" />
 
-      {/* Giant Text - Single line with blur hover effect */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="text-center z-10 mb-6 cursor-pointer w-full"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+      {/* Giant Text with Ultrahuman hover effect */}
+      <div
+        ref={textRef}
+        className="relative z-10 mb-4 cursor-pointer group"
+        onMouseEnter={() => setIsTextHovered(true)}
+        onMouseLeave={() => setIsTextHovered(false)}
       >
+        {/* Glow/Aura layer - behind text */}
+        <div
+          className="absolute -inset-8 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10 blur-2xl"
+          style={{
+            background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, rgba(16, 185, 129, 0.4), transparent 60%)`,
+          }}
+        />
+
+        {/* Spotlight layer - follows mouse */}
+        <div
+          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle 150px at ${mousePos.x}% ${mousePos.y}%, rgba(16, 185, 129, 0.15), transparent 50%)`,
+          }}
+        />
+
+        {/* Text with lift + blur effect */}
         <motion.h1
           animate={{
-            filter: isHovered ? "blur(0px)" : "blur(4px)",
-            scale: isHovered ? 1.02 : 1,
-            opacity: isHovered ? 1 : 0.7,
+            y: isTextHovered ? -3 : 0,
+            scale: isTextHovered ? 1.01 : 1,
+            filter: isTextHovered ? "blur(0px)" : "blur(3px)",
+            opacity: isTextHovered ? 1 : 0.6,
           }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="text-[8vw] sm:text-[7vw] md:text-[6vw] lg:text-[5.5vw] font-bold leading-none tracking-tight whitespace-nowrap"
+          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          className="text-[5vw] sm:text-[4.5vw] md:text-[4vw] lg:text-[3.5vw] font-bold leading-none tracking-tight whitespace-nowrap text-primary select-none"
           style={{
-            textShadow: isHovered
-              ? "0 0 60px rgba(16, 185, 129, 0.6), 0 0 100px rgba(16, 185, 129, 0.4)"
-              : "0 0 40px rgba(16, 185, 129, 0.3)",
+            textShadow: isTextHovered
+              ? "0 4px 20px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.3)"
+              : "0 0 30px rgba(16, 185, 129, 0.2)",
           }}
         >
-          <span className="text-primary">Ton analyse tout en 1</span>
-          <span className="text-white">.</span>
+          Ton analyse tout en 1<span className="text-white">.</span>
         </motion.h1>
-      </motion.div>
+      </div>
 
-      {/* Phone Mockup with Interactive Tabs */}
+      {/* Phone Mockup - Smaller */}
       <motion.div
-        initial={{ opacity: 0, y: 60, scale: 0.95 }}
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-[300px] sm:max-w-[340px] md:max-w-[380px]"
+        transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-[200px] sm:max-w-[220px] md:max-w-[240px]"
       >
-        {/* Phone Frame */}
         <div className="relative mx-auto">
-          {/* Phone outer shell */}
-          <div className="relative rounded-[3rem] bg-gradient-to-b from-zinc-700 to-zinc-900 p-2 shadow-2xl shadow-primary/20">
-            {/* Phone inner bezel */}
-            <div className="rounded-[2.5rem] bg-black p-1">
-              {/* Phone screen */}
-              <div className="relative rounded-[2.25rem] bg-gradient-to-b from-zinc-900 to-black overflow-hidden aspect-[9/19]">
+          {/* Phone shell */}
+          <div className="relative rounded-[2rem] bg-gradient-to-b from-zinc-700 to-zinc-900 p-1.5 shadow-xl shadow-primary/10 group">
+            {/* Glow on phone hover */}
+            <div className="absolute -inset-4 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+
+            <div className="rounded-[1.75rem] bg-black p-0.5">
+              <div className="relative rounded-[1.5rem] bg-gradient-to-b from-zinc-900 to-black overflow-hidden aspect-[9/19]">
                 {/* Status bar */}
-                <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-3 text-white/80 text-xs z-20">
+                <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-2 text-white/70 text-[8px] z-20">
                   <span className="font-medium">9:41</span>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-2 border border-white/60 rounded-sm">
-                      <div className="w-3/4 h-full bg-primary rounded-sm" />
-                    </div>
+                  <div className="w-3 h-1.5 border border-white/50 rounded-sm">
+                    <div className="w-2/3 h-full bg-primary rounded-sm" />
                   </div>
                 </div>
 
                 {/* Dynamic Island */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-7 bg-black rounded-full z-30" />
+                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-5 bg-black rounded-full z-30" />
 
-                {/* App Content - Changes based on active tab */}
-                <div className="pt-14 px-4 h-full flex flex-col">
-                  {/* Header */}
-                  <div className="mb-4">
-                    <p className="text-white/60 text-xs">Bonsoir, Achzod</p>
-                    <p className="text-white/40 text-[10px]">Voici ton rapport NEUROCORE</p>
+                {/* Content */}
+                <div className="pt-10 px-3 h-full flex flex-col">
+                  <div className="mb-2">
+                    <p className="text-white/50 text-[8px]">Bonsoir, Achzod</p>
+                    <p className="text-white/30 text-[7px]">Ton rapport NEUROCORE</p>
                   </div>
 
-                  {/* Main Content - Animated on tab change */}
                   <motion.div
                     key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex-1 flex flex-col items-center justify-center -mt-4"
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 flex flex-col items-center justify-center -mt-2"
                   >
-                    <div className="text-center mb-2">
-                      <div className="inline-flex items-center gap-1 bg-white/10 rounded-full px-3 py-1 text-[10px] text-white/70">
-                        {current.title} <ChevronRight className="w-3 h-3" />
-                      </div>
+                    <div className="inline-flex items-center gap-0.5 bg-white/10 rounded-full px-2 py-0.5 text-[7px] text-white/60 mb-1">
+                      {current.title} <ChevronRight className="w-2 h-2" />
                     </div>
 
                     <motion.div
-                      animate={{ scale: [1, 1.02, 1] }}
+                      animate={{ scale: [1, 1.015, 1] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                      className="text-7xl font-bold text-white tracking-tighter"
+                      className="text-4xl font-bold text-white tracking-tighter"
                     >
                       {current.value}
                     </motion.div>
 
-                    <div className="mt-2 inline-flex items-center gap-1 bg-primary/20 rounded-full px-3 py-1">
-                      <TrendingUp className="w-3 h-3 text-primary" />
-                      <span className="text-primary text-xs font-medium">{current.subtitle}</span>
+                    <div className="mt-1 inline-flex items-center gap-0.5 bg-primary/20 rounded-full px-2 py-0.5">
+                      <TrendingUp className="w-2 h-2 text-primary" />
+                      <span className="text-primary text-[7px] font-medium">{current.subtitle}</span>
                     </div>
                   </motion.div>
 
-                  {/* Dynamic Details based on tab */}
+                  {/* Details */}
                   <motion.div
-                    key={`details-${activeTab}`}
+                    key={`d-${activeTab}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                    className="bg-white/5 rounded-2xl p-3 mb-3"
+                    className="bg-white/5 rounded-xl p-2 mb-2"
                   >
                     {current.details.map((item, idx) => (
-                      <div key={idx} className="mb-2 last:mb-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-white/70 text-[10px]">{item.label}</span>
-                          <span className="text-primary text-[10px]">{item.value}{activeTab === "rapport" ? "" : "/100"}</span>
+                      <div key={idx} className="mb-1.5 last:mb-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-white/60 text-[7px]">{item.label}</span>
+                          <span className="text-primary text-[7px]">{item.value}{activeTab === "rapport" ? "" : "/100"}</span>
                         </div>
-                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-0.5 bg-white/10 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${activeTab === "rapport" ? Math.min(item.value * 4, 100) : item.value}%` }}
-                            transition={{ duration: 0.8, delay: idx * 0.1 }}
+                            transition={{ duration: 0.6, delay: idx * 0.08 }}
                             className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
                           />
                         </div>
@@ -221,72 +250,61 @@ function UltrahumanHero() {
                     ))}
                   </motion.div>
 
-                  {/* Interactive Bottom Nav */}
-                  <div className="bg-white/5 backdrop-blur rounded-2xl p-2 mb-2">
+                  {/* Nav tabs */}
+                  <div className="bg-white/5 rounded-xl p-1 mb-1.5">
                     <div className="flex items-center justify-around">
-                      <button
-                        onClick={() => setActiveTab("scores")}
-                        className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${activeTab === "scores" ? "bg-white/10" : "hover:bg-white/5"}`}
-                      >
-                        <Activity className={`w-4 h-4 ${activeTab === "scores" ? "text-primary" : "text-white/40"}`} />
-                        <span className={`text-[8px] ${activeTab === "scores" ? "text-primary" : "text-white/40"}`}>SCORES</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("domaines")}
-                        className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${activeTab === "domaines" ? "bg-white/10" : "hover:bg-white/5"}`}
-                      >
-                        <Layers className={`w-4 h-4 ${activeTab === "domaines" ? "text-primary" : "text-white/40"}`} />
-                        <span className={`text-[8px] ${activeTab === "domaines" ? "text-primary" : "text-white/40"}`}>DOMAINES</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("rapport")}
-                        className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${activeTab === "rapport" ? "bg-white/10" : "hover:bg-white/5"}`}
-                      >
-                        <Brain className={`w-4 h-4 ${activeTab === "rapport" ? "text-primary" : "text-white/40"}`} />
-                        <span className={`text-[8px] ${activeTab === "rapport" ? "text-primary" : "text-white/40"}`}>RAPPORT</span>
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("plan")}
-                        className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${activeTab === "plan" ? "bg-white/10" : "hover:bg-white/5"}`}
-                      >
-                        <Target className={`w-4 h-4 ${activeTab === "plan" ? "text-primary" : "text-white/40"}`} />
-                        <span className={`text-[8px] ${activeTab === "plan" ? "text-primary" : "text-white/40"}`}>PLAN</span>
-                      </button>
+                      {[
+                        { id: "scores", icon: Activity, label: "SCORES" },
+                        { id: "domaines", icon: Layers, label: "DOMAINES" },
+                        { id: "rapport", icon: Brain, label: "RAPPORT" },
+                        { id: "plan", icon: Target, label: "PLAN" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                          className={`flex flex-col items-center gap-0 px-1.5 py-1 rounded-lg transition-all duration-200 ${
+                            activeTab === tab.id ? "bg-white/10 scale-105" : "hover:bg-white/5"
+                          }`}
+                        >
+                          <tab.icon className={`w-3 h-3 ${activeTab === tab.id ? "text-primary" : "text-white/30"}`} />
+                          <span className={`text-[5px] ${activeTab === tab.id ? "text-primary" : "text-white/30"}`}>{tab.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Glow effect behind phone */}
-          <div className="absolute -inset-10 bg-primary/20 blur-3xl rounded-full -z-10" />
         </div>
       </motion.div>
 
-      {/* Description text below */}
+      {/* Description */}
       <motion.p
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-        className="text-center text-white/60 text-sm sm:text-base max-w-lg mt-8 px-4 z-10"
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="text-center text-white/50 text-xs sm:text-sm max-w-md mt-6 px-4 z-10"
       >
-        Analyse complète sur 15 domaines : métabolisme, hormones, nutrition, sommeil,
-        biomécanique. Rapport personnalisé de 40+ pages avec plan d'action concret.
+        15 domaines analysés. 180+ questions. Rapport personnalisé de 40+ pages.
       </motion.p>
 
-      {/* CTA Button */}
+      {/* CTA with Ultrahuman hover */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.5 }}
-        className="mt-8 z-10"
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mt-6 z-10"
       >
         <Link href="/audit-complet/questionnaire">
-          <Button size="lg" className="gap-2 px-8 h-14 rounded-full text-lg bg-primary hover:bg-primary/90 text-black font-semibold">
-            Lancer mon audit
-            <ArrowRight className="w-5 h-5" />
-          </Button>
+          <button className="group relative px-6 py-3 rounded-full text-sm bg-primary hover:bg-primary/90 text-black font-semibold transition-all duration-250 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25">
+            {/* Button glow */}
+            <div className="absolute -inset-1 bg-primary/30 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+            <span className="flex items-center gap-2">
+              Lancer mon audit
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </button>
         </Link>
       </motion.div>
     </section>
