@@ -1374,6 +1374,123 @@ export async function registerRoutes(
     }
   });
 
+  // Create test data for relances (TEMPORARY - DELETE AFTER TESTING)
+  app.post("/api/admin/create-test-relances", async (req, res) => {
+    try {
+      const testEmail = "achkou@gmail.com";
+
+      // Get or create user
+      let user = await storage.getUserByEmail(testEmail);
+      if (!user) {
+        user = await storage.createUser({ email: testEmail, name: "Test User" });
+      }
+
+      const results: string[] = [];
+
+      // Create 2 abandoned questionnaires
+      await storage.saveQuestionnaireProgress({
+        email: "achkou+abandon1@gmail.com",
+        currentSection: "5",
+        totalSections: "14",
+        percentComplete: "35",
+        responses: { sexe: "homme", prenom: "TestAbandon1" },
+        status: "IN_PROGRESS",
+      });
+      await storage.saveQuestionnaireProgress({
+        email: "achkou+abandon2@gmail.com",
+        currentSection: "9",
+        totalSections: "14",
+        percentComplete: "64",
+        responses: { sexe: "femme", prenom: "TestAbandon2" },
+        status: "IN_PROGRESS",
+      });
+      results.push("2 abandons créés");
+
+      // Create 2 GRATUIT audits (sent 3-5 days ago)
+      const gratuit1 = await storage.createAudit({
+        email: "achkou+gratuit1@gmail.com",
+        type: "GRATUIT",
+        responses: { test: true },
+        userId: user.id,
+      });
+      await storage.updateAudit(gratuit1.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      });
+
+      const gratuit2 = await storage.createAudit({
+        email: "achkou+gratuit2@gmail.com",
+        type: "GRATUIT",
+        responses: { test: true },
+        userId: user.id,
+      });
+      await storage.updateAudit(gratuit2.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+      });
+      results.push("2 GRATUIT audits créés");
+
+      // Create 2 PREMIUM J+7 audits (sent 8-10 days ago)
+      const premium7a = await storage.createAudit({
+        email: "achkou+premium7a@gmail.com",
+        type: "PREMIUM",
+        responses: { test: true },
+        userId: user.id,
+      });
+      await storage.updateAudit(premium7a.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+      });
+
+      const premium7b = await storage.createAudit({
+        email: "achkou+premium7b@gmail.com",
+        type: "PREMIUM",
+        responses: { test: true },
+        userId: user.id,
+      });
+      await storage.updateAudit(premium7b.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+      });
+      results.push("2 PREMIUM J+7 audits créés");
+
+      // Create 2 PREMIUM J+14 audits (sent 15-20 days ago)
+      const premium14a = await storage.createAudit({
+        email: "achkou+premium14a@gmail.com",
+        type: "PREMIUM",
+        responses: { test: true },
+        userId: user.id,
+      });
+      await storage.updateAudit(premium14a.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+      });
+
+      const premium14b = await storage.createAudit({
+        email: "achkou+premium14b@gmail.com",
+        type: "ELITE",
+        responses: { test: true },
+        userId: user.id,
+      });
+      await storage.updateAudit(premium14b.id, {
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+      });
+      results.push("2 PREMIUM J+14 audits créés");
+
+      res.json({ success: true, results });
+    } catch (error: any) {
+      console.error("[Test Data] Error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Manual trigger for testing specific email sequence
   app.post("/api/admin/send-sequence-email", async (req, res) => {
     try {
