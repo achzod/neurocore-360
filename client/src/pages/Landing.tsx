@@ -129,52 +129,49 @@ function UltrahumanHero() {
         <div className="flex-1 flex flex-col justify-center">
           <div
             ref={textRef}
-            className="relative cursor-pointer select-none"
+            className="relative cursor-pointer select-none inline-block"
             style={{ "--x": "0px", "--y": "0px" } as React.CSSProperties}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            {/* Layer 1: GHOST - blurred text behind */}
+            {/* Layer 1: GHOST - blurred text behind (always visible, fades on hover) */}
             <h1
-              className="text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[6vw] font-black leading-[0.95] tracking-tighter absolute inset-0 select-none pointer-events-none transition-all duration-500"
+              className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[5.5vw] font-black leading-[0.95] tracking-tighter absolute inset-0 select-none pointer-events-none"
               style={{
-                color: "rgba(16, 185, 129, 0.4)",
-                filter: isHovered ? "blur(20px)" : "blur(12px)",
-                opacity: isHovered ? 0.2 : 0.5,
-                transform: "translate(2px, 2px)",
+                color: "hsl(160, 84%, 39%)",
+                filter: `blur(${isHovered ? 25 : 14}px)`,
+                opacity: isHovered ? 0 : 0.45,
+                transform: "translate(1px, 1px)",
+                transition: "filter 400ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms cubic-bezier(0.4, 0, 0.2, 1)",
               }}
               aria-hidden="true"
             >
-              Décode ton<br />métabolisme<span className="text-white/30">.</span>
+              Décode ton<br />métabolisme<span style={{ color: "rgba(255,255,255,0.3)" }}>.</span>
             </h1>
 
-            {/* Layer 2: SHARP - main text */}
-            <motion.h1
-              animate={{
-                opacity: isHovered ? 1 : 0.7,
-                scale: isHovered ? 1.01 : 0.99,
-                y: isHovered ? -4 : 2,
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 400,
-                damping: 25,
-                mass: 0.8,
-              }}
-              className="text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[6vw] font-black leading-[0.95] tracking-tighter relative z-10"
-            >
-              <span className="text-primary">Décode ton</span>
-              <br />
-              <span className="text-primary">métabolisme</span>
-              <span className="text-white">.</span>
-            </motion.h1>
-
-            {/* Layer 3: Spotlight - follows mouse */}
-            <div
-              className="absolute inset-0 pointer-events-none z-20 transition-opacity duration-300"
+            {/* Layer 2: SHARP - main text (held back by default, snaps to crisp on hover) */}
+            <h1
+              className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[5.5vw] font-black leading-[0.95] tracking-tighter relative z-10"
               style={{
-                background: "radial-gradient(circle 250px at var(--x) var(--y), rgba(16, 185, 129, 0.12), transparent 60%)",
+                color: "hsl(160, 84%, 39%)",
+                filter: `blur(${isHovered ? 0 : 1}px)`,
+                opacity: isHovered ? 1 : 0.65,
+                transform: `translateY(${isHovered ? -3 : 1}px) scale(${isHovered ? 1.012 : 0.995})`,
+                textShadow: isHovered ? "0 4px 30px rgba(16, 185, 129, 0.4)" : "none",
+                letterSpacing: isHovered ? "-0.02em" : "-0.03em",
+                transition: "all 350ms cubic-bezier(0.34, 1.56, 0.64, 1)", // overshoot curve
+              }}
+            >
+              Décode ton<br />métabolisme<span className="text-white">.</span>
+            </h1>
+
+            {/* Layer 3: Spotlight - follows mouse (radial gradient at --x --y) */}
+            <div
+              className="absolute inset-0 pointer-events-none z-20 rounded-2xl"
+              style={{
+                background: "radial-gradient(circle 200px at var(--x) var(--y), rgba(255, 255, 255, 0.12), transparent 60%)",
                 opacity: isHovered ? 1 : 0,
+                transition: "opacity 250ms ease-out",
               }}
             />
           </div>
@@ -569,57 +566,152 @@ const iconMap: Record<string, typeof User> = {
 };
 
 // BENTO DOMAINES - Clean 5-column grid
+// Ultrahuman-style Domaines Section with human silhouette
 function BentoDomainesSection() {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  // Domaines avec positions autour de la silhouette
+  const domaines = [
+    { id: 1, name: "Métabolisme", position: "top-[15%] right-[5%]", line: "left" },
+    { id: 2, name: "Cardiovasculaire", position: "top-[25%] left-[5%]", line: "right" },
+    { id: 3, name: "Hormones", position: "top-[38%] right-[5%]", line: "left" },
+    { id: 4, name: "Thyroïde", position: "bottom-[45%] left-[5%]", line: "right" },
+    { id: 5, name: "Digestion", position: "bottom-[35%] right-[5%]", line: "left" },
+    { id: 6, name: "Sommeil", position: "top-[8%] left-[15%]", line: "right" },
+    { id: 7, name: "Nutrition", position: "bottom-[25%] left-[5%]", line: "right" },
+    { id: 8, name: "Énergie", position: "bottom-[15%] right-[5%]", line: "left" },
+  ];
+
+  const biomarkers = [
+    "CORTISOL", "TSH", "T3/T4", "INSULINE", "HBA1C", "VITAMINE D",
+    "FERRITINE", "MAGNÉSIUM", "ZINC", "OMÉGA-3", "CRP", "HOMOCYSTÉINE"
+  ];
+
   return (
-    <section id="domaines" className="relative border-y border-border/30 bg-background py-12 lg:py-16" data-testid="section-domaines">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.03),transparent_70%)]" />
-      <div className="relative mx-auto max-w-7xl px-4">
+    <section id="domaines" className="relative min-h-[90vh] overflow-hidden bg-[#0a1628]" data-testid="section-domaines">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.08),transparent_60%)]" />
 
-        {/* Section Header */}
-        <div className="mb-10 text-center">
-          <Badge variant="outline" className="mb-4 border-primary/50 bg-primary/10 text-primary">
-            Analyse Complète
-          </Badge>
-          <h2 className="text-3xl font-bold tracking-[-0.03em] sm:text-4xl" data-testid="text-domaines-title">
-            15 Domaines d'Analyse
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground tracking-[-0.01em]">
-            Une approche holistique couvrant tous les aspects de ton métabolisme
-          </p>
-        </div>
+      <div className="relative max-w-7xl mx-auto px-6 py-20">
+        {/* Main content with silhouette */}
+        <div className="relative min-h-[600px] flex items-center justify-center">
 
-        {/* Clean Grid - 5 columns on desktop, 3 on tablet, 2 on mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {QUESTIONNAIRE_SECTIONS.map((section, idx) => {
-            const IconComponent = iconMap[section.icon] || User;
+          {/* Human Silhouette - Center */}
+          <div className="relative w-[300px] h-[500px] md:w-[350px] md:h-[580px]">
+            {/* Silhouette shape */}
+            <div
+              className="absolute inset-0 opacity-40"
+              style={{
+                background: "linear-gradient(180deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 50%, rgba(16,185,129,0.05) 100%)",
+                clipPath: "ellipse(35% 48% at 50% 50%)",
+                filter: "blur(2px)",
+              }}
+            />
+            {/* Head */}
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-[80px] h-[100px] opacity-50"
+              style={{
+                background: "radial-gradient(ellipse, rgba(16,185,129,0.4) 0%, transparent 70%)",
+                borderRadius: "50% 50% 45% 45%",
+              }}
+            />
+            {/* Body glow */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-3/4 h-3/4 rounded-full bg-primary/10 blur-3xl" />
+            </div>
 
-            return (
-              <motion.div
-                key={section.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: idx * 0.02 }}
+            {/* Scan lines effect */}
+            <div className="absolute inset-0 overflow-hidden opacity-20">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-full h-px bg-primary/50"
+                  style={{ top: `${i * 5}%` }}
+                />
+              ))}
+            </div>
+
+            {/* Corner brackets */}
+            <div className="absolute top-[30%] left-[30%] w-6 h-6 border-l-2 border-t-2 border-primary/40" />
+            <div className="absolute top-[30%] right-[30%] w-6 h-6 border-r-2 border-t-2 border-primary/40" />
+            <div className="absolute bottom-[30%] left-[30%] w-6 h-6 border-l-2 border-b-2 border-primary/40" />
+            <div className="absolute bottom-[30%] right-[30%] w-6 h-6 border-r-2 border-b-2 border-primary/40" />
+          </div>
+
+          {/* Domain Labels around silhouette */}
+          {domaines.map((domaine, idx) => (
+            <motion.div
+              key={domaine.id}
+              initial={{ opacity: 0, x: domaine.line === "left" ? 20 : -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: idx * 0.08 }}
+              className={`absolute ${domaine.position} hidden md:flex items-center gap-3 cursor-pointer group`}
+              onMouseEnter={() => setActiveIndex(idx)}
+              onMouseLeave={() => setActiveIndex(null)}
+            >
+              {/* Number badge */}
+              <span className="text-[10px] text-primary/60 font-mono">[0{domaine.id}]</span>
+
+              {/* Line connector */}
+              <div className={`w-12 h-px bg-gradient-to-${domaine.line === "left" ? "l" : "r"} from-primary/60 to-transparent`} />
+
+              {/* Label card */}
+              <div
+                className={`px-4 py-2 rounded-lg border transition-all duration-300 ${
+                  activeIndex === idx
+                    ? "bg-primary/20 border-primary/60 shadow-lg shadow-primary/20"
+                    : "bg-white/5 border-white/10 hover:border-primary/40"
+                }`}
               >
-                <div className="group relative h-full rounded-2xl border border-border/50 bg-card/60 p-4 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/5">
-                  {/* Icon */}
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
-                    <IconComponent className="h-5 w-5" />
-                  </div>
+                <span className={`text-sm font-medium ${activeIndex === idx ? "text-primary" : "text-white/80"}`}>
+                  {domaine.name}
+                </span>
+              </div>
+            </motion.div>
+          ))}
 
-                  {/* Title */}
-                  <h3 className="font-semibold text-sm text-foreground tracking-[-0.01em] leading-tight">
-                    {section.title}
-                  </h3>
-
-                  {/* Subtle accent line */}
-                  <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-              </motion.div>
-            );
-          })}
+          {/* Center title overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Analyse 360°
+              </h2>
+              <p className="text-white/60 text-base max-w-sm">
+                15 domaines analysés pour une vision complète de ta santé métabolique
+              </p>
+              <Link href="/audit-complet/questionnaire" className="pointer-events-auto">
+                <button className="mt-6 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white font-medium transition-all duration-300 hover:border-primary/50">
+                  En savoir plus
+                </button>
+              </Link>
+            </motion.div>
+          </div>
         </div>
 
+        {/* Biomarkers ticker at bottom */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mt-16 overflow-hidden"
+        >
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+            {biomarkers.map((marker, idx) => (
+              <span
+                key={idx}
+                className="px-3 py-1.5 text-[10px] md:text-xs font-mono tracking-wider text-primary/60 border border-primary/20 rounded bg-primary/5"
+              >
+                【{marker}】
+              </span>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );
