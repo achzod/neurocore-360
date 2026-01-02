@@ -201,8 +201,8 @@ function degradedSectionText(section: SectionName): string {
   ].join("\n");
 }
 
-// Fallback model quand GPT-5.2 est instable
-const FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || "gpt-4.1";
+// Fallback model (GPT-4o) si le modèle principal a des problèmes
+const FALLBACK_MODEL = (OPENAI_CONFIG as any).OPENAI_FALLBACK_MODEL || process.env.OPENAI_FALLBACK_MODEL || "gpt-4o";
 
 async function callOpenAIWithModel(
   prompt: string,

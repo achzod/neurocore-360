@@ -1,10 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GEMINI_CONFIG } from "./geminiConfig";
+import OpenAI from "openai";
+import { OPENAI_CONFIG } from "./openaiConfig";
 import { PhotoAnalysis } from "./types";
 
-// Initialisation standard
-const genAI = new GoogleGenerativeAI(GEMINI_CONFIG.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: GEMINI_CONFIG.GEMINI_MODEL });
+// GPT-4.1 Vision - meilleur modèle pour analyse corporelle détaillée
+const openai = new OpenAI({
+  apiKey: OPENAI_CONFIG.OPENAI_API_KEY,
+});
+
+const VISION_MODEL = "gpt-4.1"; // GPT-4.1 avec vision intégrée
 
 // On utilise maintenant le type PhotoAnalysis exporté globalement
 export type PhotoAnalysisResult = PhotoAnalysis;
@@ -99,102 +102,130 @@ export async function analyzeBodyPhotosWithAI(
   photos: { front?: string; side?: string; back?: string },
   userContext?: { sexe?: string; age?: string; objectif?: string }
 ): Promise<PhotoAnalysisResult> {
-  
-  const parts: Array<{ inlineData: { data: string; mimeType: string } } | { text: string }> = [];
-  
-  const processPhoto = (base64Data: string): { data: string; mimeType: string } => {
-    let cleanData = base64Data;
-    let mimeType = "image/jpeg";
-    
-    if (base64Data.includes(";base64,")) {
-      const dataParts = base64Data.split(";base64,");
-      if (dataParts.length === 2) {
-        const extractedMime = dataParts[0].replace("data:", "");
-        if (["image/png", "image/gif", "image/webp", "image/jpeg"].includes(extractedMime)) {
-          mimeType = extractedMime;
-        }
-        cleanData = dataParts[1];
-      }
-    }
-    
-    cleanData = cleanData.replace(/\s/g, '');
-    
-    return { data: cleanData, mimeType };
-  };
-  
+
+  // Préparer les images pour l'API OpenAI Vision
+  const imageContents: Array<{ type: "image_url"; image_url: { url: string; detail: "high" } }> = [];
   const photoLabels: string[] = [];
-  
+
+  const processPhotoUrl = (base64Data: string): string => {
+    // Si c'est déjà une data URL complète, la retourner
+    if (base64Data.startsWith("data:image/")) {
+      return base64Data;
+    }
+    // Sinon, ajouter le préfixe
+    return `data:image/jpeg;base64,${base64Data.replace(/\s/g, '')}`;
+  };
+
   if (photos.front) {
-    const processed = processPhoto(photos.front);
-    parts.push({ inlineData: processed });
+    const url = processPhotoUrl(photos.front);
+    imageContents.push({ type: "image_url", image_url: { url, detail: "high" } });
     photoLabels.push("Photo 1: Vue de face");
   }
   if (photos.side) {
-    const processed = processPhoto(photos.side);
-    parts.push({ inlineData: processed });
+    const url = processPhotoUrl(photos.side);
+    imageContents.push({ type: "image_url", image_url: { url, detail: "high" } });
     photoLabels.push("Photo 2: Vue de profil");
   }
   if (photos.back) {
-    const processed = processPhoto(photos.back);
-    parts.push({ inlineData: processed });
+    const url = processPhotoUrl(photos.back);
+    imageContents.push({ type: "image_url", image_url: { url, detail: "high" } });
     photoLabels.push("Photo 3: Vue de dos");
   }
-  
-  if (parts.length === 0) {
+
+  if (imageContents.length === 0) {
     return getDefaultAnalysis("Aucune photo fournie");
   }
-  
-  const contextText = userContext 
+
+  const contextText = userContext
     ? `\nCONTEXTE CLIENT: Sexe ${userContext.sexe || "non specifie"}, Age ${userContext.age || "non specifie"}, Objectif ${userContext.objectif || "non specifie"}`
     : "";
-  
-  parts.push({ 
-    text: `${PHOTO_ANALYSIS_PROMPT}${contextText}\n\nPhotos fournies: ${photoLabels.join(", ")}\n\nAnalyse ces photos et retourne ton analyse en JSON.` 
-  });
-  
+
+  const fullPrompt = `${PHOTO_ANALYSIS_PROMPT}${contextText}\n\nPhotos fournies: ${photoLabels.join(", ")}\n\nAnalyse ces photos et retourne ton analyse en JSON.`;
+
+  // Construire le message avec images + texte
+  const messageContent: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "high" } }> = [
+    ...imageContents,
+    { type: "text", text: fullPrompt }
+  ];
+
   try {
-    console.log(`[PhotoAnalysis Gemini] Analysing ${photoLabels.length} photos with ${GEMINI_CONFIG.GEMINI_MODEL}...`);
-    
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
+    console.log(`[PhotoAnalysis GPT-4.1] Analysing ${photoLabels.length} photos with ${VISION_MODEL}...`);
+
+    const response = await openai.chat.completions.create({
+      model: VISION_MODEL,
+      messages: [
+        {
+          role: "user",
+          content: messageContent,
+        }
+      ],
+      max_tokens: 3000,
+      temperature: 0.5, // Plus bas pour analyse précise
     });
-    
-    const text = result.response.text() || "";
-    
+
+    const text = response.choices[0]?.message?.content || "";
+
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error("[PhotoAnalysis Gemini] No JSON found in response:", text.substring(0, 500));
+      console.error("[PhotoAnalysis GPT-4.1] No JSON found in response:", text.substring(0, 500));
       return getDefaultAnalysis("JSON non trouve dans la reponse");
     }
-    
+
     let jsonStr = jsonMatch[0];
     jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
     jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');
     jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
     jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' ');
-    
+
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(jsonStr);
     } catch (parseError) {
-      console.error("[PhotoAnalysis Gemini] JSON parse failed, trying recovery. Raw:", jsonStr.substring(0, 1000));
+      console.error("[PhotoAnalysis GPT-4.1] JSON parse failed, trying recovery. Raw:", jsonStr.substring(0, 1000));
       try {
         jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
         jsonStr = jsonStr.replace(/\n/g, ' ').replace(/\r/g, '');
         jsonStr = jsonStr.replace(/\s+/g, ' ');
         parsed = JSON.parse(jsonStr);
       } catch (e) {
-        console.error("[PhotoAnalysis Gemini] JSON recovery failed:", e);
+        console.error("[PhotoAnalysis GPT-4.1] JSON recovery failed:", e);
         return getDefaultAnalysis("Erreur parsing JSON - reponse IA malformee");
       }
     }
-    
-    console.log(`[PhotoAnalysis Gemini] Analysis complete - confidence: ${(parsed as { confidenceLevel?: number }).confidenceLevel || 70}%`);
+
+    console.log(`[PhotoAnalysis GPT-4.1] Analysis complete - confidence: ${(parsed as { confidenceLevel?: number }).confidenceLevel || 70}%`);
     return normalizeAnalysisResult(parsed);
-    
-  } catch (error) {
-    console.error("[PhotoAnalysis Gemini] Error:", error);
-    return getDefaultAnalysis("Erreur lors de l'analyse IA Gemini");
+
+  } catch (error: any) {
+    console.error("[PhotoAnalysis GPT-4.1] Error:", error?.message || error);
+
+    // Fallback vers GPT-4o si GPT-4.1 échoue
+    try {
+      console.log("[PhotoAnalysis] Fallback to gpt-4o...");
+      const fallbackResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: messageContent,
+          }
+        ],
+        max_tokens: 3000,
+        temperature: 0.5,
+      });
+
+      const fallbackText = fallbackResponse.choices[0]?.message?.content || "";
+      const fallbackJsonMatch = fallbackText.match(/\{[\s\S]*\}/);
+      if (fallbackJsonMatch) {
+        const parsed = JSON.parse(fallbackJsonMatch[0]);
+        console.log(`[PhotoAnalysis GPT-4o Fallback] Analysis complete`);
+        return normalizeAnalysisResult(parsed);
+      }
+    } catch (fallbackError) {
+      console.error("[PhotoAnalysis GPT-4o Fallback] Error:", fallbackError);
+    }
+
+    return getDefaultAnalysis("Erreur lors de l'analyse IA");
   }
 }
 
