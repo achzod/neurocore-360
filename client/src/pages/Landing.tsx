@@ -1113,6 +1113,118 @@ function BentoDomainesSection() {
   );
 }
 
+// BLOOD VISION SECTION
+function BloodVisionSection() {
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-background via-muted/10 to-background py-20 lg:py-32">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Texte à gauche */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
+          >
+            <Badge variant="outline" className="border-primary/50 bg-primary/10 text-primary">
+              <Activity className="mr-2 h-3 w-3" />
+              Analyse de biomarqueurs
+            </Badge>
+
+            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              Décode ton sang.
+              <br />
+              <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                Optimise tes biomarqueurs.
+              </span>
+            </h2>
+
+            <p className="text-lg text-muted-foreground">
+              Analyse complète de tes marqueurs sanguins pour identifier les déséquilibres métaboliques,
+              hormonaux et inflammatoires qui freinent ta progression.
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Check className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Hormones</p>
+                  <p className="text-sm text-muted-foreground">
+                    Testostérone, SHBG, Cortisol/DHEA, Thyroïde (TSH, T3, T4)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Check className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Métabolisme</p>
+                  <p className="text-sm text-muted-foreground">
+                    Glycémie, Insuline, HbA1c, Profil lipidique complet
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Check className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Inflammation & Stress Oxydatif</p>
+                  <p className="text-sm text-muted-foreground">
+                    CRP, Ferritine, Vitamine D, Magnésium, Omega-3 Index
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Link href="/audit-complet/questionnaire">
+                <Button size="lg" className="gap-2">
+                  Analyser mes biomarqueurs
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Vidéo à droite */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative"
+          >
+            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-black shadow-2xl">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              >
+                <source
+                  src="https://public-web-assets.uh-static.com/web_v2/blood-vision/buy/desktop/Web2K_1.mp4"
+                  type="video/mp4"
+                />
+              </video>
+            </div>
+
+            {/* Glow effect */}
+            <div className="absolute -inset-4 -z-10 bg-gradient-to-r from-primary/20 via-emerald-400/20 to-cyan-400/20 blur-3xl" />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // BENTO BODY MAPPING
 function BentoBodyMappingSection() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -1781,6 +1893,7 @@ export default function Landing() {
         <MediaBar />
         <BentoHeroSection />
         <BentoDomainesSection />
+        <BloodVisionSection />
         <BentoBodyMappingSection />
         <BentoProcessSection />
         <BentoPricingSection />
