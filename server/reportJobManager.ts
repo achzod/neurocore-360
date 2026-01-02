@@ -1,9 +1,9 @@
 import { generateAndConvertAudit } from "./geminiPremiumEngine";
-import { generateAndConvertAuditWithOpenAI } from "./openaiPremiumEngine";
+import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
 import { generateExportHTMLFromTxt } from "./exportService";
 import { storage } from "./storage";
 import type { ClientData } from "./types";
-import { OPENAI_CONFIG } from "./openaiConfig";
+import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
@@ -257,13 +257,13 @@ async function generateReportAsync(
       progress: 20,
     });
 
-    console.log(`[ReportJobManager] Calling GPT-5.2-2025-12-11 engine for ${auditId}`);
-    
-    // Utiliser GPT-5.2-2025-12-11 pour la génération
+    console.log(`[ReportJobManager] Calling Claude Opus 4.5 engine for ${auditId}`);
+
+    // Utiliser Claude Opus 4.5 pour la génération
     const generationPromise = withTimeout(
-      generateAndConvertAuditWithOpenAI(responses as ClientData, photoAnalysis, auditType as any, auditId),
+      generateAndConvertAuditWithClaude(responses as ClientData, photoAnalysis, auditType as any, auditId),
       AI_CALL_TIMEOUT_MS,
-      `GPT-5.2-2025-12-11 report generation for ${auditId}`
+      `Claude Opus 4.5 report generation for ${auditId}`
     );
 
     // Heartbeat: éviter le faux "stuck" (et donner une progression visible)
@@ -292,7 +292,7 @@ async function generateReportAsync(
     const result = await generationPromise.finally(() => clearInterval(heartbeat));
 
     if (!result.success) {
-      throw new Error(result.error || "GPT-5.2-2025-12-11 generation failed");
+      throw new Error(result.error || "Claude Opus 4.5 generation failed");
     }
 
     // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML
@@ -330,8 +330,8 @@ async function generateReportAsync(
     await storage.createReportArtifact({
       auditId,
       tier: String(auditType || "PREMIUM"),
-      engine: "openai",
-      model: OPENAI_CONFIG.OPENAI_MODEL,
+      engine: "anthropic",
+      model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
       txt: String(result.txt || ""),
       html: String(reportHtml || ""),
     });
