@@ -201,126 +201,174 @@ function degradedSectionText(section: SectionName): string {
   ].join("\n");
 }
 
+// Fallback model quand GPT-5.2 est instable
+const FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || "gpt-4.1";
+
+async function callOpenAIWithModel(
+  prompt: string,
+  model: string,
+  opts?: { maxCompletionTokens?: number; label?: string; useFallbackParams?: boolean }
+): Promise<string> {
+  const label = opts?.label ? ` (${opts.label})` : "";
+  const maxTokens = opts?.maxCompletionTokens ?? 1500;
+
+  // Pour le fallback model (gpt-4.1), on utilise max_tokens au lieu de max_completion_tokens
+  const isFallbackModel = model !== OPENAI_MODEL;
+
+  try {
+    const requestParams: any = {
+      model: model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: isFallbackModel ? 0.7 : OPENAI_TEMPERATURE,
+    };
+
+    // GPT-5.2 utilise max_completion_tokens, GPT-4.1/4o utilisent max_tokens
+    if (isFallbackModel) {
+      requestParams.max_tokens = maxTokens;
+    } else {
+      requestParams.max_completion_tokens = maxTokens;
+    }
+
+    const response = await openai.chat.completions.create(requestParams);
+    const text = response.choices[0]?.message?.content || "";
+
+    if (!text.trim()) {
+      throw new Error("OpenAI returned an empty response");
+    }
+
+    return text;
+  } catch (error: any) {
+    console.log(`[OpenAI] Erreur avec ${model}${label}: ${error?.message || error}`);
+    throw error;
+  }
+}
+
 async function callOpenAI(
   prompt: string,
   opts?: { maxCompletionTokens?: number; label?: string }
 ): Promise<string> {
   let fallbackDelayMs = Math.max(250, OPENAI_SLEEP_BETWEEN * 1000);
   let emptyStreak = 0;
-  const maxEmptyRetries = Number(process.env.OPENAI_MAX_EMPTY_RETRIES ?? "3");
+  const maxEmptyRetries = Number(process.env.OPENAI_MAX_EMPTY_RETRIES ?? "2");
+  const label = opts?.label ? ` (${opts.label})` : "";
+
   // Adaptatif: quand on voit des 429 / réponses vides, baisser progressivement le plafond
-  // réduit le "TPM réservé" et améliore la stabilité.
   let adaptiveMaxTokens = Math.max(
-    300,
+    400,
     Number(opts?.maxCompletionTokens ?? OPENAI_MAX_COMPLETION_TOKENS_PER_SECTION)
   );
 
-  for (let attempt = 1; attempt <= OPENAI_MAX_RETRIES; attempt++) {
+  // D'abord essayer avec le modèle principal (GPT-5.2)
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const response = await openai.chat.completions.create({
-        model: OPENAI_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        temperature: OPENAI_TEMPERATURE,
-        // GPT-5.2 utilise max_completion_tokens au lieu de max_tokens
-        max_completion_tokens: adaptiveMaxTokens,
+      const text = await callOpenAIWithModel(prompt, OPENAI_MODEL, {
+        maxCompletionTokens: adaptiveMaxTokens,
+        label: opts?.label,
       });
-
-      const text = response.choices[0]?.message?.content || "";
-      if (!text.trim()) {
-        // Certaines réponses peuvent arriver vides (transient). On traite ça comme retryable.
-        throw new Error("OpenAI returned an empty response");
+      if (text.trim()) {
+        console.log(`[OpenAI] Section${label} OK avec ${OPENAI_MODEL}`);
+        return text;
       }
-      return text;
+      throw new Error("OpenAI returned an empty response");
     } catch (error: any) {
       const status = error?.status ?? error?.response?.status;
       const headers = error?.headers ?? error?.response?.headers;
-      const label = opts?.label ? ` (${opts.label})` : "";
       const msg = String(error?.message || error || "");
 
-      const retryAfter = getHeader(headers, "retry-after");
-      const retryAfterMs = parseRetryAfterToMs(retryAfter);
-
-      // Empty response: retry court + baisse du cap + éventuellement mode degraded
       if (msg.toLowerCase().includes("empty response")) {
         emptyStreak++;
         noteEmptyResponse();
         console.log(
-          `[OpenAI] Empty response${label} (streak ${emptyStreak}) tentative ${attempt}/${OPENAI_MAX_RETRIES} cap=${adaptiveMaxTokens}`
+          `[OpenAI] Empty response${label} (streak ${emptyStreak}) tentative ${attempt}/3 avec ${OPENAI_MODEL}`
         );
-        // On baisse un peu le cap, ça aide souvent à éviter les réponses vides / instables.
-        adaptiveMaxTokens = Math.max(300, Math.floor(adaptiveMaxTokens * 0.85));
-        // Circuit breaker local: si trop d'empties, on arrête vite (degraded)
+        adaptiveMaxTokens = Math.max(400, Math.floor(adaptiveMaxTokens * 0.85));
+
+        // Après 2 empty responses, on passe au fallback
         if (emptyStreak >= maxEmptyRetries) {
-          console.log(`[OpenAI] Empty response${label}: fallback en mode degrade`);
-          return "";
+          console.log(`[OpenAI] ${OPENAI_MODEL} instable${label}, passage au fallback ${FALLBACK_MODEL}`);
+          break;
         }
-      } else {
-        emptyStreak = 0;
       }
 
-      // 429: sleep "exact reset" si possible (tokens ou requests) + jitter, ou Retry-After
+      // 429: attendre et réessayer
       if (status === 429) {
+        const retryAfter = getHeader(headers, "retry-after");
+        const retryAfterMs = parseRetryAfterToMs(retryAfter);
         const resetTokens = getHeader(headers, "x-ratelimit-reset-tokens");
         const resetReqs = getHeader(headers, "x-ratelimit-reset-requests");
         const resetMs = parseResetToMs(resetTokens || resetReqs || undefined);
         const jitter = Math.floor(Math.random() * 250);
 
         console.log(
-          `[OpenAI] 429 Rate limit${label} (tentative ${attempt}/${OPENAI_MAX_RETRIES}) resetTokens=${resetTokens} resetReqs=${resetReqs} retryAfter=${retryAfter} cap=${adaptiveMaxTokens}`
+          `[OpenAI] 429 Rate limit${label} tentative ${attempt}/3`
         );
-        // Baisser le cap sur les retries après 429 = moins de TPM "réservé" / moins de rechute.
-        adaptiveMaxTokens = Math.max(300, Math.floor(adaptiveMaxTokens * 0.8));
+        adaptiveMaxTokens = Math.max(400, Math.floor(adaptiveMaxTokens * 0.8));
 
-        if (attempt < OPENAI_MAX_RETRIES) {
-          if (retryAfterMs != null) {
-            await sleep(retryAfterMs + jitter);
-          } else if (resetMs != null) {
-            await sleep(resetMs + jitter);
-          } else {
-            await sleep(fallbackDelayMs + jitter);
-            fallbackDelayMs = Math.min(fallbackDelayMs * 2, 60_000);
-          }
-          continue;
+        if (retryAfterMs != null) {
+          await sleep(retryAfterMs + jitter);
+        } else if (resetMs != null) {
+          await sleep(resetMs + jitter);
+        } else {
+          await sleep(fallbackDelayMs + jitter);
+          fallbackDelayMs = Math.min(fallbackDelayMs * 2, 30_000);
         }
+        continue;
       }
 
-      // 5xx / transient: Retry-After si présent, sinon backoff
+      // 5xx: attendre et réessayer
       if (isRetryableStatus(status)) {
         const jitter = Math.floor(Math.random() * 250);
-        console.log(
-          `[OpenAI] Transient ${status}${label} tentative ${attempt}/${OPENAI_MAX_RETRIES} retryAfter=${retryAfter} cap=${adaptiveMaxTokens}`
-        );
-        // Pour les 5xx, on baisse un peu aussi (stabilité) sans trop réduire.
-        adaptiveMaxTokens = Math.max(300, Math.floor(adaptiveMaxTokens * 0.9));
-        if (attempt < OPENAI_MAX_RETRIES) {
-          if (retryAfterMs != null) {
-            await sleep(retryAfterMs + jitter);
-          } else {
-            await sleep(fallbackDelayMs + jitter);
-            fallbackDelayMs = Math.min(fallbackDelayMs * 2, 60_000);
-          }
-          continue;
-        }
+        console.log(`[OpenAI] Transient ${status}${label} tentative ${attempt}/3`);
+        await sleep(fallbackDelayMs + jitter);
+        fallbackDelayMs = Math.min(fallbackDelayMs * 2, 30_000);
+        continue;
       }
 
-      console.log(
-        `[OpenAI] Erreur${label} tentative ${attempt}/${OPENAI_MAX_RETRIES}: ${error?.message || error}`
-      );
-
-      if (attempt < OPENAI_MAX_RETRIES) {
+      // Autre erreur: court délai et retry
+      if (attempt < 3) {
         const jitter = Math.floor(Math.random() * 250);
-        const isEmpty = msg.toLowerCase().includes("empty response");
-        // Empty: retries très courts (1s puis 2s), pas d'escalade infinie
-        const delay = isEmpty ? Math.min(1000 + 500 * emptyStreak, 2_000) : fallbackDelayMs;
-        await sleep(delay + jitter);
-        if (!isEmpty) {
-          fallbackDelayMs = Math.min(fallbackDelayMs * 2, 60_000);
-        }
+        await sleep(1500 + jitter);
       }
     }
   }
 
-  console.log("[OpenAI] Echec apres toutes les tentatives");
+  // FALLBACK: essayer avec GPT-4.1 (plus stable)
+  console.log(`[OpenAI] Tentative avec fallback ${FALLBACK_MODEL}${label}`);
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const text = await callOpenAIWithModel(prompt, FALLBACK_MODEL, {
+        maxCompletionTokens: 1800, // GPT-4.1 plus stable, on peut augmenter
+        label: opts?.label,
+        useFallbackParams: true,
+      });
+      if (text.trim()) {
+        console.log(`[OpenAI] Section${label} OK avec fallback ${FALLBACK_MODEL}`);
+        return text;
+      }
+      throw new Error("Fallback returned an empty response");
+    } catch (error: any) {
+      const status = error?.status ?? error?.response?.status;
+      const headers = error?.headers ?? error?.response?.headers;
+
+      console.log(`[OpenAI] Fallback${label} tentative ${attempt}/3 erreur: ${error?.message || error}`);
+
+      if (status === 429) {
+        const retryAfter = getHeader(headers, "retry-after");
+        const retryAfterMs = parseRetryAfterToMs(retryAfter);
+        const jitter = Math.floor(Math.random() * 250);
+        await sleep(retryAfterMs ?? 5000 + jitter);
+        continue;
+      }
+
+      if (attempt < 3) {
+        const jitter = Math.floor(Math.random() * 250);
+        await sleep(2000 + jitter);
+      }
+    }
+  }
+
+  console.log(`[OpenAI] Echec total${label} - tous les modèles ont échoué`);
   return "";
 }
 
