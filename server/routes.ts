@@ -1388,7 +1388,7 @@ export async function registerRoutes(
       const results: string[] = [];
 
       // Create 2 abandoned questionnaires
-      await storage.saveQuestionnaireProgress({
+      await storage.saveProgress({
         email: "achkou+abandon1@gmail.com",
         currentSection: "5",
         totalSections: "14",
@@ -1396,7 +1396,7 @@ export async function registerRoutes(
         responses: { sexe: "homme", prenom: "TestAbandon1" },
         status: "IN_PROGRESS",
       });
-      await storage.saveQuestionnaireProgress({
+      await storage.saveProgress({
         email: "achkou+abandon2@gmail.com",
         currentSection: "9",
         totalSections: "14",
