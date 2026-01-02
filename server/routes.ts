@@ -1377,25 +1377,18 @@ export async function registerRoutes(
   // Create test data for relances (TEMPORARY - DELETE AFTER TESTING)
   app.post("/api/admin/create-test-relances", async (req, res) => {
     try {
-      const testEmail = "achkou@gmail.com";
-
-      // Get or create user
-      let user = await storage.getUserByEmail(testEmail);
-      if (!user) {
-        user = await storage.createUser({ email: testEmail, name: "Test User" });
-      }
-
       const results: string[] = [];
 
-      // Skip abandoned questionnaires for now - schema mismatch
-      results.push("Abandons: utilise le questionnaire manuellement pour tester");
+      // Get existing audits to find a valid userId
+      const existingAudits = await storage.getAllAudits();
+      const userId = existingAudits[0]?.userId || "test-user";
 
       // Create 2 GRATUIT audits (sent 3-5 days ago)
       const gratuit1 = await storage.createAudit({
         email: "achkou+gratuit1@gmail.com",
         type: "GRATUIT",
         responses: { test: true },
-        userId: user.id,
+        userId,
       });
       await storage.updateAudit(gratuit1.id, {
         status: "COMPLETED",
@@ -1407,7 +1400,7 @@ export async function registerRoutes(
         email: "achkou+gratuit2@gmail.com",
         type: "GRATUIT",
         responses: { test: true },
-        userId: user.id,
+        userId,
       });
       await storage.updateAudit(gratuit2.id, {
         status: "COMPLETED",
@@ -1421,7 +1414,7 @@ export async function registerRoutes(
         email: "achkou+premium7a@gmail.com",
         type: "PREMIUM",
         responses: { test: true },
-        userId: user.id,
+        userId,
       });
       await storage.updateAudit(premium7a.id, {
         status: "COMPLETED",
@@ -1433,7 +1426,7 @@ export async function registerRoutes(
         email: "achkou+premium7b@gmail.com",
         type: "PREMIUM",
         responses: { test: true },
-        userId: user.id,
+        userId,
       });
       await storage.updateAudit(premium7b.id, {
         status: "COMPLETED",
@@ -1447,7 +1440,7 @@ export async function registerRoutes(
         email: "achkou+premium14a@gmail.com",
         type: "PREMIUM",
         responses: { test: true },
-        userId: user.id,
+        userId,
       });
       await storage.updateAudit(premium14a.id, {
         status: "COMPLETED",
@@ -1459,7 +1452,7 @@ export async function registerRoutes(
         email: "achkou+premium14b@gmail.com",
         type: "ELITE",
         responses: { test: true },
-        userId: user.id,
+        userId,
       });
       await storage.updateAudit(premium14b.id, {
         status: "COMPLETED",
