@@ -49,6 +49,7 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 // Ultrahuman-style Hero: Text LEFT, Phone RIGHT, 3-layer hover effect
 function UltrahumanHero() {
   const [isHovered, setIsHovered] = useState(false);
+  const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
   const textRef = useRef<HTMLDivElement>(null);
 
   // Spotlight: update CSS vars on pointermove
@@ -422,6 +423,31 @@ function UltrahumanHero() {
                             ))}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nav tabs - Fixed at bottom, over the scroll */}
+                  <div className="absolute bottom-0 left-0 right-0 z-40 p-3">
+                    <div className="bg-black/80 backdrop-blur-lg rounded-2xl p-2 border border-white/10 shadow-2xl">
+                      <div className="flex items-center justify-around">
+                        {[
+                          { id: "scores", icon: Activity, label: "SCORES" },
+                          { id: "domaines", icon: Layers, label: "DOMAINES" },
+                          { id: "rapport", icon: Brain, label: "RAPPORT" },
+                          { id: "plan", icon: Target, label: "PLAN" },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 ${
+                              activeTab === tab.id ? "bg-white/10" : "hover:bg-white/5"
+                            }`}
+                          >
+                            <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary" : "text-white/40"}`} />
+                            <span className={`text-[9px] font-medium ${activeTab === tab.id ? "text-primary" : "text-white/40"}`}>{tab.label}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
