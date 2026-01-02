@@ -1029,15 +1029,6 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
     <button class="theme-btn active" data-theme="light">Light</button>
   </div>
   
-  <!-- Règles métaboliques clés -->
-  <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin: 32px 0;">
-    <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Règles métaboliques</h3>
-    <ul style="color: var(--text-muted); line-height: 1.6; margin-left: 16px;">
-      <li>Si les abdos ne sont pas visibles : pas de glucides dans les 4h après le réveil (priorité protéines + lipides).</li>
-      <li>Si surpoids : fenêtre alimentaire 16/8 (12h-20h) pour stabiliser l’insuline et améliorer la combustion.</li>
-    </ul>
-  </div>
-
   <!-- Table of Contents Toggle (réduire / agrandir) -->
   <button class="toc-toggle" id="toc-toggle" aria-label="Réduire / agrandir la table des matières">≡</button>
   
