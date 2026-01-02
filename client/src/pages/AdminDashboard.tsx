@@ -152,7 +152,18 @@ export default function AdminDashboard() {
     }
   };
 
+  // Fetch all data on mount for tab counts
   useEffect(() => {
+    if (isAuthenticated) {
+      fetchAudits();
+      fetchPendingReviews();
+      fetchIncompleteQuestionnaires();
+    }
+  }, [isAuthenticated]);
+
+  // Refresh current tab data when switching
+  useEffect(() => {
+    if (!isAuthenticated) return;
     if (activeTab === "audits") {
       fetchAudits();
     } else if (activeTab === "reviews") {
@@ -345,17 +356,26 @@ export default function AdminDashboard() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
-            <TabsTrigger value="audits">Audits</TabsTrigger>
-            <TabsTrigger value="reviews">Avis en attente</TabsTrigger>
+            <TabsTrigger value="audits" className="gap-2">
+              <FileText className="w-4 h-4" />
+              Analyses envoyées ({audits.filter(a => a.reportDeliveryStatus === "SENT").length})
+            </TabsTrigger>
             <TabsTrigger value="incomplete" className="gap-2">
               <UserX className="w-4 h-4" />
-              Abandons ({incompleteQuestionnaires.length})
+              Abandons questionnaire ({incompleteQuestionnaires.length})
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="gap-2">
+              <Star className="w-4 h-4" />
+              Avis en attente ({reviews.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="audits">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold">Liste des audits</h2>
+              <div>
+                <h2 className="text-2xl font-semibold">Analyses envoyées</h2>
+                <p className="text-muted-foreground text-sm mt-1">Rapports générés et envoyés aux clients</p>
+              </div>
               <Button
                 variant="outline"
                 onClick={fetchAudits}
