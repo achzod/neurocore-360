@@ -738,18 +738,107 @@ function uniqueByName(list: SupplementProtocolAdvanced[]): SupplementProtocolAdv
  * Objectif : zéro hallucination, cohérence, et intégration de tes règles d'achat/sécurité.
  * IMPORTANT : retourne du texte brut (pas de markdown).
  */
-// iHerb promo code
-const IHERB_PROMO_CODE = "KAN0746";
-const IHERB_BASE_URL = "https://ae.iherb.com/search?kw=";
+import { IHERB_PRODUCTS, getIHerbLink, type IHerbProduct } from "./iherbProducts";
 
-function generateIHerbLink(searchQuery: string): string {
-  const encoded = encodeURIComponent(searchQuery);
-  return `${IHERB_BASE_URL}${encoded}&rcode=${IHERB_PROMO_CODE}`;
-}
+// Mapping ingredient_id vers iHerb product database key
+const INGREDIENT_TO_IHERB_KEY: Record<string, string> = {
+  "magnesium_bisglycinate": "magnesium_bisglycinate",
+  "magnesium": "magnesium_bisglycinate",
+  "glycine": "glycine",
+  "omega3_epa_dha": "omega3_epa_dha",
+  "omega3": "omega3_epa_dha",
+  "vitamin_d3": "vitamin_d3",
+  "vitamine_d": "vitamin_d3",
+  "ashwagandha": "ashwagandha",
+  "l_theanine": "l_theanine",
+  "theanine": "l_theanine",
+  "creatine_monohydrate": "creatine_monohydrate",
+  "creatine": "creatine_monohydrate",
+  "zinc": "zinc",
+  "tongkat_ali": "tongkat_ali",
+  "mucuna_pruriens": "mucuna_pruriens",
+  "apigenine": "apigenine",
+  "acetyl_l_carnitine": "acetyl_l_carnitine",
+  "coq10": "coq10",
+  "b_complex": "b_complex",
+};
+
+// Explications humaines detaillees pour chaque supplement
+const HUMAN_EXPLANATIONS: Record<string, {
+  intro: string;
+  whyYou: string;
+  howItWorks: string;
+  protocol: string;
+  labelTips: string;
+}> = {
+  "magnesium_bisglycinate": {
+    intro: "Le magnesium est le mineral le plus sous-estime en supplementation. Plus de 60% de la population est carencee sans le savoir.",
+    whyYou: "Tes reponses indiquent des signes classiques de deficit : fatigue, tensions musculaires, sommeil agite, ou stress eleve. Le bisglycinate est la forme la mieux toleree et absorbee, sans effet laxatif.",
+    howItWorks: "Le magnesium active plus de 300 reactions enzymatiques dans ton corps. Il calme le systeme nerveux en modulant les recepteurs GABA, detend les muscles, et ameliore la qualite du sommeil profond. Tu sentiras la difference des les premiers jours.",
+    protocol: "Commence par 200mg le soir, 1-2h avant le coucher. Apres une semaine, tu peux monter a 300-400mg si besoin. Prends-le quotidiennement, c'est un supplement de fond.",
+    labelTips: "Verifie que l'etiquette indique les mg de magnesium ELEMENTAIRE, pas le poids total du sel. 'Magnesium bisglycinate 2000mg' peut ne contenir que 200mg de magnesium reel. Cherche 'elemental magnesium' ou 'magnesium (as bisglycinate)'."
+  },
+  "glycine": {
+    intro: "La glycine est un acide amine discret mais puissant pour le sommeil. C'est l'un des secrets les mieux gardes pour un sommeil profond et reparateur.",
+    whyYou: "Tu as mentionne des difficultes de sommeil ou de recuperation. La glycine agit differemment des somniferes : elle abaisse ta temperature corporelle le soir, signal naturel pour l'endormissement.",
+    howItWorks: "En prenant 3g avant le coucher, la glycine active les recepteurs du sommeil dans ton cerveau et abaisse ta temperature centrale de 0.3-0.5 degre. Resultat : endormissement plus rapide et plus de temps en sommeil profond (phases 3-4), la ou ton corps se repare vraiment.",
+    protocol: "3g de poudre dans un verre d'eau, 30-60 minutes avant le coucher. Le gout est legerement sucre, agreable. Tu peux l'utiliser tous les soirs sans accoutumance.",
+    labelTips: "La glycine est simple : cherche 'glycine pure' ou 'L-glycine'. Evite les formules combinees qui diluent le dosage. Une cuillere rase doit donner environ 3g."
+  },
+  "omega3_epa_dha": {
+    intro: "Les omega-3 sont essentiels : ton corps ne peut pas les fabriquer. La majorite des gens en manque cruellement, avec des consequences sur l'humeur, l'inflammation et la sante cardiovasculaire.",
+    whyYou: "Ton profil suggere un besoin accru : stress eleve, inflammation, ou simplement une alimentation pauvre en poissons gras. Les omega-3 sont anti-inflammatoires et protecteurs a tous les niveaux.",
+    howItWorks: "L'EPA reduit l'inflammation systemique et stabilise l'humeur. Le DHA nourrit ton cerveau (60% de graisse). Ensemble, ils fluidifient le sang, protegent le coeur, et ameliorent la sensibilite a l'insuline. Les effets sont progressifs sur 4-8 semaines.",
+    protocol: "Vise 2-3g d'EPA+DHA par jour (pas 2g d'huile de poisson, mais 2g d'EPA+DHA combines). Prends-les avec un repas gras pour maximiser l'absorption. Divise en 2 prises si tu depasses 2g.",
+    labelTips: "IGNORE le '1000mg huile de poisson' en gros sur l'etiquette. Retourne le flacon et cherche EPA + DHA en mg. Additionne-les. Une bonne huile donne 500-700mg EPA+DHA par capsule. Prefere les marques certifiees IFOS (purete testee)."
+  },
+  "vitamin_d3": {
+    intro: "La vitamine D n'est pas vraiment une vitamine, c'est une hormone. Et la carence est epidemique, surtout si tu vis au-dessus du 35e parallele ou travailles en interieur.",
+    whyYou: "Statistiquement, tu es probablement en deficit. Les symptomes sont sournois : fatigue diffuse, immunite fragile, humeur en berne l'hiver, douleurs musculaires. Un simple dosage sanguin confirme souvent le probleme.",
+    howItWorks: "La D3 regule plus de 1000 genes. Elle module ton systeme immunitaire, maintient tes os solides, influence ta testosterone, et protege contre la depression saisonniere. Avec la K2, elle dirige le calcium vers tes os plutot que tes arteres.",
+    protocol: "2000-5000 UI par jour selon ton taux sanguin de depart. Prends-la avec un repas gras (elle est liposoluble). Idealement, fais un dosage sanguin apres 2-3 mois pour ajuster.",
+    labelTips: "Prefere la D3 (cholecalciferol) a la D2 (ergocalciferol), beaucoup plus efficace. Les softgels dans l'huile sont mieux absorbes que les comprimes secs. Un combo D3+K2 est ideal."
+  },
+  "ashwagandha": {
+    intro: "L'ashwagandha est l'adaptogene le plus etudie au monde. Utilise depuis 3000 ans en medecine ayurvedique, il est maintenant valide par des dizaines d'etudes cliniques.",
+    whyYou: "Ton stress eleve ou ta fatigue chronique en font un candidat ideal. L'ashwagandha ne te shoote pas : il recalibre ton axe du stress (HPA) pour que tu reagisses mieux aux pressions quotidiennes.",
+    howItWorks: "Il reduit le cortisol de 25-30% en moyenne, ameliore la qualite du sommeil, et booste la testosterone chez l'homme. Les withanolides (principes actifs) modulent tes recepteurs GABA et ton systeme endocrinien. Effets perceptibles en 2-4 semaines.",
+    protocol: "300-600mg d'extrait standardise par jour. Commence par 300mg le soir (effet calmant). Tu peux augmenter ou diviser en 2 prises. Cycle recommande : 8-12 semaines ON, 2-4 semaines OFF.",
+    labelTips: "CRUCIAL : cherche 'KSM-66' ou 'Sensoril', les deux extraits brevetes les plus etudies. Verifie le % de withanolides (minimum 5% pour KSM-66). Evite les poudres de racine brute non standardisees."
+  },
+  "l_theanine": {
+    intro: "La L-theanine est l'acide amine qui donne au the vert son effet 'calme mais alerte'. C'est le perfect chill sans la somnolence.",
+    whyYou: "Si tu ressens de l'anxiete, des ruminations, ou si tu veux un focus calme sans les effets secondaires des stimulants, la theanine est faite pour toi.",
+    howItWorks: "Elle traverse la barriere hemato-encephalique et booste les ondes alpha cerebrales (celles de la meditation). Elle augmente GABA, dopamine et serotonine sans sédation. Combine au cafe, elle elimine les jitters tout en gardant le focus.",
+    protocol: "100-200mg selon besoin. Tu peux la prendre le matin avec ton cafe (synergie prouvee), ou le soir pour calmer l'esprit avant le coucher. Pas de tolerance, pas de dependance.",
+    labelTips: "Cherche 'Suntheanine', la forme brevete de L-theanine pure. Evite les melanges qui cachent le dosage reel. 200mg est la dose standard des etudes."
+  },
+  "creatine_monohydrate": {
+    intro: "La creatine n'est pas juste pour les bodybuilders. C'est le supplement le plus etudie au monde, avec des benefices prouves sur le cerveau, les muscles, et meme le vieillissement.",
+    whyYou: "Tu t'entraines et tu veux progresser ? La creatine augmente ta force et ta puissance de 5-15%. Mais aussi : meilleure cognition sous stress, recuperation acceleree, et protection neurologique.",
+    howItWorks: "Elle recharge l'ATP, la monnaie energetique de tes cellules. Plus d'ATP = plus de repetitions, sprints plus puissants, et cerveau qui tourne mieux sous pression. Les effets musculaires apparaissent en 2-4 semaines.",
+    protocol: "5g par jour, tous les jours, point final. Pas besoin de phase de charge. Pas besoin de cycler. Le timing importe peu. Melange dans n'importe quel liquide.",
+    labelTips: "Monohydrate = la forme de reference, la plus etudiee. 'Creapure' est le gold standard (fabrication allemande pure). Evite les formes fancy (HCL, ethyl ester) : marketing sans benefice prouve."
+  },
+  "zinc": {
+    intro: "Le zinc est implique dans plus de 300 reactions enzymatiques. Crucial pour l'immunite, la testosterone, la peau, et la cicatrisation.",
+    whyYou: "Les athletes, les stresses, et ceux qui transpirent beaucoup perdent du zinc. Les vegetariens sont souvent carences. Tes symptomes potentiels : immunite fragile, libido en baisse, cicatrisation lente.",
+    howItWorks: "Il soutient la production de testosterone, renforce les defenses immunitaires (premiere ligne contre les virus), et accelere la reparation tissulaire. Effet perceptible sur l'immunite en quelques semaines.",
+    protocol: "15-30mg par jour avec un repas. ATTENTION : le zinc a long terme peut desequilibrer le cuivre. Prefere une formule zinc + cuivre (ratio 15:1) pour un usage prolonge.",
+    labelTips: "Formes bien absorbees : picolinate, bisglycinate, citrate. Evite l'oxyde de zinc (absorption mediocre). Verifie que le dosage est en zinc ELEMENTAIRE."
+  },
+  "coq10": {
+    intro: "La CoQ10 est le carburant de tes mitochondries, les centrales energetiques de chaque cellule. Apres 40 ans, ta production naturelle chute.",
+    whyYou: "Fatigue persistante, prise de statines, ou simplement envie d'optimiser ton energie cellulaire ? La CoQ10 est ton alliee.",
+    howItWorks: "Elle participe directement a la chaine de transport des electrons qui produit l'ATP. Plus de CoQ10 = mitochondries plus efficaces = plus d'energie, meilleure recuperation, protection cardiovasculaire.",
+    protocol: "100-200mg par jour avec un repas gras. Prefere l'ubiquinol (forme reduite) si tu as plus de 40 ans, sinon l'ubiquinone convient.",
+    labelTips: "Ubiquinol = forme active, mieux absorbee (surtout apres 40 ans). Ubiquinone = forme classique, moins chere. Les softgels dans l'huile sont superieurs aux poudres seches."
+  }
+};
 
 /**
- * Generates enhanced HTML for supplements section with detailed explanations,
- * mechanisms, dosage protocols, and iHerb links with promo code.
+ * Generates enhanced HTML for supplements section with detailed human explanations
+ * and real iHerb affiliate product links.
  */
 export function generateEnhancedSupplementsHTML(input: {
   responses: Record<string, unknown>;
@@ -783,148 +872,195 @@ export function generateEnhancedSupplementsHTML(input: {
 
   if (picked.length === 0) {
     return `
-      <div class="supplements-empty">
-        <p>Ton profil actuel ne necessite pas de stack avancee.</p>
-        <p>Concentre-toi sur les fondations : sommeil de qualite, proteines adequates, hydratation optimale et entrainement regulier pendant 14 jours.</p>
-        <p>Ensuite, on reevaluera ensemble.</p>
+      <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 32px; text-align: center;">
+        <p style="font-size: 1.1rem; color: var(--text); margin-bottom: 16px;">
+          <strong>${firstName}</strong>, ton profil actuel ne necessite pas de stack avancee.
+        </p>
+        <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.7;">
+          Concentre-toi sur les fondations pendant les 14 prochains jours : sommeil de qualite (7-8h),
+          apport proteique adequat (1.6-2g/kg), hydratation optimale (35ml/kg), et entrainement regulier.
+          Une fois ces bases solides, on reevaluera ensemble ta stack.
+        </p>
       </div>
     `;
   }
 
-  const supplementCards = picked.slice(0, 8).map((supp, idx) => {
-    const iherbLink = supp.iherb_search_query ? generateIHerbLink(supp.iherb_search_query) : null;
-    const evidenceColor = supp.evidence_grade === "A" ? "#22c55e" :
-                          supp.evidence_grade === "B" ? "#3b82f6" :
-                          supp.evidence_grade === "C" ? "#f59e0b" : "#9ca3af";
+  // Generate supplement sections
+  const supplementSections = picked.slice(0, 6).map((supp, idx) => {
+    const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
+    const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
+    const products = IHERB_PRODUCTS[iherbKey] || [];
+    const explanation = HUMAN_EXPLANATIONS[iherbKey];
+
+    const evidenceColor = supp.evidence_grade === "A" ? "var(--accent-ok)" :
+                          supp.evidence_grade === "B" ? "var(--primary)" :
+                          supp.evidence_grade === "C" ? "var(--accent-warning)" : "var(--text-muted)";
+
+    // Product links HTML
+    const productLinksHTML = products.length > 0 ? `
+      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <h5 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">
+          Mes recommandations iHerb
+        </h5>
+        ${products.map((product, pIdx) => {
+          const link = getIHerbLink(product);
+          const badgeText = pIdx === 0 ? "MON CHOIX" : pIdx === 1 ? "ALTERNATIVE" : "BUDGET";
+          const badgeColor = pIdx === 0 ? "var(--accent-ok)" : pIdx === 1 ? "var(--primary)" : "var(--accent-warning)";
+          return `
+            <a href="${link}" target="_blank" rel="noopener noreferrer" style="display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none; transition: all 0.2s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                  <span style="background: ${badgeColor}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;">${badgeText}</span>
+                  <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin: 10px 0 4px 0;">${product.brand}</p>
+                  <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">${product.name}</p>
+                </div>
+                <span style="color: var(--primary); font-weight: 700; font-size: 0.95rem; white-space: nowrap;">${product.priceRange}</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 0 0;">${product.dose} | ${product.count}</p>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0 0 0; font-style: italic;">${product.whyThisOne}</p>
+            </a>
+          `;
+        }).join("")}
+      </div>
+    ` : "";
 
     return `
-      <div class="supplement-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+      <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px;">
+
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
           <div>
-            <span style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">#${idx + 1}</span>
-            <h4 style="font-size: 1.25rem; font-weight: 700; color: var(--text); margin: 8px 0 4px 0;">${supp.ingredient}</h4>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">${supp.form}</p>
+            <span style="background: var(--primary); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">#${idx + 1}</span>
+            <h4 style="font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 12px 0 4px 0;">${supp.ingredient}</h4>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">${supp.form}</p>
           </div>
-          <div style="text-align: right;">
-            <span style="background: ${evidenceColor}; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">Grade ${supp.evidence_grade}</span>
+          <span style="background: ${evidenceColor}; color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;">GRADE ${supp.evidence_grade}</span>
+        </div>
+
+        <!-- Introduction -->
+        ${explanation ? `
+        <p style="font-size: 1.05rem; color: var(--text); line-height: 1.7; margin-bottom: 20px;">
+          ${explanation.intro}
+        </p>
+        ` : ""}
+
+        <!-- Pourquoi toi -->
+        ${explanation ? `
+        <div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.08) 0%, rgba(94, 234, 212, 0.02) 100%); border-left: 3px solid var(--primary); padding: 16px 20px; border-radius: 0 12px 12px 0; margin-bottom: 20px;">
+          <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em;">Pourquoi pour toi, ${firstName} ?</h5>
+          <p style="font-size: 1rem; color: var(--text); line-height: 1.7; margin: 0;">${explanation.whyYou}</p>
+        </div>
+        ` : ""}
+
+        <!-- Comment ca marche -->
+        ${explanation ? `
+        <div style="margin-bottom: 20px;">
+          <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em;">Comment ca fonctionne</h5>
+          <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.7; margin: 0;">${explanation.howItWorks}</p>
+        </div>
+        ` : ""}
+
+        <!-- Protocole -->
+        <div style="background: var(--surface-2); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+          <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;">Ton protocole</h5>
+          ${explanation ? `
+          <p style="font-size: 1rem; color: var(--text); line-height: 1.7; margin: 0 0 16px 0;">${explanation.protocol}</p>
+          ` : ""}
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <div style="background: var(--surface-1); border-radius: 8px; padding: 12px;">
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent-ok); text-transform: uppercase;">Dosage</span>
+              <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 6px 0 0 0;">${supp.dose.daily_amount} ${supp.dose.units}</p>
+            </div>
+            <div style="background: var(--surface-1); border-radius: 8px; padding: 12px;">
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">Timing</span>
+              <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 6px 0 0 0;">${supp.timing}</p>
+            </div>
+            <div style="background: var(--surface-1); border-radius: 8px; padding: 12px;">
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--secondary); text-transform: uppercase;">Cycle</span>
+              <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 6px 0 0 0;">${supp.cycle}</p>
+            </div>
+            <div style="background: var(--surface-1); border-radius: 8px; padding: 12px;">
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent-warning); text-transform: uppercase;">Ajustement</span>
+              <p style="font-size: 0.85rem; color: var(--text); margin: 6px 0 0 0;">${supp.dose.scaling_note}</p>
+            </div>
           </div>
         </div>
 
-        <div style="background: rgba(255,255,255,0.5); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-          <h5 style="font-size: 0.85rem; font-weight: 700; color: #8b5cf6; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">POURQUOI CE COMPLEMENT ?</h5>
-          <p style="font-size: 0.95rem; color: var(--text); line-height: 1.6; margin: 0;">${supp.mechanism}</p>
+        <!-- Comment choisir -->
+        ${explanation ? `
+        <div style="background: rgba(159, 140, 255, 0.08); border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;">
+          <h5 style="font-size: 0.85rem; font-weight: 700; color: var(--secondary); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em;">Comment lire l'etiquette</h5>
+          <p style="font-size: 0.95rem; color: var(--text); line-height: 1.6; margin: 0;">${explanation.labelTips}</p>
         </div>
+        ` : ""}
 
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
-          <div style="background: rgba(34, 197, 94, 0.1); border-radius: 10px; padding: 12px;">
-            <span style="font-size: 0.7rem; font-weight: 700; color: #22c55e; text-transform: uppercase;">Dosage</span>
-            <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 4px 0 0 0;">${supp.dose.daily_amount} ${supp.dose.units}</p>
-            <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 2px 0 0 0;">${supp.dose.split}</p>
-          </div>
-          <div style="background: rgba(59, 130, 246, 0.1); border-radius: 10px; padding: 12px;">
-            <span style="font-size: 0.7rem; font-weight: 700; color: #3b82f6; text-transform: uppercase;">Timing</span>
-            <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 4px 0 0 0;">${supp.timing}</p>
-          </div>
-          <div style="background: rgba(139, 92, 246, 0.1); border-radius: 10px; padding: 12px;">
-            <span style="font-size: 0.7rem; font-weight: 700; color: #8b5cf6; text-transform: uppercase;">Cycle</span>
-            <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin: 4px 0 0 0;">${supp.cycle}</p>
-          </div>
-          <div style="background: rgba(249, 115, 22, 0.1); border-radius: 10px; padding: 12px;">
-            <span style="font-size: 0.7rem; font-weight: 700; color: #f97316; text-transform: uppercase;">Scaling</span>
-            <p style="font-size: 0.85rem; color: var(--text); margin: 4px 0 0 0;">${supp.dose.scaling_note}</p>
-          </div>
-        </div>
-
+        <!-- Synergies et risques -->
         ${supp.synergies.length > 0 ? `
-        <div style="margin-bottom: 12px;">
-          <span style="font-size: 0.75rem; font-weight: 700; color: #22c55e;">SYNERGIES :</span>
-          <span style="font-size: 0.85rem; color: var(--text-secondary);"> ${supp.synergies.join(", ")}</span>
-        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">
+          <strong style="color: var(--accent-ok);">Synergies :</strong> ${supp.synergies.join(", ")}
+        </p>
         ` : ""}
 
-        ${supp.risks.length > 0 ? `
-        <div style="background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 12px;">
-          <span style="font-size: 0.75rem; font-weight: 700; color: #ef4444;">A SURVEILLER :</span>
-          <p style="font-size: 0.85rem; color: var(--text); margin: 4px 0 0 0;">${supp.risks.join(" | ")}</p>
-        </div>
+        ${supp.risks.length > 0 && supp.risks[0] !== "Aucun notable" ? `
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">
+          <strong style="color: var(--accent-warning);">A surveiller :</strong> ${supp.risks.join(" | ")}
+        </p>
         ` : ""}
 
-        <div style="background: rgba(139, 92, 246, 0.05); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
-          <h5 style="font-size: 0.8rem; font-weight: 700; color: #8b5cf6; margin: 0 0 8px 0;">COMMENT LIRE L'ETIQUETTE</h5>
-          <ul style="margin: 0; padding-left: 18px; font-size: 0.85rem; color: var(--text);">
-            ${supp.label_checks.map(check => `<li style="margin-bottom: 4px;">${check}</li>`).join("")}
-          </ul>
-        </div>
+        <!-- Product Links -->
+        ${productLinksHTML}
 
-        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">
-          <strong>Evidence :</strong> ${supp.citations.join(", ")}
-        </div>
-
-        ${iherbLink ? `
-        <a href="${iherbLink}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: transform 0.2s, box-shadow 0.2s;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-          Acheter sur iHerb (-5% avec code KAN0746)
-        </a>
-        ` : ""}
       </div>
     `;
   }).join("");
 
-  const buyingRulesHTML = `
-    <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(249, 115, 22, 0.05) 100%); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-      <h4 style="font-size: 1.1rem; font-weight: 700; color: #ef4444; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        REGLES D'ACHAT NON NEGOCIABLES
-      </h4>
-      <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; color: var(--text); line-height: 1.8;">
-        <li><strong>Zero blend proprietaire :</strong> ${IHERB_RULES.zero_proprietary_blends}</li>
-        <li><strong>Magnesium :</strong> ${IHERB_RULES.correct_units.magnesium}</li>
-        <li><strong>Omega-3 :</strong> ${IHERB_RULES.quality_markers.omega3}</li>
-        <li><strong>Ashwagandha :</strong> ${IHERB_RULES.standardization_required.ashwagandha}</li>
-        <li><strong>Tongkat Ali :</strong> ${IHERB_RULES.standardization_required.tongkat_ali}</li>
-      </ul>
-    </div>
-  `;
-
+  // Safety warning for medications
   const safetyHTML = meds.length > 0 ? `
-    <div style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 179, 8, 0.05) 100%); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-      <h4 style="font-size: 1.1rem; font-weight: 700; color: #f97316; margin: 0 0 12px 0;">SECURITE - MEDICAMENTS DECLARES</h4>
-      <p style="font-size: 0.9rem; color: var(--text); margin: 0 0 8px 0;"><strong>Tes medicaments :</strong> ${meds.join(", ")}</p>
-      <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">La stack ci-dessous a ete filtree pour eviter les interactions connues. En cas de doute, consulte ton medecin.</p>
+    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.02) 100%); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 28px;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--accent-warning); margin: 0 0 12px 0;">Note importante : Medicaments declares</h4>
+      <p style="font-size: 1rem; color: var(--text); margin: 0 0 8px 0;"><strong>Tes medicaments :</strong> ${meds.join(", ")}</p>
+      <p style="font-size: 0.95rem; color: var(--text-secondary); margin: 0; line-height: 1.6;">
+        J'ai filtre les supplements qui pourraient interagir avec tes traitements.
+        Cependant, consulte toujours ton medecin ou pharmacien avant d'ajouter un nouveau supplement a ta routine.
+      </p>
     </div>
   ` : "";
 
-  const protocolHTML = `
-    <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 24px; margin-top: 24px;">
-      <h4 style="font-size: 1.1rem; font-weight: 700; color: #3b82f6; margin: 0 0 16px 0;">PROTOCOLE D'INTRODUCTION</h4>
-      <div style="display: grid; gap: 12px;">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">1</span>
-          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Introduis UN seul supplement tous les 3-4 jours pour identifier les effets individuels</p>
+  // Introduction protocol
+  const introProtocolHTML = `
+    <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 28px;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 16px 0;">Comment introduire ta stack</h4>
+      <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">
+        N'introduis JAMAIS tous les supplements en meme temps. Si tu as une reaction, tu ne sauras pas lequel est en cause.
+        Voici la methode intelligente :
+      </p>
+      <div style="display: grid; gap: 14px;">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <span style="background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">1</span>
+          <p style="margin: 0; font-size: 0.95rem; color: var(--text); line-height: 1.5;"><strong>Semaine 1-2 :</strong> Commence par UN seul supplement (je recommande le magnesium ou la vitamine D)</p>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">2</span>
-          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Commence par les basiques : Magnesium, Vitamine D, Omega-3</p>
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <span style="background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">2</span>
+          <p style="margin: 0; font-size: 0.95rem; color: var(--text); line-height: 1.5;"><strong>Toutes les 4-5 jours :</strong> Ajoute un nouveau supplement si tu toleres bien le precedent</p>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">3</span>
-          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Note tes ressentis dans un journal (energie, sommeil, humeur)</p>
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <span style="background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">3</span>
+          <p style="margin: 0; font-size: 0.95rem; color: var(--text); line-height: 1.5;"><strong>Tiens un journal :</strong> Note energie, sommeil, digestion, humeur chaque jour pendant l'introduction</p>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="background: #3b82f6; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0;">4</span>
-          <p style="margin: 0; font-size: 0.9rem; color: var(--text);">Reevalue apres 4-6 semaines avant d'ajouter des supplements avances</p>
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <span style="background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">4</span>
+          <p style="margin: 0; font-size: 0.95rem; color: var(--text); line-height: 1.5;"><strong>Reevalue a 6 semaines :</strong> Ajuste les dosages, elimine ce qui n'apporte rien de perceptible</p>
         </div>
       </div>
     </div>
   `;
 
   return `
-    <div class="supplements-section-enhanced">
-      ${buyingRulesHTML}
+    <div class="supplements-section">
       ${safetyHTML}
-      <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0 0 20px 0;">Ta Stack Personnalisee</h3>
-      ${supplementCards}
-      ${protocolHTML}
+      ${introProtocolHTML}
+      <h3 style="font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 0 0 24px 0;">Ta stack personnalisee</h3>
+      ${supplementSections}
     </div>
   `;
 }
