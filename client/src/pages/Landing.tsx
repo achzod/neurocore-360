@@ -601,17 +601,163 @@ function BentoDomainesSection() {
     };
   }, []);
 
-  // Domaines avec positions autour de la silhouette
+  // Domaines avec positions et points anatomiques
   const domaines = [
-    { id: 1, name: "Métabolisme", position: "top-[15%] right-[5%]", line: "left" },
-    { id: 2, name: "Cardiovasculaire", position: "top-[25%] left-[5%]", line: "right" },
-    { id: 3, name: "Hormones", position: "top-[38%] right-[5%]", line: "left" },
-    { id: 4, name: "Thyroïde", position: "bottom-[45%] left-[5%]", line: "right" },
-    { id: 5, name: "Digestion", position: "bottom-[35%] right-[5%]", line: "left" },
-    { id: 6, name: "Sommeil", position: "top-[8%] left-[15%]", line: "right" },
-    { id: 7, name: "Nutrition", position: "bottom-[25%] left-[5%]", line: "right" },
-    { id: 8, name: "Énergie", position: "bottom-[15%] right-[5%]", line: "left" },
+    {
+      id: 1,
+      name: "Biomécanique",
+      position: "top-[12%] right-[5%]",
+      line: "left",
+      points: ["shoulder-left", "shoulder-right", "knee-left", "knee-right", "hip-left", "hip-right", "spine"]
+    },
+    {
+      id: 2,
+      name: "Cardiovasculaire",
+      position: "top-[22%] left-[5%]",
+      line: "right",
+      points: ["heart", "chest"]
+    },
+    {
+      id: 3,
+      name: "Hormones",
+      position: "top-[32%] right-[5%]",
+      line: "left",
+      points: ["thyroid", "adrenal-left", "adrenal-right", "reproductive"]
+    },
+    {
+      id: 4,
+      name: "Thyroïde",
+      position: "top-[42%] left-[5%]",
+      line: "right",
+      points: ["thyroid", "neck"]
+    },
+    {
+      id: 5,
+      name: "Digestion",
+      position: "bottom-[42%] right-[5%]",
+      line: "left",
+      points: ["stomach", "intestines", "liver"]
+    },
+    {
+      id: 6,
+      name: "Sommeil",
+      position: "top-[5%] left-[15%]",
+      line: "right",
+      points: ["head", "brain"]
+    },
+    {
+      id: 7,
+      name: "Nutrition",
+      position: "bottom-[32%] left-[5%]",
+      line: "right",
+      points: ["stomach", "intestines"]
+    },
+    {
+      id: 8,
+      name: "Énergie",
+      position: "bottom-[22%] right-[5%]",
+      line: "left",
+      points: ["mitochondria", "chest", "adrenal-left", "adrenal-right"]
+    },
+    {
+      id: 9,
+      name: "Posture",
+      position: "bottom-[12%] left-[5%]",
+      line: "right",
+      points: ["spine", "shoulder-left", "shoulder-right", "hip-left", "hip-right"]
+    },
+    {
+      id: 10,
+      name: "Inflammation",
+      position: "top-[52%] right-[5%]",
+      line: "left",
+      points: ["shoulder-left", "shoulder-right", "knee-left", "knee-right", "intestines"]
+    },
+    {
+      id: 11,
+      name: "Stress",
+      position: "top-[62%] left-[5%]",
+      line: "right",
+      points: ["brain", "adrenal-left", "adrenal-right", "heart"]
+    },
+    {
+      id: 12,
+      name: "Immunité",
+      position: "bottom-[52%] right-[5%]",
+      line: "left",
+      points: ["thymus", "intestines", "lymph-left", "lymph-right"]
+    },
+    {
+      id: 13,
+      name: "Biohacking",
+      position: "bottom-[2%] right-[8%]",
+      line: "left",
+      points: ["mitochondria", "brain", "heart", "liver"]
+    },
+    {
+      id: 14,
+      name: "Prise de sang",
+      position: "bottom-[2%] left-[8%]",
+      line: "right",
+      points: ["blood-arm-left", "blood-arm-right"],
+      icon: "blood"
+    },
+    {
+      id: 15,
+      name: "Cognition",
+      position: "top-[72%] right-[5%]",
+      line: "left",
+      points: ["brain", "head"]
+    },
   ];
+
+  // Positions anatomiques pour les points
+  const anatomyPoints: Record<string, { x: string; y: string; color: string }> = {
+    // Tête
+    "head": { x: "50%", y: "8%", color: "#60a5fa" },
+    "brain": { x: "50%", y: "6%", color: "#8b5cf6" },
+    "neck": { x: "50%", y: "13%", color: "#fbbf24" },
+    "thyroid": { x: "50%", y: "14%", color: "#f59e0b" },
+
+    // Torse
+    "heart": { x: "48%", y: "28%", color: "#ef4444" },
+    "chest": { x: "50%", y: "30%", color: "#dc2626" },
+    "thymus": { x: "50%", y: "25%", color: "#ec4899" },
+    "lungs-left": { x: "42%", y: "28%", color: "#06b6d4" },
+    "lungs-right": { x: "58%", y: "28%", color: "#06b6d4" },
+
+    // Épaules
+    "shoulder-left": { x: "35%", y: "22%", color: "#10b981" },
+    "shoulder-right": { x: "65%", y: "22%", color: "#10b981" },
+
+    // Bras
+    "blood-arm-left": { x: "30%", y: "35%", color: "#dc2626" },
+    "blood-arm-right": { x: "70%", y: "35%", color: "#dc2626" },
+
+    // Abdomen
+    "stomach": { x: "50%", y: "40%", color: "#84cc16" },
+    "liver": { x: "55%", y: "38%", color: "#eab308" },
+    "intestines": { x: "50%", y: "48%", color: "#22c55e" },
+    "adrenal-left": { x: "45%", y: "42%", color: "#f97316" },
+    "adrenal-right": { x: "55%", y: "42%", color: "#f97316" },
+    "reproductive": { x: "50%", y: "55%", color: "#ec4899" },
+    "mitochondria": { x: "50%", y: "45%", color: "#a855f7" },
+
+    // Hanches
+    "hip-left": { x: "42%", y: "54%", color: "#10b981" },
+    "hip-right": { x: "58%", y: "54%", color: "#10b981" },
+
+    // Genoux
+    "knee-left": { x: "43%", y: "72%", color: "#10b981" },
+    "knee-right": { x: "57%", y: "72%", color: "#10b981" },
+
+    // Colonne
+    "spine": { x: "50%", y: "35%", color: "#6366f1" },
+
+    // Système lymphatique
+    "lymph-left": { x: "40%", y: "33%", color: "#a78bfa" },
+    "lymph-right": { x: "60%", y: "33%", color: "#a78bfa" },
+  };
 
   const biomarkers = [
     "CORTISOL", "TSH", "T3/T4", "INSULINE", "HBA1C", "VITAMINE D",
@@ -627,29 +773,64 @@ function BentoDomainesSection() {
         {/* Main content with silhouette */}
         <div className="relative min-h-[600px] flex items-center justify-center">
 
-          {/* Human Silhouette - Center */}
+          {/* Detailed Skeleton - Center */}
           <div className="relative w-[300px] h-[500px] md:w-[350px] md:h-[580px]">
-            {/* Silhouette shape */}
-            <div
-              className="absolute inset-0 opacity-40"
-              style={{
-                background: "linear-gradient(180deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 50%, rgba(16,185,129,0.05) 100%)",
-                clipPath: "ellipse(35% 48% at 50% 50%)",
-                filter: "blur(2px)",
-              }}
-            />
-            {/* Head */}
-            <div
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-[80px] h-[100px] opacity-50"
-              style={{
-                background: "radial-gradient(ellipse, rgba(16,185,129,0.4) 0%, transparent 70%)",
-                borderRadius: "50% 50% 45% 45%",
-              }}
-            />
             {/* Body glow */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-3/4 h-3/4 rounded-full bg-primary/10 blur-3xl" />
             </div>
+
+            {/* SVG Skeleton */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Skull/Head */}
+              <ellipse cx="50" cy="12" rx="10" ry="13" stroke="rgba(16,185,129,0.4)" strokeWidth="0.5" />
+              <circle cx="50" cy="10" r="12" stroke="rgba(16,185,129,0.3)" strokeWidth="0.3" />
+
+              {/* Neck */}
+              <line x1="50" y1="22" x2="50" y2="30" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5" />
+
+              {/* Spine */}
+              <line x1="50" y1="30" x2="50" y2="90" stroke="rgba(16,185,129,0.5)" strokeWidth="2" />
+
+              {/* Ribs */}
+              <path d="M 50 35 Q 40 40, 42 45" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 35 Q 60 40, 58 45" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 40 Q 38 45, 40 50" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 40 Q 62 45, 60 50" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 45 Q 38 50, 40 55" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 45 Q 62 50, 60 55" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 50 Q 40 55, 42 60" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+              <path d="M 50 50 Q 60 55, 58 60" stroke="rgba(16,185,129,0.3)" strokeWidth="0.8" fill="none" />
+
+              {/* Shoulders */}
+              <circle cx="35" cy="35" r="3" fill="rgba(16,185,129,0.5)" />
+              <circle cx="65" cy="35" r="3" fill="rgba(16,185,129,0.5)" />
+
+              {/* Arms */}
+              <line x1="35" y1="35" x2="25" y2="55" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5" />
+              <line x1="65" y1="35" x2="75" y2="55" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5" />
+              <line x1="25" y1="55" x2="22" y2="75" stroke="rgba(16,185,129,0.4)" strokeWidth="1.2" />
+              <line x1="75" y1="55" x2="78" y2="75" stroke="rgba(16,185,129,0.4)" strokeWidth="1.2" />
+
+              {/* Pelvis */}
+              <ellipse cx="50" cy="88" rx="12" ry="8" stroke="rgba(16,185,129,0.5)" strokeWidth="1.5" fill="none" />
+
+              {/* Hips */}
+              <circle cx="42" cy="88" r="3" fill="rgba(16,185,129,0.5)" />
+              <circle cx="58" cy="88" r="3" fill="rgba(16,185,129,0.5)" />
+
+              {/* Legs */}
+              <line x1="42" y1="90" x2="40" y2="120" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5" />
+              <line x1="58" y1="90" x2="60" y2="120" stroke="rgba(16,185,129,0.4)" strokeWidth="1.5" />
+
+              {/* Knees */}
+              <circle cx="40" cy="120" r="2.5" fill="rgba(16,185,129,0.5)" />
+              <circle cx="60" cy="120" r="2.5" fill="rgba(16,185,129,0.5)" />
+
+              {/* Lower legs */}
+              <line x1="40" y1="122" x2="38" y2="150" stroke="rgba(16,185,129,0.4)" strokeWidth="1.2" />
+              <line x1="60" y1="122" x2="62" y2="150" stroke="rgba(16,185,129,0.4)" strokeWidth="1.2" />
+            </svg>
 
             {/* Scan lines effect */}
             <div className="absolute inset-0 overflow-hidden opacity-20">
@@ -661,6 +842,44 @@ function BentoDomainesSection() {
                 />
               ))}
             </div>
+
+            {/* Interactive anatomy points */}
+            {activeIndex !== null && domaines[activeIndex]?.points?.map((pointId) => {
+              const point = anatomyPoints[pointId];
+              if (!point) return null;
+              return (
+                <motion.div
+                  key={pointId}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, type: "spring" }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 z-20"
+                  style={{
+                    left: point.x,
+                    top: point.y,
+                  }}
+                >
+                  <div className="relative">
+                    {/* Outer pulse ring */}
+                    <div
+                      className="absolute w-8 h-8 rounded-full -translate-x-1/2 -translate-y-1/2 animate-ping"
+                      style={{ backgroundColor: `${point.color}40` }}
+                    />
+                    {/* Middle glow */}
+                    <div
+                      className="absolute w-6 h-6 rounded-full blur-md -translate-x-1/2 -translate-y-1/2"
+                      style={{ backgroundColor: point.color, opacity: 0.6 }}
+                    />
+                    {/* Inner dot */}
+                    <div
+                      className="absolute w-3 h-3 rounded-full -translate-x-1/2 -translate-y-1/2 shadow-lg"
+                      style={{ backgroundColor: point.color }}
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
 
             {/* Corner brackets */}
             <div className="absolute top-[30%] left-[30%] w-6 h-6 border-l-2 border-t-2 border-primary/40" />
@@ -689,12 +908,21 @@ function BentoDomainesSection() {
 
               {/* Label card */}
               <div
-                className={`px-4 py-2 rounded-lg border transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg border transition-all duration-300 flex items-center gap-2 ${
                   activeIndex === idx
                     ? "bg-primary/20 border-primary/60 shadow-lg shadow-primary/20"
                     : "bg-white/5 border-white/10 hover:border-primary/40"
                 }`}
               >
+                {domaine.icon === "blood" && (
+                  <svg width="12" height="12" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M6 0C6 0 2 4.5 2 8C2 10.2091 3.79086 12 6 12C8.20914 12 10 10.2091 10 8C10 4.5 6 0 6 0Z"
+                      fill={activeIndex === idx ? "#ef4444" : "#dc2626"}
+                      opacity={activeIndex === idx ? "1" : "0.7"}
+                    />
+                  </svg>
+                )}
                 <span className={`text-sm font-medium ${activeIndex === idx ? "text-primary" : "text-white/80"}`}>
                   {domaine.name}
                 </span>
