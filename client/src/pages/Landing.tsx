@@ -576,10 +576,10 @@ function BentoHeroSection() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
             </span>
-            <span className="text-sm font-semibold text-amber-200/90 tracking-wide">
+            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200/90 tracking-wide">
               En Beta Test depuis Septembre 2025
             </span>
-            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs px-2 py-0.5">
+            <Badge className="bg-amber-500/20 text-amber-900 dark:text-amber-300 border-amber-500/30 text-xs px-2 py-0.5">
               127 testeurs
             </Badge>
           </div>
