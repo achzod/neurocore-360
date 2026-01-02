@@ -49,27 +49,27 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 // Ultrahuman-style Hero with spotlight, glow, lift effects
 function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
-  const textRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isTextHovered, setIsTextHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Spotlight effect - track mouse position with rAF
+  // Update CSS variables on pointermove with rAF
   useEffect(() => {
     let rafId: number;
-    const handleMouseMove = (e: MouseEvent) => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
       rafId = requestAnimationFrame(() => {
-        if (textRef.current) {
-          const rect = textRef.current.getBoundingClientRect();
-          setMousePos({
-            x: ((e.clientX - rect.left) / rect.width) * 100,
-            y: ((e.clientY - rect.top) / rect.height) * 100,
-          });
-        }
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty("--x", `${x}px`);
+        card.style.setProperty("--y", `${y}px`);
       });
     };
-    window.addEventListener("pointermove", handleMouseMove);
+
+    card.addEventListener("pointermove", handlePointerMove);
     return () => {
-      window.removeEventListener("pointermove", handleMouseMove);
+      card.removeEventListener("pointermove", handlePointerMove);
       cancelAnimationFrame(rafId);
     };
   }, []);
@@ -122,49 +122,37 @@ function UltrahumanHero() {
   return (
     <section className="relative min-h-[85vh] overflow-hidden bg-black flex flex-col items-center justify-center px-4 py-8">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.12),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_50%)]" />
 
-      {/* Giant Text with Ultrahuman hover effect */}
+      {/* Hero Card with 3-layer Ultrahuman hover effect */}
       <div
-        ref={textRef}
-        className="relative z-10 mb-4 cursor-pointer group"
-        onMouseEnter={() => setIsTextHovered(true)}
-        onMouseLeave={() => setIsTextHovered(false)}
+        ref={cardRef}
+        className="uh-card relative z-10 mb-6 px-12 py-8 rounded-3xl cursor-pointer group"
+        style={{ "--x": "50%", "--y": "50%" } as React.CSSProperties}
       >
-        {/* Glow/Aura layer - behind text */}
+        {/* Layer 1: Glow/Aura - blurred halo behind */}
+        <div className="absolute -inset-4 rounded-3xl bg-primary/20 blur-3xl opacity-0 group-hover:opacity-60 transition-opacity duration-300 -z-20" />
+
+        {/* Layer 2: Glass card background */}
+        <div className="absolute inset-0 rounded-3xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] group-hover:border-white/[0.1] group-hover:bg-white/[0.04] transition-all duration-300 -z-10" />
+
+        {/* Layer 3: Spotlight - follows mouse via CSS vars */}
         <div
-          className="absolute -inset-8 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10 blur-2xl"
+          className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none -z-5"
           style={{
-            background: `radial-gradient(circle at ${mousePos.x}% ${mousePos.y}%, rgba(16, 185, 129, 0.4), transparent 60%)`,
+            background: "radial-gradient(circle 200px at var(--x) var(--y), rgba(16, 185, 129, 0.15), transparent 50%)",
           }}
         />
 
-        {/* Spotlight layer - follows mouse */}
-        <div
-          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle 150px at ${mousePos.x}% ${mousePos.y}%, rgba(16, 185, 129, 0.15), transparent 50%)`,
-          }}
-        />
-
-        {/* Text with lift + blur effect */}
-        <motion.h1
-          animate={{
-            y: isTextHovered ? -3 : 0,
-            scale: isTextHovered ? 1.01 : 1,
-            filter: isTextHovered ? "blur(0px)" : "blur(3px)",
-            opacity: isTextHovered ? 1 : 0.6,
-          }}
-          transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-          className="text-[5vw] sm:text-[4.5vw] md:text-[4vw] lg:text-[3.5vw] font-bold leading-none tracking-tight whitespace-nowrap text-primary select-none"
-          style={{
-            textShadow: isTextHovered
-              ? "0 4px 20px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.3)"
-              : "0 0 30px rgba(16, 185, 129, 0.2)",
-          }}
-        >
-          Ton analyse tout en 1<span className="text-white">.</span>
-        </motion.h1>
+        {/* Text content with lift effect */}
+        <div className="transform transition-transform duration-300 ease-out group-hover:-translate-y-1">
+          <h1 className="text-[6vw] sm:text-[5vw] md:text-[4vw] lg:text-[3.5vw] font-bold leading-[1.1] tracking-tight text-center">
+            <span className="text-primary">Décode ton</span>
+            <br />
+            <span className="text-primary">métabolisme</span>
+            <span className="text-white">.</span>
+          </h1>
+        </div>
       </div>
 
       {/* Phone Mockup - Smaller */}
