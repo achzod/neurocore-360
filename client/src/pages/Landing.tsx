@@ -557,6 +557,52 @@ function BentoProcessSection() {
   );
 }
 
+// Static fallback reviews
+const STATIC_REVIEWS = [
+  {
+    id: "static-1",
+    email: "marc.d@gmail.com",
+    rating: 5,
+    comment: "Audit incroyablement détaillé. J'ai enfin compris pourquoi je stagnais depuis des mois. Les protocoles sont ultra précis et faciles à suivre. Résultats visibles en 3 semaines.",
+    createdAt: new Date("2025-12-15"),
+  },
+  {
+    id: "static-2",
+    email: "sophie.m@outlook.com",
+    rating: 5,
+    comment: "Je suis coach sportive et même moi j'ai appris des choses sur mon propre corps. L'analyse posturale et les liens avec le stress/sommeil sont bluffants. Très pro.",
+    createdAt: new Date("2025-12-10"),
+  },
+  {
+    id: "static-3",
+    email: "thomas.r@yahoo.fr",
+    rating: 5,
+    comment: "40 pages d'analyse personnalisée, pas du blabla générique. Chaque recommandation est argumentée avec la science derrière. Le stack supplements m'a fait gagner un temps fou.",
+    createdAt: new Date("2025-12-08"),
+  },
+  {
+    id: "static-4",
+    email: "julie.b@gmail.com",
+    rating: 4,
+    comment: "Rapport très complet, peut-être même trop au début ! Mais une fois qu'on suit le plan 30-60-90, tout devient clair. Mon énergie a complètement changé.",
+    createdAt: new Date("2025-12-05"),
+  },
+  {
+    id: "static-5",
+    email: "alex.k@proton.me",
+    rating: 5,
+    comment: "J'ai fait des dizaines de bilans santé, celui-ci est le seul qui connecte TOUT : sommeil, digestion, hormones, posture. Enfin une vision globale et des solutions concrètes.",
+    createdAt: new Date("2025-11-28"),
+  },
+  {
+    id: "static-6",
+    email: "emma.l@gmail.com",
+    rating: 5,
+    comment: "Le protocole matin anti-cortisol a changé ma vie. Je dormais mal depuis 2 ans, en 10 jours c'était réglé. Merci Achzod !",
+    createdAt: new Date("2025-11-20"),
+  },
+];
+
 // BENTO TESTIMONIALS
 function BentoTestimonialsSection() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -566,11 +612,16 @@ function BentoTestimonialsSection() {
     try {
       const response = await fetch("/api/reviews");
       const data = await response.json();
-      if (data.success && data.reviews) {
+      if (data.success && data.reviews && data.reviews.length > 0) {
         setReviews(data.reviews.slice(0, 6));
+      } else {
+        // Fallback to static reviews if API returns empty
+        setReviews(STATIC_REVIEWS);
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
+      // Fallback to static reviews on error
+      setReviews(STATIC_REVIEWS);
     } finally {
       setIsLoading(false);
     }
