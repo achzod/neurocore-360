@@ -73,6 +73,13 @@ export function Header() {
                 >
                   Prix
                 </a>
+                <Link
+                  href="/faq"
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  data-testid="link-faq"
+                >
+                  FAQ
+                </Link>
               </>
             )}
             {isDashboard && (
@@ -178,6 +185,13 @@ export function Header() {
                   >
                     Prix
                   </a>
+                  <Link
+                    href="/faq"
+                    className="text-sm font-medium text-muted-foreground"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    FAQ
+                  </Link>
                 </>
               )}
               {userEmail && (
