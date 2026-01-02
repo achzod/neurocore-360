@@ -707,113 +707,63 @@ function BentoDomainesSection() {
     };
   }, []);
 
-  // Domaines avec positions et points anatomiques
+  // Domaines avec positions et points anatomiques (8 principaux, bien espacés)
   const domaines = [
     {
       id: 1,
+      name: "Sommeil",
+      position: "top-[8%] left-[8%]",
+      line: "right",
+      points: ["head", "brain"]
+    },
+    {
+      id: 2,
       name: "Biomécanique",
-      position: "top-[12%] right-[5%]",
+      position: "top-[8%] right-[8%]",
       line: "left",
       points: ["shoulder-left", "shoulder-right", "knee-left", "knee-right", "hip-left", "hip-right", "spine"]
     },
     {
-      id: 2,
+      id: 3,
       name: "Cardiovasculaire",
-      position: "top-[22%] left-[5%]",
+      position: "top-[32%] left-[8%]",
       line: "right",
       points: ["heart", "chest"]
     },
     {
-      id: 3,
+      id: 4,
       name: "Hormones",
-      position: "top-[32%] right-[5%]",
+      position: "top-[32%] right-[8%]",
       line: "left",
       points: ["thyroid", "adrenal-left", "adrenal-right", "reproductive"]
     },
     {
-      id: 4,
-      name: "Thyroïde",
-      position: "top-[42%] left-[5%]",
-      line: "right",
-      points: ["thyroid", "neck"]
-    },
-    {
       id: 5,
       name: "Digestion",
-      position: "bottom-[42%] right-[5%]",
+      position: "bottom-[32%] right-[8%]",
       line: "left",
       points: ["stomach", "intestines", "liver"]
     },
     {
       id: 6,
-      name: "Sommeil",
-      position: "top-[5%] left-[15%]",
+      name: "Stress",
+      position: "bottom-[32%] left-[8%]",
       line: "right",
-      points: ["head", "brain"]
+      points: ["brain", "adrenal-left", "adrenal-right", "heart"]
     },
     {
       id: 7,
       name: "Nutrition",
-      position: "bottom-[32%] left-[5%]",
+      position: "bottom-[8%] left-[8%]",
       line: "right",
       points: ["stomach", "intestines"]
     },
     {
       id: 8,
-      name: "Énergie",
-      position: "bottom-[22%] right-[5%]",
-      line: "left",
-      points: ["mitochondria", "chest", "adrenal-left", "adrenal-right"]
-    },
-    {
-      id: 9,
       name: "Posture",
-      position: "bottom-[12%] left-[5%]",
-      line: "right",
+      position: "bottom-[8%] right-[8%]",
+      line: "left",
       points: ["spine", "shoulder-left", "shoulder-right", "hip-left", "hip-right"]
-    },
-    {
-      id: 10,
-      name: "Inflammation",
-      position: "top-[52%] right-[5%]",
-      line: "left",
-      points: ["shoulder-left", "shoulder-right", "knee-left", "knee-right", "intestines"]
-    },
-    {
-      id: 11,
-      name: "Stress",
-      position: "top-[62%] left-[5%]",
-      line: "right",
-      points: ["brain", "adrenal-left", "adrenal-right", "heart"]
-    },
-    {
-      id: 12,
-      name: "Immunité",
-      position: "bottom-[52%] right-[5%]",
-      line: "left",
-      points: ["thymus", "intestines", "lymph-left", "lymph-right"]
-    },
-    {
-      id: 13,
-      name: "Biohacking",
-      position: "bottom-[2%] right-[8%]",
-      line: "left",
-      points: ["mitochondria", "brain", "heart", "liver"]
-    },
-    {
-      id: 14,
-      name: "Prise de sang",
-      position: "bottom-[2%] left-[8%]",
-      line: "right",
-      points: ["blood-arm-left", "blood-arm-right"],
-      icon: "blood"
-    },
-    {
-      id: 15,
-      name: "Cognition",
-      position: "top-[72%] right-[5%]",
-      line: "left",
-      points: ["brain", "head"]
     },
   ];
 
