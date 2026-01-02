@@ -14,7 +14,11 @@ import {
   Gift,
   ArrowRight,
   Loader2,
+  Tag,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,6 +30,10 @@ export default function Checkout() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [responses, setResponses] = useState<Record<string, unknown>>({});
+  const [promoCode, setPromoCode] = useState("");
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [validatedPromo, setValidatedPromo] = useState<{ code: string; discount: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
@@ -40,6 +48,54 @@ export default function Checkout() {
     setResponses(JSON.parse(savedResponses));
   }, [navigate]);
 
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) return;
+
+    setPromoValidating(true);
+    setPromoError(null);
+
+    try {
+      const response = await fetch("/api/promo-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          auditType: selectedPlan?.toUpperCase() || "ALL",
+        }),
+      });
+      const data = await response.json();
+
+      if (data.valid) {
+        setValidatedPromo({ code: promoCode.trim().toUpperCase(), discount: data.discount });
+        setPromoError(null);
+        toast({
+          title: "Code promo appliqué !",
+          description: `-${data.discount}% de réduction sur ton analyse`,
+        });
+      } else {
+        setValidatedPromo(null);
+        setPromoError(data.error || "Code invalide");
+      }
+    } catch {
+      setPromoError("Erreur de validation");
+    } finally {
+      setPromoValidating(false);
+    }
+  };
+
+  const removePromoCode = () => {
+    setValidatedPromo(null);
+    setPromoCode("");
+    setPromoError(null);
+  };
+
+  // Re-validate promo when plan changes
+  useEffect(() => {
+    if (validatedPromo && selectedPlan) {
+      validatePromoCode();
+    }
+  }, [selectedPlan]);
+
   const STRIPE_PRICE_IDS: Record<string, string> = {
     premium: "price_1SisNBRDE5WXnLZXF6QIJuh4",
     elite: "price_1SisNCRDE5WXnLZXTk4obahF",
@@ -48,7 +104,7 @@ export default function Checkout() {
   const createAuditMutation = useMutation({
     mutationFn: async (planId: string) => {
       const type = planId.toUpperCase() as "GRATUIT" | "PREMIUM" | "ELITE";
-      
+
       if (planId === "gratuit") {
         return apiRequest("POST", "/api/audit/create", {
           email,
@@ -61,6 +117,7 @@ export default function Checkout() {
           email,
           planType: type,
           responses,
+          promoCode: validatedPromo?.code || null,
         });
         return response.json();
       }
@@ -193,11 +250,79 @@ export default function Checkout() {
           ))}
         </div>
 
+        {/* Code Promo */}
+        {selectedPlan && selectedPlan !== "gratuit" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-8 max-w-md mx-auto"
+          >
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Tag className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Code promo</span>
+                </div>
+
+                {validatedPromo ? (
+                  <div className="flex items-center justify-between rounded-md bg-green-500/10 border border-green-500/30 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span className="font-mono font-medium">{validatedPromo.code}</span>
+                      <Badge variant="secondary" className="ml-2">
+                        -{validatedPromo.discount}%
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={removePromoCode}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="Entre ton code promo"
+                        value={promoCode}
+                        onChange={(e) => {
+                          setPromoCode(e.target.value.toUpperCase());
+                          setPromoError(null);
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && validatePromoCode()}
+                        className={`font-mono ${promoError ? "border-red-500" : ""}`}
+                      />
+                      {promoError && (
+                        <p className="text-xs text-red-500 mt-1">{promoError}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="secondary"
+                      onClick={validatePromoCode}
+                      disabled={promoValidating || !promoCode.trim()}
+                    >
+                      {promoValidating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Appliquer"
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12"
+          className="mt-8"
         >
           <Card className="bg-muted/30">
             <CardContent className="flex flex-col items-center gap-6 p-8 sm:flex-row sm:justify-between">
@@ -214,6 +339,11 @@ export default function Checkout() {
                     ? "Tu seras redirigé vers le paiement sécurisé."
                     : "Clique sur l'une des offres ci-dessus."}
                 </p>
+                {validatedPromo && selectedPlan && selectedPlan !== "gratuit" && (
+                  <p className="mt-2 text-sm font-medium text-green-500">
+                    Code promo {validatedPromo.code} appliqué : -{validatedPromo.discount}% de réduction
+                  </p>
+                )}
               </div>
               <Button
                 size="lg"

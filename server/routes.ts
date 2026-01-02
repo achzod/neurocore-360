@@ -6,7 +6,14 @@ import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
-import { sendMagicLinkEmail, sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
+import {
+  sendMagicLinkEmail,
+  sendReportReadyEmail,
+  sendAdminEmailNewAudit,
+  sendGratuitUpsellEmail,
+  sendPremiumJ7Email,
+  sendPremiumJ14Email,
+} from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAudit } from "./geminiPremiumEngine";
 import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
@@ -725,13 +732,39 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", async (req, res) => {
     try {
-      const { priceId, email, planType, responses } = req.body;
-      
+      const { priceId, email, planType, responses, promoCode } = req.body;
+
       const stripe = await getUncachableStripeClient();
-      
+
       const baseUrl = getBaseUrl();
-      
-      const session = await stripe.checkout.sessions.create({
+
+      // Validate and apply promo code if provided
+      let discounts: any[] = [];
+      let validatedPromoCode: string | null = null;
+
+      if (promoCode) {
+        const validation = await storage.validatePromoCode(promoCode, planType);
+        if (validation.valid) {
+          validatedPromoCode = promoCode;
+
+          // Create a Stripe coupon dynamically
+          try {
+            const couponId = `NEUROCORE_${promoCode.toUpperCase()}_${Date.now()}`;
+            const coupon = await stripe.coupons.create({
+              id: couponId,
+              percent_off: validation.discount,
+              duration: 'once',
+              max_redemptions: 1,
+            });
+            discounts = [{ coupon: coupon.id }];
+          } catch (couponError: any) {
+            console.error("Stripe coupon error:", couponError);
+            // Continue without discount if coupon creation fails
+          }
+        }
+      }
+
+      const sessionParams: any = {
         payment_method_types: ['card'],
         line_items: [
           {
@@ -747,8 +780,21 @@ export async function registerRoutes(
           email,
           planType,
           responses: JSON.stringify(responses).substring(0, 500),
+          promoCode: validatedPromoCode || '',
         },
-      });
+      };
+
+      // Apply discounts if any
+      if (discounts.length > 0) {
+        sessionParams.discounts = discounts;
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      // Increment promo code usage if checkout session created successfully
+      if (validatedPromoCode) {
+        await storage.incrementPromoCodeUse(validatedPromoCode);
+      }
 
       res.json({ sessionId: session.id, url: session.url });
     } catch (error: any) {
@@ -1066,6 +1112,38 @@ export async function registerRoutes(
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
         
+        // Promo codes
+        `CREATE TABLE IF NOT EXISTS promo_codes (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          code VARCHAR(50) NOT NULL UNIQUE,
+          discount_percent INTEGER NOT NULL CHECK (discount_percent >= 1 AND discount_percent <= 100),
+          description TEXT,
+          valid_for VARCHAR(20) NOT NULL DEFAULT 'ALL',
+          max_uses INTEGER DEFAULT NULL,
+          current_uses INTEGER NOT NULL DEFAULT 0,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          expires_at TIMESTAMP DEFAULT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
+
+        // Email tracking
+        `CREATE TABLE IF NOT EXISTS email_tracking (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          audit_id VARCHAR(36) NOT NULL,
+          email_type VARCHAR(50) NOT NULL,
+          sent_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          opened_at TIMESTAMP DEFAULT NULL,
+          clicked_at TIMESTAMP DEFAULT NULL
+        )`,
+
+        // Default promo codes
+        `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+         VALUES ('ANALYSE20', 20, 'Code promo 20% sur analyse Premium', 'PREMIUM')
+         ON CONFLICT (code) DO NOTHING`,
+        `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+         VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
+         ON CONFLICT (code) DO NOTHING`,
+
         // Index
         `CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email)`,
         `CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id)`,
@@ -1074,7 +1152,9 @@ export async function registerRoutes(
         `CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`,
         `CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`,
         `CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id)`,
-        `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`
+        `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`,
+        `CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`,
+        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`
       ];
       
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
@@ -1115,6 +1195,229 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error('[Init DB] Error:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ==================== PROMO CODES API ====================
+
+  // Get all promo codes (Admin)
+  app.get("/api/admin/promo-codes", async (req, res) => {
+    try {
+      const codes = await storage.getAllPromoCodes();
+      res.json({ success: true, codes });
+    } catch (error) {
+      console.error("[Promo Codes] Error fetching:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Create promo code (Admin)
+  app.post("/api/admin/promo-codes", async (req, res) => {
+    try {
+      const { code, discountPercent, description, validFor, maxUses, isActive, expiresAt } = req.body;
+
+      if (!code || !discountPercent) {
+        res.status(400).json({ success: false, error: "Code et réduction requis" });
+        return;
+      }
+
+      const promo = await storage.createPromoCode({
+        code,
+        discountPercent: Number(discountPercent),
+        description: description || null,
+        validFor: validFor || "ALL",
+        maxUses: maxUses ? Number(maxUses) : null,
+        isActive: isActive !== false,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      });
+
+      res.json({ success: true, promo });
+    } catch (error: any) {
+      console.error("[Promo Codes] Error creating:", error);
+      if (error?.code === "23505") {
+        res.status(400).json({ success: false, error: "Ce code existe déjà" });
+      } else {
+        res.status(500).json({ success: false, error: "Erreur serveur" });
+      }
+    }
+  });
+
+  // Update promo code (Admin)
+  app.put("/api/admin/promo-codes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+
+      const promo = await storage.updatePromoCode(id, {
+        ...data,
+        discountPercent: data.discountPercent ? Number(data.discountPercent) : undefined,
+        maxUses: data.maxUses !== undefined ? (data.maxUses ? Number(data.maxUses) : null) : undefined,
+        expiresAt: data.expiresAt !== undefined ? (data.expiresAt ? new Date(data.expiresAt) : null) : undefined,
+      });
+
+      if (!promo) {
+        res.status(404).json({ success: false, error: "Code promo non trouvé" });
+        return;
+      }
+
+      res.json({ success: true, promo });
+    } catch (error) {
+      console.error("[Promo Codes] Error updating:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Validate promo code (Public - for checkout)
+  app.post("/api/promo-codes/validate", async (req, res) => {
+    try {
+      const { code, auditType } = req.body;
+
+      if (!code) {
+        res.status(400).json({ valid: false, discount: 0, error: "Code requis" });
+        return;
+      }
+
+      const result = await storage.validatePromoCode(code, auditType || "ALL");
+      res.json(result);
+    } catch (error) {
+      console.error("[Promo Codes] Error validating:", error);
+      res.status(500).json({ valid: false, discount: 0, error: "Erreur serveur" });
+    }
+  });
+
+  // Track email open (pixel tracking)
+  app.get("/api/track/email/:trackingId/open.gif", async (req, res) => {
+    try {
+      const { trackingId } = req.params;
+      await storage.markEmailOpened(trackingId);
+    } catch (error) {
+      console.error("[Email Tracking] Error:", error);
+    }
+    // Return 1x1 transparent GIF
+    const gif = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
+    res.setHeader("Content-Type", "image/gif");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.send(gif);
+  });
+
+  // ==================== EMAIL SEQUENCES CRON ====================
+
+  // Cron endpoint to process scheduled email sequences
+  // Call this endpoint every hour via external cron service (e.g., cron-job.org)
+  app.post("/api/cron/process-email-sequences", async (req, res) => {
+    try {
+      const baseUrl = getBaseUrl();
+      const now = new Date();
+      const results = { gratuitUpsell: 0, premiumJ7: 0, premiumJ14: 0, errors: 0 };
+
+      // Get all SENT audits
+      const allAudits = await storage.getAllAudits();
+      const sentAudits = allAudits.filter(a => a.reportDeliveryStatus === "SENT" && a.reportSentAt);
+
+      for (const audit of sentAudits) {
+        try {
+          const sentAt = new Date(audit.reportSentAt!);
+          const daysSinceSent = Math.floor((now.getTime() - sentAt.getTime()) / (1000 * 60 * 60 * 24));
+
+          // Get existing email tracking for this audit
+          const emailTracking = await storage.getEmailTrackingForAudit(audit.id);
+          const trackingTypes = emailTracking.map(t => t.emailType);
+
+          // GRATUIT audits: Send upsell email after 2 days
+          if (audit.type === "GRATUIT" && daysSinceSent >= 2 && daysSinceSent < 30) {
+            if (!trackingTypes.includes("GRATUIT_UPSELL")) {
+              const tracking = await storage.createEmailTracking(audit.id, "GRATUIT_UPSELL");
+              const sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, tracking.id);
+              if (sent) results.gratuitUpsell++;
+              else results.errors++;
+            }
+          }
+
+          // PREMIUM/ELITE audits: J+7 and J+14 sequences
+          if (audit.type === "PREMIUM" || audit.type === "ELITE") {
+            // J+7: Send if 7+ days and no J+7 email sent yet
+            if (daysSinceSent >= 7 && daysSinceSent < 14) {
+              if (!trackingTypes.includes("PREMIUM_J7")) {
+                const hasReview = await storage.hasUserLeftReview(audit.id);
+                const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J7");
+                const sent = await sendPremiumJ7Email(audit.email, audit.id, baseUrl, tracking.id, hasReview);
+                if (sent) results.premiumJ7++;
+                else results.errors++;
+              }
+            }
+
+            // J+14: Send ONLY if J+7 email was NOT opened
+            if (daysSinceSent >= 14 && daysSinceSent < 30) {
+              const j7Email = emailTracking.find(t => t.emailType === "PREMIUM_J7");
+              const j14Sent = trackingTypes.includes("PREMIUM_J14");
+
+              // Only send J+14 if J+7 was sent but NOT opened
+              if (j7Email && !j7Email.openedAt && !j14Sent) {
+                const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J14");
+                const sent = await sendPremiumJ14Email(audit.email, audit.id, baseUrl, tracking.id);
+                if (sent) results.premiumJ14++;
+                else results.errors++;
+              }
+            }
+          }
+        } catch (auditError) {
+          console.error(`[Cron] Error processing audit ${audit.id}:`, auditError);
+          results.errors++;
+        }
+      }
+
+      console.log(`[Cron] Email sequences processed:`, results);
+      res.json({ success: true, ...results, processedAt: new Date().toISOString() });
+    } catch (error) {
+      console.error("[Cron] Error processing email sequences:", error);
+      res.status(500).json({ success: false, error: "Erreur traitement sequences" });
+    }
+  });
+
+  // Manual trigger for testing specific email sequence
+  app.post("/api/admin/send-sequence-email", async (req, res) => {
+    try {
+      const { auditId, emailType } = req.body;
+
+      if (!auditId || !emailType) {
+        res.status(400).json({ success: false, error: "auditId et emailType requis" });
+        return;
+      }
+
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      const baseUrl = getBaseUrl();
+      const tracking = await storage.createEmailTracking(audit.id, emailType);
+      let sent = false;
+
+      switch (emailType) {
+        case "GRATUIT_UPSELL":
+          sent = await sendGratuitUpsellEmail(audit.email, audit.id, baseUrl, tracking.id);
+          break;
+        case "PREMIUM_J7":
+          const hasReview = await storage.hasUserLeftReview(audit.id);
+          sent = await sendPremiumJ7Email(audit.email, audit.id, baseUrl, tracking.id, hasReview);
+          break;
+        case "PREMIUM_J14":
+          sent = await sendPremiumJ14Email(audit.email, audit.id, baseUrl, tracking.id);
+          break;
+        default:
+          res.status(400).json({ success: false, error: "Type d'email invalide" });
+          return;
+      }
+
+      if (sent) {
+        res.json({ success: true, message: `Email ${emailType} envoyé à ${audit.email}` });
+      } else {
+        res.status(500).json({ success: false, error: "Erreur envoi email" });
+      }
+    } catch (error) {
+      console.error("[Admin] Error sending sequence email:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
 

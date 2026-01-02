@@ -23,6 +23,11 @@ import {
   Percent,
   Lock,
   ShieldCheck,
+  Tag,
+  Plus,
+  Power,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -64,6 +69,19 @@ interface IncompleteQuestionnaire {
   lastActivityAt: string;
 }
 
+interface PromoCode {
+  id: string;
+  code: string;
+  discountPercent: number;
+  description: string | null;
+  validFor: string;
+  maxUses: number | null;
+  currentUses: number;
+  isActive: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 const ADMIN_PASSWORD = "badboy007";
 
 export default function AdminDashboard() {
@@ -76,7 +94,18 @@ export default function AdminDashboard() {
   const [audits, setAudits] = useState<Audit[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [incompleteQuestionnaires, setIncompleteQuestionnaires] = useState<IncompleteQuestionnaire[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [editingPromo, setEditingPromo] = useState<PromoCode | null>(null);
+  const [newPromo, setNewPromo] = useState({
+    code: "",
+    discountPercent: 20,
+    description: "",
+    validFor: "ALL",
+    maxUses: "",
+    expiresAt: "",
+  });
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,12 +181,104 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPromoCodes = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/admin/promo-codes");
+      const data = await response.json();
+      if (data.success) {
+        setPromoCodes(data.codes);
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les codes promo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreatePromo = async () => {
+    if (!newPromo.code || !newPromo.discountPercent) {
+      toast({
+        title: "Erreur",
+        description: "Code et réduction requis",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/promo-codes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: newPromo.code.toUpperCase(),
+          discountPercent: newPromo.discountPercent,
+          description: newPromo.description || null,
+          validFor: newPromo.validFor,
+          maxUses: newPromo.maxUses ? parseInt(newPromo.maxUses) : null,
+          expiresAt: newPromo.expiresAt || null,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Code promo créé",
+          description: `Le code ${newPromo.code.toUpperCase()} a été créé`,
+        });
+        setShowPromoModal(false);
+        setNewPromo({ code: "", discountPercent: 20, description: "", validFor: "ALL", maxUses: "", expiresAt: "" });
+        fetchPromoCodes();
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.error || "Impossible de créer le code promo",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le code promo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTogglePromo = async (promo: PromoCode) => {
+    try {
+      const response = await fetch(`/api/admin/promo-codes/${promo.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !promo.isActive }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: promo.isActive ? "Code désactivé" : "Code activé",
+          description: `Le code ${promo.code} a été ${promo.isActive ? "désactivé" : "activé"}`,
+        });
+        fetchPromoCodes();
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le code promo",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Fetch all data on mount for tab counts
   useEffect(() => {
     if (isAuthenticated) {
       fetchAudits();
       fetchPendingReviews();
       fetchIncompleteQuestionnaires();
+      fetchPromoCodes();
     }
   }, [isAuthenticated]);
 
@@ -170,6 +291,8 @@ export default function AdminDashboard() {
       fetchPendingReviews();
     } else if (activeTab === "incomplete") {
       fetchIncompleteQuestionnaires();
+    } else if (activeTab === "promo") {
+      fetchPromoCodes();
     }
   }, [activeTab]);
 
@@ -355,7 +478,7 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="audits" className="gap-2">
               <FileText className="w-4 h-4" />
               Analyses envoyées ({audits.filter(a => a.reportDeliveryStatus === "SENT").length})
@@ -367,6 +490,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="reviews" className="gap-2">
               <Star className="w-4 h-4" />
               Avis en attente ({reviews.length})
+            </TabsTrigger>
+            <TabsTrigger value="promo" className="gap-2">
+              <Tag className="w-4 h-4" />
+              Codes promo ({promoCodes.filter(p => p.isActive).length})
             </TabsTrigger>
           </TabsList>
 
@@ -658,8 +785,8 @@ export default function AdminDashboard() {
                               className="flex-1"
                               onClick={() => {
                                 setSelectedAuditId(q.id);
-                                setCtaSubject("Ton audit NEUROCORE 360 t'attend !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire NEUROCORE 360 mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaSubject("Ton audit NEUROCORE 360 t'attend + Code -20% !");
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire NEUROCORE 360 mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >
@@ -675,8 +802,212 @@ export default function AdminDashboard() {
               </div>
             )}
           </TabsContent>
+
+          {/* Tab: Codes promo */}
+          <TabsContent value="promo">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold">Gestion des codes promo</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Créez et gérez les codes de réduction
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={fetchPromoCodes}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                  Actualiser
+                </Button>
+                <Button onClick={() => setShowPromoModal(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouveau code
+                </Button>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : promoCodes.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <Tag className="w-12 h-12 text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold">Aucun code promo</h3>
+                  <p className="text-muted-foreground mt-2">
+                    Créez votre premier code promo
+                  </p>
+                  <Button className="mt-4" onClick={() => setShowPromoModal(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Créer un code
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {promoCodes.map((promo, index) => (
+                  <motion.div
+                    key={promo.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Card className={!promo.isActive ? "opacity-60" : ""}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <CardTitle className="text-xl font-mono">
+                                {promo.code}
+                              </CardTitle>
+                              <Badge variant={promo.isActive ? "default" : "secondary"}>
+                                {promo.isActive ? "Actif" : "Inactif"}
+                              </Badge>
+                              <Badge variant="outline" className="text-lg font-bold">
+                                -{promo.discountPercent}%
+                              </Badge>
+                            </div>
+                            {promo.description && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {promo.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Tag className="w-4 h-4" />
+                                Valide pour: {promo.validFor === "ALL" ? "Tous" : promo.validFor}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-4 h-4" />
+                                Utilisations: {promo.currentUses}{promo.maxUses ? `/${promo.maxUses}` : ""}
+                              </div>
+                              {promo.expiresAt && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  Expire: {new Date(promo.expiresAt).toLocaleDateString("fr-FR")}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant={promo.isActive ? "outline" : "default"}
+                            size="sm"
+                            onClick={() => handleTogglePromo(promo)}
+                          >
+                            {promo.isActive ? (
+                              <>
+                                <ToggleRight className="w-4 h-4 mr-2" />
+                                Désactiver
+                              </>
+                            ) : (
+                              <>
+                                <ToggleLeft className="w-4 h-4 mr-2" />
+                                Activer
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal Nouveau Code Promo */}
+      {showPromoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-lg w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="w-5 h-5" />
+                Nouveau code promo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Code *</Label>
+                <Input
+                  value={newPromo.code}
+                  onChange={(e) => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })}
+                  placeholder="Ex: PROMO2024"
+                  className="font-mono"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Réduction (%) *</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={newPromo.discountPercent}
+                    onChange={(e) => setNewPromo({ ...newPromo, discountPercent: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <Label>Valide pour</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={newPromo.validFor}
+                    onChange={(e) => setNewPromo({ ...newPromo, validFor: e.target.value })}
+                  >
+                    <option value="ALL">Tous les audits</option>
+                    <option value="PREMIUM">Premium uniquement</option>
+                    <option value="ELITE">Elite uniquement</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Input
+                  value={newPromo.description}
+                  onChange={(e) => setNewPromo({ ...newPromo, description: e.target.value })}
+                  placeholder="Description du code promo"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Utilisations max</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newPromo.maxUses}
+                    onChange={(e) => setNewPromo({ ...newPromo, maxUses: e.target.value })}
+                    placeholder="Illimité"
+                  />
+                </div>
+                <div>
+                  <Label>Date d'expiration</Label>
+                  <Input
+                    type="date"
+                    value={newPromo.expiresAt}
+                    onChange={(e) => setNewPromo({ ...newPromo, expiresAt: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end pt-4">
+                <Button variant="outline" onClick={() => {
+                  setShowPromoModal(false);
+                  setNewPromo({ code: "", discountPercent: 20, description: "", validFor: "ALL", maxUses: "", expiresAt: "" });
+                }}>
+                  Annuler
+                </Button>
+                <Button onClick={handleCreatePromo}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Créer le code
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Modal CTA */}
       {showCtaModal && (

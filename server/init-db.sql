@@ -86,9 +86,44 @@ CREATE TABLE IF NOT EXISTS cta_history (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+-- Table: promo_codes
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  code VARCHAR(50) NOT NULL UNIQUE,
+  discount_percent INTEGER NOT NULL CHECK (discount_percent >= 1 AND discount_percent <= 100),
+  description TEXT,
+  valid_for VARCHAR(20) NOT NULL DEFAULT 'ALL', -- ALL, PREMIUM, ELITE
+  max_uses INTEGER DEFAULT NULL, -- NULL = unlimited
+  current_uses INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  expires_at TIMESTAMP DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: email_tracking (pour suivre les ouvertures)
+CREATE TABLE IF NOT EXISTS email_tracking (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id VARCHAR(36) NOT NULL,
+  email_type VARCHAR(50) NOT NULL, -- 'GRATUIT_UPSELL', 'PREMIUM_J7', 'PREMIUM_J14'
+  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  opened_at TIMESTAMP DEFAULT NULL,
+  clicked_at TIMESTAMP DEFAULT NULL
+);
+
+-- Insert default promo codes
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('ANALYSE20', 20, 'Code promo 20% sur analyse Premium', 'PREMIUM')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
 -- Index pour améliorer les performances
 CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
 CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);
+CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code);
+CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
 CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);

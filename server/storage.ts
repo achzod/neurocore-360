@@ -47,6 +47,28 @@ export interface ReportArtifact {
   createdAt: Date;
 }
 
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountPercent: number;
+  description: string | null;
+  validFor: string; // 'ALL' | 'PREMIUM' | 'ELITE'
+  maxUses: number | null;
+  currentUses: number;
+  isActive: boolean;
+  expiresAt: Date | null;
+  createdAt: Date;
+}
+
+export interface EmailTracking {
+  id: string;
+  auditId: string;
+  emailType: string;
+  sentAt: Date;
+  openedAt: Date | null;
+  clickedAt: Date | null;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -77,6 +99,20 @@ export interface IStorage {
 
   // Traçabilité: conserver CHAQUE version générée (TXT + HTML)
   createReportArtifact(input: Omit<ReportArtifact, "id" | "createdAt"> & { createdAt?: Date }): Promise<ReportArtifact>;
+
+  // Promo codes
+  getPromoCode(code: string): Promise<PromoCode | undefined>;
+  getAllPromoCodes(): Promise<PromoCode[]>;
+  createPromoCode(promo: Omit<PromoCode, "id" | "createdAt" | "currentUses">): Promise<PromoCode>;
+  updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode | undefined>;
+  incrementPromoCodeUse(code: string): Promise<void>;
+  validatePromoCode(code: string, auditType: string): Promise<{ valid: boolean; discount: number; error?: string }>;
+
+  // Email tracking
+  createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking>;
+  markEmailOpened(trackingId: string): Promise<void>;
+  getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
+  hasUserLeftReview(auditId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -85,6 +121,8 @@ export class MemStorage implements IStorage {
   private progress: Map<string, QuestionnaireProgress>;
   private magicTokens: Map<string, MagicToken>;
   private reportArtifacts: ReportArtifact[];
+  private promoCodes: Map<string, PromoCode>;
+  private emailTrackings: Map<string, EmailTracking>;
 
   constructor() {
     this.users = new Map();
@@ -92,6 +130,36 @@ export class MemStorage implements IStorage {
     this.progress = new Map();
     this.magicTokens = new Map();
     this.reportArtifacts = [];
+    this.promoCodes = new Map();
+    this.emailTrackings = new Map();
+
+    // Default promo codes
+    const analyse20: PromoCode = {
+      id: randomUUID(),
+      code: "ANALYSE20",
+      discountPercent: 20,
+      description: "Code promo 20% sur analyse Premium",
+      validFor: "PREMIUM",
+      maxUses: null,
+      currentUses: 0,
+      isActive: true,
+      expiresAt: null,
+      createdAt: new Date(),
+    };
+    const neurocore20: PromoCode = {
+      id: randomUUID(),
+      code: "NEUROCORE20",
+      discountPercent: 20,
+      description: "Code promo 20% coaching Achzod",
+      validFor: "ALL",
+      maxUses: null,
+      currentUses: 0,
+      isActive: true,
+      expiresAt: null,
+      createdAt: new Date(),
+    };
+    this.promoCodes.set("ANALYSE20", analyse20);
+    this.promoCodes.set("NEUROCORE20", neurocore20);
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -262,6 +330,93 @@ export class MemStorage implements IStorage {
     };
     this.reportArtifacts.push(art);
     return art;
+  }
+
+  // Promo codes methods (MemStorage)
+  async getPromoCode(code: string): Promise<PromoCode | undefined> {
+    return this.promoCodes.get(code.toUpperCase());
+  }
+
+  async getAllPromoCodes(): Promise<PromoCode[]> {
+    return Array.from(this.promoCodes.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async createPromoCode(promo: Omit<PromoCode, "id" | "createdAt" | "currentUses">): Promise<PromoCode> {
+    const newPromo: PromoCode = {
+      ...promo,
+      id: randomUUID(),
+      currentUses: 0,
+      createdAt: new Date(),
+    };
+    this.promoCodes.set(promo.code.toUpperCase(), newPromo);
+    return newPromo;
+  }
+
+  async updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode | undefined> {
+    const promo = Array.from(this.promoCodes.values()).find(p => p.id === id);
+    if (!promo) return undefined;
+    const updated = { ...promo, ...data };
+    this.promoCodes.set(updated.code.toUpperCase(), updated);
+    return updated;
+  }
+
+  async incrementPromoCodeUse(code: string): Promise<void> {
+    const promo = this.promoCodes.get(code.toUpperCase());
+    if (promo) {
+      promo.currentUses++;
+    }
+  }
+
+  async validatePromoCode(code: string, auditType: string): Promise<{ valid: boolean; discount: number; error?: string }> {
+    const promo = this.promoCodes.get(code.toUpperCase());
+    if (!promo) {
+      return { valid: false, discount: 0, error: "Code promo invalide" };
+    }
+    if (!promo.isActive) {
+      return { valid: false, discount: 0, error: "Ce code promo n'est plus actif" };
+    }
+    if (promo.expiresAt && new Date() > promo.expiresAt) {
+      return { valid: false, discount: 0, error: "Ce code promo a expiré" };
+    }
+    if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
+      return { valid: false, discount: 0, error: "Ce code promo a atteint son nombre maximum d'utilisations" };
+    }
+    if (promo.validFor !== "ALL" && promo.validFor !== auditType) {
+      return { valid: false, discount: 0, error: `Ce code promo n'est pas valide pour l'analyse ${auditType}` };
+    }
+    return { valid: true, discount: promo.discountPercent };
+  }
+
+  // Email tracking methods (MemStorage)
+  async createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking> {
+    const tracking: EmailTracking = {
+      id: randomUUID(),
+      auditId,
+      emailType,
+      sentAt: new Date(),
+      openedAt: null,
+      clickedAt: null,
+    };
+    this.emailTrackings.set(tracking.id, tracking);
+    return tracking;
+  }
+
+  async markEmailOpened(trackingId: string): Promise<void> {
+    const tracking = this.emailTrackings.get(trackingId);
+    if (tracking && !tracking.openedAt) {
+      tracking.openedAt = new Date();
+    }
+  }
+
+  async getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]> {
+    return Array.from(this.emailTrackings.values()).filter(t => t.auditId === auditId);
+  }
+
+  async hasUserLeftReview(auditId: string): Promise<boolean> {
+    // MemStorage doesn't have reviews, always return false
+    return false;
   }
 }
 
@@ -685,6 +840,138 @@ export class PgStorage implements IStorage {
 
   async deleteReportJob(auditId: string): Promise<void> {
     await pool.query("DELETE FROM report_jobs WHERE audit_id = $1", [auditId]);
+  }
+
+  // Promo codes methods (PgStorage)
+  private rowToPromoCode(row: any): PromoCode {
+    return {
+      id: row.id,
+      code: row.code,
+      discountPercent: row.discount_percent,
+      description: row.description,
+      validFor: row.valid_for,
+      maxUses: row.max_uses,
+      currentUses: row.current_uses,
+      isActive: row.is_active,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+    };
+  }
+
+  async getPromoCode(code: string): Promise<PromoCode | undefined> {
+    const result = await pool.query("SELECT * FROM promo_codes WHERE UPPER(code) = $1", [code.toUpperCase()]);
+    if (result.rows.length === 0) return undefined;
+    return this.rowToPromoCode(result.rows[0]);
+  }
+
+  async getAllPromoCodes(): Promise<PromoCode[]> {
+    const result = await pool.query("SELECT * FROM promo_codes ORDER BY created_at DESC");
+    return result.rows.map(row => this.rowToPromoCode(row));
+  }
+
+  async createPromoCode(promo: Omit<PromoCode, "id" | "createdAt" | "currentUses">): Promise<PromoCode> {
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO promo_codes (id, code, discount_percent, description, valid_for, max_uses, is_active, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [id, promo.code.toUpperCase(), promo.discountPercent, promo.description, promo.validFor, promo.maxUses, promo.isActive, promo.expiresAt]
+    );
+    return this.rowToPromoCode(result.rows[0]);
+  }
+
+  async updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode | undefined> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (data.code !== undefined) { updates.push(`code = $${idx++}`); values.push(data.code.toUpperCase()); }
+    if (data.discountPercent !== undefined) { updates.push(`discount_percent = $${idx++}`); values.push(data.discountPercent); }
+    if (data.description !== undefined) { updates.push(`description = $${idx++}`); values.push(data.description); }
+    if (data.validFor !== undefined) { updates.push(`valid_for = $${idx++}`); values.push(data.validFor); }
+    if (data.maxUses !== undefined) { updates.push(`max_uses = $${idx++}`); values.push(data.maxUses); }
+    if (data.isActive !== undefined) { updates.push(`is_active = $${idx++}`); values.push(data.isActive); }
+    if (data.expiresAt !== undefined) { updates.push(`expires_at = $${idx++}`); values.push(data.expiresAt); }
+
+    if (updates.length === 0) return this.getPromoCode(id);
+
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE promo_codes SET ${updates.join(", ")} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToPromoCode(result.rows[0]);
+  }
+
+  async incrementPromoCodeUse(code: string): Promise<void> {
+    await pool.query(
+      "UPDATE promo_codes SET current_uses = current_uses + 1 WHERE UPPER(code) = $1",
+      [code.toUpperCase()]
+    );
+  }
+
+  async validatePromoCode(code: string, auditType: string): Promise<{ valid: boolean; discount: number; error?: string }> {
+    const promo = await this.getPromoCode(code);
+    if (!promo) {
+      return { valid: false, discount: 0, error: "Code promo invalide" };
+    }
+    if (!promo.isActive) {
+      return { valid: false, discount: 0, error: "Ce code promo n'est plus actif" };
+    }
+    if (promo.expiresAt && new Date() > promo.expiresAt) {
+      return { valid: false, discount: 0, error: "Ce code promo a expiré" };
+    }
+    if (promo.maxUses !== null && promo.currentUses >= promo.maxUses) {
+      return { valid: false, discount: 0, error: "Ce code promo a atteint son nombre maximum d'utilisations" };
+    }
+    if (promo.validFor !== "ALL" && promo.validFor !== auditType) {
+      return { valid: false, discount: 0, error: `Ce code promo n'est pas valide pour l'analyse ${auditType}` };
+    }
+    return { valid: true, discount: promo.discountPercent };
+  }
+
+  // Email tracking methods (PgStorage)
+  private rowToEmailTracking(row: any): EmailTracking {
+    return {
+      id: row.id,
+      auditId: row.audit_id,
+      emailType: row.email_type,
+      sentAt: row.sent_at,
+      openedAt: row.opened_at,
+      clickedAt: row.clicked_at,
+    };
+  }
+
+  async createEmailTracking(auditId: string, emailType: string): Promise<EmailTracking> {
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO email_tracking (id, audit_id, email_type) VALUES ($1, $2, $3) RETURNING *`,
+      [id, auditId, emailType]
+    );
+    return this.rowToEmailTracking(result.rows[0]);
+  }
+
+  async markEmailOpened(trackingId: string): Promise<void> {
+    await pool.query(
+      "UPDATE email_tracking SET opened_at = NOW() WHERE id = $1 AND opened_at IS NULL",
+      [trackingId]
+    );
+  }
+
+  async getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]> {
+    const result = await pool.query(
+      "SELECT * FROM email_tracking WHERE audit_id = $1 ORDER BY sent_at DESC",
+      [auditId]
+    );
+    return result.rows.map(row => this.rowToEmailTracking(row));
+  }
+
+  async hasUserLeftReview(auditId: string): Promise<boolean> {
+    const result = await pool.query(
+      "SELECT 1 FROM reviews WHERE audit_id = $1 LIMIT 1",
+      [auditId]
+    );
+    return result.rows.length > 0;
   }
 }
 
