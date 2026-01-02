@@ -46,55 +46,179 @@ import pnLogo from "@assets/limage-19764_1767172975495.webp";
 import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
-// Giant Brand Text with Ultrahuman-style blur effect
-function GiantBrandText() {
-  const [isHovered, setIsHovered] = useState(false);
-
+// Ultrahuman-style Hero Section with giant green text + phone mockup
+function UltrahumanHero() {
   return (
-    <section className="relative overflow-hidden bg-background py-12 md:py-20">
+    <section className="relative min-h-[90vh] overflow-hidden bg-black flex flex-col items-center justify-center px-4 py-16">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(16,185,129,0.08),transparent_60%)]" />
 
+      {/* Giant Text - Ultrahuman style */}
       <motion.div
-        className="relative flex justify-center items-center cursor-pointer select-none"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
+        className="text-center z-10 mb-8"
       >
-        <motion.h1
-          animate={{
-            filter: isHovered ? "blur(0px)" : "blur(8px)",
-            scale: isHovered ? 1.02 : 1,
-            opacity: isHovered ? 1 : 0.4,
-          }}
-          transition={{
-            duration: 0.5,
-            ease: "easeOut",
-          }}
-          className="text-[15vw] sm:text-[12vw] md:text-[10vw] font-black tracking-tighter text-foreground whitespace-nowrap"
-          style={{
-            textShadow: isHovered
-              ? "0 0 60px rgba(16, 185, 129, 0.5), 0 0 100px rgba(16, 185, 129, 0.3), 0 0 150px rgba(16, 185, 129, 0.15)"
-              : "0 0 80px rgba(16, 185, 129, 0.2), 0 0 120px rgba(16, 185, 129, 0.1)",
-          }}
-        >
-          NEUROCORE<span className="text-primary">360°</span>
-        </motion.h1>
+        <h1 className="text-[14vw] sm:text-[12vw] md:text-[10vw] lg:text-[9vw] font-bold leading-[0.9] tracking-tight">
+          <span className="text-primary block" style={{ fontFamily: "'Inter', sans-serif" }}>
+            Ton audit
+          </span>
+          <span className="text-primary block" style={{ fontFamily: "'Inter', sans-serif" }}>
+            360°<span className="text-white">.</span>
+          </span>
+        </h1>
       </motion.div>
 
-      {/* Subtitle that appears on hover */}
-      <motion.p
-        animate={{
-          opacity: isHovered ? 1 : 0,
-          y: isHovered ? 0 : 10,
-        }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="text-center mt-4 text-muted-foreground text-lg"
+      {/* Phone Mockup with Report Preview */}
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-[320px] sm:max-w-[360px] md:max-w-[400px]"
       >
-        L'audit métabolique le plus complet du marché
+        {/* Phone Frame */}
+        <div className="relative mx-auto">
+          {/* Phone outer shell */}
+          <div className="relative rounded-[3rem] bg-gradient-to-b from-zinc-700 to-zinc-900 p-2 shadow-2xl shadow-primary/20">
+            {/* Phone inner bezel */}
+            <div className="rounded-[2.5rem] bg-black p-1">
+              {/* Phone screen */}
+              <div className="relative rounded-[2.25rem] bg-gradient-to-b from-zinc-900 to-black overflow-hidden aspect-[9/19]">
+                {/* Status bar */}
+                <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-3 text-white/80 text-xs z-20">
+                  <span className="font-medium">9:41</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-2 border border-white/60 rounded-sm">
+                      <div className="w-3/4 h-full bg-primary rounded-sm" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dynamic Island */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-7 bg-black rounded-full z-30" />
+
+                {/* App Content */}
+                <div className="pt-14 px-4 h-full flex flex-col">
+                  {/* Header */}
+                  <div className="mb-4">
+                    <p className="text-white/60 text-xs">Bonsoir, Achzod</p>
+                    <p className="text-white/40 text-[10px]">Voici ton rapport NEUROCORE</p>
+                  </div>
+
+                  {/* Main Score Card */}
+                  <div className="flex-1 flex flex-col items-center justify-center -mt-4">
+                    <div className="text-center mb-2">
+                      <div className="inline-flex items-center gap-1 bg-white/10 rounded-full px-3 py-1 text-[10px] text-white/70">
+                        Score Global <ChevronRight className="w-3 h-3" />
+                      </div>
+                    </div>
+
+                    <motion.div
+                      animate={{ scale: [1, 1.02, 1] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                      className="text-8xl font-bold text-white tracking-tighter"
+                    >
+                      78
+                    </motion.div>
+
+                    <div className="mt-2 inline-flex items-center gap-1 bg-primary/20 rounded-full px-3 py-1">
+                      <TrendingUp className="w-3 h-3 text-primary" />
+                      <span className="text-primary text-xs font-medium">+12 pts</span>
+                    </div>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div className="bg-white/5 rounded-2xl p-3 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white/60 text-[10px]">15 Domaines Analysés</span>
+                      <span className="text-white/40 text-[10px]">12/15 optimisés</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">180</div>
+                        <div className="text-[9px] text-white/50">QUESTIONS</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">40+</div>
+                        <div className="text-[9px] text-white/50">PAGES</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Domain Preview */}
+                  <div className="bg-white/5 rounded-2xl p-3 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white text-xs font-medium">Métabolisme</span>
+                      <span className="text-primary text-xs">85/100</span>
+                    </div>
+                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "85%" }}
+                        transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bottom Nav */}
+                  <div className="bg-white/5 backdrop-blur rounded-2xl p-2 mb-2">
+                    <div className="flex items-center justify-around">
+                      <div className="flex flex-col items-center gap-0.5 px-3 py-1">
+                        <Activity className="w-4 h-4 text-white/40" />
+                        <span className="text-[8px] text-white/40">SCORES</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-3 py-1">
+                        <Layers className="w-4 h-4 text-white/40" />
+                        <span className="text-[8px] text-white/40">DOMAINES</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-3 py-1 bg-white/10 rounded-xl">
+                        <Brain className="w-4 h-4 text-primary" />
+                        <span className="text-[8px] text-primary">RAPPORT</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-3 py-1">
+                        <Target className="w-4 h-4 text-white/40" />
+                        <span className="text-[8px] text-white/40">PLAN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Glow effect behind phone */}
+          <div className="absolute -inset-10 bg-primary/20 blur-3xl rounded-full -z-10" />
+        </div>
+      </motion.div>
+
+      {/* Description text below */}
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="text-center text-white/60 text-sm sm:text-base max-w-lg mt-8 px-4 z-10"
+      >
+        Analyse complète sur 15 domaines : métabolisme, hormones, nutrition, sommeil,
+        biomécanique. Rapport personnalisé de 40+ pages avec plan d'action concret.
       </motion.p>
+
+      {/* CTA Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
+        className="mt-8 z-10"
+      >
+        <Link href="/audit-complet/questionnaire">
+          <Button size="lg" className="gap-2 px-8 h-14 rounded-full text-lg bg-primary hover:bg-primary/90 text-black font-semibold">
+            Lancer mon audit
+            <ArrowRight className="w-5 h-5" />
+          </Button>
+        </Link>
+      </motion.div>
     </section>
   );
 }
@@ -1062,7 +1186,7 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        <GiantBrandText />
+        <UltrahumanHero />
         <CertificationsBar />
         <MediaBar />
         <BentoHeroSection />
