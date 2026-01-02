@@ -147,20 +147,19 @@ function UltrahumanHero() {
               Décode ton<br />métabolisme
             </h1>
 
-            {/* Layer 2: SHARP - magnified area around cursor */}
+            {/* Layer 2: SHARP - magnified area around cursor (100% crisp, revealed by mask) */}
             <h1
               className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[5.5vw] font-black leading-[0.95] tracking-tighter relative z-10"
               style={{
                 color: "hsl(160, 84%, 39%)",
-                filter: "blur(6px)",
-                opacity: 0.6,
-                WebkitMaskImage: isHovered ? `radial-gradient(circle 100px at var(--x) var(--y), black 40%, transparent 100%)` : "none",
-                maskImage: isHovered ? `radial-gradient(circle 100px at var(--x) var(--y), black 40%, transparent 100%)` : "none",
+                filter: "blur(0px)",
+                opacity: 1,
+                textShadow: "0 0 40px rgba(16, 185, 129, 0.5)",
+                WebkitMaskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
+                maskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
               }}
             >
-              <span style={{ filter: "blur(0px)", display: "inline-block" }}>
-                Décode ton<br />métabolisme
-              </span>
+              Décode ton<br />métabolisme
             </h1>
 
             {/* Layer 3: Cursor dot - stylized point at mouse position */}
