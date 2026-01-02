@@ -310,6 +310,8 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       l = l.replace(/^[=\-#*]{2,}/, '').replace(/[=\-#*]{2,}$/, '').trim();
       // Suppression hard des emojis/ASCII résiduels (standard premium clinique)
       l = l.replace(/[🟢🟡🔴🧬🛡️📸🎯🚀⭐✅❌⚠️🌙☀️📑]/g, '').trim();
+      // Remplacer les tirets longs (—) par des tirets normaux ou deux-points
+      l = l.replace(/\s*—\s*/g, ' : ').replace(/—/g, '-');
       l = l.replace(/\s{2,}/g, ' ').trim();
       // Supprimer toute mention "info à clarifier" côté rendu client
       if (l.toLowerCase().includes("info a clarifier")) return '';
