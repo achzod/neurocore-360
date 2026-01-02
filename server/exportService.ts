@@ -1260,82 +1260,114 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       ${generateSVGRadar(scores)}
     </div>
 
-    <!-- CTA Premium - Offres Coaching -->
-    <div style="max-width: 1000px; margin: 48px auto 60px; padding: 0;">
-      <div style="text-align: center; margin-bottom: 32px;">
-        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">Prochaine étape</h2>
-        <p style="color: var(--text-muted); font-size: 1.05rem;">Transforme cette analyse en résultats concrets avec un accompagnement personnalisé</p>
-        <div style="margin-top: 12px; padding: 10px 20px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 8px; display: inline-block;">
-          <span style="color: #0B0B0F; font-weight: 700; font-size: 0.95rem;">TON AUDIT (79€) EST DÉDUIT À 100% DU COACHING</span>
+    <!-- CTA Premium - Offres Coaching Complètes -->
+    <div style="max-width: 1100px; margin: 48px auto 60px; padding: 0 16px;">
+      <div style="text-align: center; margin-bottom: 40px;">
+        <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text); margin-bottom: 12px;">Prochaine étape</h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Transforme cette analyse en résultats concrets</p>
+        <div style="margin-top: 16px; padding: 12px 24px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 8px; display: inline-block;">
+          <span style="color: #0B0B0F; font-weight: 800; font-size: 1rem;">TON AUDIT (79€) DÉDUIT À 100% DU COACHING</span>
         </div>
       </div>
 
-      <!-- Grille des offres -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      <!-- STARTER -->
+      <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin-bottom: 24px;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+          <div>
+            <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Sans suivi</span>
+            <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text); margin: 4px 0;">Starter</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Plan personnalisé 8 semaines sans accompagnement</p>
+          </div>
+          <div style="text-align: right;">
+            <div><span style="font-size: 1.8rem; font-weight: 800; color: var(--text);">149€</span> <span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.9rem;">199€</span></div>
+            <span style="background: #f59e0b; color: #0B0B0F; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">OFFRE LANCEMENT</span>
+          </div>
+          <a href="https://achzodcoaching.com/formules-coaching" target="_blank" style="padding: 10px 20px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-weight: 700; text-decoration: none; font-size: 0.9rem;">Voir</a>
+        </div>
+      </div>
+
+      <!-- Grille ESSENTIAL / ELITE / PRIVATE LAB -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
 
         <!-- ESSENTIAL -->
-        <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; position: relative; transition: transform 0.2s, box-shadow 0.2s;">
-          <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Coaching</div>
-          <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 12px;">Essential</h3>
-          <div style="margin-bottom: 16px;">
-            <span style="font-size: 2rem; font-weight: 800; color: var(--text);">187€</span>
-            <span style="color: var(--text-muted); font-size: 0.95rem;">/mois</span>
-            <div style="margin-top: 4px;">
-              <span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.9rem;">249€</span>
-              <span style="background: #34d399; color: #0B0B0F; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;">-25% CODE: neurocore20</span>
+        <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; position: relative;">
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Coaching avec suivi</div>
+          <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 16px;">Essential</h3>
+
+          <!-- Pricing grid -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 12px 8px; background: var(--surface-2); border-radius: 8px;">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">4 sem.</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">249€</div>
+            </div>
+            <div style="text-align: center; padding: 12px 8px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--primary);">
+              <div style="font-size: 0.7rem; color: var(--primary); margin-bottom: 4px;">8 sem.</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">399€</div>
+            </div>
+            <div style="text-align: center; padding: 12px 8px; background: var(--surface-2); border-radius: 8px;">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">12 sem.</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">549€</div>
             </div>
           </div>
-          <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Plan training + nutrition personnalisé</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Analyse biologique incluse</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Check-in hebdomadaire</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Support email 48h</li>
+
+          <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.7;">
+            <li style="margin-bottom: 6px;">Plan training + nutrition personnalisé</li>
+            <li style="margin-bottom: 6px;">Analyse biologique incluse</li>
+            <li style="margin-bottom: 6px;">Check-in hebdomadaire</li>
+            <li>Support email 7j/7</li>
           </ul>
-          <a href="https://achzodcoaching.com/coaching-essential" target="_blank" style="display: block; text-align: center; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-weight: 700; text-decoration: none;">Découvrir</a>
+          <a href="https://achzodcoaching.com/coaching-essential" target="_blank" style="display: block; text-align: center; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-weight: 700; text-decoration: none;">Choisir Essential</a>
         </div>
 
         <!-- ELITE (Recommandé) -->
-        <div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.03) 100%); border: 2px solid var(--primary); border-radius: 16px; padding: 28px; position: relative; transform: scale(1.02);">
-          <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #0B0B0F; padding: 4px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Recommandé</div>
-          <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Coaching</div>
-          <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 12px;">Elite</h3>
-          <div style="margin-bottom: 16px;">
-            <span style="font-size: 2rem; font-weight: 800; color: var(--text);">299€</span>
-            <span style="color: var(--text-muted); font-size: 0.95rem;">/mois</span>
-            <div style="margin-top: 4px;">
-              <span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.9rem;">399€</span>
-              <span style="background: #34d399; color: #0B0B0F; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;">-25% CODE: neurocore20</span>
+        <div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.02) 100%); border: 2px solid var(--primary); border-radius: 16px; padding: 28px; position: relative;">
+          <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #0B0B0F; padding: 4px 16px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">Recommandé</div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Coaching VIP</div>
+          <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 16px;">Elite</h3>
+
+          <!-- Pricing grid -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 12px 8px; background: var(--surface-2); border-radius: 8px;">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">4 sem.</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">399€</div>
+            </div>
+            <div style="text-align: center; padding: 12px 8px; background: rgba(94, 234, 212, 0.15); border-radius: 8px; border: 1px solid var(--primary);">
+              <div style="font-size: 0.7rem; color: var(--primary); margin-bottom: 4px;">8 sem.</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">649€</div>
+            </div>
+            <div style="text-align: center; padding: 12px 8px; background: var(--surface-2); border-radius: 8px;">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">12 sem.</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">899€</div>
             </div>
           </div>
-          <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Tout Essential +</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> WhatsApp illimité</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Call vidéo 30min/semaine</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Corrections vidéo forme</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Support 24/7</li>
+
+          <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.7;">
+            <li style="margin-bottom: 6px;">Tout Essential +</li>
+            <li style="margin-bottom: 6px;">WhatsApp illimité</li>
+            <li style="margin-bottom: 6px;">Call vidéo 30min/semaine</li>
+            <li style="margin-bottom: 6px;">Corrections vidéo forme</li>
+            <li>Support 24/7</li>
           </ul>
           <a href="https://achzodcoaching.com/coaching-elite" target="_blank" style="display: block; text-align: center; padding: 12px; background: var(--accent-gradient); border-radius: 10px; color: #0B0B0F; font-weight: 800; text-decoration: none;">Choisir Elite</a>
         </div>
 
         <!-- PRIVATE LAB -->
         <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; position: relative;">
-          <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Coaching</div>
-          <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 12px;">Private Lab</h3>
-          <div style="margin-bottom: 16px;">
-            <span style="font-size: 2rem; font-weight: 800; color: var(--text);">449€</span>
-            <span style="color: var(--text-muted); font-size: 0.95rem;">/mois</span>
-            <div style="margin-top: 4px;">
-              <span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.9rem;">599€</span>
-              <span style="background: #34d399; color: #0B0B0F; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;">-25% CODE: neurocore20</span>
-            </div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Accès prioritaire</div>
+          <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 16px;">Private Lab</h3>
+
+          <div style="text-align: center; padding: 16px; background: var(--surface-2); border-radius: 8px; margin-bottom: 20px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">À partir de</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--text);">499€<span style="font-size: 1rem; color: var(--text-muted);">/mois</span></div>
           </div>
-          <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Tout Elite +</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Accès direct 7j/7 (6h-minuit)</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Réponses instantanées</li>
-            <li style="display: flex; align-items: flex-start; gap: 8px;"><span style="color: var(--primary);">✓</span> Tous mes ebooks offerts</li>
+
+          <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.7;">
+            <li style="margin-bottom: 6px;">Tout Elite +</li>
+            <li style="margin-bottom: 6px;">Accès direct 7j/7 (6h-minuit)</li>
+            <li style="margin-bottom: 6px;">Réponses instantanées</li>
+            <li>Tous mes ebooks offerts</li>
           </ul>
-          <a href="https://achzodcoaching.com/formules-coaching" target="_blank" style="display: block; text-align: center; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-weight: 700; text-decoration: none;">Découvrir</a>
+          <a href="https://achzodcoaching.com/formules-coaching" target="_blank" style="display: block; text-align: center; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-weight: 700; text-decoration: none;">En savoir plus</a>
         </div>
       </div>
 
@@ -1343,6 +1375,8 @@ export function generateExportHTMLFromTxt(txt: string, auditId: string, photos?:
       <div style="text-align: center; margin-top: 32px; padding: 24px; background: var(--surface-1); border-radius: 12px;">
         <p style="color: var(--text-muted); margin-bottom: 12px;">Une question ? Discutons de ton accompagnement</p>
         <a href="mailto:coaching@achzodcoaching.com" style="color: var(--primary); font-weight: 700; text-decoration: none; font-size: 1.1rem;">coaching@achzodcoaching.com</a>
+        <span style="color: var(--text-muted); margin: 0 12px;">|</span>
+        <a href="https://achzodcoaching.com" target="_blank" style="color: var(--text-muted); text-decoration: none;">achzodcoaching.com</a>
       </div>
     </div>
 
