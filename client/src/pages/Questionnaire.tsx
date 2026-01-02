@@ -372,6 +372,21 @@ export default function Questionnaire() {
     if (currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed) {
       return;
     }
+
+    // Vérifier que les 3 photos sont uploadées avant d'aller au checkout (dernière section = analyse-posturale)
+    const isLastSection = currentSectionIndex === QUESTIONNAIRE_SECTIONS.length - 1;
+    if (isLastSection) {
+      const missingPhotos = PHOTO_FIELDS.filter(field => !photoData[field]);
+      if (missingPhotos.length > 0) {
+        toast({
+          title: "Photos obligatoires",
+          description: `Il manque ${missingPhotos.length} photo(s). Les 3 photos (face, profil, dos) sont necessaires pour ton analyse posturale.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     if (currentSectionIndex < QUESTIONNAIRE_SECTIONS.length - 1) {
       setCurrentSectionIndex((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
