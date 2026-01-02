@@ -577,6 +577,29 @@ const iconMap: Record<string, typeof User> = {
 // Ultrahuman-style Domaines Section with human silhouette
 function BentoDomainesSection() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const titleRef = useRef<HTMLDivElement>(null);
+
+  // Spotlight: update CSS vars on pointermove for title
+  useEffect(() => {
+    let rafId: number;
+    const el = titleRef.current;
+    if (!el) return;
+
+    const onMove = (e: PointerEvent) => {
+      rafId = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        el.style.setProperty("--x", `${e.clientX - rect.left}px`);
+        el.style.setProperty("--y", `${e.clientY - rect.top}px`);
+      });
+    };
+
+    el.addEventListener("pointermove", onMove);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   // Domaines avec positions autour de la silhouette
   const domaines = [
@@ -687,9 +710,64 @@ function BentoDomainesSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Analyse 360°
-              </h2>
+              {/* Title with magnifying glass effect */}
+              <div
+                ref={titleRef}
+                className="relative cursor-pointer select-none inline-block pointer-events-auto mb-4"
+                style={{ "--x": "0px", "--y": "0px" } as React.CSSProperties}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              >
+                {/* Layer 1: BASE - blurred text (always visible) */}
+                <h2
+                  className="text-4xl md:text-5xl font-bold absolute inset-0 select-none pointer-events-none"
+                  style={{
+                    color: "white",
+                    filter: "blur(6px)",
+                    opacity: 0.6,
+                  }}
+                  aria-hidden="true"
+                >
+                  Analyse 360°
+                </h2>
+
+                {/* Layer 2: SHARP - magnified area around cursor (100% crisp, revealed by mask) */}
+                <h2
+                  className="text-4xl md:text-5xl font-bold relative z-10"
+                  style={{
+                    color: "white",
+                    filter: "blur(0px)",
+                    opacity: 1,
+                    textShadow: "0 0 40px rgba(255, 255, 255, 0.5)",
+                    WebkitMaskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
+                    maskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
+                  }}
+                >
+                  Analyse 360°
+                </h2>
+
+                {/* Layer 3: Cursor dot - stylized point at mouse position */}
+                {isHovered && (
+                  <div
+                    className="absolute pointer-events-none z-30"
+                    style={{
+                      left: "var(--x)",
+                      top: "var(--y)",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  >
+                    <div className="relative">
+                      {/* Outer glow */}
+                      <div className="absolute w-12 h-12 bg-white/30 rounded-full blur-xl -translate-x-1/2 -translate-y-1/2" />
+                      {/* Inner dot */}
+                      <div className="absolute w-3 h-3 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 shadow-lg shadow-white/50" />
+                      {/* Center point */}
+                      <div className="absolute w-1 h-1 bg-primary rounded-full -translate-x-1/2 -translate-y-1/2" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <p className="text-white/60 text-base max-w-sm">
                 15 domaines analysés pour une vision complète de ta santé métabolique
               </p>
