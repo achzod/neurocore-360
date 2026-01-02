@@ -168,6 +168,14 @@ COUVERTURE DES REPONSES (CRITIQUE)
 - Tu dois exploiter les reponses du questionnaire au maximum.
 - Si une reponse importante n'est PAS exploitable (trop vague / incoherente) : transforme ca en "PROCHAINE ETAPE GUIDEE" (workflow) au lieu de le dire comme un manque.
 
+LONGUEUR DE SECTION (OBLIGATOIRE POUR RAPPORT PREMIUM)
+- Chaque section ANALYSE doit faire 5000-7000 caracteres minimum (120-175 lignes)
+- Chaque section PROTOCOLE doit faire 6000-8000 caracteres minimum (150-200 lignes)
+- Developpe en profondeur : pas de listes telegraphiques, des paragraphes argumentes
+- Explique les MECANISMES BIOLOGIQUES derriere chaque recommandation
+- Donne des EXEMPLES CONCRETS personnalises au client
+- Pour les protocoles : minute par minute, variantes selon contraintes, erreurs a eviter
+
 {section_specific_instructions}
 
 Donnees du client :
@@ -998,35 +1006,75 @@ function buildDataStrForPrompt(data: ClientData): string {
 function getSectionInstructionsForTier(section: SectionName, tier: AuditTier): string {
   if (tier !== "GRATUIT") return SECTION_INSTRUCTIONS[section] || "";
 
-  // Mode gratuit : version compacte, sans protocoles longs ni stack détaillée.
+  // Mode GRATUIT : 4 sections pour 10-12 pages total
+  // Calcul: 11 pages × 2800 chars = 30,800 chars / 4 sections = ~7,700 chars par section
+
   if (section === "Executive Summary") {
     return `
-MODE GRATUIT (CRITIQUE) :
-- Version courte (max 25 lignes), ultra claire.
-- Donne 3 priorites d'optimisation, 2 risques si rien ne change, 2 actions "des demain".
+MODE GRATUIT - EXECUTIVE SUMMARY COMPLET (CRITIQUE) :
+LONGUEUR : Cette section doit faire 6000-8000 caracteres (150-200 lignes).
+Le client gratuit doit recevoir une vraie valeur, pas un teaser creux.
+
+STRUCTURE :
+1. DIAGNOSTIC COMPLET (2000 chars) : Analyse detaillee de ses 3 blocages principaux avec mecanismes biologiques
+2. CAUSES RACINES (2000 chars) : Pourquoi son corps est en mode "survie" - explique les connexions
+3. LEVIER PRINCIPAL (1500 chars) : L'action unique qui deverrouille 80% des resultats
+4. PROJECTION 30 JOURS (1500 chars) : Ce qui change s'il applique
+
+Termine par une mention naturelle que l'analyse PREMIUM va plus loin (18 sections, protocoles detailles).
 `;
   }
+
   if (section === "Analyse visuelle et posturale complete") {
     return `
-MODE GRATUIT (CRITIQUE) :
-- Version courte (max 25 lignes).
-- Screening + 2 tests video simples.
+MODE GRATUIT - ANALYSE VISUELLE COMPLETE (CRITIQUE) :
+LONGUEUR : Cette section doit faire 7000-9000 caracteres (175-225 lignes).
+
+STRUCTURE :
+1. MAPPING VISUEL DETAILLE (2500 chars) : Analyse chaque zone visible sur les photos
+2. SIGNATURE POSTURALE (2000 chars) : Ce que sa posture revele sur son systeme nerveux et hormonal
+3. MECANISMES SOUS-JACENTS (2000 chars) : Pourquoi ces patterns se sont installes
+4. TESTS VIDEO PROPOSES (1500 chars) : 4-5 tests simples pour confirmer les hypotheses
+
+C'est une vraie analyse, pas un apercu. Le client doit comprendre son corps.
 `;
   }
+
   if (section === "Analyse metabolisme et nutrition") {
     return `
-MODE GRATUIT (CRITIQUE) :
-- Version courte (max 25 lignes).
-- Donne 3 leviers nutrition/metabolisme prioritaires + 1 mini protocole 24h.
+MODE GRATUIT - ANALYSE METABOLISME COMPLETE (CRITIQUE) :
+LONGUEUR : Cette section doit faire 7000-9000 caracteres (175-225 lignes).
+
+STRUCTURE :
+1. PROFIL METABOLIQUE (2500 chars) : Type de metabolisme, sensibilite insuline, stockage graisseux
+2. ERREURS NUTRITIONNELLES DETECTEES (2000 chars) : Basees sur ses reponses, avec mecanismes
+3. MINI-PROTOCOLE 7 JOURS (2500 chars) : Actions concretes jour par jour (pas juste "mange mieux")
+4. ALIMENTS PRIORITAIRES (1500 chars) : Top 5 a ajouter, Top 5 a eliminer avec explications
+
+Donne une vraie valeur actionnable, pas des generalites.
 `;
   }
+
   if (section === "Synthese et Prochaines Etapes") {
     return `
-MODE GRATUIT (CRITIQUE) :
-- Conclus en mode "aperçu", sans entrer dans les protocoles 30/60/90 complets.
-- Termine en ouvrant vers l'analyse PREMIUM (details + protocoles + stack complete).
+MODE GRATUIT - SYNTHESE ET PLAN D'ACTION (CRITIQUE) :
+LONGUEUR : Cette section doit faire 6000-8000 caracteres (150-200 lignes).
+
+STRUCTURE :
+1. BILAN GLOBAL (2000 chars) : Resume des decouvertes cles avec score global
+2. FEUILLE DE ROUTE 14 JOURS (2500 chars) : Plan detaille jour par jour des premieres actions
+3. KPIs A SUIVRE (1500 chars) : 5 metriques a tracker avec seuils vert/jaune/rouge
+4. OUVERTURE PREMIUM (1500 chars) : Ce que l'analyse complete apporte en plus :
+   - 18 sections au lieu de 4
+   - Protocoles minute par minute (matin, soir, digestion, bureau)
+   - Stack supplements personnalise avec liens d'achat
+   - Plan 30/60/90 jours detaille
+   - KPIs complets et tableau de bord
+
+Le client doit sentir qu'il a recu de la valeur ET qu'il y a encore plus a decouvrir.
 `;
   }
+
   return SECTION_INSTRUCTIONS[section] || "";
 }
 

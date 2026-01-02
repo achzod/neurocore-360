@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ClientData, PhotoAnalysis, AuditResult, SectionName, AuditTier } from './types';
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
-import { ANTHROPIC_CONFIG, validateAnthropicConfig } from './anthropicConfig';
+import { ANTHROPIC_CONFIG, validateAnthropicConfig, SECTION_TOKEN_LIMITS } from './anthropicConfig';
 import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
@@ -99,12 +99,26 @@ const CLAUDE_MAX_TOKENS = ANTHROPIC_CONFIG.ANTHROPIC_MAX_TOKENS;
 const CLAUDE_MAX_RETRIES = ANTHROPIC_CONFIG.ANTHROPIC_MAX_RETRIES;
 const CLAUDE_SECTION_CONCURRENCY = ANTHROPIC_CONFIG.ANTHROPIC_SECTION_CONCURRENCY;
 
-function getMaxTokensForSection(section: SectionName): number {
+function getMaxTokensForSection(section: SectionName, tier: AuditTier = 'PREMIUM'): number {
   const s = String(section).toLowerCase();
-  if (s.includes("executive summary") || s.includes("synthese")) return 2500;
-  if (s.includes("supplements") || s.includes("stack")) return 4000;
-  if (s.includes("plan") || s.includes("protocole")) return 3500;
-  return 3000;
+
+  // Version GRATUIT : moins de sections donc plus de tokens chacune
+  if (tier === 'GRATUIT') {
+    if (s.includes("executive summary")) return SECTION_TOKEN_LIMITS.GRATUIT_EXECUTIVE;
+    if (s.includes("synthese") || s.includes("prochaines etapes")) return SECTION_TOKEN_LIMITS.GRATUIT_SYNTHESIS;
+    return SECTION_TOKEN_LIMITS.GRATUIT_ANALYSIS; // Analyses longues pour compenser
+  }
+
+  // Version PREMIUM : 18 sections, objectif 40-50 pages
+  if (s.includes("executive summary")) return SECTION_TOKEN_LIMITS.EXECUTIVE_SUMMARY;
+  if (s.includes("synthese") || s.includes("prochaines etapes")) return SECTION_TOKEN_LIMITS.SYNTHESIS;
+  if (s.includes("supplements") || s.includes("stack")) return SECTION_TOKEN_LIMITS.SUPPLEMENTS;
+  if (s.includes("kpi") || s.includes("tableau")) return SECTION_TOKEN_LIMITS.KPI;
+  if (s.includes("plan") && (s.includes("30") || s.includes("60") || s.includes("90"))) return SECTION_TOKEN_LIMITS.PLAN;
+  if (s.includes("protocole")) return SECTION_TOKEN_LIMITS.PROTOCOL;
+  if (s.includes("analyse")) return SECTION_TOKEN_LIMITS.ANALYSIS;
+
+  return SECTION_TOKEN_LIMITS.DEFAULT;
 }
 
 function degradedSectionText(section: SectionName): string {
@@ -367,8 +381,14 @@ ${photoAnalysisStr}
 
       console.log(`[Claude] Generation de la section "${section}"...`);
       const specificInstructions = SECTION_INSTRUCTIONS[section] || "";
+      const maxTokensForThisSection = getMaxTokensForSection(section as SectionName, tier);
 
-      // Claude-specific prompt with enhanced instructions
+      // Calcul de la longueur cible basé sur le tier
+      const targetChars = tier === 'GRATUIT'
+        ? '6000-8000 caracteres (environ 150-200 lignes)' // 4 sections -> 10-12 pages
+        : '5000-7000 caracteres (environ 120-175 lignes)'; // 18 sections -> 40-50 pages
+
+      // Claude-specific prompt with enhanced instructions + length requirements
       const claudePrompt = `Tu es un expert en sante integrative, biohacking et coaching performance.
 Tu analyses les donnees de ${firstName} pour lui fournir un audit personnalise de haute qualite.
 
@@ -380,11 +400,17 @@ INSTRUCTIONS IMPORTANTES:
 - Structure clairement avec des paragraphes et listes
 - N'utilise pas de markdown (pas de ** ou ##)
 
+LONGUEUR OBLIGATOIRE (CRITIQUE):
+- Cette section doit contenir ${targetChars}
+- Developpe en profondeur chaque point avec des explications detaillees
+- Ne fais pas de liste courte - developpe chaque element en paragraphes complets
+- Inclus des mecanismes biologiques, des exemples concrets, des protocoles detailles
+- Si c'est une analyse: explique le POURQUOI, les MECANISMES, les CONSEQUENCES, les SOLUTIONS
+- Si c'est un protocole: detaille chaque etape minute par minute avec variantes
+
 ${PROMPT_SECTION.replace("{section}", section)
   .replace("{section_specific_instructions}", specificInstructions)
   .replace("{data}", fullDataStr)}`;
-
-      const maxTokensForThisSection = getMaxTokensForSection(section as SectionName);
 
       const t0 = Date.now();
       let sectionText = await callClaude(claudePrompt, {
