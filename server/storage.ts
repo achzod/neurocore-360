@@ -460,14 +460,14 @@ export class PgStorage implements IStorage {
     const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
-    return { id: row.id, email: row.email, name: row.name, createdAt: row.created_at };
+    return { id: row.id, email: row.email, name: row.name, createdAt: row.createdAt || row.created_at };
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
-    return { id: row.id, email: row.email, name: row.name, createdAt: row.created_at };
+    return { id: row.id, email: row.email, name: row.name, createdAt: row.createdAt || row.created_at };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
