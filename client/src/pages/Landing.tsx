@@ -1116,9 +1116,9 @@ function BentoDomainesSection() {
 // BLOOD VISION SECTION
 function BloodVisionSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-background via-muted/10 to-background py-20 lg:py-32">
+    <section className="relative overflow-hidden bg-black py-20 lg:py-32">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="grid items-center gap-8 lg:grid-cols-[35%_65%] lg:gap-12">
           {/* Texte à gauche */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -1129,55 +1129,55 @@ function BloodVisionSection() {
           >
             <Badge variant="outline" className="border-primary/50 bg-primary/10 text-primary">
               <Activity className="mr-2 h-3 w-3" />
-              Analyse de biomarqueurs
+              Décodeur biologique
             </Badge>
 
-            <h2 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Décode ton sang.
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+              Analyse sanguine
               <br />
               <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                Optimise tes biomarqueurs.
+                + Optimisation métabolique
               </span>
             </h2>
 
-            <p className="text-lg text-muted-foreground">
-              Analyse complète de tes marqueurs sanguins pour identifier les déséquilibres métaboliques,
-              hormonaux et inflammatoires qui freinent ta progression.
+            <p className="text-base text-gray-300 lg:text-lg">
+              Décode tes prises de sang pour identifier déséquilibres hormonaux et inflammatoires.
+              Optimise ton métabolisme, ta biomécanique posturale et ta performance globale.
             </p>
 
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
                   <Check className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold">Hormones</p>
-                  <p className="text-sm text-muted-foreground">
-                    Testostérone, SHBG, Cortisol/DHEA, Thyroïde (TSH, T3, T4)
+                  <p className="font-semibold text-white">Biomarqueurs sanguins</p>
+                  <p className="text-sm text-gray-400">
+                    Hormones, Thyroïde, Inflammation, Vitamines, Minéraux
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
                   <Check className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold">Métabolisme</p>
-                  <p className="text-sm text-muted-foreground">
-                    Glycémie, Insuline, HbA1c, Profil lipidique complet
+                  <p className="font-semibold text-white">Optimisation métabolique</p>
+                  <p className="text-sm text-gray-400">
+                    Flexibilité métabolique, Glycémie, Insuline, Profil lipidique
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
                   <Check className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold">Inflammation & Stress Oxydatif</p>
-                  <p className="text-sm text-muted-foreground">
-                    CRP, Ferritine, Vitamine D, Magnésium, Omega-3 Index
+                  <p className="font-semibold text-white">Biomécanique posturale</p>
+                  <p className="text-sm text-gray-400">
+                    Alignement vertébral, Chaînes musculaires, Mobilité articulaire
                   </p>
                 </div>
               </div>
@@ -1186,14 +1186,14 @@ function BloodVisionSection() {
             <div className="pt-4">
               <Link href="/audit-complet/questionnaire">
                 <Button size="lg" className="gap-2">
-                  Analyser mes biomarqueurs
+                  Lancer l'analyse complète
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
             </div>
           </motion.div>
 
-          {/* Vidéo à droite */}
+          {/* Vidéo à droite - Plus grande */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -1201,7 +1201,7 @@ function BloodVisionSection() {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-black shadow-2xl">
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
               <video
                 autoPlay
                 loop
@@ -1217,7 +1217,7 @@ function BloodVisionSection() {
             </div>
 
             {/* Glow effect */}
-            <div className="absolute -inset-4 -z-10 bg-gradient-to-r from-primary/20 via-emerald-400/20 to-cyan-400/20 blur-3xl" />
+            <div className="absolute -inset-4 -z-10 bg-gradient-to-r from-primary/30 via-emerald-400/30 to-cyan-400/30 blur-3xl" />
           </motion.div>
         </div>
       </div>
@@ -1894,7 +1894,6 @@ export default function Landing() {
         <BentoHeroSection />
         <BentoDomainesSection />
         <BloodVisionSection />
-        <BentoBodyMappingSection />
         <BentoProcessSection />
         <BentoPricingSection />
         <BentoTestimonialsSection />
