@@ -723,11 +723,10 @@ function DemoModal({ onClose }: { onClose: () => void }) {
 
 // Ultrahuman-style Hero: Centered elegant typography with phone mockup
 function UltrahumanHero() {
-  const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
   const [showDemo, setShowDemo] = useState(false);
 
-  // Contenu scrollable pour chaque onglet - Ultrahuman style
-  const tabContents = {
+  // Ancien contenu des onglets (gardé pour référence mais non utilisé)
+  const _tabContents = {
     scores: (
       <div className="w-full bg-[#0a0f0d] px-4 pt-10 pb-24">
         {/* Header */}
@@ -1073,59 +1072,88 @@ function UltrahumanHero() {
                   <div className="w-10 h-3 rounded-full bg-zinc-800" />
                 </div>
 
-                {/* Screen content */}
-                <div className="h-[520px] sm:h-[580px] overflow-hidden">
-                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="h-full overflow-y-auto scrollbar-hide"
-                  >
-                    {tabContents[activeTab]}
-                  </motion.div>
+                {/* Screen content - Auto-scrolling biomarkers */}
+                <div className="h-[520px] sm:h-[580px] overflow-hidden relative">
+                  {/* Header fixed */}
+                  <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-[#0a0f0d] via-[#0a0f0d] to-transparent pt-10 pb-8 px-4">
+                    <p className="text-[#4a9d7c]/60 text-[9px] tracking-[0.2em] font-medium text-center mb-1">NEUROCORE 360</p>
+                    <p className="text-white text-center text-lg font-semibold">Tes biomarqueurs</p>
+                  </div>
+
+                  {/* Auto-scrolling markers list */}
+                  <div className="absolute inset-0 pt-24">
+                    <div className="animate-scroll-markers">
+                      {/* First set of markers */}
+                      {[
+                        { name: "Score Global", value: "58", unit: "/100", status: "À optimiser", color: "amber" },
+                        { name: "HRV", value: "28", unit: "ms", status: "Critique", color: "red" },
+                        { name: "Sommeil Profond", value: "12", unit: "%", status: "Bas", color: "red" },
+                        { name: "Cortisol AM", value: "24.5", unit: "µg/dL", status: "Élevé", color: "red" },
+                        { name: "Récupération", value: "41", unit: "/100", status: "Faible", color: "amber" },
+                        { name: "FC Repos", value: "68", unit: "bpm", status: "Normal", color: "green" },
+                        { name: "Énergie", value: "44", unit: "/100", status: "Moyen", color: "amber" },
+                        { name: "Nutrition", value: "72", unit: "/100", status: "Bon", color: "green" },
+                        { name: "Protéines", value: "1.8", unit: "g/kg", status: "Optimal", color: "green" },
+                        { name: "Hydratation", value: "1.8", unit: "L/j", status: "Insuffisant", color: "amber" },
+                        { name: "Training", value: "85", unit: "/100", status: "Excellent", color: "green" },
+                        { name: "Volume", value: "18", unit: "séries", status: "Optimal", color: "green" },
+                        { name: "Hormones", value: "48", unit: "/100", status: "À améliorer", color: "amber" },
+                        { name: "Thyroïde", value: "65", unit: "/100", status: "Correct", color: "green" },
+                        { name: "Stress", value: "72", unit: "/100", status: "Élevé", color: "red" },
+                        { name: "Digestion", value: "52", unit: "/100", status: "Moyen", color: "amber" },
+                        { name: "Score Global", value: "58", unit: "/100", status: "À optimiser", color: "amber" },
+                        { name: "HRV", value: "28", unit: "ms", status: "Critique", color: "red" },
+                        { name: "Sommeil Profond", value: "12", unit: "%", status: "Bas", color: "red" },
+                        { name: "Cortisol AM", value: "24.5", unit: "µg/dL", status: "Élevé", color: "red" },
+                        { name: "Récupération", value: "41", unit: "/100", status: "Faible", color: "amber" },
+                        { name: "FC Repos", value: "68", unit: "bpm", status: "Normal", color: "green" },
+                      ].map((marker, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between px-5 py-4 border-b border-white/5"
+                        >
+                          <div>
+                            <p className="text-white/40 text-[10px] uppercase tracking-wider">{marker.name}</p>
+                            <div className="flex items-baseline gap-1 mt-1">
+                              <span className="text-white text-2xl font-bold">{marker.value}</span>
+                              <span className="text-white/30 text-sm">{marker.unit}</span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${
+                            marker.color === 'red' ? 'bg-red-500/15 text-red-400' :
+                            marker.color === 'amber' ? 'bg-amber-500/15 text-amber-400' :
+                            'bg-emerald-500/15 text-emerald-400'
+                          }`}>
+                            {marker.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gradient overlays for smooth fade */}
+                  <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0f0d] to-transparent z-10 pointer-events-none" />
                 </div>
 
                 {/* Home indicator */}
                 <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-28 h-1 bg-white/20 rounded-full z-50" />
+
+                {/* Scroll animation styles */}
+                <style>{`
+                  @keyframes scrollMarkers {
+                    0% { transform: translateY(0); }
+                    100% { transform: translateY(-50%); }
+                  }
+                  .animate-scroll-markers {
+                    animation: scrollMarkers 25s linear infinite;
+                  }
+                `}</style>
               </div>
             </div>
 
             {/* Glow effect */}
             <div className="absolute -inset-4 bg-gradient-to-b from-primary/20 via-transparent to-transparent rounded-[4rem] blur-2xl -z-10 opacity-50" />
           </div>
-
-          {/* Tab Bar - OUTSIDE phone, Ultrahuman style floating bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="mt-6 relative z-50"
-          >
-            <div className="bg-zinc-900/80 backdrop-blur-xl rounded-full px-2 py-2 shadow-2xl shadow-black/50 border border-white/10">
-              <div className="flex items-center gap-1">
-                {[
-                  { id: "scores", icon: Activity, label: "SCORES" },
-                  { id: "domaines", icon: Layers, label: "DOMAINES" },
-                  { id: "rapport", icon: Brain, label: "RAPPORT" },
-                  { id: "plan", icon: Target, label: "PLAN" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    className={`flex flex-col items-center gap-1 px-5 py-3 rounded-full transition-all duration-300 ${
-                      activeTab === tab.id
-                        ? "bg-white/10 text-white"
-                        : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
-                    }`}
-                  >
-                    <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-primary' : ''}`} />
-                    <span className="text-[9px] font-semibold tracking-wider">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
 
       </div>
@@ -1370,252 +1398,178 @@ function BentoHeroSection() {
 function UltrahumanFeatureCards() {
   return (
     <section className="relative bg-black py-24 overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(148,84,255,0.08),transparent_60%)]" />
-
       <div className="relative max-w-6xl mx-auto px-6">
-        {/* Section header */}
+        {/* Section header - Ultrahuman style */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
-            <Sparkles className="w-4 h-4 text-violet-400" />
-            <span className="text-xs font-medium tracking-widest text-white/60 uppercase">
-              Technologie avancée
-            </span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
-            Analyse de précision
-            <span className="block text-white/40 text-2xl sm:text-3xl mt-2">clinique</span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Optimise ta<br />
+            <span className="text-white/50">performance.</span>
           </h2>
+          <p className="text-white/40 text-lg max-w-xl">
+            Analyse en temps réel de ton système nerveux, sommeil et récupération avec précision clinique.
+          </p>
         </motion.div>
 
-        {/* Dual Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        {/* Dual Feature Cards - Exact Ultrahuman style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* Card 1 - HRV Analysis (Red/Maroon theme like AFib Detection) */}
+          {/* Card 1 - HRV/Stress Detection (Dark red/maroon like AFib) */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="group relative"
           >
-            <div className="relative h-[420px] rounded-3xl overflow-hidden bg-gradient-to-br from-[#2a1215] via-[#1f0f11] to-[#0d0506] border border-red-900/30 p-8 transition-all duration-500 hover:border-red-500/40 hover:shadow-2xl hover:shadow-red-900/20">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(220,38,38,0.15),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
+            <div className="relative h-[480px] rounded-[32px] overflow-hidden bg-[#3d1a1f] p-8">
               {/* Header */}
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-red-400/80 uppercase">Analyse HRV</span>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                  Système Nerveux
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                  Détection Stress
                 </h3>
-                <p className="text-white/50 text-sm max-w-xs">
-                  Détection des déséquilibres sympathique/parasympathique en temps réel
+                <p className="text-white/60 text-sm leading-relaxed max-w-sm">
+                  Analyse ton système nerveux en continu, détectant les signes de stress chronique et de dysrégulation du SNA avec des rapports quotidiens.
                 </p>
               </div>
 
-              {/* ECG Animation */}
-              <div className="absolute bottom-20 left-0 right-0 h-32 overflow-hidden opacity-60">
-                <svg viewBox="0 0 400 100" className="w-full h-full" preserveAspectRatio="none">
+              {/* ECG Animation - Pink like Ultrahuman */}
+              <div className="absolute bottom-32 left-0 right-0 h-40 overflow-hidden">
+                <svg viewBox="0 0 500 120" className="w-full h-full" preserveAspectRatio="none">
                   <defs>
-                    <linearGradient id="ecgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#ef4444" stopOpacity="0" />
-                      <stop offset="50%" stopColor="#ef4444" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                    <linearGradient id="pinkEcg" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#ec4899" stopOpacity="0.2" />
+                      <stop offset="30%" stopColor="#ec4899" stopOpacity="1" />
+                      <stop offset="70%" stopColor="#ec4899" stopOpacity="1" />
+                      <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
                     </linearGradient>
                   </defs>
                   <path
-                    d="M0,50 L30,50 L40,50 L50,20 L60,80 L70,30 L80,60 L90,50 L120,50 L130,50 L140,20 L150,80 L160,30 L170,60 L180,50 L210,50 L220,50 L230,20 L240,80 L250,30 L260,60 L270,50 L300,50 L310,50 L320,20 L330,80 L340,30 L350,60 L360,50 L400,50"
+                    d="M0,60 L60,60 L80,60 L100,20 L120,100 L140,40 L160,70 L180,60 L240,60 L260,60 L280,20 L300,100 L320,40 L340,70 L360,60 L420,60 L440,60 L460,20 L480,100 L500,60"
                     fill="none"
-                    stroke="url(#ecgGradient)"
-                    strokeWidth="2"
-                    className="animate-ecg-flow"
+                    stroke="url(#pinkEcg)"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    className="ecg-line"
                   />
                 </svg>
                 <style>{`
-                  @keyframes ecgFlow {
-                    0% { transform: translateX(-25%); }
-                    100% { transform: translateX(0%); }
+                  .ecg-line {
+                    animation: ecgPulse 2s ease-in-out infinite;
                   }
-                  .animate-ecg-flow {
-                    animation: ecgFlow 2s linear infinite;
+                  @keyframes ecgPulse {
+                    0%, 100% { opacity: 0.6; }
+                    50% { opacity: 1; }
                   }
                 `}</style>
               </div>
 
-              {/* Alert Badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
-                className="absolute bottom-8 left-8 right-8"
-              >
-                <div className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-red-500/20">
-                  <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-red-400" />
+              {/* Notification Badge Stack - Like Ultrahuman */}
+              <div className="absolute bottom-8 left-8 right-8 space-y-2">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/40 backdrop-blur-sm opacity-40">
+                  <div className="w-8 h-8 rounded-full bg-pink-500/30 flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-pink-400" />
+                  </div>
+                  <span className="text-white/60 text-sm">Stress modéré</span>
+                </div>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/40 backdrop-blur-sm opacity-60">
+                  <div className="w-8 h-8 rounded-full bg-pink-500/30 flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-pink-400" />
+                  </div>
+                  <span className="text-white/70 text-sm">Stress modéré</span>
+                </div>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-sm border border-pink-500/20">
+                  <div className="w-8 h-8 rounded-full bg-pink-500/30 flex items-center justify-center">
+                    <Heart className="w-4 h-4 text-pink-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-white font-semibold text-sm">Stress détecté</p>
-                    <p className="text-white/50 text-xs">HRV: 28ms - Cortisol élevé</p>
+                    <p className="text-white font-medium text-sm">Stress élevé détecté</p>
+                    <p className="text-white/50 text-xs">HRV basse. Voir le rapport.</p>
                   </div>
-                  <div className="text-red-400 text-2xl font-bold">!</div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
 
-          {/* Card 2 - Sleep Score (Green theme like Cardio Adaptability) */}
+          {/* Card 2 - Recovery/Sleep (Green like Cardio Adaptability) */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="group relative"
           >
-            <div className="relative h-[420px] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0a1f15] via-[#071510] to-[#030a07] border border-emerald-900/30 p-8 transition-all duration-500 hover:border-emerald-500/40 hover:shadow-2xl hover:shadow-emerald-900/20">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.15),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
+            <div className="relative h-[480px] rounded-[32px] overflow-hidden bg-[#0d3326] p-8">
               {/* Header */}
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-emerald-400/80 uppercase">Récupération</span>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                  Score Sommeil
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                  Score Récupération
                 </h3>
-                <p className="text-white/50 text-sm max-w-xs">
-                  Optimisation de l'architecture du sommeil et de la récupération
+                <p className="text-white/60 text-sm leading-relaxed max-w-sm">
+                  Analyse ton sommeil chaque nuit avec des tachogrammes détaillés, offrant des insights sur ta récupération et ton adaptation au stress.
                 </p>
               </div>
 
-              {/* Circular Progress Gauge */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-48 h-48">
-                <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-                  {/* Background circle */}
+              {/* Circular Gauge with Checkmark - Exact Ultrahuman style */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/4 w-56 h-56">
+                {/* Outer glow ring */}
+                <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-xl" />
+
+                {/* SVG Gauge */}
+                <svg viewBox="0 0 200 200" className="w-full h-full">
+                  {/* Background track */}
                   <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
+                    cx="100"
+                    cy="100"
+                    r="80"
                     fill="none"
-                    stroke="rgba(255,255,255,0.05)"
-                    strokeWidth="8"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth="12"
                   />
-                  {/* Progress circle */}
-                  <motion.circle
-                    cx="60"
-                    cy="60"
-                    r="50"
+                  {/* Gradient track segments */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="80"
                     fill="none"
-                    stroke="url(#greenGradient)"
-                    strokeWidth="8"
+                    stroke="url(#gaugeGradient)"
+                    strokeWidth="12"
                     strokeLinecap="round"
-                    strokeDasharray="314"
-                    initial={{ strokeDashoffset: 314 }}
-                    whileInView={{ strokeDashoffset: 314 * 0.28 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
+                    strokeDasharray="380 503"
+                    strokeDashoffset="125"
+                    className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                   />
                   <defs>
-                    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#10b981" />
-                      <stop offset="100%" stopColor="#34d399" />
+                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f59e0b" />
+                      <stop offset="50%" stopColor="#22c55e" />
+                      <stop offset="100%" stopColor="#10b981" />
                     </linearGradient>
                   </defs>
                 </svg>
-                {/* Center text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5 }}
-                    className="text-5xl font-bold text-white"
-                  >
-                    72
-                  </motion.span>
-                  <span className="text-emerald-400 text-sm font-medium">/100</span>
+
+                {/* Center checkmark */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <Check className="w-10 h-10 text-white" strokeWidth={3} />
+                  </div>
                 </div>
               </div>
 
-              {/* Success Badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.5 }}
-                className="absolute bottom-8 left-8 right-8"
-              >
-                <div className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-emerald-500/20">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              {/* Status Badge - Like Ultrahuman */}
+              <div className="absolute bottom-8 left-8 right-8">
+                <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-black/40 backdrop-blur-sm border border-emerald-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span className="text-white font-medium">Bonne récupération</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-white font-semibold text-sm">Récupération optimale</p>
-                    <p className="text-white/50 text-xs">Sommeil profond: 22% • REM: 24%</p>
-                  </div>
-                  <Check className="w-6 h-6 text-emerald-400" />
+                  <span className="text-white/50 text-sm">9:41</span>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
-        </div>
-
-        {/* Bottom row - 3 smaller feature cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-          {[
-            { icon: Brain, title: "Analyse Cognitive", desc: "Focus & clarté mentale", color: "violet", value: "89%" },
-            { icon: Zap, title: "Énergie", desc: "Métabolisme mitochondrial", color: "amber", value: "67%" },
-            { icon: Activity, title: "Performance", desc: "Capacité d'adaptation", color: "blue", value: "81%" },
-          ].map((item, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 + idx * 0.1 }}
-              className="group relative"
-            >
-              <div className={`relative h-[160px] rounded-2xl overflow-hidden bg-gradient-to-br ${
-                item.color === "violet" ? "from-violet-950/50 to-violet-950/20 border-violet-500/20 hover:border-violet-500/40" :
-                item.color === "amber" ? "from-amber-950/50 to-amber-950/20 border-amber-500/20 hover:border-amber-500/40" :
-                "from-blue-950/50 to-blue-950/20 border-blue-500/20 hover:border-blue-500/40"
-              } border p-6 transition-all duration-300 hover:shadow-xl`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className={`w-10 h-10 rounded-xl ${
-                      item.color === "violet" ? "bg-violet-500/20" :
-                      item.color === "amber" ? "bg-amber-500/20" :
-                      "bg-blue-500/20"
-                    } flex items-center justify-center mb-3`}>
-                      <item.icon className={`w-5 h-5 ${
-                        item.color === "violet" ? "text-violet-400" :
-                        item.color === "amber" ? "text-amber-400" :
-                        "text-blue-400"
-                      }`} />
-                    </div>
-                    <h4 className="text-white font-semibold text-sm">{item.title}</h4>
-                    <p className="text-white/40 text-xs mt-1">{item.desc}</p>
-                  </div>
-                  <span className={`text-2xl font-bold ${
-                    item.color === "violet" ? "text-violet-400" :
-                    item.color === "amber" ? "text-amber-400" :
-                    "text-blue-400"
-                  }`}>{item.value}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
         </div>
       </div>
     </section>
