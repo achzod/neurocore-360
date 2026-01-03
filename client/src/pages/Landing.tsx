@@ -737,8 +737,54 @@ function BentoDomainesSection() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.08),transparent_60%)]" />
 
       <div className="relative max-w-7xl mx-auto px-6 py-20">
+        {/* Title section - ABOVE skeleton */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <div
+            ref={titleRef}
+            className="relative cursor-pointer select-none inline-block mb-4"
+            style={{ "--x": "0px", "--y": "0px" } as React.CSSProperties}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {/* Layer 1: BASE - blurred text */}
+            <h2
+              className="text-4xl md:text-5xl font-bold absolute inset-0 select-none pointer-events-none"
+              style={{ color: "white", filter: "blur(6px)", opacity: 0.6 }}
+              aria-hidden="true"
+            >
+              Analyse 360°
+            </h2>
+            {/* Layer 2: SHARP text */}
+            <h2
+              className="text-4xl md:text-5xl font-bold relative z-10"
+              style={{
+                color: "white",
+                textShadow: "0 0 40px rgba(255, 255, 255, 0.5)",
+                WebkitMaskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
+                maskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
+              }}
+            >
+              Analyse 360°
+            </h2>
+          </div>
+          <p className="text-white/60 text-base max-w-md mx-auto mb-6">
+            15 domaines analysés pour une vision complète de ta santé métabolique
+          </p>
+          <Link href="/audit-complet/questionnaire">
+            <button className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white font-medium transition-all duration-300 hover:border-primary/50">
+              En savoir plus
+            </button>
+          </Link>
+        </motion.div>
+
         {/* Main content with silhouette */}
-        <div className="relative min-h-[600px] flex items-center justify-center">
+        <div className="relative min-h-[500px] flex items-center justify-center">
 
           {/* Detailed Skeleton - Center */}
           <div className="relative w-[300px] h-[500px] md:w-[350px] md:h-[580px]">
@@ -902,82 +948,6 @@ function BentoDomainesSection() {
             </motion.div>
           ))}
 
-          {/* Center title overlay */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              {/* Title with magnifying glass effect */}
-              <div
-                ref={titleRef}
-                className="relative cursor-pointer select-none inline-block pointer-events-auto mb-4"
-                style={{ "--x": "0px", "--y": "0px" } as React.CSSProperties}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                {/* Layer 1: BASE - blurred text (always visible) */}
-                <h2
-                  className="text-4xl md:text-5xl font-bold absolute inset-0 select-none pointer-events-none"
-                  style={{
-                    color: "white",
-                    filter: "blur(6px)",
-                    opacity: 0.6,
-                  }}
-                  aria-hidden="true"
-                >
-                  Analyse 360°
-                </h2>
-
-                {/* Layer 2: SHARP - magnified area around cursor (100% crisp, revealed by mask) */}
-                <h2
-                  className="text-4xl md:text-5xl font-bold relative z-10"
-                  style={{
-                    color: "white",
-                    filter: "blur(0px)",
-                    opacity: 1,
-                    textShadow: "0 0 40px rgba(255, 255, 255, 0.5)",
-                    WebkitMaskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
-                    maskImage: isHovered ? `radial-gradient(circle 160px at var(--x) var(--y), black 30%, transparent 100%)` : "none",
-                  }}
-                >
-                  Analyse 360°
-                </h2>
-
-                {/* Layer 3: Cursor dot - stylized point at mouse position */}
-                {isHovered && (
-                  <div
-                    className="absolute pointer-events-none z-30"
-                    style={{
-                      left: "var(--x)",
-                      top: "var(--y)",
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  >
-                    <div className="relative">
-                      {/* Outer glow */}
-                      <div className="absolute w-12 h-12 bg-white/30 rounded-full blur-xl -translate-x-1/2 -translate-y-1/2" />
-                      {/* Inner dot */}
-                      <div className="absolute w-3 h-3 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 shadow-lg shadow-white/50" />
-                      {/* Center point */}
-                      <div className="absolute w-1 h-1 bg-primary rounded-full -translate-x-1/2 -translate-y-1/2" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-white/60 text-base max-w-sm">
-                15 domaines analysés pour une vision complète de ta santé métabolique
-              </p>
-              <Link href="/audit-complet/questionnaire" className="pointer-events-auto">
-                <button className="mt-6 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white font-medium transition-all duration-300 hover:border-primary/50">
-                  En savoir plus
-                </button>
-              </Link>
-            </motion.div>
-          </div>
         </div>
 
         {/* Biomarkers ticker at bottom */}
@@ -1023,7 +993,7 @@ function BloodVisionSection() {
             </Badge>
 
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-              Analyse sanguine
+              Diagnostic complet
               <br />
               <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
                 + Optimisation métabolique
@@ -1031,8 +1001,8 @@ function BloodVisionSection() {
             </h2>
 
             <p className="text-base text-gray-300 lg:text-lg">
-              Décode tes prises de sang pour identifier déséquilibres hormonaux et inflammatoires.
-              Optimise ton métabolisme, ta biomécanique posturale et ta performance globale.
+              Identifie tes déséquilibres hormonaux, inflammatoires et métaboliques.
+              Optimise ta biomécanique posturale et ta performance globale.
             </p>
 
             <div className="space-y-3">
@@ -1041,9 +1011,9 @@ function BloodVisionSection() {
                   <Check className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-white">Biomarqueurs sanguins</p>
+                  <p className="font-semibold text-white">Biomarqueurs clés</p>
                   <p className="text-sm text-gray-400">
-                    Hormones, Thyroïde, Inflammation, Vitamines, Minéraux
+                    Hormones, Thyroïde, Inflammation, Énergie, Récupération
                   </p>
                 </div>
               </div>
