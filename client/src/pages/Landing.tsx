@@ -1576,6 +1576,190 @@ function UltrahumanFeatureCards() {
   );
 }
 
+// Ultrahuman-style Scores Section (like Metabolic Score / Food Score)
+function UltrahumanScoresSection() {
+  return (
+    <section className="relative bg-[#f5f5f5] py-24 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Top Row - 2 large cards with phone mockups */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+          {/* Card 1 - Score Sommeil (Dark theme) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative bg-[#1a1a1a] rounded-[32px] p-8 min-h-[500px] overflow-hidden"
+          >
+            <div className="relative z-10 max-w-[280px]">
+              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                Score Sommeil
+              </h3>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Analyse ton architecture de sommeil en temps réel. Identifie tes phases de sommeil profond et REM.
+              </p>
+            </div>
+
+            {/* Phone Mockup */}
+            <div className="absolute right-4 bottom-4 w-[220px]">
+              <div className="bg-black rounded-[2rem] p-2 shadow-2xl">
+                <div className="bg-[#0a0f0d] rounded-[1.5rem] p-4 pt-8">
+                  {/* Status bar */}
+                  <div className="flex justify-between items-center text-[10px] text-white/40 mb-4">
+                    <span>9:41</span>
+                    <div className="flex gap-1">
+                      <div className="w-4 h-2 bg-white/40 rounded-sm" />
+                    </div>
+                  </div>
+
+                  {/* Score Display */}
+                  <div className="text-center mb-4">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-2">Score Sommeil</p>
+                    <div className="text-5xl font-bold text-white mb-1">
+                      72<span className="text-emerald-400 text-lg ml-1">↑</span>
+                    </div>
+                    <p className="text-emerald-400 text-xs">+8 vs semaine dernière</p>
+                  </div>
+
+                  {/* Mini Stats */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-[9px] text-white/40 uppercase">Profond</p>
+                      <p className="text-white font-bold">22%</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <p className="text-[9px] text-white/40 uppercase">REM</p>
+                      <p className="text-white font-bold">24%</p>
+                    </div>
+                  </div>
+
+                  {/* Bottom indicator */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 rounded-xl">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 text-xs">Sommeil optimal</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Card 2 - Score Récupération (Light theme like Ultrahuman) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="relative bg-white rounded-[32px] p-8 min-h-[500px] overflow-hidden border border-gray-100"
+          >
+            <div className="relative z-10 max-w-[280px]">
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+                Score Récupération
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Visualise ta capacité de récupération en temps réel grâce à l'analyse de ta HRV.
+              </p>
+            </div>
+
+            {/* Phone Mockup with dark screen */}
+            <div className="absolute right-4 bottom-4 w-[220px]">
+              <div className="bg-gray-900 rounded-[2rem] p-2 shadow-2xl">
+                <div className="bg-[#0d1a15] rounded-[1.5rem] p-4 pt-8">
+                  {/* Status bar */}
+                  <div className="flex justify-between items-center text-[10px] text-white/40 mb-2">
+                    <span>DERNIÈRE SYNC • 09:43</span>
+                  </div>
+
+                  {/* Score Display */}
+                  <div className="text-center mb-3">
+                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-2">Score Récupération</p>
+                    <div className="text-5xl font-bold text-white mb-1">
+                      79<span className="text-emerald-400 text-sm ml-1">↑ +10</span>
+                    </div>
+                    <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-[10px] rounded-full">
+                      En progression
+                    </span>
+                  </div>
+
+                  {/* Metrics */}
+                  <div className="flex justify-center gap-6 mb-3">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-white">42<span className="text-[10px] text-white/40">ms</span></p>
+                      <p className="text-[9px] text-white/40 uppercase">HRV</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-white">58<span className="text-[10px] text-white/40">bpm</span></p>
+                      <p className="text-[9px] text-white/40 uppercase">FC Repos</p>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 rounded-xl">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <div className="flex-1">
+                      <p className="text-emerald-400 text-xs font-medium">Bonne récupération</p>
+                      <p className="text-white/40 text-[9px]">HRV en amélioration</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Bottom Row - 2 smaller cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* Card 3 - Score Métabolique */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-[32px] p-8 border border-gray-100"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Score Métabolique</h3>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              Mesure l'impact de ta nutrition sur ton métabolisme. Identifie les aliments qui fonctionnent pour toi et optimise ton énergie.
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                <Zap className="w-7 h-7 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">67<span className="text-gray-400 text-lg">/100</span></p>
+                <p className="text-sm text-amber-500">À optimiser</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Card 4 - Score Hormonal */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-[32px] p-8 border border-gray-100"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Score Hormonal</h3>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              Analyse ton équilibre hormonal basé sur tes symptômes. Optimise ta testostérone, ton cortisol et ta thyroïde.
+            </p>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center">
+                <Activity className="w-7 h-7 text-violet-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">48<span className="text-gray-400 text-lg">/100</span></p>
+                <p className="text-sm text-red-500">Priorité</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Icône mapping pour les domaines
 const iconMap: Record<string, typeof User> = {
   User,
@@ -3052,6 +3236,7 @@ export default function Landing() {
         <MediaBar />
         <BentoHeroSection />
         <UltrahumanFeatureCards />
+        <UltrahumanScoresSection />
         <BentoDomainesSection />
         <BloodVisionSection />
         <BentoProcessSection />
