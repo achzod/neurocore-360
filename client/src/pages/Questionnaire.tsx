@@ -846,27 +846,32 @@ export default function Questionnaire() {
                             const res = await apiRequest("POST", "/api/terra/connect", {
                               userId: email || `guest-${Date.now()}`,
                             });
-                            if (res.widgetUrl) {
-                              window.open(res.widgetUrl, "_blank");
-                              // Simulate connection for demo
+                            const data = await res.json();
+                            if (data.widgetUrl) {
+                              window.open(data.widgetUrl, "_blank");
+                              // Attendre que l'utilisateur connecte son wearable
                               setTimeout(() => {
                                 setTerraConnected(true);
                                 setTerraConnecting(false);
                                 toast({
                                   title: "Connexion réussie !",
-                                  description: "Tes données seront synchronisées.",
+                                  description: "Tes données seront synchronisées automatiquement.",
                                 });
-                              }, 3000);
+                              }, 5000);
                             } else {
-                              throw new Error("Widget URL not received");
+                              throw new Error(data.error || "Widget URL non reçue");
                             }
-                          } catch (error) {
+                          } catch (error: any) {
                             setTerraConnecting(false);
+                            console.error("[Terra] Connection error:", error);
+                            const errorMsg = error?.message || error?.error || "Erreur de connexion";
                             toast({
-                              title: "Info",
-                              description: "La synchronisation sera disponible prochainement. Continue le questionnaire !",
+                              title: "Erreur de connexion",
+                              description: errorMsg.includes("non configurée")
+                                ? "Configuration Terra en cours. Réessaie dans quelques minutes."
+                                : `Erreur: ${errorMsg}. Réessaie ou passe cette étape.`,
+                              variant: "destructive",
                             });
-                            setWearablesSyncShown(true);
                           }
                         }}
                         className="w-full"
