@@ -38,7 +38,6 @@ import {
   Layers,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { DNAHelix } from "@/components/animations/DNAHelix";
 import { BodyVisualization } from "@/components/animations/BodyVisualization";
 
 import issaLogo from "@assets/ISSA+Logo+_+Vertical+_+for-white-background_1767172975495.webp";
@@ -1195,100 +1194,101 @@ function BentoBodyMappingSection() {
   );
 }
 
-// BENTO PROCESS SECTION
+// BENTO PROCESS SECTION - Ultrahuman style
 function BentoProcessSection() {
   const steps = [
     {
-      step: 1,
-      title: "Questionnaire Complet",
-      description: "190+ questions sur 15 domaines : métabolisme, hormones, nutrition, biomécanique...",
-      icon: CheckCircle2,
-      color: "from-primary/20 to-primary/5",
+      step: "01",
+      title: "Data Collection",
+      subtitle: "Input Phase",
+      description: "190+ questions analysent ton profil métabolique, hormonal, circadien et biomécanique. Chaque réponse calibre l'algorithme.",
+      metric: "15 min",
+      metricLabel: "completion",
     },
     {
-      step: 2,
-      title: "Analyse Avancée",
-      description: "J'analyse tes réponses et tes photos pour créer un profil complet personnalisé",
-      icon: Brain,
-      color: "from-purple-500/20 to-purple-500/5",
+      step: "02",
+      title: "Neural Processing",
+      subtitle: "Analysis Phase",
+      description: "Cross-référencement de tes biomarqueurs avec 50+ patterns métaboliques. Identification des dysfonctions et leviers d'optimisation.",
+      metric: "180+",
+      metricLabel: "data points",
     },
     {
-      step: 3,
-      title: "Rapport Personnalisé",
-      description: "Reçois un rapport détaillé de 40+ pages avec scores, recommandations et plan d'action",
-      icon: Award,
-      color: "from-amber-500/20 to-amber-500/5",
+      step: "03",
+      title: "Protocol Generation",
+      subtitle: "Output Phase",
+      description: "Génération d'un rapport de 40+ pages : scores par domaine, root causes identifiées, stack supplements personnalisé, timing circadien.",
+      metric: "40+",
+      metricLabel: "pages",
     },
     {
-      step: 4,
-      title: "Plan d'Action Concret",
-      description: "Protocoles précis : suppléments, nutrition, exercices, timing... Tout est détaillé",
-      icon: Target,
-      color: "from-emerald-500/20 to-emerald-500/5",
+      step: "04",
+      title: "Implementation",
+      subtitle: "Action Phase",
+      description: "Plan 30-60-90 jours avec protocoles précis : nutrition périodisée, exercices correctifs, supplémentation ciblée, hacks récupération.",
+      metric: "90",
+      metricLabel: "days plan",
     },
   ];
 
   return (
-    <section id="process" className="relative border-y border-border/30 bg-background py-12 lg:py-16" data-testid="section-process">
-      <div className="mx-auto max-w-7xl px-4">
+    <section id="process" className="relative bg-black py-24" data-testid="section-process">
+      {/* Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(14,252,109,0.05),transparent_50%)]" />
 
-        {/* Header */}
-        <div className="mb-10 text-center">
-          <Badge variant="outline" className="mb-4">
-            Simple & Efficace
-          </Badge>
-          <h2 className="text-3xl font-bold tracking-[-0.03em] sm:text-4xl" data-testid="text-process-title">
-            Comment ça marche ?
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            En 4 étapes simples, découvre les leviers d'optimisation de ton métabolisme
-          </p>
-        </div>
-
-        {/* Bento Grid for Process */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, idx) => {
-            const IconComponent = step.icon;
-            return (
-              <motion.div
-                key={step.step}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-              >
-                <div className={`${bentoStyles.card} h-full bg-gradient-to-br ${step.color}`}>
-                  {/* Step Number */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-background/80 text-xl font-bold text-primary">
-                      {step.step}
-                    </div>
-                    <IconComponent className="h-6 w-6 text-muted-foreground" />
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="mb-3 text-lg font-semibold tracking-[-0.01em]">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* DNA Animation Card */}
+      <div className="relative mx-auto max-w-6xl px-6">
+        {/* Header - Ultrahuman style */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-6"
+          className="mb-16"
         >
-          <div className={`${bentoStyles.card} flex items-center justify-center py-8`}>
-            <div className="h-32 w-20">
-              <DNAHelix />
-            </div>
-          </div>
+          <p className="text-primary text-xs font-medium tracking-[0.3em] uppercase mb-4">METHODOLOGY</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+            The Protocol
+          </h2>
+          <p className="text-white/40 text-lg max-w-xl">
+            De la collecte de données à l'optimisation métabolique.
+          </p>
         </motion.div>
 
+        {/* Steps Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {steps.map((step, idx) => (
+            <motion.div
+              key={step.step}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              className="group"
+            >
+              <div className="relative h-full rounded-2xl bg-white/[0.02] border border-white/[0.06] p-6 md:p-8 transition-all duration-500 hover:bg-white/[0.04] hover:border-primary/30">
+                {/* Step number */}
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <span className="text-primary/40 text-xs font-mono tracking-wider">{step.step}</span>
+                    <h3 className="text-xl md:text-2xl font-bold text-white mt-1">{step.title}</h3>
+                    <span className="text-white/30 text-xs tracking-wider uppercase">{step.subtitle}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-primary">{step.metric}</span>
+                    <span className="block text-[10px] text-white/30 uppercase tracking-wider">{step.metricLabel}</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <p className="text-white/50 text-sm leading-relaxed">
+                  {step.description}
+                </p>
+
+                {/* Bottom line */}
+                <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
