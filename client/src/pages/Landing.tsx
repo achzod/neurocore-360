@@ -49,18 +49,33 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 // Demo Modal Component - Ultrahuman-style Report with 4 themes
 function DemoModal({ onClose }: { onClose: () => void }) {
   const [activeTheme, setActiveTheme] = useState<"m1black" | "metabolic" | "titanium" | "organic">("m1black");
+  const [activeSection, setActiveSection] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const themes = {
-    m1black: { name: "M1 Black", bg: "#000000", surface: "#09090B", primary: "#E1E1E1", text: "#EDEDED", muted: "#71717A", border: "rgba(255,255,255,0.12)" },
+    m1black: { name: "M1 Black", bg: "#000000", surface: "#09090B", primary: "#007ff5", text: "#EDEDED", muted: "#71717A", border: "rgba(255,255,255,0.12)" },
     metabolic: { name: "Metabolic Fire", bg: "#050505", surface: "#111111", primary: "#FF4F00", text: "#FFFFFF", muted: "#A1A1AA", border: "rgba(255,79,0,0.2)" },
     titanium: { name: "Titanium Light", bg: "#F2F2F2", surface: "#FFFFFF", primary: "#000000", text: "#171717", muted: "#737373", border: "rgba(0,0,0,0.08)" },
     organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
   };
 
+  const sections = [
+    { name: "Dashboard", locked: false, content: { title: "Vue d'ensemble", subtitle: "GRATUIT", body: "Score global: 58/100. Système nerveux et sommeil identifiés comme priorités. Potentiel d'amélioration: +37 points en 90 jours." } },
+    { name: "Système Nerveux", locked: false, content: { title: "Système Nerveux Autonome", subtitle: "PRIORITÉ #1", body: "HRV basse (28ms). Cortisol matinal élevé (24.5 µg/dL). Ratio sympathique/parasympathique déséquilibré. Recommandations: respiration Wim Hof, cold exposure progressive, magnésium glycinate 400mg." } },
+    { name: "Sommeil", locked: false, content: { title: "Architecture du Sommeil", subtitle: "CRITIQUE", body: "Latence d'endormissement: 45+ min. Sommeil profond: 12% (optimal: 20%+). Réveils nocturnes: 3-4x/nuit. Chronotype: Loup (décalé). Protocole: lumière rouge le soir, glycine 3g, température chambre 18°C." } },
+    { name: "Hormones", locked: false, content: { title: "Profil Hormonal", subtitle: "À OPTIMISER", body: "Testostérone estimée sous-optimale. Cortisol élevé impactant le ratio T/C. Thyroïde: signes d'hypothyroïdie subclinique. Stack recommandé: ashwagandha KSM-66, zinc picolinate, vitamine D3+K2." } },
+    { name: "Nutrition", locked: false, content: { title: "Habitudes Alimentaires", subtitle: "BON NIVEAU", body: "Apport protéique optimal (1.8g/kg). Timing à optimiser: fenêtre anabolique post-training sous-exploitée. Hydratation: 1.8L/jour (insuffisant). Ajout: créatine 5g/j, électrolytes." } },
+    { name: "Training", locked: false, content: { title: "Performance Training", subtitle: "FORT", body: "Fréquence: 5x/sem. Volume: adéquat. Intensité: bonne. Points d'amélioration: deload systématique toutes les 4 semaines, travail excentrique à intégrer, mobilité thoracique." } },
+    { name: "Suppléments", locked: true, content: { title: "Stack Personnalisé", subtitle: "ESSENTIAL", body: "Contenu verrouillé. Passe au plan Essential pour accéder au stack suppléments complet avec dosages, timing et marques recommandées." } },
+    { name: "Plan 90 Jours", locked: true, content: { title: "Feuille de Route", subtitle: "ESSENTIAL", body: "Contenu verrouillé. Le plan 90 jours détaillé avec phases progressives est disponible avec le plan Essential ou Elite." } },
+    { name: "HRV & Cardio", locked: true, content: { title: "Variabilité Cardiaque", subtitle: "ELITE", body: "Contenu verrouillé. Analyse HRV avancée avec données de ton wearable disponible uniquement avec le plan Elite." } },
+    { name: "Analyse Photo", locked: true, content: { title: "Posture & Composition", subtitle: "ELITE", body: "Contenu verrouillé. L'analyse photo détaillée (posture, composition corporelle) est exclusive au plan Elite." } },
+  ];
+
   const theme = themes[activeTheme];
   const isLight = activeTheme === "titanium" || activeTheme === "organic";
+  const currentSection = sections[activeSection];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,14 +143,23 @@ function DemoModal({ onClose }: { onClose: () => void }) {
 
           {/* Navigation */}
           <div className="flex-1 overflow-y-auto px-4 py-2">
-            {["Dashboard", "Système Nerveux", "Sommeil", "Nutrition", "Hormones", "Énergie", "Training", "Protocole", "Suppléments", "Plan 90J"].map((item, i) => (
+            {sections.map((section, i) => (
               <button
                 key={i}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
-                style={{ color: i === 0 ? theme.text : theme.muted }}
+                onClick={() => !section.locked && setActiveSection(i)}
+                disabled={section.locked}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                  section.locked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'
+                } ${activeSection === i ? 'bg-white/10' : ''}`}
+                style={{ color: activeSection === i ? theme.text : theme.muted }}
               >
-                <span className="font-mono text-[10px] mr-2" style={{ color: theme.muted }}>{String(i + 1).padStart(2, '0')}</span>
-                {item}
+                <span className="flex items-center">
+                  <span className="font-mono text-[10px] mr-2" style={{ color: theme.muted }}>{String(i + 1).padStart(2, '0')}</span>
+                  {section.name}
+                </span>
+                {section.locked && (
+                  <Lock size={12} style={{ color: theme.muted }} />
+                )}
               </button>
             ))}
           </div>
@@ -233,25 +257,32 @@ function DemoModal({ onClose }: { onClose: () => void }) {
                 </div>
               </section>
 
-              {/* Sections */}
-              {[
-                { num: "01", title: "Système Nerveux", subtitle: "PRIORITÉ #1", content: "HRV basse (28ms). Cortisol matinal élevé. Ton système nerveux autonome montre des signes de dysrégulation chronique. C'est le verrou principal qui bloque ta progression." },
-                { num: "02", title: "Sommeil", subtitle: "CRITIQUE", content: "Latence d'endormissement prolongée (45+ min). Sommeil profond insuffisant. Réveils nocturnes fréquents (3-4x). La qualité de ton sommeil impacte directement ta récupération et tes hormones." },
-                { num: "03", title: "Nutrition", subtitle: "BON NIVEAU", content: "Apport protéique optimal (1.8g/kg). Timing des repas à optimiser. Hydratation sous-optimale. La base est solide, quelques ajustements vont amplifier les résultats." },
-              ].map((section, i) => (
-                <section key={i} className="py-8 border-t" style={{ borderColor: theme.border }}>
-                  <div className="flex gap-8">
-                    <div className="w-20 shrink-0">
-                      <span className="text-4xl font-bold" style={{ color: theme.border }}>{section.num}</span>
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-xl font-bold mb-1">{section.title}</h2>
-                      <p className="text-[10px] font-mono uppercase tracking-widest mb-4" style={{ color: theme.primary }}>{section.subtitle}</p>
-                      <p style={{ color: theme.muted }}>{section.content}</p>
-                    </div>
+              {/* Section Content - Dynamic based on sidebar selection */}
+              <section className="py-8 border-t" style={{ borderColor: theme.border }}>
+                <div className="flex gap-8">
+                  <div className="w-20 shrink-0">
+                    <span className="text-4xl font-bold" style={{ color: currentSection.locked ? theme.muted : theme.primary }}>{String(activeSection + 1).padStart(2, '0')}</span>
                   </div>
-                </section>
-              ))}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-xl font-bold">{currentSection.content.title}</h2>
+                      {currentSection.locked && <Lock size={16} style={{ color: theme.muted }} />}
+                    </div>
+                    <p className="text-[10px] font-mono uppercase tracking-widest mb-4" style={{ color: currentSection.locked ? theme.muted : theme.primary }}>{currentSection.content.subtitle}</p>
+                    <p style={{ color: theme.muted }} className={currentSection.locked ? 'italic' : ''}>{currentSection.content.body}</p>
+                    {currentSection.locked && (
+                      <Link href="/audit-complet/questionnaire?plan=essential">
+                        <button
+                          className="mt-6 px-6 py-2 rounded-lg text-sm font-bold transition-all hover:opacity-90"
+                          style={{ backgroundColor: theme.primary, color: theme.bg }}
+                        >
+                          Débloquer avec {currentSection.content.subtitle === "ELITE" ? "Elite" : "Essential"} →
+                        </button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </section>
 
               {/* CTA Section */}
               <section className="rounded-2xl p-8 text-center border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
