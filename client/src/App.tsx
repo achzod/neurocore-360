@@ -19,6 +19,7 @@ import MentionsLegales from "@/pages/MentionsLegales";
 import CGV from "@/pages/CGV";
 import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
+import Report from "@/pages/Report";
 
 function Router() {
   return (
@@ -36,6 +37,8 @@ function Router() {
       <Route path="/cgv" component={CGV} />
       <Route path="/faq" component={FAQ} />
       <Route path="/test" component={TestAudit} />
+      <Route path="/report" component={Report} />
+      <Route path="/report/:auditId" component={Report} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/reviews" component={AdminReviews} />
       <Route component={NotFound} />

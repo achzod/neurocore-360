@@ -614,12 +614,20 @@ export default function Dashboard() {
                           </p>
                         </div>
                       </div>
-                      <Link href={`/dashboard/${latestAudit.id}`}>
-                        <Button size="lg" data-testid="button-view-latest">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Voir le rapport detaille
-                        </Button>
-                      </Link>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Link href={`/dashboard/${latestAudit.id}`}>
+                          <Button size="lg" variant="outline" data-testid="button-view-latest">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Rapport classique
+                          </Button>
+                        </Link>
+                        <Link href={`/report/${latestAudit.id}`}>
+                          <Button size="lg" data-testid="button-view-report-premium">
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Rapport Premium
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </Card>
