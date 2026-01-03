@@ -21,6 +21,15 @@ import { ClientData, PhotoAnalysis } from "./types";
 import { streamAuditZip } from "./exportZipService";
 import { isAnthropicAvailable } from "./anthropicEngine";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
+import {
+  generateTerraWidget,
+  getTerraUserData,
+  mapTerraDataToAnswers,
+  handleTerraWebhook,
+  isTerraConfigured,
+  getSupportedProviders,
+  TERRA_PROVIDERS,
+} from "./terraService";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -579,6 +588,140 @@ export async function registerRoutes(
       res.status(500).json({ error: "Erreur serveur" });
     }
   });
+
+  // ============================================
+  // TERRA API ROUTES - Wearables Integration
+  // ============================================
+
+  // Get supported wearable providers
+  app.get("/api/terra/providers", async (req, res) => {
+    try {
+      const providers = getSupportedProviders();
+      res.json({
+        configured: isTerraConfigured(),
+        providers,
+      });
+    } catch (error) {
+      console.error("[Terra] Error getting providers:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Generate Terra widget session for user authentication
+  app.post("/api/terra/connect", async (req, res) => {
+    try {
+      const { userId, providers, redirectUrl } = req.body;
+
+      if (!userId) {
+        res.status(400).json({ error: "userId requis" });
+        return;
+      }
+
+      if (!isTerraConfigured()) {
+        res.status(503).json({
+          error: "Terra API non configurée",
+          message: "La synchronisation des wearables sera disponible prochainement."
+        });
+        return;
+      }
+
+      const widget = await generateTerraWidget(userId, providers, redirectUrl);
+
+      if (!widget) {
+        res.status(500).json({ error: "Erreur génération widget Terra" });
+        return;
+      }
+
+      res.json({
+        success: true,
+        widgetUrl: widget.url,
+        sessionId: widget.sessionId,
+      });
+    } catch (error) {
+      console.error("[Terra] Error generating widget:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Get synced data for a user
+  app.get("/api/terra/data/:terraUserId", async (req, res) => {
+    try {
+      const { terraUserId } = req.params;
+
+      if (!isTerraConfigured()) {
+        res.status(503).json({ error: "Terra API non configurée" });
+        return;
+      }
+
+      const data = await getTerraUserData(terraUserId);
+
+      if (!data) {
+        res.status(404).json({ error: "Données non trouvées" });
+        return;
+      }
+
+      // Map to questionnaire answers
+      const mapped = mapTerraDataToAnswers(data);
+
+      res.json({
+        success: true,
+        rawData: data,
+        mappedAnswers: mapped.answers,
+        skippedQuestions: mapped.skippedQuestionIds,
+      });
+    } catch (error) {
+      console.error("[Terra] Error fetching data:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Terra webhook endpoint
+  app.post("/api/terra/webhook", async (req, res) => {
+    try {
+      const signature = req.headers["terra-signature"] as string || "";
+      const result = await handleTerraWebhook(req.body, signature);
+
+      if (result.success) {
+        res.json({ status: "ok", message: result.message });
+      } else {
+        res.status(400).json({ error: result.message });
+      }
+    } catch (error) {
+      console.error("[Terra] Webhook error:", error);
+      res.status(500).json({ error: "Erreur webhook" });
+    }
+  });
+
+  // Check Terra connection status for an audit
+  app.get("/api/terra/status/:auditId", async (req, res) => {
+    try {
+      const audit = await storage.getAudit(req.params.auditId);
+
+      if (!audit) {
+        res.status(404).json({ error: "Audit non trouvé" });
+        return;
+      }
+
+      const responses = audit.responses as Record<string, unknown>;
+      const terraData = responses?.terraData as Record<string, unknown> | undefined;
+      const terraUserId = responses?.terraUserId as string | undefined;
+
+      res.json({
+        connected: !!terraUserId,
+        terraUserId: terraUserId || null,
+        provider: responses?.terraProvider || null,
+        syncedData: terraData ? Object.keys(terraData) : [],
+        skippedQuestions: (responses?.terraSkippedQuestions as string[]) || [],
+      });
+    } catch (error) {
+      console.error("[Terra] Status error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // ============================================
+  // END TERRA API ROUTES
+  // ============================================
 
   app.post("/api/audit/:id/regenerate", async (req, res) => {
     try {

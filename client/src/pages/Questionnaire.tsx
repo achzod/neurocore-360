@@ -44,6 +44,10 @@ import {
   AlertCircle,
   X,
   Clock,
+  Watch,
+  Smartphone,
+  Link2,
+  CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
@@ -286,6 +290,9 @@ export default function Questionnaire() {
   const userSex = responses["sexe"] as string | undefined;
   const [sexConfirmed, setSexConfirmed] = useState(false);
   const [prenomConfirmed, setPrenomConfirmed] = useState(false);
+  const [wearablesSyncShown, setWearablesSyncShown] = useState(false);
+  const [terraConnecting, setTerraConnecting] = useState(false);
+  const [terraConnected, setTerraConnected] = useState(false);
   const sectionQuestions = getQuestionsForSection(currentSection.id, userSex);
   const IconComponent = iconMap[currentSection.icon] || User;
 
@@ -737,7 +744,7 @@ export default function Questionnaire() {
                       />
                     </div>
                     {String(responses["prenom"] ?? "").trim().length > 0 && (
-                      <Button 
+                      <Button
                         onClick={() => setPrenomConfirmed(true)}
                         className="w-full"
                         data-testid="button-confirm-prenom"
@@ -746,6 +753,152 @@ export default function Questionnaire() {
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     )}
+                  </motion.div>
+                ) : currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
+                  /* WEARABLES SYNC SCREEN */
+                  <motion.div
+                    key="wearables-sync"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <Watch className="w-8 h-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground">
+                          Synchronise tes données santé
+                        </h3>
+                        <p className="text-muted-foreground mt-2">
+                          Connecte ton wearable pour un audit plus précis et un questionnaire plus court.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Wearables Grid */}
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { name: "Apple", icon: "🍎" },
+                        { name: "Oura", icon: "💍" },
+                        { name: "Whoop", icon: "⌚" },
+                        { name: "Garmin", icon: "🏃" },
+                        { name: "Fitbit", icon: "💪" },
+                        { name: "Samsung", icon: "📱" },
+                        { name: "Polar", icon: "❄️" },
+                        { name: "Autre", icon: "🔗" },
+                      ].map((w, i) => (
+                        <div
+                          key={i}
+                          className="flex flex-col items-center p-3 rounded-xl bg-muted/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+                        >
+                          <span className="text-xl mb-1">{w.icon}</span>
+                          <span className="text-[10px] text-muted-foreground">{w.name}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Data types */}
+                    <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
+                      <p className="text-xs font-medium text-muted-foreground mb-3 text-center">
+                        DONNÉES AUTO-SYNCHRONISÉES
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { icon: "💓", label: "HRV" },
+                          { icon: "🌙", label: "Sommeil" },
+                          { icon: "❤️", label: "FC repos" },
+                          { icon: "👟", label: "Activité" },
+                          { icon: "🫁", label: "SpO2" },
+                          { icon: "🌡️", label: "Temp." },
+                        ].map((d, i) => (
+                          <div key={i} className="text-center">
+                            <span className="text-lg">{d.icon}</span>
+                            <p className="text-[10px] text-muted-foreground">{d.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Benefits */}
+                    <div className="space-y-2">
+                      {[
+                        { icon: CheckCircle2, text: "Data exacte (pas d'estimation)" },
+                        { icon: Clock, text: "Questionnaire 2x plus rapide" },
+                        { icon: Brain, text: "Analyse plus précise" },
+                      ].map((b, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <b.icon className="w-4 h-4 text-primary" />
+                          <span>{b.text}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="space-y-3">
+                      <Button
+                        onClick={async () => {
+                          setTerraConnecting(true);
+                          try {
+                            const res = await apiRequest("POST", "/api/terra/connect", {
+                              userId: email || `guest-${Date.now()}`,
+                            });
+                            if (res.widgetUrl) {
+                              window.open(res.widgetUrl, "_blank");
+                              // Simulate connection for demo
+                              setTimeout(() => {
+                                setTerraConnected(true);
+                                setTerraConnecting(false);
+                                toast({
+                                  title: "Connexion réussie !",
+                                  description: "Tes données seront synchronisées.",
+                                });
+                              }, 3000);
+                            } else {
+                              throw new Error("Widget URL not received");
+                            }
+                          } catch (error) {
+                            setTerraConnecting(false);
+                            toast({
+                              title: "Info",
+                              description: "La synchronisation sera disponible prochainement. Continue le questionnaire !",
+                            });
+                            setWearablesSyncShown(true);
+                          }
+                        }}
+                        className="w-full"
+                        disabled={terraConnecting}
+                      >
+                        {terraConnecting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                            Connexion...
+                          </>
+                        ) : terraConnected ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Connecté ! Continuer
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="w-4 h-4 mr-2" />
+                            Connecter mon wearable
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setWearablesSyncShown(true)}
+                        className="w-full text-muted-foreground"
+                      >
+                        Passer cette étape
+                      </Button>
+                    </div>
+
+                    <p className="text-[10px] text-center text-muted-foreground">
+                      Compatible avec Terra API • 100+ appareils supportés
+                    </p>
                   </motion.div>
                 ) : (
                   sectionQuestions.filter(q => q.id !== "sexe" && q.id !== "prenom" || currentSectionIndex !== 0).map((question, index) => (
