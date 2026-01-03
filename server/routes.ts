@@ -724,6 +724,94 @@ export async function registerRoutes(
     }
   });
 
+  // Get mapped Terra answers for questionnaire pre-fill
+  app.get("/api/terra/answers/:email", async (req, res) => {
+    try {
+      const records = await storage.getTerraDataByEmail(req.params.email);
+
+      if (!records || records.length === 0) {
+        res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [] });
+        return;
+      }
+
+      // Aggregate data from all records
+      const aggregated: Record<string, unknown> = {
+        hrv: {},
+        sleep: {},
+        heart_rate: {},
+        activity: {},
+        body: {},
+        calories: {},
+      };
+
+      for (const record of records) {
+        const data = record.data?.data?.[0] || record.data?.data || {};
+
+        // HRV
+        if (data.heart_rate_data?.summary?.avg_hrv_sdnn) {
+          (aggregated.hrv as Record<string, unknown>).avg_hrv_sdnn = data.heart_rate_data.summary.avg_hrv_sdnn;
+        }
+        if (data.heart_rate_data?.summary?.avg_hrv_rmssd) {
+          (aggregated.hrv as Record<string, unknown>).avg_hrv_rmssd = data.heart_rate_data.summary.avg_hrv_rmssd;
+        }
+
+        // Heart rate
+        if (data.heart_rate_data?.summary) {
+          const hr = data.heart_rate_data.summary;
+          if (hr.avg_hr_bpm) (aggregated.heart_rate as Record<string, unknown>).hr_avg = hr.avg_hr_bpm;
+          if (hr.min_hr_bpm) (aggregated.heart_rate as Record<string, unknown>).hr_min = hr.min_hr_bpm;
+          if (hr.max_hr_bpm) (aggregated.heart_rate as Record<string, unknown>).hr_max = hr.max_hr_bpm;
+          if (hr.resting_hr_bpm) (aggregated.heart_rate as Record<string, unknown>).hr_resting = hr.resting_hr_bpm;
+        }
+
+        // Sleep
+        if (data.sleep_durations_data) {
+          const sleep = data.sleep_durations_data;
+          if (sleep.asleep?.duration_asleep_state_seconds) {
+            (aggregated.sleep as Record<string, unknown>).duration_in_bed_seconds = sleep.other?.duration_in_bed_seconds || sleep.asleep.duration_asleep_state_seconds;
+            (aggregated.sleep as Record<string, unknown>).duration_deep_sleep_state_seconds = sleep.asleep.duration_deep_sleep_state_seconds;
+            (aggregated.sleep as Record<string, unknown>).duration_light_sleep_state_seconds = sleep.asleep.duration_light_sleep_state_seconds;
+            (aggregated.sleep as Record<string, unknown>).duration_rem_sleep_state_seconds = sleep.asleep.duration_REM_sleep_state_seconds;
+          }
+          if (sleep.awake?.num_wakeup_events) {
+            (aggregated.sleep as Record<string, unknown>).num_awakenings = sleep.awake.num_wakeup_events;
+          }
+        }
+
+        // Activity
+        if (data.distance_data) {
+          const act = data.distance_data;
+          if (act.steps) (aggregated.activity as Record<string, unknown>).steps = act.steps;
+          if (act.distance_meters) (aggregated.activity as Record<string, unknown>).distance_meters = act.distance_meters;
+          if (act.floors_climbed) (aggregated.activity as Record<string, unknown>).floors_climbed = act.floors_climbed;
+        }
+
+        // Calories
+        if (data.calories_data) {
+          const cal = data.calories_data;
+          if (cal.BMR_calories) (aggregated.calories as Record<string, unknown>).bmr = cal.BMR_calories;
+          if (cal.net_activity_calories) (aggregated.calories as Record<string, unknown>).active = cal.net_activity_calories;
+          if (cal.total_burned_calories) (aggregated.calories as Record<string, unknown>).total = cal.total_burned_calories;
+        }
+      }
+
+      // Map to questionnaire answers
+      const mapped = mapTerraDataToAnswers(aggregated as any);
+
+      res.json({
+        success: true,
+        hasData: true,
+        provider: records[0]?.provider || "WEARABLE",
+        answers: mapped.answers,
+        skippedQuestions: mapped.skippedQuestionIds,
+        summary: mapped.summary,
+      });
+    } catch (error) {
+      console.error("[Terra] Error mapping answers:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   // Check Terra connection status for an audit
   app.get("/api/terra/status/:auditId", async (req, res) => {
     try {

@@ -343,6 +343,7 @@ function QuestionnaireContent() {
   const [wearablesSyncShown, setWearablesSyncShown] = useState(false);
   const [terraConnecting, setTerraConnecting] = useState(false);
   const [terraConnected, setTerraConnected] = useState(false);
+  const [terraSkippedQuestions, setTerraSkippedQuestions] = useState<string[]>([]);
   const sectionQuestions = currentSection ? getQuestionsForSection(currentSection.id, userSex) : [];
   const IconComponent = currentSection ? (iconMap[currentSection.icon] || User) : User;
 
@@ -435,11 +436,26 @@ function QuestionnaireContent() {
 
         const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
         if (emailToCheck) {
-          fetch(`/api/terra/db/email/${encodeURIComponent(emailToCheck)}`)
+          // Fetch mapped wearable answers
+          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}`)
             .then(res => res.json())
             .then(data => {
-              if (data.success && data.count > 0) {
+              if (data.success && data.hasData) {
                 setTerraConnected(true);
+                // Pre-fill responses with wearable data
+                if (data.answers && Object.keys(data.answers).length > 0) {
+                  setResponses(prev => ({ ...prev, ...data.answers }));
+                  console.log("[Terra] Pre-filled", Object.keys(data.answers).length, "answers from wearable");
+                }
+                // Store skipped questions
+                if (data.skippedQuestions && data.skippedQuestions.length > 0) {
+                  setTerraSkippedQuestions(data.skippedQuestions);
+                  console.log("[Terra] Will skip", data.skippedQuestions.length, "questions");
+                }
+                toast({
+                  title: "Wearable synchronise !",
+                  description: `${Object.keys(data.answers || {}).length} reponses pre-remplies automatiquement.`,
+                });
               }
             })
             .catch(err => console.error("[Terra] Sync check failed:", err));
@@ -1028,31 +1044,52 @@ function QuestionnaireContent() {
                     </p>
                   </motion.div>
                 ) : (
-                  sectionQuestions.filter(q => q.id !== "sexe" && q.id !== "prenom" || currentSectionIndex !== 0).map((question, index) => (
-                    <motion.div
-                      key={question.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="space-y-3"
-                    >
-                      <div className="flex items-start gap-2">
-                        <Label className="text-base font-medium">
-                          {question.label}
-                          {question.required && <span className="ml-1 text-destructive">*</span>}
-                        </Label>
-                      </div>
-                      {question.helpText && (
-                        <p className="text-sm text-muted-foreground">{question.helpText}</p>
-                      )}
-                      <QuestionField
-                        question={question}
-                        value={responses[question.id]}
-                        onChange={(value) => handleResponseChange(question.id, value)}
-                        onError={(msg) => toast({ title: "Erreur", description: msg, variant: "destructive" })}
-                      />
-                    </motion.div>
-                  ))
+                  <>
+                    {/* Show badge if some questions were auto-filled */}
+                    {terraSkippedQuestions.length > 0 && sectionQuestions.some(q => terraSkippedQuestions.includes(q.id)) && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>
+                            {sectionQuestions.filter(q => terraSkippedQuestions.includes(q.id)).length} question(s)
+                            pre-remplie(s) par ton wearable
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                    {sectionQuestions
+                      .filter(q => (q.id !== "sexe" && q.id !== "prenom") || currentSectionIndex !== 0)
+                      .filter(q => !terraSkippedQuestions.includes(q.id))
+                      .map((question, index) => (
+                      <motion.div
+                        key={question.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="space-y-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <Label className="text-base font-medium">
+                            {question.label}
+                            {question.required && <span className="ml-1 text-destructive">*</span>}
+                          </Label>
+                        </div>
+                        {question.helpText && (
+                          <p className="text-sm text-muted-foreground">{question.helpText}</p>
+                        )}
+                        <QuestionField
+                          question={question}
+                          value={responses[question.id]}
+                          onChange={(value) => handleResponseChange(question.id, value)}
+                          onError={(msg) => toast({ title: "Erreur", description: msg, variant: "destructive" })}
+                        />
+                      </motion.div>
+                    ))}
+                  </>
                 )}
               </CardContent>
             </Card>
