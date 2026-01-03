@@ -346,12 +346,12 @@ function UltrahumanHero() {
 
             {/* Dashboard content overlay - positioned on phone screen */}
             <div
-              className="absolute z-20 overflow-hidden rounded-[1.8rem] sm:rounded-[2.2rem]"
+              className="absolute z-20 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]"
               style={{
-                top: "5.5%",
-                left: "22%",
-                width: "56%",
-                height: "62%",
+                top: "4%",
+                left: "21.5%",
+                width: "57%",
+                height: "72%",
               }}
             >
               <motion.div
@@ -408,8 +408,8 @@ const bentoStyles = {
 
 function CertificationsBar() {
   const certifications = [
-    { name: "ISSA", subtitle: "CPT, Nutrition", image: issaLogo },
-    { name: "NASM", subtitle: "CPT, CES, PES", image: nasmLogo },
+    { name: "ISSA", subtitle: "CPT, SNS, SFC", image: issaLogo },
+    { name: "NASM", subtitle: "CPT, CES, PES, FNS", image: nasmLogo },
     { name: "Precision Nutrition", subtitle: "PN1 Coach", image: pnLogo },
     { name: "Pre-Script", subtitle: "Movement", image: preScriptLogo },
   ];
