@@ -12,7 +12,15 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  BarChart,
+  Bar,
+  Cell,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
 } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
   X,
@@ -32,6 +40,20 @@ import {
   FlaskConical,
   Target,
   Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Flame,
+  Droplets,
+  Wind,
+  Clock,
+  Battery,
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Pill,
+  Calendar,
+  BarChart3,
 } from 'lucide-react';
 
 // ============================================================================
@@ -67,6 +89,10 @@ interface SectionContent {
   subtitle?: string;
   content: string;
   chips?: string[];
+  score?: number;
+  scoreLabel?: string;
+  metrics?: { label: string; value: number; status: 'critical' | 'warning' | 'good' }[];
+  chartType?: 'gauge' | 'bars' | 'timeline' | 'comparison' | 'stack';
 }
 
 // ============================================================================
@@ -159,6 +185,9 @@ const REPORT_DATA = {
 <p>Ce rapport decortique chaque systeme de ton corps — sommeil, stress, hormones, digestion, entrainement — et surtout comment ils s'influencent mutuellement. Ton score global de <strong>58/100</strong> cache une realite plus nuancee.</p>
 <p>Tu vas comprendre pourquoi ton energie flanche malgre la discipline. Et surtout, quels leviers actionner — dans quel ordre — pour debloquer la machine.</p>`,
       chips: ['Analyse Chirurgicale', 'Blocages Identifies'],
+      score: 58,
+      scoreLabel: 'Score Global',
+      chartType: 'gauge' as const,
     },
     {
       id: 'global',
@@ -169,6 +198,15 @@ const REPORT_DATA = {
 <p><strong>Systeme nerveux : 38 sur 100.</strong> Le score le plus bas de ton bilan. Et c'est precisement ce score qui tire tout le reste vers le bas.</p>
 <p>Stress eleve. Anxiete frequente. Concentration difficile. Ce triptyque raconte une histoire que ton corps connait par coeur : mode survie permanent. Ton systeme nerveux sympathique — celui qui gere la reponse au danger — tourne en surregime.</p>`,
       chips: ['Mode Survie', 'Sympathique Dominant', 'Frein Metabolique'],
+      score: 38,
+      scoreLabel: 'Systeme Nerveux',
+      metrics: [
+        { label: 'Stress', value: 85, status: 'critical' as const },
+        { label: 'Anxiete', value: 72, status: 'critical' as const },
+        { label: 'Focus', value: 35, status: 'warning' as const },
+        { label: 'Energie', value: 28, status: 'critical' as const },
+      ],
+      chartType: 'bars' as const,
     },
     {
       id: 'sleep',
@@ -179,6 +217,15 @@ const REPORT_DATA = {
 <p><strong>HRV estime : 26-32ms</strong> — systeme nerveux sature. Latence d'endormissement : 60-90 min. Reveils nocturnes : 3-4x par nuit.</p>
 <p>Objectif : 7h30 minimum. Stack sommeil : Magnesium + Glycine + Inositol + Ashwagandha. Chambre 17-18°C, blackout complet.</p>`,
       chips: ['GH Tronquee', 'Reveils Nocturnes', 'HRV Critique'],
+      score: 35,
+      scoreLabel: 'Sommeil',
+      metrics: [
+        { label: 'Deep Sleep', value: 10, status: 'critical' as const },
+        { label: 'REM', value: 18, status: 'warning' as const },
+        { label: 'Latence', value: 25, status: 'critical' as const },
+        { label: 'Continuite', value: 40, status: 'warning' as const },
+      ],
+      chartType: 'timeline' as const,
     },
     {
       id: 'digestion',
@@ -189,6 +236,15 @@ const REPORT_DATA = {
 <p><strong>Le Gluten et la Zonuline :</strong> L'exposition au gluten declenche la liberation de zonuline, qui ouvre les jonctions serrees de ton intestin. Resultat : permeabilite intestinale.</p>
 <p>Protocole : Betaine HCL 650mg avec repas, Probiotiques 50 milliards CFU, L-Glutamine 5g matin, Eliminer gluten/lactose 30 jours.</p>`,
       chips: ['Leaky Gut', 'Fermentation', 'Malabsorption'],
+      score: 45,
+      scoreLabel: 'Digestion',
+      metrics: [
+        { label: 'Microbiote', value: 35, status: 'critical' as const },
+        { label: 'Acidite', value: 30, status: 'critical' as const },
+        { label: 'Permeabilite', value: 55, status: 'warning' as const },
+        { label: 'Absorption', value: 48, status: 'warning' as const },
+      ],
+      chartType: 'comparison' as const,
     },
     {
       id: 'stress',
@@ -199,6 +255,15 @@ const REPORT_DATA = {
 <p><strong>Impact hormonal :</strong> Le cortisol et la testosterone partagent un precurseur commun (Pregnenolone Steal). En mode survie, ton corps priorise le cortisol.</p>
 <p>Protocole : Tyrosine 1g matin a jeun, Mucuna Pruriens 300mg, Ashwagandha KSM-66 600mg soir, Stop cafeine apres 10h.</p>`,
       chips: ['Axe HPA', 'Pregnenolone Steal', 'Dominance Sympathique'],
+      score: 38,
+      scoreLabel: 'Nerveux',
+      metrics: [
+        { label: 'Cortisol AM', value: 25, status: 'critical' as const },
+        { label: 'Cortisol PM', value: 85, status: 'critical' as const },
+        { label: 'Dopamine', value: 28, status: 'critical' as const },
+        { label: 'GABA', value: 40, status: 'warning' as const },
+      ],
+      chartType: 'bars' as const,
     },
     {
       id: 'hormones',
@@ -208,6 +273,15 @@ const REPORT_DATA = {
 <p><strong>Metaboliseur LENT cafeine</strong> — une tasse de cafe a 16h signifie encore 50% de la cafeine en circulation a 23h.</p>
 <p>La cafeine ne te donne pas d'energie, elle bloque les recepteurs a adenosine (le signal de fatigue). Tu "fonctionnes" mais tu ne recuperes pas.</p>`,
       chips: ['Testosterone Libre', 'SHBG', 'Resistance Insuline'],
+      score: 42,
+      scoreLabel: 'Hormones',
+      metrics: [
+        { label: 'Testo Libre', value: 35, status: 'critical' as const },
+        { label: 'DHEA', value: 40, status: 'warning' as const },
+        { label: 'Thyroide', value: 45, status: 'warning' as const },
+        { label: 'Insuline', value: 55, status: 'warning' as const },
+      ],
+      chartType: 'comparison' as const,
     },
     {
       id: 'training',
@@ -218,6 +292,15 @@ const REPORT_DATA = {
 <p><strong>Emotional Eater + Limbic Friction eleve</strong> — tu manges tes emotions.</p>
 <p>Protocole : Force basique 3x/semaine (Full Body 45min), Marche Zone 2 3x/semaine (30-40 min), Mobilite/etirements quotidiens, Meal prep dimanche.</p>`,
       chips: ['Dette de Recuperation', 'Sarcopenie', 'Sedentarite'],
+      score: 25,
+      scoreLabel: 'Training',
+      metrics: [
+        { label: 'Force', value: 15, status: 'critical' as const },
+        { label: 'Cardio', value: 20, status: 'critical' as const },
+        { label: 'Mobilite', value: 25, status: 'critical' as const },
+        { label: 'NEAT', value: 30, status: 'critical' as const },
+      ],
+      chartType: 'bars' as const,
     },
     {
       id: 'supplements',
@@ -247,6 +330,7 @@ const REPORT_DATA = {
   <li>Taurine 2g</li>
 </ul>`,
       chips: ['Magnesium', 'Vitamine D3', 'Zinc', 'Omega-3'],
+      chartType: 'stack' as const,
     },
     {
       id: 'protocol',
@@ -259,6 +343,7 @@ const REPORT_DATA = {
 <p class="mt-4"><strong>PHASE 3 — OPTIMIZE (J61-90) :</strong></p>
 <p>Maintenance gains, performance maximale. 3x Force (5-3-1), 2x Conditionnement + 1x Zone 2, 2400 kcal maintenance, DEXA Scan + Bilan sanguin.</p>`,
       chips: ['RESET', 'BUILD', 'OPTIMIZE'],
+      chartType: 'timeline' as const,
     },
     {
       id: 'predictions',
@@ -269,6 +354,7 @@ const REPORT_DATA = {
 <p class="mt-4"><strong>SEMAINE 8 :</strong> Poids -7 a -9kg, Masse grasse 18% → 14%, HRV 65-70ms, Force +35-40%</p>
 <p class="mt-4"><strong>SEMAINE 12 :</strong> Poids total -9 a -11kg, Masse grasse < 12%, HRV 70-75ms, Testosterone libre +40-45%, Bien-etre 4/10 → 9/10</p>`,
       chips: ['J+30', 'J+60', 'J+90'],
+      chartType: 'timeline' as const,
     },
     {
       id: 'conclusion',
@@ -280,35 +366,77 @@ const REPORT_DATA = {
 <p><strong>Ce n'est pas un regime. C'est une reprogrammation neurometabolique.</strong></p>
 <p class="mt-6">La distance entre 35% et 95% de ton potentiel n'est pas un gouffre, c'est une serie de verrous a faire sauter. Le premier s'appelle systeme nerveux.</p>`,
       chips: ['Forces', 'Risques', 'Potentiel'],
+      score: 95,
+      scoreLabel: 'Potentiel J+90',
+      chartType: 'gauge' as const,
     },
   ] as SectionContent[],
 };
 
 // ============================================================================
-// COMPONENTS
+// ANIMATED COMPONENTS
 // ============================================================================
 
-// Radial Progress
+// Animated Radial Progress with hover effects
 const RadialProgress = ({
   score,
   max,
   size = 180,
   strokeWidth = 4,
   color = '#0efc6d',
+  label,
+  animated = true,
 }: {
   score: number;
   max: number;
   size?: number;
   strokeWidth?: number;
   color?: string;
+  label?: string;
+  animated?: boolean;
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [animatedScore, setAnimatedScore] = useState(0);
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const progress = score / max;
+  const progress = animatedScore / max;
   const dashoffset = circumference - progress * circumference;
 
+  useEffect(() => {
+    if (animated) {
+      const timer = setTimeout(() => {
+        setAnimatedScore(score);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setAnimatedScore(score);
+    }
+  }, [score, animated]);
+
   return (
-    <div className="relative flex flex-col items-center justify-center" style={{ width: size, height: size }}>
+    <motion.div
+      className="relative flex flex-col items-center justify-center cursor-pointer"
+      style={{ width: size, height: size }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      animate={{
+        scale: isHovered ? 1.05 : 1,
+      }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    >
+      {/* Glow effect on hover */}
+      <motion.div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: `radial-gradient(circle, ${color}20 0%, transparent 70%)`,
+        }}
+        animate={{
+          opacity: isHovered ? 1 : 0,
+          scale: isHovered ? 1.2 : 1,
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
       <svg width={size} height={size} className="transform -rotate-90">
         <circle
           cx={size / 2}
@@ -319,86 +447,679 @@ const RadialProgress = ({
           strokeWidth={strokeWidth}
           strokeOpacity={0.5}
         />
-        <circle
+        <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
           stroke={color}
-          strokeWidth={strokeWidth}
+          strokeWidth={isHovered ? strokeWidth + 2 : strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={dashoffset}
           strokeLinecap="round"
-          className="transition-all duration-1000 ease-out"
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: dashoffset }}
+          transition={{ duration: 1.5, ease: 'easeOut' }}
+          style={{
+            filter: isHovered ? `drop-shadow(0 0 8px ${color})` : 'none',
+          }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-5xl font-medium tracking-tighter" style={{ color: 'var(--color-text)' }}>
-          {score}
-        </span>
-        <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mt-1">/ {max}</span>
+        <motion.span
+          className="text-5xl font-medium tracking-tighter"
+          style={{ color: 'var(--color-text)' }}
+          animate={{ scale: isHovered ? 1.1 : 1 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+        >
+          {Math.round(animatedScore * 10)}
+        </motion.span>
+        <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] mt-1">/ {max * 10}</span>
+        {label && (
+          <motion.span
+            className="text-[9px] uppercase tracking-widest mt-2 font-bold"
+            style={{ color }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isHovered ? 1 : 0.7 }}
+          >
+            {label}
+          </motion.span>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-// Metrics Radar
+// Mini Score Gauge for sections
+const MiniGauge = ({
+  score,
+  max = 100,
+  size = 100,
+  color,
+  label,
+}: {
+  score: number;
+  max?: number;
+  size?: number;
+  color: string;
+  label?: string;
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const strokeWidth = 6;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * Math.PI; // Half circle
+  const progress = animatedScore / max;
+  const dashoffset = circumference - progress * circumference;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimatedScore(score), 500);
+    return () => clearTimeout(timer);
+  }, [score]);
+
+  const getStatusColor = () => {
+    if (score < 40) return '#ef4444';
+    if (score < 60) return '#f59e0b';
+    return '#22c55e';
+  };
+
+  return (
+    <motion.div
+      className="relative flex flex-col items-center cursor-pointer"
+      style={{ width: size, height: size / 2 + 30 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      whileHover={{ scale: 1.05 }}
+    >
+      <svg width={size} height={size / 2 + 10} className="overflow-visible">
+        {/* Background arc */}
+        <path
+          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+          fill="none"
+          stroke="var(--color-border)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+        {/* Progress arc */}
+        <motion.path
+          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+          fill="none"
+          stroke={getStatusColor()}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: dashoffset }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+          style={{
+            filter: isHovered ? `drop-shadow(0 0 6px ${getStatusColor()})` : 'none',
+          }}
+        />
+      </svg>
+      <motion.div
+        className="absolute bottom-4 text-center"
+        animate={{ y: isHovered ? -4 : 0 }}
+      >
+        <motion.span
+          className="text-2xl font-bold"
+          style={{ color: getStatusColor() }}
+        >
+          {Math.round(animatedScore)}
+        </motion.span>
+        <span className="text-xs text-[var(--color-text-muted)]">/{max}</span>
+      </motion.div>
+      {label && (
+        <span className="text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] mt-1 font-medium">
+          {label}
+        </span>
+      )}
+    </motion.div>
+  );
+};
+
+// Animated Score Bar
+const ScoreBar = ({
+  label,
+  value,
+  status,
+  delay = 0,
+}: {
+  label: string;
+  value: number;
+  status: 'critical' | 'warning' | 'good';
+  delay?: number;
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [animatedValue, setAnimatedValue] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimatedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  const getColor = () => {
+    if (status === 'critical') return '#ef4444';
+    if (status === 'warning') return '#f59e0b';
+    return '#22c55e';
+  };
+
+  const getIcon = () => {
+    if (status === 'critical') return <XCircle size={12} />;
+    if (status === 'warning') return <AlertTriangle size={12} />;
+    return <CheckCircle2 size={12} />;
+  };
+
+  return (
+    <motion.div
+      className="group cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: delay / 1000, duration: 0.4 }}
+    >
+      <div className="flex justify-between items-center mb-1.5">
+        <span className="text-xs font-medium text-[var(--color-text)] flex items-center gap-1.5">
+          <motion.span
+            style={{ color: getColor() }}
+            animate={{ scale: isHovered ? 1.2 : 1 }}
+          >
+            {getIcon()}
+          </motion.span>
+          {label}
+        </span>
+        <motion.span
+          className="text-xs font-bold"
+          style={{ color: getColor() }}
+          animate={{ scale: isHovered ? 1.15 : 1 }}
+        >
+          {Math.round(animatedValue)}%
+        </motion.span>
+      </div>
+      <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
+        <motion.div
+          className="h-full rounded-full relative"
+          style={{ backgroundColor: getColor() }}
+          initial={{ width: 0 }}
+          animate={{ width: `${animatedValue}%` }}
+          transition={{ duration: 0.8, ease: 'easeOut', delay: delay / 1000 }}
+        >
+          {isHovered && (
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${getColor()}80, transparent)`,
+              }}
+              animate={{ x: ['0%', '100%'] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+          )}
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Animated Metrics Radar with hover interactions
 const MetricsRadar = ({ data, color }: { data: Metric[]; color: string }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   const chartData = data.map((m) => ({
     subject: m.label,
     A: m.value,
     fullMark: m.max,
   }));
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="px-3 py-2 rounded-lg"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            border: `1px solid ${color}40`,
+            boxShadow: `0 4px 20px ${color}20`,
+          }}
+        >
+          <p className="text-sm font-bold" style={{ color }}>{payload[0].payload.subject}</p>
+          <p className="text-lg font-bold text-[var(--color-text)]">
+            {payload[0].value}<span className="text-xs text-[var(--color-text-muted)]">/10</span>
+          </p>
+        </motion.div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="w-full h-[320px] relative">
+    <motion.div
+      className="w-full h-[320px] relative cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => { setIsHovered(false); setActiveIndex(null); }}
+      animate={{ scale: isHovered ? 1.02 : 1 }}
+      transition={{ type: 'spring', stiffness: 300 }}
+    >
+      {/* Glow effect */}
+      <motion.div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: `radial-gradient(circle at center, ${color}10 0%, transparent 60%)`,
+        }}
+        animate={{ opacity: isHovered ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+      />
+
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
-          <PolarGrid stroke="rgba(255,255,255,0.05)" />
-          <PolarAngleAxis dataKey="subject" tick={{ fill: '#A1A1AA', fontSize: 11, fontWeight: 600 }} />
+          <PolarGrid
+            stroke={isHovered ? `${color}30` : 'rgba(255,255,255,0.05)'}
+            strokeWidth={isHovered ? 1.5 : 1}
+          />
+          <PolarAngleAxis
+            dataKey="subject"
+            tick={{
+              fill: isHovered ? color : '#A1A1AA',
+              fontSize: 11,
+              fontWeight: 600
+            }}
+          />
           <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
           <Radar
             name="Score"
             dataKey="A"
             stroke={color}
-            strokeWidth={3}
+            strokeWidth={isHovered ? 4 : 3}
             fill={color}
-            fillOpacity={0.2}
+            fillOpacity={isHovered ? 0.35 : 0.2}
             isAnimationActive={true}
             animationDuration={1500}
+            dot={{
+              fill: color,
+              strokeWidth: isHovered ? 3 : 2,
+              r: isHovered ? 6 : 4,
+            }}
+            activeDot={{
+              r: 8,
+              fill: color,
+              stroke: 'var(--color-bg)',
+              strokeWidth: 3,
+            }}
           />
+          <Tooltip content={<CustomTooltip />} />
         </RadarChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 };
 
-// Projection Chart
+// Enhanced Projection Chart
 const ProjectionChart = ({ color }: { color: string }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   const data = [
-    { name: 'Actuel', Potential: 35 },
-    { name: 'J+30', Potential: 55 },
-    { name: 'J+60', Potential: 75 },
-    { name: 'J+90', Potential: 95 },
+    { name: 'Actuel', value: 35, potential: 35 },
+    { name: 'J+30', value: 55, potential: 60 },
+    { name: 'J+60', value: 75, potential: 80 },
+    { name: 'J+90', value: 95, potential: 95 },
   ];
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 py-3 rounded-lg"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            border: `1px solid ${color}40`,
+            boxShadow: `0 8px 32px ${color}30`,
+          }}
+        >
+          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color }}>{label}</p>
+          <p className="text-2xl font-bold text-[var(--color-text)]">
+            {payload[0].value}<span className="text-sm text-[var(--color-text-muted)]">%</span>
+          </p>
+          <p className="text-[10px] text-[var(--color-text-muted)] mt-1">Potentiel exploite</p>
+        </motion.div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="w-full h-[200px]">
+    <motion.div
+      className="w-full h-[200px] cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      whileHover={{ scale: 1.01 }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorPotential" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="5%" stopColor={color} stopOpacity={isHovered ? 0.5 : 0.3} />
               <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="name" stroke="#52525B" fontSize={10} tickLine={false} axisLine={false} />
+          <XAxis
+            dataKey="name"
+            stroke="#52525B"
+            fontSize={10}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fill: isHovered ? color : '#52525B' }}
+          />
           <YAxis hide domain={[0, 100]} />
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-          <Area type="monotone" dataKey="Potential" stroke={color} strokeWidth={2} fill="url(#colorPotential)" />
+          <Tooltip content={<CustomTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={isHovered ? 4 : 2}
+            fill="url(#colorPotential)"
+            dot={{
+              fill: color,
+              strokeWidth: 2,
+              r: isHovered ? 6 : 4,
+              stroke: 'var(--color-bg)',
+            }}
+            activeDot={{
+              r: 10,
+              fill: color,
+              stroke: 'var(--color-bg)',
+              strokeWidth: 4,
+            }}
+            animationDuration={1500}
+          />
         </AreaChart>
       </ResponsiveContainer>
+    </motion.div>
+  );
+};
+
+// Section Chart - Timeline visualization
+const TimelineChart = ({ color }: { color: string }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const data = [
+    { phase: 'Actuel', sleep: 35, hrv: 28, energy: 30 },
+    { phase: 'S2', sleep: 50, hrv: 48, energy: 45 },
+    { phase: 'S4', sleep: 65, hrv: 60, energy: 60 },
+    { phase: 'S8', sleep: 80, hrv: 68, energy: 78 },
+    { phase: 'S12', sleep: 90, hrv: 75, energy: 92 },
+  ];
+
+  return (
+    <motion.div
+      className="w-full h-[180px] cursor-pointer"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+          <XAxis dataKey="phase" stroke="#52525B" fontSize={9} tickLine={false} />
+          <YAxis hide domain={[0, 100]} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'var(--color-surface)',
+              border: `1px solid var(--color-border)`,
+              borderRadius: '8px',
+            }}
+            labelStyle={{ color: 'var(--color-text)', fontWeight: 'bold' }}
+          />
+          <Line
+            type="monotone"
+            dataKey="sleep"
+            stroke="#8b5cf6"
+            strokeWidth={2}
+            dot={{ r: isHovered ? 5 : 3 }}
+            activeDot={{ r: 8, stroke: '#8b5cf6', strokeWidth: 3 }}
+            name="Sommeil"
+          />
+          <Line
+            type="monotone"
+            dataKey="hrv"
+            stroke={color}
+            strokeWidth={2}
+            dot={{ r: isHovered ? 5 : 3 }}
+            activeDot={{ r: 8, stroke: color, strokeWidth: 3 }}
+            name="HRV"
+          />
+          <Line
+            type="monotone"
+            dataKey="energy"
+            stroke="#f59e0b"
+            strokeWidth={2}
+            dot={{ r: isHovered ? 5 : 3 }}
+            activeDot={{ r: 8, stroke: '#f59e0b', strokeWidth: 3 }}
+            name="Energie"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </motion.div>
+  );
+};
+
+// Section Chart - Comparison Bar Chart
+const ComparisonChart = ({ metrics, color }: { metrics: { label: string; value: number; status: string }[]; color: string }) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const getStatusColor = (status: string) => {
+    if (status === 'critical') return '#ef4444';
+    if (status === 'warning') return '#f59e0b';
+    return '#22c55e';
+  };
+
+  return (
+    <motion.div className="w-full h-[180px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={metrics} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+          <XAxis dataKey="label" stroke="#52525B" fontSize={9} tickLine={false} />
+          <YAxis hide domain={[0, 100]} />
+          <Tooltip
+            cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+            contentStyle={{
+              backgroundColor: 'var(--color-surface)',
+              border: `1px solid var(--color-border)`,
+              borderRadius: '8px',
+            }}
+          />
+          <Bar
+            dataKey="value"
+            radius={[4, 4, 0, 0]}
+            animationDuration={1200}
+          >
+            {metrics.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={hoveredIndex === index ? color : getStatusColor(entry.status)}
+                style={{
+                  filter: hoveredIndex === index ? `drop-shadow(0 0 8px ${color})` : 'none',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </motion.div>
+  );
+};
+
+// Supplement Stack Visualization
+const StackVisualization = ({ color }: { color: string }) => {
+  const [activeTime, setActiveTime] = useState<'matin' | 'midi' | 'soir'>('matin');
+
+  const stacks = {
+    matin: [
+      { name: 'L-Tyrosine', dose: '1000mg', priority: 'high' },
+      { name: 'L-Glutamine', dose: '5g', priority: 'high' },
+      { name: 'Vit D3+K2', dose: '5000UI', priority: 'medium' },
+      { name: 'Omega-3', dose: '3g', priority: 'high' },
+      { name: 'Probiotiques', dose: '50B', priority: 'medium' },
+    ],
+    midi: [
+      { name: 'Betaine HCL', dose: '650mg', priority: 'high' },
+      { name: 'Zinc', dose: '30mg', priority: 'medium' },
+      { name: 'B-Complex', dose: '1cap', priority: 'low' },
+      { name: 'Alpha-GPC', dose: '300mg', priority: 'medium' },
+    ],
+    soir: [
+      { name: 'Magnesium', dose: '400mg', priority: 'high' },
+      { name: 'Glycine', dose: '3g', priority: 'high' },
+      { name: 'Inositol', dose: '2g', priority: 'medium' },
+      { name: 'Ashwagandha', dose: '600mg', priority: 'high' },
+      { name: 'Taurine', dose: '2g', priority: 'low' },
+    ],
+  };
+
+  const getPriorityColor = (priority: string) => {
+    if (priority === 'high') return color;
+    if (priority === 'medium') return '#f59e0b';
+    return '#6b7280';
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Time selector */}
+      <div className="flex gap-2">
+        {(['matin', 'midi', 'soir'] as const).map((time) => (
+          <motion.button
+            key={time}
+            onClick={() => setActiveTime(time)}
+            className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+            style={{
+              backgroundColor: activeTime === time ? color : 'var(--color-surface)',
+              color: activeTime === time ? 'var(--color-bg)' : 'var(--color-text-muted)',
+              border: `1px solid ${activeTime === time ? color : 'var(--color-border)'}`,
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {time}
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Stack list */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTime}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="space-y-2"
+        >
+          {stacks[activeTime].map((supp, idx) => (
+            <motion.div
+              key={supp.name}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+            >
+              <div className="flex items-center gap-3">
+                <motion.div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: getPriorityColor(supp.priority) }}
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: idx * 0.2 }}
+                />
+                <span className="text-sm font-medium text-[var(--color-text)]">{supp.name}</span>
+              </div>
+              <span className="text-xs font-mono" style={{ color: getPriorityColor(supp.priority) }}>
+                {supp.dose}
+              </span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </AnimatePresence>
     </div>
+  );
+};
+
+// Section Visualization Component - renders appropriate chart based on section type
+const SectionVisualization = ({ section, color }: { section: SectionContent; color: string }) => {
+  if (!section.chartType) return null;
+
+  return (
+    <motion.div
+      className="rounded-2xl p-6 mb-8"
+      style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+    >
+      {/* Score Header */}
+      {section.score !== undefined && (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h4 className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-1">
+              {section.scoreLabel || 'Score'}
+            </h4>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold" style={{ color }}>{section.score}</span>
+              <span className="text-lg text-[var(--color-text-muted)]">/100</span>
+            </div>
+          </div>
+          <MiniGauge score={section.score} color={color} />
+        </div>
+      )}
+
+      {/* Metrics Bars */}
+      {section.metrics && section.chartType === 'bars' && (
+        <div className="space-y-4">
+          {section.metrics.map((metric, idx) => (
+            <ScoreBar
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              status={metric.status}
+              delay={idx * 150}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Timeline Chart */}
+      {section.chartType === 'timeline' && (
+        <TimelineChart color={color} />
+      )}
+
+      {/* Comparison Chart */}
+      {section.metrics && section.chartType === 'comparison' && (
+        <ComparisonChart metrics={section.metrics} color={color} />
+      )}
+
+      {/* Stack Visualization */}
+      {section.chartType === 'stack' && (
+        <StackVisualization color={color} />
+      )}
+
+      {/* Gauge only */}
+      {section.chartType === 'gauge' && !section.metrics && (
+        <div className="flex justify-center">
+          <RadialProgress
+            score={section.score! / 10}
+            max={10}
+            size={160}
+            color={color}
+            label={section.scoreLabel}
+          />
+        </div>
+      )}
+    </motion.div>
   );
 };
 
@@ -452,18 +1173,30 @@ const Sidebar = ({
             const isActive = activeSection === section.id;
 
             return (
-              <button
+              <motion.button
                 key={section.id}
                 onClick={() => onNavigate(section.id)}
                 className={`w-full text-left px-3 py-2 text-xs transition-all duration-200 flex items-center gap-3 group relative rounded-md
                   ${isActive ? 'bg-[var(--color-surface)] text-[var(--color-text)] font-medium' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]/50'}`}
+                whileHover={{ x: 4 }}
               >
                 <span className={`font-mono text-[10px] ${isActive ? 'opacity-100' : 'opacity-40'}`}>
                   {originalIndex + 1 < 10 ? `0${originalIndex + 1}` : originalIndex + 1}
                 </span>
                 <span className="truncate">{section.title}</span>
-                {isActive && <div className="absolute right-2 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentTheme.colors.primary }}></div>}
-              </button>
+                {section.score !== undefined && (
+                  <span className="ml-auto text-[9px] font-mono opacity-50">{section.score}</span>
+                )}
+                {isActive && (
+                  <motion.div
+                    className="absolute right-2 w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                    layoutId="activeIndicator"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                )}
+              </motion.button>
             );
           })}
         </div>
@@ -473,15 +1206,17 @@ const Sidebar = ({
         <p className="text-[10px] font-mono font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-3">Theme</p>
         <div className="grid grid-cols-2 gap-2">
           {themes.map((theme) => (
-            <button
+            <motion.button
               key={theme.id}
               onClick={() => onThemeChange(theme)}
               className={`flex items-center justify-center gap-2 text-[10px] p-2 rounded border transition-all
                 ${currentTheme.id === theme.id ? 'border-[var(--color-text)] bg-[var(--color-surface)] text-[var(--color-text)] font-bold' : 'border-transparent bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <div className="w-2 h-2 rounded-full border border-white/10" style={{ backgroundColor: theme.colors.background }} />
+              <div className="w-2 h-2 rounded-full border border-white/10" style={{ backgroundColor: theme.colors.primary }} />
               {theme.name}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
@@ -558,12 +1293,16 @@ export function FullReport() {
       style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
     >
       {/* Reading Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
-        <div
-          className="h-full transition-all duration-150 ease-out"
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 z-[60]"
+        style={{ backgroundColor: 'var(--color-border)' }}
+      >
+        <motion.div
+          className="h-full"
           style={{ width: `${scrollProgress}%`, backgroundColor: currentTheme.colors.primary }}
+          transition={{ duration: 0.1 }}
         />
-      </div>
+      </motion.div>
 
       {/* Background Grid */}
       <div
@@ -581,7 +1320,12 @@ export function FullReport() {
       >
         <div className="p-8 pb-4 pt-10 relative">
           <div className="flex items-center gap-2 mb-1 mt-4">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentTheme.colors.primary }}></div>
+            <motion.div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: currentTheme.colors.primary }}
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
             <span className="text-xs font-mono font-bold tracking-widest uppercase">Neurocore 360</span>
           </div>
           <h1 className="text-xl font-bold tracking-tight">
@@ -611,24 +1355,39 @@ export function FullReport() {
       {/* Main Content */}
       <main ref={mainContentRef} className="flex-1 overflow-y-auto relative z-10 scroll-smooth">
         {/* Floating Nav */}
-        <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-2">
-          <button
+        <motion.div
+          className="fixed bottom-8 right-8 z-50 flex flex-col gap-2"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <motion.button
             onClick={() => scrollToSection('dashboard')}
             className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-xl"
             style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+            whileHover={{ scale: 1.1, boxShadow: `0 0 20px ${currentTheme.colors.primary}30` }}
+            whileTap={{ scale: 0.9 }}
           >
             <ArrowUp size={16} />
-          </button>
+          </motion.button>
           <div className="flex flex-col rounded-full shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-            <button onClick={() => navigateChapter('prev')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity">
+            <motion.button
+              onClick={() => navigateChapter('prev')}
+              className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+              whileHover={{ backgroundColor: 'var(--color-border)' }}
+            >
               <ArrowUp size={16} />
-            </button>
+            </motion.button>
             <div className="h-[1px] w-full" style={{ backgroundColor: 'var(--color-border)' }}></div>
-            <button onClick={() => navigateChapter('next')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity">
+            <motion.button
+              onClick={() => navigateChapter('next')}
+              className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-opacity"
+              whileHover={{ backgroundColor: 'var(--color-border)' }}
+            >
               <ArrowDown size={16} />
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Mobile Header */}
         <div
@@ -644,17 +1403,29 @@ export function FullReport() {
         <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
           {/* Dashboard Header */}
           <div id="dashboard" className="pt-8 lg:pt-12">
-            <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+            <motion.header
+              className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
               <div className="space-y-6 max-w-2xl">
-                <div
+                <motion.div
                   className="inline-flex items-center gap-2 px-3 py-1 rounded-full"
                   style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 }}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-green-500"></span>
+                  <motion.span
+                    className="w-1.5 h-1.5 rounded-full bg-green-500"
+                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
                     Audit Premium
                   </span>
-                </div>
+                </motion.div>
                 <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
                   {REPORT_DATA.clientName.split(' ')[0]}, <br />
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton audit.</span>
@@ -663,14 +1434,18 @@ export function FullReport() {
                   Score global: {Math.round(REPORT_DATA.globalScore * 10)}/100. Systeme nerveux critique. On va debloquer ca.
                 </p>
               </div>
-            </header>
+            </motion.header>
 
             {/* Dashboard Grid */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Main Score */}
-              <div
+              <motion.div
                 className="lg:col-span-1 lg:row-span-2 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden"
                 style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                whileHover={{ boxShadow: `0 0 40px ${currentTheme.colors.primary}15` }}
               >
                 <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
                   Performance Globale
@@ -679,16 +1454,24 @@ export function FullReport() {
                   <RadialProgress score={REPORT_DATA.globalScore} max={10} size={180} color={currentTheme.colors.primary} />
                 </div>
                 <div className="flex items-center justify-center">
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                  <motion.span
+                    className="text-xs font-medium px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                    animate={{ scale: [1, 1.02, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
                     A OPTIMISER
-                  </span>
+                  </motion.span>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Radar */}
-              <div
+              <motion.div
                 className="lg:col-span-2 lg:row-span-2 rounded-2xl p-1 relative"
                 style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                whileHover={{ boxShadow: `0 0 40px ${currentTheme.colors.primary}15` }}
               >
                 <div className="absolute top-6 left-6 z-10">
                   <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -698,49 +1481,63 @@ export function FullReport() {
                 <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
                   <MetricsRadar data={REPORT_DATA.metrics} color={currentTheme.colors.primary} />
                 </div>
-              </div>
+              </motion.div>
 
               {/* KPIs */}
-              <div
-                className="rounded-2xl p-6 flex flex-col justify-between hover:opacity-80 transition-opacity cursor-default"
-                style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
-              >
-                <div className="flex justify-between items-start">
-                  <Brain className="text-[var(--color-text-muted)]" size={20} />
-                  <span className="text-[10px] font-mono bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded">CRITIQUE</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-medium mt-4">
-                    3.8<span className="text-sm text-[var(--color-text-muted)]">/10</span>
+              {[
+                { icon: Brain, label: 'Systeme Nerveux', value: 3.8, status: 'CRITIQUE', statusColor: 'red' },
+                { icon: Moon, label: 'Sommeil', value: 3.5, status: 'BAS', statusColor: 'amber' },
+              ].map((kpi, idx) => (
+                <motion.div
+                  key={kpi.label}
+                  className="rounded-2xl p-6 flex flex-col justify-between cursor-pointer"
+                  style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + idx * 0.1 }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: `0 0 30px ${currentTheme.colors.primary}20`,
+                    borderColor: currentTheme.colors.primary,
+                  }}
+                >
+                  <div className="flex justify-between items-start">
+                    <kpi.icon className="text-[var(--color-text-muted)]" size={20} />
+                    <motion.span
+                      className={`text-[10px] font-mono bg-${kpi.statusColor}-500/10 text-${kpi.statusColor}-500 px-1.5 py-0.5 rounded`}
+                      animate={{ opacity: [1, 0.7, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      {kpi.status}
+                    </motion.span>
                   </div>
-                  <div className="text-xs font-mono uppercase text-[var(--color-text-muted)] mt-1">Systeme Nerveux</div>
-                </div>
-              </div>
-
-              <div
-                className="rounded-2xl p-6 flex flex-col justify-between hover:opacity-80 transition-opacity cursor-default"
-                style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
-              >
-                <div className="flex justify-between items-start">
-                  <Moon className="text-[var(--color-text-muted)]" size={20} />
-                  <span className="text-[10px] font-mono bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded">BAS</span>
-                </div>
-                <div>
-                  <div className="text-2xl font-medium mt-4">
-                    3.5<span className="text-sm text-[var(--color-text-muted)]">/10</span>
+                  <div>
+                    <div className="text-2xl font-medium mt-4">
+                      {kpi.value}<span className="text-sm text-[var(--color-text-muted)]">/10</span>
+                    </div>
+                    <div className="text-xs font-mono uppercase text-[var(--color-text-muted)] mt-1">{kpi.label}</div>
                   </div>
-                  <div className="text-xs font-mono uppercase text-[var(--color-text-muted)] mt-1">Sommeil</div>
-                </div>
-              </div>
+                </motion.div>
+              ))}
 
               {/* Projection */}
-              <div
+              <motion.div
                 className="lg:col-span-4 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center"
                 style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                whileHover={{ boxShadow: `0 0 40px ${currentTheme.colors.primary}15` }}
               >
                 <div className="w-full md:w-1/3">
                   <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: currentTheme.colors.primary }}>
-                    <ArrowUpRight size={16} /> Potentiel Inexploite
+                    <motion.span
+                      animate={{ rotate: [0, 10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <ArrowUpRight size={16} />
+                    </motion.span>
+                    Potentiel Inexploite
                   </h3>
                   <p className="text-sm text-[var(--color-text-muted)]">
                     Actuellement a 35% de ton potentiel. En debloquant le systeme nerveux, projection 95% en 90 jours.
@@ -749,7 +1546,7 @@ export function FullReport() {
                 <div className="w-full md:w-2/3 h-[150px]">
                   <ProjectionChart color={currentTheme.colors.primary} />
                 </div>
-              </div>
+              </motion.div>
             </section>
           </div>
 
@@ -758,14 +1555,25 @@ export function FullReport() {
             <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
 
             {REPORT_DATA.sections.map((section, idx) => (
-              <section key={section.id} id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
+              <motion.section
+                key={section.id}
+                id={section.id}
+                className="scroll-mt-32 group relative pb-24 lg:pb-32"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: '-100px' }}
+                transition={{ duration: 0.6 }}
+              >
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
                   {/* Sticky Header */}
                   <div className="lg:w-[240px] flex-shrink-0">
                     <div className="sticky top-24 pr-8 lg:text-right">
-                      <span className="font-mono text-4xl lg:text-5xl font-bold text-[var(--color-border)] group-hover:text-[var(--color-text-muted)] transition-colors block mb-2 opacity-30">
+                      <motion.span
+                        className="font-mono text-4xl lg:text-5xl font-bold text-[var(--color-border)] group-hover:text-[var(--color-text-muted)] transition-colors block mb-2 opacity-30"
+                        whileHover={{ scale: 1.1, opacity: 0.6 }}
+                      >
                         {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                      </span>
+                      </motion.span>
                       <h2 className="text-xl font-bold tracking-tight mb-2 text-[var(--color-text)] leading-tight">
                         {section.title}
                       </h2>
@@ -776,14 +1584,22 @@ export function FullReport() {
                       )}
                       {section.chips && (
                         <div className="flex flex-wrap lg:justify-end gap-2 mt-4">
-                          {section.chips.map((chip) => (
-                            <span
+                          {section.chips.map((chip, chipIdx) => (
+                            <motion.span
                               key={chip}
                               className="px-2 py-1 text-[9px] font-mono uppercase rounded text-[var(--color-text-muted)]"
                               style={{ border: `1px solid var(--color-border)` }}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              whileInView={{ opacity: 1, scale: 1 }}
+                              viewport={{ once: true }}
+                              transition={{ delay: chipIdx * 0.1 }}
+                              whileHover={{
+                                borderColor: currentTheme.colors.primary,
+                                color: currentTheme.colors.primary,
+                              }}
                             >
                               {chip}
-                            </span>
+                            </motion.span>
                           ))}
                         </div>
                       )}
@@ -792,18 +1608,31 @@ export function FullReport() {
 
                   {/* Body Content */}
                   <div className="flex-1 min-w-0">
-                    <div
+                    {/* Section Visualization */}
+                    <SectionVisualization section={section} color={currentTheme.colors.primary} />
+
+                    <motion.div
                       className="prose prose-lg max-w-none prose-p:text-[var(--color-text-muted)] prose-p:text-[17px] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]"
                       dangerouslySetInnerHTML={{ __html: section.content }}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
                     />
                   </div>
                 </div>
-              </section>
+              </motion.section>
             ))}
           </div>
 
           {/* Footer */}
-          <footer className="py-24 flex flex-col md:flex-row justify-between items-start gap-8" style={{ borderTop: `1px solid var(--color-border)` }}>
+          <motion.footer
+            className="py-24 flex flex-col md:flex-row justify-between items-start gap-8"
+            style={{ borderTop: `1px solid var(--color-border)` }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
             <div>
               <h4 className="font-bold text-lg mb-2 tracking-tight">Neurocore 360</h4>
               <p className="text-[var(--color-text-muted)] text-sm max-w-xs">
@@ -815,7 +1644,7 @@ export function FullReport() {
                 Confidential Report • {new Date().getFullYear()}
               </p>
             </div>
-          </footer>
+          </motion.footer>
         </div>
       </main>
     </div>
