@@ -1,7 +1,19 @@
 const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
 const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 const SENDER_EMAIL = "coaching@achzodcoaching.com";
-const SENDER_NAME = "NEUROCORE 360°";
+const SENDER_NAME = "NEUROCORE 360";
+
+// NEUROCORE 360 Design System
+const COLORS = {
+  primary: '#0efc6d',
+  background: '#000000',
+  surface: '#09090B',
+  border: 'rgba(255, 255, 255, 0.08)',
+  text: '#EDEDED',
+  textMuted: '#71717A',
+  warning: '#f59e0b',
+  purple: '#8b5cf6',
+};
 
 let accessToken: string | null = null;
 let tokenExpiry: number = 0;
@@ -43,112 +55,58 @@ function encodeBase64(str: string): string {
   return Buffer.from(str).toString("base64");
 }
 
-export async function sendReportReadyEmail(
-  email: string,
-  auditId: string,
-  auditType: string,
-  baseUrl: string
-): Promise<boolean> {
-  try {
-    const token = await getAccessToken();
-    const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
-    const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
-    const planBadgeColor = auditType === "ELITE" ? "#8b5cf6" : auditType === "PREMIUM" ? "#10b981" : "#6b7280";
-
-    const achzodLogoSvg = `<svg viewBox="0 0 38.047 30.012" width="32" height="25" style="vertical-align: middle;"><g fill="#ffffff"><path d="M128.282,57.01v6.646H108.06V59.6l4.9-19.315H119.9l-4.243,16.72Z" transform="translate(-90.235 -33.644)" /><path d="M19.506,0V4.048L14.6,23.366H7.667L11.91,6.646H0V0Z" /></g></svg>`;
-
-    const emailContent = `
+// Reusable email wrapper with NEUROCORE 360 design
+function getEmailWrapper(content: string, headerGradient: string = `linear-gradient(135deg, ${COLORS.primary} 0%, #059669 100%)`): string {
+  return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${COLORS.background};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${COLORS.background}; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: ${COLORS.surface}; border-radius: 16px; overflow: hidden; border: 1px solid ${COLORS.border};">
+          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 32px 30px; text-align: center;">
+            <td style="background: ${headerGradient}; padding: 40px 30px; text-align: center;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; background-color: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 8px; margin-bottom: 16px;">
-                      ${achzodLogoSvg}
-                      <span style="color: #ffffff; font-size: 16px; font-weight: 700; margin-left: 8px; vertical-align: middle;">ACHZOD</span>
+                    <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${COLORS.background};"></div>
+                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">NEUROCORE 360</span>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">NEUROCORE 360°</h1>
-                    <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;">Audit 360 Complet</p>
+                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">Audit Metabolique</h1>
+                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">15 Domaines d'Analyse</p>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
+          <!-- Content -->
           <tr>
             <td style="padding: 40px 30px;">
-              <div style="text-align: center; margin-bottom: 24px;">
-                <span style="display: inline-block; background-color: ${planBadgeColor}; color: #ffffff; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                  Rapport ${planLabel}
-                </span>
-              </div>
-              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 24px; text-align: center;">Ton rapport est pret !</h2>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 16px; text-align: center;">
-                J'ai termine l'analyse complete de ton profil metabolique a travers les 15 domaines de sante.
-              </p>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
-                Decouvre tes scores, recommandations personnalisees et protocoles de supplements.
-              </p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="center">
-                    <a href="${dashboardLink}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
-                      Consulter mon rapport
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Review CTA Section -->
-              <div style="margin-top: 32px; padding: 24px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.3);">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td align="center">
-                      <div style="font-size: 28px; margin-bottom: 12px;">⭐⭐⭐⭐⭐</div>
-                      <h3 style="color: #fbbf24; font-size: 18px; font-weight: 700; margin: 0 0 8px;">Ton avis compte !</h3>
-                      <p style="color: #a3a3a3; font-size: 14px; margin: 0 0 16px; line-height: 1.5;">
-                        Apres avoir consulte ton rapport, prends 30 secondes pour noter ton experience.<br>
-                        Ton retour aide d'autres personnes a decouvrir NEUROCORE 360.
-                      </p>
-                      <a href="${dashboardLink}#review" style="display: inline-block; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #0a0a0a; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 700;">
-                        Laisser mon avis
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-              <div style="margin-top: 32px; padding: 20px; background-color: #262626; border-radius: 10px;">
-                <p style="color: #a3a3a3; font-size: 13px; margin: 0 0 8px; text-align: center;">
-                  Si le bouton ne fonctionne pas, copie ce lien :
-                </p>
-                <p style="margin: 0; text-align: center;">
-                  <a href="${dashboardLink}" style="color: #10b981; font-size: 12px; word-break: break-all;">${dashboardLink}</a>
-                </p>
-              </div>
+              ${content}
             </td>
           </tr>
+          <!-- Footer -->
           <tr>
-            <td style="background-color: #0a0a0a; padding: 24px 30px; text-align: center; border-top: 1px solid #262626;">
-              <p style="color: #525252; font-size: 12px; margin: 0 0 8px;">
-                ${achzodLogoSvg.replace('#ffffff', '#525252')}
-                <span style="vertical-align: middle; margin-left: 6px;">ACHZOD</span>
+            <td style="background-color: ${COLORS.background}; padding: 24px 30px; text-align: center; border-top: 1px solid ${COLORS.border};">
+              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 0 0 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">
+                Achzod Coaching
               </p>
-              <p style="color: #404040; font-size: 11px; margin: 0;">
-                Optimise ta sante avec la science
+              <p style="color: #404040; font-size: 10px; margin: 0;">
+                Excellence · Science · Transformation
               </p>
             </td>
           </tr>
@@ -158,6 +116,129 @@ export async function sendReportReadyEmail(
   </table>
 </body>
 </html>`;
+}
+
+// Primary CTA Button
+function getPrimaryButton(text: string, href: string, color: string = COLORS.primary): string {
+  const textColor = color === COLORS.primary || color === COLORS.warning ? COLORS.background : '#ffffff';
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td align="center">
+          <a href="${href}" style="display: inline-block; background: ${color}; color: ${textColor}; text-decoration: none; padding: 16px 48px; border-radius: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">
+            ${text}
+          </a>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+// Review Stars Section
+function getReviewSection(dashboardLink: string): string {
+  return `
+    <div style="margin: 32px 0; padding: 28px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.2); text-align: center;">
+      <div style="font-size: 32px; margin-bottom: 16px; letter-spacing: 4px;">★★★★★</div>
+      <h3 style="color: ${COLORS.warning}; font-size: 18px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px;">Ton avis compte !</h3>
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 20px; line-height: 1.6;">
+        30 secondes pour noter ton experience.<br>Ton retour aide d'autres personnes a decouvrir NEUROCORE 360.
+      </p>
+      ${getPrimaryButton('Laisser mon avis', `${dashboardLink}#review`, COLORS.warning)}
+    </div>
+  `;
+}
+
+// Coaching CTA Section
+function getCoachingSection(color: string = COLORS.purple): string {
+  const coachingLink = "https://achzodcoaching.com";
+  return `
+    <div style="padding: 28px; background: linear-gradient(135deg, ${color}15 0%, ${color}08 100%); border-radius: 12px; border: 1px solid ${color}30;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; background: ${color}; color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+          Passe a l'action
+        </span>
+      </div>
+      <h3 style="color: ${color}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
+        Pret a transformer ton corps ?
+      </h3>
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
+        Ce rapport t'a montre le chemin. Laisse-moi t'accompagner pour atteindre tes objectifs.
+      </p>
+
+      <!-- Plans -->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
+            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">STARTER</p>
+            <p style="color: ${COLORS.text}; font-size: 20px; margin: 0; font-weight: 700;">97€</p>
+            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 4px 0 0;">/1 mois</p>
+          </td>
+          <td style="width: 8px;"></td>
+          <td style="padding: 12px; background: ${color}; border-radius: 8px; text-align: center; width: 33%;">
+            <p style="color: rgba(255,255,255,0.8); font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">TRANSFORM</p>
+            <p style="color: #fff; font-size: 20px; margin: 0; font-weight: 700;">247€</p>
+            <p style="color: rgba(255,255,255,0.7); font-size: 10px; margin: 4px 0 0;">/3 mois</p>
+          </td>
+          <td style="width: 8px;"></td>
+          <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
+            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ELITE</p>
+            <p style="color: ${COLORS.text}; font-size: 20px; margin: 0; font-weight: 700;">497€</p>
+            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 4px 0 0;">/6 mois</p>
+          </td>
+        </tr>
+      </table>
+
+      ${getPrimaryButton('Decouvrir les formules', coachingLink, color)}
+    </div>
+  `;
+}
+
+export async function sendReportReadyEmail(
+  email: string,
+  auditId: string,
+  auditType: string,
+  baseUrl: string
+): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+    const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
+    const reportLink = `${baseUrl}/report/${auditId}`;
+    const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
+    const planColor = auditType === "ELITE" ? COLORS.purple : auditType === "PREMIUM" ? COLORS.primary : COLORS.textMuted;
+
+    const content = `
+      <div style="text-align: center; margin-bottom: 28px;">
+        <span style="display: inline-block; background: ${planColor}20; color: ${planColor}; padding: 8px 20px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${planColor}40;">
+          Rapport ${planLabel}
+        </span>
+      </div>
+
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        Ton rapport est pret !
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 12px; text-align: center;">
+        J'ai termine l'analyse complete de ton profil metabolique a travers les <strong style="color: ${COLORS.text};">15 domaines de sante</strong>.
+      </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
+        Decouvre tes scores, recommandations personnalisees et protocoles.
+      </p>
+
+      ${getPrimaryButton('Consulter mon rapport', reportLink)}
+
+      ${getReviewSection(dashboardLink)}
+
+      <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
+          Si le bouton ne fonctionne pas, copie ce lien :
+        </p>
+        <p style="margin: 0; text-align: center;">
+          <a href="${reportLink}" style="color: ${COLORS.primary}; font-size: 11px; word-break: break-all;">${reportLink}</a>
+        </p>
+      </div>
+    `;
+
+    const emailContent = getEmailWrapper(content);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -168,8 +249,8 @@ export async function sendReportReadyEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Ton audit NEUROCORE 360 est pret ! Consulte ton rapport ici : ${dashboardLink}`,
-          subject: `Ton Audit 360 ${planLabel} est Pret - NEUROCORE 360`,
+          text: `Ton audit NEUROCORE 360 est pret ! Consulte ton rapport ici : ${reportLink}`,
+          subject: `Ton Audit 360 ${planLabel} est Pret`,
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
@@ -197,85 +278,32 @@ export async function sendMagicLinkEmail(
     const token_ = await getAccessToken();
     const magicLink = `${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
 
-    const achzodLogoSvg = `<svg viewBox="0 0 38.047 30.012" width="32" height="25" style="vertical-align: middle;"><g fill="#ffffff"><path d="M128.282,57.01v6.646H108.06V59.6l4.9-19.315H119.9l-4.243,16.72Z" transform="translate(-90.235 -33.644)" /><path d="M19.506,0V4.048L14.6,23.366H7.667L11.91,6.646H0V0Z" /></g></svg>`;
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        Connexion a ton espace
+      </h2>
 
-    const emailContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
-          <tr>
-            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 32px 30px; text-align: center;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="center">
-                    <div style="display: inline-block; background-color: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 8px; margin-bottom: 16px;">
-                      ${achzodLogoSvg}
-                      <span style="color: #ffffff; font-size: 16px; font-weight: 700; margin-left: 8px; vertical-align: middle;">ACHZOD</span>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">NEUROCORE 360°</h1>
-                    <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;">Audit 360 Complet</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 24px; text-align: center;">Connexion a ton espace</h2>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
-                Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits NEUROCORE 360.
-              </p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="center">
-                    <a href="${magicLink}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
-                      Acceder a mon dashboard
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="color: #737373; font-size: 14px; line-height: 1.6; margin: 24px 0 0; text-align: center;">
-                Ce lien expire dans 1 heure. Si tu n'as pas demande cette connexion, ignore cet email.
-              </p>
-              <div style="margin-top: 32px; padding: 20px; background-color: #262626; border-radius: 10px;">
-                <p style="color: #a3a3a3; font-size: 13px; margin: 0 0 8px; text-align: center;">
-                  Si le bouton ne fonctionne pas, copie ce lien :
-                </p>
-                <p style="margin: 0; text-align: center;">
-                  <a href="${magicLink}" style="color: #10b981; font-size: 12px; word-break: break-all;">${magicLink}</a>
-                </p>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #0a0a0a; padding: 24px 30px; text-align: center; border-top: 1px solid #262626;">
-              <p style="color: #525252; font-size: 12px; margin: 0 0 8px;">
-                ${achzodLogoSvg.replace('#ffffff', '#525252')}
-                <span style="vertical-align: middle; margin-left: 6px;">ACHZOD</span>
-              </p>
-              <p style="color: #404040; font-size: 11px; margin: 0;">
-                Optimise ta sante avec la science
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
+        Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits NEUROCORE 360.
+      </p>
+
+      ${getPrimaryButton('Acceder a mon dashboard', magicLink)}
+
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
+        Ce lien expire dans <strong style="color: ${COLORS.text};">1 heure</strong>. Si tu n'as pas demande cette connexion, ignore cet email.
+      </p>
+
+      <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
+        <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
+          Si le bouton ne fonctionne pas, copie ce lien :
+        </p>
+        <p style="margin: 0; text-align: center;">
+          <a href="${magicLink}" style="color: ${COLORS.primary}; font-size: 11px; word-break: break-all;">${magicLink}</a>
+        </p>
+      </div>
+    `;
+
+    const emailContent = getEmailWrapper(content);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -317,41 +345,32 @@ export async function sendAdminEmailNewAudit(
     const token = await getAccessToken();
     const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
 
-    const emailContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
-          <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 24px;">Nouvelle analyse générée</h2>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px;">
-                <strong style="color: #fafafa;">Client:</strong> ${clientName} (${clientEmail})
-              </p>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 8px;">
-                <strong style="color: #fafafa;">Type:</strong> ${planLabel}
-              </p>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px;">
-                <strong style="color: #fafafa;">Audit ID:</strong> ${auditId}
-              </p>
-              <p style="color: #a3a3a3; font-size: 14px; line-height: 1.7; margin: 0;">
-                L'analyse a été générée avec succès et l'email a été envoyé au client.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 24px; font-weight: 700;">
+        Nouvelle analyse generee
+      </h2>
+
+      <div style="background: ${COLORS.background}; border-radius: 8px; padding: 20px; border: 1px solid ${COLORS.border};">
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
+          <strong style="color: ${COLORS.text};">Client:</strong> ${clientName}
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
+          <strong style="color: ${COLORS.text};">Email:</strong> ${clientEmail}
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
+          <strong style="color: ${COLORS.text};">Type:</strong> <span style="color: ${COLORS.primary}; font-weight: 600;">${planLabel}</span>
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0;">
+          <strong style="color: ${COLORS.text};">Audit ID:</strong> <code style="background: ${COLORS.border}; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${auditId}</code>
+        </p>
+      </div>
+
+      <p style="color: ${COLORS.primary}; font-size: 14px; line-height: 1.7; margin: 24px 0 0; text-align: center; font-weight: 500;">
+        L'email a ete envoye au client.
+      </p>
+    `;
+
+    const emailContent = getEmailWrapper(content);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -362,7 +381,7 @@ export async function sendAdminEmailNewAudit(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Nouvelle analyse ${planLabel} générée pour ${clientName} (${clientEmail}) - Audit ID: ${auditId}`,
+          text: `Nouvelle analyse ${planLabel} generee pour ${clientName} (${clientEmail}) - Audit ID: ${auditId}`,
           subject: `[NEUROCORE 360] Nouvelle analyse ${planLabel} - ${clientName}`,
           from: {
             name: SENDER_NAME,
@@ -395,89 +414,43 @@ export async function sendGratuitUpsellEmail(
     const checkoutLink = `${baseUrl}/audit-complet/questionnaire?promo=ANALYSE20`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
-    const achzodLogoSvg = `<svg viewBox="0 0 38.047 30.012" width="32" height="25" style="vertical-align: middle;"><g fill="#ffffff"><path d="M128.282,57.01v6.646H108.06V59.6l4.9-19.315H119.9l-4.243,16.72Z" transform="translate(-90.235 -33.644)" /><path d="M19.506,0V4.048L14.6,23.366H7.667L11.91,6.646H0V0Z" /></g></svg>`;
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        Merci d'avoir teste NEUROCORE 360 !
+      </h2>
 
-    const emailContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
-          <tr>
-            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 32px 30px; text-align: center;">
-              <div style="display: inline-block; background-color: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 8px; margin-bottom: 16px;">
-                ${achzodLogoSvg}
-                <span style="color: #ffffff; font-size: 16px; font-weight: 700; margin-left: 8px; vertical-align: middle;">ACHZOD</span>
-              </div>
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">NEUROCORE 360°</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 24px; text-align: center;">Ton avis compte !</h2>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-                Merci d'avoir teste NEUROCORE 360 ! J'aimerais savoir ce que tu as pense de ton analyse gratuite.
-              </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
+        J'aimerais savoir ce que tu as pense de ton analyse gratuite.
+      </p>
 
-              <!-- Review CTA -->
-              <div style="margin-bottom: 32px; padding: 24px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.3); text-align: center;">
-                <div style="font-size: 28px; margin-bottom: 12px;">⭐⭐⭐⭐⭐</div>
-                <h3 style="color: #fbbf24; font-size: 18px; font-weight: 700; margin: 0 0 8px;">Laisse ton avis en 30 secondes</h3>
-                <p style="color: #a3a3a3; font-size: 14px; margin: 0 0 16px;">Ton retour aide d'autres personnes a decouvrir NEUROCORE 360.</p>
-                <a href="${dashboardLink}#review" style="display: inline-block; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #0a0a0a; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 700;">
-                  Donner mon avis
-                </a>
-              </div>
+      ${getReviewSection(dashboardLink)}
 
-              <!-- Upsell Premium -->
-              <div style="padding: 24px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
-                <h3 style="color: #10b981; font-size: 20px; font-weight: 700; margin: 0 0 12px; text-align: center;">
-                  Passe au niveau superieur
-                </h3>
-                <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6; margin: 0 0 16px; text-align: center;">
-                  Tu as eu un apercu de ton profil. Avec l'analyse <strong style="color: #fafafa;">Premium</strong>, decouvre :
-                </p>
-                <ul style="color: #a3a3a3; font-size: 14px; line-height: 1.8; margin: 0 0 16px; padding-left: 20px;">
-                  <li>Analyse IA approfondie sur 15 domaines</li>
-                  <li>Protocole de supplements personnalise</li>
-                  <li>Analyse de tes photos corporelles</li>
-                  <li>Recommandations alimentaires detaillees</li>
-                </ul>
-                <div style="text-align: center; margin-bottom: 16px;">
-                  <span style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: 700;">
-                    -20% avec le code ANALYSE20
-                  </span>
-                </div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td align="center">
-                      <a href="${checkoutLink}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
-                        Passer au Premium (-20%)
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #0a0a0a; padding: 24px 30px; text-align: center; border-top: 1px solid #262626;">
-              <p style="color: #404040; font-size: 11px; margin: 0;">Optimise ta sante avec la science</p>
-            </td>
-          </tr>
+      <!-- Upsell Premium -->
+      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}15 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 1px solid ${COLORS.primary}30;">
+        <h3 style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
+          Passe au niveau superieur
+        </h3>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
+          Tu as eu un apercu de ton profil. Avec l'analyse <strong style="color: ${COLORS.text};">Premium</strong>, decouvre :
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse IA approfondie sur 15 domaines</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocole de supplements personnalise</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse de tes photos corporelles</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Recommandations alimentaires detaillees</td></tr>
         </table>
-      </td>
-    </tr>
-  </table>
-  <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
-</body>
-</html>`;
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
+            -20% avec le code ANALYSE20
+          </span>
+        </div>
+        ${getPrimaryButton('Passer au Premium (-20%)', checkoutLink)}
+      </div>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(content);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -516,98 +489,33 @@ export async function sendPremiumJ7Email(
   try {
     const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
-    const coachingLink = "https://achzodcoaching.com/formules";
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
-    const achzodLogoSvg = `<svg viewBox="0 0 38.047 30.012" width="32" height="25" style="vertical-align: middle;"><g fill="#ffffff"><path d="M128.282,57.01v6.646H108.06V59.6l4.9-19.315H119.9l-4.243,16.72Z" transform="translate(-90.235 -33.644)" /><path d="M19.506,0V4.048L14.6,23.366H7.667L11.91,6.646H0V0Z" /></g></svg>`;
+    const reviewSection = !hasLeftReview ? getReviewSection(dashboardLink) : '';
 
-    // Section avis conditionnelle
-    const reviewSection = !hasLeftReview ? `
-      <div style="margin-bottom: 32px; padding: 24px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.3); text-align: center;">
-        <div style="font-size: 28px; margin-bottom: 12px;">⭐⭐⭐⭐⭐</div>
-        <h3 style="color: #fbbf24; font-size: 18px; font-weight: 700; margin: 0 0 8px;">Ton avis compte enormement !</h3>
-        <p style="color: #a3a3a3; font-size: 14px; margin: 0 0 16px;">Ca fait une semaine que tu as recu ton analyse. Qu'en penses-tu ?</p>
-        <a href="${dashboardLink}#review" style="display: inline-block; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #0a0a0a; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 700;">
-          Laisser mon avis
-        </a>
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        Ca fait une semaine...
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
+        Tu as maintenant toutes les informations pour transformer ta sante. Mais <strong style="color: ${COLORS.text};">l'information sans action ne sert a rien</strong>.
+      </p>
+
+      ${reviewSection}
+
+      ${getCoachingSection(COLORS.purple)}
+
+      <div style="text-align: center; margin-top: 24px;">
+        <span style="display: inline-block; background: ${COLORS.purple}; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
+          -20% avec le code NEUROCORE20
+        </span>
       </div>
-    ` : '';
 
-    const emailContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
-          <tr>
-            <td style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 32px 30px; text-align: center;">
-              <div style="display: inline-block; background-color: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 8px; margin-bottom: 16px;">
-                ${achzodLogoSvg}
-                <span style="color: #ffffff; font-size: 16px; font-weight: 700; margin-left: 8px; vertical-align: middle;">ACHZOD</span>
-              </div>
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Pret a passer a l'action ?</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 22px; text-align: center;">
-                Ca fait une semaine que tu as recu ton analyse Premium...
-              </h2>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-                Tu as maintenant toutes les informations pour transformer ta sante. Mais l'information sans action ne sert a rien.
-              </p>
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
 
-              ${reviewSection}
-
-              <!-- Coaching CTA -->
-              <div style="padding: 24px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.3);">
-                <h3 style="color: #8b5cf6; font-size: 20px; font-weight: 700; margin: 0 0 12px; text-align: center;">
-                  Coaching personnalise avec Achzod
-                </h3>
-                <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6; margin: 0 0 16px; text-align: center;">
-                  Tu veux aller plus loin et etre accompagne personnellement ? Decouvre mes formules de coaching :
-                </p>
-                <ul style="color: #a3a3a3; font-size: 14px; line-height: 1.8; margin: 0 0 16px; padding-left: 20px;">
-                  <li><strong style="color: #fafafa;">Suivi nutritionnel</strong> adapte a ton profil</li>
-                  <li><strong style="color: #fafafa;">Programme d'entrainement</strong> sur mesure</li>
-                  <li><strong style="color: #fafafa;">Coaching 1:1</strong> pour te guider chaque semaine</li>
-                  <li><strong style="color: #fafafa;">Acces direct</strong> par WhatsApp/Telegram</li>
-                </ul>
-                <div style="text-align: center; margin-bottom: 16px;">
-                  <span style="display: inline-block; background-color: #8b5cf6; color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: 700;">
-                    -20% avec le code NEUROCORE20
-                  </span>
-                </div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td align="center">
-                      <a href="${coachingLink}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);">
-                        Decouvrir les formules (-20%)
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #0a0a0a; padding: 24px 30px; text-align: center; border-top: 1px solid #262626;">
-              <p style="color: #404040; font-size: 11px; margin: 0;">Optimise ta sante avec la science - ACHZOD</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-  <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
-</body>
-</html>`;
+    const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.purple} 0%, #7c3aed 100%)`);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -644,81 +552,41 @@ export async function sendPremiumJ14Email(
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
-    const coachingLink = "https://achzodcoaching.com/formules";
+    const coachingLink = "https://achzodcoaching.com";
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
-    const achzodLogoSvg = `<svg viewBox="0 0 38.047 30.012" width="32" height="25" style="vertical-align: middle;"><g fill="#ffffff"><path d="M128.282,57.01v6.646H108.06V59.6l4.9-19.315H119.9l-4.243,16.72Z" transform="translate(-90.235 -33.644)" /><path d="M19.506,0V4.048L14.6,23.366H7.667L11.91,6.646H0V0Z" /></g></svg>`;
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -1px;">
+        J'ai remarque que tu n'as pas vu mon dernier message...
+      </h2>
 
-    const emailContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0a0a0a;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #171717; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
-          <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 32px 30px; text-align: center;">
-              <div style="display: inline-block; background-color: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 8px; margin-bottom: 16px;">
-                ${achzodLogoSvg}
-                <span style="color: #ffffff; font-size: 16px; font-weight: 700; margin-left: 8px; vertical-align: middle;">ACHZOD</span>
-              </div>
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Derniere chance !</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 30px;">
-              <h2 style="color: #fafafa; margin: 0 0 16px; font-size: 22px; text-align: center;">
-                J'ai remarque que tu n'as pas vu mon dernier message...
-              </h2>
-              <p style="color: #a3a3a3; font-size: 16px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-                Peut-etre que tu attends le bon moment pour te lancer ? Je comprends. Mais le meilleur moment, c'est maintenant.
-              </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
+        Peut-etre que tu attends le bon moment pour te lancer ? Je comprends. Mais <strong style="color: ${COLORS.text};">le meilleur moment, c'est maintenant</strong>.
+      </p>
 
-              <div style="padding: 24px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.08) 100%); border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3);">
-                <h3 style="color: #f59e0b; font-size: 20px; font-weight: 700; margin: 0 0 12px; text-align: center;">
-                  Derniere opportunite : -20% sur le coaching
-                </h3>
-                <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6; margin: 0 0 16px; text-align: center;">
-                  Tu as fait ton analyse NEUROCORE 360. Tu as les informations. Il ne te manque plus que l'accompagnement pour passer a l'action.
-                </p>
-                <div style="text-align: center; margin-bottom: 16px;">
-                  <span style="display: inline-block; background-color: #f59e0b; color: #0a0a0a; padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: 700;">
-                    Code NEUROCORE20 = -20%
-                  </span>
-                </div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td align="center">
-                      <a href="${coachingLink}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0a0a0a; text-decoration: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; font-weight: 700; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
-                        Commencer maintenant
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
+      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.warning}15 0%, ${COLORS.warning}05 100%); border-radius: 12px; border: 1px solid ${COLORS.warning}30;">
+        <h3 style="color: ${COLORS.warning}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
+          Derniere opportunite : -20%
+        </h3>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
+          Tu as fait ton analyse NEUROCORE 360. Tu as les informations. Il ne te manque plus que <strong style="color: ${COLORS.text};">l'accompagnement</strong> pour passer a l'action.
+        </p>
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="display: inline-block; background: ${COLORS.warning}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
+            Code NEUROCORE20 = -20%
+          </span>
+        </div>
+        ${getPrimaryButton('Commencer maintenant', coachingLink, COLORS.warning)}
+      </div>
 
-              <p style="color: #737373; font-size: 13px; line-height: 1.6; margin: 24px 0 0; text-align: center;">
-                Si tu ne souhaites plus recevoir ces emails, reponds simplement "STOP" et je te retirerai de la liste.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #0a0a0a; padding: 24px 30px; text-align: center; border-top: 1px solid #262626;">
-              <p style="color: #404040; font-size: 11px; margin: 0;">Optimise ta sante avec la science - ACHZOD</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-  <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
-</body>
-</html>`;
+      <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
+        Si tu ne souhaites plus recevoir ces emails, reponds simplement "STOP".
+      </p>
+
+      <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+    `;
+
+    const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${COLORS.warning} 0%, #d97706 100%)`);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
