@@ -22,6 +22,117 @@ export const TERRA_CONFIG = {
   BASE_URL: "https://api.tryterra.co/v2",
 };
 
+/**
+ * MULTI-SITE DISPATCHER CONFIGURATION
+ *
+ * Un seul compte Terra ($399/mois) peut alimenter plusieurs sites.
+ * Le reference_id détermine vers quel site router les données.
+ *
+ * Format reference_id: "{site_prefix}_{user_id}"
+ * Ex: "neurocore_user123", "site2_user456", "coaching_user789"
+ */
+export const TERRA_SITES_CONFIG: Record<string, {
+  name: string;
+  webhookUrl: string;
+  apiKey?: string; // Optional: si le site distant a besoin d'authentification
+}> = {
+  // Site principal - Neurocore (traité localement)
+  neurocore: {
+    name: "Neurocore 360",
+    webhookUrl: "local", // Traité directement sur ce serveur
+  },
+  // Site 2 - Configure ton autre projet ici
+  site2: {
+    name: "Site 2",
+    webhookUrl: process.env.TERRA_SITE2_WEBHOOK_URL || "",
+    apiKey: process.env.TERRA_SITE2_API_KEY,
+  },
+  // Site 3 - Configure ton troisième projet ici
+  site3: {
+    name: "Site 3",
+    webhookUrl: process.env.TERRA_SITE3_WEBHOOK_URL || "",
+    apiKey: process.env.TERRA_SITE3_API_KEY,
+  },
+};
+
+/**
+ * Parse le reference_id pour extraire le site prefix et le user_id
+ */
+export function parseReferenceId(referenceId: string): { sitePrefix: string; userId: string } {
+  const parts = referenceId.split("_");
+  if (parts.length >= 2) {
+    const sitePrefix = parts[0];
+    const userId = parts.slice(1).join("_");
+    return { sitePrefix, userId };
+  }
+  // Default to neurocore if no prefix
+  return { sitePrefix: "neurocore", userId: referenceId };
+}
+
+/**
+ * Dispatch les données Terra vers le bon site
+ */
+export async function dispatchTerraData(
+  referenceId: string,
+  eventType: string,
+  data: unknown
+): Promise<{ dispatched: boolean; site: string; error?: string }> {
+  const { sitePrefix, userId } = parseReferenceId(referenceId);
+  const siteConfig = TERRA_SITES_CONFIG[sitePrefix];
+
+  if (!siteConfig) {
+    console.warn(`[Terra Dispatcher] Unknown site prefix: ${sitePrefix}, defaulting to neurocore`);
+    return { dispatched: true, site: "neurocore" }; // Handle locally
+  }
+
+  // Si c'est le site local (neurocore), pas besoin de dispatcher
+  if (siteConfig.webhookUrl === "local") {
+    console.log(`[Terra Dispatcher] Handling locally for ${siteConfig.name}: ${userId}`);
+    return { dispatched: true, site: siteConfig.name };
+  }
+
+  // Dispatcher vers le site distant
+  if (!siteConfig.webhookUrl) {
+    console.warn(`[Terra Dispatcher] No webhook URL configured for site: ${sitePrefix}`);
+    return { dispatched: false, site: sitePrefix, error: "No webhook URL configured" };
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (siteConfig.apiKey) {
+      headers["x-api-key"] = siteConfig.apiKey;
+    }
+
+    const response = await fetch(siteConfig.webhookUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        type: eventType,
+        user_id: userId,
+        original_reference_id: referenceId,
+        data,
+        dispatched_at: new Date().toISOString(),
+        source: "neurocore-terra-dispatcher",
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Terra Dispatcher] Failed to dispatch to ${siteConfig.name}: ${errorText}`);
+      return { dispatched: false, site: siteConfig.name, error: errorText };
+    }
+
+    console.log(`[Terra Dispatcher] Successfully dispatched to ${siteConfig.name} for user: ${userId}`);
+    return { dispatched: true, site: siteConfig.name };
+  } catch (error) {
+    console.error(`[Terra Dispatcher] Error dispatching to ${siteConfig.name}:`, error);
+    return { dispatched: false, site: siteConfig.name, error: String(error) };
+  }
+}
+
 // Supported providers
 export const TERRA_PROVIDERS = [
   { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true },
@@ -248,16 +359,25 @@ interface TerraData {
 
 /**
  * Generate a Terra widget session for user authentication
+ *
+ * @param userId - L'ID utilisateur unique
+ * @param sitePrefix - Le prefix du site (neurocore, site2, site3) pour le multi-site dispatcher
+ * @param providers - Les providers à afficher dans le widget
+ * @param redirectUrl - URL de redirection après auth réussie
  */
 export async function generateTerraWidget(
   userId: string,
+  sitePrefix: string = "neurocore",
   providers?: TerraProvider[],
   redirectUrl?: string
-): Promise<{ url: string; sessionId: string } | null> {
+): Promise<{ url: string; sessionId: string; referenceId: string } | null> {
   if (!TERRA_CONFIG.API_KEY || !TERRA_CONFIG.DEV_ID) {
     console.warn("[Terra] API not configured - skipping widget generation");
     return null;
   }
+
+  // Créer le reference_id avec le prefix du site pour le dispatcher
+  const referenceId = `${sitePrefix}_${userId}`;
 
   try {
     const response = await fetch(`${TERRA_CONFIG.BASE_URL}/auth/generateWidgetSession`, {
@@ -268,8 +388,8 @@ export async function generateTerraWidget(
         "dev-id": TERRA_CONFIG.DEV_ID,
       },
       body: JSON.stringify({
-        reference_id: userId,
-        providers: providers?.join(",") || "OURA,GARMIN,FITBIT,WHOOP,POLAR,ULTRAHUMAN",
+        reference_id: referenceId,
+        providers: providers?.join(",") || "OURA,GARMIN,FITBIT,WHOOP,POLAR,ULTRAHUMAN,WITHINGS",
         language: "fr",
         auth_success_redirect_url: redirectUrl || `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_success=true`,
         auth_failure_redirect_url: `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_error=true`,
@@ -285,6 +405,7 @@ export async function generateTerraWidget(
     return {
       url: data.url,
       sessionId: data.session_id,
+      referenceId, // Include the reference_id for tracking
     };
   } catch (error) {
     console.error("[Terra] Widget generation error:", error);
@@ -659,35 +780,52 @@ export function mapTerraDataToAnswers(terraData: TerraData): {
 }
 
 /**
- * Handle Terra webhook events
+ * Handle Terra webhook events with MULTI-SITE DISPATCHER
+ *
+ * Ce webhook reçoit TOUS les événements Terra pour tous les sites,
+ * puis les dispatch vers le bon site selon le reference_id.
  */
 export async function handleTerraWebhook(
   payload: unknown,
   signature: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string; site?: string }> {
   // Verify webhook signature
   // TODO: Implement signature verification with TERRA_CONFIG.WEBHOOK_SECRET
 
   const event = payload as any;
+  const referenceId = event.user?.reference_id || "";
 
+  // Dispatch vers le bon site
+  const dispatchResult = await dispatchTerraData(referenceId, event.type, event);
+
+  // Si dispatché vers un site externe, on a fini
+  if (dispatchResult.dispatched && dispatchResult.site !== "Neurocore 360") {
+    return {
+      success: true,
+      message: `Event dispatched to ${dispatchResult.site}`,
+      site: dispatchResult.site,
+    };
+  }
+
+  // Sinon, traiter localement pour Neurocore
   switch (event.type) {
     case "auth":
-      console.log(`[Terra] User authenticated: ${event.user?.reference_id} via ${event.user?.provider}`);
+      console.log(`[Terra] User authenticated: ${referenceId} via ${event.user?.provider}`);
       // Store Terra user connection
-      return { success: true, message: "Auth event processed" };
+      return { success: true, message: "Auth event processed", site: "Neurocore 360" };
 
     case "deauth":
-      console.log(`[Terra] User deauthenticated: ${event.user?.reference_id}`);
-      return { success: true, message: "Deauth event processed" };
+      console.log(`[Terra] User deauthenticated: ${referenceId}`);
+      return { success: true, message: "Deauth event processed", site: "Neurocore 360" };
 
     case "user_reauth":
-      console.log(`[Terra] User re-authenticated: ${event.user?.reference_id}`);
-      return { success: true, message: "Reauth event processed" };
+      console.log(`[Terra] User re-authenticated: ${referenceId}`);
+      return { success: true, message: "Reauth event processed", site: "Neurocore 360" };
 
     default:
       // Data events (daily, sleep, body, etc.)
-      console.log(`[Terra] Data event: ${event.type} for user ${event.user?.reference_id}`);
-      return { success: true, message: "Data event processed" };
+      console.log(`[Terra] Data event: ${event.type} for user ${referenceId}`);
+      return { success: true, message: "Data event processed", site: "Neurocore 360" };
   }
 }
 
