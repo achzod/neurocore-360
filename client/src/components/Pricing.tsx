@@ -39,7 +39,7 @@ const tiers: PricingTier[] = [
     gradient: "from-gray-500 to-gray-600",
   },
   {
-    name: "Essential",
+    name: "Anabolic Bioscan",
     price: "49",
     period: "one-time",
     description: "L'audit complet: rapport ~25 pages (17 sections) + protocoles 90j",
@@ -56,13 +56,13 @@ const tiers: PricingTier[] = [
       { text: "Sync wearables", included: false },
       { text: "Analyse photo", included: false },
     ],
-    cta: "Obtenir mon audit",
+    cta: "Obtenir Anabolic",
     href: "/audit-complet/questionnaire?plan=essential",
     icon: <Sparkles className="w-5 h-5" />,
     gradient: "from-primary to-emerald-400",
   },
   {
-    name: "Elite",
+    name: "Pro Panel 360",
     price: "99",
     period: "one-time",
     description: "Rapport ~45 pages (25+ sections) + wearables + analyse photo",
@@ -78,7 +78,7 @@ const tiers: PricingTier[] = [
       { text: "Psychologie & blocages mentaux", included: true },
       { text: "Support prioritaire", included: true },
     ],
-    cta: "Passer Elite",
+    cta: "Passer Pro Panel",
     href: "/audit-complet/questionnaire?plan=elite",
     icon: <Crown className="w-5 h-5" />,
     gradient: "from-violet-500 to-purple-500",
@@ -197,7 +197,7 @@ export function Pricing() {
                   className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
                     tier.popular
                       ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
-                      : tier.name === "Elite"
+                      : tier.name === "Pro Panel 360"
                       ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}

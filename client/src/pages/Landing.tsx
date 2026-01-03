@@ -51,6 +51,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
   const [activeTheme, setActiveTheme] = useState<"m1black" | "metabolic" | "titanium" | "organic">("m1black");
   const [activeSection, setActiveSection] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState<"anabolic" | "propanel">("anabolic");
   const contentRef = useRef<HTMLDivElement>(null);
 
   const themes = {
@@ -60,8 +61,8 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
   };
 
-  // Plan Essential - 17 sections (rapport ~25 pages)
-  const sections = [
+  // ANABOLIC BIOSCAN: 150 questions, 17 sections, rapport ~25 pages (49€)
+  const anabolicSections = [
     { name: "Dashboard", locked: false, tier: "free" },
     { name: "Système Nerveux", locked: false, tier: "free" },
     { name: "Sommeil", locked: true, tier: "essential" },
@@ -70,16 +71,51 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     { name: "Training", locked: true, tier: "essential" },
     { name: "Digestion & Microbiome", locked: true, tier: "essential" },
     { name: "Stress & Mental", locked: true, tier: "essential" },
-    { name: "Thyroïde & Métabolisme", locked: true, tier: "essential" },
+    { name: "Énergie & Fatigue", locked: true, tier: "essential" },
+    { name: "Détox de Base", locked: true, tier: "essential" },
     { name: "Inflammation", locked: true, tier: "essential" },
-    { name: "Détox & Foie", locked: true, tier: "essential" },
     { name: "Immunité", locked: true, tier: "essential" },
+    { name: "Lifestyle & Habitudes", locked: true, tier: "essential" },
+    { name: "Objectifs Personnels", locked: true, tier: "essential" },
     { name: "Stack Suppléments", locked: true, tier: "essential" },
     { name: "Plan 90 Jours", locked: true, tier: "essential" },
-    { name: "Protocole Quotidien", locked: true, tier: "essential" },
-    { name: "Wearables & HRV", locked: true, tier: "elite" },
-    { name: "Analyse Photo", locked: true, tier: "elite" },
+    { name: "Résumé & Actions", locked: true, tier: "essential" },
   ];
+
+  // PRO PANEL 360: 210 questions, 25+ sections, scoring avancé, wearables, photo (99€)
+  const propanelSections = [
+    { name: "Dashboard Avancé", locked: false, tier: "elite" },
+    { name: "Système Nerveux Pro", locked: false, tier: "elite" },
+    { name: "HRV & Cardio Temps Réel", locked: true, tier: "elite" },
+    { name: "Architecture Sommeil", locked: true, tier: "elite" },
+    { name: "Analyse Photo Posture", locked: true, tier: "elite" },
+    { name: "Composition Corporelle", locked: true, tier: "elite" },
+    { name: "Profil Hormonal Complet", locked: true, tier: "elite" },
+    { name: "Thyroïde Approfondie", locked: true, tier: "elite" },
+    { name: "Axe Surrénalien", locked: true, tier: "elite" },
+    { name: "Nutrition Avancée", locked: true, tier: "elite" },
+    { name: "Nutrition Timing", locked: true, tier: "elite" },
+    { name: "Microbiome & Intestin", locked: true, tier: "elite" },
+    { name: "Inflammation Systémique", locked: true, tier: "elite" },
+    { name: "Détox & Foie", locked: true, tier: "elite" },
+    { name: "Immunité & Récupération", locked: true, tier: "elite" },
+    { name: "Training Periodization", locked: true, tier: "elite" },
+    { name: "Mobilité & Posture", locked: true, tier: "elite" },
+    { name: "Psychologie & Blocages", locked: true, tier: "elite" },
+    { name: "Stress & Résilience", locked: true, tier: "elite" },
+    { name: "Circadien Avancé", locked: true, tier: "elite" },
+    { name: "Wearables Data Sync", locked: true, tier: "elite" },
+    { name: "Biofeedback Analysis", locked: true, tier: "elite" },
+    { name: "Stack Elite Personnalisé", locked: true, tier: "elite" },
+    { name: "Protocole Elite 90j", locked: true, tier: "elite" },
+    { name: "Suivi & Ajustements", locked: true, tier: "elite" },
+  ];
+
+  const sections = selectedPlan === "anabolic" ? anabolicSections : propanelSections;
+  const sectionCount = selectedPlan === "anabolic" ? 17 : 25;
+  const questionCount = selectedPlan === "anabolic" ? 150 : 210;
+  const planName = selectedPlan === "anabolic" ? "ANABOLIC BIOSCAN" : "PRO PANEL 360";
+  const planPrice = selectedPlan === "anabolic" ? "49€" : "99€";
 
   const theme = themes[activeTheme];
   const currentSection = sections[activeSection];
@@ -98,7 +134,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
   // Render different content based on active section
   const renderSectionContent = () => {
     if (currentSection.locked) {
-      const isElite = currentSection.tier === "elite";
+      const isPropanel = selectedPlan === "propanel";
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: theme.surface }}>
@@ -106,23 +142,23 @@ function DemoModal({ onClose }: { onClose: () => void }) {
           </div>
           <h2 className="text-3xl font-bold mb-4">{currentSection.name}</h2>
           <p className="text-lg mb-2" style={{ color: theme.muted }}>
-            Section verrouillée - {isElite ? "ELITE" : "ESSENTIAL"}
+            Section verrouillée - {planName}
           </p>
           <p className="max-w-md mb-8" style={{ color: theme.muted }}>
-            {isElite
-              ? "Cette section avancée est disponible uniquement avec le plan Elite (99€). Accède aux analyses wearables temps réel et composition corporelle."
-              : "Cette section fait partie du rapport Essential (49€). Débloquer les 17 sections + stack suppléments + plan 90 jours."}
+            {isPropanel
+              ? `Cette section fait partie du Pro Panel 360 (99€). Accède aux ${sectionCount} sections + analyses wearables temps réel + analyse photo posture.`
+              : `Cette section fait partie de l'Anabolic Bioscan (49€). Débloquer les ${sectionCount} sections + stack suppléments + plan 90 jours.`}
           </p>
-          <Link href={`/audit-complet/questionnaire?plan=${isElite ? 'elite' : 'essential'}`}>
+          <Link href={`/audit-complet/questionnaire?plan=${isPropanel ? 'elite' : 'essential'}`}>
             <button
               className={`px-8 py-4 rounded-xl font-bold transition-all hover:opacity-90 ${
-                isElite
+                isPropanel
                   ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
                   : ""
               }`}
-              style={!isElite ? { backgroundColor: theme.primary, color: theme.bg } : {}}
+              style={!isPropanel ? { backgroundColor: theme.primary, color: theme.bg } : {}}
             >
-              {isElite ? "Passer Elite (99€)" : "Obtenir Essential (49€)"} →
+              Obtenir {planName} ({planPrice}) →
             </button>
           </Link>
         </div>
@@ -643,8 +679,35 @@ function DemoModal({ onClose }: { onClose: () => void }) {
             </div>
             <h1 className="text-xl font-bold tracking-tight">Audit: Marc D.</h1>
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/20 text-primary">ESSENTIAL</span>
-              <span className="text-[10px] font-mono" style={{ color: theme.muted }}>17 sections</span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${selectedPlan === "anabolic" ? "bg-primary/20 text-primary" : "bg-violet-500/20 text-violet-400"}`}>{planName}</span>
+              <span className="text-[10px] font-mono" style={{ color: theme.muted }}>{sectionCount} sections</span>
+            </div>
+          </div>
+
+          {/* Plan Toggle */}
+          <div className="px-6 pb-4">
+            <p className="text-[9px] font-mono uppercase tracking-widest mb-2" style={{ color: theme.muted }}>CHOISIR UN PLAN</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setSelectedPlan("anabolic"); setActiveSection(0); }}
+                className={`py-2.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${
+                  selectedPlan === "anabolic"
+                    ? "bg-primary text-black"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                Anabolic<br /><span className="text-[9px] opacity-70">49€</span>
+              </button>
+              <button
+                onClick={() => { setSelectedPlan("propanel"); setActiveSection(0); }}
+                className={`py-2.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${
+                  selectedPlan === "propanel"
+                    ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                Pro Panel<br /><span className="text-[9px] opacity-70">99€</span>
+              </button>
             </div>
           </div>
 
@@ -686,14 +749,9 @@ function DemoModal({ onClose }: { onClose: () => void }) {
                   <span className="font-mono text-[10px] shrink-0" style={{ color: theme.muted }}>{String(i + 1).padStart(2, '0')}</span>
                   <span className="truncate">{section.name}</span>
                 </span>
-                <span className="flex items-center gap-1.5 shrink-0">
-                  {section.tier === "elite" && (
-                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400">ELITE</span>
-                  )}
-                  {section.locked && (
-                    <Lock size={11} style={{ color: section.tier === "elite" ? "#a78bfa" : theme.muted }} />
-                  )}
-                </span>
+                {section.locked && (
+                  <Lock size={11} style={{ color: selectedPlan === "propanel" ? "#a78bfa" : theme.muted }} />
+                )}
               </button>
             ))}
           </div>
@@ -714,15 +772,40 @@ function DemoModal({ onClose }: { onClose: () => void }) {
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Mobile Header */}
-          <div className="md:hidden flex items-center justify-between p-4 border-b" style={{ borderColor: theme.border }}>
-            <div>
-              <span className="font-bold text-sm block">Audit Marc D.</span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary">ESSENTIAL</span>
-                <span className="text-[9px]" style={{ color: theme.muted }}>17 sections</span>
+          <div className="md:hidden flex flex-col gap-3 p-4 border-b" style={{ borderColor: theme.border }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-bold text-sm block">Audit Marc D.</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${selectedPlan === "anabolic" ? "bg-primary/20 text-primary" : "bg-violet-500/20 text-violet-400"}`}>{planName}</span>
+                  <span className="text-[9px]" style={{ color: theme.muted }}>{sectionCount} sections</span>
+                </div>
               </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.surface }}>×</button>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.surface }}>×</button>
+            {/* Mobile Plan Toggle */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setSelectedPlan("anabolic"); setActiveSection(0); }}
+                className={`py-2 px-3 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                  selectedPlan === "anabolic"
+                    ? "bg-primary text-black"
+                    : "bg-white/5 text-white/60"
+                }`}
+              >
+                Anabolic 49€
+              </button>
+              <button
+                onClick={() => { setSelectedPlan("propanel"); setActiveSection(0); }}
+                className={`py-2 px-3 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                  selectedPlan === "propanel"
+                    ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
+                    : "bg-white/5 text-white/60"
+                }`}
+              >
+                Pro Panel 99€
+              </button>
+            </div>
           </div>
 
           {/* Close button desktop */}
@@ -1505,372 +1588,6 @@ function BentoHeroSection() {
             </button>
           </Link>
         </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// Ultrahuman-style Feature Cards Section (AFib/Cardio style dual cards)
-function UltrahumanFeatureCards() {
-  return (
-    <section className="relative bg-black py-24 overflow-hidden">
-      <div className="relative max-w-6xl mx-auto px-6">
-        {/* Section header - Ultrahuman style */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Optimise ta<br />
-            <span className="text-white/50">performance.</span>
-          </h2>
-          <p className="text-white/40 text-lg max-w-xl">
-            Analyse en temps réel de ton système nerveux, sommeil et récupération avec précision clinique.
-          </p>
-        </motion.div>
-
-        {/* Dual Feature Cards - Exact Ultrahuman style */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* Card 1 - HRV/Stress Detection (Dark red/maroon like AFib) */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="relative h-[480px] rounded-[32px] overflow-hidden bg-[#3d1a1f] p-8">
-              {/* Header */}
-              <div className="relative z-10">
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                  Détection Stress
-                </h3>
-                <p className="text-white/60 text-sm leading-relaxed max-w-sm">
-                  Analyse ton système nerveux en continu, détectant les signes de stress chronique et de dysrégulation du SNA avec des rapports quotidiens.
-                </p>
-              </div>
-
-              {/* ECG Animation - Pink like Ultrahuman */}
-              <div className="absolute bottom-32 left-0 right-0 h-40 overflow-hidden">
-                <svg viewBox="0 0 500 120" className="w-full h-full" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="pinkEcg" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#ec4899" stopOpacity="0.2" />
-                      <stop offset="30%" stopColor="#ec4899" stopOpacity="1" />
-                      <stop offset="70%" stopColor="#ec4899" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M0,60 L60,60 L80,60 L100,20 L120,100 L140,40 L160,70 L180,60 L240,60 L260,60 L280,20 L300,100 L320,40 L340,70 L360,60 L420,60 L440,60 L460,20 L480,100 L500,60"
-                    fill="none"
-                    stroke="url(#pinkEcg)"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    className="ecg-line"
-                  />
-                </svg>
-                <style>{`
-                  .ecg-line {
-                    animation: ecgPulse 2s ease-in-out infinite;
-                  }
-                  @keyframes ecgPulse {
-                    0%, 100% { opacity: 0.6; }
-                    50% { opacity: 1; }
-                  }
-                `}</style>
-              </div>
-
-              {/* Notification Badge Stack - Like Ultrahuman */}
-              <div className="absolute bottom-8 left-8 right-8 space-y-2">
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/40 backdrop-blur-sm opacity-40">
-                  <div className="w-8 h-8 rounded-full bg-pink-500/30 flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-pink-400" />
-                  </div>
-                  <span className="text-white/60 text-sm">Stress modéré</span>
-                </div>
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/40 backdrop-blur-sm opacity-60">
-                  <div className="w-8 h-8 rounded-full bg-pink-500/30 flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-pink-400" />
-                  </div>
-                  <span className="text-white/70 text-sm">Stress modéré</span>
-                </div>
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-sm border border-pink-500/20">
-                  <div className="w-8 h-8 rounded-full bg-pink-500/30 flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-pink-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium text-sm">Stress élevé détecté</p>
-                    <p className="text-white/50 text-xs">HRV basse. Voir le rapport.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 2 - Recovery/Sleep (Green like Cardio Adaptability) */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <div className="relative h-[480px] rounded-[32px] overflow-hidden bg-[#0d3326] p-8">
-              {/* Header */}
-              <div className="relative z-10">
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                  Score Récupération
-                </h3>
-                <p className="text-white/60 text-sm leading-relaxed max-w-sm">
-                  Analyse ton sommeil chaque nuit avec des tachogrammes détaillés, offrant des insights sur ta récupération et ton adaptation au stress.
-                </p>
-              </div>
-
-              {/* Circular Gauge with Checkmark - Exact Ultrahuman style */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/4 w-56 h-56">
-                {/* Outer glow ring */}
-                <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-xl" />
-
-                {/* SVG Gauge */}
-                <svg viewBox="0 0 200 200" className="w-full h-full">
-                  {/* Background track */}
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="80"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth="12"
-                  />
-                  {/* Gradient track segments */}
-                  <circle
-                    cx="100"
-                    cy="100"
-                    r="80"
-                    fill="none"
-                    stroke="url(#gaugeGradient)"
-                    strokeWidth="12"
-                    strokeLinecap="round"
-                    strokeDasharray="380 503"
-                    strokeDashoffset="125"
-                    className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                  />
-                  <defs>
-                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f59e0b" />
-                      <stop offset="50%" stopColor="#22c55e" />
-                      <stop offset="100%" stopColor="#10b981" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-
-                {/* Center checkmark */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                    <Check className="w-10 h-10 text-white" strokeWidth={3} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Badge - Like Ultrahuman */}
-              <div className="absolute bottom-8 left-8 right-8">
-                <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-black/40 backdrop-blur-sm border border-emerald-500/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                    <span className="text-white font-medium">Bonne récupération</span>
-                  </div>
-                  <span className="text-white/50 text-sm">9:41</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// Ultrahuman-style Scores Section (like Metabolic Score / Food Score)
-function UltrahumanScoresSection() {
-  return (
-    <section className="relative bg-[#f5f5f5] py-24 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Top Row - 2 large cards with phone mockups */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-          {/* Card 1 - Score Sommeil (Dark theme) */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative bg-[#1a1a1a] rounded-[32px] p-8 min-h-[500px] overflow-hidden"
-          >
-            <div className="relative z-10 max-w-[280px]">
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                Score Sommeil
-              </h3>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Analyse ton architecture de sommeil en temps réel. Identifie tes phases de sommeil profond et REM.
-              </p>
-            </div>
-
-            {/* Phone Mockup */}
-            <div className="absolute right-4 bottom-4 w-[220px]">
-              <div className="bg-black rounded-[2rem] p-2 shadow-2xl">
-                <div className="bg-[#0a0f0d] rounded-[1.5rem] p-4 pt-8">
-                  {/* Status bar */}
-                  <div className="flex justify-between items-center text-[10px] text-white/40 mb-4">
-                    <span>9:41</span>
-                    <div className="flex gap-1">
-                      <div className="w-4 h-2 bg-white/40 rounded-sm" />
-                    </div>
-                  </div>
-
-                  {/* Score Display */}
-                  <div className="text-center mb-4">
-                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-2">Score Sommeil</p>
-                    <div className="text-5xl font-bold text-white mb-1">
-                      72<span className="text-emerald-400 text-lg ml-1">↑</span>
-                    </div>
-                    <p className="text-emerald-400 text-xs">+8 vs semaine dernière</p>
-                  </div>
-
-                  {/* Mini Stats */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="bg-white/5 rounded-xl p-3">
-                      <p className="text-[9px] text-white/40 uppercase">Profond</p>
-                      <p className="text-white font-bold">22%</p>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3">
-                      <p className="text-[9px] text-white/40 uppercase">REM</p>
-                      <p className="text-white font-bold">24%</p>
-                    </div>
-                  </div>
-
-                  {/* Bottom indicator */}
-                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 rounded-xl">
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400 text-xs">Sommeil optimal</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 2 - Score Récupération (Light theme like Ultrahuman) */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="relative bg-white rounded-[32px] p-8 min-h-[500px] overflow-hidden border border-gray-100"
-          >
-            <div className="relative z-10 max-w-[280px]">
-              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-                Score Récupération
-              </h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Visualise ta capacité de récupération en temps réel grâce à l'analyse de ta HRV.
-              </p>
-            </div>
-
-            {/* Phone Mockup with dark screen */}
-            <div className="absolute right-4 bottom-4 w-[220px]">
-              <div className="bg-gray-900 rounded-[2rem] p-2 shadow-2xl">
-                <div className="bg-[#0d1a15] rounded-[1.5rem] p-4 pt-8">
-                  {/* Status bar */}
-                  <div className="flex justify-between items-center text-[10px] text-white/40 mb-2">
-                    <span>DERNIÈRE SYNC • 09:43</span>
-                  </div>
-
-                  {/* Score Display */}
-                  <div className="text-center mb-3">
-                    <p className="text-[10px] text-white/40 uppercase tracking-wider mb-2">Score Récupération</p>
-                    <div className="text-5xl font-bold text-white mb-1">
-                      79<span className="text-emerald-400 text-sm ml-1">↑ +10</span>
-                    </div>
-                    <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-[10px] rounded-full">
-                      En progression
-                    </span>
-                  </div>
-
-                  {/* Metrics */}
-                  <div className="flex justify-center gap-6 mb-3">
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-white">42<span className="text-[10px] text-white/40">ms</span></p>
-                      <p className="text-[9px] text-white/40 uppercase">HRV</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-white">58<span className="text-[10px] text-white/40">bpm</span></p>
-                      <p className="text-[9px] text-white/40 uppercase">FC Repos</p>
-                    </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 rounded-xl">
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <div className="flex-1">
-                      <p className="text-emerald-400 text-xs font-medium">Bonne récupération</p>
-                      <p className="text-white/40 text-[9px]">HRV en amélioration</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Bottom Row - 2 smaller cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* Card 3 - Score Métabolique */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-[32px] p-8 border border-gray-100"
-          >
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Score Métabolique</h3>
-            <p className="text-gray-500 text-sm leading-relaxed mb-6">
-              Mesure l'impact de ta nutrition sur ton métabolisme. Identifie les aliments qui fonctionnent pour toi et optimise ton énergie.
-            </p>
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                <Zap className="w-7 h-7 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">67<span className="text-gray-400 text-lg">/100</span></p>
-                <p className="text-sm text-amber-500">À optimiser</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 4 - Score Hormonal */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-[32px] p-8 border border-gray-100"
-          >
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Score Hormonal</h3>
-            <p className="text-gray-500 text-sm leading-relaxed mb-6">
-              Analyse ton équilibre hormonal basé sur tes symptômes. Optimise ta testostérone, ton cortisol et ta thyroïde.
-            </p>
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center">
-                <Activity className="w-7 h-7 text-violet-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">48<span className="text-gray-400 text-lg">/100</span></p>
-                <p className="text-sm text-red-500">Priorité</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
       </div>
     </section>
   );
@@ -3474,8 +3191,6 @@ export default function Landing() {
         <CertificationsBar />
         <MediaBar />
         <BentoHeroSection />
-        <UltrahumanFeatureCards />
-        <UltrahumanScoresSection />
         <ScienceValidationSection />
         <BentoDomainesSection />
         <BloodVisionSection />
