@@ -2161,18 +2161,16 @@ function FloatingCTABar() {
 // BENTO CTA
 // Wearables Sync Section - Premium style with brand logos
 function WearablesSyncSection() {
-  // Main compatible brands with proper styling
+  // Sources actives sur Terra (11 sources configurées)
   const brands = [
     { name: "Apple Health", abbr: "apple", color: "#FFFFFF", bg: "#000000" },
     { name: "Oura", abbr: "oura", color: "#C9A962", bg: "#1A1A1A" },
-    { name: "WHOOP", abbr: "whoop", color: "#00D4AA", bg: "#000000" },
     { name: "Garmin", abbr: "garmin", color: "#FFFFFF", bg: "#007DC3" },
     { name: "Fitbit", abbr: "fitbit", color: "#00B0B9", bg: "#1A1A1A" },
-    { name: "Samsung", abbr: "samsung", color: "#1428A0", bg: "#FFFFFF" },
-    { name: "Polar", abbr: "polar", color: "#D32F2F", bg: "#FFFFFF" },
+    { name: "Google Fit", abbr: "google", color: "#4285F4", bg: "#FFFFFF" },
+    { name: "Samsung Health", abbr: "samsung", color: "#1428A0", bg: "#FFFFFF" },
     { name: "Ultrahuman", abbr: "ultra", color: "#FF4F00", bg: "#000000" },
     { name: "Withings", abbr: "withings", color: "#00A1DE", bg: "#FFFFFF" },
-    { name: "Huawei", abbr: "huawei", color: "#C7000B", bg: "#FFFFFF" },
   ];
 
   const dataTypes = [
@@ -2265,10 +2263,12 @@ function WearablesSyncSection() {
             ))}
           </div>
 
-          {/* +100 more badge */}
+          {/* Terra badge */}
           <div className="text-center mt-6">
-            <span className="inline-flex items-center gap-1 text-[11px] text-white/40">
-              <span className="font-mono text-[#4a9d7c]">+100</span> autres appareils supportés via Terra API
+            <span className="inline-flex items-center gap-2 text-[11px] text-white/40">
+              <span className="font-mono text-amber-400">8 sources actives</span>
+              <span className="text-white/20">•</span>
+              Powered by Terra API
             </span>
           </div>
         </motion.div>

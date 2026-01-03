@@ -135,17 +135,16 @@ export async function dispatchTerraData(
 
 // Supported providers
 // APPLE fonctionne via Terra Avengers App (l'user télécharge l'app iOS)
+// 8 sources actives sur Terra (configurées dans dashboard)
 export const TERRA_PROVIDERS = [
-  { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true, note: "Via Terra Avengers App" },
-  { id: "OURA", name: "Oura Ring", icon: "💍", requiresWidget: false },
-  { id: "GARMIN", name: "Garmin", icon: "🏃", requiresWidget: false },
-  { id: "FITBIT", name: "Fitbit", icon: "💪", requiresWidget: false },
-  { id: "POLAR", name: "Polar", icon: "❄️", requiresWidget: false },
-  { id: "ULTRAHUMAN", name: "Ultrahuman", icon: "🔬", requiresWidget: false },
-  { id: "WITHINGS", name: "Withings", icon: "⚖️", requiresWidget: false },
-  { id: "WHOOP", name: "Whoop", icon: "⌚", requiresWidget: false, note: "Requires WHOOP dev account" },
-  { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true, note: "Via Terra Avengers App" },
-  { id: "GOOGLE", name: "Google Fit", icon: "🟢", requiresWidget: true },
+  { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true, note: "Via Terra Avengers App", active: true },
+  { id: "OURA", name: "Oura Ring", icon: "💍", requiresWidget: false, active: true },
+  { id: "GARMIN", name: "Garmin", icon: "🏃", requiresWidget: false, active: true },
+  { id: "FITBIT", name: "Fitbit", icon: "💪", requiresWidget: false, active: true },
+  { id: "GOOGLE", name: "Google Fit", icon: "🟢", requiresWidget: false, active: true },
+  { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true, note: "Via Terra Avengers App", active: true },
+  { id: "ULTRAHUMAN", name: "Ultrahuman", icon: "🔬", requiresWidget: false, active: true },
+  { id: "WITHINGS", name: "Withings", icon: "⚖️", requiresWidget: false, active: true },
 ] as const;
 
 export type TerraProvider = typeof TERRA_PROVIDERS[number]["id"];
@@ -395,7 +394,7 @@ export async function generateTerraWidget(
       },
       body: JSON.stringify({
         reference_id: referenceId,
-        providers: providers?.join(",") || "APPLE,OURA,GARMIN,FITBIT,POLAR,ULTRAHUMAN,WITHINGS",
+        providers: providers?.join(",") || "APPLE,OURA,GARMIN,FITBIT,GOOGLE,SAMSUNG,ULTRAHUMAN,WITHINGS",
         language: "fr",
         // TERRA AVENGERS: Permet aux users iPhone de connecter Apple Health via l'app Terra Avengers
         // L'app est déjà sur l'App Store, l'user la télécharge et autorise Apple Health

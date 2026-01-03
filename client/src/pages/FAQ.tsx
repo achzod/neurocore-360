@@ -22,7 +22,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Comment fonctionne la synchronisation wearables (Elite) ?",
-    answer: "Avec le plan Elite, tu connectes ton Apple Watch, Oura Ring, Garmin, WHOOP, Fitbit ou autre via notre intégration Terra. On récupère automatiquement : HRV, qualité de sommeil (profond/REM/léger), fréquence cardiaque, SpO2, activité. Ces données enrichissent ton analyse et permettent des recommandations ultra-précises basées sur ta biologie réelle."
+    answer: "Avec le plan Elite, tu connectes tes wearables via Terra API. Pour Oura, Garmin, Fitbit, Ultrahuman, Withings → connexion directe en 1 clic. Pour Apple Health, Samsung Health, Google Fit → tu télécharges l'app gratuite 'Terra Avengers' sur ton téléphone, tu autorises l'accès à tes données santé, et c'est synchro automatiquement. On récupère : HRV, sommeil (profond/REM/léger), fréquence cardiaque, SpO2, activité. Ces données enrichissent ton analyse et permettent des recommandations ultra-précises."
   },
   {
     question: "L'analyse photo AI, ça marche comment ?",
