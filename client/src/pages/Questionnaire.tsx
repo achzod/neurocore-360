@@ -324,48 +324,60 @@ export default function Questionnaire() {
   };
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem("neurocore_email");
-    const savedResponses = localStorage.getItem("neurocore_responses");
-    const savedSection = localStorage.getItem("neurocore_section");
-    const savedPhotos = sessionStorage.getItem("neurocore_photos");
-
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setEmailSubmitted(true);
-      // Essayer de charger depuis la DB (plus fiable que localStorage)
-      loadProgressFromDB(savedEmail);
-    }
-
-    const parsedResponses = savedResponses ? JSON.parse(savedResponses) : {};
-    const parsedPhotos = savedPhotos ? JSON.parse(savedPhotos) : {};
-
-    if (Object.keys(parsedPhotos).length > 0) {
-      setPhotoData(parsedPhotos);
-    }
-
-    if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0) {
-      setResponses({ ...parsedResponses, ...parsedPhotos });
-    }
-
-    if (savedSection) {
-      setCurrentSectionIndex(Number(savedSection));
-    }
-
-    if (parsedResponses["sexe"]) {
-      setSexConfirmed(true);
-    }
-    if (parsedResponses["prenom"]) {
-      setPrenomConfirmed(true);
-    }
-
-    // Check if returning from Terra widget
     try {
+      const savedEmail = localStorage.getItem("neurocore_email");
+      const savedResponses = localStorage.getItem("neurocore_responses");
+      const savedSection = localStorage.getItem("neurocore_section");
+      const savedPhotos = sessionStorage.getItem("neurocore_photos");
+
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setEmailSubmitted(true);
+        loadProgressFromDB(savedEmail);
+      }
+
+      let parsedResponses: Record<string, unknown> = {};
+      let parsedPhotos: Record<string, string> = {};
+
+      try {
+        parsedResponses = savedResponses ? JSON.parse(savedResponses) : {};
+      } catch {
+        console.error("[Questionnaire] Invalid responses, clearing");
+        localStorage.removeItem("neurocore_responses");
+      }
+
+      try {
+        parsedPhotos = savedPhotos ? JSON.parse(savedPhotos) : {};
+      } catch {
+        console.error("[Questionnaire] Invalid photos, clearing");
+        sessionStorage.removeItem("neurocore_photos");
+      }
+
+      if (Object.keys(parsedPhotos).length > 0) {
+        setPhotoData(parsedPhotos);
+      }
+
+      if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0) {
+        setResponses({ ...parsedResponses, ...parsedPhotos });
+      }
+
+      if (savedSection) {
+        setCurrentSectionIndex(Number(savedSection));
+      }
+
+      if (parsedResponses["sexe"]) {
+        setSexConfirmed(true);
+      }
+      if (parsedResponses["prenom"]) {
+        setPrenomConfirmed(true);
+      }
+
+      // Check if returning from Terra widget
       const wasConnecting = sessionStorage.getItem("terraConnecting");
       if (wasConnecting === "true") {
         sessionStorage.removeItem("terraConnecting");
         setWearablesSyncShown(true);
 
-        // Verify Terra sync in background (non-blocking)
         const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
         if (emailToCheck) {
           fetch(`/api/terra/db/email/${encodeURIComponent(emailToCheck)}`)
@@ -373,14 +385,13 @@ export default function Questionnaire() {
             .then(data => {
               if (data.success && data.count > 0) {
                 setTerraConnected(true);
-                console.log("[Terra] Sync verified:", data.count, "records");
               }
             })
             .catch(err => console.error("[Terra] Sync check failed:", err));
         }
       }
     } catch (e) {
-      console.error("[Terra] Init error:", e);
+      console.error("[Questionnaire] Init error:", e);
     }
   }, []);
 
