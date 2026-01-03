@@ -2,13 +2,13 @@
  * NEUROCORE 360 - Système de Questionnaire 3 Tiers
  *
  * GRATUIT (0€): ~50 questions - Dashboard basique
- * ESSENTIAL (49€): ~150 questions - Rapport Achzod 17 sections
- * ELITE (99€): ~210 questions - Rapport premium + Terra Wearables + Analyse Photo
+ * ANABOLIC BIOSCAN (49€): ~150 questions - Rapport Achzod 18 sections
+ * PRO PANEL 360 (99€): ~210 questions - Rapport premium 25 sections + Terra Wearables + Analyse Photo
  *
  * Chaque question a un champ `tier`:
- * - "free" = disponible pour tous (gratuit, essential, elite)
- * - "essential" = disponible pour essential et elite
- * - "elite" = disponible uniquement pour elite
+ * - "free" = disponible pour tous
+ * - "essential" = ANABOLIC BIOSCAN (49€)
+ * - "elite" = PRO PANEL 360 (99€)
  */
 
 export type QuestionTier = "free" | "essential" | "elite";
@@ -56,7 +56,7 @@ export const SECTIONS: Section[] = [
   { id: "nutrition-base", title: "Nutrition", subtitle: "Habitudes alimentaires", icon: "Utensils", tier: "free", order: 7 },
   { id: "lifestyle", title: "Lifestyle", subtitle: "Mode de vie", icon: "Heart", tier: "free", order: 8 },
 
-  // ESSENTIAL SECTIONS (+6)
+  // ANABOLIC BIOSCAN SECTIONS (+6)
   { id: "hormones-homme", title: "Hormones Homme", subtitle: "Profil hormonal masculin", icon: "TrendingUp", tier: "essential", order: 9 },
   { id: "hormones-femme", title: "Hormones Femme", subtitle: "Profil hormonal féminin", icon: "TrendingUp", tier: "essential", order: 10 },
   { id: "axes-cliniques", title: "Axes Cliniques", subtitle: "Thyroïde, SII, diabète", icon: "Stethoscope", tier: "essential", order: 11 },
@@ -64,7 +64,7 @@ export const SECTIONS: Section[] = [
   { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 13 },
   { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 14 },
 
-  // ELITE SECTIONS (+5)
+  // PRO PANEL 360 SECTIONS (+5)
   { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 15 },
   { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 16 },
   { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 17 },
@@ -145,7 +145,7 @@ export const QUESTIONS_FREE: Question[] = [
 ];
 
 // ============================================================================
-// QUESTIONS - ESSENTIAL TIER (ajoutées aux FREE)
+// QUESTIONS - ANABOLIC BIOSCAN (ajoutées aux FREE)
 // ============================================================================
 
 export const QUESTIONS_ESSENTIAL: Question[] = [
@@ -217,7 +217,7 @@ export const QUESTIONS_ESSENTIAL: Question[] = [
 ];
 
 // ============================================================================
-// QUESTIONS - ELITE TIER (ajoutées aux ESSENTIAL)
+// QUESTIONS - PRO PANEL 360 (ajoutées aux ANABOLIC BIOSCAN)
 // ============================================================================
 
 export const QUESTIONS_ELITE: Question[] = [
