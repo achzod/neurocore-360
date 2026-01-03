@@ -136,15 +136,17 @@ export async function dispatchTerraData(
 // Supported providers
 // APPLE fonctionne via Terra Avengers App (l'user télécharge l'app iOS)
 // 8 sources actives sur Terra (configurées dans dashboard)
+// API = connexion directe 1 clic
+// SDK = nécessite l'app Terra Avengers sur le téléphone
 export const TERRA_PROVIDERS = [
-  { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true, note: "Via Terra Avengers App", active: true },
-  { id: "OURA", name: "Oura Ring", icon: "💍", requiresWidget: false, active: true },
-  { id: "GARMIN", name: "Garmin", icon: "🏃", requiresWidget: false, active: true },
-  { id: "FITBIT", name: "Fitbit", icon: "💪", requiresWidget: false, active: true },
-  { id: "GOOGLE", name: "Google Fit", icon: "🟢", requiresWidget: false, active: true },
-  { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true, note: "Via Terra Avengers App", active: true },
-  { id: "ULTRAHUMAN", name: "Ultrahuman", icon: "🔬", requiresWidget: false, active: true },
-  { id: "WITHINGS", name: "Withings", icon: "⚖️", requiresWidget: false, active: true },
+  { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true, note: "SDK - Via Terra Avengers App", active: true },
+  { id: "OURA", name: "Oura Ring", icon: "💍", requiresWidget: false, note: "API", active: true },
+  { id: "GARMIN", name: "Garmin", icon: "🏃", requiresWidget: false, note: "API", active: true },
+  { id: "FITBIT", name: "Fitbit", icon: "💪", requiresWidget: false, note: "API", active: true },
+  { id: "GOOGLE", name: "Google Fit", icon: "🟢", requiresWidget: true, note: "SDK - Via Terra Avengers App", active: true },
+  { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true, note: "SDK - Via Terra Avengers App", active: true },
+  { id: "ULTRAHUMAN", name: "Ultrahuman", icon: "🔬", requiresWidget: false, note: "API", active: true },
+  { id: "WITHINGS", name: "Withings", icon: "⚖️", requiresWidget: false, note: "API", active: true },
 ] as const;
 
 export type TerraProvider = typeof TERRA_PROVIDERS[number]["id"];
