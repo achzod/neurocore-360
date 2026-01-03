@@ -807,6 +807,8 @@ export async function handleTerraWebhook(
 
   const event = payload as any;
   const referenceId = event.user?.reference_id || "";
+  const terraUserId = event.user?.user_id || null;
+  const provider = event.user?.provider || null;
 
   // Dispatch vers le bon site
   const dispatchResult = await dispatchTerraData(referenceId, event.type, event);
@@ -820,25 +822,43 @@ export async function handleTerraWebhook(
     };
   }
 
-  // Sinon, traiter localement pour Neurocore
+  // Import storage dynamically to avoid circular dependency
+  const { storage } = await import("./storage");
+
+  // TOUJOURS sauvegarder les données en DB (très important !)
+  try {
+    await storage.saveTerraData(referenceId, terraUserId, provider, event.type, event);
+    console.log(`[Terra] Saved ${event.type} data to DB for ${referenceId}`);
+  } catch (err) {
+    console.error(`[Terra] Failed to save data to DB:`, err);
+  }
+
+  // Traiter localement pour Neurocore
   switch (event.type) {
     case "auth":
-      console.log(`[Terra] User authenticated: ${referenceId} via ${event.user?.provider}`);
-      // Store Terra user connection
-      return { success: true, message: "Auth event processed", site: "Neurocore 360" };
+      console.log(`[Terra] User authenticated: ${referenceId} via ${provider}`);
+      return { success: true, message: "Auth event saved to DB", site: "Neurocore 360" };
 
     case "deauth":
       console.log(`[Terra] User deauthenticated: ${referenceId}`);
-      return { success: true, message: "Deauth event processed", site: "Neurocore 360" };
+      return { success: true, message: "Deauth event saved to DB", site: "Neurocore 360" };
 
     case "user_reauth":
       console.log(`[Terra] User re-authenticated: ${referenceId}`);
-      return { success: true, message: "Reauth event processed", site: "Neurocore 360" };
+      return { success: true, message: "Reauth event saved to DB", site: "Neurocore 360" };
+
+    case "daily":
+    case "sleep":
+    case "body":
+    case "activity":
+    case "nutrition":
+    case "menstruation":
+      console.log(`[Terra] Health data (${event.type}) received for ${referenceId} - SAVED TO DB`);
+      return { success: true, message: `${event.type} data saved to DB`, site: "Neurocore 360" };
 
     default:
-      // Data events (daily, sleep, body, etc.)
-      console.log(`[Terra] Data event: ${event.type} for user ${referenceId}`);
-      return { success: true, message: "Data event processed", site: "Neurocore 360" };
+      console.log(`[Terra] Unknown event type: ${event.type} for ${referenceId} - SAVED TO DB`);
+      return { success: true, message: "Event saved to DB", site: "Neurocore 360" };
   }
 }
 
