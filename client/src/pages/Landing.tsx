@@ -1201,7 +1201,7 @@ function BloodVisionSection() {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+            <div className="relative overflow-hidden rounded-2xl bg-black">
               <video
                 autoPlay
                 loop
