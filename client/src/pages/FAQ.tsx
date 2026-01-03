@@ -18,7 +18,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Quelle est la différence entre Gratuit, Essential et Elite ?",
-    answer: "GRATUIT (0€) : 50 questions essentielles + dashboard interactif + scores des 5 domaines + radar de performance. Tu obtiens une vue d'ensemble de ton profil. ESSENTIAL (49€) : 150 questions approfondies + rapport ~25 pages (17 sections) + axes cliniques (thyroïde, SII...) + stack suppléments personnalisé + plan 90 jours. Le meilleur rapport qualité/prix. ELITE (99€) : 210+ questions ultra-détaillées + rapport ~45 pages (25+ sections) + sync wearables + analyse photo (posture, composition) + nutrition timing avancé + support prioritaire. L'expérience complète."
+    answer: "GRATUIT (0€) : 50 questions essentielles + dashboard interactif + scores des 5 domaines + radar de performance. Tu obtiens une vue d'ensemble de ton profil. ESSENTIAL (49€) : 150 questions approfondies + rapport ~25 pages (17 sections) + axes cliniques (thyroïde, SII...) + stack suppléments personnalisé + plan 90 jours. Le meilleur rapport qualité/prix. ELITE (99€) : 210 questions ultra-détaillées + rapport ~45 pages (25+ sections) + sync wearables + analyse photo (posture, composition) + nutrition timing avancé + support prioritaire. L'expérience complète."
   },
   {
     question: "Comment fonctionne la synchronisation wearables (Elite) ?",

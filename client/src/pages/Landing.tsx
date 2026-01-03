@@ -61,20 +61,19 @@ function DemoModal({ onClose }: { onClose: () => void }) {
   };
 
   const sections = [
-    { name: "Dashboard", locked: false, content: { title: "Vue d'ensemble", subtitle: "GRATUIT", body: "Score global: 58/100. Système nerveux et sommeil identifiés comme priorités. Potentiel d'amélioration: +37 points en 90 jours." } },
-    { name: "Système Nerveux", locked: false, content: { title: "Système Nerveux Autonome", subtitle: "PRIORITÉ #1", body: "HRV basse (28ms). Cortisol matinal élevé (24.5 µg/dL). Ratio sympathique/parasympathique déséquilibré. Recommandations: respiration Wim Hof, cold exposure progressive, magnésium glycinate 400mg." } },
-    { name: "Sommeil", locked: false, content: { title: "Architecture du Sommeil", subtitle: "CRITIQUE", body: "Latence d'endormissement: 45+ min. Sommeil profond: 12% (optimal: 20%+). Réveils nocturnes: 3-4x/nuit. Chronotype: Loup (décalé). Protocole: lumière rouge le soir, glycine 3g, température chambre 18°C." } },
-    { name: "Hormones", locked: false, content: { title: "Profil Hormonal", subtitle: "À OPTIMISER", body: "Testostérone estimée sous-optimale. Cortisol élevé impactant le ratio T/C. Thyroïde: signes d'hypothyroïdie subclinique. Stack recommandé: ashwagandha KSM-66, zinc picolinate, vitamine D3+K2." } },
-    { name: "Nutrition", locked: false, content: { title: "Habitudes Alimentaires", subtitle: "BON NIVEAU", body: "Apport protéique optimal (1.8g/kg). Timing à optimiser: fenêtre anabolique post-training sous-exploitée. Hydratation: 1.8L/jour (insuffisant). Ajout: créatine 5g/j, électrolytes." } },
-    { name: "Training", locked: false, content: { title: "Performance Training", subtitle: "FORT", body: "Fréquence: 5x/sem. Volume: adéquat. Intensité: bonne. Points d'amélioration: deload systématique toutes les 4 semaines, travail excentrique à intégrer, mobilité thoracique." } },
-    { name: "Suppléments", locked: true, content: { title: "Stack Personnalisé", subtitle: "ESSENTIAL", body: "Contenu verrouillé. Passe au plan Essential pour accéder au stack suppléments complet avec dosages, timing et marques recommandées." } },
-    { name: "Plan 90 Jours", locked: true, content: { title: "Feuille de Route", subtitle: "ESSENTIAL", body: "Contenu verrouillé. Le plan 90 jours détaillé avec phases progressives est disponible avec le plan Essential ou Elite." } },
-    { name: "HRV & Cardio", locked: true, content: { title: "Variabilité Cardiaque", subtitle: "ELITE", body: "Contenu verrouillé. Analyse HRV avancée avec données de ton wearable disponible uniquement avec le plan Elite." } },
-    { name: "Analyse Photo", locked: true, content: { title: "Posture & Composition", subtitle: "ELITE", body: "Contenu verrouillé. L'analyse photo détaillée (posture, composition corporelle) est exclusive au plan Elite." } },
+    { name: "Dashboard", locked: false },
+    { name: "Système Nerveux", locked: false },
+    { name: "Sommeil", locked: false },
+    { name: "Hormones", locked: false },
+    { name: "Nutrition", locked: false },
+    { name: "Training", locked: false },
+    { name: "Suppléments", locked: true },
+    { name: "Plan 90 Jours", locked: true },
+    { name: "HRV & Cardio", locked: true },
+    { name: "Analyse Photo", locked: true },
   ];
 
   const theme = themes[activeTheme];
-  const isLight = activeTheme === "titanium" || activeTheme === "organic";
   const currentSection = sections[activeSection];
 
   useEffect(() => {
@@ -87,6 +86,517 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     contentRef.current?.addEventListener('scroll', handleScroll);
     return () => contentRef.current?.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Render different content based on active section
+  const renderSectionContent = () => {
+    if (currentSection.locked) {
+      const isElite = activeSection >= 8;
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: theme.surface }}>
+            <Lock size={40} style={{ color: theme.muted }} />
+          </div>
+          <h2 className="text-3xl font-bold mb-4">{currentSection.name}</h2>
+          <p className="text-lg mb-2" style={{ color: theme.muted }}>Contenu verrouillé</p>
+          <p className="max-w-md mb-8" style={{ color: theme.muted }}>
+            {isElite
+              ? "Cette section avancée est disponible uniquement avec le plan Elite. Accède aux analyses wearables et photo."
+              : "Cette section est disponible avec le plan Essential. Accède au stack suppléments et au plan 90 jours détaillé."}
+          </p>
+          <Link href={`/audit-complet/questionnaire?plan=${isElite ? 'elite' : 'essential'}`}>
+            <button
+              className="px-8 py-4 rounded-xl font-bold transition-all hover:opacity-90"
+              style={{ backgroundColor: theme.primary, color: theme.bg }}
+            >
+              Débloquer avec {isElite ? "Elite (99€)" : "Essential (49€)"} →
+            </button>
+          </Link>
+        </div>
+      );
+    }
+
+    switch (activeSection) {
+      case 0: // Dashboard
+        return (
+          <div className="space-y-8">
+            <header>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6" style={{ borderColor: theme.border, backgroundColor: theme.surface }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: theme.muted }}>Vue d'ensemble</span>
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+                Marc, voici ton audit.
+              </h1>
+              <p className="text-lg" style={{ color: theme.muted }}>
+                Score global: 58/100 — Une base solide avec un fort potentiel d'amélioration.
+              </p>
+            </header>
+
+            {/* Score Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:row-span-2 rounded-2xl p-6 border relative overflow-hidden" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                <Activity className="absolute top-4 right-4 opacity-10" size={60} />
+                <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-4" style={{ color: theme.muted }}>Score Global</h3>
+                <div className="text-6xl font-bold mb-2">58<span className="text-xl" style={{ color: theme.muted }}>/100</span></div>
+                <span className="inline-block px-2 py-1 text-[10px] font-mono rounded bg-amber-500/10 text-amber-500">À OPTIMISER</span>
+              </div>
+              {[
+                { label: "Système Nerveux", score: "4.5", status: "CRITIQUE", statusColor: "red" },
+                { label: "Sommeil", score: "3.5", status: "CRITIQUE", statusColor: "red" },
+                { label: "Nutrition", score: "7.2", status: "BON", statusColor: "green" },
+                { label: "Training", score: "8.5", status: "FORT", statusColor: "green" },
+              ].map((kpi, i) => (
+                <div key={i} className="rounded-xl p-5 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-[10px] font-mono uppercase" style={{ color: theme.muted }}>{kpi.label}</span>
+                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${kpi.statusColor === 'red' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>{kpi.status}</span>
+                  </div>
+                  <div className="text-2xl font-bold">{kpi.score}<span className="text-sm" style={{ color: theme.muted }}>/10</span></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Projection Chart */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={16} style={{ color: theme.primary }} />
+                <h3 className="font-bold" style={{ color: theme.primary }}>Projection 90 jours</h3>
+              </div>
+              <p className="text-sm mb-4" style={{ color: theme.muted }}>
+                En suivant le protocole, tu peux atteindre 95/100 en 90 jours.
+              </p>
+              <div className="flex items-end gap-1 h-24">
+                {[58, 65, 72, 78, 84, 90, 95].map((v, i) => (
+                  <div key={i} className="flex-1 rounded-t transition-all" style={{ height: `${v}%`, backgroundColor: i === 0 ? theme.muted : theme.primary, opacity: i === 0 ? 0.3 : 0.4 + (i * 0.1) }} />
+                ))}
+              </div>
+              <div className="flex justify-between text-[9px] font-mono mt-2" style={{ color: theme.muted }}>
+                <span>Aujourd'hui</span>
+                <span>J90</span>
+              </div>
+            </div>
+
+            {/* Priorities */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4">Tes 3 priorités</h3>
+              <div className="space-y-3">
+                {[
+                  { num: 1, title: "Système Nerveux", desc: "HRV basse, cortisol élevé", color: "red" },
+                  { num: 2, title: "Sommeil", desc: "Architecture fragmentée", color: "red" },
+                  { num: 3, title: "Hormones", desc: "Ratio T/C à optimiser", color: "amber" },
+                ].map((p) => (
+                  <div key={p.num} className="flex items-center gap-4 p-3 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${p.color === 'red' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>#{p.num}</span>
+                    <div>
+                      <p className="font-semibold text-sm">{p.title}</p>
+                      <p className="text-xs" style={{ color: theme.muted }}>{p.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 1: // Système Nerveux
+        return (
+          <div className="space-y-8">
+            <header>
+              <span className="inline-block px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-red-500/10 text-red-500 mb-4">PRIORITÉ #1</span>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">Système Nerveux Autonome</h1>
+              <p className="text-lg" style={{ color: theme.muted }}>
+                Ton système nerveux est en mode "survie". C'est le blocage principal à débloquer.
+              </p>
+            </header>
+
+            {/* HRV Card */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-2" style={{ color: theme.muted }}>Variabilité Cardiaque (HRV)</h3>
+                  <div className="text-5xl font-bold text-red-500">28<span className="text-xl" style={{ color: theme.muted }}>ms</span></div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm" style={{ color: theme.muted }}>Optimal: 50-100ms</p>
+                  <span className="text-red-500 font-bold">-44%</span>
+                </div>
+              </div>
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-red-500 rounded-full" style={{ width: '28%' }} />
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Cortisol AM", value: "24.5", unit: "µg/dL", status: "Élevé", color: "red" },
+                { label: "Ratio Sympa/Para", value: "3.2:1", unit: "", status: "Déséquilibré", color: "red" },
+                { label: "Fréquence cardiaque repos", value: "72", unit: "bpm", status: "Moyen", color: "amber" },
+                { label: "Temps de récupération", value: "48+", unit: "h", status: "Long", color: "amber" },
+              ].map((m, i) => (
+                <div key={i} className="rounded-xl p-4 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <p className="text-[10px] font-mono uppercase mb-2" style={{ color: theme.muted }}>{m.label}</p>
+                  <div className="text-2xl font-bold">{m.value}<span className="text-sm" style={{ color: theme.muted }}>{m.unit}</span></div>
+                  <span className={`text-[10px] font-mono ${m.color === 'red' ? 'text-red-500' : 'text-amber-500'}`}>{m.status}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Recommendations */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4" style={{ color: theme.primary }}>Protocole recommandé</h3>
+              <div className="space-y-3">
+                {[
+                  { title: "Respiration Wim Hof", desc: "3 rounds le matin à jeun", time: "15 min/jour" },
+                  { title: "Cold Exposure", desc: "Douche froide progressive", time: "2-5 min/jour" },
+                  { title: "Magnésium Glycinate", desc: "Avant le coucher", time: "400mg/jour" },
+                  { title: "Cohérence cardiaque", desc: "5-5-5 avant les repas", time: "5 min x3/jour" },
+                ].map((r, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <div className="flex items-center gap-3">
+                      <Check size={16} style={{ color: theme.primary }} />
+                      <div>
+                        <p className="font-semibold text-sm">{r.title}</p>
+                        <p className="text-xs" style={{ color: theme.muted }}>{r.desc}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono" style={{ color: theme.muted }}>{r.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2: // Sommeil
+        return (
+          <div className="space-y-8">
+            <header>
+              <span className="inline-block px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-red-500/10 text-red-500 mb-4">CRITIQUE</span>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">Architecture du Sommeil</h1>
+              <p className="text-lg" style={{ color: theme.muted }}>
+                Ton sommeil est fragmenté. La récupération nocturne est compromise.
+              </p>
+            </header>
+
+            {/* Sleep Score */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-2" style={{ color: theme.muted }}>Score Sommeil</h3>
+                  <div className="text-5xl font-bold text-red-500">35<span className="text-xl" style={{ color: theme.muted }}>/100</span></div>
+                </div>
+                <div className="w-24 h-24 relative">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" strokeWidth="8" strokeLinecap="round" strokeDasharray="251" strokeDashoffset={251 * 0.65} />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Sleep Phases */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Latence", value: "45+", unit: "min", target: "<15 min", bad: true },
+                { label: "Sommeil Profond", value: "12", unit: "%", target: "20%+", bad: true },
+                { label: "REM", value: "18", unit: "%", target: "25%+", bad: true },
+                { label: "Réveils", value: "3-4", unit: "x/nuit", target: "0-1x", bad: true },
+              ].map((p, i) => (
+                <div key={i} className="rounded-xl p-4 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <p className="text-[10px] font-mono uppercase mb-2" style={{ color: theme.muted }}>{p.label}</p>
+                  <div className="text-2xl font-bold">{p.value}<span className="text-sm" style={{ color: theme.muted }}>{p.unit}</span></div>
+                  <p className="text-[10px]" style={{ color: p.bad ? '#ef4444' : theme.muted }}>Optimal: {p.target}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Chronotype */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4">Ton Chronotype: Loup</h3>
+              <p className="text-sm mb-4" style={{ color: theme.muted }}>
+                Tu es naturellement décalé vers le soir. Ton pic de performance est entre 16h et 20h.
+                Tes habitudes actuelles ne respectent pas ton rythme biologique.
+              </p>
+              <div className="flex items-center gap-4">
+                <Moon size={24} style={{ color: theme.primary }} />
+                <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: theme.bg }}>
+                  <div className="h-full w-3/4 rounded-full" style={{ background: `linear-gradient(to right, ${theme.muted}, ${theme.primary})` }} />
+                </div>
+                <span className="text-sm font-mono" style={{ color: theme.muted }}>23h-7h idéal</span>
+              </div>
+            </div>
+
+            {/* Protocol */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4" style={{ color: theme.primary }}>Protocole Sommeil</h3>
+              <div className="space-y-3">
+                {[
+                  { title: "Lumière rouge le soir", desc: "Après 20h, éliminer lumière bleue" },
+                  { title: "Glycine 3g", desc: "30 min avant le coucher" },
+                  { title: "Chambre à 18°C", desc: "Température optimale pour le sommeil profond" },
+                  { title: "Magnésium + L-Théanine", desc: "Stack relaxation nocturne" },
+                  { title: "Routine fixe", desc: "Même heure de coucher ±30min" },
+                ].map((r, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <Check size={16} style={{ color: theme.primary }} />
+                    <div>
+                      <p className="font-semibold text-sm">{r.title}</p>
+                      <p className="text-xs" style={{ color: theme.muted }}>{r.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3: // Hormones
+        return (
+          <div className="space-y-8">
+            <header>
+              <span className="inline-block px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-500 mb-4">À OPTIMISER</span>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">Profil Hormonal</h1>
+              <p className="text-lg" style={{ color: theme.muted }}>
+                Ton équilibre hormonal est perturbé par le stress chronique et le manque de sommeil.
+              </p>
+            </header>
+
+            {/* Hormone Levels */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { label: "Testostérone (estimée)", value: "Sous-optimale", status: "Signes: fatigue, libido basse, récup lente", color: "amber" },
+                { label: "Cortisol", value: "Élevé", status: "Ratio T/C déséquilibré", color: "red" },
+                { label: "Thyroïde", value: "Subclinique", status: "Signes d'hypothyroïdie légère", color: "amber" },
+                { label: "Insuline", value: "Résistance légère", status: "Pics glycémiques fréquents", color: "amber" },
+              ].map((h, i) => (
+                <div key={i} className="rounded-xl p-5 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <p className="text-[10px] font-mono uppercase mb-2" style={{ color: theme.muted }}>{h.label}</p>
+                  <p className={`text-xl font-bold ${h.color === 'red' ? 'text-red-500' : 'text-amber-500'}`}>{h.value}</p>
+                  <p className="text-xs mt-2" style={{ color: theme.muted }}>{h.status}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Optimization Stack */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4" style={{ color: theme.primary }}>Stack Optimisation Hormonale</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { name: "Ashwagandha KSM-66", dose: "600mg/jour", timing: "Soir", effect: "Cortisol ↓, Testo ↑" },
+                  { name: "Zinc Picolinate", dose: "30mg/jour", timing: "Repas", effect: "Testo, Thyroïde" },
+                  { name: "Vitamine D3 + K2", dose: "5000 UI/jour", timing: "Matin", effect: "Hormones, Immunité" },
+                  { name: "Bore", dose: "10mg/jour", timing: "Matin", effect: "SHBG ↓, Free T ↑" },
+                ].map((s, i) => (
+                  <div key={i} className="p-4 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <p className="font-semibold text-sm">{s.name}</p>
+                    <div className="flex items-center gap-2 mt-2 text-xs" style={{ color: theme.muted }}>
+                      <span>{s.dose}</span>
+                      <span>•</span>
+                      <span>{s.timing}</span>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: theme.primary }}>{s.effect}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Lifestyle Factors */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4">Facteurs Lifestyle</h3>
+              <div className="space-y-3">
+                {[
+                  { factor: "Sommeil", impact: "Critique", desc: "Chaque heure de dette = -15% testostérone" },
+                  { factor: "Training", impact: "Positif", desc: "Compound lifts = stimulus hormonal optimal" },
+                  { factor: "Stress", impact: "Négatif", desc: "Cortisol chronique = suppression axe HPG" },
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <div>
+                      <p className="font-semibold text-sm">{f.factor}</p>
+                      <p className="text-xs" style={{ color: theme.muted }}>{f.desc}</p>
+                    </div>
+                    <span className={`text-xs font-mono px-2 py-1 rounded ${f.impact === 'Critique' ? 'bg-red-500/10 text-red-500' : f.impact === 'Positif' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500'}`}>{f.impact}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4: // Nutrition
+        return (
+          <div className="space-y-8">
+            <header>
+              <span className="inline-block px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-green-500/10 text-green-500 mb-4">BON NIVEAU</span>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">Habitudes Alimentaires</h1>
+              <p className="text-lg" style={{ color: theme.muted }}>
+                Ta nutrition est solide. Quelques optimisations pour maximiser les résultats.
+              </p>
+            </header>
+
+            {/* Nutrition Score */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-2" style={{ color: theme.muted }}>Score Nutrition</h3>
+                  <div className="text-5xl font-bold text-green-500">72<span className="text-xl" style={{ color: theme.muted }}>/100</span></div>
+                </div>
+                <div className="w-24 h-24 relative">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#22c55e" strokeWidth="8" strokeLinecap="round" strokeDasharray="251" strokeDashoffset={251 * 0.28} />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Macros */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: "Protéines", value: "1.8", unit: "g/kg", status: "Optimal", color: "green" },
+                { label: "Glucides", value: "2.5", unit: "g/kg", status: "Timing à revoir", color: "amber" },
+                { label: "Lipides", value: "0.9", unit: "g/kg", status: "Correct", color: "green" },
+              ].map((m, i) => (
+                <div key={i} className="rounded-xl p-4 border text-center" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <p className="text-[10px] font-mono uppercase mb-2" style={{ color: theme.muted }}>{m.label}</p>
+                  <div className="text-2xl font-bold">{m.value}<span className="text-sm" style={{ color: theme.muted }}>{m.unit}</span></div>
+                  <span className={`text-[10px] ${m.color === 'green' ? 'text-green-500' : 'text-amber-500'}`}>{m.status}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Points to Improve */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4">Points d'amélioration</h3>
+              <div className="space-y-3">
+                {[
+                  { issue: "Hydratation insuffisante", current: "1.8L/jour", target: "3L/jour minimum" },
+                  { issue: "Fenêtre anabolique", current: "Repas 2h post-training", target: "Shake 30min post" },
+                  { issue: "Timing glucides", current: "Répartition égale", target: "Concentrer péri-training" },
+                ].map((p, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <div>
+                      <p className="font-semibold text-sm">{p.issue}</p>
+                      <p className="text-xs" style={{ color: theme.muted }}>Actuel: {p.current}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs" style={{ color: theme.primary }}>→ {p.target}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Supplements */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4" style={{ color: theme.primary }}>Ajouts recommandés</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { name: "Créatine Monohydrate", dose: "5g/jour", why: "Performance, cognition" },
+                  { name: "Électrolytes", dose: "Quotidien", why: "Hydratation optimale" },
+                  { name: "Whey Isolate", dose: "30g post-WO", why: "Fenêtre anabolique" },
+                  { name: "Oméga-3", dose: "3g EPA/DHA", why: "Inflammation, récup" },
+                ].map((s, i) => (
+                  <div key={i} className="p-4 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <p className="font-semibold text-sm">{s.name}</p>
+                    <p className="text-xs mt-1" style={{ color: theme.muted }}>{s.dose}</p>
+                    <p className="text-xs mt-1" style={{ color: theme.primary }}>{s.why}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 5: // Training
+        return (
+          <div className="space-y-8">
+            <header>
+              <span className="inline-block px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-green-500/10 text-green-500 mb-4">FORT</span>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">Performance Training</h1>
+              <p className="text-lg" style={{ color: theme.muted }}>
+                Ton entraînement est solide. On optimise la récupération et la périodisation.
+              </p>
+            </header>
+
+            {/* Training Score */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-2" style={{ color: theme.muted }}>Score Training</h3>
+                  <div className="text-5xl font-bold text-green-500">85<span className="text-xl" style={{ color: theme.muted }}>/100</span></div>
+                </div>
+                <Dumbbell size={48} style={{ color: theme.primary, opacity: 0.3 }} />
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Fréquence", value: "5x", unit: "/sem", status: "Optimal" },
+                { label: "Volume", value: "16-20", unit: "séries/muscle", status: "Bon" },
+                { label: "Intensité", value: "RPE 8-9", unit: "", status: "Élevée" },
+                { label: "Progression", value: "+2.5%", unit: "/sem", status: "Linéaire" },
+              ].map((m, i) => (
+                <div key={i} className="rounded-xl p-4 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <p className="text-[10px] font-mono uppercase mb-2" style={{ color: theme.muted }}>{m.label}</p>
+                  <div className="text-xl font-bold">{m.value}<span className="text-sm" style={{ color: theme.muted }}>{m.unit}</span></div>
+                  <span className="text-[10px] text-green-500">{m.status}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Optimizations */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4">Optimisations recommandées</h3>
+              <div className="space-y-3">
+                {[
+                  { title: "Deload systématique", desc: "Semaine 4: -40% volume", impact: "Récupération SNC" },
+                  { title: "Travail excentrique", desc: "3-4s tempo négatif sur composés", impact: "Hypertrophie +15%" },
+                  { title: "Mobilité thoracique", desc: "10 min/jour, focus rotation", impact: "Posture, performance" },
+                  { title: "Zone 2 cardio", desc: "2x30min/sem, 120-140 bpm", impact: "Base aérobie, récup" },
+                ].map((o, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: theme.bg }}>
+                    <div className="flex items-center gap-3">
+                      <Check size={16} style={{ color: theme.primary }} />
+                      <div>
+                        <p className="font-semibold text-sm">{o.title}</p>
+                        <p className="text-xs" style={{ color: theme.muted }}>{o.desc}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs" style={{ color: theme.primary }}>{o.impact}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Weekly Split */}
+            <div className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+              <h3 className="font-bold mb-4">Split recommandé</h3>
+              <div className="grid grid-cols-7 gap-2">
+                {[
+                  { day: "L", type: "Push", color: "primary" },
+                  { day: "M", type: "Pull", color: "primary" },
+                  { day: "M", type: "Legs", color: "primary" },
+                  { day: "J", type: "Rest", color: "muted" },
+                  { day: "V", type: "Upper", color: "primary" },
+                  { day: "S", type: "Lower", color: "primary" },
+                  { day: "D", type: "Rest", color: "muted" },
+                ].map((d, i) => (
+                  <div key={i} className="text-center p-3 rounded-xl" style={{ backgroundColor: d.color === 'muted' ? theme.bg : theme.surface }}>
+                    <p className="text-[10px] font-mono mb-1" style={{ color: theme.muted }}>{d.day}</p>
+                    <p className="text-xs font-semibold" style={{ color: d.color === 'muted' ? theme.muted : theme.primary }}>{d.type}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <motion.div
@@ -118,7 +628,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
               <span className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: theme.muted }}>NEUROCORE 360</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight">Audit: Marc D.</h1>
-            <p className="text-[10px] mt-1 font-mono" style={{ color: theme.muted }}>17 SECTIONS • PREMIUM</p>
+            <p className="text-[10px] mt-1 font-mono" style={{ color: theme.muted }}>10 SECTIONS • DEMO</p>
           </div>
 
           {/* Theme Switcher */}
@@ -146,10 +656,9 @@ function DemoModal({ onClose }: { onClose: () => void }) {
             {sections.map((section, i) => (
               <button
                 key={i}
-                onClick={() => !section.locked && setActiveSection(i)}
-                disabled={section.locked}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
-                  section.locked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'
+                onClick={() => setActiveSection(i)}
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between ${
+                  section.locked ? 'opacity-60' : 'hover:bg-white/5'
                 } ${activeSection === i ? 'bg-white/10' : ''}`}
                 style={{ color: activeSection === i ? theme.text : theme.muted }}
               >
@@ -166,12 +675,14 @@ function DemoModal({ onClose }: { onClose: () => void }) {
 
           {/* Sidebar Footer */}
           <div className="p-4 border-t" style={{ borderColor: theme.border }}>
-            <button
-              className="w-full py-2 text-xs font-mono font-bold uppercase tracking-wider rounded transition-all"
-              style={{ backgroundColor: theme.primary, color: theme.bg }}
-            >
-              Export PDF
-            </button>
+            <Link href="/audit-complet/questionnaire">
+              <button
+                className="w-full py-3 text-xs font-bold uppercase tracking-wider rounded-lg transition-all hover:opacity-90"
+                style={{ backgroundColor: theme.primary, color: theme.bg }}
+              >
+                Créer mon audit →
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -186,7 +697,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
           {/* Close button desktop */}
           <button
             onClick={onClose}
-            className="hidden md:flex absolute top-4 right-4 z-20 w-10 h-10 rounded-full items-center justify-center transition-colors"
+            className="hidden md:flex absolute top-4 right-4 z-20 w-10 h-10 rounded-full items-center justify-center transition-colors hover:bg-white/10"
             style={{ backgroundColor: theme.surface, color: theme.muted }}
           >
             ×
@@ -194,119 +705,15 @@ function DemoModal({ onClose }: { onClose: () => void }) {
 
           {/* Scrollable Content */}
           <div ref={contentRef} className="flex-1 overflow-y-auto p-6 lg:p-12">
-            <div className="max-w-4xl mx-auto space-y-12">
-              {/* Header */}
-              <header className="pt-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6" style={{ borderColor: theme.border, backgroundColor: theme.surface }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: theme.muted }}>Demo Live</span>
-                </div>
-                <h1 className="text-4xl lg:text-6xl font-medium tracking-tighter leading-[0.95]">
-                  Marc,<br />
-                  <span style={{ color: theme.muted }}>voici ton audit.</span>
-                </h1>
-                <p className="text-lg mt-6 max-w-lg" style={{ color: theme.muted }}>
-                  58/100 — Une base solide. Optimiser ton sommeil va tout changer.
-                </p>
-              </header>
-
-              {/* Dashboard Grid */}
-              <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Global Score */}
-                <div className="md:row-span-2 rounded-2xl p-6 border relative overflow-hidden" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
-                  <Activity className="absolute top-4 right-4 opacity-10" size={60} />
-                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-4" style={{ color: theme.muted }}>Score Global</h3>
-                  <div className="text-6xl font-bold mb-2">58<span className="text-xl" style={{ color: theme.muted }}>/100</span></div>
-                  <span className="inline-block px-2 py-1 text-[10px] font-mono rounded bg-amber-500/10 text-amber-500">À OPTIMISER</span>
-                </div>
-
-                {/* KPI Cards */}
-                {[
-                  { label: "Système Nerveux", score: "4.5", status: "CRITIQUE", statusColor: "red" },
-                  { label: "Sommeil", score: "3.5", status: "CRITIQUE", statusColor: "red" },
-                  { label: "Nutrition", score: "7.2", status: "BON", statusColor: "green" },
-                  { label: "Training", score: "8.5", status: "FORT", statusColor: "green" },
-                ].map((kpi, i) => (
-                  <div key={i} className="rounded-xl p-5 border transition-colors" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="text-[10px] font-mono uppercase" style={{ color: theme.muted }}>{kpi.label}</span>
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${kpi.statusColor === 'red' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>{kpi.status}</span>
-                    </div>
-                    <div className="text-2xl font-bold">{kpi.score}<span className="text-sm" style={{ color: theme.muted }}>/10</span></div>
-                  </div>
-                ))}
-              </section>
-
-              {/* Projection */}
-              <section className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={16} style={{ color: theme.primary }} />
-                  <h3 className="font-bold" style={{ color: theme.primary }}>Potentiel Inexploité</h3>
-                </div>
-                <p className="text-sm mb-4" style={{ color: theme.muted }}>
-                  Actuellement à 35% de ton potentiel. En débloquant le système nerveux, projection: 95% en 90 jours.
-                </p>
-                <div className="flex items-end gap-1 h-24">
-                  {[35, 42, 55, 68, 78, 88, 95].map((v, i) => (
-                    <div key={i} className="flex-1 rounded-t transition-all" style={{ height: `${v}%`, backgroundColor: i < 2 ? theme.muted : theme.primary, opacity: i < 2 ? 0.3 : 1 }} />
-                  ))}
-                </div>
-                <div className="flex justify-between text-[9px] font-mono mt-2" style={{ color: theme.muted }}>
-                  <span>Aujourd'hui</span>
-                  <span>J90</span>
-                </div>
-              </section>
-
-              {/* Section Content - Dynamic based on sidebar selection */}
-              <section className="py-8 border-t" style={{ borderColor: theme.border }}>
-                <div className="flex gap-8">
-                  <div className="w-20 shrink-0">
-                    <span className="text-4xl font-bold" style={{ color: currentSection.locked ? theme.muted : theme.primary }}>{String(activeSection + 1).padStart(2, '0')}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-xl font-bold">{currentSection.content.title}</h2>
-                      {currentSection.locked && <Lock size={16} style={{ color: theme.muted }} />}
-                    </div>
-                    <p className="text-[10px] font-mono uppercase tracking-widest mb-4" style={{ color: currentSection.locked ? theme.muted : theme.primary }}>{currentSection.content.subtitle}</p>
-                    <p style={{ color: theme.muted }} className={currentSection.locked ? 'italic' : ''}>{currentSection.content.body}</p>
-                    {currentSection.locked && (
-                      <Link href="/audit-complet/questionnaire?plan=essential">
-                        <button
-                          className="mt-6 px-6 py-2 rounded-lg text-sm font-bold transition-all hover:opacity-90"
-                          style={{ backgroundColor: theme.primary, color: theme.bg }}
-                        >
-                          Débloquer avec {currentSection.content.subtitle === "ELITE" ? "Elite" : "Essential"} →
-                        </button>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* CTA Section */}
-              <section className="rounded-2xl p-8 text-center border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
-                <h2 className="text-2xl font-bold mb-4">Passe à l'action</h2>
-                <p className="mb-6" style={{ color: theme.muted }}>Ton Audit PREMIUM de 79€ est déduit du coaching.</p>
-                <Link href="/audit-complet/questionnaire">
-                  <button
-                    className="px-8 py-3 rounded-full font-bold text-sm transition-all hover:opacity-90"
-                    style={{ backgroundColor: theme.primary, color: theme.bg }}
-                  >
-                    Obtenir mon rapport personnalisé →
-                  </button>
-                </Link>
-              </section>
-
-              {/* Footer */}
-              <footer className="py-12 border-t flex justify-between items-center" style={{ borderColor: theme.border }}>
-                <div>
-                  <h4 className="font-bold">Neurocore 360</h4>
-                  <p className="text-sm" style={{ color: theme.muted }}>AchzodCoaching • Excellence • Science</p>
-                </div>
-                <p className="text-[10px] font-mono uppercase tracking-widest" style={{ color: theme.muted }}>Demo Report • 2025</p>
-              </footer>
-            </div>
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-4xl mx-auto"
+            >
+              {renderSectionContent()}
+            </motion.div>
           </div>
         </div>
       </motion.div>
@@ -602,7 +1009,7 @@ function UltrahumanHero() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="text-white/50 text-base sm:text-lg max-w-xl mb-10 leading-relaxed"
         >
-          190+ questions. 15 domaines. Précision clinique.
+          190 questions. 15 domaines. Précision clinique.
           <br className="hidden sm:block" />
           Comprends ton corps, optimise ta performance.
         </motion.p>
@@ -640,6 +1047,20 @@ function UltrahumanHero() {
           transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
           className="mt-12 relative flex flex-col items-center"
         >
+          {/* Space video background - Ultrahuman style */}
+          <div className="absolute inset-0 -top-20 -bottom-20 -left-32 -right-32 overflow-hidden rounded-3xl -z-10">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover opacity-60"
+              src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+          </div>
+
           {/* Phone Frame */}
           <div className="relative w-[300px] sm:w-[340px]">
             {/* Phone outer frame */}
@@ -849,7 +1270,7 @@ function MediaBar() {
 // Ultrahuman-style Stats Section - Clean & Minimal
 function BentoHeroSection() {
   const stats = [
-    { value: "190+", label: "Questions", sublabel: "analysées" },
+    { value: "190", label: "Questions", sublabel: "analysées" },
     { value: "16", label: "Sections", sublabel: "du questionnaire" },
     { value: "15", label: "Domaines", sublabel: "de santé" },
     { value: "90", label: "Jours", sublabel: "de protocole" },
@@ -940,6 +1361,262 @@ function BentoHeroSection() {
             </button>
           </Link>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// Ultrahuman-style Feature Cards Section (AFib/Cardio style dual cards)
+function UltrahumanFeatureCards() {
+  return (
+    <section className="relative bg-black py-24 overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(148,84,255,0.08),transparent_60%)]" />
+
+      <div className="relative max-w-6xl mx-auto px-6">
+        {/* Section header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
+            <Sparkles className="w-4 h-4 text-violet-400" />
+            <span className="text-xs font-medium tracking-widest text-white/60 uppercase">
+              Technologie avancée
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
+            Analyse de précision
+            <span className="block text-white/40 text-2xl sm:text-3xl mt-2">clinique</span>
+          </h2>
+        </motion.div>
+
+        {/* Dual Feature Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+
+          {/* Card 1 - HRV Analysis (Red/Maroon theme like AFib Detection) */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="group relative"
+          >
+            <div className="relative h-[420px] rounded-3xl overflow-hidden bg-gradient-to-br from-[#2a1215] via-[#1f0f11] to-[#0d0506] border border-red-900/30 p-8 transition-all duration-500 hover:border-red-500/40 hover:shadow-2xl hover:shadow-red-900/20">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(220,38,38,0.15),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              {/* Header */}
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[10px] font-bold tracking-[0.2em] text-red-400/80 uppercase">Analyse HRV</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  Système Nerveux
+                </h3>
+                <p className="text-white/50 text-sm max-w-xs">
+                  Détection des déséquilibres sympathique/parasympathique en temps réel
+                </p>
+              </div>
+
+              {/* ECG Animation */}
+              <div className="absolute bottom-20 left-0 right-0 h-32 overflow-hidden opacity-60">
+                <svg viewBox="0 0 400 100" className="w-full h-full" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="ecgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity="0" />
+                      <stop offset="50%" stopColor="#ef4444" stopOpacity="1" />
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,50 L30,50 L40,50 L50,20 L60,80 L70,30 L80,60 L90,50 L120,50 L130,50 L140,20 L150,80 L160,30 L170,60 L180,50 L210,50 L220,50 L230,20 L240,80 L250,30 L260,60 L270,50 L300,50 L310,50 L320,20 L330,80 L340,30 L350,60 L360,50 L400,50"
+                    fill="none"
+                    stroke="url(#ecgGradient)"
+                    strokeWidth="2"
+                    className="animate-ecg-flow"
+                  />
+                </svg>
+                <style>{`
+                  @keyframes ecgFlow {
+                    0% { transform: translateX(-25%); }
+                    100% { transform: translateX(0%); }
+                  }
+                  .animate-ecg-flow {
+                    animation: ecgFlow 2s linear infinite;
+                  }
+                `}</style>
+              </div>
+
+              {/* Alert Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="absolute bottom-8 left-8 right-8"
+              >
+                <div className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-red-500/20">
+                  <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                    <Heart className="w-6 h-6 text-red-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-semibold text-sm">Stress détecté</p>
+                    <p className="text-white/50 text-xs">HRV: 28ms - Cortisol élevé</p>
+                  </div>
+                  <div className="text-red-400 text-2xl font-bold">!</div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          {/* Card 2 - Sleep Score (Green theme like Cardio Adaptability) */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="group relative"
+          >
+            <div className="relative h-[420px] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0a1f15] via-[#071510] to-[#030a07] border border-emerald-900/30 p-8 transition-all duration-500 hover:border-emerald-500/40 hover:shadow-2xl hover:shadow-emerald-900/20">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.15),transparent_60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              {/* Header */}
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold tracking-[0.2em] text-emerald-400/80 uppercase">Récupération</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  Score Sommeil
+                </h3>
+                <p className="text-white/50 text-sm max-w-xs">
+                  Optimisation de l'architecture du sommeil et de la récupération
+                </p>
+              </div>
+
+              {/* Circular Progress Gauge */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-48 h-48">
+                <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                  {/* Background circle */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.05)"
+                    strokeWidth="8"
+                  />
+                  {/* Progress circle */}
+                  <motion.circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke="url(#greenGradient)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray="314"
+                    initial={{ strokeDashoffset: 314 }}
+                    whileInView={{ strokeDashoffset: 314 * 0.28 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
+                  />
+                  <defs>
+                    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#34d399" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5 }}
+                    className="text-5xl font-bold text-white"
+                  >
+                    72
+                  </motion.span>
+                  <span className="text-emerald-400 text-sm font-medium">/100</span>
+                </div>
+              </div>
+
+              {/* Success Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 }}
+                className="absolute bottom-8 left-8 right-8"
+              >
+                <div className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-black/60 backdrop-blur-xl border border-emerald-500/20">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-semibold text-sm">Récupération optimale</p>
+                    <p className="text-white/50 text-xs">Sommeil profond: 22% • REM: 24%</p>
+                  </div>
+                  <Check className="w-6 h-6 text-emerald-400" />
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Bottom row - 3 smaller feature cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+          {[
+            { icon: Brain, title: "Analyse Cognitive", desc: "Focus & clarté mentale", color: "violet", value: "89%" },
+            { icon: Zap, title: "Énergie", desc: "Métabolisme mitochondrial", color: "amber", value: "67%" },
+            { icon: Activity, title: "Performance", desc: "Capacité d'adaptation", color: "blue", value: "81%" },
+          ].map((item, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 + idx * 0.1 }}
+              className="group relative"
+            >
+              <div className={`relative h-[160px] rounded-2xl overflow-hidden bg-gradient-to-br ${
+                item.color === "violet" ? "from-violet-950/50 to-violet-950/20 border-violet-500/20 hover:border-violet-500/40" :
+                item.color === "amber" ? "from-amber-950/50 to-amber-950/20 border-amber-500/20 hover:border-amber-500/40" :
+                "from-blue-950/50 to-blue-950/20 border-blue-500/20 hover:border-blue-500/40"
+              } border p-6 transition-all duration-300 hover:shadow-xl`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className={`w-10 h-10 rounded-xl ${
+                      item.color === "violet" ? "bg-violet-500/20" :
+                      item.color === "amber" ? "bg-amber-500/20" :
+                      "bg-blue-500/20"
+                    } flex items-center justify-center mb-3`}>
+                      <item.icon className={`w-5 h-5 ${
+                        item.color === "violet" ? "text-violet-400" :
+                        item.color === "amber" ? "text-amber-400" :
+                        "text-blue-400"
+                      }`} />
+                    </div>
+                    <h4 className="text-white font-semibold text-sm">{item.title}</h4>
+                    <p className="text-white/40 text-xs mt-1">{item.desc}</p>
+                  </div>
+                  <span className={`text-2xl font-bold ${
+                    item.color === "violet" ? "text-violet-400" :
+                    item.color === "amber" ? "text-amber-400" :
+                    "text-blue-400"
+                  }`}>{item.value}</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1592,7 +2269,7 @@ function BentoProcessSection() {
       step: "01",
       title: "Data Collection",
       subtitle: "Input Phase",
-      description: "190+ questions analysent ton profil métabolique, hormonal, circadien et biomécanique. Chaque réponse calibre l'algorithme.",
+      description: "190 questions analysent ton profil métabolique, hormonal, circadien et biomécanique. Chaque réponse calibre l'algorithme.",
       metric: "15 min",
       metricLabel: "completion",
     },
@@ -2210,12 +2887,12 @@ function WearablesSyncSection() {
   ];
 
   const dataTypes = [
-    { metric: "HRV", desc: "SDNN, RMSSD", icon: "💓" },
-    { metric: "Sommeil", desc: "Profond, REM, léger", icon: "🌙" },
-    { metric: "FC", desc: "Repos, max, moyenne", icon: "❤️" },
-    { metric: "Activité", desc: "Pas, distance", icon: "👟" },
-    { metric: "Calories", desc: "BMR, TDEE", icon: "🔥" },
-    { metric: "SpO2", desc: "Oxygène sanguin", icon: "🫁" },
+    { metric: "HRV", desc: "SDNN, RMSSD", Icon: Activity },
+    { metric: "Sommeil", desc: "Profond, REM, léger", Icon: Moon },
+    { metric: "FC", desc: "Repos, max, moyenne", Icon: Heart },
+    { metric: "Activité", desc: "Pas, distance", Icon: Zap },
+    { metric: "Calories", desc: "BMR, TDEE", Icon: Timer },
+    { metric: "SpO2", desc: "Oxygène sanguin", Icon: Activity },
   ];
 
   return (
@@ -2331,8 +3008,8 @@ function WearablesSyncSection() {
                 transition={{ delay: 0.1 * i }}
                 className="text-center group"
               >
-                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-2xl group-hover:border-[#4a9d7c]/30 group-hover:bg-[#4a9d7c]/5 transition-all">
-                  {d.icon}
+                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center group-hover:border-[#4a9d7c]/30 group-hover:bg-[#4a9d7c]/5 transition-all">
+                  <d.Icon className="w-6 h-6 text-white/60 group-hover:text-[#4a9d7c] transition-colors" />
                 </div>
                 <p className="text-white font-semibold text-sm">{d.metric}</p>
                 <p className="text-white/30 text-[10px]">{d.desc}</p>
@@ -2420,6 +3097,7 @@ export default function Landing() {
         <CertificationsBar />
         <MediaBar />
         <BentoHeroSection />
+        <UltrahumanFeatureCards />
         <BentoDomainesSection />
         <BloodVisionSection />
         <BentoProcessSection />

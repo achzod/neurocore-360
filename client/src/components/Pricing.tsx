@@ -68,7 +68,7 @@ const tiers: PricingTier[] = [
     description: "Rapport ~45 pages (25+ sections) + wearables + analyse photo",
     badge: "COMPLET",
     features: [
-      { text: "210+ questions ultra-détaillées", included: true },
+      { text: "210 questions ultra-détaillées", included: true },
       { text: "Dashboard avancé temps réel", included: true },
       { text: "Rapport premium 25+ sections", included: true },
       { text: "Sync Apple Watch, Oura, Garmin...", included: true },
@@ -146,26 +146,29 @@ export function Pricing() {
                 </div>
               )}
 
-              {/* Header */}
+              {/* Header with Icon + Name + Price inline */}
               <div className="mb-6">
-                <div
-                  className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${tier.gradient} mb-4`}
-                >
-                  {tier.icon}
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${tier.gradient}`}
+                    >
+                      {tier.icon}
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">{tier.name}</h3>
+                  </div>
+                  {/* Price - right aligned */}
+                  <div className="text-right">
+                    <div className="flex items-baseline gap-0.5 justify-end">
+                      <span className="text-4xl font-black text-white">{tier.price}</span>
+                      <span className="text-xl font-bold text-white">€</span>
+                    </div>
+                    {tier.period === "one-time" && (
+                      <span className="text-white/40 text-xs">paiement unique</span>
+                    )}
+                  </div>
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">{tier.name}</h3>
                 <p className="text-white/50 text-sm">{tier.description}</p>
-              </div>
-
-              {/* Price */}
-              <div className="mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-white">{tier.price}</span>
-                  <span className="text-2xl font-bold text-white">€</span>
-                  {tier.period === "one-time" && (
-                    <span className="text-white/40 text-sm ml-2">une fois</span>
-                  )}
-                </div>
               </div>
 
               {/* Features */}

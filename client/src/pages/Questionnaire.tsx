@@ -48,6 +48,8 @@ import {
   Smartphone,
   Link2,
   CheckCircle2,
+  Timer,
+  Thermometer,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
@@ -780,20 +782,20 @@ export default function Questionnaire() {
                     {/* Wearables Grid */}
                     <div className="grid grid-cols-4 gap-2">
                       {[
-                        { name: "Apple", icon: "🍎" },
-                        { name: "Oura", icon: "💍" },
-                        { name: "Whoop", icon: "⌚" },
-                        { name: "Garmin", icon: "🏃" },
-                        { name: "Fitbit", icon: "💪" },
-                        { name: "Samsung", icon: "📱" },
-                        { name: "Polar", icon: "❄️" },
-                        { name: "Autre", icon: "🔗" },
+                        { name: "Apple", Icon: Apple },
+                        { name: "Oura", Icon: Activity },
+                        { name: "Whoop", Icon: Watch },
+                        { name: "Garmin", Icon: Activity },
+                        { name: "Fitbit", Icon: Heart },
+                        { name: "Samsung", Icon: Smartphone },
+                        { name: "Polar", Icon: Heart },
+                        { name: "Autre", Icon: Link2 },
                       ].map((w, i) => (
                         <div
                           key={i}
                           className="flex flex-col items-center p-3 rounded-xl bg-muted/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
                         >
-                          <span className="text-xl mb-1">{w.icon}</span>
+                          <w.Icon className="w-5 h-5 mb-1 text-muted-foreground" />
                           <span className="text-[10px] text-muted-foreground">{w.name}</span>
                         </div>
                       ))}
@@ -806,15 +808,15 @@ export default function Questionnaire() {
                       </p>
                       <div className="grid grid-cols-3 gap-3">
                         {[
-                          { icon: "💓", label: "HRV" },
-                          { icon: "🌙", label: "Sommeil" },
-                          { icon: "❤️", label: "FC repos" },
-                          { icon: "👟", label: "Activité" },
-                          { icon: "🫁", label: "SpO2" },
-                          { icon: "🌡️", label: "Temp." },
+                          { Icon: Activity, label: "HRV" },
+                          { Icon: Moon, label: "Sommeil" },
+                          { Icon: Heart, label: "FC repos" },
+                          { Icon: Zap, label: "Activité" },
+                          { Icon: Timer, label: "SpO2" },
+                          { Icon: Thermometer, label: "Temp." },
                         ].map((d, i) => (
                           <div key={i} className="text-center">
-                            <span className="text-lg">{d.icon}</span>
+                            <d.Icon className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                             <p className="text-[10px] text-muted-foreground">{d.label}</p>
                           </div>
                         ))}
