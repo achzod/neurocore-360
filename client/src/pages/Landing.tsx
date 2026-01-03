@@ -357,7 +357,7 @@ function UltrahumanHero() {
                   <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-30" />
 
                   {/* Tab Content - Changes based on active tab */}
-                  <div className="absolute inset-0 rounded-[2rem] overflow-hidden pt-10 pb-16">
+                  <div className="absolute inset-0 rounded-[2rem] overflow-hidden pt-10 pb-4">
                     <motion.div
                       key={activeTab}
                       initial={{ opacity: 0, y: 10 }}
@@ -368,32 +368,32 @@ function UltrahumanHero() {
                       {tabContents[activeTab]}
                     </motion.div>
                   </div>
-
-                  {/* Nav tabs - Fixed at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 z-40 p-2">
-                    <div className="bg-black/90 backdrop-blur-xl rounded-xl p-1.5 border border-white/5">
-                      <div className="flex items-center justify-around">
-                        {[
-                          { id: "scores", icon: Activity, label: "SCORES" },
-                          { id: "domaines", icon: Layers, label: "PROTOCOLE" },
-                          { id: "rapport", icon: Brain, label: "BILANS" },
-                          { id: "plan", icon: Target, label: "INSIGHTS" },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                            className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all duration-200 ${
-                              activeTab === tab.id ? "bg-white/10" : ""
-                            }`}
-                          >
-                            <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-primary" : "text-white/30"}`} />
-                            <span className={`text-[7px] font-medium ${activeTab === tab.id ? "text-primary" : "text-white/30"}`}>{tab.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
                 </div>
+              </div>
+            </div>
+
+            {/* External Tab Bar - Outside phone like reference */}
+            <div className="mt-4 bg-white/95 backdrop-blur-xl rounded-full p-1 shadow-lg shadow-black/20 border border-white/20">
+              <div className="flex items-center">
+                {[
+                  { id: "scores", icon: Activity, label: "Scores" },
+                  { id: "domaines", icon: Layers, label: "Protocole" },
+                  { id: "rapport", icon: Brain, label: "Bilans" },
+                  { id: "plan", icon: Target, label: "Insights" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full transition-all duration-200 ${
+                      activeTab === tab.id
+                        ? "bg-zinc-900 text-white shadow-md"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    <span className="text-[11px] font-medium hidden sm:inline">{tab.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
