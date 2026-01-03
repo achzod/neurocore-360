@@ -3,7 +3,7 @@
  *
  * GRATUIT (0€): ~50 questions - Dashboard basique
  * ESSENTIAL (49€): ~150 questions - Rapport Achzod 17 sections
- * ELITE (99€): ~210 questions - Rapport premium + Terra Wearables + Photo AI
+ * ELITE (99€): ~210 questions - Rapport premium + Terra Wearables + Analyse Photo
  *
  * Chaque question a un champ `tier`:
  * - "free" = disponible pour tous (gratuit, essential, elite)
@@ -69,7 +69,7 @@ export const SECTIONS: Section[] = [
   { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 16 },
   { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 17 },
   { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 18 },
-  { id: "analyse-photo", title: "Analyse Photo AI", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 19 },
+  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 19 },
 ];
 
 // ============================================================================

@@ -21,17 +21,17 @@ const tiers: PricingTier[] = [
     name: "Gratuit",
     price: "0",
     period: "",
-    description: "Découvre ton profil de base avec 50 questions essentielles",
+    description: "Découvre ton profil de base avec 50 questions - Dashboard interactif",
     features: [
       { text: "50 questions essentielles", included: true },
       { text: "Dashboard interactif", included: true },
       { text: "Scores des 5 domaines", included: true },
       { text: "Radar de performance", included: true },
       { text: "Recommandations générales", included: true },
-      { text: "Rapport AI personnalisé", included: false },
+      { text: "Rapport personnalisé", included: false },
       { text: "Stack suppléments", included: false },
       { text: "Sync wearables", included: false },
-      { text: "Analyse photo AI", included: false },
+      { text: "Analyse photo", included: false },
     ],
     cta: "Commencer gratuitement",
     href: "/audit-complet/questionnaire?plan=free",
@@ -42,19 +42,19 @@ const tiers: PricingTier[] = [
     name: "Essential",
     price: "49",
     period: "one-time",
-    description: "L'audit hormonal complet avec rapport Achzod 17 sections",
+    description: "L'audit complet: rapport ~25 pages (17 sections) + protocoles 90j",
     badge: "POPULAIRE",
     popular: true,
     features: [
       { text: "150 questions approfondies", included: true },
       { text: "Dashboard interactif", included: true },
-      { text: "Rapport AI 17 sections", included: true },
+      { text: "Rapport 17 sections", included: true },
       { text: "Questions genre-spécifiques", included: true },
       { text: "Axes cliniques (thyroïde, SII...)", included: true },
       { text: "Stack suppléments personnalisé", included: true },
       { text: "Plan 90 jours détaillé", included: true },
       { text: "Sync wearables", included: false },
-      { text: "Analyse photo AI", included: false },
+      { text: "Analyse photo", included: false },
     ],
     cta: "Obtenir mon audit",
     href: "/audit-complet/questionnaire?plan=essential",
@@ -65,14 +65,14 @@ const tiers: PricingTier[] = [
     name: "Elite",
     price: "99",
     period: "one-time",
-    description: "L'expérience ultime: wearables + analyse photo AI + rapport premium",
+    description: "Rapport ~45 pages (25+ sections) + wearables + analyse photo",
     badge: "COMPLET",
     features: [
       { text: "210+ questions ultra-détaillées", included: true },
       { text: "Dashboard avancé temps réel", included: true },
-      { text: "Rapport AI premium 25+ sections", included: true },
+      { text: "Rapport premium 25+ sections", included: true },
       { text: "Sync Apple Watch, Oura, Garmin...", included: true },
-      { text: "Analyse photo AI (posture, composition)", included: true },
+      { text: "Analyse photo (posture, composition)", included: true },
       { text: "Nutrition timing avancé", included: true },
       { text: "HRV & performance cardio", included: true },
       { text: "Psychologie & blocages mentaux", included: true },
@@ -81,7 +81,7 @@ const tiers: PricingTier[] = [
     cta: "Passer Elite",
     href: "/audit-complet/questionnaire?plan=elite",
     icon: <Crown className="w-5 h-5" />,
-    gradient: "from-amber-500 to-orange-500",
+    gradient: "from-violet-500 to-purple-500",
   },
 ];
 
@@ -138,7 +138,7 @@ export function Pricing() {
                     className={`px-4 py-1 rounded-full text-xs font-bold tracking-wider ${
                       tier.popular
                         ? "bg-primary text-black"
-                        : "bg-amber-500 text-black"
+                        : "bg-violet-500 text-white"
                     }`}
                   >
                     {tier.badge}
@@ -195,7 +195,7 @@ export function Pricing() {
                     tier.popular
                       ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
                       : tier.name === "Elite"
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:opacity-90"
+                      ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >

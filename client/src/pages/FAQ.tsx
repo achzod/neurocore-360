@@ -18,15 +18,15 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Quelle est la différence entre Gratuit, Essential et Elite ?",
-    answer: "GRATUIT (0€) : 50 questions essentielles + dashboard interactif + scores des 5 domaines + radar de performance. Tu obtiens une vue d'ensemble de ton profil. ESSENTIAL (49€) : 150 questions approfondies + rapport AI 17 sections + axes cliniques (thyroïde, SII...) + stack suppléments personnalisé + plan 90 jours. Le meilleur rapport qualité/prix. ELITE (99€) : 210+ questions ultra-détaillées + rapport 25+ sections + sync Apple Watch/Oura/Garmin + analyse photo AI (posture, composition) + nutrition timing avancé + support prioritaire. L'expérience complète."
+    answer: "GRATUIT (0€) : 50 questions essentielles + dashboard interactif + scores des 5 domaines + radar de performance. Tu obtiens une vue d'ensemble de ton profil. ESSENTIAL (49€) : 150 questions approfondies + rapport ~25 pages (17 sections) + axes cliniques (thyroïde, SII...) + stack suppléments personnalisé + plan 90 jours. Le meilleur rapport qualité/prix. ELITE (99€) : 210+ questions ultra-détaillées + rapport ~45 pages (25+ sections) + sync wearables + analyse photo (posture, composition) + nutrition timing avancé + support prioritaire. L'expérience complète."
   },
   {
     question: "Comment fonctionne la synchronisation wearables (Elite) ?",
     answer: "Avec le plan Elite, tu connectes tes wearables via Terra API. CONNEXION DIRECTE (1 clic) : Oura, Garmin, Fitbit, Ultrahuman, Withings. VIA TERRA AVENGERS APP (gratuite) : Apple Health, Samsung Health, Google Fit - tu télécharges l'app sur ton téléphone, tu autorises l'accès, et c'est synchro automatiquement. On récupère : HRV, sommeil (profond/REM/léger), fréquence cardiaque, SpO2, activité. Ces données enrichissent ton analyse pour des recommandations ultra-précises basées sur ta biologie réelle."
   },
   {
-    question: "L'analyse photo AI, ça marche comment ?",
-    answer: "Disponible avec le plan Elite. Tu uploades 2-3 photos (face, profil, dos) et notre AI analyse : posture (épaules, bassin, lordose), composition corporelle estimée, asymétries musculaires, points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées."
+    question: "L'analyse photo, ça marche comment ?",
+    answer: "Disponible avec le plan Elite. Tu uploades 2-3 photos (face, profil, dos) et notre système analyse : posture (épaules, bassin, lordose), composition corporelle estimée, asymétries musculaires, points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées."
   },
   {
     question: "Ai-je besoin d'une prise de sang ?",
@@ -34,11 +34,11 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
-    answer: "Le questionnaire prend 10-35 min selon le plan choisi. Ton rapport AI est généré sous 24-48h. Le rapport inclut scores par domaine, analyses approfondies, cause racine des blocages, et protocoles sur 90 jours (Essential/Elite)."
+    answer: "Le questionnaire prend 10-35 min selon le plan choisi. Ton rapport est généré sous 24-48h. Le rapport inclut scores par domaine, analyses approfondies, cause racine des blocages, et protocoles sur 90 jours (Essential/Elite)."
   },
   {
     question: "Qui analyse mes résultats ?",
-    answer: "Notre AI spécialisée, entraînée par Achzod (coach certifié ISSA, Precision Nutrition, PreScript Level 1). Chaque rapport est généré avec une expertise clinique de 8+ ans en coaching métabolique. L'AI produit des recommandations personnalisées à 100% basées sur TES données."
+    answer: "Le système NEUROCORE, développé par Achzod (coach certifié ISSA, Precision Nutrition, PreScript Level 1) avec 8+ ans d'expertise en coaching métabolique. Chaque rapport est basé sur des algorithmes cliniques validés et produit des recommandations personnalisées à 100% basées sur TES données."
   },
   {
     question: "Est-ce adapté aux débutants ?",
@@ -178,7 +178,7 @@ export default function FAQ() {
                   </Button>
                 </Link>
                 <Link href="/audit-complet/questionnaire?plan=elite">
-                  <Button size="lg" className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:opacity-90">
+                  <Button size="lg" className="gap-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90">
                     Elite (99€)
                   </Button>
                 </Link>

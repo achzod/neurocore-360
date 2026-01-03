@@ -2206,7 +2206,7 @@ function WearablesSyncSection() {
             transition={{ delay: 0.1 }}
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight"
           >
-            Sync tes <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">wearables</span> en 1 clic
+            Sync tes <span className="bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent">wearables</span> en 1 clic
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -2222,9 +2222,9 @@ function WearablesSyncSection() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30"
           >
-            <span className="text-xs font-bold text-amber-400">ELITE</span>
+            <span className="text-xs font-bold text-violet-400">ELITE</span>
             <span className="text-white/60 text-sm">Inclus dans le plan Elite 99</span>
           </motion.div>
         </div>
@@ -2266,7 +2266,7 @@ function WearablesSyncSection() {
           {/* Terra badge */}
           <div className="text-center mt-6">
             <span className="inline-flex items-center gap-2 text-[11px] text-white/40">
-              <span className="font-mono text-amber-400">8 sources actives</span>
+              <span className="font-mono text-violet-400">8 sources actives</span>
               <span className="text-white/20">•</span>
               Powered by Terra API
             </span>
@@ -2380,9 +2380,9 @@ export default function Landing() {
       <Header />
       <main>
         <UltrahumanHero />
+        <WearablesSyncSection />
         <CertificationsBar />
         <MediaBar />
-        <WearablesSyncSection />
         <BentoHeroSection />
         <BentoDomainesSection />
         <BloodVisionSection />
