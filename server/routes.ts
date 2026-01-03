@@ -702,6 +702,28 @@ export async function registerRoutes(
     }
   });
 
+  // Get all Terra data stored in DB (admin endpoint)
+  app.get("/api/terra/db/all", async (_req, res) => {
+    try {
+      const data = await storage.getAllTerraData(100);
+      res.json({ success: true, count: data.length, data });
+    } catch (error) {
+      console.error("[Terra] Error fetching DB data:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // Get Terra data by email
+  app.get("/api/terra/db/email/:email", async (req, res) => {
+    try {
+      const data = await storage.getTerraDataByEmail(req.params.email);
+      res.json({ success: true, count: data.length, data });
+    } catch (error) {
+      console.error("[Terra] Error fetching by email:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   // Check Terra connection status for an audit
   app.get("/api/terra/status/:auditId", async (req, res) => {
     try {

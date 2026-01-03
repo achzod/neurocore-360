@@ -1083,6 +1083,24 @@ export class PgStorage implements IStorage {
       createdAt: row.created_at,
     };
   }
+
+  async getAllTerraData(limit: number = 100): Promise<any[]> {
+    await this.ensureTerraDataTable();
+    const result = await pool.query(
+      `SELECT id, reference_id, terra_user_id, provider, event_type, created_at, data
+       FROM terra_data ORDER BY created_at DESC LIMIT $1`,
+      [limit]
+    );
+    return result.rows.map(row => ({
+      id: row.id,
+      referenceId: row.reference_id,
+      terraUserId: row.terra_user_id,
+      provider: row.provider,
+      eventType: row.event_type,
+      data: row.data,
+      createdAt: row.created_at,
+    }));
+  }
 }
 
 export const storage = new PgStorage();
