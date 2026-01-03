@@ -334,15 +334,17 @@ function QuestionnaireContent() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
 
-  const currentSection = QUESTIONNAIRE_SECTIONS[currentSectionIndex];
+  // Bounds check pour éviter undefined
+  const safeIndex = Math.min(Math.max(0, currentSectionIndex), QUESTIONNAIRE_SECTIONS.length - 1);
+  const currentSection = QUESTIONNAIRE_SECTIONS[safeIndex];
   const userSex = responses["sexe"] as string | undefined;
   const [sexConfirmed, setSexConfirmed] = useState(false);
   const [prenomConfirmed, setPrenomConfirmed] = useState(false);
   const [wearablesSyncShown, setWearablesSyncShown] = useState(false);
   const [terraConnecting, setTerraConnecting] = useState(false);
   const [terraConnected, setTerraConnected] = useState(false);
-  const sectionQuestions = getQuestionsForSection(currentSection.id, userSex);
-  const IconComponent = iconMap[currentSection.icon] || User;
+  const sectionQuestions = currentSection ? getQuestionsForSection(currentSection.id, userSex) : [];
+  const IconComponent = currentSection ? (iconMap[currentSection.icon] || User) : User;
 
   const totalProgress = Math.round(((currentSectionIndex + 1) / QUESTIONNAIRE_SECTIONS.length) * 100);
 
@@ -408,7 +410,14 @@ function QuestionnaireContent() {
       }
 
       if (savedSection) {
-        setCurrentSectionIndex(Number(savedSection));
+        const sectionNum = Number(savedSection);
+        // Valider que l'index est dans les limites
+        if (!isNaN(sectionNum) && sectionNum >= 0 && sectionNum < QUESTIONNAIRE_SECTIONS.length) {
+          setCurrentSectionIndex(sectionNum);
+        } else {
+          // Index invalide, reset à 0
+          localStorage.removeItem("neurocore_section");
+        }
       }
 
       if (parsedResponses["sexe"]) {
