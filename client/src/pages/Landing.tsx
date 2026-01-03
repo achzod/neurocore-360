@@ -389,107 +389,113 @@ function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
   const [showDemo, setShowDemo] = useState(false);
 
-  // Contenu différent pour chaque onglet - couleurs neutres et élégantes
+  // Contenu scrollable pour chaque onglet - style dashboard premium
   const tabContents = {
     scores: (
-      <div className="w-full bg-gradient-to-b from-[#0a2520] to-black px-4 pt-3 pb-4">
-        {/* Header with back arrow and date */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-white/40 text-[10px]">←</span>
-          <span className="text-white/60 text-[10px]">Rapport complet</span>
-          <span className="text-primary/60 text-[10px]">ⓘ</span>
+      <div className="w-full bg-gradient-to-b from-[#0a1f1a] via-[#0d1510] to-black px-4 pt-8 pb-20">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <p className="text-white/40 text-[10px] tracking-widest mb-1">NEUROCORE 360</p>
+          <p className="text-white/60 text-xs">Rapport Marc D. • 34 ans</p>
         </div>
 
-        {/* Big Score */}
-        <div className="mb-3">
-          <div className="flex items-baseline gap-1">
-            <span className="text-white text-4xl font-bold">58</span>
-            <span className="text-primary text-xs">+12 vs baseline</span>
+        {/* Big Score Card */}
+        <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-2xl p-5 border border-primary/20 mb-4">
+          <p className="text-white/40 text-[9px] tracking-widest mb-2">SCORE GLOBAL</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-white text-5xl font-bold">58</span>
+            <span className="text-white/30 text-xl">/100</span>
           </div>
-          <p className="text-white/60 text-sm">Global Index</p>
-          <div className="inline-flex items-center gap-1 mt-1 bg-primary/20 rounded-full px-2 py-0.5">
-            <span className="text-[8px]">📈</span>
-            <span className="text-primary text-[9px] font-medium">Rapport de 45 pages</span>
+          <div className="flex items-center gap-2 mt-3">
+            <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[9px] font-medium">À optimiser</span>
+            <span className="text-primary text-[10px]">+12 pts possibles</span>
           </div>
         </div>
 
-        {/* Mini bar chart */}
-        <div className="flex items-end justify-between gap-1 h-12 mb-4 px-2">
-          {[42, 38, 45, 52, 48, 55, 58].map((val, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <span className="text-[7px] text-white/40">{val}</span>
-              <div
-                className={`w-5 rounded-sm ${i === 6 ? 'bg-white' : 'bg-primary/60'}`}
-                style={{ height: `${val * 0.5}px` }}
-              />
-              <span className="text-[6px] text-white/30">{['L', 'M', 'M', 'J', 'V', 'S', 'D'][i]}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Contributors section */}
-        <div className="bg-zinc-900/80 rounded-xl p-3 border border-white/5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-white/60 text-[10px] font-medium">Domaines analysés</span>
-            <span className="text-white/30 text-[8px]">ⓘ</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { value: "35", label: "SOMMEIL", status: "Needs attention", statusColor: "bg-red-500/20 text-red-400" },
-              { value: "72", label: "NUTRITION", status: "Optimal", statusColor: "bg-primary/20 text-primary" },
-              { value: "42", label: "HORMONES", status: "Needs attention", statusColor: "bg-amber-500/20 text-amber-400" },
-              { value: "85", label: "TRAINING", status: "Excellent", statusColor: "bg-primary/20 text-primary" },
-            ].map((item, i) => (
-              <div key={i} className="bg-black/40 rounded-lg p-2 border border-white/5">
-                <div className="flex items-baseline gap-0.5">
-                  <span className="text-white text-lg font-bold">{item.value}</span>
-                  <span className="text-white/30 text-[8px]">/100</span>
-                </div>
-                <p className="text-white/40 text-[8px] tracking-wider">{item.label}</p>
-                <span className={`inline-block mt-1 text-[7px] px-1.5 py-0.5 rounded ${item.statusColor}`}>
-                  {item.status}
-                </span>
+        {/* Weekly Progress */}
+        <div className="bg-black/40 rounded-xl p-4 border border-white/5 mb-4">
+          <p className="text-white/40 text-[9px] tracking-widest mb-3">PROGRESSION</p>
+          <div className="flex items-end justify-between gap-2 h-20">
+            {[42, 38, 45, 52, 48, 55, 58].map((val, i) => (
+              <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                <span className="text-[8px] text-white/50">{val}</span>
+                <div className={`w-full rounded-t ${i === 6 ? 'bg-white' : 'bg-primary/60'}`} style={{ height: `${val * 1.2}px` }} />
+                <span className="text-[7px] text-white/30">{['L', 'M', 'M', 'J', 'V', 'S', 'D'][i]}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bottom metrics */}
-        <div className="mt-3 space-y-1.5">
+        {/* Domain Grid */}
+        <p className="text-white/40 text-[9px] tracking-widest mb-3">DOMAINES CLÉS</p>
+        <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { label: "Stress & HRV", status: "Optimal", color: "text-primary" },
-            { label: "Digestion", status: "Excellent", color: "text-primary" },
-            { label: "Énergie", status: "Needs attention", color: "text-amber-400" },
-          ].map((m, i) => (
-            <div key={i} className="flex items-center justify-between py-1 border-b border-white/5">
-              <span className="text-white/50 text-[10px]">{m.label}</span>
-              <span className={`text-[9px] ${m.color} bg-white/5 px-2 py-0.5 rounded`}>{m.status} →</span>
+            { value: 35, label: "Sommeil", status: "Critique", color: "red" },
+            { value: 72, label: "Nutrition", status: "Bon", color: "green" },
+            { value: 42, label: "Hormones", status: "Moyen", color: "amber" },
+            { value: 85, label: "Training", status: "Excellent", color: "green" },
+            { value: 44, label: "Énergie", status: "Moyen", color: "amber" },
+            { value: 62, label: "Cardio", status: "Correct", color: "green" },
+          ].map((item, i) => (
+            <div key={i} className="bg-zinc-900/60 rounded-xl p-3 border border-white/5">
+              <div className="flex items-baseline gap-1 mb-1">
+                <span className="text-white text-xl font-bold">{item.value}</span>
+                <span className="text-white/30 text-[9px]">/100</span>
+              </div>
+              <p className="text-white/50 text-[9px]">{item.label}</p>
+              <div className="h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                <div className={`h-full rounded-full ${item.color === 'red' ? 'bg-red-500' : item.color === 'amber' ? 'bg-amber-500' : 'bg-primary'}`} style={{ width: `${item.value}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Sections", value: "14" },
+            { label: "Pages", value: "45+" },
+            { label: "Protocoles", value: "8" },
+          ].map((s, i) => (
+            <div key={i} className="bg-white/[0.03] rounded-lg p-3 text-center border border-white/5">
+              <p className="text-white text-lg font-bold">{s.value}</p>
+              <p className="text-white/40 text-[8px]">{s.label}</p>
             </div>
           ))}
         </div>
       </div>
     ),
     domaines: (
-      <div className="w-full bg-black px-4 pt-4 pb-6">
-        <p className="text-white/40 text-[9px] tracking-widest mb-3">15 DOMAINES ANALYSÉS</p>
-        <div className="grid grid-cols-2 gap-2">
+      <div className="w-full bg-gradient-to-b from-[#0d1510] to-black px-4 pt-8 pb-20">
+        <p className="text-white/40 text-[9px] tracking-widest mb-4">15 DOMAINES ANALYSÉS</p>
+        <div className="space-y-2">
           {[
-            { name: "Stress & HRV", score: 42 },
-            { name: "Cortisol", score: 38 },
-            { name: "Thyroïde", score: 65 },
-            { name: "DHEA", score: 55 },
-            { name: "Insuline", score: 48 },
-            { name: "Sommeil", score: 35 },
-            { name: "Digestion", score: 52 },
-            { name: "Énergie", score: 44 },
+            { name: "Sommeil", score: 35, icon: "🌙" },
+            { name: "Stress & HRV", score: 42, icon: "💓" },
+            { name: "Cortisol", score: 38, icon: "⚡" },
+            { name: "Hormones", score: 48, icon: "🧬" },
+            { name: "Énergie", score: 44, icon: "🔋" },
+            { name: "Digestion", score: 52, icon: "🍽️" },
+            { name: "Insuline", score: 48, icon: "📊" },
+            { name: "DHEA", score: 55, icon: "💪" },
+            { name: "Thyroïde", score: 65, icon: "🦋" },
+            { name: "Cardio", score: 62, icon: "❤️" },
+            { name: "Nutrition", score: 72, icon: "🥗" },
+            { name: "Training", score: 85, icon: "🏋️" },
+            { name: "Mobilité", score: 58, icon: "🤸" },
+            { name: "Mental", score: 67, icon: "🧠" },
+            { name: "Récupération", score: 41, icon: "😴" },
           ].map((d, i) => (
-            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5 border border-white/5">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-white/70 text-[9px] font-medium">{d.name}</span>
-              </div>
-              <div className="text-white text-sm font-bold">{d.score}</div>
-              <div className="h-0.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-                <div className="h-full rounded-full bg-white/30" style={{ width: `${d.score}%` }} />
+            <div key={i} className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 flex items-center gap-3">
+              <span className="text-lg">{d.icon}</span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-white/80 text-[10px] font-medium">{d.name}</span>
+                  <span className="text-white text-sm font-bold">{d.score}</span>
+                </div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${d.score < 40 ? 'bg-red-500' : d.score < 60 ? 'bg-amber-500' : 'bg-primary'}`} style={{ width: `${d.score}%` }} />
+                </div>
               </div>
             </div>
           ))}
@@ -497,80 +503,106 @@ function UltrahumanHero() {
       </div>
     ),
     rapport: (
-      <div className="w-full bg-black px-4 pt-4 pb-6">
-        <p className="text-white/40 text-[9px] tracking-widest mb-3">ANALYSE DÉTAILLÉE</p>
+      <div className="w-full bg-gradient-to-b from-[#0d1510] to-black px-4 pt-8 pb-20">
+        <p className="text-white/40 text-[9px] tracking-widest mb-4">ANALYSE DÉTAILLÉE</p>
         <div className="space-y-3">
-          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center">
-                <Activity className="w-2.5 h-2.5 text-white/60" />
+          {[
+            { icon: Moon, title: "Sommeil", score: 35, status: "Critique", desc: "Latence d'endormissement prolongée (45+ min). Sommeil profond insuffisant. Réveils nocturnes fréquents." },
+            { icon: Activity, title: "Système Nerveux", score: 42, status: "À améliorer", desc: "HRV basse (28ms). Dysrégulation du SNA détectée. Cortisol matinal élevé." },
+            { icon: Zap, title: "Énergie", score: 44, status: "Moyen", desc: "Fatigue mitochondriale probable. Pic énergétique tardif (16h-18h). Crash post-prandial." },
+            { icon: Apple, title: "Nutrition", score: 72, status: "Bon", desc: "Apport protéique optimal (1.8g/kg). Hydratation à améliorer. Diversité alimentaire correcte." },
+            { icon: Heart, title: "Cardio", score: 62, status: "Correct", desc: "FC repos 68bpm. Zone 2 sous-développée. Récupération post-effort moyenne." },
+            { icon: Dumbbell, title: "Training", score: 85, status: "Excellent", desc: "Volume optimal. Progression linéaire. Force relative élevée. Mobilité à travailler." },
+          ].map((section, i) => (
+            <div key={i} className="bg-zinc-900/50 rounded-xl p-4 border border-white/5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${section.score < 40 ? 'bg-red-500/20' : section.score < 60 ? 'bg-amber-500/20' : 'bg-primary/20'}`}>
+                    <section.icon className={`w-4 h-4 ${section.score < 40 ? 'text-red-400' : section.score < 60 ? 'text-amber-400' : 'text-primary'}`} />
+                  </div>
+                  <div>
+                    <p className="text-white text-[11px] font-medium">{section.title}</p>
+                    <p className={`text-[8px] ${section.score < 40 ? 'text-red-400' : section.score < 60 ? 'text-amber-400' : 'text-primary'}`}>{section.status}</p>
+                  </div>
+                </div>
+                <span className="text-white text-lg font-bold">{section.score}</span>
               </div>
-              <span className="text-white/80 text-[10px] font-medium">Système Nerveux</span>
+              <p className="text-white/50 text-[9px] leading-relaxed">{section.desc}</p>
             </div>
-            <p className="text-white/50 text-[9px] leading-relaxed">
-              Signes de dysrégulation du SNA. HRV basse (28ms), cortisol matinal élevé.
-            </p>
-          </div>
-          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center">
-                <Moon className="w-2.5 h-2.5 text-white/60" />
-              </div>
-              <span className="text-white/80 text-[10px] font-medium">Sommeil</span>
-            </div>
-            <p className="text-white/50 text-[9px] leading-relaxed">
-              Latence d'endormissement prolongée. Manque de sommeil profond estimé.
-            </p>
-          </div>
-          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center">
-                <Zap className="w-2.5 h-2.5 text-white/60" />
-              </div>
-              <span className="text-white/80 text-[10px] font-medium">Énergie</span>
-            </div>
-            <p className="text-white/50 text-[9px] leading-relaxed">
-              Fatigue mitochondriale probable. Pic énergétique tardif (16h-18h).
-            </p>
-          </div>
+          ))}
         </div>
       </div>
     ),
     plan: (
-      <div className="w-full bg-black px-4 pt-4 pb-6">
-        <p className="text-white/40 text-[9px] tracking-widest mb-3">PROTOCOLE 90 JOURS</p>
-        <div className="space-y-3">
-          <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center">
-                <Target className="w-3 h-3 text-white/70" />
+      <div className="w-full bg-gradient-to-b from-[#0d1510] to-black px-4 pt-8 pb-20">
+        <p className="text-white/40 text-[9px] tracking-widest mb-4">PLAN D'ACTION 90 JOURS</p>
+
+        {/* Timeline */}
+        <div className="flex gap-2 mb-4">
+          {[
+            { phase: "J1-30", label: "Reset", pts: "+8" },
+            { phase: "J31-60", label: "Build", pts: "+6" },
+            { phase: "J61-90", label: "Perf", pts: "+4" },
+          ].map((p, i) => (
+            <div key={i} className="flex-1 bg-zinc-900/60 rounded-xl p-3 border border-white/5 text-center">
+              <p className="text-primary text-[8px] font-bold">{p.phase}</p>
+              <p className="text-white text-[10px] font-medium">{p.label}</p>
+              <p className="text-emerald-400 text-[9px] font-bold">{p.pts}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Priority Protocol */}
+        <div className="bg-gradient-to-r from-red-500/10 to-transparent rounded-xl p-4 border border-red-500/20 mb-4">
+          <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[8px] font-bold">PRIORITÉ #1</span>
+          <p className="text-white text-[11px] font-semibold mt-2">Protocole Sommeil</p>
+          <div className="mt-2 space-y-1">
+            {["Lumière naturelle 30min AM", "Magnésium 300mg soir", "Écrans off 2h avant", "Chambre 18°C"].map((item, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Check className="w-3 h-3 text-red-400" />
+                <span className="text-white/60 text-[9px]">{item}</span>
               </div>
-              <span className="text-white/80 text-[10px] font-medium">Phase 1: Reset (J1-30)</span>
-            </div>
-            <div className="space-y-1.5">
-              {["Protocole sommeil 10-3-2-1", "Magnésium glycinate soir", "Exposition lumière AM"].map((p, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <Check className="w-2.5 h-2.5 text-white/50" />
-                  <span className="text-white/50 text-[9px]">{p}</span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
-          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
-            <p className="text-white/40 text-[9px] tracking-widest mb-2">STACK RECOMMANDÉ</p>
-            <div className="flex gap-1.5">
-              {[
-                { name: "Mg", desc: "400mg" },
-                { name: "D3", desc: "4000UI" },
-                { name: "Zn", desc: "30mg" },
-                { name: "B+", desc: "Complex" }
-              ].map((s, i) => (
-                <div key={i} className="flex-1 bg-black/50 rounded-lg p-2 text-center border border-white/5">
-                  <p className="text-white/70 text-[10px] font-medium">{s.name}</p>
-                  <p className="text-white/30 text-[7px]">{s.desc}</p>
+        </div>
+
+        {/* Supplements */}
+        <div className="bg-zinc-900/50 rounded-xl p-4 border border-white/5 mb-4">
+          <p className="text-white/40 text-[9px] tracking-widest mb-3">STACK SUPPLÉMENTS</p>
+          <div className="space-y-2">
+            {[
+              { name: "Magnésium Bisglycinate", dose: "300mg", time: "Soir" },
+              { name: "Vitamine D3 + K2", dose: "4000 UI", time: "Matin" },
+              { name: "Oméga-3 EPA/DHA", dose: "2g", time: "Repas" },
+              { name: "Ashwagandha KSM-66", dose: "600mg", time: "Soir" },
+            ].map((s, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <span className="text-white/80 text-[10px]">{s.name}</span>
+                <span className="text-white/40 text-[8px]">{s.dose} • {s.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Targets */}
+        <div className="bg-zinc-900/50 rounded-xl p-4 border border-white/5">
+          <p className="text-white/40 text-[9px] tracking-widest mb-3">OBJECTIFS 90J</p>
+          <div className="space-y-3">
+            {[
+              { label: "Score Global", from: 58, to: 76 },
+              { label: "Sommeil", from: 35, to: 65 },
+              { label: "HRV", from: 32, to: 48 },
+            ].map((t, i) => (
+              <div key={i}>
+                <div className="flex justify-between text-[9px] mb-1">
+                  <span className="text-white/60">{t.label}</span>
+                  <span className="text-white/40">{t.from} → <span className="text-primary">{t.to}</span></span>
                 </div>
-              ))}
-            </div>
+                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-primary rounded-full" style={{ width: `${(t.from / t.to) * 100}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -677,63 +709,66 @@ function UltrahumanHero() {
           </button>
         </motion.div>
 
-        {/* Phone Mockup with hand - Ultrahuman style */}
+        {/* Phone Mockup - Clean frame style */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-          className="mt-8 relative"
+          className="mt-12 relative"
         >
-          {/* Container for hand + phone */}
-          <div className="relative w-[340px] sm:w-[400px] md:w-[450px] mx-auto">
-            {/* Hand holding phone image */}
-            <img
-              src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/homepage-v3/app-section/hand-phone-mockup.png"
-              alt="Phone mockup"
-              className="w-full h-auto relative z-10"
-            />
+          {/* Phone Frame */}
+          <div className="relative w-[280px] sm:w-[320px] mx-auto">
+            {/* Phone outer frame */}
+            <div className="relative bg-zinc-900 rounded-[3rem] p-2 shadow-2xl shadow-black/50 border border-white/10">
+              {/* Phone inner bezel */}
+              <div className="relative bg-black rounded-[2.5rem] overflow-hidden">
+                {/* Dynamic Island / Notch */}
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-30 flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-zinc-800" />
+                  <div className="w-10 h-3 rounded-full bg-zinc-800" />
+                </div>
 
-            {/* Dashboard content overlay - positioned on phone screen */}
-            <div
-              className="absolute z-20 overflow-hidden rounded-[1.5rem] sm:rounded-[2rem]"
-              style={{
-                top: "4%",
-                left: "21.5%",
-                width: "57%",
-                height: "72%",
-              }}
-            >
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="h-full overflow-y-auto scrollbar-hide bg-gradient-to-b from-[#0a2520] to-black"
-              >
-                {tabContents[activeTab]}
-              </motion.div>
+                {/* Screen content - scrollable */}
+                <div className="h-[520px] sm:h-[580px] overflow-hidden">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="h-full overflow-y-auto scrollbar-hide"
+                  >
+                    {tabContents[activeTab]}
+                  </motion.div>
+                </div>
+
+                {/* Home indicator */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-28 h-1 bg-white/20 rounded-full" />
+              </div>
             </div>
+
+            {/* Glow effect */}
+            <div className="absolute -inset-4 bg-gradient-to-b from-primary/20 via-transparent to-transparent rounded-[4rem] blur-2xl -z-10 opacity-50" />
           </div>
 
-          {/* External Tab Bar - Below phone */}
-          <div className="mt-6 max-w-md mx-auto bg-zinc-900/90 backdrop-blur-xl rounded-full p-1.5 shadow-lg shadow-black/40 border border-white/10">
+          {/* Tab Bar - Below phone */}
+          <div className="mt-8 max-w-md mx-auto bg-zinc-900/90 backdrop-blur-xl rounded-full p-1.5 shadow-lg shadow-black/40 border border-white/10">
             <div className="flex items-center">
               {[
                 { id: "scores", icon: Activity, label: "Scores" },
-                { id: "domaines", icon: Layers, label: "Protocole" },
-                { id: "rapport", icon: Brain, label: "Bilans" },
-                { id: "plan", icon: Target, label: "Insights" },
+                { id: "domaines", icon: Layers, label: "Domaines" },
+                { id: "rapport", icon: Brain, label: "Rapport" },
+                { id: "plan", icon: Target, label: "Plan" },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-full transition-all duration-200 ${
                     activeTab === tab.id
-                      ? "bg-zinc-800 text-white"
+                      ? "bg-primary text-black"
                       : "text-zinc-500 hover:text-zinc-300"
                   }`}
                 >
-                  <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary" : ""}`} />
+                  <tab.icon className={`w-4 h-4`} />
                   <span className="text-xs font-medium hidden sm:inline">{tab.label}</span>
                 </button>
               ))}
