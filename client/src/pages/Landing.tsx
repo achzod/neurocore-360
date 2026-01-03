@@ -52,41 +52,78 @@ function UltrahumanHero() {
   // Contenu différent pour chaque onglet - couleurs neutres et élégantes
   const tabContents = {
     scores: (
-      <div className="w-full bg-black px-4 pt-4 pb-6">
-        <p className="text-white/40 text-[9px] tracking-widest mb-3">NEUROCORE 360</p>
-        {/* Score global card */}
-        <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/40 text-[8px] tracking-widest mb-1">SCORE GLOBAL</p>
-              <p className="text-white text-2xl font-bold">58<span className="text-white/30 text-sm">/100</span></p>
-            </div>
-            <div className="w-12 h-12 rounded-full border-2 border-primary/50 flex items-center justify-center">
-              <span className="text-primary text-xs font-bold">C+</span>
-            </div>
+      <div className="w-full bg-gradient-to-b from-[#0a2520] to-black px-4 pt-3 pb-4">
+        {/* Header with back arrow and date */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-white/40 text-[10px]">←</span>
+          <span className="text-white/60 text-[10px]">Rapport complet</span>
+          <span className="text-primary/60 text-[10px]">ⓘ</span>
+        </div>
+
+        {/* Big Score */}
+        <div className="mb-3">
+          <div className="flex items-baseline gap-1">
+            <span className="text-white text-4xl font-bold">58</span>
+            <span className="text-primary text-xs">+12 vs baseline</span>
+          </div>
+          <p className="text-white/60 text-sm">Global Index</p>
+          <div className="inline-flex items-center gap-1 mt-1 bg-primary/20 rounded-full px-2 py-0.5">
+            <span className="text-[8px]">📈</span>
+            <span className="text-primary text-[9px] font-medium">Rapport de 45 pages</span>
           </div>
         </div>
-        {/* Domaines grid */}
-        <div className="grid grid-cols-2 gap-2">
+
+        {/* Mini bar chart */}
+        <div className="flex items-end justify-between gap-1 h-12 mb-4 px-2">
+          {[42, 38, 45, 52, 48, 55, 58].map((val, i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <span className="text-[7px] text-white/40">{val}</span>
+              <div
+                className={`w-5 rounded-sm ${i === 6 ? 'bg-white' : 'bg-primary/60'}`}
+                style={{ height: `${val * 0.5}px` }}
+              />
+              <span className="text-[6px] text-white/30">{['L', 'M', 'M', 'J', 'V', 'S', 'D'][i]}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Contributors section */}
+        <div className="bg-zinc-900/80 rounded-xl p-3 border border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-white/60 text-[10px] font-medium">Domaines analysés</span>
+            <span className="text-white/30 text-[8px]">ⓘ</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: "35", label: "SOMMEIL", status: "Needs attention", statusColor: "bg-red-500/20 text-red-400" },
+              { value: "72", label: "NUTRITION", status: "Optimal", statusColor: "bg-primary/20 text-primary" },
+              { value: "42", label: "HORMONES", status: "Needs attention", statusColor: "bg-amber-500/20 text-amber-400" },
+              { value: "85", label: "TRAINING", status: "Excellent", statusColor: "bg-primary/20 text-primary" },
+            ].map((item, i) => (
+              <div key={i} className="bg-black/40 rounded-lg p-2 border border-white/5">
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-white text-lg font-bold">{item.value}</span>
+                  <span className="text-white/30 text-[8px]">/100</span>
+                </div>
+                <p className="text-white/40 text-[8px] tracking-wider">{item.label}</p>
+                <span className={`inline-block mt-1 text-[7px] px-1.5 py-0.5 rounded ${item.statusColor}`}>
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom metrics */}
+        <div className="mt-3 space-y-1.5">
           {[
-            { name: "Sommeil", score: 35, icon: "🌙" },
-            { name: "Stress", score: 38, icon: "⚡" },
-            { name: "Hormones", score: 42, icon: "🧬" },
-            { name: "Digestion", score: 45, icon: "🔥" },
-            { name: "Training", score: 25, icon: "💪" },
-            { name: "Nutrition", score: 48, icon: "🥗" },
-            { name: "Cardio", score: 52, icon: "❤️" },
-            { name: "Énergie", score: 44, icon: "⚡" },
-          ].map((d, i) => (
-            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5 border border-white/5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px]">{d.icon}</span>
-                <span className="text-white/70 text-[9px] font-medium">{d.name}</span>
-              </div>
-              <div className="text-white text-sm font-bold">{d.score}</div>
-              <div className="h-0.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-                <div className="h-full rounded-full bg-primary/60" style={{ width: `${d.score}%` }} />
-              </div>
+            { label: "Stress & HRV", status: "Optimal", color: "text-primary" },
+            { label: "Digestion", status: "Excellent", color: "text-primary" },
+            { label: "Énergie", status: "Needs attention", color: "text-amber-400" },
+          ].map((m, i) => (
+            <div key={i} className="flex items-center justify-between py-1 border-b border-white/5">
+              <span className="text-white/50 text-[10px]">{m.label}</span>
+              <span className={`text-[9px] ${m.color} bg-white/5 px-2 py-0.5 rounded`}>{m.status} →</span>
             </div>
           ))}
         </div>
