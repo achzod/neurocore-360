@@ -383,22 +383,18 @@ function CertificationsBar() {
     { name: "Pre-Script", subtitle: "Movement", image: preScriptLogo },
   ];
 
-  const allCerts = [...certifications, ...certifications, ...certifications];
-
   return (
-    <div className="relative overflow-hidden border-b border-white/5 bg-black/40 py-4" data-testid="section-certifications-bar">
+    <div className="relative border-b border-white/5 bg-black/40 py-4" data-testid="section-certifications-bar">
       <div className="relative mb-3 flex items-center justify-center">
         <span className="text-[9px] font-medium uppercase tracking-[0.25em] text-white/30">
           Certifications
         </span>
       </div>
 
-      <div className="relative">
-        <div className="absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-black/40 to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-black/40 to-transparent" />
-
-        <div className="flex animate-scroll-slow items-center gap-6">
-          {allCerts.map((cert, idx) => (
+      {/* Centered container with max-width */}
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          {certifications.map((cert, idx) => (
             <div
               key={idx}
               className="flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
