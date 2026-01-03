@@ -625,13 +625,15 @@ export async function registerRoutes(
         return;
       }
 
-      // IMPORTANT: ordre des paramètres = (userId, sitePrefix, providers, redirectUrl, useAppleHealth)
+      // IMPORTANT: use_terra_avengers_app=true pour Apple Health via Terra Avengers app
+      // L'utilisateur DOIT avoir l'app Terra Avengers installée sur iPhone
+      // Le widget redirige vers l'app qui demande les permissions HealthKit
       const widget = await generateTerraWidget(
         userId,
         "neurocore",  // sitePrefix for multi-site dispatcher
         providers,    // optional provider filter
         redirectUrl,  // optional redirect URL
-        true          // use_terra_avengers_app = true for Apple Health
+        true          // use_terra_avengers_app = true (OBLIGATOIRE pour Apple Health)
       );
 
       if (!widget) {
