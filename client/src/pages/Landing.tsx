@@ -50,7 +50,7 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
 
-  // Contenu différent pour chaque onglet
+  // Contenu différent pour chaque onglet - couleurs neutres et élégantes
   const tabContents = {
     scores: (
       <div className="w-full bg-black">
@@ -64,19 +64,19 @@ function UltrahumanHero() {
             <div className="text-4xl font-bold text-white text-center tracking-tight">58</div>
             <div className="text-[10px] text-white/30 text-center mt-1">/100</div>
             <div className="mt-2 flex justify-center">
-              <div className="inline-flex items-center gap-1 bg-amber-500/20 rounded-full px-2.5 py-1">
-                <span className="text-amber-400 text-[9px] font-medium">À optimiser</span>
+              <div className="inline-flex items-center gap-1 bg-white/5 rounded-full px-2.5 py-1 border border-white/10">
+                <span className="text-white/60 text-[9px] font-medium">À optimiser</span>
               </div>
             </div>
           </div>
         </div>
         <div className="px-4 py-2 space-y-2">
           {[
-            { label: "Système Nerveux", value: 38, color: "bg-red-500" },
-            { label: "Sommeil", value: 35, color: "bg-red-500" },
-            { label: "Digestion", value: 45, color: "bg-amber-500" },
-            { label: "Hormones", value: 42, color: "bg-amber-500" },
-            { label: "Entraînement", value: 25, color: "bg-red-500" },
+            { label: "Système Nerveux", value: 38 },
+            { label: "Sommeil", value: 35 },
+            { label: "Digestion", value: 45 },
+            { label: "Hormones", value: 42 },
+            { label: "Entraînement", value: 25 },
           ].map((m, i) => (
             <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5">
               <div className="flex justify-between mb-1">
@@ -84,7 +84,7 @@ function UltrahumanHero() {
                 <span className="text-white/80 text-[10px] font-medium">{m.value}/100</span>
               </div>
               <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className={`h-full ${m.color} rounded-full transition-all`} style={{ width: `${m.value}%` }} />
+                <div className="h-full bg-white/40 rounded-full transition-all" style={{ width: `${m.value}%` }} />
               </div>
             </div>
           ))}
@@ -96,23 +96,22 @@ function UltrahumanHero() {
         <p className="text-white/40 text-[9px] tracking-widest mb-3">15 DOMAINES ANALYSÉS</p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { name: "Stress & HRV", score: 42, status: "warning" },
-            { name: "Cortisol", score: 38, status: "danger" },
-            { name: "Thyroïde", score: 65, status: "ok" },
-            { name: "DHEA", score: 55, status: "warning" },
-            { name: "Insuline", score: 48, status: "warning" },
-            { name: "Sommeil", score: 35, status: "danger" },
-            { name: "Digestion", score: 52, status: "warning" },
-            { name: "Énergie", score: 44, status: "warning" },
+            { name: "Stress & HRV", score: 42 },
+            { name: "Cortisol", score: 38 },
+            { name: "Thyroïde", score: 65 },
+            { name: "DHEA", score: 55 },
+            { name: "Insuline", score: 48 },
+            { name: "Sommeil", score: 35 },
+            { name: "Digestion", score: 52 },
+            { name: "Énergie", score: 44 },
           ].map((d, i) => (
             <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5 border border-white/5">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-white/70 text-[9px] font-medium">{d.name}</span>
-                <div className={`w-1.5 h-1.5 rounded-full ${d.status === 'danger' ? 'bg-red-500' : d.status === 'warning' ? 'bg-amber-500' : 'bg-primary'}`} />
               </div>
               <div className="text-white text-sm font-bold">{d.score}</div>
               <div className="h-0.5 bg-white/10 rounded-full mt-1 overflow-hidden">
-                <div className={`h-full rounded-full ${d.status === 'danger' ? 'bg-red-500' : d.status === 'warning' ? 'bg-amber-500' : 'bg-primary'}`} style={{ width: `${d.score}%` }} />
+                <div className="h-full rounded-full bg-white/30" style={{ width: `${d.score}%` }} />
               </div>
             </div>
           ))}
@@ -125,8 +124,8 @@ function UltrahumanHero() {
         <div className="space-y-3">
           <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-md bg-red-500/20 flex items-center justify-center">
-                <Activity className="w-2.5 h-2.5 text-red-400" />
+              <div className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center">
+                <Activity className="w-2.5 h-2.5 text-white/60" />
               </div>
               <span className="text-white/80 text-[10px] font-medium">Système Nerveux</span>
             </div>
@@ -136,8 +135,8 @@ function UltrahumanHero() {
           </div>
           <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-md bg-amber-500/20 flex items-center justify-center">
-                <Moon className="w-2.5 h-2.5 text-amber-400" />
+              <div className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center">
+                <Moon className="w-2.5 h-2.5 text-white/60" />
               </div>
               <span className="text-white/80 text-[10px] font-medium">Sommeil</span>
             </div>
@@ -147,8 +146,8 @@ function UltrahumanHero() {
           </div>
           <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
-                <Zap className="w-2.5 h-2.5 text-primary" />
+              <div className="w-5 h-5 rounded-md bg-white/5 flex items-center justify-center">
+                <Zap className="w-2.5 h-2.5 text-white/60" />
               </div>
               <span className="text-white/80 text-[10px] font-medium">Énergie</span>
             </div>
@@ -163,17 +162,17 @@ function UltrahumanHero() {
       <div className="w-full bg-black px-4 pt-4 pb-6">
         <p className="text-white/40 text-[9px] tracking-widest mb-3">PROTOCOLE 90 JOURS</p>
         <div className="space-y-3">
-          <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
+          <div className="bg-white/[0.03] rounded-xl p-3 border border-white/10">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Target className="w-3 h-3 text-primary" />
+              <div className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center">
+                <Target className="w-3 h-3 text-white/70" />
               </div>
               <span className="text-white/80 text-[10px] font-medium">Phase 1: Reset (J1-30)</span>
             </div>
             <div className="space-y-1.5">
               {["Protocole sommeil 10-3-2-1", "Magnésium glycinate soir", "Exposition lumière AM"].map((p, i) => (
                 <div key={i} className="flex items-center gap-1.5">
-                  <Check className="w-2.5 h-2.5 text-primary" />
+                  <Check className="w-2.5 h-2.5 text-white/50" />
                   <span className="text-white/50 text-[9px]">{p}</span>
                 </div>
               ))}
@@ -189,7 +188,7 @@ function UltrahumanHero() {
                 { name: "B+", desc: "Complex" }
               ].map((s, i) => (
                 <div key={i} className="flex-1 bg-black/50 rounded-lg p-2 text-center border border-white/5">
-                  <p className="text-primary text-[10px] font-medium">{s.name}</p>
+                  <p className="text-white/70 text-[10px] font-medium">{s.name}</p>
                   <p className="text-white/30 text-[7px]">{s.desc}</p>
                 </div>
               ))}
@@ -378,41 +377,40 @@ const bentoStyles = {
 
 function CertificationsBar() {
   const certifications = [
-    { name: "ISSA", image: issaLogo },
-    { name: "NASM", image: nasmLogo },
-    { name: "Precision Nutrition", image: pnLogo },
-    { name: "Pre-Script", image: preScriptLogo },
+    { name: "ISSA", subtitle: "CPT, Nutrition", image: issaLogo },
+    { name: "NASM", subtitle: "CPT, CES, PES", image: nasmLogo },
+    { name: "Precision Nutrition", subtitle: "PN1 Coach", image: pnLogo },
+    { name: "Pre-Script", subtitle: "Movement", image: preScriptLogo },
   ];
 
-  const allCerts = [...certifications, ...certifications, ...certifications, ...certifications];
+  const allCerts = [...certifications, ...certifications, ...certifications];
 
   return (
-    <div className="relative overflow-hidden border-b border-white/10 bg-zinc-950/50 py-6" data-testid="section-certifications-bar">
-      <div className="relative mb-4 flex items-center justify-center">
-        <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-white/50">
-          Certifications Internationales
+    <div className="relative overflow-hidden border-b border-white/5 bg-black/40 py-4" data-testid="section-certifications-bar">
+      <div className="relative mb-3 flex items-center justify-center">
+        <span className="text-[9px] font-medium uppercase tracking-[0.25em] text-white/30">
+          Certifications
         </span>
       </div>
 
       <div className="relative">
-        <div className="absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-zinc-950/50 to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-zinc-950/50 to-transparent" />
+        <div className="absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-black/40 to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-black/40 to-transparent" />
 
-        <div className="flex animate-scroll-slow items-center gap-16">
+        <div className="flex animate-scroll-slow items-center gap-6">
           {allCerts.map((cert, idx) => (
             <div
               key={idx}
-              className="flex shrink-0 flex-col items-center gap-2 opacity-70 hover:opacity-100 transition-opacity duration-300"
+              className="flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
               data-testid={`certification-${idx}`}
             >
-              <div className="flex h-12 w-12 items-center justify-center">
-                <img
-                  src={cert.image}
-                  alt={cert.name}
-                  className="h-10 w-10 object-contain brightness-0 invert opacity-80"
-                />
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-white/90">
+                <img src={cert.image} alt={cert.name} className="h-5 w-5 object-contain" />
               </div>
-              <span className="text-[10px] font-medium text-white/50">{cert.name}</span>
+              <div className="text-left">
+                <span className="text-[10px] font-medium text-white/60 block">{cert.name}</span>
+                <span className="text-[8px] text-white/30">{cert.subtitle}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -428,18 +426,27 @@ function MediaBar() {
   const allMedia = [...mediaLogos, ...mediaLogos, ...mediaLogos, ...mediaLogos];
 
   return (
-    <div className="w-full overflow-hidden border-b border-white/10 bg-zinc-950/30 py-4" data-testid="section-media-bar">
-      <div className="mb-3 text-center text-[9px] font-medium uppercase tracking-[0.3em] text-white/40">
+    <div className="w-full overflow-hidden border-b border-white/5 bg-black/30 py-3" data-testid="section-media-bar">
+      <div className="mb-2 text-center text-[8px] font-medium uppercase tracking-[0.3em] text-white/25">
         Vu dans les médias
       </div>
       <div className="relative w-full">
-        <div className="absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-zinc-950/30 to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-zinc-950/30 to-transparent" />
-        <div className="flex animate-scroll-slower items-center gap-16 whitespace-nowrap" style={{ width: 'fit-content' }}>
+        <div className="absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-black/30 to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-black/30 to-transparent" />
+        <div className="flex animate-scroll-slower items-center gap-12 whitespace-nowrap" style={{ width: 'fit-content' }}>
           {allMedia.map((name, idx) => (
             <span
               key={idx}
-              className="text-xs font-semibold text-white/40 transition-colors hover:text-white/60 tracking-wide"
+              className="text-[11px] font-medium text-white/30 transition-all duration-300 hover:text-white/70 hover:text-shadow-glow cursor-default"
+              style={{
+                textShadow: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textShadow = '0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(255,255,255,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textShadow = 'none';
+              }}
               data-testid={`media-${idx}`}
             >
               {name}
