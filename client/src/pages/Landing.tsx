@@ -53,41 +53,41 @@ function UltrahumanHero() {
   // Contenu différent pour chaque onglet - couleurs neutres et élégantes
   const tabContents = {
     scores: (
-      <div className="w-full bg-black">
-        {/* Header - ANABOLIC BIOSCAN centered */}
-        <div className="px-3 pt-2 pb-2 text-center">
-          <p className="text-primary text-[11px] font-bold tracking-wider">ANABOLIC BIOSCAN</p>
-        </div>
-        {/* Score circle */}
-        <div className="px-4 py-3 flex justify-center">
-          <div className="relative w-28 h-28">
-            {/* Outer ring */}
-            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
-              <circle cx="50" cy="50" r="45" fill="none" stroke="rgb(14,252,109)" strokeWidth="4" strokeLinecap="round" strokeDasharray="283" strokeDashoffset="68" />
-            </svg>
-            {/* Center content */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-white">76</span>
-              <span className="text-[8px] text-white/40 tracking-widest">SCORE GLOBAL</span>
+      <div className="w-full bg-black px-4 pt-4 pb-6">
+        <p className="text-white/40 text-[9px] tracking-widest mb-3">NEUROCORE 360</p>
+        {/* Score global card */}
+        <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5 mb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/40 text-[8px] tracking-widest mb-1">SCORE GLOBAL</p>
+              <p className="text-white text-2xl font-bold">58<span className="text-white/30 text-sm">/100</span></p>
+            </div>
+            <div className="w-12 h-12 rounded-full border-2 border-primary/50 flex items-center justify-center">
+              <span className="text-primary text-xs font-bold">C+</span>
             </div>
           </div>
         </div>
-        {/* Metrics bars */}
-        <div className="px-4 py-2 space-y-2.5">
+        {/* Domaines grid */}
+        <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Hormones", value: 82, color: "from-cyan-400 to-cyan-500" },
-            { label: "Sommeil", value: 65, color: "from-blue-400 to-blue-500" },
-            { label: "Stress", value: 71, color: "from-amber-400 to-amber-500" },
-            { label: "Digestion", value: 78, color: "from-emerald-400 to-emerald-500" },
-            { label: "Training", value: 85, color: "from-violet-400 to-violet-500" },
-          ].map((m, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="text-white/60 text-[10px] w-20">{m.label}</span>
-              <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div className={`h-full bg-gradient-to-r ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
+            { name: "Sommeil", score: 35, icon: "🌙" },
+            { name: "Stress", score: 38, icon: "⚡" },
+            { name: "Hormones", score: 42, icon: "🧬" },
+            { name: "Digestion", score: 45, icon: "🔥" },
+            { name: "Training", score: 25, icon: "💪" },
+            { name: "Nutrition", score: 48, icon: "🥗" },
+            { name: "Cardio", score: 52, icon: "❤️" },
+            { name: "Énergie", score: 44, icon: "⚡" },
+          ].map((d, i) => (
+            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5 border border-white/5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px]">{d.icon}</span>
+                <span className="text-white/70 text-[9px] font-medium">{d.name}</span>
               </div>
-              <span className="text-white/80 text-[10px] font-semibold w-6 text-right">{m.value}</span>
+              <div className="text-white text-sm font-bold">{d.score}</div>
+              <div className="h-0.5 bg-white/10 rounded-full mt-1 overflow-hidden">
+                <div className="h-full rounded-full bg-primary/60" style={{ width: `${d.score}%` }} />
+              </div>
             </div>
           ))}
         </div>
