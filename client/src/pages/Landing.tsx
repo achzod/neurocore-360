@@ -1092,200 +1092,201 @@ const bentoStyles = {
   subtitle: "text-muted-foreground tracking-[-0.01em]",
 };
 
-// Phone Mockup with Clickable Tabs - Ultrahuman style
+// Phone Mockup with Glass Tabs - Ultrahuman style
 function PhoneMockupWithTabs({ setShowDemo }: { setShowDemo: (show: boolean) => void }) {
   const [activeTab, setActiveTab] = useState(0);
 
   const tabs = [
     {
-      id: "global",
-      label: "Global",
-      title: "Score Global",
-      color: "amber",
-      markers: [
-        { name: "Score Global", value: "58", unit: "/100", status: "À optimiser", color: "amber" },
-        { name: "Énergie", value: "44", unit: "/100", status: "Moyen", color: "amber" },
-        { name: "Récupération", value: "41", unit: "/100", status: "Faible", color: "amber" },
-        { name: "Performance", value: "62", unit: "/100", status: "Correct", color: "green" },
-        { name: "Immunité", value: "55", unit: "/100", status: "Moyen", color: "amber" },
-      ]
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <Activity className="w-5 h-5" />,
     },
     {
       id: "sommeil",
       label: "Sommeil",
-      title: "Analyse Sommeil",
-      color: "violet",
-      markers: [
-        { name: "Score Sommeil", value: "35", unit: "/100", status: "Critique", color: "red" },
-        { name: "Profond", value: "12", unit: "%", status: "Bas", color: "red" },
-        { name: "REM", value: "18", unit: "%", status: "Insuffisant", color: "amber" },
-        { name: "Latence", value: "45", unit: "min", status: "Long", color: "red" },
-        { name: "Efficacité", value: "72", unit: "%", status: "Moyen", color: "amber" },
-      ]
+      icon: <Moon className="w-5 h-5" />,
     },
     {
       id: "hrv",
       label: "HRV",
-      title: "Variabilité Cardiaque",
-      color: "red",
-      markers: [
-        { name: "HRV Moyenne", value: "28", unit: "ms", status: "Critique", color: "red" },
-        { name: "RMSSD", value: "24", unit: "ms", status: "Bas", color: "red" },
-        { name: "FC Repos", value: "72", unit: "bpm", status: "Normal", color: "green" },
-        { name: "Récupération", value: "38", unit: "%", status: "Faible", color: "red" },
-        { name: "Stress Index", value: "78", unit: "/100", status: "Élevé", color: "red" },
-      ]
+      icon: <Heart className="w-5 h-5" />,
     },
     {
       id: "nutrition",
       label: "Nutrition",
-      title: "Bilan Nutritionnel",
-      color: "green",
-      markers: [
-        { name: "Score Nutrition", value: "72", unit: "/100", status: "Bon", color: "green" },
-        { name: "Protéines", value: "1.8", unit: "g/kg", status: "Optimal", color: "green" },
-        { name: "Hydratation", value: "1.8", unit: "L/j", status: "Insuffisant", color: "amber" },
-        { name: "Fibres", value: "22", unit: "g/j", status: "Bas", color: "amber" },
-        { name: "Micronutriments", value: "68", unit: "/100", status: "Correct", color: "green" },
-      ]
+      icon: <Beaker className="w-5 h-5" />,
     },
   ];
 
-  const currentTab = tabs[activeTab];
+  // Different screen content for each tab
+  const renderScreenContent = () => {
+    switch (activeTab) {
+      case 0: // Dashboard
+        return (
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <p className="text-[#4a9d7c]/60 text-[9px] tracking-[0.2em] font-medium mb-2">SCORE GLOBAL</p>
+            <div className="text-7xl font-bold text-white mb-2">58</div>
+            <p className="text-amber-400 text-sm font-medium mb-6">À optimiser</p>
+            <div className="w-full grid grid-cols-2 gap-3">
+              <div className="bg-white/5 rounded-xl p-3 text-left">
+                <p className="text-[9px] text-white/40 uppercase">Énergie</p>
+                <p className="text-white font-bold text-lg">44<span className="text-white/30 text-xs">/100</span></p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 text-left">
+                <p className="text-[9px] text-white/40 uppercase">Récupération</p>
+                <p className="text-white font-bold text-lg">41<span className="text-white/30 text-xs">/100</span></p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 text-left">
+                <p className="text-[9px] text-white/40 uppercase">Stress</p>
+                <p className="text-red-400 font-bold text-lg">72<span className="text-white/30 text-xs">/100</span></p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 text-left">
+                <p className="text-[9px] text-white/40 uppercase">Nutrition</p>
+                <p className="text-emerald-400 font-bold text-lg">72<span className="text-white/30 text-xs">/100</span></p>
+              </div>
+            </div>
+          </div>
+        );
+      case 1: // Sommeil
+        return (
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <p className="text-violet-400/60 text-[9px] tracking-[0.2em] font-medium mb-2">SCORE SOMMEIL</p>
+            <div className="text-7xl font-bold text-white mb-1">72</div>
+            <p className="text-emerald-400 text-sm font-medium mb-1">+8 vs semaine dernière</p>
+            <p className="text-white/40 text-xs mb-6">Dernière sync: 07:32</p>
+            <div className="w-full grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white/5 rounded-xl p-3 text-left">
+                <p className="text-[9px] text-white/40 uppercase">Profond</p>
+                <p className="text-white font-bold text-lg">22<span className="text-white/30 text-xs">%</span></p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 text-left">
+                <p className="text-[9px] text-white/40 uppercase">REM</p>
+                <p className="text-white font-bold text-lg">24<span className="text-white/30 text-xs">%</span></p>
+              </div>
+            </div>
+            <div className="w-full flex items-center gap-2 px-4 py-3 bg-emerald-500/10 rounded-xl">
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span className="text-emerald-400 text-sm">Sommeil optimal</span>
+            </div>
+          </div>
+        );
+      case 2: // HRV
+        return (
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <p className="text-red-400/60 text-[9px] tracking-[0.2em] font-medium mb-2">VARIABILITÉ CARDIAQUE</p>
+            <div className="text-7xl font-bold text-white mb-1">28<span className="text-2xl text-white/40">ms</span></div>
+            <p className="text-red-400 text-sm font-medium mb-6">Zone critique</p>
+            <div className="w-full space-y-3">
+              <div className="bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-white/40 text-xs uppercase">RMSSD</span>
+                <span className="text-red-400 font-bold">24 ms</span>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-white/40 text-xs uppercase">FC Repos</span>
+                <span className="text-emerald-400 font-bold">68 bpm</span>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-white/40 text-xs uppercase">Stress Index</span>
+                <span className="text-red-400 font-bold">78/100</span>
+              </div>
+            </div>
+          </div>
+        );
+      case 3: // Nutrition
+        return (
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <p className="text-emerald-400/60 text-[9px] tracking-[0.2em] font-medium mb-2">SCORE NUTRITION</p>
+            <div className="text-7xl font-bold text-white mb-1">72</div>
+            <p className="text-emerald-400 text-sm font-medium mb-6">Bon équilibre</p>
+            <div className="w-full space-y-3">
+              <div className="bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-white/40 text-xs uppercase">Protéines</span>
+                <span className="text-emerald-400 font-bold">1.8 g/kg</span>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-white/40 text-xs uppercase">Hydratation</span>
+                <span className="text-amber-400 font-bold">1.8 L/j</span>
+              </div>
+              <div className="bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-white/40 text-xs uppercase">Fibres</span>
+                <span className="text-amber-400 font-bold">22 g/j</span>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-      className="mt-12 relative flex flex-col items-center"
+      transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+      className="mt-16 relative flex flex-col items-center"
     >
-      {/* Space video background */}
-      <div className="absolute inset-0 -top-32 -bottom-32 -left-48 -right-48 overflow-hidden rounded-3xl">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
-          src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80" />
-      </div>
-
-      {/* Phone Frame */}
-      <div className="relative w-[300px] sm:w-[340px]">
-        <div className="relative bg-zinc-900 rounded-[3rem] p-2 shadow-2xl shadow-black/50 border border-white/10">
-          <div className="relative bg-[#0a0f0d] rounded-[2.5rem] overflow-hidden">
+      {/* Phone Frame - Compact */}
+      <div className="relative w-[260px] sm:w-[280px]">
+        <div className="relative bg-zinc-900 rounded-[2.5rem] p-1.5 shadow-2xl shadow-black/50 border border-white/10">
+          <div className="relative bg-[#0a0f0d] rounded-[2rem] overflow-hidden">
             {/* Dynamic Island */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-30 flex items-center justify-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-zinc-800" />
-              <div className="w-10 h-3 rounded-full bg-zinc-800" />
-            </div>
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-30" />
 
             {/* Screen content */}
-            <div className="h-[520px] sm:h-[580px] overflow-hidden relative">
-              {/* Header */}
-              <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-[#0a0f0d] via-[#0a0f0d] to-transparent pt-10 pb-8 px-4">
-                <p className="text-[#4a9d7c]/60 text-[9px] tracking-[0.2em] font-medium text-center mb-1">NEUROCORE 360</p>
-                <p className="text-white text-center text-lg font-semibold">{currentTab.title}</p>
-              </div>
-
-              {/* Scrolling content - changes based on active tab */}
-              <div className="absolute inset-0 pt-24" key={activeTab}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="animate-scroll-markers-slow"
-                >
-                  {/* Duplicate markers for infinite scroll */}
-                  {[...currentTab.markers, ...currentTab.markers, ...currentTab.markers].map((marker, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between px-5 py-4 border-b border-white/5"
-                    >
-                      <div>
-                        <p className="text-white/40 text-[10px] uppercase tracking-wider">{marker.name}</p>
-                        <div className="flex items-baseline gap-1 mt-1">
-                          <span className="text-white text-2xl font-bold">{marker.value}</span>
-                          <span className="text-white/30 text-sm">{marker.unit}</span>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${
-                        marker.color === 'red' ? 'bg-red-500/15 text-red-400' :
-                        marker.color === 'amber' ? 'bg-amber-500/15 text-amber-400' :
-                        'bg-emerald-500/15 text-emerald-400'
-                      }`}>
-                        {marker.status}
-                      </span>
-                    </div>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Gradient fade */}
-              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0f0d] to-transparent z-10 pointer-events-none" />
+            <div className="h-[420px] sm:h-[450px] overflow-hidden relative pt-8">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className="h-full"
+              >
+                {renderScreenContent()}
+              </motion.div>
             </div>
 
             {/* Home indicator */}
-            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-28 h-1 bg-white/20 rounded-full z-50" />
-
-            {/* Animation styles */}
-            <style>{`
-              @keyframes scrollMarkersSlow {
-                0% { transform: translateY(0); }
-                100% { transform: translateY(-33.33%); }
-              }
-              .animate-scroll-markers-slow {
-                animation: scrollMarkersSlow 15s linear infinite;
-              }
-            `}</style>
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-24 h-1 bg-white/20 rounded-full z-50" />
           </div>
         </div>
 
-        {/* Glow effect */}
-        <div className="absolute -inset-4 bg-gradient-to-b from-primary/20 via-transparent to-transparent rounded-[4rem] blur-2xl -z-10 opacity-50" />
+        {/* Subtle glow */}
+        <div className="absolute -inset-8 bg-gradient-to-b from-primary/10 via-transparent to-transparent rounded-full blur-3xl -z-10 opacity-60" />
       </div>
 
-      {/* Clickable tabs - Ultrahuman style */}
-      <div className="mt-8 flex flex-wrap justify-center gap-2">
+      {/* Glass Tabs - Outside phone, Ultrahuman style */}
+      <div className="mt-10 flex justify-center gap-3">
         {tabs.map((tab, i) => (
-          <button
+          <motion.button
             key={tab.id}
             onClick={() => setActiveTab(i)}
-            className={`px-4 py-2 rounded-full border transition-all duration-300 ${
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className={`relative px-5 py-3 rounded-2xl transition-all duration-300 flex flex-col items-center gap-1.5 min-w-[80px] ${
               activeTab === i
-                ? tab.color === 'red'
-                  ? 'border-red-500 bg-red-500/20 scale-105'
-                  : tab.color === 'amber'
-                  ? 'border-amber-500 bg-amber-500/20 scale-105'
-                  : tab.color === 'violet'
-                  ? 'border-violet-500 bg-violet-500/20 scale-105'
-                  : 'border-emerald-500 bg-emerald-500/20 scale-105'
-                : 'border-white/20 bg-white/5 hover:bg-white/10'
+                ? 'bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg shadow-primary/10'
+                : 'bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20'
             }`}
           >
-            <span className={`font-semibold text-sm ${
-              activeTab === i
-                ? tab.color === 'red' ? 'text-red-400' :
-                  tab.color === 'amber' ? 'text-amber-400' :
-                  tab.color === 'violet' ? 'text-violet-400' : 'text-emerald-400'
-                : 'text-white/60'
-            }`}>{tab.label}</span>
-          </button>
+            {/* Active indicator glow */}
+            {activeTab === i && (
+              <motion.div
+                layoutId="activeTabGlow"
+                className="absolute inset-0 bg-gradient-to-b from-primary/20 to-transparent rounded-2xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className={`relative z-10 transition-colors ${activeTab === i ? 'text-primary' : 'text-white/50'}`}>
+              {tab.icon}
+            </span>
+            <span className={`relative z-10 text-xs font-medium transition-colors ${activeTab === i ? 'text-white' : 'text-white/50'}`}>
+              {tab.label}
+            </span>
+          </motion.button>
         ))}
       </div>
-
-      {/* CTA below tabs */}
-      <button
-        onClick={() => setShowDemo(true)}
-        className="mt-6 text-white/40 text-sm hover:text-white/60 transition-colors flex items-center gap-2"
-      >
-        <Play className="w-3 h-3" />
-        Voir la démo complète
-      </button>
     </motion.div>
   );
 }
