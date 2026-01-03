@@ -61,7 +61,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
   };
 
-  // ANABOLIC BIOSCAN (49€) - 15 sections (sans CTA qui ne comptent pas)
+  // ANABOLIC BIOSCAN (49€) - 15 sections d'analyse
   const anabolicSections = [
     { name: "Introduction", locked: false },
     { name: "Sommeil", locked: false },
@@ -80,7 +80,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     { name: "Conclusion", locked: true },
   ];
 
-  // PRO PANEL 360 (99€) - 17 sections (sans Executive Summary qui ne compte pas)
+  // PRO PANEL 360 (99€) - 17 sections d'analyse + protocoles
   const propanelSections = [
     { name: "Analyse Visuelle & Posturale", locked: false },
     { name: "Analyse Biomécanique", locked: false },
