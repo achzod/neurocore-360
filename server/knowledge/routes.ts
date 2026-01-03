@@ -36,9 +36,15 @@ export function registerKnowledgeRoutes(app: Express): void {
         success: true,
         ...stats,
         sources: {
-          huberman: { name: "Huberman Lab", url: "https://www.hubermanlab.com/episodes" },
+          huberman: { name: "Huberman Lab", url: "https://www.hubermanlab.com" },
           sbs: { name: "Stronger By Science", url: "https://www.strongerbyscience.com" },
           applied_metabolics: { name: "Applied Metabolics", url: "https://www.appliedmetabolics.com" },
+          examine: { name: "Examine.com", url: "https://examine.com" },
+          peter_attia: { name: "Peter Attia - The Drive", url: "https://peterattiamd.com" },
+          marek_health: { name: "Marek Health", url: "https://marekhealth.com" },
+          chris_masterjohn: { name: "Chris Masterjohn PhD", url: "https://chrismasterjohnphd.com" },
+          renaissance_periodization: { name: "Renaissance Periodization", url: "https://rpstrength.com" },
+          mpmd: { name: "More Plates More Dates", url: "https://moreplatesmoredates.com" },
           newsletter: { name: "Newsletters ACHZOD", url: "SendPulse" }
         }
       });
@@ -84,11 +90,17 @@ export function registerKnowledgeRoutes(app: Express): void {
       const source = req.params.source as ScraperSource;
       const limit = parseInt(req.query.limit as string) || 20;
 
-      if (!["huberman", "sbs", "applied_metabolics", "newsletter", "all"].includes(source)) {
+      const validSources = [
+        "huberman", "sbs", "applied_metabolics", "newsletter",
+        "examine", "peter_attia", "marek_health", "chris_masterjohn",
+        "renaissance_periodization", "mpmd", "all"
+      ];
+
+      if (!validSources.includes(source)) {
         res.status(400).json({
           success: false,
           error: "Source invalide",
-          validSources: ["huberman", "sbs", "applied_metabolics", "newsletter", "all"]
+          validSources
         });
         return;
       }
