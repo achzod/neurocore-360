@@ -541,8 +541,8 @@ function UltrahumanHero() {
           className="absolute inset-0 opacity-[0.15]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(14,252,109,0.3) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(14,252,109,0.3) 1px, transparent 1px)
+              linear-gradient(rgba(0,127,245,0.15) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,127,245,0.15) 1px, transparent 1px)
             `,
             backgroundSize: '60px 60px',
             animation: 'gridMove 20s linear infinite',
@@ -557,7 +557,7 @@ function UltrahumanHero() {
       </div>
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,252,109,0.05),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,127,245,0.08),transparent_70%)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
 
       <div className="relative max-w-7xl mx-auto px-6 pt-32 pb-20 flex flex-col items-center text-center min-h-screen">
@@ -858,8 +858,8 @@ function BentoHeroSection() {
           className="absolute inset-0"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(14,252,109,0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(14,252,109,0.5) 1px, transparent 1px)
+              linear-gradient(rgba(0,127,245,0.2) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,127,245,0.2) 1px, transparent 1px)
             `,
             backgroundSize: '80px 80px',
             animation: 'gridMove 25s linear infinite',
@@ -869,7 +869,7 @@ function BentoHeroSection() {
 
       {/* Gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,252,109,0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,127,245,0.12),transparent_60%)]" />
 
       <div className="relative max-w-6xl mx-auto px-6">
         {/* Section header */}
@@ -1119,7 +1119,7 @@ function BentoDomainesSection() {
   return (
     <section id="domaines" className="relative min-h-[90vh] overflow-hidden bg-[#0a1628]" data-testid="section-domaines">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,127,245,0.1),transparent_60%)]" />
 
       <div className="relative max-w-7xl mx-auto px-6 py-20">
         {/* Title section - ABOVE skeleton */}
@@ -1620,7 +1620,7 @@ function BentoProcessSection() {
   return (
     <section id="process" className="relative bg-black py-24" data-testid="section-process">
       {/* Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(14,252,109,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,127,245,0.08),transparent_50%)]" />
 
       <div className="relative mx-auto max-w-6xl px-6">
         {/* Header - Ultrahuman style */}
