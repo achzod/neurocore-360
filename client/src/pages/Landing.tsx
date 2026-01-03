@@ -328,73 +328,66 @@ function UltrahumanHero() {
           </Link>
         </motion.div>
 
-        {/* Phone Mockup with interactive tabs */}
+        {/* Phone Mockup with hand - Ultrahuman style */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-          className="mt-4"
+          className="mt-8 relative"
         >
-          <div className="relative w-[280px] sm:w-[300px] mx-auto">
-            {/* Glow behind phone */}
-            <div className="absolute -inset-12 bg-primary/10 blur-3xl rounded-full -z-10" />
+          {/* Container for hand + phone */}
+          <div className="relative w-[340px] sm:w-[400px] md:w-[450px] mx-auto">
+            {/* Hand holding phone image */}
+            <img
+              src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/homepage-v3/app-section/hand-phone-mockup.png"
+              alt="Phone mockup"
+              className="w-full h-auto relative z-10"
+            />
 
-            {/* Phone shell */}
-            <div className="relative rounded-[2.5rem] bg-gradient-to-b from-zinc-700 to-zinc-900 p-1.5 shadow-2xl shadow-black/50">
-              <div className="rounded-[2.25rem] bg-black p-0.5">
-                <div className="relative rounded-[2rem] bg-black overflow-hidden aspect-[9/19]">
-                  {/* Status bar */}
-                  <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pt-2.5 text-white/60 text-[9px] z-20">
-                    <span className="font-medium">9:41</span>
-                    <div className="flex items-center gap-1">
-                      <div className="w-4 h-2 border border-white/40 rounded-sm">
-                        <div className="w-2/3 h-full bg-primary rounded-sm" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Island */}
-                  <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-30" />
-
-                  {/* Tab Content - Changes based on active tab */}
-                  <div className="absolute inset-0 rounded-[2rem] overflow-hidden pt-10 pb-4">
-                    <motion.div
-                      key={activeTab}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="h-full overflow-y-auto scrollbar-hide"
-                    >
-                      {tabContents[activeTab]}
-                    </motion.div>
-                  </div>
-                </div>
-              </div>
+            {/* Dashboard content overlay - positioned on phone screen */}
+            <div
+              className="absolute z-20 overflow-hidden rounded-[1.8rem] sm:rounded-[2.2rem]"
+              style={{
+                top: "5.5%",
+                left: "22%",
+                width: "56%",
+                height: "62%",
+              }}
+            >
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="h-full overflow-y-auto scrollbar-hide bg-gradient-to-b from-[#0a2520] to-black"
+              >
+                {tabContents[activeTab]}
+              </motion.div>
             </div>
+          </div>
 
-            {/* External Tab Bar - Outside phone like reference */}
-            <div className="mt-4 bg-white/95 backdrop-blur-xl rounded-full p-1 shadow-lg shadow-black/20 border border-white/20">
-              <div className="flex items-center">
-                {[
-                  { id: "scores", icon: Activity, label: "Scores" },
-                  { id: "domaines", icon: Layers, label: "Protocole" },
-                  { id: "rapport", icon: Brain, label: "Bilans" },
-                  { id: "plan", icon: Target, label: "Insights" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full transition-all duration-200 ${
-                      activeTab === tab.id
-                        ? "bg-zinc-900 text-white shadow-md"
-                        : "text-zinc-500 hover:text-zinc-700"
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    <span className="text-[11px] font-medium hidden sm:inline">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
+          {/* External Tab Bar - Below phone */}
+          <div className="mt-6 max-w-md mx-auto bg-zinc-900/90 backdrop-blur-xl rounded-full p-1.5 shadow-lg shadow-black/40 border border-white/10">
+            <div className="flex items-center">
+              {[
+                { id: "scores", icon: Activity, label: "Scores" },
+                { id: "domaines", icon: Layers, label: "Protocole" },
+                { id: "rapport", icon: Brain, label: "Bilans" },
+                { id: "plan", icon: Target, label: "Insights" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-full transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? "bg-zinc-800 text-white"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? "text-primary" : ""}`} />
+                  <span className="text-xs font-medium hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </motion.div>
