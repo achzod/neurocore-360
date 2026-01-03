@@ -60,17 +60,25 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
   };
 
+  // Plan Essential - 17 sections (rapport ~25 pages)
   const sections = [
-    { name: "Dashboard", locked: false },
-    { name: "Système Nerveux", locked: false },
-    { name: "Sommeil", locked: false },
-    { name: "Hormones", locked: false },
-    { name: "Nutrition", locked: false },
-    { name: "Training", locked: false },
-    { name: "Suppléments", locked: true },
-    { name: "Plan 90 Jours", locked: true },
-    { name: "HRV & Cardio", locked: true },
-    { name: "Analyse Photo", locked: true },
+    { name: "Dashboard", locked: false, tier: "free" },
+    { name: "Système Nerveux", locked: false, tier: "free" },
+    { name: "Sommeil", locked: true, tier: "essential" },
+    { name: "Hormones", locked: true, tier: "essential" },
+    { name: "Nutrition", locked: true, tier: "essential" },
+    { name: "Training", locked: true, tier: "essential" },
+    { name: "Digestion & Microbiome", locked: true, tier: "essential" },
+    { name: "Stress & Mental", locked: true, tier: "essential" },
+    { name: "Thyroïde & Métabolisme", locked: true, tier: "essential" },
+    { name: "Inflammation", locked: true, tier: "essential" },
+    { name: "Détox & Foie", locked: true, tier: "essential" },
+    { name: "Immunité", locked: true, tier: "essential" },
+    { name: "Stack Suppléments", locked: true, tier: "essential" },
+    { name: "Plan 90 Jours", locked: true, tier: "essential" },
+    { name: "Protocole Quotidien", locked: true, tier: "essential" },
+    { name: "Wearables & HRV", locked: true, tier: "elite" },
+    { name: "Analyse Photo", locked: true, tier: "elite" },
   ];
 
   const theme = themes[activeTheme];
@@ -90,25 +98,31 @@ function DemoModal({ onClose }: { onClose: () => void }) {
   // Render different content based on active section
   const renderSectionContent = () => {
     if (currentSection.locked) {
-      const isElite = activeSection >= 8;
+      const isElite = currentSection.tier === "elite";
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: theme.surface }}>
             <Lock size={40} style={{ color: theme.muted }} />
           </div>
           <h2 className="text-3xl font-bold mb-4">{currentSection.name}</h2>
-          <p className="text-lg mb-2" style={{ color: theme.muted }}>Contenu verrouillé</p>
+          <p className="text-lg mb-2" style={{ color: theme.muted }}>
+            Section verrouillée - {isElite ? "ELITE" : "ESSENTIAL"}
+          </p>
           <p className="max-w-md mb-8" style={{ color: theme.muted }}>
             {isElite
-              ? "Cette section avancée est disponible uniquement avec le plan Elite. Accède aux analyses wearables et photo."
-              : "Cette section est disponible avec le plan Essential. Accède au stack suppléments et au plan 90 jours détaillé."}
+              ? "Cette section avancée est disponible uniquement avec le plan Elite (99€). Accède aux analyses wearables temps réel et composition corporelle."
+              : "Cette section fait partie du rapport Essential (49€). Débloquer les 17 sections + stack suppléments + plan 90 jours."}
           </p>
           <Link href={`/audit-complet/questionnaire?plan=${isElite ? 'elite' : 'essential'}`}>
             <button
-              className="px-8 py-4 rounded-xl font-bold transition-all hover:opacity-90"
-              style={{ backgroundColor: theme.primary, color: theme.bg }}
+              className={`px-8 py-4 rounded-xl font-bold transition-all hover:opacity-90 ${
+                isElite
+                  ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white"
+                  : ""
+              }`}
+              style={!isElite ? { backgroundColor: theme.primary, color: theme.bg } : {}}
             >
-              Débloquer avec {isElite ? "Elite (99€)" : "Essential (49€)"} →
+              {isElite ? "Passer Elite (99€)" : "Obtenir Essential (49€)"} →
             </button>
           </Link>
         </div>
@@ -628,7 +642,10 @@ function DemoModal({ onClose }: { onClose: () => void }) {
               <span className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: theme.muted }}>NEUROCORE 360</span>
             </div>
             <h1 className="text-xl font-bold tracking-tight">Audit: Marc D.</h1>
-            <p className="text-[10px] mt-1 font-mono" style={{ color: theme.muted }}>10 SECTIONS • DEMO</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/20 text-primary">ESSENTIAL</span>
+              <span className="text-[10px] font-mono" style={{ color: theme.muted }}>17 sections</span>
+            </div>
           </div>
 
           {/* Theme Switcher */}
@@ -651,24 +668,32 @@ function DemoModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Navigation - Table des matières */}
+          <div className="px-4 pt-2 pb-1">
+            <p className="text-[9px] font-mono uppercase tracking-widest" style={{ color: theme.muted }}>TABLE DES MATIÈRES</p>
+          </div>
           <div className="flex-1 overflow-y-auto px-4 py-2">
             {sections.map((section, i) => (
               <button
                 key={i}
                 onClick={() => setActiveSection(i)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between ${
-                  section.locked ? 'opacity-60' : 'hover:bg-white/5'
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between gap-2 ${
+                  section.locked ? 'opacity-70 hover:opacity-100' : 'hover:bg-white/5'
                 } ${activeSection === i ? 'bg-white/10' : ''}`}
                 style={{ color: activeSection === i ? theme.text : theme.muted }}
               >
-                <span className="flex items-center">
-                  <span className="font-mono text-[10px] mr-2" style={{ color: theme.muted }}>{String(i + 1).padStart(2, '0')}</span>
-                  {section.name}
+                <span className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="font-mono text-[10px] shrink-0" style={{ color: theme.muted }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span className="truncate">{section.name}</span>
                 </span>
-                {section.locked && (
-                  <Lock size={12} style={{ color: theme.muted }} />
-                )}
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {section.tier === "elite" && (
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-400">ELITE</span>
+                  )}
+                  {section.locked && (
+                    <Lock size={11} style={{ color: section.tier === "elite" ? "#a78bfa" : theme.muted }} />
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -690,7 +715,13 @@ function DemoModal({ onClose }: { onClose: () => void }) {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Mobile Header */}
           <div className="md:hidden flex items-center justify-between p-4 border-b" style={{ borderColor: theme.border }}>
-            <span className="font-bold text-sm">Audit Marc D.</span>
+            <div>
+              <span className="font-bold text-sm block">Audit Marc D.</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary">ESSENTIAL</span>
+                <span className="text-[9px]" style={{ color: theme.muted }}>17 sections</span>
+              </div>
+            </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.surface }}>×</button>
           </div>
 
@@ -1047,17 +1078,17 @@ function UltrahumanHero() {
           className="mt-12 relative flex flex-col items-center"
         >
           {/* Space video background - Ultrahuman style */}
-          <div className="absolute inset-0 -top-20 -bottom-20 -left-32 -right-32 overflow-hidden rounded-3xl -z-10">
+          <div className="absolute inset-0 -top-32 -bottom-32 -left-48 -right-48 overflow-hidden rounded-3xl">
             <video
               autoPlay
               loop
               muted
               playsInline
-              className="absolute inset-0 w-full h-full object-cover opacity-60"
+              className="absolute inset-0 w-full h-full object-cover opacity-80"
               src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80" />
           </div>
 
           {/* Phone Frame */}
@@ -1153,6 +1184,35 @@ function UltrahumanHero() {
 
             {/* Glow effect */}
             <div className="absolute -inset-4 bg-gradient-to-b from-primary/20 via-transparent to-transparent rounded-[4rem] blur-2xl -z-10 opacity-50" />
+          </div>
+
+          {/* Clickable tabs below phone - Ultrahuman style */}
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            {[
+              { label: "Score Global", value: "58/100", color: "amber" },
+              { label: "Sommeil", value: "35%", color: "red" },
+              { label: "HRV", value: "28ms", color: "red" },
+              { label: "Récupération", value: "41/100", color: "amber" },
+              { label: "Nutrition", value: "72/100", color: "green" },
+            ].map((tab, i) => (
+              <button
+                key={i}
+                onClick={() => setShowDemo(true)}
+                className={`px-4 py-2 rounded-full border transition-all hover:scale-105 ${
+                  tab.color === 'red'
+                    ? 'border-red-500/30 bg-red-500/10 hover:bg-red-500/20'
+                    : tab.color === 'amber'
+                    ? 'border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20'
+                    : 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20'
+                }`}
+              >
+                <span className="text-white/60 text-xs">{tab.label}: </span>
+                <span className={`font-bold text-sm ${
+                  tab.color === 'red' ? 'text-red-400' :
+                  tab.color === 'amber' ? 'text-amber-400' : 'text-emerald-400'
+                }`}>{tab.value}</span>
+              </button>
+            ))}
           </div>
         </motion.div>
 
