@@ -134,17 +134,18 @@ export async function dispatchTerraData(
 }
 
 // Supported providers
+// APPLE fonctionne via Terra Avengers App (l'user télécharge l'app iOS)
 export const TERRA_PROVIDERS = [
-  { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true },
+  { id: "APPLE", name: "Apple Health", icon: "🍎", requiresWidget: true, note: "Via Terra Avengers App" },
   { id: "OURA", name: "Oura Ring", icon: "💍", requiresWidget: false },
-  { id: "WHOOP", name: "Whoop", icon: "⌚", requiresWidget: false },
   { id: "GARMIN", name: "Garmin", icon: "🏃", requiresWidget: false },
   { id: "FITBIT", name: "Fitbit", icon: "💪", requiresWidget: false },
-  { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true },
   { id: "POLAR", name: "Polar", icon: "❄️", requiresWidget: false },
   { id: "ULTRAHUMAN", name: "Ultrahuman", icon: "🔬", requiresWidget: false },
-  { id: "GOOGLE", name: "Google Fit", icon: "🟢", requiresWidget: true },
   { id: "WITHINGS", name: "Withings", icon: "⚖️", requiresWidget: false },
+  { id: "WHOOP", name: "Whoop", icon: "⌚", requiresWidget: false, note: "Requires WHOOP dev account" },
+  { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true, note: "Via Terra Avengers App" },
+  { id: "GOOGLE", name: "Google Fit", icon: "🟢", requiresWidget: true },
 ] as const;
 
 export type TerraProvider = typeof TERRA_PROVIDERS[number]["id"];
@@ -360,16 +361,21 @@ interface TerraData {
 /**
  * Generate a Terra widget session for user authentication
  *
+ * IMPORTANT: Pour Apple Health sur iPhone, on utilise Terra Avengers App!
+ * L'user télécharge l'app, connecte Apple Health, et les données arrivent via webhook.
+ *
  * @param userId - L'ID utilisateur unique
  * @param sitePrefix - Le prefix du site (neurocore, site2, site3) pour le multi-site dispatcher
  * @param providers - Les providers à afficher dans le widget
  * @param redirectUrl - URL de redirection après auth réussie
+ * @param useAppleHealth - Si true, active Terra Avengers pour Apple Health (iPhone users)
  */
 export async function generateTerraWidget(
   userId: string,
   sitePrefix: string = "neurocore",
   providers?: TerraProvider[],
-  redirectUrl?: string
+  redirectUrl?: string,
+  useAppleHealth: boolean = true
 ): Promise<{ url: string; sessionId: string; referenceId: string } | null> {
   if (!TERRA_CONFIG.API_KEY || !TERRA_CONFIG.DEV_ID) {
     console.warn("[Terra] API not configured - skipping widget generation");
@@ -389,8 +395,12 @@ export async function generateTerraWidget(
       },
       body: JSON.stringify({
         reference_id: referenceId,
-        providers: providers?.join(",") || "OURA,GARMIN,FITBIT,WHOOP,POLAR,ULTRAHUMAN,WITHINGS",
+        providers: providers?.join(",") || "APPLE,OURA,GARMIN,FITBIT,POLAR,ULTRAHUMAN,WITHINGS",
         language: "fr",
+        // TERRA AVENGERS: Permet aux users iPhone de connecter Apple Health via l'app Terra Avengers
+        // L'app est déjà sur l'App Store, l'user la télécharge et autorise Apple Health
+        // Les données sont ensuite envoyées automatiquement à notre webhook
+        use_terra_avengers_app: useAppleHealth,
         auth_success_redirect_url: redirectUrl || `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_success=true`,
         auth_failure_redirect_url: `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_error=true`,
       }),

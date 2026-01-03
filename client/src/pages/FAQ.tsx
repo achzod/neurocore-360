@@ -14,51 +14,51 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "Qu'est-ce que l'audit NEUROCORE 360° ?",
-    answer: "L'audit NEUROCORE 360° est une analyse métabolique complète basée sur 180+ questions couvrant 15 domaines : nutrition, entraînement, sommeil, hormones, digestion, stress, biomécanique posturale, et plus. Tu reçois un rapport de 40+ pages avec des protocoles cliniques personnalisés (pas de 'mange mieux' générique). Chaque recommandation est basée sur tes biomarqueurs, ton profil hormonal, et ta flexibilité métabolique."
+    answer: "L'audit NEUROCORE 360° est une analyse métabolique complète couvrant 15 domaines : sommeil, hormones, digestion, stress, nutrition, training, biomécanique et plus. Selon ton plan (Gratuit, Essential ou Elite), tu reçois un rapport de 8 à 25+ sections avec des protocoles personnalisés basés sur tes données réelles, pas des conseils génériques."
   },
   {
-    question: "Ai-je besoin d'une prise de sang pour commencer ?",
-    answer: "Non, la prise de sang n'est pas obligatoire pour démarrer. L'audit initial se base sur un questionnaire approfondi et l'analyse de tes photos (composition corporelle, posture). Cependant, si tu as des bilans récents (< 6 mois), partage-les : je les décoderai pour identifier déséquilibres hormonaux (Testostérone, SHBG, Cortisol/DHEA, Thyroïde), inflammatoires (CRP, Ferritine) et métaboliques (Glycémie, HbA1c, Profil lipidique). Si tu n'as pas de bilans, je te recommanderai les analyses pertinentes selon ton profil."
+    question: "Quelle est la différence entre Gratuit, Essential et Elite ?",
+    answer: "GRATUIT (0€) : 50 questions essentielles + dashboard interactif + scores des 5 domaines + radar de performance. Tu obtiens une vue d'ensemble de ton profil. ESSENTIAL (49€) : 150 questions approfondies + rapport AI 17 sections + axes cliniques (thyroïde, SII...) + stack suppléments personnalisé + plan 90 jours. Le meilleur rapport qualité/prix. ELITE (99€) : 210+ questions ultra-détaillées + rapport 25+ sections + sync Apple Watch/Oura/Garmin + analyse photo AI (posture, composition) + nutrition timing avancé + support prioritaire. L'expérience complète."
   },
   {
-    question: "Combien de temps dure l'analyse complète ?",
-    answer: "Le questionnaire prend 25-35 minutes à remplir (prends ton temps, la précision est clé). Une fois soumis, tu reçois ton rapport complet sous 5-7 jours ouvrés. Le rapport inclut : scores par domaine, analyses approfondies, cause racine de tes blocages, protocoles cliniques sur 90 jours, et plan de supplémentation biodisponible."
+    question: "Comment fonctionne la synchronisation wearables (Elite) ?",
+    answer: "Avec le plan Elite, tu connectes ton Apple Watch, Oura Ring, Garmin, WHOOP, Fitbit ou autre via notre intégration Terra. On récupère automatiquement : HRV, qualité de sommeil (profond/REM/léger), fréquence cardiaque, SpO2, activité. Ces données enrichissent ton analyse et permettent des recommandations ultra-précises basées sur ta biologie réelle."
+  },
+  {
+    question: "L'analyse photo AI, ça marche comment ?",
+    answer: "Disponible avec le plan Elite. Tu uploades 2-3 photos (face, profil, dos) et notre AI analyse : posture (épaules, bassin, lordose), composition corporelle estimée, asymétries musculaires, points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées."
+  },
+  {
+    question: "Ai-je besoin d'une prise de sang ?",
+    answer: "Non, l'audit se base sur le questionnaire (et tes wearables/photos pour Elite). Si tu as des bilans récents, partage-les : je les décoderai pour identifier déséquilibres hormonaux, inflammatoires et métaboliques. Sinon, selon ton profil, je recommanderai les analyses pertinentes."
+  },
+  {
+    question: "Combien de temps pour recevoir mon rapport ?",
+    answer: "Le questionnaire prend 10-35 min selon le plan choisi. Ton rapport AI est généré sous 24-48h. Le rapport inclut scores par domaine, analyses approfondies, cause racine des blocages, et protocoles sur 90 jours (Essential/Elite)."
   },
   {
     question: "Qui analyse mes résultats ?",
-    answer: "Moi, Achzod. Coach sportif d'élite avec 11 certifications internationales (ISSA CPT, Nutrition, Bodybuilding, Transformation, PreScript Level 1, Precision Nutrition, NASM, ACE, FMS, TRX, Kettlebell). Je ne délègue rien : chaque audit est rédigé manuellement, personnalisé à 100%, en me basant sur 8+ ans d'expérience en coaching métabolique et réathlétisation."
-  },
-  {
-    question: "Quelle est la différence avec un nutritionniste classique ?",
-    answer: "Les nutritionnistes donnent souvent des plans macro génériques. NEUROCORE 360°, c'est une approche neuro-endocrinienne : je ne te dis pas 'mange équilibré', je t'explique pourquoi ton ratio Cortisol/DHEA élevé bloque ta lipolyse, comment ton CYP1A2 (génétique caféine) impacte ton système nerveux, ou pourquoi tes envies de sucre à 15h signalent une hypoglycémie réactionnelle. Chaque recommandation a un mécanisme biologique précis. Pas de platitudes, que de la clinique."
+    answer: "Notre AI spécialisée, entraînée par Achzod (coach certifié ISSA, Precision Nutrition, PreScript Level 1). Chaque rapport est généré avec une expertise clinique de 8+ ans en coaching métabolique. L'AI produit des recommandations personnalisées à 100% basées sur TES données."
   },
   {
     question: "Est-ce adapté aux débutants ?",
-    answer: "Absolument. NEUROCORE 360° s'adapte à tous les niveaux : débutant complet, intermédiaire bloqué en stagnation, ou athlète avancé voulant optimiser les derniers %. Le questionnaire détecte automatiquement ton niveau et mes protocoles sont progressifs. Si tu débutes, je construis des fondations solides (split training 3-4x/sem, chrono-nutrition simple, sommeil architecture). Si tu es avancé, j'optimise via timing péri-workout, cycling glucidique, gestion HRV."
+    answer: "Absolument. Le questionnaire détecte automatiquement ton niveau. Si tu débutes → fondations solides (split 3-4x/sem, nutrition simple, sommeil). Si tu es avancé → optimisations fines (timing péri-workout, cycling glucidique, HRV). Le plan Gratuit est parfait pour commencer."
   },
   {
     question: "Les suppléments sont-ils obligatoires ?",
-    answer: "Non, jamais obligatoires. Mais je recommande ceux qui ont un ROI prouvé selon TON profil : si tu dors mal + stress élevé → Magnésium Bisglycinate 400mg + Glycine 3g le soir (pas du Magnésium Marin mal absorbé). Si HRV < 30ms + fatigue centrale → Rhodiola + Ashwagandha KSM-66. Je privilégie toujours l'alimentation d'abord, suppléments ensuite pour combler carences documentées. Budget 50-150€/mois selon besoins."
+    answer: "Non. Mais avec Essential/Elite, tu reçois un stack personnalisé avec dosages précis selon TON profil. Ex: stress + sommeil → Magnésium Bisglycinate 400mg + Glycine 3g le soir. Budget estimé : 50-100€/mois si besoin."
   },
   {
-    question: "Comment se passe le suivi après l'audit ?",
-    answer: "Le rapport inclut un plan 90 jours avec 3 phases progressives. Tu peux implémenter seul (le rapport est ultra-détaillé), ou opter pour un coaching suivi 1-to-1 : check-ins hebdomadaires, ajustements en temps réel selon ta progression, analyse de tes nouveaux bilans sanguins. Le coaching n'est pas inclus dans l'audit de base mais disponible en option."
-  },
-  {
-    question: "Puis-je faire l'audit si j'ai des problèmes de santé ?",
-    answer: "Oui, mais avec nuances. Si tu as des pathologies diagnostiquées (diabète, hypertension, hypothyroïdie sous traitement), l'audit peut t'aider à optimiser ton mode de vie EN COMPLÉMENT de ton suivi médical (je ne remplace jamais ton médecin). Je travaille souvent avec des clients sous traitement hormonal, métabolique, ou thyroïdien. Si problème aigu non diagnostiqué, je te redirige vers spécialiste avant de commencer."
-  },
-  {
-    question: "Quel est le prix de l'audit complet ?",
-    answer: "L'Audit NEUROCORE 360° Standard (questionnaire + rapport 40 pages + protocoles 90j) est à 97€. L'Audit Premium (idem + analyse photos détaillée + décodage bilans sanguins si fournis + vidéo personnalisée 15min) est à 197€. Le coaching suivi mensuel (4 sessions/mois + support WhatsApp) est à 397€/mois. Rapport qualité/prix imbattable pour ce niveau d'expertise clinique."
+    question: "C'est un paiement unique ou un abonnement ?",
+    answer: "Paiement unique. Gratuit = 0€ pour toujours. Essential = 49€ une fois. Elite = 99€ une fois. Pas d'abonnement caché. Tu gardes l'accès à ton rapport à vie."
   },
   {
     question: "Que se passe-t-il si je ne suis pas satisfait ?",
-    answer: "Garantie satisfait ou remboursé 14 jours. Si le rapport ne répond pas à tes attentes ou n'apporte pas de valeur concrète, je te rembourse intégralement, sans question. Mon taux de satisfaction est > 97% (vérifie les témoignages), donc je prends ce risque sans problème."
+    answer: "Garantie satisfait ou remboursé 14 jours sur Essential et Elite. Si le rapport n'apporte pas de valeur, remboursement intégral sans question. Notre taux de satisfaction est > 97%."
   },
   {
-    question: "L'audit remplace-t-il un bilan sanguin médical ?",
-    answer: "Non, l'audit ne remplace pas un diagnostic médical. Je ne diagnostique pas de pathologies. Mon expertise : interpréter tes biomarqueurs dans une optique performance/optimisation (pas pathologie). Si je détecte des signaux inquiétants (ex: TSH > 4.5, Ferritine < 30, HbA1c pré-diabétique), je te recommande une consultation médicale. Mon rôle = optimiser ce qui est 'normal mais sous-optimal' selon les standards cliniques de performance."
+    question: "Puis-je upgrader mon plan après ?",
+    answer: "Oui ! Tu peux commencer Gratuit pour découvrir, puis passer à Essential ou Elite quand tu veux. Ton questionnaire est sauvegardé, tu ne refais que les questions supplémentaires du nouveau plan."
   }
 ];
 
@@ -122,12 +122,16 @@ export default function FAQ() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
+                <span className="text-xs font-medium tracking-widest text-white/60 uppercase">
+                  FAQ
+                </span>
+              </div>
               <h1 className="text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
-                Still got questions?
+                Questions fréquentes
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-400">
-                Tout ce que tu dois savoir sur l'audit NEUROCORE 360°, les protocoles cliniques,
-                et comment optimiser ta biologie.
+                Tout ce que tu dois savoir sur les 3 formules NEUROCORE 360° : Gratuit, Essential et Elite.
               </p>
             </motion.div>
           </div>
@@ -153,23 +157,31 @@ export default function FAQ() {
               viewport={{ once: true }}
               className="space-y-6"
             >
-              <MessageCircle className="mx-auto h-12 w-12 text-primary" />
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center">
+                <MessageCircle className="h-8 w-8 text-black" />
+              </div>
               <h2 className="text-2xl font-bold text-white sm:text-3xl">
-                Tu as d'autres questions ?
+                Prêt à découvrir ton potentiel ?
               </h2>
               <p className="text-lg text-gray-400">
-                Contacte-moi directement pour discuter de ton cas spécifique.
+                Commence gratuitement ou passe directement à Essential/Elite.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-                <Link href="/audit-complet/questionnaire">
-                  <Button size="lg" className="gap-2">
-                    Lancer mon audit 360°
+                <Link href="/audit-complet/questionnaire?plan=free">
+                  <Button size="lg" variant="outline" className="gap-2">
+                    Gratuit (0€)
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="gap-2">
-                  <MessageCircle className="h-5 w-5" />
-                  Parler à un expert
-                </Button>
+                <Link href="/audit-complet/questionnaire?plan=essential">
+                  <Button size="lg" className="gap-2 bg-primary text-black hover:bg-primary/90">
+                    Essential (49€)
+                  </Button>
+                </Link>
+                <Link href="/audit-complet/questionnaire?plan=elite">
+                  <Button size="lg" className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:opacity-90">
+                    Elite (99€)
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           </div>

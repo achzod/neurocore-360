@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { BodyVisualization } from "@/components/animations/BodyVisualization";
+import { Pricing } from "@/components/Pricing";
 
 import issaLogo from "@assets/ISSA+Logo+_+Vertical+_+for-white-background_1767172975495.webp";
 import pnLogo from "@assets/limage-19764_1767172975495.webp";
@@ -2207,17 +2208,27 @@ function WearablesSyncSection() {
             transition={{ delay: 0.1 }}
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight"
           >
-            Compatible avec tes <span className="bg-gradient-to-r from-[#4a9d7c] to-[#6fcfa6] bg-clip-text text-transparent">wearables</span>
+            Sync tes <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">wearables</span> en 1 clic
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-white/50 text-lg max-w-xl mx-auto"
+            className="text-white/50 text-lg max-w-xl mx-auto mb-4"
           >
-            Connecte ton appareil en 1 clic. On récupère tes données automatiquement.
+            Apple Watch, Oura, Garmin, WHOOP... On importe HRV, sommeil, FC automatiquement.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
+          >
+            <span className="text-xs font-bold text-amber-400">ELITE</span>
+            <span className="text-white/60 text-sm">Inclus dans le plan Elite 99</span>
+          </motion.div>
         </div>
 
         {/* COMPATIBLE BRANDS BAR - Premium style */}
@@ -2376,7 +2387,7 @@ export default function Landing() {
         <BentoDomainesSection />
         <BloodVisionSection />
         <BentoProcessSection />
-        <BentoPricingSection />
+        <Pricing />
         <FloatingCTABar />
         <BentoTestimonialsSection />
         <PrivacySection />
