@@ -2172,12 +2172,18 @@ function WearablesSyncSection() {
   ];
 
   const dataTypes = [
-    { metric: "HRV", desc: "Variabilité cardiaque", icon: "💓" },
-    { metric: "Sommeil", desc: "Durée, phases, qualité", icon: "🌙" },
-    { metric: "FC repos", desc: "Fréquence cardiaque", icon: "❤️" },
-    { metric: "Pas", desc: "Activité quotidienne", icon: "👟" },
+    { metric: "HRV", desc: "SDNN, RMSSD", icon: "💓" },
+    { metric: "Sommeil", desc: "Profond, REM, léger", icon: "🌙" },
+    { metric: "FC", desc: "Repos, max, moyenne", icon: "❤️" },
+    { metric: "Pas", desc: "Distance, étages", icon: "👟" },
+    { metric: "Calories", desc: "BMR, actives, total", icon: "🔥" },
     { metric: "SpO2", desc: "Saturation oxygène", icon: "🫁" },
-    { metric: "Température", desc: "Variations corporelles", icon: "🌡️" },
+    { metric: "Stress", desc: "Score récupération", icon: "😤" },
+    { metric: "VO2max", desc: "Capacité aérobique", icon: "🏃" },
+    { metric: "Body", desc: "Poids, masse grasse", icon: "⚖️" },
+    { metric: "Temp", desc: "Corporelle, peau", icon: "🌡️" },
+    { metric: "Respi", desc: "Fréquence resp.", icon: "🌬️" },
+    { metric: "Sleep Score", desc: "Qualité globale", icon: "⭐" },
   ];
 
   return (
@@ -2229,7 +2235,7 @@ function WearablesSyncSection() {
             <Zap className="w-4 h-4 text-[#4a9d7c]" />
             <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#4a9d7c]">Données auto-synchronisées</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {dataTypes.map((d, i) => (
               <div key={i} className="text-center">
                 <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-[#1a3d2e]/50 flex items-center justify-center text-xl">
