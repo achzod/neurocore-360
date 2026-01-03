@@ -848,16 +848,11 @@ export default function Questionnaire() {
                             });
                             const data = await res.json();
                             if (data.widgetUrl) {
-                              window.open(data.widgetUrl, "_blank");
-                              // Attendre que l'utilisateur connecte son wearable
-                              setTimeout(() => {
-                                setTerraConnected(true);
-                                setTerraConnecting(false);
-                                toast({
-                                  title: "Connexion réussie !",
-                                  description: "Tes données seront synchronisées automatiquement.",
-                                });
-                              }, 5000);
+                              // Stocker l'état avant de quitter la page
+                              sessionStorage.setItem("terraConnecting", "true");
+                              sessionStorage.setItem("questionnaireProgress", JSON.stringify(responses));
+                              // Rediriger vers Terra (fonctionne sur mobile)
+                              window.location.href = data.widgetUrl;
                             } else {
                               throw new Error(data.error || "Widget URL non reçue");
                             }
@@ -867,9 +862,7 @@ export default function Questionnaire() {
                             const errorMsg = error?.message || error?.error || "Erreur de connexion";
                             toast({
                               title: "Erreur de connexion",
-                              description: errorMsg.includes("non configurée")
-                                ? "Configuration Terra en cours. Réessaie dans quelques minutes."
-                                : `Erreur: ${errorMsg}. Réessaie ou passe cette étape.`,
+                              description: `${errorMsg}. Réessaie ou passe cette étape.`,
                               variant: "destructive",
                             });
                           }
