@@ -48,6 +48,7 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 // Ultrahuman-style Hero: Centered elegant typography with phone mockup
 function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
+  const [showDemo, setShowDemo] = useState(false);
 
   // Contenu différent pour chaque onglet - couleurs neutres et élégantes
   const tabContents = {
@@ -311,12 +312,12 @@ function UltrahumanHero() {
           Comprends ton corps, optimise ta performance.
         </motion.p>
 
-        {/* Single CTA - No demo button */}
+        {/* CTA Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="mb-16"
+          className="mb-16 flex items-center gap-4 flex-wrap justify-center"
         >
           <Link href="/audit-complet/questionnaire">
             <button className="group px-8 py-4 rounded-full bg-white text-black font-semibold text-sm transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:shadow-white/20">
@@ -326,6 +327,15 @@ function UltrahumanHero() {
               </span>
             </button>
           </Link>
+          <button
+            onClick={() => setShowDemo(true)}
+            className="group px-8 py-4 rounded-full bg-transparent border border-white/20 text-white font-semibold text-sm transition-all duration-300 hover:bg-white/10 hover:border-primary/50"
+          >
+            <span className="flex items-center gap-2">
+              <Play className="w-4 h-4" />
+              Demo live
+            </span>
+          </button>
         </motion.div>
 
         {/* Phone Mockup with hand - Ultrahuman style */}
@@ -393,6 +403,108 @@ function UltrahumanHero() {
         </motion.div>
 
       </div>
+
+      {/* Demo Modal */}
+      {showDemo && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+          onClick={() => setShowDemo(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", duration: 0.5 }}
+            className="relative w-full max-w-5xl max-h-[90vh] overflow-auto bg-zinc-900 rounded-3xl border border-white/10 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowDemo(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+
+            {/* Demo Header */}
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                <span className="text-primary text-sm font-medium">DEMO LIVE</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mt-2">Exemple de rapport NEUROCORE 360</h3>
+              <p className="text-white/50 text-sm mt-1">Profil: Marc D., 34 ans • Score Global: 58/100</p>
+            </div>
+
+            {/* Demo Dashboard Content */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Score Card */}
+              <div className="col-span-1 md:col-span-2 lg:col-span-1 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl p-6 border border-primary/20">
+                <p className="text-white/40 text-xs tracking-widest mb-2">SCORE GLOBAL</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl font-bold text-white">58</span>
+                  <span className="text-white/30 text-xl">/100</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium">À optimiser</span>
+                  <span className="text-primary text-xs">+12 pts possibles</span>
+                </div>
+              </div>
+
+              {/* Domain Scores */}
+              {[
+                { name: "Sommeil", score: 35, status: "Critique", color: "red" },
+                { name: "Stress & HRV", score: 42, status: "À améliorer", color: "amber" },
+                { name: "Hormones", score: 48, status: "Moyen", color: "amber" },
+                { name: "Nutrition", score: 72, status: "Bon", color: "green" },
+                { name: "Training", score: 85, status: "Excellent", color: "green" },
+                { name: "Digestion", score: 55, status: "Moyen", color: "amber" },
+                { name: "Énergie", score: 44, status: "À améliorer", color: "amber" },
+                { name: "Cardio", score: 62, status: "Correct", color: "green" },
+              ].map((domain, i) => (
+                <div key={i} className="bg-white/[0.03] rounded-xl p-4 border border-white/5 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/70 text-sm font-medium">{domain.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      domain.color === "red" ? "bg-red-500/20 text-red-400" :
+                      domain.color === "amber" ? "bg-amber-500/20 text-amber-400" :
+                      "bg-primary/20 text-primary"
+                    }`}>{domain.status}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-white">{domain.score}</span>
+                    <span className="text-white/30 text-sm">/100</span>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        domain.color === "red" ? "bg-red-500" :
+                        domain.color === "amber" ? "bg-amber-500" :
+                        "bg-primary"
+                      }`}
+                      style={{ width: `${domain.score}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Demo CTA */}
+            <div className="p-6 border-t border-white/10 bg-white/[0.02]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-white/50 text-sm">Ceci est un exemple. Obtenez votre rapport personnalisé de 45+ pages.</p>
+                <Link href="/audit-complet/questionnaire">
+                  <button className="px-6 py-3 rounded-full bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-colors">
+                    Lancer mon audit →
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </section>
   );
 }
