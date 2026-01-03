@@ -633,15 +633,15 @@ function UltrahumanHero() {
           </button>
         </motion.div>
 
-        {/* Phone Mockup - Ultrahuman style with tabs inside */}
+        {/* Phone Mockup - Ultrahuman style with tabs OUTSIDE */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-          className="mt-12 relative"
+          className="mt-12 relative flex flex-col items-center"
         >
           {/* Phone Frame */}
-          <div className="relative w-[300px] sm:w-[340px] mx-auto">
+          <div className="relative w-[300px] sm:w-[340px]">
             {/* Phone outer frame */}
             <div className="relative bg-zinc-900 rounded-[3rem] p-2 shadow-2xl shadow-black/50 border border-white/10">
               {/* Phone inner bezel */}
@@ -652,44 +652,17 @@ function UltrahumanHero() {
                   <div className="w-10 h-3 rounded-full bg-zinc-800" />
                 </div>
 
-                {/* Screen content - scrollable with padding for fixed tab bar */}
-                <div className="h-[560px] sm:h-[620px] overflow-hidden flex flex-col">
+                {/* Screen content */}
+                <div className="h-[520px] sm:h-[580px] overflow-hidden">
                   <motion.div
                     key={activeTab}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
-                    className="flex-1 overflow-y-auto scrollbar-hide pb-20"
+                    className="h-full overflow-y-auto scrollbar-hide"
                   >
                     {tabContents[activeTab]}
                   </motion.div>
-
-                  {/* Tab Bar - Fixed inside phone bottom */}
-                  <div className="absolute bottom-4 left-4 right-4 z-40">
-                    <div className="bg-zinc-900/95 backdrop-blur-xl rounded-full p-1.5 shadow-lg shadow-black/50 border border-white/10">
-                      <div className="flex items-center">
-                        {[
-                          { id: "scores", icon: Activity, label: "Scores" },
-                          { id: "domaines", icon: Layers, label: "Domaines" },
-                          { id: "rapport", icon: Brain, label: "Rapport" },
-                          { id: "plan", icon: Target, label: "Plan" },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-full transition-all duration-200 ${
-                              activeTab === tab.id
-                                ? "bg-primary/90 text-black"
-                                : "text-zinc-500 hover:text-zinc-300"
-                            }`}
-                          >
-                            <tab.icon className="w-3.5 h-3.5" />
-                            <span className="text-[10px] font-medium">{tab.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Home indicator */}
@@ -700,6 +673,38 @@ function UltrahumanHero() {
             {/* Glow effect */}
             <div className="absolute -inset-4 bg-gradient-to-b from-primary/20 via-transparent to-transparent rounded-[4rem] blur-2xl -z-10 opacity-50" />
           </div>
+
+          {/* Tab Bar - OUTSIDE phone, Ultrahuman style floating bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="mt-6 relative z-50"
+          >
+            <div className="bg-zinc-900/80 backdrop-blur-xl rounded-full px-2 py-2 shadow-2xl shadow-black/50 border border-white/10">
+              <div className="flex items-center gap-1">
+                {[
+                  { id: "scores", icon: Activity, label: "SCORES" },
+                  { id: "domaines", icon: Layers, label: "DOMAINES" },
+                  { id: "rapport", icon: Brain, label: "RAPPORT" },
+                  { id: "plan", icon: Target, label: "PLAN" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                    className={`flex flex-col items-center gap-1 px-5 py-3 rounded-full transition-all duration-300 ${
+                      activeTab === tab.id
+                        ? "bg-white/10 text-white"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                    }`}
+                  >
+                    <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-primary' : ''}`} />
+                    <span className="text-[9px] font-semibold tracking-wider">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
 
       </div>
