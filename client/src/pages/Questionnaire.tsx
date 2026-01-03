@@ -358,36 +358,11 @@ export default function Questionnaire() {
       setPrenomConfirmed(true);
     }
 
-    // Check if returning from Terra widget
-    try {
-      const wasConnecting = sessionStorage.getItem("terraConnecting");
-      if (wasConnecting === "true" && savedEmail) {
-        sessionStorage.removeItem("terraConnecting");
-        setWearablesSyncShown(true); // Always advance past wearable screen
-        // Verify Terra sync after a short delay (webhook needs time)
-        setTimeout(async () => {
-          try {
-            const res = await fetch(`/api/terra/db/email/${encodeURIComponent(savedEmail)}`);
-            const data = await res.json();
-            if (data.success && data.count > 0) {
-              setTerraConnected(true);
-              toast({
-                title: "Wearable synchronise !",
-                description: `${data.count} donnees recuperees. Le questionnaire sera plus court.`,
-              });
-            } else {
-              toast({
-                title: "Synchronisation en cours",
-                description: "Tes donnees arrivent. Continue le questionnaire.",
-              });
-            }
-          } catch (err) {
-            console.error("[Terra] Error checking sync:", err);
-          }
-        }, 2000);
-      }
-    } catch (e) {
-      console.error("[Terra] Init error:", e);
+    // Check if returning from Terra widget - just clear flag and advance
+    const wasConnecting = sessionStorage.getItem("terraConnecting");
+    if (wasConnecting === "true") {
+      sessionStorage.removeItem("terraConnecting");
+      setWearablesSyncShown(true);
     }
   }, []);
 
