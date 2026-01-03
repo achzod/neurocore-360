@@ -61,58 +61,60 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
   };
 
-  // ANABOLIC BIOSCAN: 150 questions, 17 sections, rapport ~25 pages (49€)
+  // ANABOLIC BIOSCAN: 150 questions, 18 sections (from geminiPremiumEngine.ts)
   const anabolicSections = [
-    { name: "Dashboard", locked: false, tier: "free" },
-    { name: "Système Nerveux", locked: false, tier: "free" },
-    { name: "Sommeil", locked: true, tier: "essential" },
-    { name: "Hormones", locked: true, tier: "essential" },
-    { name: "Nutrition", locked: true, tier: "essential" },
-    { name: "Training", locked: true, tier: "essential" },
-    { name: "Digestion & Microbiome", locked: true, tier: "essential" },
-    { name: "Stress & Mental", locked: true, tier: "essential" },
-    { name: "Énergie & Fatigue", locked: true, tier: "essential" },
-    { name: "Détox de Base", locked: true, tier: "essential" },
-    { name: "Inflammation", locked: true, tier: "essential" },
-    { name: "Immunité", locked: true, tier: "essential" },
-    { name: "Lifestyle & Habitudes", locked: true, tier: "essential" },
-    { name: "Objectifs Personnels", locked: true, tier: "essential" },
+    { name: "Executive Summary", locked: false, tier: "free" },
+    { name: "Analyse Visuelle & Posturale", locked: false, tier: "free" },
+    { name: "Analyse Biomécanique", locked: true, tier: "essential" },
+    { name: "Analyse Entraînement", locked: true, tier: "essential" },
+    { name: "Analyse Cardiovasculaire", locked: true, tier: "essential" },
+    { name: "Analyse Métabolisme & Nutrition", locked: true, tier: "essential" },
+    { name: "Analyse Sommeil & Récupération", locked: true, tier: "essential" },
+    { name: "Analyse Digestion & Microbiote", locked: true, tier: "essential" },
+    { name: "Analyse Axes Hormonaux", locked: true, tier: "essential" },
+    { name: "Protocole Matin Anti-Cortisol", locked: true, tier: "essential" },
+    { name: "Protocole Soir Sommeil", locked: true, tier: "essential" },
+    { name: "Protocole Digestion 14j", locked: true, tier: "essential" },
+    { name: "Protocole Bureau Anti-Sédentarité", locked: true, tier: "essential" },
+    { name: "Protocole Entraînement", locked: true, tier: "essential" },
+    { name: "Plan 30-60-90 Jours", locked: true, tier: "essential" },
+    { name: "KPI & Tableau de Bord", locked: true, tier: "essential" },
     { name: "Stack Suppléments", locked: true, tier: "essential" },
-    { name: "Plan 90 Jours", locked: true, tier: "essential" },
-    { name: "Résumé & Actions", locked: true, tier: "essential" },
+    { name: "Synthèse & Actions", locked: true, tier: "essential" },
   ];
 
-  // PRO PANEL 360: 210 questions, 25+ sections, scoring avancé, wearables, photo (99€)
+  // PRO PANEL 360: 210 questions, 25 sections (18 base + 7 avancées)
   const propanelSections = [
-    { name: "Dashboard Avancé", locked: false, tier: "elite" },
-    { name: "Système Nerveux Pro", locked: false, tier: "elite" },
-    { name: "HRV & Cardio Temps Réel", locked: true, tier: "elite" },
-    { name: "Architecture Sommeil", locked: true, tier: "elite" },
+    { name: "Executive Summary Pro", locked: false, tier: "elite" },
+    { name: "Analyse Visuelle & Posturale", locked: false, tier: "elite" },
+    { name: "Analyse Biomécanique Avancée", locked: true, tier: "elite" },
+    { name: "Analyse Entraînement & Périodisation", locked: true, tier: "elite" },
+    { name: "Analyse Cardiovasculaire & HRV", locked: true, tier: "elite" },
+    { name: "Analyse Métabolisme & Nutrition", locked: true, tier: "elite" },
+    { name: "Analyse Sommeil & Architecture", locked: true, tier: "elite" },
+    { name: "Analyse Digestion & Microbiote", locked: true, tier: "elite" },
+    { name: "Analyse Axes Hormonaux Complet", locked: true, tier: "elite" },
+    { name: "Protocole Matin Anti-Cortisol", locked: true, tier: "elite" },
+    { name: "Protocole Soir Sommeil", locked: true, tier: "elite" },
+    { name: "Protocole Digestion 14j", locked: true, tier: "elite" },
+    { name: "Protocole Bureau Anti-Sédentarité", locked: true, tier: "elite" },
+    { name: "Protocole Entraînement Elite", locked: true, tier: "elite" },
+    { name: "Plan 30-60-90 Jours Détaillé", locked: true, tier: "elite" },
+    { name: "KPI & Tableau de Bord Avancé", locked: true, tier: "elite" },
+    { name: "Stack Suppléments Elite", locked: true, tier: "elite" },
+    { name: "Synthèse & Actions", locked: true, tier: "elite" },
+    // +7 sections exclusives Pro Panel
     { name: "Analyse Photo Posture", locked: true, tier: "elite" },
-    { name: "Composition Corporelle", locked: true, tier: "elite" },
-    { name: "Profil Hormonal Complet", locked: true, tier: "elite" },
-    { name: "Thyroïde Approfondie", locked: true, tier: "elite" },
-    { name: "Axe Surrénalien", locked: true, tier: "elite" },
-    { name: "Nutrition Avancée", locked: true, tier: "elite" },
-    { name: "Nutrition Timing", locked: true, tier: "elite" },
-    { name: "Microbiome & Intestin", locked: true, tier: "elite" },
-    { name: "Inflammation Systémique", locked: true, tier: "elite" },
-    { name: "Détox & Foie", locked: true, tier: "elite" },
-    { name: "Immunité & Récupération", locked: true, tier: "elite" },
-    { name: "Training Periodization", locked: true, tier: "elite" },
-    { name: "Mobilité & Posture", locked: true, tier: "elite" },
-    { name: "Psychologie & Blocages", locked: true, tier: "elite" },
-    { name: "Stress & Résilience", locked: true, tier: "elite" },
-    { name: "Circadien Avancé", locked: true, tier: "elite" },
     { name: "Wearables Data Sync", locked: true, tier: "elite" },
-    { name: "Biofeedback Analysis", locked: true, tier: "elite" },
-    { name: "Stack Elite Personnalisé", locked: true, tier: "elite" },
-    { name: "Protocole Elite 90j", locked: true, tier: "elite" },
-    { name: "Suivi & Ajustements", locked: true, tier: "elite" },
+    { name: "Nutrition Timing Avancé", locked: true, tier: "elite" },
+    { name: "Analyse Circadienne", locked: true, tier: "elite" },
+    { name: "Psychologie & Blocages", locked: true, tier: "elite" },
+    { name: "Biofeedback & Stress", locked: true, tier: "elite" },
+    { name: "Protocole Suivi Personnalisé", locked: true, tier: "elite" },
   ];
 
   const sections = selectedPlan === "anabolic" ? anabolicSections : propanelSections;
-  const sectionCount = selectedPlan === "anabolic" ? 17 : 25;
+  const sectionCount = selectedPlan === "anabolic" ? 18 : 25;
   const questionCount = selectedPlan === "anabolic" ? 150 : 210;
   const planName = selectedPlan === "anabolic" ? "ANABOLIC BIOSCAN" : "PRO PANEL 360";
   const planPrice = selectedPlan === "anabolic" ? "49€" : "99€";
