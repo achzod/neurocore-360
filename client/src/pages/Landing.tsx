@@ -270,7 +270,7 @@ function UltrahumanHero() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="text-white/50 text-base sm:text-lg max-w-xl mb-10 leading-relaxed"
         >
-          180+ biomarqueurs analysés avec précision clinique.
+          190+ questions. 15 domaines. Précision clinique.
           <br className="hidden sm:block" />
           Comprends ton corps, optimise ta performance.
         </motion.p>
@@ -459,8 +459,8 @@ function MediaBar() {
 // Ultrahuman-style Stats Section - Clean & Minimal
 function BentoHeroSection() {
   const stats = [
-    { value: "180+", label: "Biomarqueurs", sublabel: "analysés" },
-    { value: "21", label: "Sections", sublabel: "du questionnaire" },
+    { value: "190+", label: "Questions", sublabel: "analysées" },
+    { value: "16", label: "Sections", sublabel: "du questionnaire" },
     { value: "15", label: "Domaines", sublabel: "de santé" },
     { value: "90", label: "Jours", sublabel: "de protocole" },
   ];
@@ -1201,7 +1201,7 @@ function BentoProcessSection() {
     {
       step: 1,
       title: "Questionnaire Complet",
-      description: "180+ questions sur 15 domaines : métabolisme, hormones, nutrition, biomécanique...",
+      description: "190+ questions sur 15 domaines : métabolisme, hormones, nutrition, biomécanique...",
       icon: CheckCircle2,
       color: "from-primary/20 to-primary/5",
     },
