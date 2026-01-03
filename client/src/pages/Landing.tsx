@@ -50,10 +50,182 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
 
+  // Contenu différent pour chaque onglet
+  const tabContents = {
+    scores: (
+      <div className="w-full bg-black">
+        <div className="px-4 pt-4 pb-3">
+          <p className="text-white/80 text-xs font-medium">Bonsoir, Julien</p>
+          <p className="text-white/40 text-[10px]">Voici ton audit NEUROCORE 360</p>
+        </div>
+        <div className="px-4 py-3">
+          <div className="bg-zinc-900/80 rounded-2xl p-4 border border-white/5">
+            <p className="text-white/40 text-[9px] tracking-widest text-center mb-2">SCORE GLOBAL</p>
+            <div className="text-4xl font-bold text-white text-center tracking-tight">58</div>
+            <div className="text-[10px] text-white/30 text-center mt-1">/100</div>
+            <div className="mt-2 flex justify-center">
+              <div className="inline-flex items-center gap-1 bg-amber-500/20 rounded-full px-2.5 py-1">
+                <span className="text-amber-400 text-[9px] font-medium">À optimiser</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-2 space-y-2">
+          {[
+            { label: "Système Nerveux", value: 38, color: "bg-red-500" },
+            { label: "Sommeil", value: 35, color: "bg-red-500" },
+            { label: "Digestion", value: 45, color: "bg-amber-500" },
+            { label: "Hormones", value: 42, color: "bg-amber-500" },
+            { label: "Entraînement", value: 25, color: "bg-red-500" },
+          ].map((m, i) => (
+            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5">
+              <div className="flex justify-between mb-1">
+                <span className="text-white/60 text-[10px]">{m.label}</span>
+                <span className="text-white/80 text-[10px] font-medium">{m.value}/100</span>
+              </div>
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                <div className={`h-full ${m.color} rounded-full transition-all`} style={{ width: `${m.value}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    domaines: (
+      <div className="w-full bg-black px-4 pt-4 pb-6">
+        <p className="text-white/40 text-[9px] tracking-widest mb-3">15 DOMAINES ANALYSÉS</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { name: "Stress & HRV", score: 42, status: "warning" },
+            { name: "Cortisol", score: 38, status: "danger" },
+            { name: "Thyroïde", score: 65, status: "ok" },
+            { name: "DHEA", score: 55, status: "warning" },
+            { name: "Insuline", score: 48, status: "warning" },
+            { name: "Sommeil", score: 35, status: "danger" },
+            { name: "Digestion", score: 52, status: "warning" },
+            { name: "Énergie", score: 44, status: "warning" },
+          ].map((d, i) => (
+            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5 border border-white/5">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-white/70 text-[9px] font-medium">{d.name}</span>
+                <div className={`w-1.5 h-1.5 rounded-full ${d.status === 'danger' ? 'bg-red-500' : d.status === 'warning' ? 'bg-amber-500' : 'bg-primary'}`} />
+              </div>
+              <div className="text-white text-sm font-bold">{d.score}</div>
+              <div className="h-0.5 bg-white/10 rounded-full mt-1 overflow-hidden">
+                <div className={`h-full rounded-full ${d.status === 'danger' ? 'bg-red-500' : d.status === 'warning' ? 'bg-amber-500' : 'bg-primary'}`} style={{ width: `${d.score}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    rapport: (
+      <div className="w-full bg-black px-4 pt-4 pb-6">
+        <p className="text-white/40 text-[9px] tracking-widest mb-3">ANALYSE DÉTAILLÉE</p>
+        <div className="space-y-3">
+          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-5 h-5 rounded-md bg-red-500/20 flex items-center justify-center">
+                <Activity className="w-2.5 h-2.5 text-red-400" />
+              </div>
+              <span className="text-white/80 text-[10px] font-medium">Système Nerveux</span>
+            </div>
+            <p className="text-white/50 text-[9px] leading-relaxed">
+              Signes de dysrégulation du SNA. HRV basse (28ms), cortisol matinal élevé.
+            </p>
+          </div>
+          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-5 h-5 rounded-md bg-amber-500/20 flex items-center justify-center">
+                <Moon className="w-2.5 h-2.5 text-amber-400" />
+              </div>
+              <span className="text-white/80 text-[10px] font-medium">Sommeil</span>
+            </div>
+            <p className="text-white/50 text-[9px] leading-relaxed">
+              Latence d'endormissement prolongée. Manque de sommeil profond estimé.
+            </p>
+          </div>
+          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
+                <Zap className="w-2.5 h-2.5 text-primary" />
+              </div>
+              <span className="text-white/80 text-[10px] font-medium">Énergie</span>
+            </div>
+            <p className="text-white/50 text-[9px] leading-relaxed">
+              Fatigue mitochondriale probable. Pic énergétique tardif (16h-18h).
+            </p>
+          </div>
+        </div>
+      </div>
+    ),
+    plan: (
+      <div className="w-full bg-black px-4 pt-4 pb-6">
+        <p className="text-white/40 text-[9px] tracking-widest mb-3">PROTOCOLE 90 JOURS</p>
+        <div className="space-y-3">
+          <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Target className="w-3 h-3 text-primary" />
+              </div>
+              <span className="text-white/80 text-[10px] font-medium">Phase 1: Reset (J1-30)</span>
+            </div>
+            <div className="space-y-1.5">
+              {["Protocole sommeil 10-3-2-1", "Magnésium glycinate soir", "Exposition lumière AM"].map((p, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <Check className="w-2.5 h-2.5 text-primary" />
+                  <span className="text-white/50 text-[9px]">{p}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-zinc-900/50 rounded-xl p-3 border border-white/5">
+            <p className="text-white/40 text-[9px] tracking-widest mb-2">STACK RECOMMANDÉ</p>
+            <div className="flex gap-1.5">
+              {[
+                { name: "Mg", desc: "400mg" },
+                { name: "D3", desc: "4000UI" },
+                { name: "Zn", desc: "30mg" },
+                { name: "B+", desc: "Complex" }
+              ].map((s, i) => (
+                <div key={i} className="flex-1 bg-black/50 rounded-lg p-2 text-center border border-white/5">
+                  <p className="text-primary text-[10px] font-medium">{s.name}</p>
+                  <p className="text-white/30 text-[7px]">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  };
+
   return (
     <section className="relative min-h-screen overflow-hidden bg-black">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,252,109,0.03),transparent_70%)]" />
+      {/* Animated Grid Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(14,252,109,0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(14,252,109,0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            animation: 'gridMove 20s linear infinite',
+          }}
+        />
+        <style>{`
+          @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+          }
+        `}</style>
+      </div>
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,252,109,0.05),transparent_70%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
 
       <div className="relative max-w-7xl mx-auto px-6 pt-32 pb-20 flex flex-col items-center text-center min-h-screen">
 
@@ -64,7 +236,7 @@ function UltrahumanHero() {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-xs font-medium tracking-widest text-white/60 uppercase">
               Neurocore System V.3
@@ -72,40 +244,42 @@ function UltrahumanHero() {
           </div>
         </motion.div>
 
-        {/* Main Title - Metabolic Mastery style */}
+        {/* Main Title - French, clean */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="mb-8"
+          className="mb-6"
         >
-          <h1 className="text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[6vw] font-black leading-[0.9] tracking-tighter">
-            <span className="bg-gradient-to-b from-white/40 via-white/60 to-white/20 bg-clip-text text-transparent">
-              METABOLIC
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight">
+            <span className="text-white">
+              L'audit santé
             </span>
             <br />
-            <span className="bg-gradient-to-b from-white via-white/80 to-white/40 bg-clip-text text-transparent">
-              MASTERY
+            <span className="bg-gradient-to-r from-primary via-emerald-400 to-primary bg-clip-text text-transparent">
+              nouvelle génération.
             </span>
           </h1>
         </motion.div>
 
-        {/* Subtitle */}
+        {/* Subtitle - French */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
           className="text-white/50 text-base sm:text-lg max-w-xl mb-10 leading-relaxed"
         >
-          Decode your body's signals with clinical-grade precision. The interface between biology and technology has never been this seamless.
+          180+ biomarqueurs analysés avec précision clinique.
+          <br className="hidden sm:block" />
+          Comprends ton corps, optimise ta performance.
         </motion.p>
 
-        {/* CTAs */}
+        {/* Single CTA - No demo button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="flex flex-col sm:flex-row items-center gap-4 mb-16"
+          className="mb-16"
         >
           <Link href="/audit-complet/questionnaire">
             <button className="group px-8 py-4 rounded-full bg-white text-black font-semibold text-sm transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:shadow-white/20">
@@ -115,36 +289,14 @@ function UltrahumanHero() {
               </span>
             </button>
           </Link>
-          <button className="flex items-center gap-3 text-white/60 hover:text-white transition-colors">
-            <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 transition-colors">
-              <Play className="w-4 h-4 ml-0.5" />
-            </div>
-            <span className="text-sm font-medium">Voir la demo</span>
-          </button>
         </motion.div>
 
-        {/* Floating CTA Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
-        >
-          <span className="text-white/60 text-sm">Unlock your potential</span>
-          <Link href="/audit-complet/questionnaire">
-            <button className="px-5 py-2 rounded-full bg-primary text-black text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2">
-              Get Neurocore
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          </Link>
-        </motion.div>
-
-        {/* Phone Mockup - Centered below */}
+        {/* Phone Mockup with interactive tabs */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-          className="mt-16"
+          transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+          className="mt-4"
         >
           <div className="relative w-[280px] sm:w-[300px] mx-auto">
             {/* Glow behind phone */}
@@ -167,184 +319,17 @@ function UltrahumanHero() {
                   {/* Dynamic Island */}
                   <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-30" />
 
-                  {/* Infinite Scroll Content */}
-                  <div className="absolute inset-0 rounded-[2rem] overflow-hidden pt-10">
-                    <style>{`
-                      @keyframes scrollUp {
-                        0% { transform: translateY(0); }
-                        100% { transform: translateY(-50%); }
-                      }
-                      .scroll-container {
-                        animation: scrollUp 40s linear infinite;
-                      }
-                    `}</style>
-
-                    <div className="scroll-container">
-                      {/* Content Block 1 */}
-                      <div className="w-full bg-black">
-                        {/* Header */}
-                        <div className="px-4 pt-4 pb-3">
-                          <p className="text-white/80 text-xs font-medium">Bonsoir, Julien</p>
-                          <p className="text-white/40 text-[10px]">Voici ton audit NEUROCORE 360</p>
-                        </div>
-
-                        {/* Score Card */}
-                        <div className="px-4 py-3">
-                          <div className="bg-zinc-900/80 rounded-2xl p-4 border border-white/5">
-                            <p className="text-white/40 text-[9px] tracking-widest text-center mb-2">SCORE GLOBAL</p>
-                            <div className="text-4xl font-bold text-white text-center tracking-tight">58</div>
-                            <div className="text-[10px] text-white/30 text-center mt-1">/100</div>
-                            <div className="mt-2 flex justify-center">
-                              <div className="inline-flex items-center gap-1 bg-amber-500/20 rounded-full px-2.5 py-1">
-                                <span className="text-amber-400 text-[9px] font-medium">A optimiser</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Metrics */}
-                        <div className="px-4 py-2 space-y-2">
-                          {[
-                            { label: "Systeme Nerveux", value: 38, color: "bg-red-500" },
-                            { label: "Sommeil", value: 35, color: "bg-red-500" },
-                            { label: "Digestion", value: 45, color: "bg-amber-500" },
-                            { label: "Hormones", value: 42, color: "bg-amber-500" },
-                            { label: "Training", value: 25, color: "bg-red-500" },
-                          ].map((m, i) => (
-                            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5">
-                              <div className="flex justify-between mb-1">
-                                <span className="text-white/60 text-[10px]">{m.label}</span>
-                                <span className="text-white/80 text-[10px] font-medium">{m.value}/100</span>
-                              </div>
-                              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                <div className={`h-full ${m.color} rounded-full transition-all`} style={{ width: `${m.value}%` }} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Domaines Grid */}
-                        <div className="px-4 py-4">
-                          <p className="text-white/40 text-[9px] tracking-widest mb-2">15 DOMAINES ANALYSES</p>
-                          <div className="grid grid-cols-3 gap-1.5">
-                            {["Stress", "HRV", "Cortisol", "Thyroide", "DHEA", "Insuline"].map((d, i) => (
-                              <div key={i} className="bg-zinc-900/50 rounded-lg p-2 text-center">
-                                <p className="text-white/50 text-[8px]">{d}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Protocol Preview */}
-                        <div className="px-4 py-3">
-                          <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center">
-                                <Target className="w-3 h-3 text-primary" />
-                              </div>
-                              <span className="text-white/80 text-[10px] font-medium">Protocole 90 Jours</span>
-                            </div>
-                            <div className="space-y-1">
-                              {["Phase 1: Reset", "Phase 2: Build", "Phase 3: Optimize"].map((p, i) => (
-                                <div key={i} className="flex items-center gap-1.5">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-primary' : 'bg-white/20'}`} />
-                                  <span className="text-white/50 text-[9px]">{p}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Supplements */}
-                        <div className="px-4 py-3">
-                          <p className="text-white/40 text-[9px] tracking-widest mb-2">STACK SUPPLEMENTS</p>
-                          <div className="flex gap-1.5">
-                            {["Mg", "D3", "Zn", "B+"].map((s, i) => (
-                              <div key={i} className="flex-1 bg-zinc-900/50 rounded-lg p-2 text-center">
-                                <p className="text-primary text-[10px] font-medium">{s}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content Block 2 - Duplicate for seamless loop */}
-                      <div className="w-full bg-black">
-                        <div className="px-4 pt-4 pb-3">
-                          <p className="text-white/80 text-xs font-medium">Bonsoir, Julien</p>
-                          <p className="text-white/40 text-[10px]">Voici ton audit NEUROCORE 360</p>
-                        </div>
-                        <div className="px-4 py-3">
-                          <div className="bg-zinc-900/80 rounded-2xl p-4 border border-white/5">
-                            <p className="text-white/40 text-[9px] tracking-widest text-center mb-2">SCORE GLOBAL</p>
-                            <div className="text-4xl font-bold text-white text-center tracking-tight">58</div>
-                            <div className="text-[10px] text-white/30 text-center mt-1">/100</div>
-                            <div className="mt-2 flex justify-center">
-                              <div className="inline-flex items-center gap-1 bg-amber-500/20 rounded-full px-2.5 py-1">
-                                <span className="text-amber-400 text-[9px] font-medium">A optimiser</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="px-4 py-2 space-y-2">
-                          {[
-                            { label: "Systeme Nerveux", value: 38, color: "bg-red-500" },
-                            { label: "Sommeil", value: 35, color: "bg-red-500" },
-                            { label: "Digestion", value: 45, color: "bg-amber-500" },
-                            { label: "Hormones", value: 42, color: "bg-amber-500" },
-                            { label: "Training", value: 25, color: "bg-red-500" },
-                          ].map((m, i) => (
-                            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5">
-                              <div className="flex justify-between mb-1">
-                                <span className="text-white/60 text-[10px]">{m.label}</span>
-                                <span className="text-white/80 text-[10px] font-medium">{m.value}/100</span>
-                              </div>
-                              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="px-4 py-4">
-                          <p className="text-white/40 text-[9px] tracking-widest mb-2">15 DOMAINES ANALYSES</p>
-                          <div className="grid grid-cols-3 gap-1.5">
-                            {["Stress", "HRV", "Cortisol", "Thyroide", "DHEA", "Insuline"].map((d, i) => (
-                              <div key={i} className="bg-zinc-900/50 rounded-lg p-2 text-center">
-                                <p className="text-white/50 text-[8px]">{d}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="px-4 py-3">
-                          <div className="bg-primary/10 rounded-xl p-3 border border-primary/20">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center">
-                                <Target className="w-3 h-3 text-primary" />
-                              </div>
-                              <span className="text-white/80 text-[10px] font-medium">Protocole 90 Jours</span>
-                            </div>
-                            <div className="space-y-1">
-                              {["Phase 1: Reset", "Phase 2: Build", "Phase 3: Optimize"].map((p, i) => (
-                                <div key={i} className="flex items-center gap-1.5">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-primary' : 'bg-white/20'}`} />
-                                  <span className="text-white/50 text-[9px]">{p}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="px-4 py-3 pb-20">
-                          <p className="text-white/40 text-[9px] tracking-widest mb-2">STACK SUPPLEMENTS</p>
-                          <div className="flex gap-1.5">
-                            {["Mg", "D3", "Zn", "B+"].map((s, i) => (
-                              <div key={i} className="flex-1 bg-zinc-900/50 rounded-lg p-2 text-center">
-                                <p className="text-primary text-[10px] font-medium">{s}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Tab Content - Changes based on active tab */}
+                  <div className="absolute inset-0 rounded-[2rem] overflow-hidden pt-10 pb-16">
+                    <motion.div
+                      key={activeTab}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="h-full overflow-y-auto scrollbar-hide"
+                    >
+                      {tabContents[activeTab]}
+                    </motion.div>
                   </div>
 
                   {/* Nav tabs - Fixed at bottom */}
@@ -393,54 +378,37 @@ const bentoStyles = {
 
 function CertificationsBar() {
   const certifications = [
-    { name: "ISSA", subtitle: "CPT, Nutrition, Bodybuilding, Transformation", image: issaLogo, count: 4 },
-    { name: "NASM", subtitle: "CPT, CES, PES, FNS, WLS", image: nasmLogo, count: 5 },
-    { name: "Precision Nutrition", subtitle: "PN1 Certified Coach", image: pnLogo, count: 1 },
-    { name: "Pre-Script", subtitle: "Movement Assessment", image: preScriptLogo, count: 1 },
+    { name: "ISSA", image: issaLogo },
+    { name: "NASM", image: nasmLogo },
+    { name: "Precision Nutrition", image: pnLogo },
+    { name: "Pre-Script", image: preScriptLogo },
   ];
 
-  const allCerts = [...certifications, ...certifications, ...certifications];
+  const allCerts = [...certifications, ...certifications, ...certifications, ...certifications];
 
   return (
-    <div className="relative overflow-hidden border-b border-primary/10 bg-gradient-to-r from-background via-primary/5 to-background py-6" data-testid="section-certifications-bar">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,hsl(var(--primary)/0.1),transparent_50%),radial-gradient(ellipse_at_right,hsl(var(--accent)/0.08),transparent_50%)]" />
-
-      <div className="relative mb-4 flex items-center justify-center gap-3">
-        <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/50" />
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-primary" />
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            11 Certifications Internationales
-          </span>
-          <Award className="h-4 w-4 text-primary" />
-        </div>
-        <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary/50" />
+    <div className="relative overflow-hidden border-b border-white/5 bg-black py-4" data-testid="section-certifications-bar">
+      <div className="relative mb-3 flex items-center justify-center">
+        <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-white/30">
+          Certifications
+        </span>
       </div>
 
       <div className="relative">
-        <div className="absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-background to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-background to-transparent" />
+        <div className="absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-black to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-black to-transparent" />
 
-        <div className="flex animate-scroll-certs items-center gap-8">
+        <div className="flex animate-scroll-slow items-center gap-12">
           {allCerts.map((cert, idx) => (
             <div
               key={idx}
-              className="group flex shrink-0 items-center gap-4 rounded-xl border border-primary/20 bg-gradient-to-br from-card/90 to-card/50 px-5 py-3 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+              className="flex shrink-0 items-center gap-3 opacity-50 hover:opacity-80 transition-opacity duration-300"
               data-testid={`certification-${idx}`}
             >
-              <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-white shadow-inner">
-                <img src={cert.image} alt={cert.name} className="h-10 w-10 object-contain" />
-                <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-black/5" />
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-white/90">
+                <img src={cert.image} alt={cert.name} className="h-6 w-6 object-contain" />
               </div>
-              <div className="text-left">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold tracking-wide">{cert.name}</span>
-                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
-                    x{cert.count}
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground">{cert.subtitle}</span>
-              </div>
+              <span className="text-xs font-medium text-white/40">{cert.name}</span>
             </div>
           ))}
         </div>
@@ -456,16 +424,18 @@ function MediaBar() {
   const allMedia = [...mediaLogos, ...mediaLogos, ...mediaLogos, ...mediaLogos];
 
   return (
-    <div className="w-full overflow-hidden border-b border-border/20 bg-muted/30 py-4" data-testid="section-media-bar">
-      <div className="mb-3 text-center text-[10px] font-medium uppercase tracking-[0.25em] text-muted-foreground/50">
-        Recommandé par les médias
+    <div className="w-full overflow-hidden border-b border-white/5 bg-black/50 py-3" data-testid="section-media-bar">
+      <div className="mb-2 text-center text-[9px] font-medium uppercase tracking-[0.3em] text-white/20">
+        Vu dans les médias
       </div>
-      <div className="relative w-full px-16">
-        <div className="flex animate-scroll items-center gap-16 whitespace-nowrap" style={{ width: 'fit-content' }}>
+      <div className="relative w-full">
+        <div className="absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-black/50 to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-black/50 to-transparent" />
+        <div className="flex animate-scroll-slower items-center gap-16 whitespace-nowrap" style={{ width: 'fit-content' }}>
           {allMedia.map((name, idx) => (
             <span
               key={idx}
-              className="text-sm font-medium text-muted-foreground/40 transition-colors hover:text-muted-foreground/70"
+              className="text-[11px] font-medium text-white/25 transition-colors hover:text-white/40"
               data-testid={`media-${idx}`}
             >
               {name}
@@ -1761,6 +1731,30 @@ function BentoPricingSection() {
   );
 }
 
+// Floating CTA Bar - below pricing
+function FloatingCTABar() {
+  return (
+    <div className="py-8 bg-gradient-to-b from-muted/20 to-background">
+      <div className="max-w-7xl mx-auto px-4 flex justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-black/80 border border-white/10 backdrop-blur-sm shadow-xl"
+        >
+          <span className="text-white/60 text-sm">Libère ton potentiel</span>
+          <Link href="/audit-complet/questionnaire">
+            <button className="px-5 py-2 rounded-full bg-primary text-black text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2">
+              Obtenir mon audit
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </Link>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 // BENTO CTA
 function BentoCTASection() {
   return (
@@ -1816,6 +1810,7 @@ export default function Landing() {
         <BloodVisionSection />
         <BentoProcessSection />
         <BentoPricingSection />
+        <FloatingCTABar />
         <BentoTestimonialsSection />
         <BentoCTASection />
       </main>

@@ -387,3 +387,29 @@
 .animate-scroll-certs:hover {
   animation-play-state: paused;
 }
+
+/* Slower scroll animations for cleaner look */
+.animate-scroll-slow {
+  animation: scroll-certs 60s linear infinite;
+}
+
+.animate-scroll-slow:hover {
+  animation-play-state: paused;
+}
+
+.animate-scroll-slower {
+  animation: scroll 50s linear infinite;
+}
+
+.animate-scroll-slower:hover {
+  animation-play-state: paused;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
