@@ -54,6 +54,7 @@ import {
   Pill,
   Calendar,
   BarChart3,
+  Star,
 } from 'lucide-react';
 
 // ============================================================================
@@ -1061,19 +1062,10 @@ const SectionVisualization = ({ section, color }: { section: SectionContent; col
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
     >
-      {/* Score Header */}
-      {section.score !== undefined && (
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h4 className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-1">
-              {section.scoreLabel || 'Score'}
-            </h4>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold" style={{ color }}>{section.score}</span>
-              <span className="text-lg text-[var(--color-text-muted)]">/100</span>
-            </div>
-          </div>
-          <MiniGauge score={section.score} color={color} />
+      {/* Score Gauge - only show for sections with score and not gauge type (gauge shows its own) */}
+      {section.score !== undefined && section.chartType !== 'gauge' && (
+        <div className="flex justify-center mb-6">
+          <MiniGauge score={section.score} color={color} label={section.scoreLabel} />
         </div>
       )}
 
@@ -1118,6 +1110,294 @@ const SectionVisualization = ({ section, color }: { section: SectionContent; col
             label={section.scoreLabel}
           />
         </div>
+      )}
+    </motion.div>
+  );
+};
+
+// How to Read Guide Component
+const HowToReadGuide = ({ color }: { color: string }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  const features = [
+    { icon: Menu, label: 'Table des matieres', desc: 'Navigation cliquable a gauche' },
+    { icon: Search, label: 'Recherche', desc: 'Trouve rapidement une section' },
+    { icon: Sparkles, label: '4 Themes', desc: 'Change le style visuel en bas de la sidebar' },
+    { icon: BarChart3, label: 'Graphiques interactifs', desc: 'Survole pour plus de details' },
+  ];
+
+  return (
+    <motion.div
+      className="rounded-2xl p-6 mb-8"
+      style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+    >
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between"
+      >
+        <h3 className="text-sm font-bold flex items-center gap-2">
+          <AlertCircle size={16} style={{ color }} />
+          Comment lire ce rapport
+        </h3>
+        <motion.div
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronRight size={16} className="rotate-90" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              {features.map((feature, idx) => (
+                <motion.div
+                  key={feature.label}
+                  className="p-3 rounded-lg text-center"
+                  style={{ backgroundColor: 'var(--color-bg)' }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                >
+                  <feature.icon size={20} className="mx-auto mb-2" style={{ color }} />
+                  <p className="text-xs font-bold text-[var(--color-text)]">{feature.label}</p>
+                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1">{feature.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+// CTA Coaching Component
+const CoachingCTA = ({ color }: { color: string }) => {
+  const plans = [
+    { name: 'STARTER', price: '97', duration: '1 mois', features: ['Plan personnalise', 'Support email'] },
+    { name: 'TRANSFORM', price: '247', duration: '3 mois', features: ['Suivi hebdo', 'Ajustements', 'Support prioritaire'], popular: true },
+    { name: 'ELITE', price: '497', duration: '6 mois', features: ['Coaching 1:1', 'Bilans mensuels', 'Acces VIP'] },
+  ];
+
+  return (
+    <motion.div
+      className="rounded-2xl p-8 mb-8 relative overflow-hidden"
+      style={{
+        backgroundColor: 'var(--color-surface)',
+        border: `2px solid ${color}40`,
+        boxShadow: `0 0 60px ${color}10`
+      }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      {/* Background glow */}
+      <div
+        className="absolute inset-0 opacity-10"
+        style={{ background: `radial-gradient(circle at 50% 0%, ${color} 0%, transparent 50%)` }}
+      />
+
+      <div className="relative z-10">
+        <div className="text-center mb-8">
+          <motion.div
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4"
+            style={{ backgroundColor: `${color}20`, border: `1px solid ${color}40` }}
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Zap size={14} style={{ color }} />
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color }}>
+              Passe a l'action
+            </span>
+          </motion.div>
+          <h3 className="text-2xl font-bold text-[var(--color-text)] mb-2">
+            Pret a transformer ton corps ?
+          </h3>
+          <p className="text-sm text-[var(--color-text-muted)] max-w-md mx-auto">
+            Ce rapport t'a montre le chemin. Maintenant, laisse-moi t'accompagner pour atteindre tes objectifs.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {plans.map((plan, idx) => (
+            <motion.div
+              key={plan.name}
+              className={`p-5 rounded-xl relative ${plan.popular ? 'ring-2' : ''}`}
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                ringColor: plan.popular ? color : 'transparent'
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              whileHover={{ y: -4, boxShadow: `0 10px 40px ${color}20` }}
+            >
+              {plan.popular && (
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase"
+                  style={{ backgroundColor: color, color: 'var(--color-bg)' }}
+                >
+                  Populaire
+                </div>
+              )}
+              <h4 className="text-xs font-bold tracking-wider text-[var(--color-text-muted)]">{plan.name}</h4>
+              <div className="mt-2 mb-4">
+                <span className="text-3xl font-bold text-[var(--color-text)]">{plan.price}€</span>
+                <span className="text-xs text-[var(--color-text-muted)]">/{plan.duration}</span>
+              </div>
+              <ul className="space-y-2 mb-4">
+                {plan.features.map(f => (
+                  <li key={f} className="text-xs text-[var(--color-text-muted)] flex items-center gap-2">
+                    <Check size={12} style={{ color }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <motion.a
+                href="https://achzodcoaching.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full py-2 rounded-lg text-center text-xs font-bold transition-all"
+                style={{
+                  backgroundColor: plan.popular ? color : 'transparent',
+                  color: plan.popular ? 'var(--color-bg)' : 'var(--color-text)',
+                  border: `1px solid ${plan.popular ? color : 'var(--color-border)'}`
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Choisir {plan.name}
+              </motion.a>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Review Request Component
+const ReviewRequest = ({ color }: { color: string }) => {
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [comment, setComment] = useState('');
+
+  const handleSubmit = () => {
+    if (rating > 0) {
+      // Here you would send the review to your backend
+      console.log('Review submitted:', { rating, comment });
+      setSubmitted(true);
+    }
+  };
+
+  return (
+    <motion.div
+      className="rounded-2xl p-8 text-center"
+      style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      {!submitted ? (
+        <>
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+          >
+            <Heart size={40} className="mx-auto mb-4" style={{ color }} />
+          </motion.div>
+          <h3 className="text-xl font-bold text-[var(--color-text)] mb-2">
+            Ton avis compte !
+          </h3>
+          <p className="text-sm text-[var(--color-text-muted)] mb-6 max-w-sm mx-auto">
+            Comment as-tu trouve ce rapport ? Ta note nous aide a nous ameliorer.
+          </p>
+
+          {/* Star Rating */}
+          <div className="flex justify-center gap-2 mb-6">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <motion.button
+                key={star}
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHoveredRating(star)}
+                onMouseLeave={() => setHoveredRating(0)}
+                className="p-1"
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Star
+                  size={32}
+                  fill={(hoveredRating || rating) >= star ? color : 'transparent'}
+                  stroke={(hoveredRating || rating) >= star ? color : 'var(--color-text-muted)'}
+                  strokeWidth={1.5}
+                />
+              </motion.button>
+            ))}
+          </div>
+
+          {rating > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="space-y-4"
+            >
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Un commentaire ? (optionnel)"
+                className="w-full max-w-sm mx-auto p-3 rounded-lg text-sm resize-none"
+                style={{
+                  backgroundColor: 'var(--color-bg)',
+                  border: `1px solid var(--color-border)`,
+                  color: 'var(--color-text)'
+                }}
+                rows={3}
+              />
+              <motion.button
+                onClick={handleSubmit}
+                className="px-6 py-2 rounded-lg text-sm font-bold"
+                style={{ backgroundColor: color, color: 'var(--color-bg)' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Envoyer ma note
+              </motion.button>
+            </motion.div>
+          )}
+        </>
+      ) : (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="py-8"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.5 }}
+          >
+            <CheckCircle2 size={60} className="mx-auto mb-4" style={{ color }} />
+          </motion.div>
+          <h3 className="text-xl font-bold text-[var(--color-text)] mb-2">
+            Merci pour ton retour !
+          </h3>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Ta note de {rating}/5 a bien ete enregistree.
+          </p>
+        </motion.div>
       )}
     </motion.div>
   );
@@ -1436,6 +1716,9 @@ export function FullReport() {
               </div>
             </motion.header>
 
+            {/* How to Read Guide */}
+            <HowToReadGuide color={currentTheme.colors.primary} />
+
             {/* Dashboard Grid */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Main Score */}
@@ -1624,6 +1907,12 @@ export function FullReport() {
               </motion.section>
             ))}
           </div>
+
+          {/* CTA Coaching */}
+          <CoachingCTA color={currentTheme.colors.primary} />
+
+          {/* Review Request */}
+          <ReviewRequest color={currentTheme.colors.primary} />
 
           {/* Footer */}
           <motion.footer
