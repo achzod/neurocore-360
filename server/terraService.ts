@@ -147,6 +147,7 @@ export const TERRA_PROVIDERS = [
   { id: "SAMSUNG", name: "Samsung Health", icon: "📱", requiresWidget: true, note: "SDK - Via Terra Avengers App", active: true },
   { id: "ULTRAHUMAN", name: "Ultrahuman", icon: "🔬", requiresWidget: false, note: "API", active: true },
   { id: "WITHINGS", name: "Withings", icon: "⚖️", requiresWidget: false, note: "API", active: true },
+  { id: "HUAWEI", name: "Huawei Health", icon: "📲", requiresWidget: false, note: "API - Web OAuth", active: true },
 ] as const;
 
 export type TerraProvider = typeof TERRA_PROVIDERS[number]["id"];
