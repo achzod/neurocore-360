@@ -45,338 +45,236 @@ import pnLogo from "@assets/limage-19764_1767172975495.webp";
 import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
-// Demo Modal Component with 4 tabs - Same as phone mockup (scores, domaines, rapport, plan)
+// Demo Modal Component - Ultrahuman-style Report with 4 themes
 function DemoModal({ onClose }: { onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
+  const [activeTheme, setActiveTheme] = useState<"m1black" | "metabolic" | "titanium" | "organic">("m1black");
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const tabs = [
-    { id: "scores", label: "Scores" },
-    { id: "domaines", label: "Domaines" },
-    { id: "rapport", label: "Rapport" },
-    { id: "plan", label: "Plan" },
-  ] as const;
+  const themes = {
+    m1black: { name: "M1 Black", bg: "#000000", surface: "#09090B", primary: "#E1E1E1", text: "#EDEDED", muted: "#71717A", border: "rgba(255,255,255,0.12)" },
+    metabolic: { name: "Metabolic Fire", bg: "#050505", surface: "#111111", primary: "#FF4F00", text: "#FFFFFF", muted: "#A1A1AA", border: "rgba(255,79,0,0.2)" },
+    titanium: { name: "Titanium Light", bg: "#F2F2F2", surface: "#FFFFFF", primary: "#000000", text: "#171717", muted: "#737373", border: "rgba(0,0,0,0.08)" },
+    organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
+  };
+
+  const theme = themes[activeTheme];
+  const isLight = activeTheme === "titanium" || activeTheme === "organic";
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!contentRef.current) return;
+      const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+      const progress = (scrollTop / (scrollHeight - clientHeight)) * 100;
+      setScrollProgress(progress);
+    };
+    contentRef.current?.addEventListener('scroll', handleScroll);
+    return () => contentRef.current?.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
       onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", duration: 0.4 }}
-        className="relative w-full max-w-5xl h-[90vh] flex flex-col bg-gradient-to-b from-[#0a2520] to-[#0d0d0d] rounded-3xl border border-white/10 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-6xl h-[95vh] flex overflow-hidden rounded-2xl shadow-2xl"
+        style={{ backgroundColor: theme.bg, color: theme.text }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
-        >
-          <span className="text-xl">×</span>
-        </button>
-
-        {/* Header */}
-        <div className="shrink-0 px-6 pt-6 pb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-primary text-xs font-semibold tracking-wider">DEMO LIVE</span>
-          </div>
-          <h3 className="text-2xl md:text-3xl font-bold text-white">Exemple de rapport NEUROCORE 360</h3>
-          <p className="text-white/40 text-sm mt-1">Profil: Marc D., 34 ans</p>
+        {/* Progress bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 z-50" style={{ backgroundColor: theme.border }}>
+          <div className="h-full transition-all duration-150" style={{ width: `${scrollProgress}%`, backgroundColor: theme.primary }} />
         </div>
 
-        {/* Tabs - Style phone mockup */}
-        <div className="shrink-0 px-6 pb-4">
-          <div className="inline-flex bg-black/40 rounded-full p-1 border border-white/10">
-            {tabs.map((tab) => (
+        {/* Sidebar */}
+        <div className="hidden md:flex w-72 flex-col border-r" style={{ borderColor: theme.border, backgroundColor: theme.bg }}>
+          <div className="p-6 pt-8">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.primary }} />
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: theme.muted }}>NEUROCORE 360</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">Audit: Marc D.</h1>
+            <p className="text-[10px] mt-1 font-mono" style={{ color: theme.muted }}>17 SECTIONS • PREMIUM</p>
+          </div>
+
+          {/* Theme Switcher */}
+          <div className="px-6 pb-4">
+            <p className="text-[9px] font-mono uppercase tracking-widest mb-2" style={{ color: theme.muted }}>THÈME</p>
+            <div className="grid grid-cols-4 gap-1">
+              {(Object.keys(themes) as Array<keyof typeof themes>).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setActiveTheme(t)}
+                  className={`h-6 rounded transition-all ${activeTheme === t ? 'ring-2 ring-offset-1' : ''}`}
+                  style={{
+                    backgroundColor: themes[t].surface,
+                    borderColor: themes[t].border,
+                    ringColor: themes[t].primary,
+                  }}
+                  title={themes[t].name}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex-1 overflow-y-auto px-4 py-2">
+            {["Dashboard", "Système Nerveux", "Sommeil", "Nutrition", "Hormones", "Énergie", "Training", "Protocole", "Suppléments", "Plan 90J"].map((item, i) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? "bg-primary text-black"
-                    : "text-white/50 hover:text-white"
-                }`}
+                key={i}
+                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
+                style={{ color: i === 0 ? theme.text : theme.muted }}
               >
-                {tab.label}
+                <span className="font-mono text-[10px] mr-2" style={{ color: theme.muted }}>{String(i + 1).padStart(2, '0')}</span>
+                {item}
               </button>
             ))}
           </div>
+
+          {/* Sidebar Footer */}
+          <div className="p-4 border-t" style={{ borderColor: theme.border }}>
+            <button
+              className="w-full py-2 text-xs font-mono font-bold uppercase tracking-wider rounded transition-all"
+              style={{ backgroundColor: theme.primary, color: theme.bg }}
+            >
+              Export PDF
+            </button>
+          </div>
         </div>
 
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
-          {activeTab === "scores" && (
-            <div className="space-y-6">
-              {/* Big Score */}
-              <div className="bg-black/30 rounded-2xl p-6 border border-white/5">
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-6xl font-bold text-white">58</span>
-                  <span className="text-primary text-lg font-medium">+12 vs baseline</span>
-                </div>
-                <p className="text-white/60 text-lg">Global Index</p>
-                <div className="inline-flex items-center gap-2 mt-3 bg-primary/20 rounded-full px-4 py-2">
-                  <span className="text-sm">📈</span>
-                  <span className="text-primary font-medium">Rapport de 45 pages</span>
-                </div>
-              </div>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile Header */}
+          <div className="md:hidden flex items-center justify-between p-4 border-b" style={{ borderColor: theme.border }}>
+            <span className="font-bold text-sm">Audit Marc D.</span>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.surface }}>×</button>
+          </div>
 
-              {/* Weekly bar chart */}
-              <div className="bg-black/30 rounded-2xl p-6 border border-white/5">
-                <p className="text-white/40 text-sm mb-4">PROGRESSION HEBDOMADAIRE</p>
-                <div className="flex items-end justify-between gap-3 h-32">
-                  {[42, 38, 45, 52, 48, 55, 58].map((val, i) => (
-                    <div key={i} className="flex flex-col items-center gap-2 flex-1">
-                      <span className="text-white/60 text-sm font-medium">{val}</span>
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: `${val * 1.5}px` }}
-                        transition={{ duration: 0.5, delay: i * 0.1 }}
-                        className={`w-full rounded-lg ${i === 6 ? 'bg-white' : 'bg-primary/60'}`}
-                      />
-                      <span className="text-white/40 text-xs">{['L', 'M', 'M', 'J', 'V', 'S', 'D'][i]}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* Close button desktop */}
+          <button
+            onClick={onClose}
+            className="hidden md:flex absolute top-4 right-4 z-20 w-10 h-10 rounded-full items-center justify-center transition-colors"
+            style={{ backgroundColor: theme.surface, color: theme.muted }}
+          >
+            ×
+          </button>
 
-              {/* Domain cards */}
-              <div>
-                <p className="text-white/40 text-sm mb-4">DOMAINES ANALYSÉS</p>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { value: "35", label: "SOMMEIL", status: "Needs attention", color: "red" },
-                    { value: "72", label: "NUTRITION", status: "Optimal", color: "green" },
-                    { value: "42", label: "HORMONES", status: "Needs attention", color: "amber" },
-                    { value: "85", label: "TRAINING", status: "Excellent", color: "green" },
-                  ].map((item, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="bg-black/40 rounded-xl p-4 border border-white/5"
-                    >
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-white">{item.value}</span>
-                        <span className="text-white/30 text-sm">/100</span>
-                      </div>
-                      <p className="text-white/40 text-xs tracking-wider mt-1">{item.label}</p>
-                      <span className={`inline-block mt-2 text-xs px-2 py-1 rounded ${
-                        item.color === "red" ? "bg-red-500/20 text-red-400" :
-                        item.color === "amber" ? "bg-amber-500/20 text-amber-400" :
-                        "bg-primary/20 text-primary"
-                      }`}>
-                        {item.status}
-                      </span>
-                    </motion.div>
-                  ))}
+          {/* Scrollable Content */}
+          <div ref={contentRef} className="flex-1 overflow-y-auto p-6 lg:p-12">
+            <div className="max-w-4xl mx-auto space-y-12">
+              {/* Header */}
+              <header className="pt-8">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6" style={{ borderColor: theme.border, backgroundColor: theme.surface }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest" style={{ color: theme.muted }}>Demo Live</span>
                 </div>
-              </div>
+                <h1 className="text-4xl lg:text-6xl font-medium tracking-tighter leading-[0.95]">
+                  Marc,<br />
+                  <span style={{ color: theme.muted }}>voici ton audit.</span>
+                </h1>
+                <p className="text-lg mt-6 max-w-lg" style={{ color: theme.muted }}>
+                  58/100 — Une base solide. Optimiser ton sommeil va tout changer.
+                </p>
+              </header>
 
-              {/* Bottom metrics */}
-              <div className="space-y-2">
+              {/* Dashboard Grid */}
+              <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Global Score */}
+                <div className="md:row-span-2 rounded-2xl p-6 border relative overflow-hidden" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                  <Activity className="absolute top-4 right-4 opacity-10" size={60} />
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest mb-4" style={{ color: theme.muted }}>Score Global</h3>
+                  <div className="text-6xl font-bold mb-2">58<span className="text-xl" style={{ color: theme.muted }}>/100</span></div>
+                  <span className="inline-block px-2 py-1 text-[10px] font-mono rounded bg-amber-500/10 text-amber-500">À OPTIMISER</span>
+                </div>
+
+                {/* KPI Cards */}
                 {[
-                  { label: "Stress & HRV", status: "Optimal", color: "text-primary" },
-                  { label: "Digestion", status: "Excellent", color: "text-primary" },
-                  { label: "Énergie", status: "Needs attention", color: "text-amber-400" },
-                  { label: "Cardio", status: "Good", color: "text-primary" },
-                ].map((m, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 px-4 bg-black/20 rounded-xl border border-white/5">
-                    <span className="text-white/70">{m.label}</span>
-                    <span className={`${m.color} bg-white/5 px-3 py-1 rounded-full text-sm`}>{m.status} →</span>
+                  { label: "Système Nerveux", score: "4.5", status: "CRITIQUE", statusColor: "red" },
+                  { label: "Sommeil", score: "3.5", status: "CRITIQUE", statusColor: "red" },
+                  { label: "Nutrition", score: "7.2", status: "BON", statusColor: "green" },
+                  { label: "Training", score: "8.5", status: "FORT", statusColor: "green" },
+                ].map((kpi, i) => (
+                  <div key={i} className="rounded-xl p-5 border transition-colors" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] font-mono uppercase" style={{ color: theme.muted }}>{kpi.label}</span>
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${kpi.statusColor === 'red' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>{kpi.status}</span>
+                    </div>
+                    <div className="text-2xl font-bold">{kpi.score}<span className="text-sm" style={{ color: theme.muted }}>/10</span></div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
+              </section>
 
-          {activeTab === "domaines" && (
-            <div className="space-y-4">
-              <p className="text-white/40 text-xs tracking-widest">15 DOMAINES ANALYSÉS</p>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { name: "Stress & HRV", score: 42 },
-                  { name: "Cortisol", score: 38 },
-                  { name: "Thyroïde", score: 65 },
-                  { name: "DHEA", score: 55 },
-                  { name: "Insuline", score: 48 },
-                  { name: "Sommeil", score: 35 },
-                  { name: "Digestion", score: 52 },
-                  { name: "Énergie", score: 44 },
-                  { name: "Nutrition", score: 72 },
-                  { name: "Training", score: 85 },
-                  { name: "Cardio", score: 62 },
-                  { name: "Mobilité", score: 58 },
-                  { name: "Mental", score: 67 },
-                  { name: "Récupération", score: 41 },
-                ].map((d, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="bg-zinc-900/50 rounded-xl p-4 border border-white/5"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white/70 text-sm font-medium">{d.name}</span>
-                    </div>
-                    <div className="text-white text-2xl font-bold">{d.score}</div>
-                    <div className="h-1.5 bg-white/10 rounded-full mt-2 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${d.score}%` }}
-                        transition={{ duration: 0.6, delay: i * 0.05 }}
-                        className={`h-full rounded-full ${
-                          d.score < 40 ? 'bg-red-500' :
-                          d.score < 60 ? 'bg-amber-500' :
-                          'bg-primary'
-                        }`}
-                      />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          )}
+              {/* Projection */}
+              <section className="rounded-2xl p-6 border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp size={16} style={{ color: theme.primary }} />
+                  <h3 className="font-bold" style={{ color: theme.primary }}>Potentiel Inexploité</h3>
+                </div>
+                <p className="text-sm mb-4" style={{ color: theme.muted }}>
+                  Actuellement à 35% de ton potentiel. En débloquant le système nerveux, projection: 95% en 90 jours.
+                </p>
+                <div className="flex items-end gap-1 h-24">
+                  {[35, 42, 55, 68, 78, 88, 95].map((v, i) => (
+                    <div key={i} className="flex-1 rounded-t transition-all" style={{ height: `${v}%`, backgroundColor: i < 2 ? theme.muted : theme.primary, opacity: i < 2 ? 0.3 : 1 }} />
+                  ))}
+                </div>
+                <div className="flex justify-between text-[9px] font-mono mt-2" style={{ color: theme.muted }}>
+                  <span>Aujourd'hui</span>
+                  <span>J90</span>
+                </div>
+              </section>
 
-          {activeTab === "rapport" && (
-            <div className="space-y-4">
-              <p className="text-white/40 text-xs tracking-widest">ANALYSE DÉTAILLÉE</p>
+              {/* Sections */}
               {[
-                { icon: Activity, title: "Système Nerveux", desc: "Signes de dysrégulation du SNA. HRV basse (28ms), cortisol matinal élevé. Protocole de régulation parasympathique recommandé." },
-                { icon: Moon, title: "Sommeil", desc: "Latence d'endormissement prolongée (45+ min). Manque de sommeil profond estimé. Réveils nocturnes fréquents. Priorité critique." },
-                { icon: Zap, title: "Énergie", desc: "Fatigue mitochondriale probable. Pic énergétique tardif (16h-18h). Crash post-prandial identifié. Optimisation métabolique nécessaire." },
-                { icon: Apple, title: "Nutrition", desc: "Apport protéique optimal (1.8g/kg). Timing des repas à améliorer. Diversité alimentaire correcte. Focus sur l'hydratation." },
-                { icon: Heart, title: "Cardiaque", desc: "FC repos 68bpm. Récupération post-effort moyenne. Zone 2 sous-développée. Programme cardio structuré recommandé." },
-                { icon: Dumbbell, title: "Training", desc: "Volume d'entraînement optimal. Progression linéaire observée. Points forts: force relative. À améliorer: mobilité thoracique." },
+                { num: "01", title: "Système Nerveux", subtitle: "PRIORITÉ #1", content: "HRV basse (28ms). Cortisol matinal élevé. Ton système nerveux autonome montre des signes de dysrégulation chronique. C'est le verrou principal qui bloque ta progression." },
+                { num: "02", title: "Sommeil", subtitle: "CRITIQUE", content: "Latence d'endormissement prolongée (45+ min). Sommeil profond insuffisant. Réveils nocturnes fréquents (3-4x). La qualité de ton sommeil impacte directement ta récupération et tes hormones." },
+                { num: "03", title: "Nutrition", subtitle: "BON NIVEAU", content: "Apport protéique optimal (1.8g/kg). Timing des repas à optimiser. Hydratation sous-optimale. La base est solide, quelques ajustements vont amplifier les résultats." },
               ].map((section, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-zinc-900/50 rounded-xl p-5 border border-white/5"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                      <section.icon className="w-4 h-4 text-white/60" />
+                <section key={i} className="py-8 border-t" style={{ borderColor: theme.border }}>
+                  <div className="flex gap-8">
+                    <div className="w-20 shrink-0">
+                      <span className="text-4xl font-bold" style={{ color: theme.border }}>{section.num}</span>
                     </div>
-                    <span className="text-white font-medium">{section.title}</span>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold mb-1">{section.title}</h2>
+                      <p className="text-[10px] font-mono uppercase tracking-widest mb-4" style={{ color: theme.primary }}>{section.subtitle}</p>
+                      <p style={{ color: theme.muted }}>{section.content}</p>
+                    </div>
                   </div>
-                  <p className="text-white/50 text-sm leading-relaxed">{section.desc}</p>
-                </motion.div>
+                </section>
               ))}
-            </div>
-          )}
 
-          {activeTab === "plan" && (
-            <div className="space-y-6">
-              <p className="text-white/40 text-xs tracking-widest">PLAN D'ACTION 90 JOURS</p>
-
-              {/* Timeline phases */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { phase: "J1-30", title: "Fondations", focus: "Sommeil + HRV", target: "+8 pts" },
-                  { phase: "J31-60", title: "Optimisation", focus: "Nutrition + Énergie", target: "+6 pts" },
-                  { phase: "J61-90", title: "Performance", focus: "Training + Cardio", target: "+4 pts" },
-                ].map((p, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-zinc-900/50 rounded-xl p-4 border border-white/5 text-center"
+              {/* CTA Section */}
+              <section className="rounded-2xl p-8 text-center border" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
+                <h2 className="text-2xl font-bold mb-4">Passe à l'action</h2>
+                <p className="mb-6" style={{ color: theme.muted }}>Ton Audit PREMIUM de 79€ est déduit du coaching.</p>
+                <Link href="/audit-complet/questionnaire">
+                  <button
+                    className="px-8 py-3 rounded-full font-bold text-sm transition-all hover:opacity-90"
+                    style={{ backgroundColor: theme.primary, color: theme.bg }}
                   >
-                    <span className="text-primary text-xs font-bold">{p.phase}</span>
-                    <h5 className="text-white font-semibold mt-1">{p.title}</h5>
-                    <p className="text-white/40 text-xs mt-1">{p.focus}</p>
-                    <p className="text-emerald-400 font-bold mt-2">{p.target}</p>
-                  </motion.div>
-                ))}
-              </div>
+                    Obtenir mon rapport personnalisé →
+                  </button>
+                </Link>
+              </section>
 
-              {/* Priority protocols */}
-              <div className="bg-gradient-to-r from-red-500/10 to-transparent rounded-xl p-5 border border-red-500/20">
-                <span className="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-bold">PRIORITÉ #1</span>
-                <h5 className="text-lg font-bold text-white mt-2">Protocole Sommeil - 21 jours</h5>
-                <div className="grid grid-cols-2 gap-2 mt-3">
-                  {[
-                    "Lumière naturelle 30min au réveil",
-                    "Magnésium 300mg avant coucher",
-                    "Arrêt écrans 2h avant sommeil",
-                    "Chambre 18-19°C",
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-red-400" />
-                      <span className="text-white/70">{item}</span>
-                    </div>
-                  ))}
+              {/* Footer */}
+              <footer className="py-12 border-t flex justify-between items-center" style={{ borderColor: theme.border }}>
+                <div>
+                  <h4 className="font-bold">Neurocore 360</h4>
+                  <p className="text-sm" style={{ color: theme.muted }}>AchzodCoaching • Excellence • Science</p>
                 </div>
-              </div>
-
-              {/* Supplements */}
-              <div className="bg-zinc-900/50 rounded-xl p-5 border border-white/5">
-                <h5 className="text-white font-semibold mb-3">Stack Suppléments</h5>
-                <div className="space-y-2">
-                  {[
-                    { name: "Magnésium Bisglycinate", dose: "300mg", timing: "Soir" },
-                    { name: "Vitamine D3 + K2", dose: "4000 UI", timing: "Matin" },
-                    { name: "Oméga-3 EPA/DHA", dose: "2g", timing: "Repas" },
-                  ].map((s, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                      <span className="text-white/80 text-sm">{s.name}</span>
-                      <span className="text-white/40 text-xs">{s.dose} • {s.timing}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Targets */}
-              <div className="bg-zinc-900/50 rounded-xl p-5 border border-white/5">
-                <h5 className="text-white font-semibold mb-3">Objectifs à 90 jours</h5>
-                <div className="space-y-3">
-                  {[
-                    { kpi: "Score Global", current: 58, target: 76 },
-                    { kpi: "Sommeil", current: 35, target: 65 },
-                    { kpi: "HRV", current: 32, target: 48 },
-                  ].map((item, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-white/60">{item.kpi}</span>
-                        <span className="text-white/40">{item.current} → <span className="text-primary">{item.target}</span></span>
-                      </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(item.current / item.target) * 100}%` }}
-                          transition={{ duration: 0.8 }}
-                          className="h-full bg-gradient-to-r from-amber-500 to-primary rounded-full"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                <p className="text-[10px] font-mono uppercase tracking-widest" style={{ color: theme.muted }}>Demo Report • 2025</p>
+              </footer>
             </div>
-          )}
-        </div>
-
-        {/* Footer CTA */}
-        <div className="shrink-0 p-6 border-t border-white/10 bg-black/50">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-white/40 text-sm text-center sm:text-left">
-              Ceci est un exemple. Obtenez votre rapport personnalisé de 45+ pages.
-            </p>
-            <Link href="/audit-complet/questionnaire">
-              <button className="px-8 py-3 rounded-full bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-all hover:scale-105">
-                Lancer mon audit →
-              </button>
-            </Link>
           </div>
         </div>
       </motion.div>
