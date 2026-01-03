@@ -1,19 +1,14 @@
 /**
- * NEUROCORE 360 - Knowledge Base Scraper
+ * NEUROCORE 360 - Knowledge Base Scraper V2
  * Scrape les sources de connaissances pour l'apprentissage IA
- *
- * Sources:
- * 1. Huberman Lab - Podcasts neuroscience
- * 2. Stronger By Science - Analyses scientifiques
- * 3. Applied Metabolics - Articles métabolisme (login requis)
- * 4. Newsletters SendPulse - Tips ACHZOD
+ * Version améliorée avec meilleure extraction de contenu
  */
 
 import { ScrapedArticle, saveArticles } from "./storage";
 
-const HUBERMAN_URL = "https://www.hubermanlab.com/episodes";
-const SBS_RESEARCH_URL = "https://www.strongerbyscience.com/research-spotlight/";
-const SBS_ARTICLES_URL = "https://www.strongerbyscience.com/articles/";
+// URLs des sources
+const HUBERMAN_RSS = "https://feeds.megaphone.fm/hubaboratory";
+const SBS_BASE = "https://www.strongerbyscience.com";
 const APPLIED_METABOLICS_URL = "https://www.appliedmetabolics.com";
 
 // Credentials
@@ -29,16 +24,16 @@ function categorizeContent(title: string, content: string): string {
   const text = `${title} ${content}`.toLowerCase();
 
   const categories: Record<string, string[]> = {
-    sommeil: ["sleep", "sommeil", "melatonin", "circadian", "insomnia", "rêve", "nuit"],
-    hormones: ["testosterone", "cortisol", "hormone", "thyroid", "estrogen", "prolactin", "gh", "igf"],
-    nutrition: ["protein", "protéine", "calorie", "macro", "diet", "nutrition", "glucide", "lipide"],
-    performance: ["vo2max", "endurance", "strength", "force", "hypertrophy", "training", "entraînement"],
-    recuperation: ["recovery", "récupération", "hrv", "rest", "repos", "overtraining"],
-    stress: ["stress", "anxiety", "anxiété", "cortisol", "burnout", "adaptation"],
-    digestion: ["gut", "microbiome", "digestif", "intestin", "probiotic", "fiber"],
-    focus: ["focus", "concentration", "dopamine", "nootropic", "cognitive", "brain"],
-    supplements: ["supplement", "supplément", "vitamine", "mineral", "creatine", "omega"],
-    metabolisme: ["metabolism", "métabolisme", "insulin", "glucose", "fat loss", "thermogenesis"]
+    sommeil: ["sleep", "sommeil", "melatonin", "circadian", "insomnia", "rêve", "nuit", "adenosine"],
+    hormones: ["testosterone", "cortisol", "hormone", "thyroid", "estrogen", "prolactin", "gh", "igf", "dhea"],
+    nutrition: ["protein", "protéine", "calorie", "macro", "diet", "nutrition", "glucide", "lipide", "carb"],
+    performance: ["vo2max", "endurance", "strength", "force", "hypertrophy", "training", "entraînement", "muscle"],
+    recuperation: ["recovery", "récupération", "hrv", "rest", "repos", "overtraining", "deload"],
+    stress: ["stress", "anxiety", "anxiété", "cortisol", "burnout", "adaptation", "resilience"],
+    digestion: ["gut", "microbiome", "digestif", "intestin", "probiotic", "fiber", "digestion"],
+    focus: ["focus", "concentration", "dopamine", "nootropic", "cognitive", "brain", "attention"],
+    supplements: ["supplement", "supplément", "vitamine", "mineral", "creatine", "omega", "magnesium"],
+    metabolisme: ["metabolism", "métabolisme", "insulin", "glucose", "fat loss", "thermogenesis", "metabolic"]
   };
 
   for (const [category, keywords] of Object.entries(categories)) {
@@ -63,7 +58,7 @@ function extractKeywords(title: string, content: string): string[] {
     "dopamine", "sérotonine", "gaba", "mélatonine", "ashwagandha", "rhodiola",
     "microbiome", "probiotique", "insuline", "glucose", "thyroïde", "t3", "t4",
     "récupération", "recovery", "inflammation", "stress oxydatif", "mitochondrie",
-    "leucine", "mtor", "autophagie", "circadien", "lumière bleue"
+    "leucine", "mtor", "autophagie", "circadien", "lumière bleue", "caffeine"
   ];
 
   return importantTerms.filter(term => text.includes(term));
@@ -76,6 +71,10 @@ function cleanHtml(html: string): string {
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+    .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, "")
+    .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, "")
+    .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, "")
+    .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, "")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -88,128 +87,142 @@ function cleanHtml(html: string): string {
 }
 
 // ============================================
-// HUBERMAN LAB SCRAPER
+// HUBERMAN LAB SCRAPER - Via RSS Feed
 // ============================================
 
 export async function scrapeHuberman(limit: number = 20): Promise<ScrapedArticle[]> {
-  console.log("[Scraper] Starting Huberman Lab scrape...");
+  console.log("[Scraper] Starting Huberman Lab scrape via RSS...");
   const articles: ScrapedArticle[] = [];
 
   try {
-    // Fetch episodes page
-    const response = await fetch(HUBERMAN_URL);
-    const html = await response.text();
+    // Fetch RSS feed
+    const response = await fetch(HUBERMAN_RSS);
+    const xml = await response.text();
 
-    // Extract episode links (basic pattern matching)
-    const episodePattern = /<a[^>]*href="(\/episode\/[^"]+)"[^>]*>([^<]+)</gi;
-    const matches = [...html.matchAll(episodePattern)];
+    // Parse RSS items
+    const itemPattern = /<item>([\s\S]*?)<\/item>/gi;
+    const items = [...xml.matchAll(itemPattern)];
 
-    console.log(`[Scraper] Found ${matches.length} Huberman episodes`);
+    console.log(`[Scraper] Found ${items.length} Huberman episodes in RSS`);
 
-    for (const match of matches.slice(0, limit)) {
-      const episodeUrl = `https://www.hubermanlab.com${match[1]}`;
-      const episodeTitle = cleanHtml(match[2]);
+    for (const item of items.slice(0, limit)) {
+      const itemContent = item[1];
 
-      try {
-        // Fetch episode page
-        const episodeResponse = await fetch(episodeUrl);
-        const episodeHtml = await episodeResponse.text();
+      // Extract title
+      const titleMatch = itemContent.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/i);
+      const title = titleMatch ? titleMatch[1].trim() : "";
 
-        // Extract transcript/content
-        const contentMatch = episodeHtml.match(/<article[^>]*>([\s\S]*?)<\/article>/i) ||
-                            episodeHtml.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+      // Extract description
+      const descMatch = itemContent.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i) ||
+                       itemContent.match(/<content:encoded>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/i);
+      const description = descMatch ? cleanHtml(descMatch[1]) : "";
 
-        const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
+      // Extract link
+      const linkMatch = itemContent.match(/<link>([^<]+)<\/link>/i);
+      const link = linkMatch ? linkMatch[1].trim() : "";
 
-        if (content.length > 500) {
-          articles.push({
-            source: "huberman",
-            title: episodeTitle,
-            content: content.substring(0, 50000), // Limit content size
-            url: episodeUrl,
-            category: categorizeContent(episodeTitle, content),
-            keywords: extractKeywords(episodeTitle, content),
-            scrapedAt: new Date()
-          });
-        }
+      // Extract publication date
+      const pubDateMatch = itemContent.match(/<pubDate>([^<]+)<\/pubDate>/i);
+      const pubDate = pubDateMatch ? new Date(pubDateMatch[1]) : new Date();
 
-        // Rate limiting
-        await new Promise(r => setTimeout(r, 1000));
-      } catch (err) {
-        console.error(`[Scraper] Error fetching Huberman episode: ${episodeUrl}`, err);
+      if (title && description.length > 200) {
+        articles.push({
+          source: "huberman",
+          title,
+          content: description.substring(0, 50000),
+          url: link || `https://www.hubermanlab.com/episode/${title.toLowerCase().replace(/\s+/g, '-')}`,
+          category: categorizeContent(title, description),
+          keywords: extractKeywords(title, description),
+          scrapedAt: pubDate
+        });
       }
     }
   } catch (error) {
-    console.error("[Scraper] Huberman scrape failed:", error);
+    console.error("[Scraper] Huberman RSS scrape failed:", error);
   }
 
-  console.log(`[Scraper] Scraped ${articles.length} Huberman articles`);
+  console.log(`[Scraper] Scraped ${articles.length} Huberman episodes`);
   return articles;
 }
 
 // ============================================
-// STRONGER BY SCIENCE SCRAPER
+// STRONGER BY SCIENCE SCRAPER - Improved
 // ============================================
 
 export async function scrapeSBS(limit: number = 20): Promise<ScrapedArticle[]> {
   console.log("[Scraper] Starting Stronger By Science scrape...");
   const articles: ScrapedArticle[] = [];
 
-  const urls = [SBS_RESEARCH_URL, SBS_ARTICLES_URL];
+  // Direct article URLs to scrape (known good articles)
+  const articleUrls = [
+    "/the-science-of-protein/",
+    "/creatine/",
+    "/the-belt-bible/",
+    "/hypertrophy-range-fact-fiction/",
+    "/training-frequency/",
+    "/muscle-math/",
+    "/periodization-data/",
+    "/avoiding-cardio-could-be-holding-you-back/",
+    "/the-science-of-deloads/",
+    "/sleep/",
+    "/caffeine/",
+    "/research-spotlight-protein-timing/",
+    "/research-spotlight-volume/",
+    "/the-3-laws-of-protein/",
+    "/training-to-failure/",
+  ];
 
-  for (const baseUrl of urls) {
+  for (const path of articleUrls.slice(0, limit)) {
+    const articleUrl = `${SBS_BASE}${path}`;
+
     try {
-      const response = await fetch(baseUrl);
+      console.log(`[Scraper] Fetching SBS: ${articleUrl}`);
+      const response = await fetch(articleUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; NeurocoreBot/1.0)"
+        }
+      });
+
+      if (!response.ok) {
+        console.log(`[Scraper] SBS ${path} returned ${response.status}`);
+        continue;
+      }
+
       const html = await response.text();
 
-      // Extract article links
-      const articlePattern = /<a[^>]*href="(https:\/\/www\.strongerbyscience\.com\/[^"]+\/?)"[^>]*>([^<]*)</gi;
-      const matches = [...html.matchAll(articlePattern)];
+      // Extract title
+      const titleMatch = html.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) ||
+                        html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+      const title = titleMatch ? cleanHtml(titleMatch[1]) : path.replace(/\//g, "").replace(/-/g, " ");
 
-      const uniqueUrls = new Set<string>();
+      // Extract main content
+      const contentMatch = html.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<(?:footer|div class="author)/i) ||
+                          html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
 
-      for (const match of matches) {
-        const articleUrl = match[1];
-        if (uniqueUrls.has(articleUrl) || articleUrl.includes("/category/") || articleUrl.includes("/tag/")) {
-          continue;
-        }
-        uniqueUrls.add(articleUrl);
-
-        if (articles.length >= limit) break;
-
-        try {
-          const articleResponse = await fetch(articleUrl);
-          const articleHtml = await articleResponse.text();
-
-          // Extract title
-          const titleMatch = articleHtml.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-          const title = titleMatch ? cleanHtml(titleMatch[1]) : match[2];
-
-          // Extract content
-          const contentMatch = articleHtml.match(/<article[^>]*>([\s\S]*?)<\/article>/i) ||
-                              articleHtml.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-
-          const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
-
-          if (content.length > 500 && title) {
-            articles.push({
-              source: "sbs",
-              title,
-              content: content.substring(0, 50000),
-              url: articleUrl,
-              category: categorizeContent(title, content),
-              keywords: extractKeywords(title, content),
-              scrapedAt: new Date()
-            });
-          }
-
-          await new Promise(r => setTimeout(r, 1000));
-        } catch (err) {
-          console.error(`[Scraper] Error fetching SBS article: ${articleUrl}`, err);
-        }
+      let content = "";
+      if (contentMatch) {
+        content = cleanHtml(contentMatch[1]);
       }
-    } catch (error) {
-      console.error(`[Scraper] SBS scrape failed for ${baseUrl}:`, error);
+
+      if (content.length > 1000) {
+        articles.push({
+          source: "sbs",
+          title: title.trim(),
+          content: content.substring(0, 50000),
+          url: articleUrl,
+          category: categorizeContent(title, content),
+          keywords: extractKeywords(title, content),
+          scrapedAt: new Date()
+        });
+        console.log(`[Scraper] ✓ Saved: ${title.substring(0, 50)}... (${content.length} chars)`);
+      } else {
+        console.log(`[Scraper] ✗ Skipped: ${path} (content too short: ${content.length})`);
+      }
+
+      // Rate limiting
+      await new Promise(r => setTimeout(r, 1500));
+    } catch (err) {
+      console.error(`[Scraper] Error fetching SBS article: ${articleUrl}`, err);
     }
   }
 
@@ -226,16 +239,27 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
   const articles: ScrapedArticle[] = [];
 
   if (!APPLIED_METABOLICS_PASSWORD) {
-    console.error("[Scraper] Applied Metabolics password not configured");
+    console.error("[Scraper] Applied Metabolics password not configured (APPLIED_METABOLICS_PASSWORD)");
     return articles;
   }
 
   try {
-    // Step 1: Login to get session cookie
-    const loginResponse = await fetch(`${APPLIED_METABOLICS_URL}/wp-login.php`, {
+    // WordPress login URL
+    const loginUrl = `${APPLIED_METABOLICS_URL}/wp-login.php`;
+
+    console.log(`[Scraper] Logging into Applied Metabolics...`);
+
+    // Step 1: Get login page to get any cookies/nonces
+    const loginPageRes = await fetch(loginUrl);
+    const loginPageCookies = loginPageRes.headers.get("set-cookie") || "";
+
+    // Step 2: Submit login
+    const loginResponse = await fetch(loginUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": loginPageCookies,
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
       },
       body: new URLSearchParams({
         log: APPLIED_METABOLICS_EMAIL,
@@ -247,60 +271,88 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
       redirect: "manual"
     });
 
-    // Get cookies from response
-    const cookies = loginResponse.headers.get("set-cookie") || "";
+    // Get session cookies
+    const allCookies = loginResponse.headers.get("set-cookie") || "";
+    console.log(`[Scraper] Login response: ${loginResponse.status}`);
 
-    if (!cookies.includes("wordpress_logged_in")) {
-      console.error("[Scraper] Applied Metabolics login failed - no session cookie");
+    if (!allCookies.includes("wordpress_logged_in")) {
+      console.error("[Scraper] Applied Metabolics login failed - check credentials");
+      console.log("[Scraper] Response cookies:", allCookies.substring(0, 200));
       return articles;
     }
 
-    console.log("[Scraper] Applied Metabolics login successful");
+    console.log("[Scraper] Applied Metabolics login successful!");
 
-    // Step 2: Fetch articles with session
-    const articlesResponse = await fetch(`${APPLIED_METABOLICS_URL}/category/articles/`, {
-      headers: {
-        Cookie: cookies
-      }
-    });
+    // Step 3: Fetch main content pages
+    const contentPages = [
+      "/category/articles/",
+      "/category/protocols/",
+      "/",
+    ];
 
-    const html = await articlesResponse.text();
-
-    // Extract article links
-    const articlePattern = /<a[^>]*href="(https:\/\/www\.appliedmetabolics\.com\/[^"]+\/?)"[^>]*class="[^"]*post[^"]*"[^>]*>/gi;
-    const matches = [...html.matchAll(articlePattern)];
-
-    for (const match of matches.slice(0, limit)) {
-      const articleUrl = match[1];
-
+    for (const pagePath of contentPages) {
       try {
-        const articleResponse = await fetch(articleUrl, {
-          headers: { Cookie: cookies }
+        const pageResponse = await fetch(`${APPLIED_METABOLICS_URL}${pagePath}`, {
+          headers: {
+            "Cookie": allCookies,
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+          }
         });
-        const articleHtml = await articleResponse.text();
 
-        const titleMatch = articleHtml.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([^<]+)<\/h1>/i);
-        const contentMatch = articleHtml.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+        const html = await pageResponse.text();
 
-        const title = titleMatch ? cleanHtml(titleMatch[1]) : "";
-        const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
+        // Find article links
+        const linkPattern = /<a[^>]*href="(https:\/\/www\.appliedmetabolics\.com\/[^"]*\/)"[^>]*>/gi;
+        const links = [...html.matchAll(linkPattern)];
+        const uniqueLinks = [...new Set(links.map(m => m[1]))];
 
-        if (title && content.length > 500) {
-          articles.push({
-            source: "applied_metabolics",
-            title,
-            content: content.substring(0, 50000),
-            url: articleUrl,
-            category: categorizeContent(title, content),
-            keywords: extractKeywords(title, content),
-            scrapedAt: new Date()
-          });
+        for (const link of uniqueLinks.slice(0, Math.ceil(limit / contentPages.length))) {
+          if (link.includes("/category/") || link.includes("/tag/") || link.includes("/page/")) {
+            continue;
+          }
+
+          try {
+            const articleRes = await fetch(link, {
+              headers: {
+                "Cookie": allCookies,
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+              }
+            });
+
+            const articleHtml = await articleRes.text();
+
+            const titleMatch = articleHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+            const contentMatch = articleHtml.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i) ||
+                                articleHtml.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+
+            const title = titleMatch ? cleanHtml(titleMatch[1]) : "";
+            const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
+
+            if (title && content.length > 500) {
+              articles.push({
+                source: "applied_metabolics",
+                title,
+                content: content.substring(0, 50000),
+                url: link,
+                category: categorizeContent(title, content),
+                keywords: extractKeywords(title, content),
+                scrapedAt: new Date()
+              });
+              console.log(`[Scraper] ✓ AM Saved: ${title.substring(0, 50)}...`);
+            }
+
+            await new Promise(r => setTimeout(r, 2000));
+          } catch (err) {
+            console.error(`[Scraper] Error fetching AM article: ${link}`, err);
+          }
+
+          if (articles.length >= limit) break;
         }
-
-        await new Promise(r => setTimeout(r, 2000)); // Slower for private site
       } catch (err) {
-        console.error(`[Scraper] Error fetching AM article: ${articleUrl}`, err);
+        console.error(`[Scraper] Error fetching AM page: ${pagePath}`, err);
       }
+
+      if (articles.length >= limit) break;
     }
   } catch (error) {
     console.error("[Scraper] Applied Metabolics scrape failed:", error);
@@ -325,6 +377,7 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
 
   try {
     // Step 1: Get access token
+    console.log("[Scraper] Getting SendPulse token...");
     const tokenResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -339,34 +392,50 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      console.error("[Scraper] Failed to get SendPulse token");
+      console.error("[Scraper] Failed to get SendPulse token:", tokenData);
       return articles;
     }
 
-    // Step 2: Get campaigns/newsletters
-    const campaignsResponse = await fetch("https://api.sendpulse.com/smtp/emails", {
+    console.log("[Scraper] SendPulse token obtained");
+
+    // Step 2: Get email campaigns
+    const campaignsResponse = await fetch("https://api.sendpulse.com/campaigns", {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     });
 
     const campaigns = await campaignsResponse.json();
+    console.log(`[Scraper] Found ${Array.isArray(campaigns) ? campaigns.length : 0} SendPulse campaigns`);
 
     if (Array.isArray(campaigns)) {
       for (const campaign of campaigns.slice(0, limit)) {
-        const title = campaign.subject || campaign.name || "Newsletter ACHZOD";
-        const content = cleanHtml(campaign.body || campaign.html || "");
-
-        if (content.length > 200) {
-          articles.push({
-            source: "newsletter",
-            title,
-            content: content.substring(0, 20000),
-            url: `sendpulse://campaign/${campaign.id}`,
-            category: categorizeContent(title, content),
-            keywords: extractKeywords(title, content),
-            scrapedAt: new Date(campaign.send_date || campaign.created || Date.now())
+        // Get campaign details
+        try {
+          const detailRes = await fetch(`https://api.sendpulse.com/campaigns/${campaign.id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
           });
+          const detail = await detailRes.json();
+
+          const title = detail.message?.subject || campaign.name || "Newsletter ACHZOD";
+          const content = cleanHtml(detail.message?.body?.html || detail.message?.body?.text || "");
+
+          if (content.length > 200) {
+            articles.push({
+              source: "newsletter",
+              title,
+              content: content.substring(0, 20000),
+              url: `sendpulse://campaign/${campaign.id}`,
+              category: categorizeContent(title, content),
+              keywords: extractKeywords(title, content),
+              scrapedAt: new Date(campaign.send_date || campaign.created || Date.now())
+            });
+            console.log(`[Scraper] ✓ Newsletter: ${title.substring(0, 50)}...`);
+          }
+
+          await new Promise(r => setTimeout(r, 500));
+        } catch (err) {
+          console.error(`[Scraper] Error fetching campaign ${campaign.id}:`, err);
         }
       }
     }
@@ -431,7 +500,9 @@ export async function buildKnowledgeBase(): Promise<{
   duplicates: number;
   bySource: Record<string, number>;
 }> {
+  console.log("[Scraper] ========================================");
   console.log("[Scraper] Building complete knowledge base...");
+  console.log("[Scraper] ========================================");
 
   const results = {
     totalScraped: 0,
@@ -440,18 +511,30 @@ export async function buildKnowledgeBase(): Promise<{
     bySource: {} as Record<string, number>
   };
 
-  // Scrape all sources
+  // Scrape all sources sequentially to avoid rate limits
   const sources: ScraperSource[] = ["huberman", "sbs", "applied_metabolics", "newsletter"];
 
   for (const source of sources) {
-    console.log(`[Scraper] Scraping ${source}...`);
-    const { articles, saved, duplicates } = await scrapeSource(source, 30);
-    results.totalScraped += articles.length;
-    results.saved += saved;
-    results.duplicates += duplicates;
-    results.bySource[source] = articles.length;
+    console.log(`\n[Scraper] === Scraping ${source.toUpperCase()} ===`);
+    try {
+      const { articles, saved, duplicates } = await scrapeSource(source, 15);
+      results.totalScraped += articles.length;
+      results.saved += saved;
+      results.duplicates += duplicates;
+      results.bySource[source] = articles.length;
+      console.log(`[Scraper] ${source}: ${articles.length} scraped, ${saved} saved`);
+    } catch (err) {
+      console.error(`[Scraper] ${source} failed:`, err);
+      results.bySource[source] = 0;
+    }
+
+    // Wait between sources
+    await new Promise(r => setTimeout(r, 3000));
   }
 
+  console.log("\n[Scraper] ========================================");
   console.log(`[Scraper] Build complete: ${results.saved} saved, ${results.duplicates} duplicates`);
+  console.log("[Scraper] ========================================");
+
   return results;
 }
