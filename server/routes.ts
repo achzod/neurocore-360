@@ -228,19 +228,38 @@ export async function registerRoutes(
     };
 
     const success = await waitForCompletion();
-    
+
     try {
     if (success) {
       const baseUrl = getBaseUrl();
       console.log(`[Email] Using baseUrl: ${baseUrl} for audit ${auditId}`);
 
-      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
-      
-      // Récupérer l'audit pour avoir le clientName
+      // Récupérer l'audit pour vérifier la validation
       const completedAudit = await storage.getAudit(auditId);
       const clientName = (completedAudit as any)?.narrativeReport?.clientName || email.split('@')[0];
-      
-      console.log(`[Email] Sending report ready email to ${email} for audit ${auditId}`);
+      const validationResult = (completedAudit as any)?.narrativeReport?.validationResult;
+      const deliveryStatus = (completedAudit as any)?.reportDeliveryStatus;
+
+      // ============================================
+      // CHECK: Ne pas envoyer si validation échouée
+      // ============================================
+      if (deliveryStatus === 'NEEDS_REVIEW') {
+        console.error(`[Email] ❌ Report ${auditId} nécessite révision manuelle - EMAIL NON ENVOYÉ`);
+        console.error(`[Email] Validation score: ${validationResult?.score || 'N/A'}`);
+        console.error(`[Email] Erreurs: ${validationResult?.errors?.join(', ') || 'N/A'}`);
+        return;
+      }
+
+      // Double-check validation score
+      if (validationResult && validationResult.score < 60) {
+        console.error(`[Email] ❌ Report ${auditId} score trop bas (${validationResult.score}/100) - EMAIL NON ENVOYÉ`);
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        return;
+      }
+
+      await storage.updateAudit(auditId, { reportDeliveryStatus: "READY" });
+
+      console.log(`[Email] ✅ Validation OK (score: ${validationResult?.score || 'N/A'}/100) - Sending email to ${email}`);
       const emailSent = await sendReportReadyEmail(email, auditId, auditType, baseUrl);
       if (emailSent) {
         await storage.updateAudit(auditId, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });

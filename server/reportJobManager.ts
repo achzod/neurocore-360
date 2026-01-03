@@ -2,11 +2,19 @@ import { generateAndConvertAudit } from "./geminiPremiumEngine";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
-import type { ClientData } from "./types";
+import type { ClientData, AuditTier } from "./types";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
+import { validateReport, logValidation, quickValidate } from "./reportValidator";
+import { getSectionsForTier } from "./geminiPremiumEngine";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
+
+// Progress monitoring interval (2 minutes)
+const PROGRESS_CHECK_INTERVAL_MS = 2 * 60 * 1000;
+
+// Minimum validation score to accept report
+const MIN_VALIDATION_SCORE = 60;
 
 /**
  * Report Job Manager - Handles async AI report generation with persistence
@@ -266,19 +274,25 @@ async function generateReportAsync(
       `Claude Opus 4.5 report generation for ${auditId}`
     );
 
-    // Heartbeat: éviter le faux "stuck" (et donner une progression visible)
-    // ⚠️ Important: interval court pour ne PAS rester bloqué visuellement à 20%.
-    // Et utiliser updateReportJobProgress() pour rafraîchir last_progress_at.
+    // ============================================
+    // MONITORING PROGRESSION (toutes les 15s heartbeat + 2min check)
+    // ============================================
     const heartbeatIntervalMs = 15 * 1000; // toutes les 15 secondes
     let lastHeartbeatPct = 20;
-    const heartbeat = setInterval(() => {
+    let lastProgressCheckTime = Date.now();
+    let lastProgressCheckPct = 0;
+    let stuckCheckCount = 0;
+    const expectedSections = getSectionsForTier((auditType as AuditTier) || 'PREMIUM').length;
+
+    const heartbeat = setInterval(async () => {
       const elapsed = Date.now() - startTime;
+
       // Progression "douce" de 20 -> 90 sur toute la fenêtre de timeout
       const pct = Math.min(90, 20 + Math.floor((elapsed / AI_CALL_TIMEOUT_MS) * 70));
       if (pct <= lastHeartbeatPct) return;
       lastHeartbeatPct = pct;
 
-      storage
+      await storage
         .updateReportJobProgress(
           auditId,
           pct,
@@ -287,6 +301,34 @@ async function generateReportAsync(
         .catch(() => {
           // best-effort
         });
+
+      // ============================================
+      // CHECK PROGRESSION TOUTES LES 2 MINUTES
+      // ============================================
+      const timeSinceLastCheck = Date.now() - lastProgressCheckTime;
+      if (timeSinceLastCheck >= PROGRESS_CHECK_INTERVAL_MS) {
+        lastProgressCheckTime = Date.now();
+
+        // Check if progress has actually been made
+        if (pct <= lastProgressCheckPct + 2) {
+          stuckCheckCount++;
+          console.warn(`[ReportJobManager] ⚠️ Progression stagnante pour ${auditId} - check #${stuckCheckCount} (${pct}%)`);
+
+          // After 3 stuck checks (6 minutes of no progress), log warning
+          if (stuckCheckCount >= 3) {
+            console.error(`[ReportJobManager] 🚨 ALERTE: Audit ${auditId} potentiellement bloqué depuis ${stuckCheckCount * 2} minutes!`);
+          }
+        } else {
+          // Progress is being made, reset counter
+          if (stuckCheckCount > 0) {
+            console.log(`[ReportJobManager] ✅ Progression reprise pour ${auditId} après ${stuckCheckCount} checks stagnants`);
+          }
+          stuckCheckCount = 0;
+        }
+
+        lastProgressCheckPct = pct;
+        console.log(`[ReportJobManager] [2min check] Audit ${auditId}: ${pct}% - Elapsed: ${Math.round(elapsed / 1000)}s`);
+      }
     }, heartbeatIntervalMs);
 
     const result = await generationPromise.finally(() => clearInterval(heartbeat));
@@ -305,16 +347,51 @@ async function generateReportAsync(
     if (!reportHtml || reportHtml.length < 1000) {
       throw new Error(`HTML generation failed or too short (${reportHtml?.length || 0} chars)`);
     }
-    
+
     console.log(`[ReportJobManager] HTML generated: ${reportHtml.length} chars for ${auditId}`);
-    
+
+    // ============================================
+    // VALIDATION OBLIGATOIRE AVANT ENVOI
+    // ============================================
+    const tier = (auditType as AuditTier) || 'PREMIUM';
+    const validation = validateReport(result.txt || '', reportHtml, tier);
+    logValidation(auditId, validation);
+
+    // Check if report meets quality standards
+    if (!validation.isValid || validation.score < MIN_VALIDATION_SCORE) {
+      console.error(`[ReportJobManager] ❌ VALIDATION FAILED for ${auditId}`);
+      console.error(`[ReportJobManager] Score: ${validation.score}/100 (minimum: ${MIN_VALIDATION_SCORE})`);
+      console.error(`[ReportJobManager] Errors: ${validation.errors.join(', ')}`);
+
+      // Save the report anyway but mark as NEEDS_REVIEW
+      await storage.updateAudit(auditId, {
+        narrativeReport: {
+          txt: result.txt,
+          html: reportHtml,
+          clientName: result.clientName,
+          metadata: result.metadata,
+          validationResult: validation,
+        },
+        reportTxt: result.txt || '',
+        reportHtml: reportHtml,
+        reportGeneratedAt: new Date(),
+        reportDeliveryStatus: "NEEDS_REVIEW",
+      });
+
+      // Fail the job so email is NOT sent
+      throw new Error(`Validation échouée (score: ${validation.score}/100). Rapport nécessite révision manuelle. Erreurs: ${validation.errors.slice(0, 3).join('; ')}`);
+    }
+
+    console.log(`[ReportJobManager] ✅ VALIDATION PASSED for ${auditId} (score: ${validation.score}/100)`);
+
     const report = {
       txt: result.txt,
       html: reportHtml,
       clientName: result.clientName,
-      metadata: result.metadata
+      metadata: result.metadata,
+      validationResult: validation,
     };
-    
+
     // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED
     await storage.updateAudit(auditId, {
       narrativeReport: report,
@@ -323,7 +400,7 @@ async function generateReportAsync(
       reportGeneratedAt: new Date(),
       reportDeliveryStatus: "READY",
     });
-    
+
     console.log(`[ReportJobManager] Report saved to audit ${auditId}`);
 
     // Traçabilité: conserver CHAQUE version générée (TXT + HTML) dans une table dédiée
