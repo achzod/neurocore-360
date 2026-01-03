@@ -1,7 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Error Boundary pour debug
+class QuestionnaireErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("[Questionnaire] Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 max-w-md">
+            <h2 className="text-red-500 font-bold text-lg mb-2">Erreur Questionnaire</h2>
+            <p className="text-sm text-red-300 mb-4">{this.state.error?.message}</p>
+            <pre className="text-xs text-red-200 overflow-auto max-h-40 bg-black/50 p-2 rounded">
+              {this.state.error?.stack}
+            </pre>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded"
+            >
+              Reset et Recharger
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -279,7 +325,7 @@ function QuestionField({
 
 const PHOTO_FIELDS = ["photo-front", "photo-side", "photo-back"];
 
-export default function Questionnaire() {
+function QuestionnaireContent() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -1032,5 +1078,14 @@ export default function Questionnaire() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export with error boundary
+export default function Questionnaire() {
+  return (
+    <QuestionnaireErrorBoundary>
+      <QuestionnaireContent />
+    </QuestionnaireErrorBoundary>
   );
 }
