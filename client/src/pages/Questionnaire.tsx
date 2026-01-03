@@ -357,6 +357,42 @@ export default function Questionnaire() {
     if (parsedResponses["prenom"]) {
       setPrenomConfirmed(true);
     }
+
+    // Check if returning from Terra widget
+    const wasConnecting = sessionStorage.getItem("terraConnecting");
+    if (wasConnecting === "true" && savedEmail) {
+      sessionStorage.removeItem("terraConnecting");
+      // Verify Terra sync after a short delay (webhook needs time)
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/terra/db/email/${encodeURIComponent(savedEmail)}`);
+          const data = await res.json();
+          if (data.success && data.count > 0) {
+            setTerraConnected(true);
+            setWearablesSyncShown(true); // Move past wearable screen
+            toast({
+              title: "✅ Wearable synchronisé !",
+              description: `${data.count} données récupérées (${data.data[0]?.provider || 'wearable'}). Le questionnaire sera plus court.`,
+            });
+          } else {
+            // No data yet - might still be syncing
+            toast({
+              title: "⏳ Synchronisation en cours",
+              description: "Tes données arrivent. Tu peux continuer le questionnaire, on les intégrera automatiquement.",
+              variant: "default",
+            });
+            setWearablesSyncShown(true);
+          }
+        } catch (err) {
+          console.error("[Terra] Error checking sync:", err);
+          toast({
+            title: "Connexion établie",
+            description: "Continue le questionnaire. Les données seront synchronisées en arrière-plan.",
+          });
+          setWearablesSyncShown(true);
+        }
+      }, 2000); // Wait 2 seconds for webhook to process
+    }
   }, []);
 
   useEffect(() => {
