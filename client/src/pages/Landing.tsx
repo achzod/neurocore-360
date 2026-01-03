@@ -45,6 +45,417 @@ import pnLogo from "@assets/limage-19764_1767172975495.webp";
 import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
+// Demo Modal Component with 4 tabs - Ultrahuman style
+function DemoModal({ onClose }: { onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<"overview" | "analyse" | "protocoles" | "kpis">("overview");
+
+  const tabs = [
+    { id: "overview", label: "Overview", icon: Layers },
+    { id: "analyse", label: "Analyse", icon: Activity },
+    { id: "protocoles", label: "Protocoles", icon: Target },
+    { id: "kpis", label: "KPIs", icon: TrendingUp },
+  ] as const;
+
+  const domainScores = [
+    { name: "Sommeil", score: 35, status: "Critique", color: "red" },
+    { name: "Stress & HRV", score: 42, status: "À améliorer", color: "amber" },
+    { name: "Hormones", score: 48, status: "Moyen", color: "cyan" },
+    { name: "Nutrition", score: 72, status: "Bon", color: "green" },
+    { name: "Training", score: 85, status: "Excellent", color: "teal" },
+    { name: "Digestion", score: 55, status: "Moyen", color: "cyan" },
+    { name: "Énergie", score: 44, status: "À améliorer", color: "amber" },
+    { name: "Cardio", score: 62, status: "Correct", color: "teal" },
+  ];
+
+  const getStatusBg = (color: string) => {
+    switch (color) {
+      case "red": return "bg-red-500/20 text-red-400";
+      case "amber": return "bg-amber-500/20 text-amber-400";
+      case "green": return "bg-emerald-500/20 text-emerald-400";
+      case "teal": return "bg-teal-500/20 text-teal-400";
+      case "cyan": return "bg-cyan-500/20 text-cyan-400";
+      default: return "bg-primary/20 text-primary";
+    }
+  };
+
+  const getBarColor = (color: string) => {
+    switch (color) {
+      case "red": return "bg-red-500";
+      case "amber": return "bg-amber-500";
+      case "green": return "bg-emerald-500";
+      case "teal": return "bg-teal-500";
+      case "cyan": return "bg-cyan-500";
+      default: return "bg-primary";
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", duration: 0.4 }}
+        className="relative w-full max-w-6xl h-[90vh] flex flex-col bg-[#0d0d0d] rounded-3xl border border-white/10 shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+        >
+          <span className="text-xl">×</span>
+        </button>
+
+        {/* Header */}
+        <div className="shrink-0 p-6 border-b border-white/10 bg-[#0d0d0d]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-emerald-400 text-xs font-semibold tracking-wider">DEMO LIVE</span>
+          </div>
+          <h3 className="text-2xl md:text-3xl font-bold text-white">Exemple de rapport NEUROCORE 360</h3>
+          <p className="text-white/40 text-sm mt-1">Profil: Marc D., 34 ans • Score Global: 58/100</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="shrink-0 border-b border-white/10 bg-[#0d0d0d]">
+          <div className="flex gap-1 p-2 overflow-x-auto">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-primary text-black"
+                      : "text-white/50 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              {/* Score Global */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-2xl p-6 border border-primary/20">
+                  <p className="text-white/40 text-xs tracking-[0.2em] mb-3">SCORE GLOBAL</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-6xl font-bold text-white">58</span>
+                    <span className="text-white/30 text-2xl">/100</span>
+                  </div>
+                  <div className="mt-4 flex items-center gap-3">
+                    <span className="px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-semibold">À optimiser</span>
+                    <span className="text-primary text-sm font-medium">+12 pts possibles</span>
+                  </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: "Domaines analysés", value: "8" },
+                    { label: "Points forts", value: "3" },
+                    { label: "Axes critiques", value: "2" },
+                    { label: "Recommandations", value: "47" },
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
+                      <p className="text-white/40 text-xs mb-1">{stat.label}</p>
+                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Domain Scores Grid */}
+              <div>
+                <h4 className="text-white/60 text-sm font-medium mb-4 tracking-wide">SCORES PAR DOMAINE</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {domainScores.map((domain, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="bg-white/[0.03] rounded-xl p-4 border border-white/5 hover:border-white/10 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-white/80 text-sm font-medium">{domain.name}</span>
+                        <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${getStatusBg(domain.color)}`}>
+                          {domain.status}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1 mb-3">
+                        <span className="text-3xl font-bold text-white">{domain.score}</span>
+                        <span className="text-white/30 text-sm">/100</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${domain.score}%` }}
+                          transition={{ duration: 0.8, delay: i * 0.05 }}
+                          className={`h-full rounded-full ${getBarColor(domain.color)}`}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "analyse" && (
+            <div className="space-y-6">
+              <h4 className="text-white/60 text-sm font-medium tracking-wide">ANALYSE DÉTAILLÉE</h4>
+
+              {/* Sommeil Deep Dive */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                      <Moon className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <h5 className="text-white font-semibold">Sommeil</h5>
+                      <p className="text-red-400 text-xs font-medium">Priorité critique</p>
+                    </div>
+                  </div>
+                  <span className="text-3xl font-bold text-white">35<span className="text-white/30 text-lg">/100</span></span>
+                </div>
+                <div className="space-y-3 text-sm text-white/60">
+                  <p>• Durée moyenne estimée: <span className="text-white">5h42</span> (optimal: 7-8h)</p>
+                  <p>• Qualité du sommeil profond: <span className="text-red-400">Insuffisante</span></p>
+                  <p>• Latence d'endormissement: <span className="text-amber-400">45+ min</span></p>
+                  <p>• Réveils nocturnes: <span className="text-red-400">3-4 par nuit</span></p>
+                </div>
+              </div>
+
+              {/* Nutrition Analysis */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <Apple className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h5 className="text-white font-semibold">Nutrition</h5>
+                      <p className="text-emerald-400 text-xs font-medium">Bon niveau</p>
+                    </div>
+                  </div>
+                  <span className="text-3xl font-bold text-white">72<span className="text-white/30 text-lg">/100</span></span>
+                </div>
+                <div className="space-y-3 text-sm text-white/60">
+                  <p>• Apport protéique: <span className="text-emerald-400">Optimal (1.8g/kg)</span></p>
+                  <p>• Hydratation: <span className="text-amber-400">À améliorer</span></p>
+                  <p>• Timing des repas: <span className="text-white">Correct</span></p>
+                  <p>• Diversité alimentaire: <span className="text-emerald-400">Excellente</span></p>
+                </div>
+              </div>
+
+              {/* HRV & Stress */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                      <Heart className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <h5 className="text-white font-semibold">Stress & HRV</h5>
+                      <p className="text-amber-400 text-xs font-medium">À améliorer</p>
+                    </div>
+                  </div>
+                  <span className="text-3xl font-bold text-white">42<span className="text-white/30 text-lg">/100</span></span>
+                </div>
+                <div className="space-y-3 text-sm text-white/60">
+                  <p>• HRV moyen: <span className="text-amber-400">32ms</span> (optimal: 50+ms)</p>
+                  <p>• Balance sympathique/parasympathique: <span className="text-red-400">Déséquilibrée</span></p>
+                  <p>• Cortisol estimé: <span className="text-amber-400">Élevé le soir</span></p>
+                  <p>• Récupération: <span className="text-amber-400">Suboptimale</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "protocoles" && (
+            <div className="space-y-6">
+              <h4 className="text-white/60 text-sm font-medium tracking-wide">PROTOCOLES PERSONNALISÉS</h4>
+
+              {/* Priority Protocol */}
+              <div className="bg-gradient-to-r from-red-500/10 to-transparent rounded-2xl p-6 border border-red-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-bold">PRIORITÉ #1</span>
+                </div>
+                <h5 className="text-xl font-bold text-white mb-2">Protocole Sommeil - 21 jours</h5>
+                <p className="text-white/50 text-sm mb-4">Restauration du cycle circadien et amélioration du sommeil profond</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    "Exposition lumière naturelle 30min au réveil",
+                    "Magnésium bisglycinate 300mg avant coucher",
+                    "Arrêt écrans 2h avant sommeil",
+                    "Température chambre 18-19°C",
+                    "Routine de décompression respiratoire",
+                    "Tracking sommeil avec objectifs",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <Check className="w-4 h-4 text-red-400 shrink-0" />
+                      <span className="text-white/70">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Supplements Stack */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <h5 className="text-lg font-bold text-white mb-4">Stack Suppléments Recommandé</h5>
+                <div className="space-y-3">
+                  {[
+                    { name: "Magnésium Bisglycinate", dose: "300mg", timing: "Soir", priority: "Essentiel" },
+                    { name: "Vitamine D3 + K2", dose: "4000 UI", timing: "Matin", priority: "Essentiel" },
+                    { name: "Oméga-3 EPA/DHA", dose: "2g", timing: "Repas", priority: "Important" },
+                    { name: "Ashwagandha KSM-66", dose: "600mg", timing: "Soir", priority: "Recommandé" },
+                  ].map((supp, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-white/[0.02] rounded-xl">
+                      <div>
+                        <p className="text-white font-medium text-sm">{supp.name}</p>
+                        <p className="text-white/40 text-xs">{supp.dose} • {supp.timing}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        supp.priority === "Essentiel" ? "bg-primary/20 text-primary" :
+                        supp.priority === "Important" ? "bg-amber-500/20 text-amber-400" :
+                        "bg-white/10 text-white/60"
+                      }`}>{supp.priority}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nutrition Protocol */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <h5 className="text-lg font-bold text-white mb-4">Protocole Nutrition</h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-white/[0.02] rounded-xl">
+                    <p className="text-3xl font-bold text-white">2450</p>
+                    <p className="text-white/40 text-xs mt-1">kcal/jour</p>
+                  </div>
+                  <div className="text-center p-4 bg-white/[0.02] rounded-xl">
+                    <p className="text-3xl font-bold text-white">155g</p>
+                    <p className="text-white/40 text-xs mt-1">Protéines</p>
+                  </div>
+                  <div className="text-center p-4 bg-white/[0.02] rounded-xl">
+                    <p className="text-3xl font-bold text-white">16:8</p>
+                    <p className="text-white/40 text-xs mt-1">Fenêtre IF</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "kpis" && (
+            <div className="space-y-6">
+              <h4 className="text-white/60 text-sm font-medium tracking-wide">OBJECTIFS & KPIs - 90 JOURS</h4>
+
+              {/* Progress Timeline */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { phase: "J1-30", title: "Fondations", focus: "Sommeil + HRV", target: "+8 pts" },
+                  { phase: "J31-60", title: "Optimisation", focus: "Nutrition + Énergie", target: "+6 pts" },
+                  { phase: "J61-90", title: "Performance", focus: "Training + Cardio", target: "+4 pts" },
+                ].map((phase, i) => (
+                  <div key={i} className="bg-white/[0.03] rounded-xl p-5 border border-white/5">
+                    <span className="text-primary text-xs font-bold">{phase.phase}</span>
+                    <h5 className="text-white font-semibold mt-1">{phase.title}</h5>
+                    <p className="text-white/40 text-sm mt-1">{phase.focus}</p>
+                    <p className="text-emerald-400 font-bold mt-3">{phase.target}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* KPI Targets */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <h5 className="text-lg font-bold text-white mb-4">Objectifs Mesurables</h5>
+                <div className="space-y-4">
+                  {[
+                    { kpi: "Score Global", current: 58, target: 76, unit: "/100" },
+                    { kpi: "Durée Sommeil", current: 5.7, target: 7.5, unit: "h" },
+                    { kpi: "HRV Moyenne", current: 32, target: 48, unit: "ms" },
+                    { kpi: "Score Énergie", current: 44, target: 65, unit: "/100" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-white/80 text-sm">{item.kpi}</span>
+                          <span className="text-white/40 text-sm">
+                            <span className="text-white">{item.current}</span> → <span className="text-primary">{item.target}</span>{item.unit}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-primary rounded-full"
+                            style={{ width: `${(item.current / item.target) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Checkpoints */}
+              <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                <h5 className="text-lg font-bold text-white mb-4">Checkpoints de Progression</h5>
+                <div className="space-y-3">
+                  {[
+                    { week: "Semaine 2", milestone: "Routine sommeil établie", status: "pending" },
+                    { week: "Semaine 4", milestone: "Premier bilan HRV", status: "pending" },
+                    { week: "Semaine 8", milestone: "Ajustement protocoles", status: "pending" },
+                    { week: "Semaine 12", milestone: "Audit de suivi complet", status: "pending" },
+                  ].map((cp, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl">
+                      <div className="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center">
+                        <span className="text-white/40 text-xs">{i + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white/40 text-xs">{cp.week}</p>
+                        <p className="text-white text-sm">{cp.milestone}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer CTA */}
+        <div className="shrink-0 p-6 border-t border-white/10 bg-[#0a0a0a]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-white/40 text-sm text-center sm:text-left">
+              Ceci est un exemple. Obtenez votre rapport personnalisé de 45+ pages.
+            </p>
+            <Link href="/audit-complet/questionnaire">
+              <button className="px-8 py-3 rounded-full bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-all hover:scale-105">
+                Lancer mon audit →
+              </button>
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Ultrahuman-style Hero: Centered elegant typography with phone mockup
 function UltrahumanHero() {
   const [activeTab, setActiveTab] = useState<"scores" | "domaines" | "rapport" | "plan">("scores");
@@ -406,104 +817,7 @@ function UltrahumanHero() {
 
       {/* Demo Modal */}
       {showDemo && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-          onClick={() => setShowDemo(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-5xl max-h-[90vh] overflow-auto bg-zinc-900 rounded-3xl border border-white/10 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setShowDemo(false)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
-
-            {/* Demo Header */}
-            <div className="p-6 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-                <span className="text-primary text-sm font-medium">DEMO LIVE</span>
-              </div>
-              <h3 className="text-2xl font-bold text-white mt-2">Exemple de rapport NEUROCORE 360</h3>
-              <p className="text-white/50 text-sm mt-1">Profil: Marc D., 34 ans • Score Global: 58/100</p>
-            </div>
-
-            {/* Demo Dashboard Content */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Score Card */}
-              <div className="col-span-1 md:col-span-2 lg:col-span-1 bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl p-6 border border-primary/20">
-                <p className="text-white/40 text-xs tracking-widest mb-2">SCORE GLOBAL</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold text-white">58</span>
-                  <span className="text-white/30 text-xl">/100</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium">À optimiser</span>
-                  <span className="text-primary text-xs">+12 pts possibles</span>
-                </div>
-              </div>
-
-              {/* Domain Scores */}
-              {[
-                { name: "Sommeil", score: 35, status: "Critique", color: "red" },
-                { name: "Stress & HRV", score: 42, status: "À améliorer", color: "amber" },
-                { name: "Hormones", score: 48, status: "Moyen", color: "amber" },
-                { name: "Nutrition", score: 72, status: "Bon", color: "green" },
-                { name: "Training", score: 85, status: "Excellent", color: "green" },
-                { name: "Digestion", score: 55, status: "Moyen", color: "amber" },
-                { name: "Énergie", score: 44, status: "À améliorer", color: "amber" },
-                { name: "Cardio", score: 62, status: "Correct", color: "green" },
-              ].map((domain, i) => (
-                <div key={i} className="bg-white/[0.03] rounded-xl p-4 border border-white/5 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white/70 text-sm font-medium">{domain.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      domain.color === "red" ? "bg-red-500/20 text-red-400" :
-                      domain.color === "amber" ? "bg-amber-500/20 text-amber-400" :
-                      "bg-primary/20 text-primary"
-                    }`}>{domain.status}</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-white">{domain.score}</span>
-                    <span className="text-white/30 text-sm">/100</span>
-                  </div>
-                  <div className="h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${
-                        domain.color === "red" ? "bg-red-500" :
-                        domain.color === "amber" ? "bg-amber-500" :
-                        "bg-primary"
-                      }`}
-                      style={{ width: `${domain.score}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Demo CTA */}
-            <div className="p-6 border-t border-white/10 bg-white/[0.02]">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-white/50 text-sm">Ceci est un exemple. Obtenez votre rapport personnalisé de 45+ pages.</p>
-                <Link href="/audit-complet/questionnaire">
-                  <button className="px-6 py-3 rounded-full bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-colors">
-                    Lancer mon audit →
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+        <DemoModal onClose={() => setShowDemo(false)} />
       )}
     </section>
   );
@@ -520,36 +834,73 @@ const bentoStyles = {
 
 function CertificationsBar() {
   const certifications = [
-    { name: "ISSA", subtitle: "CPT, SNS, SFC", image: issaLogo },
-    { name: "NASM", subtitle: "CPT, CES, PES, FNS", image: nasmLogo },
-    { name: "Precision Nutrition", subtitle: "PN1 Coach", image: pnLogo },
-    { name: "Pre-Script", subtitle: "Movement", image: preScriptLogo },
+    {
+      name: "ISSA",
+      fullName: "International Sports Sciences Association",
+      subtitle: "CPT, SNS, SFC",
+      country: "USA",
+      image: issaLogo
+    },
+    {
+      name: "NASM",
+      fullName: "National Academy of Sports Medicine",
+      subtitle: "CPT, CES, PES, FNS",
+      country: "USA",
+      image: nasmLogo
+    },
+    {
+      name: "Precision Nutrition",
+      fullName: "PN1 Certified Coach",
+      subtitle: "Level 1",
+      country: "CAN/USA/UK",
+      image: pnLogo
+    },
+    {
+      name: "Pre-Script",
+      fullName: "Movement Assessment",
+      subtitle: "Level 1",
+      country: "CAN/USA",
+      image: preScriptLogo
+    },
   ];
 
   return (
-    <div className="relative border-b border-white/5 bg-black/40 py-4" data-testid="section-certifications-bar">
-      <div className="relative mb-3 flex items-center justify-center">
-        <span className="text-[9px] font-medium uppercase tracking-[0.25em] text-white/30">
-          Certifications
+    <div className="relative border-b border-white/5 bg-black/40 py-6" data-testid="section-certifications-bar">
+      <div className="relative mb-4 flex items-center justify-center">
+        <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-white/40">
+          Certifications Internationales
         </span>
       </div>
 
-      {/* Centered container with max-width */}
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="flex items-center justify-center gap-4 flex-wrap">
+      {/* Certifications grid */}
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {certifications.map((cert, idx) => (
             <div
               key={idx}
-              className="flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
+              className="group relative flex flex-col items-center p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-primary/20 transition-all duration-300"
               data-testid={`certification-${idx}`}
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-white/90">
-                <img src={cert.image} alt={cert.name} className="h-5 w-5 object-contain" />
+              {/* Logo */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 mb-3">
+                <img src={cert.image} alt={cert.name} className="h-8 w-8 object-contain" />
               </div>
-              <div className="text-left">
-                <span className="text-[10px] font-medium text-white/60 block">{cert.name}</span>
-                <span className="text-[8px] text-white/30">{cert.subtitle}</span>
+
+              {/* Name */}
+              <span className="text-xs font-semibold text-white/80 text-center">{cert.name}</span>
+
+              {/* Full name */}
+              <span className="text-[9px] text-white/40 text-center mt-0.5 leading-tight">{cert.fullName}</span>
+
+              {/* Certifications badges */}
+              <div className="flex items-center gap-1 mt-2">
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                  {cert.subtitle}
+                </span>
               </div>
+
+              {/* Country */}
+              <span className="text-[8px] text-white/30 mt-1.5">{cert.country}</span>
             </div>
           ))}
         </div>
