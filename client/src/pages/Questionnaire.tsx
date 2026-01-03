@@ -899,7 +899,7 @@ export default function Questionnaire() {
                     </div>
 
                     <p className="text-[10px] text-center text-muted-foreground">
-                      Compatible avec Terra API • 100+ appareils supportés
+                      Connexion sécurisée • 100+ appareils supportés
                     </p>
                   </motion.div>
                 ) : (

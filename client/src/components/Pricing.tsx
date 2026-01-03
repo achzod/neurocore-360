@@ -210,12 +210,29 @@ export function Pricing() {
           ))}
         </div>
 
+        {/* Coaching discount banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 text-center"
+        >
+          <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20">
+            <Sparkles className="w-5 h-5 text-primary shrink-0" />
+            <p className="text-white/80 text-sm">
+              <span className="font-semibold text-primary">Offre coaching :</span>{" "}
+              Le montant de ton audit est <span className="font-bold text-white">déduit de ton coaching</span>
+              <span className="text-white/50 text-xs ml-2">(hors offre Starter)</span>
+            </p>
+          </div>
+        </motion.div>
+
         {/* Trust badges */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-16 text-center"
+          className="mt-8 text-center"
         >
           <div className="flex flex-wrap items-center justify-center gap-6 text-white/40 text-sm">
             <div className="flex items-center gap-2">
