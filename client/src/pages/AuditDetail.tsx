@@ -592,7 +592,7 @@ export default function AuditDetail() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Analyse en cours</h2>
             <p className="text-muted-foreground mb-8">
-              Votre dossier est en cours d'analyse par notre equipe d'experts.
+              Votre dossier est en cours d'analyse par ACHZOD.
               <br />Vous recevrez une notification des que votre bilan sera disponible.
             </p>
             

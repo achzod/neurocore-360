@@ -30,6 +30,7 @@ import {
   getSupportedProviders,
   TERRA_PROVIDERS,
 } from "./terraService";
+import { registerKnowledgeRoutes } from "./knowledge";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1157,6 +1158,33 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Update audit status
+  app.patch("/api/admin/audit/:auditId/status", async (req, res) => {
+    try {
+      const { auditId } = req.params;
+      const { status } = req.body;
+
+      if (!status || !["PENDING", "READY", "SENT", "FAILED"].includes(status)) {
+        res.status(400).json({ success: false, error: "Status invalide" });
+        return;
+      }
+
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      await storage.updateAudit(auditId, { reportDeliveryStatus: status });
+      console.log(`[Admin] Audit ${auditId} status changed to ${status}`);
+
+      res.json({ success: true, auditId, newStatus: status });
+    } catch (error) {
+      console.error("[Admin Update Status] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
   app.post("/api/admin/send-cta", async (req, res) => {
     try {
       const { auditId, subject, message } = req.body;
@@ -1855,6 +1883,9 @@ export async function registerRoutes(
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
+
+  // ==================== KNOWLEDGE BASE ROUTES ====================
+  registerKnowledgeRoutes(app);
 
   return httpServer;
 }
