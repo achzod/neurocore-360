@@ -625,7 +625,14 @@ export async function registerRoutes(
         return;
       }
 
-      const widget = await generateTerraWidget(userId, providers, redirectUrl);
+      // IMPORTANT: ordre des paramètres = (userId, sitePrefix, providers, redirectUrl, useAppleHealth)
+      const widget = await generateTerraWidget(
+        userId,
+        "neurocore",  // sitePrefix for multi-site dispatcher
+        providers,    // optional provider filter
+        redirectUrl,  // optional redirect URL
+        true          // use_terra_avengers_app = true for Apple Health
+      );
 
       if (!widget) {
         res.status(500).json({ error: "Erreur génération widget Terra" });
@@ -636,6 +643,7 @@ export async function registerRoutes(
         success: true,
         widgetUrl: widget.url,
         sessionId: widget.sessionId,
+        referenceId: widget.referenceId,
       });
     } catch (error) {
       console.error("[Terra] Error generating widget:", error);
