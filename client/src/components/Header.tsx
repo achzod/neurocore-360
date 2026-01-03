@@ -93,24 +93,24 @@ export function Header() {
             )}
           </nav>
 
-          <div className="flex items-center gap-3">
-            {/* Bouton Homepage visible partout sauf landing */}
+          <div className="flex items-center gap-1 sm:gap-3">
+            {/* Bouton Homepage visible partout sauf landing - caché sur mobile */}
             {location !== "/" && location !== "/audit-complet" && (
-              <Link href="/">
+              <Link href="/" className="hidden sm:block">
                 <Button variant="ghost" size="sm" className="gap-2" data-testid="button-homepage">
                   Accueil
                 </Button>
               </Link>
             )}
             <ThemeToggle />
-            
+
             {userEmail ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2" data-testid="button-user-menu">
+                  <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 px-2 sm:px-3" data-testid="button-user-menu">
                     <User className="h-4 w-4" />
                     <span className="hidden max-w-32 truncate sm:inline">{userEmail}</span>
-                    <ChevronDown className="h-3 w-3" />
+                    <ChevronDown className="h-3 w-3 hidden sm:block" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -124,8 +124,8 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleLogout} 
+                  <DropdownMenuItem
+                    onClick={handleLogout}
                     className="text-destructive cursor-pointer"
                     data-testid="button-logout"
                   >
@@ -135,22 +135,22 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/auth/login">
+              <Link href="/auth/login" className="hidden sm:block">
                 <Button variant="ghost" size="sm" data-testid="button-login">
                   Connexion
                 </Button>
               </Link>
             )}
-            
+
             <Link href="/audit-complet/questionnaire">
-              <Button size="sm" data-testid="button-start-audit">
+              <Button size="sm" className="px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap" data-testid="button-start-audit">
                 Commencer
               </Button>
             </Link>
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden ml-1"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
