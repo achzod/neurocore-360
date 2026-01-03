@@ -19,6 +19,8 @@ import { generateAndConvertAudit } from "./geminiPremiumEngine";
 import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
 import { ClientData, PhotoAnalysis } from "./types";
 import { streamAuditZip } from "./exportZipService";
+import { isAnthropicAvailable } from "./anthropicEngine";
+import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -120,6 +122,63 @@ export async function registerRoutes(
     return valid.length === 3;
   };
 
+  // Test endpoint for Claude API
+  app.get("/api/test-claude", async (req, res) => {
+    try {
+      const isConfigured = validateAnthropicConfig();
+      const hasKey = !!ANTHROPIC_CONFIG.ANTHROPIC_API_KEY;
+      const keyPreview = hasKey
+        ? `${ANTHROPIC_CONFIG.ANTHROPIC_API_KEY.substring(0, 8)}...${ANTHROPIC_CONFIG.ANTHROPIC_API_KEY.substring(ANTHROPIC_CONFIG.ANTHROPIC_API_KEY.length - 4)}`
+        : "NOT SET";
+
+      if (!isConfigured) {
+        res.status(500).json({
+          status: "error",
+          message: "ANTHROPIC_API_KEY not configured",
+          config: {
+            hasKey,
+            keyPreview,
+            model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+          }
+        });
+        return;
+      }
+
+      // Try a simple API call
+      const Anthropic = require('@anthropic-ai/sdk').default;
+      const client = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
+
+      const response = await client.messages.create({
+        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+        max_tokens: 100,
+        messages: [{ role: "user", content: "Réponds simplement: OK" }],
+      });
+
+      const textContent = response.content.find((c: any) => c.type === 'text');
+      const text = textContent?.text || "";
+
+      res.json({
+        status: "success",
+        message: "Claude API is working",
+        response: text,
+        config: {
+          model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+          keyPreview,
+        }
+      });
+    } catch (error: any) {
+      console.error("[Test Claude] Error:", error);
+      res.status(500).json({
+        status: "error",
+        message: error?.message || "Unknown error",
+        details: {
+          status: error?.status,
+          type: error?.type,
+        }
+      });
+    }
+  });
+
   app.post("/api/audit/create", async (req, res) => {
     try {
       const data = createAuditBodySchema.parse(req.body);
@@ -134,11 +193,11 @@ export async function registerRoutes(
         email: data.email,
         responses: data.responses,
       });
-      
+
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
       processReportAndSendEmail(audit.id, audit.email, audit.type);
-      
+
       res.json(audit);
     } catch (error) {
       if (error instanceof z.ZodError) {

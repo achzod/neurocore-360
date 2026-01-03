@@ -510,6 +510,17 @@ export async function generateAndConvertAuditWithClaude(
     };
   }
 
+  // Validation: minimum 10000 chars for PREMIUM (at least 5-6 pages)
+  const minLength = tier === 'GRATUIT' ? 5000 : 10000;
+  if (txtContent.length < minLength) {
+    console.error(`[Claude] TXT trop court pour ${clientName}: ${txtContent.length} chars (min: ${minLength})`);
+    console.error(`[Claude] Première section générée: ${txtContent.substring(0, 500)}...`);
+    return {
+      success: false,
+      error: `Rapport trop court (${txtContent.length} chars). Problème API Claude ou génération incomplète.`,
+    };
+  }
+
   console.log(`[Claude] Audit TXT genere (${txtContent.length} caracteres)`);
 
   const generationTime = Date.now() - startTime;
