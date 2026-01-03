@@ -87,46 +87,46 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* DARK MODE - Achzod Rich Black */
+/* DARK MODE DEFAULT - Ultrahuman Style (noir/metal/bleu) */
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
-  --background: 0 0% 6%;
+  --background: 0 0% 0%;
   --foreground: 0 0% 100%;
-  --border: 0 0% 15%;
-  --card: 0 0% 9%;
+  --border: 210 10% 15%;
+  --card: 210 10% 5%;
   --card-foreground: 0 0% 100%;
-  --card-border: 0 0% 13%;
-  --sidebar: 0 0% 8%;
+  --card-border: 210 10% 12%;
+  --sidebar: 210 10% 4%;
   --sidebar-foreground: 0 0% 100%;
-  --sidebar-border: 0 0% 13%;
-  --sidebar-primary: 164 100% 78%;
-  --sidebar-primary-foreground: 0 0% 6%;
-  --sidebar-accent: 0 0% 13%;
+  --sidebar-border: 210 10% 12%;
+  --sidebar-primary: 210 100% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 10% 12%;
   --sidebar-accent-foreground: 0 0% 90%;
-  --sidebar-ring: 164 100% 78%;
-  --popover: 0 0% 10%;
+  --sidebar-ring: 210 100% 50%;
+  --popover: 210 10% 6%;
   --popover-foreground: 0 0% 100%;
-  --popover-border: 0 0% 15%;
-  --primary: 164 100% 78%;
-  --primary-foreground: 0 0% 6%;
-  --secondary: 0 0% 15%;
+  --popover-border: 210 10% 15%;
+  --primary: 210 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 10% 15%;
   --secondary-foreground: 0 0% 90%;
-  --muted: 0 0% 13%;
-  --muted-foreground: 0 0% 60%;
-  --accent: 246 64% 74%;
-  --accent-foreground: 0 0% 100%;
+  --muted: 210 10% 12%;
+  --muted-foreground: 210 10% 55%;
+  --accent: 150 100% 52%;
+  --accent-foreground: 0 0% 0%;
   --destructive: 0 72% 45%;
   --destructive-foreground: 0 72% 98%;
-  --input: 0 0% 20%;
-  --ring: 164 100% 78%;
-  --chart-1: 164 100% 78%;
-  --chart-2: 246 64% 74%;
+  --input: 210 10% 18%;
+  --ring: 210 100% 50%;
+  --chart-1: 210 100% 50%;
+  --chart-2: 150 100% 52%;
   --chart-3: 45 93% 55%;
-  --chart-4: 200 80% 60%;
+  --chart-4: 280 80% 60%;
   --chart-5: 340 75% 60%;
   --shadow-2xs: 0px 2px 0px 0px hsl(210 5% 96% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(210 5% 96% / 0.00);
@@ -164,6 +164,32 @@
   /* Fallback for older browsers */
   --destructive-border: hsl(var(--destructive));
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* THEME NEUROCORE - Vert Achzod (alternative) */
+.dark.theme-neurocore {
+  --background: 0 0% 6%;
+  --border: 0 0% 15%;
+  --card: 0 0% 9%;
+  --card-border: 0 0% 13%;
+  --sidebar: 0 0% 8%;
+  --sidebar-border: 0 0% 13%;
+  --sidebar-primary: 150 100% 52%;
+  --sidebar-primary-foreground: 0 0% 6%;
+  --sidebar-accent: 0 0% 13%;
+  --sidebar-ring: 150 100% 52%;
+  --popover: 0 0% 10%;
+  --popover-border: 0 0% 15%;
+  --primary: 150 100% 52%;
+  --primary-foreground: 0 0% 6%;
+  --secondary: 0 0% 15%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 246 64% 74%;
+  --input: 0 0% 20%;
+  --ring: 150 100% 52%;
+  --chart-1: 150 100% 52%;
+  --chart-2: 246 64% 74%;
 }
 
 @layer base {
