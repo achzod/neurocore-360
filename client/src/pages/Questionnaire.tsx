@@ -358,11 +358,29 @@ export default function Questionnaire() {
       setPrenomConfirmed(true);
     }
 
-    // Check if returning from Terra widget - just clear flag and advance
-    const wasConnecting = sessionStorage.getItem("terraConnecting");
-    if (wasConnecting === "true") {
-      sessionStorage.removeItem("terraConnecting");
-      setWearablesSyncShown(true);
+    // Check if returning from Terra widget
+    try {
+      const wasConnecting = sessionStorage.getItem("terraConnecting");
+      if (wasConnecting === "true") {
+        sessionStorage.removeItem("terraConnecting");
+        setWearablesSyncShown(true);
+
+        // Verify Terra sync in background (non-blocking)
+        const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
+        if (emailToCheck) {
+          fetch(`/api/terra/db/email/${encodeURIComponent(emailToCheck)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.count > 0) {
+                setTerraConnected(true);
+                console.log("[Terra] Sync verified:", data.count, "records");
+              }
+            })
+            .catch(err => console.error("[Terra] Sync check failed:", err));
+        }
+      }
+    } catch (e) {
+      console.error("[Terra] Init error:", e);
     }
   }, []);
 
