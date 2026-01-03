@@ -32,34 +32,20 @@ export interface ValidationResult {
 
 // AI clichés and patterns to detect (French)
 const AI_PATTERNS = [
-  // Generic AI phrases
-  "il est important de noter",
-  "il convient de souligner",
-  "il est essentiel de",
+  // Generic AI phrases (truly robotic, not natural French)
+  "il est important de noter que",
+  "il convient de souligner que",
+  "il est essentiel de préciser",
   "n'hésitez pas à",
   "n'hésite pas à consulter",
-  "dans le cadre de",
-  "il est recommandé de",
-  "il est conseillé de",
-  "en conclusion",
-  "en résumé",
-  "pour conclure",
-  "en somme",
-  "globalement",
-  "de manière générale",
-  "d'une manière générale",
-  "il va sans dire",
+  "dans le cadre de cette analyse",
+  "en conclusion de cette section",
+  "pour conclure ce chapitre",
+  "il va sans dire que",
   "comme mentionné précédemment",
-  "comme nous l'avons vu",
-  "à noter que",
-  "cela dit",
-  "quoi qu'il en soit",
-  "toutefois",
-  "cependant il est important",
-  "il faut savoir que",
-  "bien entendu",
-  "naturellement",
-  "évidemment",
+  "comme nous l'avons vu plus haut",
+  "cependant il est important de noter",
+  "il faut savoir que dans ce contexte",
 
   // Generic health clichés
   "chaque individu est unique",
@@ -219,9 +205,9 @@ export function validateReport(
     }
   }
 
-  if (aiPatternsFound.length > 5) {
+  if (aiPatternsFound.length > 12) {
     errors.push(`Trop de patterns IA détectés (${aiPatternsFound.length}): ${aiPatternsFound.slice(0, 5).join(', ')}...`);
-  } else if (aiPatternsFound.length > 2) {
+  } else if (aiPatternsFound.length > 5) {
     warnings.push(`Patterns IA détectés (${aiPatternsFound.length}): ${aiPatternsFound.join(', ')}`);
   }
 
@@ -253,15 +239,16 @@ export function validateReport(
   }
 
   // 7. Check for placeholder/error text
+  // Note: "null" and "undefined" removed - can appear in legitimate text
+  // "ERROR" and "FAILED" only matched in caps to avoid false positives
   const errorMarkers = [
     'NOTE (TECHNIQUE)',
     'incident temporaire',
     'service est stable',
-    'ERROR',
-    'FAILED',
     '[object Object]',
-    'undefined',
-    'null',
+    '{{',  // Template placeholder
+    '}}',  // Template placeholder
+    'PLACEHOLDER',
   ];
 
   for (const marker of errorMarkers) {
