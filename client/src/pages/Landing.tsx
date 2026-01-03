@@ -1436,6 +1436,84 @@ function BentoProcessSection() {
   );
 }
 
+// PRIVACY SECTION - Military Grade
+function PrivacySection() {
+  const features = [
+    {
+      title: "Politique Zéro Conservation",
+      description: "Tes données de santé ne sont jamais stockées sur nos serveurs après génération du rapport."
+    },
+    {
+      title: "Chiffrement de bout en bout",
+      description: "Toutes les transmissions sont cryptées avec un chiffrement AES-256 de niveau bancaire."
+    },
+    {
+      title: "Traitement Anonymisé",
+      description: "Les identifiants personnels sont supprimés avant toute analyse algorithmique."
+    },
+    {
+      title: "Conforme RGPD",
+      description: "Infrastructure hébergée en Europe, 100% conforme aux réglementations européennes."
+    },
+  ];
+
+  return (
+    <section className="py-16 bg-black">
+      <div className="max-w-5xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative rounded-3xl bg-zinc-900/50 border border-white/10 p-8 md:p-12 overflow-hidden"
+        >
+          {/* Lock icon background */}
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-[0.03] hidden md:block">
+            <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-white">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+
+          {/* Content */}
+          <div className="relative z-10 max-w-2xl">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber-500">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl md:text-3xl font-bold text-white">Confidentialité Maximale</h3>
+            </div>
+
+            {/* Features */}
+            <div className="space-y-5">
+              {features.map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-start gap-3"
+                >
+                  <div className="mt-1">
+                    <Check className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <span className="text-white font-medium">{feature.title}:</span>{" "}
+                    <span className="text-white/60">{feature.description}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 // 127 AI-generated reviews - Average 4.8/5 - Sept to Dec 2025
 const STATIC_REVIEWS = [
   // DÉCEMBRE 2025 (30 avis)
@@ -1924,6 +2002,7 @@ export default function Landing() {
         <BentoPricingSection />
         <FloatingCTABar />
         <BentoTestimonialsSection />
+        <PrivacySection />
         <BentoCTASection />
       </main>
       <Footer />
