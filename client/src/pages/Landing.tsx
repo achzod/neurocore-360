@@ -2158,6 +2158,116 @@ function FloatingCTABar() {
 }
 
 // BENTO CTA
+// Wearables Sync Section - Ultrahuman style
+function WearablesSyncSection() {
+  const wearables = [
+    { name: "Apple Health", icon: "🍎", color: "#FF3B30" },
+    { name: "Oura", icon: "💍", color: "#D4AF37" },
+    { name: "Whoop", icon: "⌚", color: "#00D4AA" },
+    { name: "Garmin", icon: "🏃", color: "#007DC3" },
+    { name: "Ultrahuman", icon: "🔬", color: "#FF4F00" },
+    { name: "Fitbit", icon: "💪", color: "#00B0B9" },
+    { name: "Samsung", icon: "📱", color: "#1428A0" },
+    { name: "Polar", icon: "❄️", color: "#D32F2F" },
+  ];
+
+  const dataTypes = [
+    { metric: "HRV", desc: "Variabilité cardiaque", icon: "💓" },
+    { metric: "Sommeil", desc: "Durée, phases, qualité", icon: "🌙" },
+    { metric: "FC repos", desc: "Fréquence cardiaque", icon: "❤️" },
+    { metric: "Pas", desc: "Activité quotidienne", icon: "👟" },
+    { metric: "SpO2", desc: "Saturation oxygène", icon: "🫁" },
+    { metric: "Température", desc: "Variations corporelles", icon: "🌡️" },
+  ];
+
+  return (
+    <section className="relative py-20 bg-black overflow-hidden">
+      {/* Background grid */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: `linear-gradient(rgba(74,157,124,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(74,157,124,0.5) 1px, transparent 1px)`,
+        backgroundSize: '40px 40px',
+      }} />
+
+      <div className="relative max-w-6xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#4a9d7c]/10 border border-[#4a9d7c]/20 mb-6">
+            <div className="w-2 h-2 rounded-full bg-[#4a9d7c] animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4a9d7c]">Nouveau</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+            Synchronise tes <span className="text-[#4a9d7c]">wearables</span>
+          </h2>
+          <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            Connecte ton tracker et on récupère automatiquement tes données.
+            <br className="hidden sm:block" />
+            <span className="text-white/70">Moins de questions, plus de précision.</span>
+          </p>
+        </div>
+
+        {/* Wearables Grid */}
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 mb-12">
+          {wearables.map((w, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              viewport={{ once: true }}
+              className="group relative flex flex-col items-center p-4 rounded-2xl bg-[#0d1a15] border border-[#1a3d2e] hover:border-[#4a9d7c]/50 transition-all cursor-pointer"
+            >
+              <span className="text-2xl mb-2">{w.icon}</span>
+              <span className="text-[9px] text-white/60 font-medium text-center">{w.name}</span>
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: `0 0 30px ${w.color}20` }} />
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Data Types - What gets synced */}
+        <div className="bg-[#0a0f0d] rounded-3xl border border-[#1a3d2e] p-8 mb-12">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Zap className="w-4 h-4 text-[#4a9d7c]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#4a9d7c]">Données auto-synchronisées</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {dataTypes.map((d, i) => (
+              <div key={i} className="text-center">
+                <div className="w-12 h-12 mx-auto mb-2 rounded-xl bg-[#1a3d2e]/50 flex items-center justify-center text-xl">
+                  {d.icon}
+                </div>
+                <p className="text-white text-sm font-semibold">{d.metric}</p>
+                <p className="text-white/40 text-[10px]">{d.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Benefits */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { title: "Data exacte", desc: "Fini les estimations. On utilise tes vraies métriques mesurées par ton appareil.", icon: Target },
+            { title: "2x plus rapide", desc: "On skip automatiquement les questions auxquelles tes données répondent déjà.", icon: Zap },
+            { title: "Analyse premium", desc: "Plus de données = rapport plus précis et recommandations personnalisées.", icon: Brain },
+          ].map((b, i) => (
+            <div key={i} className="bg-[#0d1a15] rounded-2xl p-6 border border-[#1a3d2e]">
+              <div className="w-10 h-10 rounded-xl bg-[#4a9d7c]/10 flex items-center justify-center mb-4">
+                <b.icon className="w-5 h-5 text-[#4a9d7c]" />
+              </div>
+              <h3 className="text-white font-semibold mb-2">{b.title}</h3>
+              <p className="text-white/50 text-sm">{b.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="text-center mt-12">
+          <p className="text-white/30 text-xs mb-4">Compatible avec Terra API • 100+ appareils supportés</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function BentoCTASection() {
   return (
     <section className="border-t border-border/30 py-12 lg:py-16" data-testid="section-cta">
@@ -2207,6 +2317,7 @@ export default function Landing() {
         <UltrahumanHero />
         <CertificationsBar />
         <MediaBar />
+        <WearablesSyncSection />
         <BentoHeroSection />
         <BentoDomainesSection />
         <BloodVisionSection />
