@@ -208,457 +208,111 @@ function UltrahumanHero() {
                       }
                     `}</style>
 
-                    {/* SCORES TAB */}
-                    {activeTab === "scores" && (
-                      <div className="scroll-container">
-                        {/* Block 1 */}
-                        <div className="w-full">
-                          <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                            <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
-                            <p className="text-white/40 text-xs">Tes scores NEUROCORE</p>
-                          </div>
-
-                          <div className="px-5 py-6 bg-black">
-                            <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-3xl p-6 border border-primary/30">
-                              <p className="text-white/50 text-xs mb-2 text-center">SCORE GLOBAL</p>
-                              <div className="text-6xl font-bold text-white text-center">78</div>
-                              <div className="mt-3 flex justify-center">
-                                <div className="inline-flex items-center gap-1.5 bg-primary/30 rounded-full px-4 py-1.5">
-                                  <TrendingUp className="w-3 h-3 text-primary" />
-                                  <span className="text-primary text-xs font-medium">+12 pts</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="px-5 py-4 bg-black space-y-3">
-                            {[
-                              { label: "Métabolisme", value: 85, color: "bg-emerald-500" },
-                              { label: "Sommeil", value: 72, color: "bg-blue-500" },
-                              { label: "Nutrition", value: 81, color: "bg-amber-500" },
-                              { label: "Énergie", value: 77, color: "bg-purple-500" },
-                              { label: "Stress", value: 68, color: "bg-red-500" },
-                              { label: "Digestion", value: 74, color: "bg-orange-500" },
-                            ].map((m, i) => (
-                              <div key={i} className="bg-white/5 rounded-xl p-3">
-                                <div className="flex justify-between mb-1.5">
-                                  <span className="text-white/70 text-xs">{m.label}</span>
-                                  <span className="text-primary text-xs">{m.value}/100</span>
-                                </div>
-                                <div className="h-1.5 bg-white/10 rounded-full">
-                                  <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="px-5 py-6 bg-gradient-to-b from-black to-zinc-900">
-                            <h3 className="text-white text-sm font-semibold mb-3">Progression</h3>
-                            <div className="space-y-2">
-                              {[
-                                { label: "Cette semaine", value: "+5 pts" },
-                                { label: "Ce mois", value: "+18 pts" },
-                                { label: "Total", value: "+32 pts" },
-                              ].map((p, i) => (
-                                <div key={i} className="flex justify-between items-center">
-                                  <span className="text-white/60 text-xs">{p.label}</span>
-                                  <span className="text-primary text-xs font-semibold">{p.value}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        {/* Block 2 - Duplicate */}
-                        <div className="w-full">
-                          <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                            <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
-                            <p className="text-white/40 text-xs">Tes scores NEUROCORE</p>
-                          </div>
-                          <div className="px-5 py-6 bg-black">
-                            <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-3xl p-6 border border-primary/30">
-                              <p className="text-white/50 text-xs mb-2 text-center">SCORE GLOBAL</p>
-                              <div className="text-6xl font-bold text-white text-center">78</div>
-                              <div className="mt-3 flex justify-center">
-                                <div className="inline-flex items-center gap-1.5 bg-primary/30 rounded-full px-4 py-1.5">
-                                  <TrendingUp className="w-3 h-3 text-primary" />
-                                  <span className="text-primary text-xs font-medium">+12 pts</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="px-5 py-4 pb-20 bg-black space-y-3">
-                            {[
-                              { label: "Métabolisme", value: 85, color: "bg-emerald-500" },
-                              { label: "Sommeil", value: 72, color: "bg-blue-500" },
-                              { label: "Nutrition", value: 81, color: "bg-amber-500" },
-                              { label: "Énergie", value: 77, color: "bg-purple-500" },
-                              { label: "Stress", value: 68, color: "bg-red-500" },
-                              { label: "Digestion", value: 74, color: "bg-orange-500" },
-                            ].map((m, i) => (
-                              <div key={i} className="bg-white/5 rounded-xl p-3">
-                                <div className="flex justify-between mb-1.5">
-                                  <span className="text-white/70 text-xs">{m.label}</span>
-                                  <span className="text-primary text-xs">{m.value}/100</span>
-                                </div>
-                                <div className="h-1.5 bg-white/10 rounded-full">
-                                  <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* DOMAINES TAB */}
-                    {activeTab === "domaines" && (
-                      <div className="scroll-container">
-                        {/* Block 1 */}
-                        <div className="w-full">
-                          <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                            <p className="text-white/60 text-sm">15 Domaines</p>
-                            <p className="text-white/40 text-xs">Analyse complète</p>
-                          </div>
-
-                          <div className="px-5 py-4 bg-black">
-                            <div className="grid grid-cols-2 gap-2.5">
-                              {[
-                                { name: "Hormones", score: 72, icon: "🧬" },
-                                { name: "Cardio", score: 81, icon: "❤️" },
-                                { name: "Digestion", score: 74, icon: "🦠" },
-                                { name: "Thyroïde", score: 68, icon: "🦋" },
-                                { name: "Posture", score: 65, icon: "🧍" },
-                                { name: "Immunité", score: 79, icon: "🛡️" },
-                                { name: "Sommeil", score: 72, icon: "😴" },
-                                { name: "Stress", score: 68, icon: "🧠" },
-                                { name: "Nutrition", score: 81, icon: "🥗" },
-                                { name: "Entraînement", score: 85, icon: "💪" },
-                                { name: "Énergie", score: 77, icon: "⚡" },
-                                { name: "Biomécanique", score: 70, icon: "🦴" },
-                                { name: "Récupération", score: 73, icon: "🔄" },
-                                { name: "Hydration", score: 88, icon: "💧" },
-                                { name: "Inflammation", score: 69, icon: "🔥" },
-                              ].map((d, i) => (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3">
-                                  <div className="text-2xl mb-2 text-center">{d.icon}</div>
-                                  <p className="text-white/70 text-[10px] text-center mb-1.5">{d.name}</p>
-                                  <div className="flex items-center justify-center gap-1">
-                                    <div className="flex-1 h-1 bg-white/10 rounded-full">
-                                      <div className="h-full bg-primary rounded-full" style={{ width: `${d.score}%` }} />
-                                    </div>
-                                    <span className="text-primary text-[9px] font-semibold">{d.score}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        {/* Block 2 - Duplicate */}
-                        <div className="w-full">
-                          <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                            <p className="text-white/60 text-sm">15 Domaines</p>
-                            <p className="text-white/40 text-xs">Analyse complète</p>
-                          </div>
-                          <div className="px-5 py-4 pb-20 bg-black">
-                            <div className="grid grid-cols-2 gap-2.5">
-                              {[
-                                { name: "Hormones", score: 72, icon: "🧬" },
-                                { name: "Cardio", score: 81, icon: "❤️" },
-                                { name: "Digestion", score: 74, icon: "🦠" },
-                                { name: "Thyroïde", score: 68, icon: "🦋" },
-                                { name: "Posture", score: 65, icon: "🧍" },
-                                { name: "Immunité", score: 79, icon: "🛡️" },
-                                { name: "Sommeil", score: 72, icon: "😴" },
-                                { name: "Stress", score: 68, icon: "🧠" },
-                                { name: "Nutrition", score: 81, icon: "🥗" },
-                                { name: "Entraînement", score: 85, icon: "💪" },
-                                { name: "Énergie", score: 77, icon: "⚡" },
-                                { name: "Biomécanique", score: 70, icon: "🦴" },
-                                { name: "Récupération", score: 73, icon: "🔄" },
-                                { name: "Hydration", score: 88, icon: "💧" },
-                                { name: "Inflammation", score: 69, icon: "🔥" },
-                              ].map((d, i) => (
-                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3">
-                                  <div className="text-2xl mb-2 text-center">{d.icon}</div>
-                                  <p className="text-white/70 text-[10px] text-center mb-1.5">{d.name}</p>
-                                  <div className="flex items-center justify-center gap-1">
-                                    <div className="flex-1 h-1 bg-white/10 rounded-full">
-                                      <div className="h-full bg-primary rounded-full" style={{ width: `${d.score}%` }} />
-                                    </div>
-                                    <span className="text-primary text-[9px] font-semibold">{d.score}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* RAPPORT TAB */}
-                    {activeTab === "rapport" && (
-                      <div className="scroll-container">
-                        {/* Block 1 */}
-                        <div className="w-full">
-                          <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                            <p className="text-white/60 text-sm">Ton Rapport</p>
-                            <p className="text-white/40 text-xs">40+ pages personnalisées</p>
-                          </div>
-
-                          <div className="px-5 py-4 bg-black space-y-2.5">
-                            {[
-                              { title: "Analyse Visuelle", pages: "3 pages", icon: Camera },
-                              { title: "Entraînement", pages: "5 pages", icon: Activity },
-                              { title: "Nutrition", pages: "6 pages", icon: Target },
-                              { title: "Sommeil", pages: "4 pages", icon: Brain },
-                              { title: "Hormones", pages: "7 pages", icon: CheckCircle2 },
-                              { title: "Supplémentation", pages: "5 pages", icon: Target },
-                              { title: "Plan 90j", pages: "8 pages", icon: TrendingUp },
-                            ].map((section, i) => (
-                              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                                    <section.icon className="w-4 h-4 text-primary" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <h4 className="text-white text-xs font-medium">{section.title}</h4>
-                                    <p className="text-white/50 text-[10px]">{section.pages}</p>
-                                  </div>
-                                  <Check className="w-4 h-4 text-primary" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="px-5 py-4 bg-gradient-to-b from-black to-zinc-900">
-                            <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-xl p-4 border border-primary/30">
-                              <h4 className="text-white text-xs font-semibold mb-2">Contenu Premium</h4>
-                              <div className="space-y-1.5">
-                                {["24 Recommandations cliniques", "8 Protocoles détaillés", "12 Suppléments biodisponibles", "3 Phases progressives"].map((item, i) => (
-                                  <div key={i} className="flex items-center gap-2">
-                                    <Check className="w-3 h-3 text-primary shrink-0" />
-                                    <span className="text-white/70 text-[10px]">{item}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Block 2 - Duplicate */}
-                        <div className="w-full">
-                          <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                            <p className="text-white/60 text-sm">Ton Rapport</p>
-                            <p className="text-white/40 text-xs">40+ pages personnalisées</p>
-                          </div>
-                          <div className="px-5 py-4 pb-20 bg-black space-y-2.5">
-                            {[
-                              { title: "Analyse Visuelle", pages: "3 pages", icon: Camera },
-                              { title: "Entraînement", pages: "5 pages", icon: Activity },
-                              { title: "Nutrition", pages: "6 pages", icon: Target },
-                              { title: "Sommeil", pages: "4 pages", icon: Brain },
-                              { title: "Hormones", pages: "7 pages", icon: CheckCircle2 },
-                              { title: "Supplémentation", pages: "5 pages", icon: Target },
-                              { title: "Plan 90j", pages: "8 pages", icon: TrendingUp },
-                            ].map((section, i) => (
-                              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                                    <section.icon className="w-4 h-4 text-primary" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <h4 className="text-white text-xs font-medium">{section.title}</h4>
-                                    <p className="text-white/50 text-[10px]">{section.pages}</p>
-                                  </div>
-                                  <Check className="w-4 h-4 text-primary" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* PLAN TAB */}
-                    {activeTab === "plan" && (
-                      <div className="scroll-container">
+                    <div className="scroll-container">
                       {/* Content Block 1 */}
                       <div className="w-full">
                         <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                          <p className="text-white/60 text-sm">Plan 90 jours</p>
-                          <p className="text-white/40 text-xs">3 phases progressives</p>
+                          <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
+                          <p className="text-white/40 text-xs">Voici ton rapport NEUROCORE</p>
                         </div>
 
-                        {/* Phase 1 - Fondations */}
+                        <div className="px-5 py-6 bg-black">
+                          <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-3xl p-6 border border-primary/30">
+                            <p className="text-white/50 text-xs mb-2 text-center">SCORE GLOBAL</p>
+                            <div className="text-6xl font-bold text-white text-center">78</div>
+                            <div className="mt-3 flex justify-center">
+                              <div className="inline-flex items-center gap-1.5 bg-primary/30 rounded-full px-4 py-1.5">
+                                <TrendingUp className="w-3 h-3 text-primary" />
+                                <span className="text-primary text-xs font-medium">+12 pts</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-4 bg-black space-y-3">
+                          {[
+                            { label: "Métabolisme", value: 85, color: "bg-emerald-500" },
+                            { label: "Sommeil", value: 72, color: "bg-blue-500" },
+                            { label: "Nutrition", value: 81, color: "bg-amber-500" },
+                            { label: "Énergie", value: 77, color: "bg-purple-500" },
+                          ].map((m, i) => (
+                            <div key={i} className="bg-white/5 rounded-xl p-3">
+                              <div className="flex justify-between mb-1.5">
+                                <span className="text-white/70 text-xs">{m.label}</span>
+                                <span className="text-primary text-xs">{m.value}/100</span>
+                              </div>
+                              <div className="h-1.5 bg-white/10 rounded-full">
+                                <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="px-5 py-6 bg-gradient-to-b from-black to-zinc-900">
+                          <h3 className="text-white text-base font-semibold mb-3">15 Domaines</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {["Hormones", "Cardio", "Digestion", "Thyroïde", "Posture", "Immunité"].map((d, i) => (
+                              <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-center">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 mx-auto mb-1.5 flex items-center justify-center">
+                                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                                </div>
+                                <p className="text-white/70 text-[9px]">{d}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-zinc-900">
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <Brain className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="text-white text-xs font-medium">Ton Rapport</h4>
+                                <p className="text-white/50 text-[10px]">40+ pages</p>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              {["24 Recommandations", "8 Protocoles", "12 Suppléments"].map((item, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  <span className="text-white/70 text-[10px]">{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="px-5 py-5 bg-black">
-                          <div className="bg-gradient-to-br from-emerald-500/20 to-primary/10 rounded-2xl p-4 border border-primary/30 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h3 className="text-white text-sm font-bold">Phase 1 - Fondations</h3>
-                                <p className="text-white/50 text-[10px]">Jours 1-30</p>
-                              </div>
-                              <div className="text-primary text-xs font-semibold">100%</div>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full mb-3">
-                              <div className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full" style={{ width: "100%" }} />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-white/80 text-[10px]">Sleep Architecture optimisée</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-white/80 text-[10px]">HRV baseline établie (45ms)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-white/80 text-[10px]">Protocole digestion réparé</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Phase 2 - Optimisation */}
-                        <div className="px-5 py-4 bg-gradient-to-b from-black to-zinc-900">
-                          <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-2xl p-4 border border-blue-500/30 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h3 className="text-white text-sm font-bold">Phase 2 - Optimisation</h3>
-                                <p className="text-white/50 text-[10px]">Jours 31-60</p>
-                              </div>
-                              <div className="text-blue-400 text-xs font-semibold">58%</div>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full mb-3">
-                              <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style={{ width: "58%" }} />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
-                                <span className="text-white/80 text-[10px]">HIIT progressif (ACWR 1.12)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Cycling glucidique activé</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Stack adapto (Rhodiola + Ashwa)</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Phase 3 - Performance */}
-                        <div className="px-5 py-4 bg-zinc-900">
-                          <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-2xl p-4 border border-purple-500/30 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h3 className="text-white text-sm font-bold">Phase 3 - Performance</h3>
-                                <p className="text-white/50 text-[10px]">Jours 61-90</p>
-                              </div>
-                              <div className="text-white/40 text-xs font-semibold">0%</div>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full mb-3">
-                              <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style={{ width: "0%" }} />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Peak performance protocols</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Biomarkers retest (T, Cortisol)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Maintenance long-terme</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions Quotidiennes */}
-                        <div className="px-5 py-5 bg-black">
-                          <h3 className="text-white text-sm font-semibold mb-3">Aujourd'hui</h3>
-                          <div className="space-y-2">
-                            <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                  <p className="text-white/90 text-xs">Glycine 3g avant sommeil</p>
-                                  <p className="text-white/50 text-[9px]">21:30</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                  <Target className="w-4 h-4 text-blue-400" />
-                                </div>
-                                <div>
-                                  <p className="text-white/90 text-xs">Zone 2 cardio 45min</p>
-                                  <p className="text-white/50 text-[9px]">HR 130-140 bpm</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                  <Activity className="w-4 h-4 text-amber-400" />
-                                </div>
-                                <div>
-                                  <p className="text-white/90 text-xs">Chrono-nutrition PM</p>
-                                  <p className="text-white/50 text-[9px]">Glucides complexes 18h</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Suppléments Stack */}
-                        <div className="px-5 py-5 bg-gradient-to-b from-black to-zinc-900">
-                          <h3 className="text-white text-sm font-semibold mb-3">Stack actif</h3>
-                          <div className="grid grid-cols-2 gap-2">
+                          <h3 className="text-white text-base font-semibold mb-3">Plan 90j</h3>
+                          <div className="space-y-2.5">
                             {[
-                              { name: "Mg Bisglycinate", dose: "400mg", time: "Soir" },
-                              { name: "Vitamine D3+K2", dose: "5000 UI", time: "Matin" },
-                              { name: "Oméga-3 EPA/DHA", dose: "2g", time: "Repas" },
-                              { name: "Zinc Picolinate", dose: "30mg", time: "Soir" },
-                            ].map((supp, i) => (
-                              <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/10">
-                                <p className="text-white/90 text-[10px] font-medium mb-1">{supp.name}</p>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-primary text-[9px]">{supp.dose}</span>
-                                  <span className="text-white/50 text-[8px]">{supp.time}</span>
+                              { phase: "Phase 1", progress: 100 },
+                              { phase: "Phase 2", progress: 45 },
+                              { phase: "Phase 3", progress: 0 },
+                            ].map((p, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3">
+                                <div className="flex justify-between mb-1.5">
+                                  <span className="text-primary text-xs font-medium">{p.phase}</span>
+                                  <span className="text-white/50 text-[10px]">{p.progress}%</span>
+                                </div>
+                                <div className="h-1.5 bg-white/10 rounded-full">
+                                  <div className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full" style={{ width: `${p.progress}%` }} />
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        {/* Prochains Milestones */}
-                        <div className="px-5 py-5 bg-zinc-900">
-                          <h3 className="text-white text-sm font-semibold mb-3">Milestones</h3>
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-3 bg-white/5 rounded-xl p-3">
-                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                                <Check className="w-3 h-3 text-primary" />
+                        <div className="px-5 py-5 bg-gradient-to-b from-black to-zinc-900">
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Biomarkers", "Suppléments", "Exercices", "Nutrition"].map((c, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3 text-center">
+                                <Target className="w-6 h-6 text-primary mx-auto mb-1.5" />
+                                <p className="text-white/70 text-[10px]">{c}</p>
                               </div>
-                              <div>
-                                <p className="text-white/90 text-[10px] font-medium">HRV > 50ms atteint</p>
-                                <p className="text-white/50 text-[9px]">Jour 42 - Système nerveux stable</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3 bg-white/5 rounded-xl p-3">
-                              <div className="w-6 h-6 rounded-full border-2 border-white/20 flex items-center justify-center shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-white/70 text-[10px] font-medium">Retest biomarqueurs</p>
-                                <p className="text-white/50 text-[9px]">Jour 60 - Validation protocoles</p>
-                              </div>
-                            </div>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -666,181 +320,107 @@ function UltrahumanHero() {
                       {/* Content Block 2 - Duplicate for seamless loop */}
                       <div className="w-full">
                         <div className="px-5 pt-6 pb-4 bg-gradient-to-b from-zinc-900 to-black">
-                          <p className="text-white/60 text-sm">Plan 90 jours</p>
-                          <p className="text-white/40 text-xs">3 phases progressives</p>
+                          <p className="text-white/60 text-sm">Bonsoir, Achzod</p>
+                          <p className="text-white/40 text-xs">Voici ton rapport NEUROCORE</p>
                         </div>
 
-                        {/* Phase 1 - Fondations */}
+                        <div className="px-5 py-6 bg-black">
+                          <div className="bg-gradient-to-br from-primary/20 to-emerald-500/10 rounded-3xl p-6 border border-primary/30">
+                            <p className="text-white/50 text-xs mb-2 text-center">SCORE GLOBAL</p>
+                            <div className="text-6xl font-bold text-white text-center">78</div>
+                            <div className="mt-3 flex justify-center">
+                              <div className="inline-flex items-center gap-1.5 bg-primary/30 rounded-full px-4 py-1.5">
+                                <TrendingUp className="w-3 h-3 text-primary" />
+                                <span className="text-primary text-xs font-medium">+12 pts</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-4 bg-black space-y-3">
+                          {[
+                            { label: "Métabolisme", value: 85, color: "bg-emerald-500" },
+                            { label: "Sommeil", value: 72, color: "bg-blue-500" },
+                            { label: "Nutrition", value: 81, color: "bg-amber-500" },
+                            { label: "Énergie", value: 77, color: "bg-purple-500" },
+                          ].map((m, i) => (
+                            <div key={i} className="bg-white/5 rounded-xl p-3">
+                              <div className="flex justify-between mb-1.5">
+                                <span className="text-white/70 text-xs">{m.label}</span>
+                                <span className="text-primary text-xs">{m.value}/100</span>
+                              </div>
+                              <div className="h-1.5 bg-white/10 rounded-full">
+                                <div className={`h-full ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="px-5 py-6 bg-gradient-to-b from-black to-zinc-900">
+                          <h3 className="text-white text-base font-semibold mb-3">15 Domaines</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {["Hormones", "Cardio", "Digestion", "Thyroïde", "Posture", "Immunité"].map((d, i) => (
+                              <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-center">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 mx-auto mb-1.5 flex items-center justify-center">
+                                  <CheckCircle2 className="w-3 h-3 text-primary" />
+                                </div>
+                                <p className="text-white/70 text-[9px]">{d}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="px-5 py-5 bg-zinc-900">
+                          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/10">
+                            <div className="flex items-center gap-2.5 mb-2.5">
+                              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <Brain className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="text-white text-xs font-medium">Ton Rapport</h4>
+                                <p className="text-white/50 text-[10px]">40+ pages</p>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              {["24 Recommandations", "8 Protocoles", "12 Suppléments"].map((item, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <Check className="w-3 h-3 text-primary" />
+                                  <span className="text-white/70 text-[10px]">{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="px-5 py-5 bg-black">
-                          <div className="bg-gradient-to-br from-emerald-500/20 to-primary/10 rounded-2xl p-4 border border-primary/30 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h3 className="text-white text-sm font-bold">Phase 1 - Fondations</h3>
-                                <p className="text-white/50 text-[10px]">Jours 1-30</p>
-                              </div>
-                              <div className="text-primary text-xs font-semibold">100%</div>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full mb-3">
-                              <div className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full" style={{ width: "100%" }} />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-white/80 text-[10px]">Sleep Architecture optimisée</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-white/80 text-[10px]">HRV baseline établie (45ms)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                                <span className="text-white/80 text-[10px]">Protocole digestion réparé</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Phase 2 - Optimisation */}
-                        <div className="px-5 py-4 bg-gradient-to-b from-black to-zinc-900">
-                          <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-2xl p-4 border border-blue-500/30 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h3 className="text-white text-sm font-bold">Phase 2 - Optimisation</h3>
-                                <p className="text-white/50 text-[10px]">Jours 31-60</p>
-                              </div>
-                              <div className="text-blue-400 text-xs font-semibold">58%</div>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full mb-3">
-                              <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style={{ width: "58%" }} />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
-                                <span className="text-white/80 text-[10px]">HIIT progressif (ACWR 1.12)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Cycling glucidique activé</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Stack adapto (Rhodiola + Ashwa)</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Phase 3 - Performance */}
-                        <div className="px-5 py-4 bg-zinc-900">
-                          <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-2xl p-4 border border-purple-500/30 mb-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h3 className="text-white text-sm font-bold">Phase 3 - Performance</h3>
-                                <p className="text-white/50 text-[10px]">Jours 61-90</p>
-                              </div>
-                              <div className="text-white/40 text-xs font-semibold">0%</div>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full mb-3">
-                              <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style={{ width: "0%" }} />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Peak performance protocols</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Biomarkers retest (T, Cortisol)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30" />
-                                <span className="text-white/60 text-[10px]">Maintenance long-terme</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions Quotidiennes */}
-                        <div className="px-5 py-5 bg-black">
-                          <h3 className="text-white text-sm font-semibold mb-3">Aujourd'hui</h3>
-                          <div className="space-y-2">
-                            <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                  <p className="text-white/90 text-xs">Glycine 3g avant sommeil</p>
-                                  <p className="text-white/50 text-[9px]">21:30</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                  <Target className="w-4 h-4 text-blue-400" />
-                                </div>
-                                <div>
-                                  <p className="text-white/90 text-xs">Zone 2 cardio 45min</p>
-                                  <p className="text-white/50 text-[9px]">HR 130-140 bpm</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                  <Activity className="w-4 h-4 text-amber-400" />
-                                </div>
-                                <div>
-                                  <p className="text-white/90 text-xs">Chrono-nutrition PM</p>
-                                  <p className="text-white/50 text-[9px]">Glucides complexes 18h</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Suppléments Stack */}
-                        <div className="px-5 py-5 bg-gradient-to-b from-black to-zinc-900">
-                          <h3 className="text-white text-sm font-semibold mb-3">Stack actif</h3>
-                          <div className="grid grid-cols-2 gap-2">
+                          <h3 className="text-white text-base font-semibold mb-3">Plan 90j</h3>
+                          <div className="space-y-2.5">
                             {[
-                              { name: "Mg Bisglycinate", dose: "400mg", time: "Soir" },
-                              { name: "Vitamine D3+K2", dose: "5000 UI", time: "Matin" },
-                              { name: "Oméga-3 EPA/DHA", dose: "2g", time: "Repas" },
-                              { name: "Zinc Picolinate", dose: "30mg", time: "Soir" },
-                            ].map((supp, i) => (
-                              <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/10">
-                                <p className="text-white/90 text-[10px] font-medium mb-1">{supp.name}</p>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-primary text-[9px]">{supp.dose}</span>
-                                  <span className="text-white/50 text-[8px]">{supp.time}</span>
+                              { phase: "Phase 1", progress: 100 },
+                              { phase: "Phase 2", progress: 45 },
+                              { phase: "Phase 3", progress: 0 },
+                            ].map((p, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3">
+                                <div className="flex justify-between mb-1.5">
+                                  <span className="text-primary text-xs font-medium">{p.phase}</span>
+                                  <span className="text-white/50 text-[10px]">{p.progress}%</span>
+                                </div>
+                                <div className="h-1.5 bg-white/10 rounded-full">
+                                  <div className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full" style={{ width: `${p.progress}%` }} />
                                 </div>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        {/* Prochains Milestones */}
-                        <div className="px-5 py-5 pb-10 bg-zinc-900">
-                          <h3 className="text-white text-sm font-semibold mb-3">Milestones</h3>
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-3 bg-white/5 rounded-xl p-3">
-                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                                <Check className="w-3 h-3 text-primary" />
+                        <div className="px-5 py-5 pb-10 bg-gradient-to-b from-black to-zinc-900">
+                          <div className="grid grid-cols-2 gap-2">
+                            {["Biomarkers", "Suppléments", "Exercices", "Nutrition"].map((c, i) => (
+                              <div key={i} className="bg-white/5 rounded-xl p-3 text-center">
+                                <Target className="w-6 h-6 text-primary mx-auto mb-1.5" />
+                                <p className="text-white/70 text-[10px]">{c}</p>
                               </div>
-                              <div>
-                                <p className="text-white/90 text-[10px] font-medium">HRV > 50ms atteint</p>
-                                <p className="text-white/50 text-[9px]">Jour 42 - Système nerveux stable</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3 bg-white/5 rounded-xl p-3">
-                              <div className="w-6 h-6 rounded-full border-2 border-white/20 flex items-center justify-center shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-white/70 text-[10px] font-medium">Retest biomarqueurs</p>
-                                <p className="text-white/50 text-[9px]">Jour 60 - Validation protocoles</p>
-                              </div>
-                            </div>
+                            ))}
                           </div>
                         </div>
                       </div>
