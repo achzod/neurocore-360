@@ -54,38 +54,40 @@ function UltrahumanHero() {
   const tabContents = {
     scores: (
       <div className="w-full bg-black">
-        <div className="px-4 pt-4 pb-3">
-          <p className="text-white/80 text-xs font-medium">Bonsoir, Julien</p>
-          <p className="text-white/40 text-[10px]">Voici ton audit NEUROCORE 360</p>
+        {/* Header - ANABOLIC BIOSCAN centered */}
+        <div className="px-3 pt-2 pb-2 text-center">
+          <p className="text-primary text-[11px] font-bold tracking-wider">ANABOLIC BIOSCAN</p>
         </div>
-        <div className="px-4 py-3">
-          <div className="bg-zinc-900/80 rounded-2xl p-4 border border-white/5">
-            <p className="text-white/40 text-[9px] tracking-widest text-center mb-2">SCORE GLOBAL</p>
-            <div className="text-4xl font-bold text-white text-center tracking-tight">58</div>
-            <div className="text-[10px] text-white/30 text-center mt-1">/100</div>
-            <div className="mt-2 flex justify-center">
-              <div className="inline-flex items-center gap-1 bg-white/5 rounded-full px-2.5 py-1 border border-white/10">
-                <span className="text-white/60 text-[9px] font-medium">À optimiser</span>
-              </div>
+        {/* Score circle */}
+        <div className="px-4 py-3 flex justify-center">
+          <div className="relative w-28 h-28">
+            {/* Outer ring */}
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgb(14,252,109)" strokeWidth="4" strokeLinecap="round" strokeDasharray="283" strokeDashoffset="68" />
+            </svg>
+            {/* Center content */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold text-white">76</span>
+              <span className="text-[8px] text-white/40 tracking-widest">SCORE GLOBAL</span>
             </div>
           </div>
         </div>
-        <div className="px-4 py-2 space-y-2">
+        {/* Metrics bars */}
+        <div className="px-4 py-2 space-y-2.5">
           {[
-            { label: "Système Nerveux", value: 38 },
-            { label: "Sommeil", value: 35 },
-            { label: "Digestion", value: 45 },
-            { label: "Hormones", value: 42 },
-            { label: "Entraînement", value: 25 },
+            { label: "Hormones", value: 82, color: "from-cyan-400 to-cyan-500" },
+            { label: "Sommeil", value: 65, color: "from-blue-400 to-blue-500" },
+            { label: "Stress", value: 71, color: "from-amber-400 to-amber-500" },
+            { label: "Digestion", value: 78, color: "from-emerald-400 to-emerald-500" },
+            { label: "Training", value: 85, color: "from-violet-400 to-violet-500" },
           ].map((m, i) => (
-            <div key={i} className="bg-zinc-900/50 rounded-lg p-2.5">
-              <div className="flex justify-between mb-1">
-                <span className="text-white/60 text-[10px]">{m.label}</span>
-                <span className="text-white/80 text-[10px] font-medium">{m.value}/100</span>
+            <div key={i} className="flex items-center gap-3">
+              <span className="text-white/60 text-[10px] w-20">{m.label}</span>
+              <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div className={`h-full bg-gradient-to-r ${m.color} rounded-full`} style={{ width: `${m.value}%` }} />
               </div>
-              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-white/40 rounded-full transition-all" style={{ width: `${m.value}%` }} />
-              </div>
+              <span className="text-white/80 text-[10px] font-semibold w-6 text-right">{m.value}</span>
             </div>
           ))}
         </div>
@@ -337,9 +339,9 @@ function UltrahumanHero() {
                       <div className="flex items-center justify-around">
                         {[
                           { id: "scores", icon: Activity, label: "SCORES" },
-                          { id: "domaines", icon: Layers, label: "DOMAINES" },
-                          { id: "rapport", icon: Brain, label: "RAPPORT" },
-                          { id: "plan", icon: Target, label: "PLAN" },
+                          { id: "domaines", icon: Layers, label: "PROTOCOLE" },
+                          { id: "rapport", icon: Brain, label: "BILANS" },
+                          { id: "plan", icon: Target, label: "INSIGHTS" },
                         ].map((tab) => (
                           <button
                             key={tab.id}
