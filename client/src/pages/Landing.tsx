@@ -253,7 +253,7 @@ function UltrahumanHero() {
         >
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight">
             <span className="text-white">
-              L'audit santé
+              L'audit 360
             </span>
             <br />
             <span className="bg-gradient-to-r from-primary via-emerald-400 to-primary bg-clip-text text-transparent">
@@ -387,28 +387,32 @@ function CertificationsBar() {
   const allCerts = [...certifications, ...certifications, ...certifications, ...certifications];
 
   return (
-    <div className="relative overflow-hidden border-b border-white/5 bg-black py-4" data-testid="section-certifications-bar">
-      <div className="relative mb-3 flex items-center justify-center">
-        <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-white/30">
-          Certifications
+    <div className="relative overflow-hidden border-b border-white/10 bg-zinc-950/50 py-6" data-testid="section-certifications-bar">
+      <div className="relative mb-4 flex items-center justify-center">
+        <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-white/50">
+          Certifications Internationales
         </span>
       </div>
 
       <div className="relative">
-        <div className="absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-black to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-black to-transparent" />
+        <div className="absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-zinc-950/50 to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-zinc-950/50 to-transparent" />
 
-        <div className="flex animate-scroll-slow items-center gap-12">
+        <div className="flex animate-scroll-slow items-center gap-16">
           {allCerts.map((cert, idx) => (
             <div
               key={idx}
-              className="flex shrink-0 items-center gap-3 opacity-50 hover:opacity-80 transition-opacity duration-300"
+              className="flex shrink-0 flex-col items-center gap-2 opacity-70 hover:opacity-100 transition-opacity duration-300"
               data-testid={`certification-${idx}`}
             >
-              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded bg-white/90">
-                <img src={cert.image} alt={cert.name} className="h-6 w-6 object-contain" />
+              <div className="flex h-12 w-12 items-center justify-center">
+                <img
+                  src={cert.image}
+                  alt={cert.name}
+                  className="h-10 w-10 object-contain brightness-0 invert opacity-80"
+                />
               </div>
-              <span className="text-xs font-medium text-white/40">{cert.name}</span>
+              <span className="text-[10px] font-medium text-white/50">{cert.name}</span>
             </div>
           ))}
         </div>
@@ -424,18 +428,18 @@ function MediaBar() {
   const allMedia = [...mediaLogos, ...mediaLogos, ...mediaLogos, ...mediaLogos];
 
   return (
-    <div className="w-full overflow-hidden border-b border-white/5 bg-black/50 py-3" data-testid="section-media-bar">
-      <div className="mb-2 text-center text-[9px] font-medium uppercase tracking-[0.3em] text-white/20">
+    <div className="w-full overflow-hidden border-b border-white/10 bg-zinc-950/30 py-4" data-testid="section-media-bar">
+      <div className="mb-3 text-center text-[9px] font-medium uppercase tracking-[0.3em] text-white/40">
         Vu dans les médias
       </div>
       <div className="relative w-full">
-        <div className="absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-black/50 to-transparent" />
-        <div className="absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-black/50 to-transparent" />
+        <div className="absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-zinc-950/30 to-transparent" />
+        <div className="absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-zinc-950/30 to-transparent" />
         <div className="flex animate-scroll-slower items-center gap-16 whitespace-nowrap" style={{ width: 'fit-content' }}>
           {allMedia.map((name, idx) => (
             <span
               key={idx}
-              className="text-[11px] font-medium text-white/25 transition-colors hover:text-white/40"
+              className="text-xs font-semibold text-white/40 transition-colors hover:text-white/60 tracking-wide"
               data-testid={`media-${idx}`}
             >
               {name}
@@ -447,129 +451,100 @@ function MediaBar() {
   );
 }
 
-// BENTO HERO - Inspired by hewarsaber fintech style
+// Ultrahuman-style Stats Section - Clean & Minimal
 function BentoHeroSection() {
-  return (
-    <section className="relative bg-background py-8 lg:py-12" data-testid="section-hero">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.08),transparent_50%)]" />
+  const stats = [
+    { value: "180+", label: "Biomarqueurs", sublabel: "analysés" },
+    { value: "21", label: "Sections", sublabel: "du questionnaire" },
+    { value: "15", label: "Domaines", sublabel: "de santé" },
+    { value: "90", label: "Jours", sublabel: "de protocole" },
+  ];
 
-      {/* Beta Banner */}
-      <div className="relative mx-auto max-w-7xl px-4 mb-6">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="flex justify-center"
-        >
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-500/30 backdrop-blur-sm">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-            </span>
-            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200/90 tracking-wide">
-              En Beta Test depuis Septembre 2025
-            </span>
-            <Badge className="bg-amber-500/20 text-amber-900 dark:text-amber-300 border-amber-500/30 text-xs px-2 py-0.5">
-              127 testeurs
-            </Badge>
-          </div>
-        </motion.div>
+  return (
+    <section className="relative bg-black py-20 overflow-hidden" data-testid="section-hero">
+      {/* Animated grid background */}
+      <div className="absolute inset-0 overflow-hidden opacity-[0.08]">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(14,252,109,0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(14,252,109,0.5) 1px, transparent 1px)
+            `,
+            backgroundSize: '80px 80px',
+            animation: 'gridMove 25s linear infinite',
+          }}
+        />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4">
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:grid-rows-[auto_auto_auto]">
+      {/* Gradient overlays */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,252,109,0.08),transparent_60%)]" />
 
-          {/* Main Hero Card - Spans 8 columns */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="md:col-span-8 md:row-span-2"
-          >
-            <div className={`${bentoStyles.cardLarge} h-full flex flex-col justify-center min-h-[400px] relative overflow-hidden`}>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl" />
+      <div className="relative max-w-6xl mx-auto px-6">
+        {/* Section header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
+            <Activity className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium tracking-widest text-white/60 uppercase">
+              Analyse complète
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
+            Ton corps en données
+          </h2>
+          <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
+            Une analyse exhaustive pour comprendre chaque signal de ton organisme.
+          </p>
+        </motion.div>
 
-              <Badge
-                variant="outline"
-                className="mb-6 w-fit border-primary/50 bg-primary/10 px-4 py-1.5 text-primary"
-                data-testid="badge-hero"
-              >
-                <Sparkles className="mr-2 h-3 w-3" />
-                AUDIT 360 COMPLET
-              </Badge>
+        {/* Stats grid - 4 columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {stats.map((stat, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className="group relative"
+            >
+              <div className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-6 md:p-8 text-center backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.05] hover:border-primary/20">
+                {/* Glow on hover */}
+                <div className="absolute inset-0 rounded-2xl bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
 
-              <h1 className="text-4xl font-bold tracking-[-0.03em] sm:text-5xl lg:text-6xl leading-[1.1]" data-testid="text-hero-title">
-                Décode ton système
-                <br />
-                <span className="bg-gradient-to-r from-primary via-purple-400 to-purple-500 bg-clip-text text-transparent">
-                  métabolique.
-                </span>
-              </h1>
-
-              <p className="mt-6 max-w-lg text-lg text-muted-foreground tracking-[-0.01em]" data-testid="text-hero-subtitle">
-                180+ biomarqueurs analysés en profondeur pour comprendre et optimiser ta performance.
-              </p>
-
-              <div className="mt-8">
-                <Link href="/audit-complet/questionnaire">
-                  <Button
-                    size="lg"
-                    className="gap-2 bg-primary px-8 text-lg hover:bg-primary/90 rounded-xl h-14"
-                    data-testid="button-hero-cta"
-                  >
-                    LANCER L'ANALYSE
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </Link>
+                <div className="relative">
+                  <div className="text-4xl md:text-5xl font-bold text-white tracking-tight">
+                    {stat.value}
+                  </div>
+                  <div className="mt-2 text-sm font-medium text-white/70">{stat.label}</div>
+                  <div className="text-xs text-white/30">{stat.sublabel}</div>
+                </div>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Stats Card 1 - Questions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="md:col-span-4"
-          >
-            <div className={`${bentoStyles.card} h-full flex flex-col justify-center items-center text-center min-h-[180px]`}>
-              <div className="text-5xl font-bold text-primary tracking-[-0.02em]">180+</div>
-              <div className="mt-2 text-sm text-muted-foreground font-medium">Questions analysées</div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground/60">
-                <CheckCircle2 className="h-3 w-3 text-primary" />
-                <span>Questionnaire complet</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stats Card 2 - Sections */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="md:col-span-2"
-          >
-            <div className={`${bentoStyles.card} h-full flex flex-col justify-center items-center text-center min-h-[180px] bg-gradient-to-br from-primary/10 to-transparent`}>
-              <div className="text-4xl font-bold tracking-[-0.02em]">21</div>
-              <div className="mt-2 text-xs text-muted-foreground">Sections</div>
-            </div>
-          </motion.div>
-
-          {/* Stats Card 3 - Domaines */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="md:col-span-2"
-          >
-            <div className={`${bentoStyles.card} h-full flex flex-col justify-center items-center text-center min-h-[180px] bg-gradient-to-br from-purple-500/10 to-transparent`}>
-              <div className="text-4xl font-bold tracking-[-0.02em]">15</div>
-              <div className="mt-2 text-xs text-muted-foreground">Domaines</div>
-            </div>
-          </motion.div>
-
+            </motion.div>
+          ))}
         </div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          className="mt-12 text-center"
+        >
+          <Link href="/audit-complet/questionnaire">
+            <button className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-semibold text-sm transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:shadow-white/10">
+              Commencer l'analyse
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
@@ -596,11 +571,26 @@ const iconMap: Record<string, typeof User> = {
 };
 
 // BENTO DOMAINES - Clean 5-column grid
-// Ultrahuman-style Domaines Section with human silhouette
+// Ultrahuman-style Domaines Section with human silhouette + Auto-animation
 function BentoDomainesSection() {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(0);
+  const [isUserHovering, setIsUserHovering] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const titleRef = useRef<HTMLDivElement>(null);
+
+  // Auto-cycle through domains when not hovering
+  useEffect(() => {
+    if (isUserHovering) return;
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => {
+        if (prev === null) return 0;
+        return (prev + 1) % 8; // 8 domaines
+      });
+    }, 2500); // Change every 2.5 seconds
+
+    return () => clearInterval(interval);
+  }, [isUserHovering]);
 
   // Spotlight: update CSS vars on pointermove for title
   useEffect(() => {
@@ -869,8 +859,13 @@ function BentoDomainesSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: idx * 0.08 }}
               className={`absolute ${domaine.position} hidden md:flex items-center gap-3 cursor-pointer group`}
-              onMouseEnter={() => setActiveIndex(idx)}
-              onMouseLeave={() => setActiveIndex(null)}
+              onMouseEnter={() => {
+                setIsUserHovering(true);
+                setActiveIndex(idx);
+              }}
+              onMouseLeave={() => {
+                setIsUserHovering(false);
+              }}
             >
               {/* Number badge */}
               <span className="text-[10px] text-primary/60 font-mono">[0{domaine.id}]</span>
