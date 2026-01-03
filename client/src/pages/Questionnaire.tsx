@@ -300,6 +300,29 @@ export default function Questionnaire() {
 
   const totalProgress = Math.round(((currentSectionIndex + 1) / QUESTIONNAIRE_SECTIONS.length) * 100);
 
+  // Charger la progression depuis la DB
+  const loadProgressFromDB = async (userEmail: string) => {
+    try {
+      const res = await fetch(`/api/questionnaire/progress/${encodeURIComponent(userEmail)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.responses && Object.keys(data.responses).length > 0) {
+          console.log("[Questionnaire] Loaded progress from DB:", Object.keys(data.responses).length, "responses");
+          setResponses(prev => ({ ...prev, ...data.responses }));
+          if (data.currentSection !== undefined) {
+            setCurrentSectionIndex(data.currentSection);
+          }
+          if (data.responses["sexe"]) setSexConfirmed(true);
+          if (data.responses["prenom"]) setPrenomConfirmed(true);
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error("[Questionnaire] Error loading from DB:", err);
+    }
+    return false;
+  };
+
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
     const savedResponses = localStorage.getItem("neurocore_responses");
@@ -309,23 +332,25 @@ export default function Questionnaire() {
     if (savedEmail) {
       setEmail(savedEmail);
       setEmailSubmitted(true);
+      // Essayer de charger depuis la DB (plus fiable que localStorage)
+      loadProgressFromDB(savedEmail);
     }
-    
+
     const parsedResponses = savedResponses ? JSON.parse(savedResponses) : {};
     const parsedPhotos = savedPhotos ? JSON.parse(savedPhotos) : {};
-    
+
     if (Object.keys(parsedPhotos).length > 0) {
       setPhotoData(parsedPhotos);
     }
-    
+
     if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0) {
       setResponses({ ...parsedResponses, ...parsedPhotos });
     }
-    
+
     if (savedSection) {
       setCurrentSectionIndex(Number(savedSection));
     }
-    
+
     if (parsedResponses["sexe"]) {
       setSexConfirmed(true);
     }
@@ -357,7 +382,7 @@ export default function Questionnaire() {
     },
   });
 
-  // Auto-save every 30 seconds if email is submitted
+  // Auto-save every 15 seconds if email is submitted
   useEffect(() => {
     if (!emailSubmitted || !email) return;
 
@@ -365,10 +390,10 @@ export default function Questionnaire() {
       if (Object.keys(responses).length > 0) {
         saveProgressMutation.mutate();
       }
-    }, 30000);
+    }, 15000); // Reduced from 30s to 15s for better reliability
 
     return () => clearInterval(autoSaveInterval);
-  }, [emailSubmitted, email, responses, currentSectionIndex]);
+  }, [emailSubmitted, email]);
 
   // Save on section change
   useEffect(() => {
@@ -376,6 +401,17 @@ export default function Questionnaire() {
       saveProgressMutation.mutate();
     }
   }, [currentSectionIndex]);
+
+  // Save when responses change (debounced 3 seconds after last change)
+  useEffect(() => {
+    if (!emailSubmitted || !email || Object.keys(responses).length === 0) return;
+
+    const debounceTimer = setTimeout(() => {
+      saveProgressMutation.mutate();
+    }, 3000); // Save 3 seconds after last response change
+
+    return () => clearTimeout(debounceTimer);
+  }, [responses]);
 
   // Motivational messages based on progress
   const getMotivationalMessage = (): { title: string; message: string } | null => {
