@@ -2319,7 +2319,11 @@ function BentoBodyMappingSection() {
           >
             <div className={`${bentoStyles.cardLarge} flex items-center justify-center min-h-[500px]`}>
               <div className="h-[450px] w-[450px] max-w-full">
-                <BodyVisualization activeCategory={activeCategory || undefined} className="h-full w-full" />
+                <BodyVisualization
+                  activeCategory={activeCategory || undefined}
+                  onCategoryChange={setActiveCategory}
+                  className="h-full w-full"
+                />
               </div>
             </div>
           </motion.div>
