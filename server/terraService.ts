@@ -398,7 +398,8 @@ export async function generateTerraWidget(
       },
       body: JSON.stringify({
         reference_id: referenceId,
-        providers: providers?.join(",") || "APPLE,OURA,GARMIN,FITBIT,GOOGLE,SAMSUNG,ULTRAHUMAN,WITHINGS",
+        // Temporairement: on enlève APPLE et SAMSUNG (SDK only) pour tester les providers API
+        providers: providers?.join(",") || "OURA,GARMIN,FITBIT,GOOGLE,ULTRAHUMAN,WITHINGS,WHOOP",
         language: "fr",
         // TERRA AVENGERS: Permet aux users iPhone de connecter Apple Health via l'app Terra Avengers
         // L'app est déjà sur l'App Store, l'user la télécharge et autorise Apple Health
