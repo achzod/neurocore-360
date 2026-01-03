@@ -61,11 +61,10 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     organic: { name: "Sand Stone", bg: "#F0EFE9", surface: "#E6E4DD", primary: "#A85A32", text: "#292524", muted: "#78716C", border: "rgba(168,90,50,0.1)" },
   };
 
-  // ANABOLIC BIOSCAN (49€) - 17 sections (from anabolic-bioscan/sections.json)
+  // ANABOLIC BIOSCAN (49€) - 15 sections (sans CTA qui ne comptent pas)
   const anabolicSections = [
-    { name: "CTA Début Coaching", locked: false },
     { name: "Introduction", locked: false },
-    { name: "Sommeil", locked: true },
+    { name: "Sommeil", locked: false },
     { name: "Digestion", locked: true },
     { name: "Nerveux", locked: true },
     { name: "Hormones", locked: true },
@@ -79,17 +78,15 @@ function DemoModal({ onClose }: { onClose: () => void }) {
     { name: "Feuille Route", locked: true },
     { name: "Projection 30-60-90", locked: true },
     { name: "Conclusion", locked: true },
-    { name: "CTA Fin Coaching", locked: true },
   ];
 
-  // PRO PANEL 360 (99€) - 18 sections (from neurocore/geminiPremiumEngine.ts)
+  // PRO PANEL 360 (99€) - 17 sections (sans Executive Summary qui ne compte pas)
   const propanelSections = [
-    { name: "Executive Summary", locked: false },
     { name: "Analyse Visuelle & Posturale", locked: false },
-    { name: "Analyse Biomécanique", locked: true },
+    { name: "Analyse Biomécanique", locked: false },
     { name: "Analyse Entraînement & Périodisation", locked: true },
     { name: "Analyse Système Cardiovasculaire", locked: true },
-    { name: "Analyse Métabolisme & Nutrition", locked: true },
+    { name: "Analyse Nutrition & Métabolisme", locked: true },
     { name: "Analyse Sommeil & Récupération", locked: true },
     { name: "Analyse Digestion & Microbiote", locked: true },
     { name: "Analyse Axes Hormonaux", locked: true },
@@ -105,7 +102,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
   ];
 
   const sections = selectedPlan === "anabolic" ? anabolicSections : propanelSections;
-  const sectionCount = selectedPlan === "anabolic" ? 17 : 18;
+  const sectionCount = selectedPlan === "anabolic" ? 15 : 17;
   const questionCount = selectedPlan === "anabolic" ? 150 : 210;
   const planName = selectedPlan === "anabolic" ? "ANABOLIC BIOSCAN" : "PRO PANEL 360";
   const planPrice = selectedPlan === "anabolic" ? "49€" : "99€";
