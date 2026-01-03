@@ -31,6 +31,7 @@ import {
   TERRA_PROVIDERS,
 } from "./terraService";
 import { registerKnowledgeRoutes } from "./knowledge";
+import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1886,6 +1887,9 @@ export async function registerRoutes(
 
   // ==================== KNOWLEDGE BASE ROUTES ====================
   registerKnowledgeRoutes(app);
+
+  // ==================== BLOOD ANALYSIS ROUTES ====================
+  registerBloodAnalysisRoutes(app);
 
   return httpServer;
 }

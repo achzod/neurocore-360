@@ -7,11 +7,21 @@ import { pool } from "../db";
 
 export interface ScrapedArticle {
   id?: string;
-  source: "huberman" | "sbs" | "applied_metabolics" | "newsletter";
+  source:
+    | "huberman"
+    | "sbs"
+    | "applied_metabolics"
+    | "newsletter"
+    | "examine"
+    | "peter_attia"
+    | "marek_health"
+    | "chris_masterjohn"
+    | "renaissance_periodization"
+    | "mpmd";
   title: string;
   content: string;
   url: string;
-  category?: string; // "sommeil", "hormones", "nutrition", etc.
+  category?: string; // "sommeil", "hormones", "nutrition", "bloodwork", etc.
   keywords?: string[];
   scrapedAt: Date;
   contentHash?: string; // Pour détecter les doublons

@@ -22,8 +22,15 @@ export {
   scrapeSBS,
   scrapeAppliedMetabolics,
   scrapeSendPulseNewsletters,
+  scrapeExamine,
+  scrapePeterAttia,
+  scrapeMarekHealth,
+  scrapeMasterjohn,
+  scrapeRP,
+  scrapeMPMD,
   scrapeSource,
   buildKnowledgeBase,
+  SOURCES,
   type ScraperSource
 } from "./scraper";
 export {

@@ -1,0 +1,745 @@
+/**
+ * NEUROCORE 360 - Blood Analysis System
+ * Analyse de bilans sanguins avec ranges OPTIMAUX vs normaux
+ * Sources: Examine, Peter Attia, Marek Health, Chris Masterjohn, RP, MPMD
+ */
+
+import Anthropic from "@anthropic-ai/sdk";
+import { searchArticles, searchFullText } from "../knowledge/storage";
+
+// ============================================
+// BIOMARKERS - OPTIMAL RANGES
+// ============================================
+
+export interface BiomarkerRange {
+  name: string;
+  unit: string;
+  normalMin: number;
+  normalMax: number;
+  optimalMin: number;
+  optimalMax: number;
+  context?: string;
+  genderSpecific?: "homme" | "femme";
+}
+
+export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
+  // Panel Hormonal
+  testosterone_total: {
+    name: "Testostérone totale",
+    unit: "ng/dL",
+    normalMin: 300, normalMax: 1000,
+    optimalMin: 600, optimalMax: 900,
+    context: "<500 = suboptimal pour muscu",
+    genderSpecific: "homme"
+  },
+  testosterone_libre: {
+    name: "Testostérone libre",
+    unit: "pg/mL",
+    normalMin: 5, normalMax: 25,
+    optimalMin: 15, optimalMax: 25,
+    context: "Forme active",
+    genderSpecific: "homme"
+  },
+  shbg: {
+    name: "SHBG",
+    unit: "nmol/L",
+    normalMin: 10, normalMax: 80,
+    optimalMin: 20, optimalMax: 40,
+    context: "Trop haut = moins de testo libre"
+  },
+  estradiol: {
+    name: "Estradiol (E2)",
+    unit: "pg/mL",
+    normalMin: 10, normalMax: 40,
+    optimalMin: 20, optimalMax: 35,
+    context: "Équilibre testo/E2 crucial"
+  },
+  lh: {
+    name: "LH",
+    unit: "mIU/mL",
+    normalMin: 1.5, normalMax: 9.3,
+    optimalMin: 4, optimalMax: 7,
+    context: "Signal hypophysaire"
+  },
+  fsh: {
+    name: "FSH",
+    unit: "mIU/mL",
+    normalMin: 1.5, normalMax: 12.4,
+    optimalMin: 3, optimalMax: 8,
+    context: "Spermatogenèse"
+  },
+  prolactine: {
+    name: "Prolactine",
+    unit: "ng/mL",
+    normalMin: 2, normalMax: 18,
+    optimalMin: 5, optimalMax: 12,
+    context: "Élevée = libido ↓"
+  },
+  dhea_s: {
+    name: "DHEA-S",
+    unit: "µg/dL",
+    normalMin: 100, normalMax: 500,
+    optimalMin: 300, optimalMax: 450,
+    context: "Précurseur anabolique"
+  },
+  cortisol: {
+    name: "Cortisol matin",
+    unit: "µg/dL",
+    normalMin: 5, normalMax: 25,
+    optimalMin: 12, optimalMax: 18,
+    context: "Trop haut ou bas = problème"
+  },
+  igf1: {
+    name: "IGF-1",
+    unit: "ng/mL",
+    normalMin: 100, normalMax: 300,
+    optimalMin: 200, optimalMax: 280,
+    context: "Anabolisme, récupération"
+  },
+
+  // Panel Thyroïdien
+  tsh: {
+    name: "TSH",
+    unit: "mIU/L",
+    normalMin: 0.4, normalMax: 4.5,
+    optimalMin: 0.5, optimalMax: 2.0,
+    context: ">2.5 = thyroïde paresseuse"
+  },
+  t4_libre: {
+    name: "T4 libre",
+    unit: "ng/dL",
+    normalMin: 0.8, normalMax: 1.8,
+    optimalMin: 1.2, optimalMax: 1.6,
+    context: "Hormone stockage"
+  },
+  t3_libre: {
+    name: "T3 libre",
+    unit: "pg/mL",
+    normalMin: 2.3, normalMax: 4.2,
+    optimalMin: 3.0, optimalMax: 4.0,
+    context: "Métabolisme actif"
+  },
+  t3_reverse: {
+    name: "T3 reverse",
+    unit: "ng/dL",
+    normalMin: 9, normalMax: 27,
+    optimalMin: 0, optimalMax: 15,
+    context: "Élevé = conversion bloquée"
+  },
+  anti_tpo: {
+    name: "Anti-TPO",
+    unit: "IU/mL",
+    normalMin: 0, normalMax: 35,
+    optimalMin: 0, optimalMax: 20,
+    context: "Auto-immunité"
+  },
+
+  // Panel Métabolique
+  glycemie_jeun: {
+    name: "Glycémie à jeun",
+    unit: "mg/dL",
+    normalMin: 70, normalMax: 100,
+    optimalMin: 75, optimalMax: 90,
+    context: ">95 = résistance insuline"
+  },
+  hba1c: {
+    name: "HbA1c",
+    unit: "%",
+    normalMin: 0, normalMax: 5.7,
+    optimalMin: 0, optimalMax: 5.3,
+    context: "Moyenne 3 mois"
+  },
+  insuline_jeun: {
+    name: "Insuline à jeun",
+    unit: "µIU/mL",
+    normalMin: 2, normalMax: 25,
+    optimalMin: 3, optimalMax: 8,
+    context: "Sensibilité insuline"
+  },
+  homa_ir: {
+    name: "HOMA-IR",
+    unit: "",
+    normalMin: 0, normalMax: 2.5,
+    optimalMin: 0, optimalMax: 1.5,
+    context: "Résistance insuline"
+  },
+  triglycerides: {
+    name: "Triglycérides",
+    unit: "mg/dL",
+    normalMin: 0, normalMax: 150,
+    optimalMin: 0, optimalMax: 80,
+    context: "Énergie"
+  },
+  hdl: {
+    name: "HDL",
+    unit: "mg/dL",
+    normalMin: 40, normalMax: 999,
+    optimalMin: 55, optimalMax: 999,
+    context: "Protection cardio"
+  },
+  ldl: {
+    name: "LDL",
+    unit: "mg/dL",
+    normalMin: 0, normalMax: 100,
+    optimalMin: 70, optimalMax: 100,
+    context: "Contexte dépendant"
+  },
+  apob: {
+    name: "ApoB",
+    unit: "mg/dL",
+    normalMin: 0, normalMax: 100,
+    optimalMin: 0, optimalMax: 80,
+    context: "Meilleur que LDL"
+  },
+  lpa: {
+    name: "Lp(a)",
+    unit: "mg/dL",
+    normalMin: 0, normalMax: 30,
+    optimalMin: 0, optimalMax: 14,
+    context: "Génétique, risque CV"
+  },
+
+  // Panel Inflammatoire
+  crp_us: {
+    name: "CRP-us",
+    unit: "mg/L",
+    normalMin: 0, normalMax: 3.0,
+    optimalMin: 0, optimalMax: 0.5,
+    context: "Inflammation systémique"
+  },
+  homocysteine: {
+    name: "Homocystéine",
+    unit: "µmol/L",
+    normalMin: 5, normalMax: 15,
+    optimalMin: 6, optimalMax: 9,
+    context: "Méthylation, cardio"
+  },
+  ferritine: {
+    name: "Ferritine",
+    unit: "ng/mL",
+    normalMin: 20, normalMax: 300,
+    optimalMin: 80, optimalMax: 150,
+    context: "Fer stocké (H: 80-150, F: 50-100)"
+  },
+  fer_serique: {
+    name: "Fer sérique",
+    unit: "µg/dL",
+    normalMin: 60, normalMax: 170,
+    optimalMin: 100, optimalMax: 140,
+    context: "Transport O2"
+  },
+  transferrine_sat: {
+    name: "Transferrine sat.",
+    unit: "%",
+    normalMin: 20, normalMax: 50,
+    optimalMin: 30, optimalMax: 45,
+    context: "Utilisation fer"
+  },
+
+  // Panel Vitamines/Minéraux
+  vitamine_d: {
+    name: "Vitamine D",
+    unit: "ng/mL",
+    normalMin: 30, normalMax: 100,
+    optimalMin: 50, optimalMax: 80,
+    context: "Hormones, immunité"
+  },
+  b12: {
+    name: "B12",
+    unit: "pg/mL",
+    normalMin: 200, normalMax: 900,
+    optimalMin: 500, optimalMax: 800,
+    context: "Énergie, neuro"
+  },
+  folate: {
+    name: "Folate",
+    unit: "ng/mL",
+    normalMin: 3, normalMax: 999,
+    optimalMin: 10, optimalMax: 20,
+    context: "Méthylation"
+  },
+  magnesium_rbc: {
+    name: "Magnésium RBC",
+    unit: "mg/dL",
+    normalMin: 4.2, normalMax: 6.8,
+    optimalMin: 5.5, optimalMax: 6.5,
+    context: "Récup musculaire"
+  },
+  zinc: {
+    name: "Zinc",
+    unit: "µg/dL",
+    normalMin: 60, normalMax: 120,
+    optimalMin: 90, optimalMax: 110,
+    context: "Testostérone, immunité"
+  },
+
+  // Panel Hépatique/Rénal
+  alt: {
+    name: "ALT",
+    unit: "U/L",
+    normalMin: 7, normalMax: 56,
+    optimalMin: 0, optimalMax: 30,
+    context: "Foie"
+  },
+  ast: {
+    name: "AST",
+    unit: "U/L",
+    normalMin: 10, normalMax: 40,
+    optimalMin: 0, optimalMax: 30,
+    context: "Foie + muscle"
+  },
+  ggt: {
+    name: "GGT",
+    unit: "U/L",
+    normalMin: 9, normalMax: 48,
+    optimalMin: 0, optimalMax: 25,
+    context: "Stress oxydatif"
+  },
+  creatinine: {
+    name: "Créatinine",
+    unit: "mg/dL",
+    normalMin: 0.7, normalMax: 1.3,
+    optimalMin: 0.9, optimalMax: 1.1,
+    context: "Fonction rénale"
+  },
+  egfr: {
+    name: "eGFR",
+    unit: "mL/min",
+    normalMin: 90, normalMax: 999,
+    optimalMin: 100, optimalMax: 999,
+    context: "Filtration rénale"
+  }
+};
+
+// ============================================
+// DIAGNOSTIC PATTERNS
+// ============================================
+
+export interface DiagnosticPattern {
+  name: string;
+  markers: Record<string, "low" | "high" | "normal">;
+  causes: string[];
+  protocol: string[];
+}
+
+export const DIAGNOSTIC_PATTERNS: DiagnosticPattern[] = [
+  {
+    name: "Low T Syndrome",
+    markers: {
+      testosterone_total: "low",
+      shbg: "high",
+      estradiol: "low",
+      cortisol: "high"
+    },
+    causes: ["Stress chronique", "Déficit calorique", "Surentraînement"],
+    protocol: [
+      "Stopper déficit calorique",
+      "Réduire volume entraînement",
+      "Sommeil 8h+",
+      "Ashwagandha 600mg, Zinc 30mg, Magnésium 400mg"
+    ]
+  },
+  {
+    name: "Thyroid Slowdown",
+    markers: {
+      tsh: "high",
+      t3_libre: "low",
+      t3_reverse: "high"
+    },
+    causes: ["Déficit calorique prolongé", "Stress", "Inflammation"],
+    protocol: [
+      "Refeeds glucides 2x/semaine",
+      "Sélénium 200mcg",
+      "Iode si carence confirmée",
+      "Check anti-TPO"
+    ]
+  },
+  {
+    name: "Insulin Resistance",
+    markers: {
+      insuline_jeun: "high",
+      homa_ir: "high",
+      triglycerides: "high",
+      hba1c: "high"
+    },
+    causes: ["Excès glucides raffinés", "Sédentarité", "Graisse viscérale"],
+    protocol: [
+      "Réduire glucides raffinés",
+      "Marche post-prandiale 15min",
+      "Musculation 3x/semaine",
+      "Berbérine 500mg x2 ou Metformine (médecin)"
+    ]
+  },
+  {
+    name: "Chronic Inflammation",
+    markers: {
+      crp_us: "high",
+      ferritine: "high",
+      homocysteine: "high"
+    },
+    causes: ["Alimentation pro-inflammatoire", "Stress oxydatif", "Infections chroniques"],
+    protocol: [
+      "Oméga-3 3-4g/jour (EPA dominant)",
+      "Curcumine 500mg + pipérine",
+      "Réduire oméga-6, sucres",
+      "Check infections chroniques"
+    ]
+  },
+  {
+    name: "Anemia/Low Iron",
+    markers: {
+      ferritine: "low",
+      fer_serique: "low",
+      transferrine_sat: "low"
+    },
+    causes: ["Déficit alimentaire", "Malabsorption", "Sport endurance"],
+    protocol: [
+      "Fer bisglycinate 25mg + vitamine C",
+      "Éviter café/thé aux repas",
+      "Check B12 et folate"
+    ]
+  },
+  {
+    name: "HPA Dysfunction",
+    markers: {
+      cortisol: "high",
+      dhea_s: "low"
+    },
+    causes: ["Stress chronique", "Surentraînement", "Manque sommeil"],
+    protocol: [
+      "Ashwagandha KSM-66 600mg",
+      "Phosphatidylsérine 300mg soir",
+      "Magnésium glycinate 400mg",
+      "NSDR/méditation 20min/jour"
+    ]
+  }
+];
+
+// ============================================
+// BLOOD ANALYSIS FUNCTIONS
+// ============================================
+
+export interface BloodMarkerInput {
+  markerId: string;
+  value: number;
+}
+
+export interface MarkerAnalysis {
+  markerId: string;
+  name: string;
+  value: number;
+  unit: string;
+  normalRange: string;
+  optimalRange: string;
+  status: "optimal" | "normal" | "suboptimal" | "critical";
+  interpretation: string;
+}
+
+export interface BloodAnalysisResult {
+  summary: {
+    optimal: string[];
+    watch: string[];
+    action: string[];
+  };
+  markers: MarkerAnalysis[];
+  patterns: DiagnosticPattern[];
+  recommendations: {
+    priority1: { action: string; dosage?: string; timing?: string; why: string }[];
+    priority2: { action: string; dosage?: string; timing?: string; why: string }[];
+  };
+  followUp: { test: string; delay: string; objective: string }[];
+  alerts: string[];
+}
+
+function getMarkerStatus(value: number, range: BiomarkerRange): "optimal" | "normal" | "suboptimal" | "critical" {
+  // Check if value is within optimal range
+  if (value >= range.optimalMin && value <= range.optimalMax) {
+    return "optimal";
+  }
+
+  // Check if value is within normal range
+  if (value >= range.normalMin && value <= range.normalMax) {
+    return "normal"; // In normal but not optimal
+  }
+
+  // Check if critically out of range (>20% outside normal)
+  const normalSpread = range.normalMax - range.normalMin;
+  if (value < range.normalMin - normalSpread * 0.2 || value > range.normalMax + normalSpread * 0.2) {
+    return "critical";
+  }
+
+  return "suboptimal";
+}
+
+function detectPatterns(markers: MarkerAnalysis[]): DiagnosticPattern[] {
+  const detectedPatterns: DiagnosticPattern[] = [];
+  const markerMap = new Map(markers.map(m => [m.markerId, m]));
+
+  for (const pattern of DIAGNOSTIC_PATTERNS) {
+    let matchCount = 0;
+    let totalMarkers = Object.keys(pattern.markers).length;
+
+    for (const [markerId, expectedStatus] of Object.entries(pattern.markers)) {
+      const marker = markerMap.get(markerId);
+      if (!marker) continue;
+
+      const range = BIOMARKER_RANGES[markerId];
+      if (!range) continue;
+
+      const isLow = marker.value < range.optimalMin;
+      const isHigh = marker.value > range.optimalMax;
+
+      if ((expectedStatus === "low" && isLow) ||
+          (expectedStatus === "high" && isHigh) ||
+          (expectedStatus === "normal" && marker.status === "optimal")) {
+        matchCount++;
+      }
+    }
+
+    // If at least 50% of markers match the pattern
+    if (matchCount >= totalMarkers * 0.5) {
+      detectedPatterns.push(pattern);
+    }
+  }
+
+  return detectedPatterns;
+}
+
+export async function analyzeBloodwork(
+  markers: BloodMarkerInput[],
+  userProfile: {
+    gender: "homme" | "femme";
+    age?: string;
+    objectives?: string;
+    medications?: string;
+  }
+): Promise<BloodAnalysisResult> {
+  // Analyze each marker
+  const analyzedMarkers: MarkerAnalysis[] = [];
+  const optimal: string[] = [];
+  const watch: string[] = [];
+  const action: string[] = [];
+
+  for (const input of markers) {
+    const range = BIOMARKER_RANGES[input.markerId];
+    if (!range) continue;
+
+    // Skip gender-specific markers for wrong gender
+    if (range.genderSpecific && range.genderSpecific !== userProfile.gender) continue;
+
+    const status = getMarkerStatus(input.value, range);
+    const analysis: MarkerAnalysis = {
+      markerId: input.markerId,
+      name: range.name,
+      value: input.value,
+      unit: range.unit,
+      normalRange: `${range.normalMin}-${range.normalMax}`,
+      optimalRange: `${range.optimalMin}-${range.optimalMax}`,
+      status,
+      interpretation: range.context || ""
+    };
+
+    analyzedMarkers.push(analysis);
+
+    // Categorize
+    if (status === "optimal") {
+      optimal.push(range.name);
+    } else if (status === "critical") {
+      action.push(range.name);
+    } else {
+      watch.push(range.name);
+    }
+  }
+
+  // Detect patterns
+  const patterns = detectPatterns(analyzedMarkers);
+
+  // Build recommendations from patterns
+  const priority1: BloodAnalysisResult["recommendations"]["priority1"] = [];
+  const priority2: BloodAnalysisResult["recommendations"]["priority2"] = [];
+
+  for (const pattern of patterns) {
+    for (let i = 0; i < pattern.protocol.length; i++) {
+      const rec = {
+        action: pattern.protocol[i],
+        why: `Pattern: ${pattern.name}`
+      };
+
+      if (i < 2) {
+        priority1.push(rec);
+      } else {
+        priority2.push(rec);
+      }
+    }
+  }
+
+  // Add follow-up tests
+  const followUp: BloodAnalysisResult["followUp"] = [];
+  for (const marker of analyzedMarkers) {
+    if (marker.status === "critical" || marker.status === "suboptimal") {
+      followUp.push({
+        test: marker.name,
+        delay: "6-8 semaines",
+        objective: `Vérifier évolution vers range optimal (${marker.unit})`
+      });
+    }
+  }
+
+  // Generate alerts
+  const alerts: string[] = [];
+  if (action.length > 0) {
+    alerts.push("Consultez un médecin pour les marqueurs critiques");
+  }
+  if (patterns.some(p => p.name === "Insulin Resistance")) {
+    alerts.push("Risque métabolique détecté - consultation recommandée");
+  }
+
+  return {
+    summary: { optimal, watch, action },
+    markers: analyzedMarkers,
+    patterns,
+    recommendations: { priority1, priority2 },
+    followUp,
+    alerts
+  };
+}
+
+// ============================================
+// AI-POWERED ANALYSIS
+// ============================================
+
+const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es un expert en analyse de bilans sanguins orienté SANTÉ + PERFORMANCE + MUSCULATION.
+
+PRINCIPES CLÉS:
+- Utilise les RANGES OPTIMAUX (pas juste "normaux")
+- Croise les marqueurs pour identifier les PATTERNS
+- Donne des dosages et timing PRÉCIS
+- Cite tes sources: [Peter Attia], [Marek Health], [Examine.com], etc.
+- Explique les mécanismes physiologiques
+- Propose des contrôles de suivi
+
+DISCLAIMER OBLIGATOIRE EN FIN DE CHAQUE ANALYSE:
+⚠️ IMPORTANT: Analyse à titre informatif uniquement.
+Ne remplace PAS une consultation médicale.
+
+FORMAT DE RÉPONSE:
+## ANALYSE BILAN SANGUIN
+
+### Résumé Exécutif
+🟢 Optimal: [liste]
+🟡 À surveiller: [liste]
+🔴 Action requise: [liste]
+
+### Analyse par Système
+[Pour chaque système (Hormones, Thyroïde, Métabolique, etc.)]
+| Marqueur | Valeur | Ref Labo | Optimal | Status |
+**Interprétation:** [explication]
+**Source:** [Peter Attia/Marek Health/etc.]
+
+### Connexions Identifiées
+🔗 [Marqueur A] + [Marqueur B] → [Pattern]
+
+### Protocole Recommandé
+#### Priorité 1 - Actions Immédiates
+1. [Action] - [Dosage] - [Timing]
+   **Pourquoi:** [mécanisme]
+
+### Contrôles à Prévoir
+| Test | Délai | Objectif |
+
+### ⚠️ Alertes Médicales
+- Consulter si [condition]
+- Contre-indiqué si [condition]`;
+
+export async function generateAIBloodAnalysis(
+  analysisResult: BloodAnalysisResult,
+  userProfile: {
+    gender: "homme" | "femme";
+    age?: string;
+    objectives?: string;
+    medications?: string;
+  },
+  knowledgeContext?: string
+): Promise<string> {
+  const anthropic = new Anthropic();
+
+  // Build the prompt with analysis data
+  const markersTable = analysisResult.markers.map(m =>
+    `- ${m.name}: ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) → ${m.status.toUpperCase()}`
+  ).join("\n");
+
+  const patternsText = analysisResult.patterns.map(p =>
+    `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
+  ).join("\n\n");
+
+  const userPrompt = `Analyse ce bilan sanguin pour un ${userProfile.gender} ${userProfile.age || ""}.
+Objectifs: ${userProfile.objectives || "Performance et santé"}
+Médicaments: ${userProfile.medications || "Aucun"}
+
+MARQUEURS:
+${markersTable}
+
+PATTERNS DÉTECTÉS:
+${patternsText}
+
+RÉSUMÉ:
+- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}
+- À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
+- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
+
+${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}
+
+Génère une analyse complète selon le format demandé.`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 4000,
+    system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userPrompt }]
+  });
+
+  const textContent = response.content.find(c => c.type === "text");
+  return textContent?.text || "";
+}
+
+// ============================================
+// KNOWLEDGE BASE INTEGRATION
+// ============================================
+
+export async function getBloodworkKnowledgeContext(
+  markers: MarkerAnalysis[],
+  patterns: DiagnosticPattern[]
+): Promise<string> {
+  const keywords: string[] = [];
+
+  // Add marker names as keywords
+  for (const marker of markers) {
+    if (marker.status !== "optimal") {
+      keywords.push(marker.name.toLowerCase());
+    }
+  }
+
+  // Add pattern-related keywords
+  for (const pattern of patterns) {
+    keywords.push(...pattern.causes.map(c => c.toLowerCase()));
+  }
+
+  // Add specific bloodwork terms
+  keywords.push("bloodwork", "biomarker", "optimal range");
+
+  // Search knowledge base
+  const articles = await searchArticles(keywords, 5, [
+    "peter_attia", "marek_health", "examine", "chris_masterjohn", "mpmd"
+  ]);
+
+  if (articles.length === 0) {
+    return "";
+  }
+
+  // Build context from articles
+  const context = articles.map(a =>
+    `[${a.source}] ${a.title}\n${a.content.substring(0, 1000)}...`
+  ).join("\n\n---\n\n");
+
+  return `Sources consultées:\n${context}`;
+}
