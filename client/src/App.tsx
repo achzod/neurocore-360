@@ -24,6 +24,7 @@ import BloodAnalysis from "@/pages/BloodAnalysis";
 import BurnoutDetectionPage from "@/pages/BurnoutDetectionPage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
+import Press from "@/pages/Press";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/faq" component={FAQ} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogArticle} />
+      <Route path="/press" component={Press} />
       <Route path="/test" component={TestAudit} />
       <Route path="/report" component={Report} />
       <Route path="/report/:auditId" component={Report} />
