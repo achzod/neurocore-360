@@ -31,31 +31,31 @@ import {
   BarChart3,
 } from "lucide-react";
 
-// What's included in Discovery Scan (free)
+// What's included in Discovery Scan (free) - DIAGNOSTIC ONLY, NO RECOMMENDATIONS
 const discoveryFeatures = [
-  { text: "Executive Summary personnalise", desc: "Synthese de ton profil en 1 page" },
-  { text: "Analyse energie & recuperation", desc: "Sommeil, stress, fatigue" },
-  { text: "Analyse metabolisme & nutrition", desc: "Digestion, habitudes alimentaires" },
-  { text: "Plan d'action 14 jours", desc: "Actions prioritaires a implementer" },
-  { text: "Rapport PDF 5-7 pages", desc: "Telechargeable immediatement" },
+  { text: "Detection de tes blocages", desc: "On identifie ce qui te freine" },
+  { text: "Patterns problematiques reveles", desc: "Habitudes qui sabotent tes resultats" },
+  { text: "Desequilibres identifies", desc: "Energie, sommeil, metabolisme" },
+  { text: "Score global sur 100", desc: "Ton niveau actuel mesure" },
+  { text: "Rapport diagnostic 5-7 pages", desc: "Ce qui va pas, sans les solutions" },
 ];
 
-// What's included in Anabolic Bioscan (59€)
+// What's included in Anabolic Bioscan (59€) - DIAGNOSTIC + PROTOCOLS
 const anabolicFeatures = [
-  { text: "16 sections d'analyse", desc: "Rapport complet 25-30 pages" },
-  { text: "Profil Hormonal complet", desc: "Testosterone, cortisol, thyroide..." },
+  { text: "Tout le Discovery Scan", desc: "Diagnostic complet inclus" },
   { text: "5 protocoles personnalises", desc: "Matin, soir, digestion, bureau, training" },
-  { text: "Stack Supplements optimise", desc: "Dosages precis et timing" },
+  { text: "Stack Supplements avec dosages", desc: "Exactement quoi prendre et quand" },
   { text: "Plan 30-60-90 jours", desc: "Roadmap semaine par semaine" },
-  { text: "KPIs et tableau de bord", desc: "Metriques de suivi" },
+  { text: "Recommandations precises", desc: "Quoi faire pour corriger chaque probleme" },
+  { text: "Rapport action 25-30 pages", desc: "Diagnostic + Solutions detaillees" },
 ];
 
-// What's included in Ultimate Scan (79€)
+// What's included in Ultimate Scan (79€) - DIAGNOSTIC + PROTOCOLS + PHOTO ANALYSIS
 const ultimateFeatures = [
-  { text: "18 sections ultra-detaillees", desc: "Rapport 40-50 pages complet" },
+  { text: "Tout l'Anabolic Bioscan", desc: "Diagnostic + Protocoles inclus" },
   { text: "Analyse photo posturale", desc: "Composition corporelle, morphotype" },
   { text: "Analyse biomecanique complete", desc: "Psoas, diaphragme, sangle profonde" },
-  { text: "Tout l'Anabolic Bioscan inclus", desc: "16 sections + 2 exclusives" },
+  { text: "18 sections ultra-detaillees", desc: "Rapport 40-50 pages complet" },
   { text: "Support prioritaire", desc: "Reponse sous 24h" },
 ];
 
@@ -64,21 +64,21 @@ const howItWorks = [
   {
     step: 1,
     title: "Reponds au questionnaire",
-    description: "50 questions essentielles sur ton mode de vie, alimentation, sommeil et energie. Environ 10 minutes.",
+    description: "50 questions sur ton mode de vie, alimentation, sommeil et energie. 10 minutes max.",
     icon: FileText,
     color: "slate",
   },
   {
     step: 2,
-    title: "Analyse de ton profil",
-    description: "Tes reponses sont analysees et croisees avec les dernieres recherches en sante metabolique.",
+    title: "On detecte tes problemes",
+    description: "Tes reponses revelent tes blocages, patterns problematiques et desequilibres caches.",
     icon: Brain,
     color: "purple",
   },
   {
     step: 3,
-    title: "Recois ton rapport",
-    description: "Acces immediat a 5 sections d'analyse. Upgrade vers Anabolic Bioscan pour tout debloquer.",
+    title: "Tu recois ton diagnostic",
+    description: "Rapport complet de ce qui va pas. Pour les solutions, upgrade vers Anabolic ou Ultimate.",
     icon: BarChart3,
     color: "emerald",
   },
@@ -226,13 +226,13 @@ export default function AuditGratuit() {
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
                   Discovery Scan.
                   <span className="block text-primary mt-2">
-                    Decouvre ton profil metabolique.
+                    On te dit ce qui va pas.
                   </span>
                 </h1>
 
                 <p className="text-xl text-gray-400 mb-8 leading-relaxed">
-                  50 questions, 5 domaines d'analyse, rapport personnalise.
-                  Decouvre NEUROCORE 360 sans engagement, sans carte bancaire.
+                  Diagnostic complet de tes blocages, patterns problematiques et desequilibres.
+                  Sans recommandations - juste la verite sur ton profil.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
