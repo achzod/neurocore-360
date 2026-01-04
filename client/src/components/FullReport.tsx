@@ -1324,7 +1324,7 @@ const ReviewRequest = ({ color }: { color: string }) => {
             Ton avis compte !
           </h3>
           <p className="text-sm text-[var(--color-text-muted)] mb-6 max-w-sm mx-auto">
-            Comment as-tu trouve ce rapport ? Ta note nous aide a nous ameliorer.
+            Comment as-tu trouvé ce rapport ? Ta note m'aide à m'améliorer.
           </p>
 
           {/* Star Rating */}
