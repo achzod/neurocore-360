@@ -36,6 +36,7 @@ import {
   TrendingUp,
   Target,
   Layers,
+  AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { BodyVisualization } from "@/components/animations/BodyVisualization";
