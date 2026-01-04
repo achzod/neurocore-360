@@ -5,7 +5,8 @@ import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Clock, Calendar } from "lucide-react";
+import { ArrowRight, Clock, Calendar, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import {
   BLOG_ARTICLES,
@@ -16,8 +17,18 @@ import {
 
 export default function Blog() {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const featuredArticles = getFeaturedArticles();
-  const filteredArticles = getArticlesByCategory(activeCategory);
+  const categoryArticles = getArticlesByCategory(activeCategory);
+
+  // Filter by search query
+  const filteredArticles = searchQuery.trim()
+    ? categoryArticles.filter(
+        (article) =>
+          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : categoryArticles;
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,21 +109,43 @@ export default function Blog() {
           </section>
         )}
 
-        {/* Category Filter */}
+        {/* Category Filter & Search */}
         <section className="py-8 border-y border-border bg-muted/20">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {BLOG_CATEGORIES.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={activeCategory === category.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveCategory(category.id)}
-                  className="rounded-full"
-                >
-                  {category.label}
-                </Button>
-              ))}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              {/* Search */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Rechercher un article..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9 rounded-full"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {/* Categories */}
+              <div className="flex flex-wrap items-center gap-2">
+                {BLOG_CATEGORIES.map((category) => (
+                  <Button
+                    key={category.id}
+                    variant={activeCategory === category.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveCategory(category.id)}
+                    className="rounded-full"
+                  >
+                    {category.label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </section>

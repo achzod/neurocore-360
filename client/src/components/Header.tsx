@@ -43,9 +43,12 @@ export function Header() {
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-black tracking-tighter" data-testid="text-brand-name">
-              APEX<span className="text-primary">LABS</span>
-            </span>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tighter leading-none" data-testid="text-brand-name">
+                APEX<span className="text-primary">LABS</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground tracking-wide">by Achzod</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation - Products */}
