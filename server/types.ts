@@ -96,10 +96,11 @@ export interface AuditResult {
   };
 }
 
-export type SectionName = 
+export type SectionName =
   | "Executive Summary"
   | "Resume Executif"
   | "Analyse visuelle et posturale complete"
+  | "Analyse energie et recuperation"
   | "Analyse biomecanique et sangle profonde"
   | "Analyse entrainement et periodisation"
   | "Analyse systeme cardiovasculaire"

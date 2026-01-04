@@ -114,9 +114,10 @@ const SECTIONS: SectionName[] = [
 ];
 
 // Version GRATUITE : on donne un aperçu concret + CTA vers PREMIUM (pas de protocoles détaillés, pas de stack complète).
+// NOTE: Pas de photos dans le tier FREE, donc pas d'analyse visuelle/posturale
 const SECTIONS_GRATUIT: SectionName[] = [
   "Executive Summary",
-  "Analyse visuelle et posturale complete",
+  "Analyse energie et recuperation",
   "Analyse metabolisme et nutrition",
   "Synthese et Prochaines Etapes",
 ];
@@ -1025,18 +1026,33 @@ Termine par une mention naturelle que l'analyse PREMIUM va plus loin (18 section
 `;
   }
 
-  if (section === "Analyse visuelle et posturale complete") {
+  if (section === "Analyse energie et recuperation") {
     return `
-MODE GRATUIT - ANALYSE VISUELLE COMPLETE (CRITIQUE) :
+MODE GRATUIT - ANALYSE ENERGIE ET RECUPERATION (CRITIQUE) :
 LONGUEUR : Cette section doit faire 7000-9000 caracteres (175-225 lignes).
 
 STRUCTURE :
-1. MAPPING VISUEL DETAILLE (2500 chars) : Analyse chaque zone visible sur les photos
-2. SIGNATURE POSTURALE (2000 chars) : Ce que sa posture revele sur son systeme nerveux et hormonal
-3. MECANISMES SOUS-JACENTS (2000 chars) : Pourquoi ces patterns se sont installes
-4. TESTS VIDEO PROPOSES (1500 chars) : 4-5 tests simples pour confirmer les hypotheses
+1. PROFIL ENERGETIQUE (2500 chars) : Analyse des niveaux d'energie matin/aprem/soir bases sur ses reponses
+   - Courbe de cortisol probable
+   - Signes de fatigue surrenalienne ou dysregulation
+   - Impact du sommeil sur l'energie
 
-C'est une vraie analyse, pas un apercu. Le client doit comprendre son corps.
+2. ANALYSE SOMMEIL ET RECUPERATION (2000 chars) :
+   - Qualite du sommeil declaree vs attendue
+   - Facteurs perturbateurs identifies (ecrans, cafe, stress)
+   - Mecanismes GH/cortisol nocturnes
+
+3. GESTION DU STRESS (2000 chars) :
+   - Niveau de stress declare et ses consequences metaboliques
+   - Impact sur la prise de gras abdominale
+   - Lien stress -> sommeil -> energie -> performance
+
+4. MINI-PROTOCOLE ENERGIE 7 JOURS (1500 chars) :
+   - Actions concretes pour les 7 prochains jours
+   - Focus sur les quick wins (lumiere matin, heure cafe, routine soir)
+
+Base ton analyse UNIQUEMENT sur les reponses du questionnaire (sommeil, stress, energie, lifestyle).
+PAS de reference aux photos (le client n'en a pas fourni dans ce tier).
 `;
   }
 
