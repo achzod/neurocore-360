@@ -392,66 +392,137 @@ export default function BloodAnalysisOffer() {
       <Header />
 
       <main>
-        {/* Hero Section - Red Particles/Blood Cells Style */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-red-950 via-red-900/30 to-black py-20 lg:py-32">
-          {/* Main gradient */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-800/40 via-red-950/50 to-transparent" />
+        {/* Hero Section - Body Scan Style Ultrahuman */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-blue-950 via-blue-900/20 to-black py-20 lg:py-32">
+          {/* Main gradient - blue like Ultrahuman */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600/30 via-blue-950/40 to-transparent" />
 
-          {/* Animated particles effect - multiple layers */}
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Large floating particles */}
-            {[...Array(20)].map((_, i) => (
+          {/* Center blue halo glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[80px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-400/15 rounded-full blur-[60px]" />
+
+          {/* Background biomarker text - scrolling effect */}
+          <div className="absolute inset-0 overflow-hidden opacity-20">
+            <div className="absolute top-[60%] left-0 right-0 flex flex-col gap-2 text-blue-300/50 font-mono text-xs">
               <motion.div
-                key={`particle-lg-${i}`}
-                className="absolute rounded-full bg-red-500/30"
-                style={{
-                  width: Math.random() * 60 + 20,
-                  height: Math.random() * 60 + 20,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  filter: 'blur(1px)',
-                }}
-                animate={{
-                  y: [0, -30, 0],
-                  opacity: [0.2, 0.5, 0.2],
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: Math.random() * 4 + 4,
-                  repeat: Infinity,
-                  delay: Math.random() * 2,
-                  ease: "easeInOut",
-                }}
-              />
-            ))}
-            {/* Small particles */}
-            {[...Array(30)].map((_, i) => (
+                className="whitespace-nowrap"
+                animate={{ x: [0, -500] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                [25-HYDROXY] [A1C] [ACID] [ALBUMIN] [ALKALINE] [AMYLASE] [APOLIPOPROTEIN] [BILIRUBIN] [CALCIUM] [CHLORIDE] [CHOLESTEROL]
+              </motion.div>
               <motion.div
-                key={`particle-sm-${i}`}
-                className="absolute rounded-full bg-red-400/40"
-                style={{
-                  width: Math.random() * 15 + 5,
-                  height: Math.random() * 15 + 5,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                  y: [0, -20, 0],
-                  x: [0, Math.random() * 10 - 5, 0],
-                  opacity: [0.3, 0.7, 0.3],
-                }}
-                transition={{
-                  duration: Math.random() * 3 + 3,
-                  repeat: Infinity,
-                  delay: Math.random() * 2,
-                  ease: "easeInOut",
-                }}
-              />
-            ))}
+                className="whitespace-nowrap"
+                animate={{ x: [-200, -700] }}
+                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              >
+                [CREATININE] [DHEA-S] [ESTRADIOL] [FERRITIN] [FOLATE] [GGT] [GLUCOSE] [HDL] [HOMOCYSTEINE] [IGF-1] [INSULIN]
+              </motion.div>
+              <motion.div
+                className="whitespace-nowrap opacity-50"
+                animate={{ x: [-100, -600] }}
+                transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+              >
+                [LDL] [MAGNESIUM] [POTASSIUM] [PROLACTIN] [SHBG] [SODIUM] [T3] [T4] [TESTOSTERONE] [TSH] [VITAMIN-D] [ZINC]
+              </motion.div>
+            </div>
           </div>
 
-          {/* Center glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-[100px]" />
+          {/* Floating biomarker labels */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Top left - Hair Health */}
+            <motion.div
+              className="absolute top-[15%] left-[10%] hidden lg:flex items-center gap-2"
+              animate={{ y: [0, -5, 0], opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <span className="text-[10px] text-blue-400/60 font-mono">[01]</span>
+              <div className="px-3 py-1.5 bg-white/10 backdrop-blur border border-white/20 rounded text-sm text-white">
+                Sante Capillaire
+              </div>
+            </motion.div>
+
+            {/* Right - Thyroid */}
+            <motion.div
+              className="absolute top-[35%] right-[8%] hidden lg:flex items-center gap-2"
+              animate={{ y: [0, -8, 0], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            >
+              <span className="text-[10px] text-blue-400/60 font-mono">[02]</span>
+              <div className="px-3 py-1.5 bg-white/10 backdrop-blur border border-white/20 rounded text-sm text-white">
+                Thyroide
+              </div>
+            </motion.div>
+
+            {/* Bottom left - Inflammation */}
+            <motion.div
+              className="absolute bottom-[30%] left-[5%] hidden lg:flex items-center gap-2"
+              animate={{ y: [0, -6, 0], opacity: [0.5, 0.9, 0.5] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            >
+              <span className="text-[10px] text-blue-400/60 font-mono">[03]</span>
+              <div className="px-3 py-1.5 bg-white/10 backdrop-blur border border-white/20 rounded text-sm text-white">
+                Inflammation
+              </div>
+            </motion.div>
+
+            {/* Bottom right - Heart Health */}
+            <motion.div
+              className="absolute bottom-[20%] right-[12%] hidden lg:flex items-center gap-2"
+              animate={{ y: [0, -7, 0], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            >
+              <span className="text-[10px] text-blue-400/60 font-mono">[04]</span>
+              <div className="px-3 py-1.5 bg-white/10 backdrop-blur border border-white/20 rounded text-sm text-white">
+                Sante Cardiaque
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Targeting UI elements */}
+          <div className="absolute inset-0 pointer-events-none hidden lg:block">
+            {/* Crosshairs */}
+            <motion.div
+              className="absolute top-[25%] left-[25%] w-4 h-4"
+              animate={{ opacity: [0.3, 0.7, 0.3] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <div className="absolute inset-0 border-t border-l border-blue-400/40" />
+            </motion.div>
+            <motion.div
+              className="absolute top-[40%] right-[30%] w-4 h-4"
+              animate={{ opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+            >
+              <div className="absolute inset-0 border-b border-r border-blue-400/40" />
+            </motion.div>
+            {/* Small squares */}
+            <motion.div
+              className="absolute top-[55%] left-[20%] w-2 h-2 border border-blue-400/30"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            <motion.div
+              className="absolute top-[30%] right-[25%] w-2 h-2 border border-blue-400/30"
+              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.7, 0.4] }}
+              transition={{ duration: 2.8, repeat: Infinity, delay: 1 }}
+            />
+            {/* Plus signs */}
+            <motion.div
+              className="absolute top-[20%] right-[35%] text-blue-400/30 text-lg"
+              animate={{ opacity: [0.2, 0.5, 0.2] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >
+              +
+            </motion.div>
+            <motion.div
+              className="absolute bottom-[35%] left-[30%] text-blue-400/30 text-lg"
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ duration: 3.5, repeat: Infinity, delay: 1.5 }}
+            >
+              +
+            </motion.div>
+          </div>
 
           <div className="relative mx-auto max-w-6xl px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -460,14 +531,14 @@ export default function BloodAnalysisOffer() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <Badge className="mb-6 bg-red-500/20 text-red-300 border-red-500/30">
+                <Badge className="mb-6 bg-blue-500/20 text-blue-300 border-blue-500/30">
                   <Beaker className="mr-2 h-3 w-3" />
                   Blood Analysis
                 </Badge>
 
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
                   Decode ton sang.
-                  <span className="block text-red-400 mt-2">
+                  <span className="block text-blue-400 mt-2">
                     Ranges OPTIMAUX.
                   </span>
                 </h1>
@@ -482,7 +553,7 @@ export default function BloodAnalysisOffer() {
                   <Link href="/blood-analysis">
                     <Button
                       size="lg"
-                      className="gap-2 h-14 px-8 text-lg bg-red-500 hover:bg-red-600 w-full sm:w-auto"
+                      className="gap-2 h-14 px-8 text-lg bg-blue-500 hover:bg-blue-600 w-full sm:w-auto"
                     >
                       <Upload className="h-5 w-5" />
                       Analyser mon bilan
@@ -491,82 +562,111 @@ export default function BloodAnalysisOffer() {
                   </Link>
                 </div>
 
-                <p className="mt-6 text-sm text-gray-500">
+                <p className="mt-6 text-sm text-blue-400/70">
                   Resultats en moins de 2 minutes
                 </p>
               </motion.div>
 
-              {/* Right - Product Mockup */}
+              {/* Right - Human Silhouette with Scan Lines */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="relative"
+                className="relative flex justify-center"
               >
-                {/* Phone mockup with blood results */}
-                <div className="relative mx-auto w-[280px] sm:w-[320px]">
-                  {/* Phone frame */}
-                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-3 shadow-2xl">
-                    {/* Screen */}
-                    <div className="bg-black rounded-[2.5rem] overflow-hidden">
-                      {/* Status bar */}
-                      <div className="h-8 bg-black flex items-center justify-center">
-                        <div className="w-20 h-5 bg-gray-800 rounded-full" />
-                      </div>
-                      {/* Content */}
-                      <div className="p-4 space-y-3">
-                        {/* Blood Age Card */}
-                        <div className="bg-gradient-to-br from-red-900/50 to-red-950 rounded-2xl p-4 text-center">
-                          <p className="text-xs text-gray-400 mb-1">Blood Age</p>
-                          <p className="text-5xl font-bold text-white">32</p>
-                          <p className="text-xs text-emerald-400 mt-1">
-                            4.2 ans plus jeune
-                          </p>
-                        </div>
-                        {/* Biomarkers */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="bg-gray-900 rounded-xl p-3">
-                            <p className="text-[10px] text-gray-500">Testosterone</p>
-                            <p className="text-sm font-semibold text-emerald-400">
-                              687 ng/dL
-                            </p>
-                          </div>
-                          <div className="bg-gray-900 rounded-xl p-3">
-                            <p className="text-[10px] text-gray-500">Vitamine D</p>
-                            <p className="text-sm font-semibold text-amber-400">
-                              38 ng/mL
-                            </p>
-                          </div>
-                          <div className="bg-gray-900 rounded-xl p-3">
-                            <p className="text-[10px] text-gray-500">hs-CRP</p>
-                            <p className="text-sm font-semibold text-emerald-400">
-                              0.4 mg/L
-                            </p>
-                          </div>
-                          <div className="bg-gray-900 rounded-xl p-3">
-                            <p className="text-[10px] text-gray-500">HbA1c</p>
-                            <p className="text-sm font-semibold text-emerald-400">
-                              5.1%
-                            </p>
-                          </div>
-                        </div>
-                        {/* Pattern Alert */}
-                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-2">
-                          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-medium text-amber-400">
-                              Pattern detecte
-                            </p>
-                            <p className="text-[10px] text-gray-400">
-                              Vitamine D suboptimale
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Glow effect */}
-                  <div className="absolute -inset-4 bg-red-500/20 blur-3xl rounded-full -z-10" />
+                <div className="relative w-[300px] h-[400px]">
+                  {/* Human silhouette SVG with red scan lines */}
+                  <svg viewBox="0 0 200 300" className="w-full h-full">
+                    <defs>
+                      {/* Gradient for silhouette */}
+                      <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="rgba(30,58,138,0.8)" />
+                        <stop offset="100%" stopColor="rgba(15,23,42,0.9)" />
+                      </linearGradient>
+                      {/* Red scan line glow */}
+                      <filter id="redGlow">
+                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+
+                    {/* Head and neck silhouette */}
+                    <ellipse cx="100" cy="45" rx="35" ry="40" fill="url(#bodyGradient)" />
+                    <rect x="85" y="80" width="30" height="25" fill="url(#bodyGradient)" />
+
+                    {/* Shoulders and torso */}
+                    <path d="M60 105 Q100 95 140 105 L150 140 L145 200 Q100 210 55 200 L50 140 Z" fill="url(#bodyGradient)" />
+
+                    {/* Red scan lines across the face/body */}
+                    <g filter="url(#redGlow)">
+                      {[20, 35, 50, 65, 80, 95, 110, 130, 150, 170].map((y, i) => (
+                        <motion.line
+                          key={`scan-${i}`}
+                          x1={y < 90 ? "65" : "55"}
+                          y1={y}
+                          x2={y < 90 ? "135" : "145"}
+                          y2={y}
+                          stroke="#ef4444"
+                          strokeWidth="2"
+                          strokeOpacity="0.7"
+                          initial={{ pathLength: 0, opacity: 0 }}
+                          animate={{
+                            pathLength: [0, 1, 1],
+                            opacity: [0, 0.8, 0.4]
+                          }}
+                          transition={{
+                            duration: 2,
+                            delay: i * 0.15,
+                            repeat: Infinity,
+                            repeatDelay: 3,
+                          }}
+                        />
+                      ))}
+                    </g>
+                  </svg>
+
+                  {/* Floating data points around silhouette */}
+                  <motion.div
+                    className="absolute top-[10%] right-0 flex items-center gap-2"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                    <span className="text-[10px] text-gray-400 font-mono">TSH: 1.8</span>
+                  </motion.div>
+
+                  <motion.div
+                    className="absolute top-[35%] left-[-10%] flex items-center gap-2"
+                    animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
+                  >
+                    <span className="text-[10px] text-gray-400 font-mono">Vit D: 52</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  </motion.div>
+
+                  <motion.div
+                    className="absolute top-[55%] right-[-5%] flex items-center gap-2"
+                    animate={{ opacity: [0.4, 0.9, 0.4] }}
+                    transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    <span className="text-[10px] text-gray-400 font-mono">CRP: 0.4</span>
+                  </motion.div>
+
+                  <motion.div
+                    className="absolute bottom-[20%] left-0 flex items-center gap-2"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 3.2, repeat: Infinity, delay: 1.5 }}
+                  >
+                    <span className="text-[10px] text-gray-400 font-mono">Testo: 687</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  </motion.div>
+
+                  {/* Central glow behind silhouette */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[300px] bg-blue-500/10 rounded-full blur-[50px] -z-10" />
                 </div>
               </motion.div>
             </div>
