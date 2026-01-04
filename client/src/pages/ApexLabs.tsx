@@ -312,11 +312,11 @@ function HeroSection() {
 
 function OffersPreview() {
   const offers = [
-    { name: "Discovery Scan", description: "Diagnostic complet de tes blocages. Identifie ce qui te freine.", icon: Scan },
-    { name: "Anabolic Bioscan", description: "16 sections d'analyse + protocoles personnalises complets.", icon: Activity },
-    { name: "Ultimate Scan", description: "L'analyse la plus poussee. Visuelle + biomecanique + metabolique.", icon: Zap, featured: true },
-    { name: "Blood Analysis", description: "Ton bilan sanguin decode avec des ranges optimaux de performance.", icon: Droplet },
-    { name: "Burnout Engine", description: "Detecte les signaux faibles avant qu'il ne soit trop tard.", icon: Brain },
+    { name: "Discovery Scan", price: "Gratuit", description: "Diagnostic complet, sans recommandations", icon: Scan },
+    { name: "Anabolic Bioscan", price: "59€", description: "Diagnostic + Protocoles d'action", icon: Activity },
+    { name: "Ultimate Scan", price: "79€", description: "Diagnostic + Protocoles + Analyse photo", icon: Zap, featured: true },
+    { name: "Blood Analysis", price: "99€", description: "Ton bilan sanguin decode + protocoles", icon: Droplet },
+    { name: "Burnout Engine", price: "39€", description: "Detection + Protocole recuperation", icon: Brain },
   ];
 
   return (
@@ -389,8 +389,11 @@ function OffersPreview() {
                   <Icon className={`h-7 w-7 ${isFeatured ? "text-white" : "text-gray-400 group-hover:text-white"}`} />
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-3">{offer.name}</h3>
-                <p className="text-gray-400 leading-relaxed">{offer.description}</p>
+                <h3 className="text-xl font-bold text-white mb-2">{offer.name}</h3>
+                <div className={`text-2xl font-bold mb-3 ${isFeatured ? "bg-gradient-to-r from-white via-gray-200 to-white bg-clip-text text-transparent" : "text-gray-300"}`}>
+                  {offer.price}
+                </div>
+                <p className="text-gray-500 text-sm leading-relaxed">{offer.description}</p>
               </motion.div>
             );
           })}
