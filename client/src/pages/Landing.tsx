@@ -101,28 +101,28 @@ function FiveOffersSection() {
       id: "discovery",
       name: "Discovery Scan",
       price: "Gratuit",
-      subtitle: "Ton profil de base",
+      subtitle: "Ton profil de base en 4 sections",
       icon: Scan,
       color: "slate",
       href: "/offers/discovery-scan",
-      features: ["Résumé Exécutif", "Profil Métabolique", "Plan 30 jours"],
+      features: ["Executive Summary", "Analyse énergie & récupération", "Analyse métabolisme & nutrition", "Plan d'action 14 jours"],
     },
     {
       id: "anabolic",
       name: "Anabolic Bioscan",
       price: "59€",
-      subtitle: "Analyse hormonale & métabolique",
+      subtitle: "16 sections d'analyse complète",
       icon: Activity,
       color: "emerald",
       href: "/offers/anabolic-bioscan",
-      features: ["Profil Hormonal complet", "Protocoles personnalisés", "Feuille de route 90 jours"],
+      features: ["6 analyses profondes", "5 protocoles fermés", "Stack suppléments personnalisé", "Plan 30-60-90 jours"],
       popular: true,
     },
     {
       id: "blood",
       name: "Blood Analysis",
       price: "99€",
-      subtitle: "Ton sang decode",
+      subtitle: "Ton sang decodé",
       icon: Droplet,
       color: "red",
       href: "/offers/blood-analysis",
@@ -132,11 +132,11 @@ function FiveOffersSection() {
       id: "ultimate",
       name: "Ultimate Scan",
       price: "149€",
-      subtitle: "L'analyse ultime + wearables",
+      subtitle: "18 sections + analyse photo",
       icon: Zap,
       color: "cyan",
       href: "/offers/ultimate-scan",
-      features: ["Tout l'Anabolic Bioscan", "Sync wearables", "Analyse HRV avancee"],
+      features: ["Tout l'Anabolic Bioscan", "Analyse photo posturale", "Analyse biomécanique complète"],
     },
     {
       id: "burnout",
@@ -441,11 +441,11 @@ function MeasurableResultsSection() {
 // ============================================================================
 function UltimateScanSection() {
   const features = [
-    "15 sections d'analyse complètes",
-    "Analyse photos (posture, composition)",
-    "Profil hormonal + métabolique",
-    "Analyse biomécanique",
-    "Sync wearables (Oura, Whoop, Garmin...)",
+    "18 sections d'analyse ultra-détaillées",
+    "Analyse photo posturale complète",
+    "Analyse biomécanique & sangle profonde",
+    "Tout l'Anabolic Bioscan inclus",
+    "Rapport de 40-50 pages",
     "Protocoles biohacking avancés",
   ];
 
@@ -481,7 +481,7 @@ function UltimateScanSection() {
             <div className="flex items-center gap-4">
               <Link href="/offers/ultimate-scan">
                 <Button size="lg" className="gap-2">
-                  Obtenir Ultimate Scan — 79€
+                  Obtenir Ultimate Scan — 149€
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -715,12 +715,12 @@ function BurnoutEngineSection() {
 // ============================================================================
 function AnabolicBioscanSection() {
   const features = [
-    "Profil hormonal complet (T, cortisol, thyroïde...)",
-    "Analyse métabolique avancée",
-    "Digestion & Microbiome",
-    "Protocole Nutrition détaillé",
-    "Protocole Suppléments personnalisé",
-    "Feuille de Route 90 Jours",
+    "16 sections d'analyse complète",
+    "6 analyses profondes (hormones, métabolisme, sommeil...)",
+    "5 protocoles fermés personnalisés",
+    "Stack suppléments optimisé",
+    "Plan 30-60-90 jours avec KPIs",
+    "Rapport de 25-30 pages",
   ];
 
   return (
@@ -750,10 +750,10 @@ function AnabolicBioscanSection() {
             <Badge className="mb-4 bg-primary/10 text-primary">Le plus populaire</Badge>
             <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
               Anabolic Bioscan
-              <span className="block text-muted-foreground">Analyse hormonale & métabolique</span>
+              <span className="block text-muted-foreground">16 sections d'analyse complète</span>
             </h2>
             <p className="mb-8 text-lg text-muted-foreground">
-              L'analyse qui a fait notre réputation. Profil hormonal estimé, analyse métabolique, et protocoles concrets pour optimiser ta biologie.
+              L'analyse qui a fait notre réputation. 6 analyses profondes, 5 protocoles personnalisés, stack suppléments, et plan 30-60-90 jours.
             </p>
 
             <ul className="mb-8 space-y-3">
@@ -796,14 +796,14 @@ function DiscoveryScanSection() {
             <Badge className="mb-4">Gratuit</Badge>
             <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
               Discovery Scan
-              <span className="block text-muted-foreground">Ton profil de base</span>
+              <span className="block text-muted-foreground">4 sections gratuites</span>
             </h2>
             <p className="mb-8 text-lg text-muted-foreground">
-              Commence gratuitement et découvre ton profil métabolique de base. Pas de carte bancaire requise.
+              Commence gratuitement et découvre ton profil en 4 sections. Rapport de 5-7 pages. Pas de carte bancaire requise.
             </p>
 
             <ul className="mb-8 space-y-3">
-              {["Résumé Exécutif", "Analyse Anthropométrique", "Profil Métabolique de Base", "Plan d'Action 30 Jours"].map((feature, index) => (
+              {["Executive Summary personnalisé", "Analyse énergie & récupération", "Analyse métabolisme & nutrition", "Plan d'action 14 jours"].map((feature, index) => (
                 <li key={index} className="flex items-center gap-3">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
                     <Check className="h-4 w-4 text-primary" />

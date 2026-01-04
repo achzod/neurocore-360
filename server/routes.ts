@@ -15,7 +15,7 @@ import {
   sendPremiumJ14Email,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
-import { generateAndConvertAudit } from "./geminiPremiumEngine";
+import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
 import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
 import { ClientData, PhotoAnalysis } from "./types";
 import { streamAuditZip } from "./exportZipService";
@@ -1378,7 +1378,7 @@ export async function registerRoutes(
         return;
       }
 
-      const result = await generateAndConvertAudit(clientData, photoAnalysis, 'PREMIUM', resumeAuditId);
+      const result = await generateAndConvertAuditWithClaude(clientData, photoAnalysis, 'PREMIUM', resumeAuditId);
 
       if (!result.success) {
         res.status(500).json(result);
@@ -1387,7 +1387,7 @@ export async function registerRoutes(
 
       res.json(result);
     } catch (error: any) {
-      console.error("[GeminiPremiumEngine] Erreur generation audit:", error);
+      console.error("[Claude Opus 4.5] Erreur generation audit:", error);
       res.status(500).json({
         success: false,
         error: error.message || "Erreur serveur interne"
