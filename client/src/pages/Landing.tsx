@@ -1571,12 +1571,13 @@ function BentoHeroSection() {
           transition={{ delay: 0.4 }}
           className="mt-12 text-center"
         >
-          <Link href="/audit-complet/questionnaire">
-            <button className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-semibold text-sm transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:shadow-white/10">
-              Commencer l'analyse
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </button>
-          </Link>
+          <button
+            onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+            className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-semibold text-sm transition-all duration-300 hover:bg-white/90 hover:shadow-xl hover:shadow-white/10"
+          >
+            Voir les offres
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </button>
         </motion.div>
       </div>
     </section>
@@ -2968,9 +2969,9 @@ function FiveOffersPricingSection() {
           <p className="text-gray-500 text-sm mb-4">
             Pas sur de ton choix ?
           </p>
-          <Link href="/audit-complet/questionnaire">
+          <Link href="/offers/audit-gratuit">
             <Button variant="outline" className="gap-2">
-              Commencer par le questionnaire gratuit
+              Essayer l'audit gratuit
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -3350,15 +3351,18 @@ function BentoCTASection() {
                 Prêt à optimiser ta performance ?
               </h2>
               <p className="mt-4 text-lg text-muted-foreground max-w-lg mx-auto">
-                Commence ton audit 360 gratuit maintenant. Résultats en 24h.
+                5 offres distinctes pour chaque besoin. Choisis la tienne.
               </p>
               <div className="mt-8">
-                <Link href="/audit-complet/questionnaire">
-                  <Button size="lg" className="gap-2 px-10 h-14 rounded-xl text-lg" data-testid="button-cta-start">
-                    Commencer l'analyse
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="gap-2 px-10 h-14 rounded-xl text-lg"
+                  data-testid="button-cta-start"
+                  onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Voir les offres
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
               </div>
             </div>
           </div>
