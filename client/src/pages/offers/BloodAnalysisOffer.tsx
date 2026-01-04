@@ -73,7 +73,7 @@ export default function BloodAnalysisOffer() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            Upload ton bilan sanguin. Notre IA decode 50+ biomarqueurs
+            Upload ton bilan sanguin. J'analyse 50+ biomarqueurs
             et te donne des protocoles d'optimisation personnalises.
           </motion.p>
 
@@ -137,7 +137,7 @@ export default function BloodAnalysisOffer() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               { step: "01", title: "Upload", desc: "Telecharge ton bilan sanguin en PDF", icon: Upload },
-              { step: "02", title: "Analyse", desc: "Notre IA decode 50+ biomarqueurs", icon: Beaker },
+              { step: "02", title: "Analyse", desc: "J'analyse 50+ biomarqueurs", icon: Beaker },
               { step: "03", title: "Protocoles", desc: "Recois des recommandations personnalisees", icon: Check },
             ].map((item, i) => (
               <motion.div
@@ -326,7 +326,7 @@ export default function BloodAnalysisOffer() {
             <span className="text-red-400">decode.</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            Upload ton bilan. Notre IA fait le reste.
+            Upload ton bilan. Je fais le reste.
             50+ biomarqueurs analyses. Protocoles personnalises.
           </p>
           <Link href="/blood-analysis">
