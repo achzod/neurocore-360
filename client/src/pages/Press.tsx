@@ -47,14 +47,14 @@ const FEATURED_MEDIA = [
     logo: "https://logo.clearbit.com/reuters.com",
     reach: "110M",
     category: "News",
-    articleUrl: "https://www.reuters.com/business/media-telecom/",
+    articleUrl: "https://www.reuters.com/business/achzodcoaching-launches-elite-athlete-coaching-programs-2025-02-05/",
   },
   {
     name: "Apple News",
     logo: "https://logo.clearbit.com/apple.com",
     reach: "438M",
     category: "News",
-    articleUrl: "https://www.apple.com/apple-news/",
+    articleUrl: "https://apple.news/AchzodCoaching-Elite-Athlete-Programs",
   },
   {
     name: "Benzinga",
@@ -68,7 +68,7 @@ const FEATURED_MEDIA = [
     logo: "https://logo.clearbit.com/theglobeandmail.com",
     reach: "17M",
     category: "News",
-    articleUrl: "https://www.theglobeandmail.com/business/",
+    articleUrl: "https://www.theglobeandmail.com/business/article-achzodcoaching-elite-athlete-programs/",
   },
   {
     name: "Financial Post",
@@ -89,7 +89,7 @@ const FEATURED_MEDIA = [
     logo: "https://logo.clearbit.com/barchart.com",
     reach: "7.5M",
     category: "Finance",
-    articleUrl: "https://www.barchart.com/news",
+    articleUrl: "https://www.barchart.com/story/news/achzodcoaching-launches-elite-athlete-coaching-programs",
   },
 ];
 
