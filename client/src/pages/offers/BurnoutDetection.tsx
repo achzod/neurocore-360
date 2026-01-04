@@ -1,6 +1,6 @@
 /**
  * NEUROCORE 360 - Burnout Detection Offer Page
- * Ultrahuman-inspired premium design - 49€
+ * Ultrahuman-inspired premium design - 39€
  */
 
 import { useState, useRef } from "react";
@@ -236,7 +236,7 @@ export default function BurnoutDetection() {
                   transition={{ delay: 0.6 }}
                   className="mt-8 flex items-baseline gap-3"
                 >
-                  <span className="text-5xl font-black text-purple-400">49€</span>
+                  <span className="text-5xl font-black text-purple-400">39€</span>
                   <span className="text-white/40">one-time</span>
                 </motion.div>
 
@@ -511,7 +511,7 @@ export default function BurnoutDetection() {
               className="p-8 rounded-3xl border border-purple-500/30 bg-purple-500/5"
             >
               <div className="text-center mb-8">
-                <span className="text-6xl font-black text-purple-400">49€</span>
+                <span className="text-6xl font-black text-purple-400">39€</span>
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
 

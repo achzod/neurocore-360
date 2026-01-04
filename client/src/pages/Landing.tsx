@@ -214,7 +214,7 @@ function FiveOffersSection() {
     {
       id: "burnout",
       name: "Burnout Engine",
-      price: "29€",
+      price: "39€",
       subtitle: "Détection + Protocole récupération",
       icon: Brain,
       color: "purple",
@@ -1048,7 +1048,7 @@ function BurnoutEngineSection() {
                 size="lg"
                 className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
               >
-                Détecter mon risque — 29€
+                Détecter mon risque — 39€
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </Link>
