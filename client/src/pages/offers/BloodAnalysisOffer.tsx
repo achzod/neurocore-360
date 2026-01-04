@@ -392,21 +392,66 @@ export default function BloodAnalysisOffer() {
       <Header />
 
       <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-red-950 via-red-900/50 to-black py-20 lg:py-32">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-800/20 via-transparent to-transparent" />
+        {/* Hero Section - Red Particles/Blood Cells Style */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-red-950 via-red-900/30 to-black py-20 lg:py-32">
+          {/* Main gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-800/40 via-red-950/50 to-transparent" />
 
-          {/* Subtle grid pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div
-              className="h-full w-full"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
-                backgroundSize: "50px 50px",
-              }}
-            />
+          {/* Animated particles effect - multiple layers */}
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Large floating particles */}
+            {[...Array(20)].map((_, i) => (
+              <motion.div
+                key={`particle-lg-${i}`}
+                className="absolute rounded-full bg-red-500/30"
+                style={{
+                  width: Math.random() * 60 + 20,
+                  height: Math.random() * 60 + 20,
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  filter: 'blur(1px)',
+                }}
+                animate={{
+                  y: [0, -30, 0],
+                  opacity: [0.2, 0.5, 0.2],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: Math.random() * 4 + 4,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+            {/* Small particles */}
+            {[...Array(30)].map((_, i) => (
+              <motion.div
+                key={`particle-sm-${i}`}
+                className="absolute rounded-full bg-red-400/40"
+                style={{
+                  width: Math.random() * 15 + 5,
+                  height: Math.random() * 15 + 5,
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  y: [0, -20, 0],
+                  x: [0, Math.random() * 10 - 5, 0],
+                  opacity: [0.3, 0.7, 0.3],
+                }}
+                transition={{
+                  duration: Math.random() * 3 + 3,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
           </div>
+
+          {/* Center glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-[100px]" />
 
           <div className="relative mx-auto max-w-6xl px-4">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -428,7 +473,7 @@ export default function BloodAnalysisOffer() {
                 </h1>
 
                 <p className="text-xl text-gray-400 mb-8 leading-relaxed">
-                  Upload ton bilan sanguin. Notre IA l'analyse avec les ranges
+                  Upload ton bilan sanguin. Analyse avec les ranges optimaux
                   utilises par Peter Attia, Marek Health et les meilleurs
                   praticiens en medecine fonctionnelle.
                 </p>
