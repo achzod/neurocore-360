@@ -3156,6 +3156,661 @@ Le cyclage des glucides est un **outil optionnel**, pas une nécessité. La cons
 **Simplifiez votre nutrition.** L'[Ultimate Scan](/offers/ultimate-scan) identifie ce qui marche pour vous. Pour un plan personnalisé, découvrez mon [coaching](https://www.achzodcoaching.com).
     `,
   },
+  {
+    id: "61",
+    slug: "resistance-accommodante-bandes-chaines",
+    title: "Résistance accommodante : Bandes et chaînes pour la force",
+    excerpt: "Comment les bandes élastiques et chaînes ajoutent une tension variable pour maximiser vos gains de force.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-03",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    content: `
+## Le concept
+
+La résistance accommodante utilise des bandes ou chaînes pour ajouter une tension progressive tout au long du mouvement, correspondant à la courbe de force musculaire.
+
+## Pourquoi ça fonctionne
+
+### Pendant un développé couché classique
+- **En bas** : Position de faiblesse mécanique
+- **En haut** : Avantage mécanique = moins d'effort
+
+### Avec résistance accommodante
+Les bandes/chaînes augmentent la charge dans les positions fortes, maintenant un défi constant.
+
+## Les avantages prouvés
+
+- **Défi constant** sur toute l'amplitude
+- **Intent amélioré** : Force explosive obligatoire
+- **Stimulus de nouveauté** : Variation efficace
+- Applicable au squat, soulevé de terre, développé
+
+## Méthodes d'entraînement
+
+### Heavy Overload Method
+Ajoutez bandes/chaînes à vos charges de travail normales. La résistance supplémentaire doit représenter 20-30% de la charge totale.
+
+### Compensatory Acceleration
+- 40-60% du 1RM + bandes/chaînes
+- 8-12 séries de 2-3 répétitions explosives
+- 15-45 secondes de repos
+
+---
+
+**Optimisez votre force.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) évalue votre potentiel. Pour un programme sur mesure, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "62",
+    slug: "hydratation-performance-musculaire",
+    title: "Hydratation : L'impact réel sur la performance musculaire",
+    excerpt: "Une déshydratation légère réduit drastiquement force, puissance et endurance. Voici les chiffres.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-01",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800",
+    content: `
+## L'impact chiffré
+
+Une déshydratation de seulement **2% du poids corporel** cause :
+
+| Paramètre | Réduction |
+|-----------|-----------|
+| Force musculaire | -2% |
+| Puissance | -3% |
+| Endurance | -10% |
+
+Pour un individu de 80kg, 2% = **1,6kg de perte hydrique**.
+
+## Effets hormonaux
+
+La déshydratation augmente le **cortisol post-entraînement**, favorisant :
+- Dégradation protéique accrue
+- Résistance à l'insuline
+- Récupération compromise
+
+## Protocole d'hydratation optimal
+
+### Avant l'entraînement (2h avant)
+- **500ml** d'eau
+- Si entraînement matinal : 600-900ml au réveil
+
+### Pendant l'entraînement
+- **500ml à 1L** par heure
+- En chaleur intense : jusqu'à 1,5L/heure
+
+---
+
+**Surveillez vos marqueurs.** L'[Blood Analysis](/offers/blood-analysis) révèle votre état d'hydratation. Pour optimiser votre performance, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "63",
+    slug: "squats-vs-hip-thrust-fessiers",
+    title: "Squats vs Hip Thrusts : Le verdict pour les fessiers",
+    excerpt: "Quelle est vraiment la meilleure exercice pour développer les fessiers ? La science répond.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-30",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800",
+    content: `
+## L'étude clé
+
+Barbalho et al. (2020) ont comparé 12 semaines d'entraînement exclusif :
+- **Groupe squat** : Uniquement back squats
+- **Groupe hip thrust** : Uniquement hip thrusts
+
+Résultat ? Le groupe **squat a surpassé** le groupe hip thrust pour :
+- Épaisseur des quadriceps
+- Épaisseur des fessiers
+- Force au squat
+
+## Recommandation pratique
+
+**Ne choisissez pas – combinez les deux.**
+
+| Exercice | Force | Développement |
+|----------|-------|---------------|
+| Squat | Tension totale élevée | Complet |
+| Hip Thrust | Extension de hanche | Ciblé fessiers |
+
+---
+
+**Maximisez votre développement.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre potentiel musculaire. Pour un programme complet, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "64",
+    slug: "cafeine-performance-guide",
+    title: "Caféine et performance : Le guide complet",
+    excerpt: "Dosage optimal, timing, effets sur la force et l'endurance. Tout ce que vous devez savoir.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-28",
+    readTime: "7 min",
+    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800",
+    content: `
+## Comment ça fonctionne
+
+La caféine bloque les récepteurs d'adénosine dans le cerveau, favorisant l'éveil au lieu de la somnolence. Elle augmente également l'épinéphrine (adrénaline), stimulant :
+
+- Fréquence cardiaque
+- Force musculaire
+- Métabolisme
+
+## Dosage optimal
+
+| Poids | Dose minimale | Dose maximale |
+|-------|---------------|---------------|
+| 70kg | 210mg | 420mg |
+| 80kg | 240mg | 480mg |
+| 90kg | 270mg | 540mg |
+
+La fourchette efficace : **3-6mg/kg de poids corporel**.
+
+## Timing
+
+- **30-60 minutes avant** l'entraînement pour le pic sanguin
+- Éviter après l'entraînement (réduit la sensibilité à l'insuline)
+
+---
+
+**Optimisez votre énergie.** L'[Ultimate Scan](/offers/ultimate-scan) analyse votre métabolisme énergétique. Pour un protocole personnalisé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "65",
+    slug: "ischio-jambiers-squat-activation",
+    title: "Ischio-jambiers dans le squat : Mythe de l'activation",
+    excerpt: "Pourquoi les ischio-jambiers ne travaillent presque pas pendant le squat, contrairement aux croyances.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-26",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=800",
+    content: `
+## L'argument principal
+
+Les recherches montrent une **activation minimale des ischio-jambiers** pendant le squat, malgré ce que prétendent de nombreux entraîneurs.
+
+## Pourquoi ils ne sont pas impliqués
+
+Les ischio-jambiers ont deux fonctions :
+1. **Extension de hanche**
+2. **Flexion du genou**
+
+Pendant le squat, si les ischio-jambiers se contractaient pour étendre la hanche, ils fléchiraient aussi le genou – **rendant le mouvement impossible**.
+
+## Recommandations pratiques
+
+### Pour les bodybuilders
+Complétez les squats avec du travail dédié :
+- Leg curls
+- Romanian deadlifts
+- Nordic curls
+
+---
+
+**Développez vos points faibles.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie vos déséquilibres. Pour un programme ciblé, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "66",
+    slug: "soulevé-terre-jour-dos",
+    title: "Soulevé de terre le jour du dos : Bonne idée ?",
+    excerpt: "Le deadlift est-il vraiment un exercice de dos efficace ? Analyse biomécanique complète.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-24",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=800",
+    content: `
+## L'argument principal
+
+Le soulevé de terre peut être un **ajout solide** au jour dos, mais ne devrait pas être votre seul exercice dorsal.
+
+## Activation musculaire
+
+Les recherches montrent :
+- **Trapèzes** : Parmi les muscles les plus actifs pendant les 1RM
+- **Dorsaux** : Environ 70% de l'activation maximale
+
+## Le verdict
+
+Le deadlift **complète** l'entraînement du dos mais ne le remplace pas. Continuez les tirages horizontaux et verticaux.
+
+---
+
+**Structurez votre entraînement.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse vos besoins. Pour un programme optimisé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "67",
+    slug: "soulevé-terre-dangereux",
+    title: "Le soulevé de terre est-il dangereux ?",
+    excerpt: "Analyse des risques réels du deadlift et comment les minimiser.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-22",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800",
+    content: `
+## La réponse courte
+
+Non. Le soulevé de terre n'est **pas intrinsèquement dangereux**.
+
+## Ce que disent les données
+
+Le développé couché cause **plus de blessures** chez les powerlifters que le soulevé de terre. Les blessures au dos existent mais arrivent en second après les blessures d'épaule au bench.
+
+## Le verdict
+
+Le soulevé de terre est **sûr avec une technique appropriée** et une préparation adéquate. Il reste l'un des exercices les plus fonctionnels.
+
+---
+
+**Évaluez votre préparation.** L'[Discovery Scan](/offers/discovery-scan) identifie vos points faibles. Pour une technique parfaite, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "68",
+    slug: "dorsaux-developpe-couche-mythe",
+    title: "Les dorsaux dans le développé couché : Le grand mythe",
+    excerpt: "Contrairement aux croyances powerlifting, les dorsaux jouent un rôle minimal au bench press.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-20",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    content: `
+## Le résultat principal
+
+Les dorsaux jouent un **rôle minimal** dans le développé couché, contrairement aux croyances populaires du powerlifting.
+
+## D'où vient le mythe
+
+Les powerlifters équipés ont promu l'entraînement des dorsaux car les bench shirts nécessitent une force dorsale importante pour contrôler la phase excentrique.
+
+## Le verdict
+
+L'entraînement des dorsaux reste important pour la santé des épaules – mais n'améliore pas directement la performance au bench.
+
+**Ratio recommandé** : 1:1 ou 2:1 tirage:poussée pour la durabilité à long terme.
+
+---
+
+**Optimisez votre équilibre musculaire.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse vos ratios. Pour un programme équilibré, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "69",
+    slug: "techniques-intensification-guide",
+    title: "Techniques d'intensification : Drop sets, rest-pause et plus",
+    excerpt: "Guide complet des méthodes pour pousser au-delà de l'échec et maximiser l'hypertrophie.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-18",
+    readTime: "8 min",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800",
+    content: `
+## Vue d'ensemble
+
+Les techniques d'intensification poussent les muscles au-delà de l'échec. À utiliser **avec parcimonie**.
+
+## Drop Sets
+
+Effectuez un exercice jusqu'à l'échec, puis réduisez immédiatement le poids et continuez.
+
+- Maximum 2-3 drops par série
+- Réduction de 20-30% à chaque drop
+
+## Rest-Pause
+
+Même poids tout au long, avec pauses de 10-20 secondes entre mini-séries.
+
+## Cluster Sets
+
+Avec un poids de 10-15RM :
+- 5 reps toutes les 10-15 secondes
+- Pendant 3-4 minutes continues
+
+---
+
+**Programmez intelligemment.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) évalue votre capacité de récupération. Pour un programme périodisé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "70",
+    slug: "hypertrophie-vs-hyperplasie",
+    title: "Hypertrophie vs Hyperplasie : Peut-on créer de nouvelles fibres ?",
+    excerpt: "La croissance musculaire vient-elle de fibres plus grosses ou plus nombreuses ? La science répond.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-16",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800",
+    content: `
+## Définitions
+
+- **Hypertrophie** : Augmentation du diamètre des fibres musculaires existantes
+- **Hyperplasie** : Augmentation du nombre de fibres musculaires
+
+## La règle des 5%
+
+Les recherches actuelles suggèrent que l'hyperplasie représente probablement **seulement ~5%** des gains de taille musculaire. L'hypertrophie domine les adaptations.
+
+---
+
+**Maximisez chaque mécanisme.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre potentiel de croissance. Pour un programme optimisé, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "71",
+    slug: "anti-inflammatoires-gains-musculaires",
+    title: "Anti-inflammatoires et gains : Les AINS nuisent-ils à la croissance ?",
+    excerpt: "L'ibuprofène post-entraînement compromet-il vos résultats ? Analyse selon l'âge.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-14",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800",
+    content: `
+## L'âge compte
+
+### Moins de ~50 ans
+Les études montrent que les AINS peuvent **altérer la synthèse protéique** post-exercice et réduire la croissance musculaire.
+
+### Plus de 50 ans
+L'utilisation des AINS ne montre **aucune altération significative** de la croissance.
+
+## Le verdict
+
+Pour les jeunes athlètes visant la croissance maximale : **minimisez l'utilisation des AINS** post-entraînement quand possible.
+
+---
+
+**Optimisez votre récupération naturellement.** L'[Blood Analysis](/offers/blood-analysis) révèle vos marqueurs inflammatoires. Pour un protocole personnalisé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "72",
+    slug: "entrainement-maison-sans-equipement",
+    title: "Entraînement maison : Maintenir ses gains sans salle",
+    excerpt: "Comment préserver votre masse musculaire avec un équipement minimal ou inexistant.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-12",
+    readTime: "7 min",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    content: `
+## La réalité
+
+L'entraînement à domicile n'est "probablement pas aussi efficace" que l'entraînement en salle, mais des variations créatives permettent de continuer à progresser.
+
+## Haut du corps sans équipement
+
+- **Pectoraux** : Pompes variations, dips entre chaises
+- **Épaules** : Élévations avec bidons de lait, sacs à dos
+- **Dos** : Tractions sur poutres, rowings inversés sous table
+- **Bras** : Extensions et curls avec sac à dos lesté
+
+## Bas du corps sans équipement
+
+- **Quadriceps** : Split squats, squats unilatéraux
+- **Fessiers** : Hip thrusts, glute bridges
+- **Mollets** : Élévations une jambe sur surface surélevée
+
+---
+
+**Gardez le cap.** L'[Discovery Scan](/offers/discovery-scan) évalue votre progression. Pour un programme maison personnalisé, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "73",
+    slug: "entrainer-types-fibres-musculaires",
+    title: "Entraîner les types de fibres : Lentes vs rapides",
+    excerpt: "Peut-on cibler sélectivement les fibres de type 1 et de type 2 pour maximiser la croissance ?",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-10",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800",
+    content: `
+## Différences Type 1 vs Type 2
+
+### Fibres de Type 1 (lentes)
+- Plus résistantes à la fatigue
+- Plus petites en taille
+
+### Fibres de Type 2 (rapides)
+- Généralement plus grandes
+- Meilleure réponse de synthèse protéique
+
+## Application pratique
+
+| Fibres ciblées | Charge | Répétitions | À l'échec ? |
+|----------------|--------|-------------|-------------|
+| Type 2 | 70-85% 1RM | 6-12 | Non obligatoire |
+| Type 1 | 30-50% 1RM | 20-30+ | Oui |
+
+---
+
+**Identifiez votre profil.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre composition. Pour un programme adapté à vos fibres, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "74",
+    slug: "differences-genre-entrainement",
+    title: "Différences hommes/femmes en musculation",
+    excerpt: "Les femmes doivent-elles s'entraîner différemment des hommes ? La science tranche.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-08",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800",
+    content: `
+## Ce que dit la recherche
+
+Les femmes montrent des **gains relatifs similaires** en force et en masse musculaire. Les femmes récupèrent souvent **plus rapidement** entre les séries et les sessions.
+
+## Recommandations pratiques
+
+| Aspect | Recommandation |
+|--------|----------------|
+| Charges | Aussi lourdes que les hommes (relativement) |
+| Répétitions | 6-15, comme les hommes |
+| Fréquence | Possiblement légèrement plus élevée |
+
+## Le verdict
+
+Les programmes d'entraînement devraient être **largement similaires**, avec des ajustements individuels basés sur la personne, pas le genre.
+
+---
+
+**Programme personnalisé.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre profil unique. Pour un coaching adapté, réservez sur [achzodcoaching.com](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "75",
+    slug: "squats-mauvais-genoux-mythe",
+    title: "Les squats sont-ils mauvais pour les genoux ?",
+    excerpt: "Démystification de l'une des plus grandes peurs en musculation.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-06",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800",
+    content: `
+## La réponse courte
+
+Non, les squats ne sont **pas intrinsèquement mauvais** pour les genoux. En fait, ils peuvent les renforcer.
+
+## Ce que dit la recherche
+
+Les squatteurs réguliers montrent :
+- Cartilage du genou **plus épais**
+- Ligaments plus résistants
+- Moins de douleurs articulaires
+
+## Le verdict
+
+Pour la plupart des gens, les squats sont **bénéfiques** pour la santé des genoux quand exécutés correctement.
+
+---
+
+**Évaluez votre mobilité.** Le [Discovery Scan](/offers/discovery-scan) identifie vos limitations. Pour une technique parfaite, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "76",
+    slug: "calories-balance-energetique",
+    title: "Calories et balance énergétique : Le fondamental",
+    excerpt: "Comprendre le principe qui gouverne tout changement de composition corporelle.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-04",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    content: `
+## Le principe incontournable
+
+**Calories entrantes vs Calories sortantes**
+
+- Surplus = Gain de poids
+- Déficit = Perte de poids
+- Équilibre = Maintien
+
+## Le message clé
+
+Peu importe votre approche alimentaire – le **déficit ou surplus calorique** reste le facteur déterminant du changement de poids.
+
+---
+
+**Calculez précisément vos besoins.** L'[Ultimate Scan](/offers/ultimate-scan) analyse votre métabolisme. Pour un plan nutritionnel sur mesure, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "77",
+    slug: "variation-exercices-necessaire",
+    title: "Variation des exercices : Nécessité ou perte de temps ?",
+    excerpt: "Faut-il changer constamment d'exercices ou maîtriser les fondamentaux ?",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-07-02",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    content: `
+## Fréquence de variation recommandée
+
+| Type d'exercice | Rotation |
+|-----------------|----------|
+| Composés | Tous les 8-12 semaines max |
+| Accessoires | Toutes les 4-6 semaines |
+| Isolation | Selon préférence |
+
+## Le verdict
+
+La variation est un **outil**, pas une obligation. Privilégiez la progression sur les mouvements clés, variez les accessoires selon les besoins.
+
+---
+
+**Structurez votre programme.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie vos besoins. Pour une périodisation optimale, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "78",
+    slug: "strategies-boost-metabolisme",
+    title: "Stratégies pour booster le métabolisme : Ce qui marche vraiment",
+    excerpt: "Séparons les mythes des méthodes prouvées pour augmenter votre dépense énergétique.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-06-30",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    content: `
+## Ce qui FONCTIONNE
+
+### 1. Augmenter la masse musculaire
+Chaque kg de muscle brûle environ **13 calories** de plus par jour au repos.
+
+### 2. NEAT
+Les activités quotidiennes non-structurées :
+- Marcher
+- Rester debout
+- S'agiter
+
+**Impact** : 200-500+ calories/jour
+
+### 3. Protéines élevées
+L'effet thermique des protéines est de **20-30%** vs 5-10% pour les glucides.
+
+---
+
+**Analysez votre métabolisme.** L'[Ultimate Scan](/offers/ultimate-scan) révèle votre profil métabolique. Pour un plan d'optimisation, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "79",
+    slug: "erreurs-supplements-courantes",
+    title: "Erreurs courantes avec les suppléments",
+    excerpt: "Les pièges les plus fréquents et comment optimiser votre supplémentation.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-06-28",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1544991875-5dc1b05f607d?w=800",
+    content: `
+## Erreur #1 : Priorités inversées
+
+Les suppléments représentent **<5%** des résultats potentiels. Les 95% viennent des fondamentaux.
+
+## Erreur #2 : Sous-doser la créatine
+
+**5g/jour**, tous les jours. Pas besoin de "phase de charge".
+
+## Ce qui fonctionne
+
+- Créatine
+- Caféine
+- Vitamine D (si carence)
+- Oméga-3 (si apport alimentaire faible)
+
+---
+
+**Optimisez votre base.** L'[Blood Analysis](/offers/blood-analysis) révèle vos vraies carences. Pour un protocole personnalisé, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "80",
+    slug: "biomecanique-croissance-musculaire",
+    title: "Biomécanique et croissance : Optimiser chaque mouvement",
+    excerpt: "Comment les angles, leviers et positions affectent le stimulus de croissance.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-06-26",
+    readTime: "7 min",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    content: `
+## Le principe fondamental
+
+La croissance musculaire dépend de la **tension mécanique** appliquée au muscle. La biomécanique détermine comment cette tension est distribuée.
+
+## Programme équilibré
+
+Pour chaque groupe musculaire :
+- 1 exercice en étirement (stretch)
+- 1 exercice en contraction (peak)
+- 1 exercice en amplitude complète
+
+---
+
+**Analysez votre biomécanique.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) identifie vos patterns. Pour une technique optimisée, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
 ];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
