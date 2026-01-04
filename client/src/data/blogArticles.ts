@@ -2292,6 +2292,870 @@ La recherche montre que les aliments transformés produisent une réponse métab
 **Séchez intelligemment.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre composition corporelle. Pour un programme de sèche personnalisé, réservez un [coaching](https://www.achzodcoaching.com).
     `,
   },
+  {
+    id: "45",
+    slug: "excentriques-croissance-musculaire",
+    title: "Phase excentrique : Vraiment plus importante pour la croissance ?",
+    excerpt: "La négative est-elle la clé de l'hypertrophie ? La science révèle une réponse surprenante.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-09-12",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    content: `
+## Le mythe de l'excentrique
+
+On entend souvent que la phase négative (excentrique) est plus importante que la phase positive (concentrique) pour la croissance. **La science dit le contraire.**
+
+## Pourquoi les études sont trompeuses
+
+Les études montrant une supériorité de l'excentrique utilisent des charges plus lourdes pendant la négative. Comme nos muscles peuvent générer **25-50% de force en plus** en excentrique, les chercheurs compensent en ajoutant du poids.
+
+**Quand les charges sont égalisées, il n'y a aucune différence de croissance.**
+
+## L'entraînement normal
+
+Lors d'un entraînement standard avec un poids constant, la phase excentrique ne reçoit aucun stimulus supplémentaire. Contrôler lentement la négative offre des bénéfices de sécurité, mais pas d'avantage hypertrophique.
+
+## Pourquoi les concentriques pourraient être supérieures
+
+### 1. Activation musculaire
+L'activation **augmente** pendant les concentriques mais **diminue** pendant les excentriques.
+
+### 2. Courbe Force-Vélocité
+Les mouvements concentriques lents produisent plus de tension.
+
+### 3. Stress métabolique
+Les excentriques sont "deux fois plus efficaces énergétiquement" - moins de stress métabolique, moins de signal de croissance.
+
+## Types d'hypertrophie différents
+
+- **Excentrique** → Hypertrophie longitudinale (allongement des fibres)
+- **Concentrique** → Hypertrophie myofibrillaire (épaississement des fibres)
+
+## À retenir
+
+Les deux phases comptent également. À moins de faire du vrai travail excentrique avec 110%+ de charge, se concentrer exclusivement sur les négatives lentes n'apporte rien de plus.
+
+---
+
+**Optimisez chaque répétition.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre potentiel de croissance. Pour un programme scientifique, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "46",
+    slug: "mollets-guide-complet",
+    title: "Entraînement des mollets : Pourquoi les vôtres ne grossissent pas",
+    excerpt: "Les mollets sont stubborn ? Voici la science et les stratégies pour enfin les développer.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-09-10",
+    readTime: "7 min",
+    image: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=800",
+    content: `
+## Anatomie des mollets
+
+Les mollets comprennent trois chefs (triceps sural) :
+- **Gastrocnémien médial et latéral** (traverse genou et cheville)
+- **Soléaire** (traverse uniquement la cheville)
+
+## Pourquoi c'est si difficile
+
+### Composition en fibres
+Le soléaire contient **70-96% de fibres lentes**. Cela signifie que les mollets nécessitent plus de volume et de fréquence que les muscles à dominante rapide.
+
+### Activation
+Les mollets ne s'activent pas aussi facilement que les biceps, ce qui entraîne moins de courbatures mais une récupération plus rapide.
+
+## Le protocole scientifique
+
+### Fréquence
+**4-5 fois par semaine.** Les mollets récupèrent vite et tolèrent un entraînement fréquent.
+
+### Amplitude de mouvement
+L'articulation de la cheville a une amplitude limitée. **Faites des pauses en position étirée** pour compenser.
+
+### Répétitions
+- **15-30 reps** principalement (fibres lentes)
+- **6-12 reps** en complément (fibres rapides)
+
+### Répartition des exercices
+- **60%** du volume : exercices jambes tendues (gastrocnémiens)
+- **40%** du volume : mollets assis (soléaire)
+
+## Exercices clés
+
+1. **Mollets debout** (machine ou Smith)
+2. **Mollets assis**
+3. **Presse à mollets**
+4. **Mollets unilatéraux** (avec pause étirée)
+
+## La génétique compte, mais...
+
+La génétique influence le potentiel, mais l'application systématique de ces principes peut surmonter les limitations perçues.
+
+---
+
+**Développez vos points faibles.** L'[Ultimate Scan](/offers/ultimate-scan) identifie vos déséquilibres musculaires. Pour un programme ciblé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "47",
+    slug: "alcool-musculation-effets",
+    title: "Alcool et musculation : L'impact réel sur vos gains",
+    excerpt: "Un verre le week-end ruine-t-il vos progrès ? La science sur l'alcool et la croissance musculaire.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-09-08",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800",
+    content: `
+## Les 3 problèmes de l'alcool
+
+### 1. Synthèse protéique réduite
+L'alcool combiné aux protéines post-entraînement produit un taux de synthèse protéique **60% inférieur** aux protéines seules.
+
+**Mécanismes :**
+- Réduction de l'activation de mTOR et p70S6K
+- Diminution de la concentration d'IGF-1
+
+### 2. Effets hormonaux
+- **Sensibilité à l'insuline** diminuée → reconstitution du glycogène ralentie
+- **Cortisol** élevé plus longtemps → catabolisme musculaire
+- **Récepteurs aux androgènes** moins actifs → testostérone inefficace
+
+### 3. Récupération compromise
+- 8 verres post-entraînement : récupération significativement altérée
+- 4 verres : pas d'effets mesurables négatifs
+- L'alcool est diurétique → déshydratation → cortisol encore plus élevé
+
+## Recommandations pratiques
+
+### Ce qui fonctionne
+- Séparez les événements sociaux des entraînements intenses
+- Si vous buvez : augmentez protéines et eau
+- Priorisez le sommeil pour la récupération
+
+### La bonne nouvelle
+Les effets se réversent rapidement (sous 3 jours même pour une consommation chronique).
+
+## Le verdict
+
+**Évitez de combiner entraînement intense et consommation importante.** Une consommation modérée occasionnelle n'anéantira pas vos gains si les fondamentaux sont solides.
+
+---
+
+**Optimisez votre récupération.** L'[Ultimate Scan](/offers/ultimate-scan) analyse vos habitudes et leur impact. Pour un plan équilibré, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "48",
+    slug: "frequence-entrainement-muscle",
+    title: "Fréquence d'entraînement : Combien de fois par semaine par muscle ?",
+    excerpt: "2x par semaine pour tout ? La science dit non. Voici la fréquence optimale par groupe musculaire.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-09-05",
+    readTime: "7 min",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800",
+    content: `
+## Les 4 facteurs de la fréquence optimale
+
+### 1. Dommages musculaires et récupération
+Quand les muscles sont endommagés, ils ne peuvent pas produire autant de force. Les courbatures réduisent l'activation et augmentent le risque de blessure.
+
+### 2. Taille du muscle
+Les grands muscles avec une activation volontaire faible (comme les quadriceps à 80-85%) récupèrent plus vite que les petits muscles facilement activés.
+
+### 3. Composition en fibres
+**Les fibres rapides subissent plus de dommages** que les fibres lentes en raison d'un stress mécanique et biochimique plus important.
+
+### 4. Amplitude articulaire
+Les exercices avec une grande amplitude causent plus de dommages induits par l'étirement.
+
+## Recommandations par groupe musculaire
+
+| Muscle | Fréquence | Raison |
+|--------|-----------|--------|
+| Mollets | 4-5x/sem | Fibres lentes, récupération rapide |
+| Quadriceps | 4-5x/sem | Grande taille, activation difficile |
+| Trapèzes | 4-5x/sem | Haute proportion fibres lentes |
+| Abdos | 4-5x/sem | Fibres lentes, amplitude limitée |
+| Dorsaux | 2-3x/sem | Taille moyenne, activation modérée |
+| Biceps/Triceps | 2-3x/sem | Petite taille, activation facile |
+| Ischios/Fessiers | 2-3x/sem | Amplitude importante |
+| Pectoraux | 2x/sem MAX | 65% fibres rapides, récupération lente |
+
+## Stratégie de rotation
+
+Plutôt qu'une fréquence uniforme, **faites tourner mensuellement** quels groupes reçoivent un entraînement haute fréquence.
+
+---
+
+**Personnalisez votre split.** L'[Ultimate Scan](/offers/ultimate-scan) analyse votre récupération. Pour un programme adapté, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "49",
+    slug: "pectoraux-guide-scientifique",
+    title: "Entraînement des pectoraux : Le guide scientifique complet",
+    excerpt: "Développé couché standard ? Vous passez à côté de 8 segments musculaires. Voici comment tout cibler.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-09-02",
+    readTime: "8 min",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    content: `
+## Anatomie des pectoraux
+
+Le grand pectoral se divise en :
+- **Faisceau claviculaire** (haut) : 20-30% de la masse
+- **Faisceau sternal** (bas) : 70-80% de la masse
+
+**Découverte importante** : La recherche révèle que les pecs contiennent environ **8 segments fonctionnels**.
+
+## Entraînement du haut des pectoraux
+
+### Prise optimale
+La **prise largeur d'épaules** cause la plus grande activation du haut des pecs grâce à une flexion d'épaule accrue.
+
+### Angle d'inclinaison
+**30-50 degrés** pour un ciblage optimal.
+
+### Exercices clés
+- Développé incliné haltères
+- Écartés inclinés
+- Élévations frontales
+
+## Entraînement du bas des pectoraux
+
+### Prise optimale
+Prise **large (150%+ largeur d'épaules)** pour maximiser l'adduction horizontale.
+
+### Bancs recommandés
+Plat et décliné sont les plus efficaces.
+
+### Exercices clés
+- Développé couché prise large
+- Développé décliné
+- Pull-over haltères
+
+## Varier les angles
+
+Au-delà des standards incliné/plat/décliné, variez de **10-15 degrés** entre les positions pour un développement complet.
+
+## Charges recommandées
+
+Les pectoraux contiennent **57-65% de fibres rapides** :
+- Priorité aux charges lourdes (>60% 1RM)
+- Complément en séries hautes (12-30 reps)
+- Pompes insuffisantes sans résistance ajoutée
+
+## Récupération
+
+Attendez **3+ jours** entre les séances pectoraux intenses.
+
+---
+
+**Développez des pecs complets.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre symétrie. Pour un programme équilibré, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "50",
+    slug: "entrainement-jeun-analyse",
+    title: "Entraînement à jeun : Avantages réels ou perte de temps ?",
+    excerpt: "Le cardio à jeun brûle plus de graisse ? Voici ce que la science dit vraiment.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-30",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800",
+    content: `
+## Les avantages identifiés
+
+- **Oxydation des graisses** augmentée pendant l'exercice
+- **Sensibilité à l'insuline** améliorée
+- Gains musculaires et de force comparables à l'entraînement nourri
+- Peut aider à prévenir la prise de graisse excessive en prise de masse
+
+## Les mises en garde importantes
+
+### D'où vient la graisse brûlée ?
+Une partie provient des réserves intramusculaires, pas uniquement de la graisse corporelle.
+
+### Intensité compromise
+L'entraînement nourri permet des intensités plus élevées et une dépense calorique totale supérieure.
+
+### Compensation
+Le corps compense : brûler du gras à jeun signifie utiliser plus de glucides le reste de la journée.
+
+## Le verdict de la science
+
+**Les études ne montrent aucune différence significative** en composition corporelle à long terme entre l'entraînement à jeun et nourri.
+
+## Quand choisir le jeûne ?
+
+Si l'entraînement à jeun :
+- Vous convient mieux logistiquement
+- Améliore votre adhérence
+- Ne compromet pas votre performance
+
+Alors les avantages de la constance dépassent les différences métaboliques mineures.
+
+## Recommandations pratiques
+
+- Restez hydraté
+- Planifiez l'entraînement en fin de jeûne
+- Mangez peu après pour maximiser l'absorption
+
+---
+
+**Trouvez ce qui vous convient.** L'[Ultimate Scan](/offers/ultimate-scan) analyse vos habitudes et leur efficacité. Pour un plan personnalisé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "51",
+    slug: "potentiel-genetique-musculation",
+    title: "Potentiel génétique : Excuse ou réalité ?",
+    excerpt: "La génétique limite-t-elle vraiment vos gains ? Comment savoir si vous avez atteint votre limite.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-28",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800",
+    content: `
+## Les facteurs génétiques réels
+
+### Cellules satellites
+Jouent un rôle crucial en donnant des noyaux aux fibres musculaires. Leur activité varie génétiquement.
+
+### Testostérone
+Influence significativement l'activité des cellules satellites. Les niveaux varient considérablement entre individus.
+
+### Myostatine
+Cette protéine limite la croissance. Une myostatine élevée = potentiel de croissance réduit.
+
+## Le mythe du "non-répondeur"
+
+Une étude notable a démontré qu'**augmenter le volume d'entraînement** chez les sujets "non-répondeurs" a produit des améliorations significatives.
+
+**Conclusion** : Une mauvaise programmation – pas uniquement la génétique – explique souvent les plateaux.
+
+## La vraie limite
+
+La plupart des gens atteignent leur **limite d'effort** avant leur limite génétique.
+
+Le corps s'adapte au stress. La progression continue exige :
+- Un effort progressivement plus intense
+- Une nutrition optimisée
+- Un sommeil amélioré
+
+## À retenir
+
+Le potentiel génétique existe, mais **votre dévouement à l'intensité progressive détermine votre succès réel**.
+
+Ne vous cachez pas derrière la génétique avant d'avoir :
+- Entraîné 5+ ans sérieusement
+- Optimisé votre nutrition
+- Maximisé votre récupération
+- Varié systématiquement votre programmation
+
+---
+
+**Découvrez votre vrai potentiel.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse vos marqueurs de croissance. Pour exploiter votre potentiel, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "52",
+    slug: "timing-nutriments-important",
+    title: "Timing des nutriments : Ce qui compte vraiment",
+    excerpt: "Fenêtre anabolique de 30 min ? Voici la vraie hiérarchie de l'importance nutritionnelle.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-25",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    content: `
+## La hiérarchie des protéines
+
+### 1. Apport quotidien total (LE PLUS IMPORTANT)
+Atteindre vos besoins quotidiens en protéines surpasse toutes les considérations de timing.
+
+### 2. Type de protéines
+Les protéines animales contiennent plus de leucine que les végétales, affectant les taux de synthèse.
+
+### 3. Timing (LE MOINS IMPORTANT)
+Le timing post-entraînement compte, mais seulement après avoir optimisé les deux premiers facteurs.
+
+## Protéines pré-entraînement
+
+Bénéfiques principalement pour ceux qui :
+- Suivent un régime low-carb
+- Entraînent les mêmes muscles sous 24h
+- Sont débutants ou sensibles aux courbatures
+
+## Timing des glucides
+
+Contrairement aux athlètes d'endurance, les pratiquants de musculation ont moins d'urgence glucidique.
+
+**Le glycogène se reconstitue significativement** même sans glucides post-entraînement quand 48-72h séparent les séances.
+
+Les séances de 1h+ peuvent justifier 30-45g de glucides pré-entraînement.
+
+## À retenir
+
+Traitez le timing nutritionnel comme un **outil, pas une loi**. L'apport quotidien total reste le moteur principal des résultats.
+
+**Priorités :**
+1. Assez de protéines par jour
+2. Protéines de qualité
+3. Distribution sur la journée
+4. Timing peri-workout (bonus)
+
+---
+
+**Optimisez votre nutrition.** L'[Ultimate Scan](/offers/ultimate-scan) analyse vos habitudes alimentaires. Pour un plan nutritionnel précis, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "53",
+    slug: "frequence-repas-metabolisme",
+    title: "Fréquence des repas : Impact réel sur le métabolisme",
+    excerpt: "6 petits repas par jour boostent le métabolisme ? La science démystifie ce mythe.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-22",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800",
+    content: `
+## Le mythe du métabolisme accéléré
+
+### Ce que dit la science
+**Aucune différence de métabolisme au repos** entre les sujets consommant différents nombres de repas.
+
+### L'effet inverse
+Manger fréquemment **augmente la faim et le désir de manger** – le contraire de ce qu'on croit.
+
+## Composition corporelle
+
+Une seule étude a trouvé des différences significatives avec une fréquence accrue, mais elle donnait plus de protéines au groupe mangeant fréquemment – biaisant les résultats.
+
+## L'exception : les protéines
+
+Pour la croissance musculaire, la fréquence de l'apport protéique compte davantage.
+
+**Augmenter la fréquence des protéines aide à maintenir un bilan protéique positif.**
+
+### Recommandation
+Consommez **20-40g de protéines toutes les 3 heures** pour optimiser la synthèse protéique, surtout en sèche.
+
+## Le verdict
+
+**Le meilleur plan alimentaire est celui que vous pouvez suivre.**
+
+La fréquence des repas devrait servir votre style de vie, pas l'optimisation métabolique.
+
+L'apport protéique quotidien total compte **beaucoup plus** que le timing des repas pour la composition corporelle.
+
+---
+
+**Simplifiez votre nutrition.** L'[Ultimate Scan](/offers/ultimate-scan) identifie ce qui compte vraiment pour vous. Pour un plan réaliste, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "54",
+    slug: "bcaa-utiles-inutiles",
+    title: "BCAAs : Utiles ou gaspillage d'argent ?",
+    excerpt: "Les BCAAs valent-ils leur prix ? La science tranche le débat une fois pour toutes.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-20",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800",
+    content: `
+## Que sont les BCAAs ?
+
+Les acides aminés à chaîne ramifiée (leucine, isoleucine, valine) représentent ~35% des acides aminés essentiels dans le muscle.
+
+## Les arguments "pour"
+
+- **Leucine** : déclenche la synthèse protéique via mTOR
+- Peuvent réduire la fatigue perçue pendant l'exercice
+- Effet anti-catabolique potentiel
+
+## Le problème majeur
+
+### Les BCAAs seuls ne suffisent pas
+La synthèse protéique nécessite **tous les acides aminés essentiels**, pas seulement trois.
+
+Les BCAAs isolés peuvent même **réduire** la synthèse en créant un déséquilibre.
+
+### Si vous mangez assez de protéines...
+Les BCAAs n'apportent **aucun bénéfice supplémentaire** quand l'apport protéique est adéquat (1.6-2.2g/kg).
+
+## Quand les BCAAs pourraient aider
+
+- **Entraînement à jeun strict** (aucune protéine depuis 12h+)
+- **Régime très hypocalorique** avec protéines insuffisantes
+- **Végétaliens** avec difficulté à atteindre les besoins protéiques
+
+## Le verdict
+
+Pour 90% des pratiquants, les BCAAs sont un **gaspillage d'argent**.
+
+**Investissez plutôt dans :**
+- Plus de protéines alimentaires
+- Whey protéine de qualité
+- Créatine monohydrate
+
+---
+
+**Optimisez vos suppléments.** L'[Ultimate Scan](/offers/ultimate-scan) analyse vos besoins réels. Pour une supplémentation efficace, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "55",
+    slug: "amplitude-mouvement-croissance",
+    title: "Amplitude de mouvement : Plus c'est grand, mieux c'est ?",
+    excerpt: "Full ROM vs partials : quelle amplitude pour maximiser la croissance musculaire ?",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-18",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    content: `
+## Ce que dit la recherche
+
+Les études montrent généralement que **l'amplitude complète produit plus de croissance** que les amplitudes partielles.
+
+### Raisons principales
+- Plus de temps sous tension total
+- Plus grand étirement du muscle
+- Activation de différentes portions du muscle
+
+## Mais ce n'est pas si simple
+
+### Le stretch compte énormément
+L'hypertrophie dépend fortement de la **tension en position étirée**.
+
+Les exercices avec résistance maximale en position étirée (comme le curl incliné) peuvent être supérieurs même avec moins d'amplitude totale.
+
+### Charge vs amplitude
+Parfois, réduire l'amplitude permet d'utiliser **plus de charge**, créant plus de tension mécanique.
+
+## Application pratique
+
+### Utilisez l'amplitude complète pour :
+- Les exercices d'isolation
+- Les périodes de volume élevé
+- L'hypertrophie générale
+
+### Utilisez les partielles pour :
+- Surcharge spécifique à un angle
+- Compléter l'amplitude complète (drop sets)
+- Contourner des limitations de mobilité
+
+## La meilleure stratégie
+
+**Combinez les deux** :
+1. Base avec amplitude complète
+2. Finisseurs en partiales pour la surcharge
+3. Pauses en position étirée
+
+---
+
+**Maximisez chaque mouvement.** L'[Anabolic Bioscan](/offers/anabolic-bioscan) analyse votre technique. Pour optimiser votre exécution, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "56",
+    slug: "proteine-vegetale-animale",
+    title: "Protéines végétales vs animales : Le verdict scientifique",
+    excerpt: "Peut-on construire autant de muscle avec des protéines végétales ? Ce que la science révèle.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-15",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800",
+    content: `
+## Les différences clés
+
+### Teneur en leucine
+Les protéines animales contiennent **plus de leucine** – l'acide aminé déclencheur de la synthèse protéique.
+
+| Source | Leucine (%) |
+|--------|-------------|
+| Whey | 11% |
+| Bœuf | 8% |
+| Pois | 7% |
+| Soja | 7% |
+
+### Profil d'acides aminés
+Les protéines animales sont "complètes" – tous les acides aminés essentiels en quantités adéquates.
+
+### Digestibilité
+Les protéines animales ont généralement une **meilleure biodisponibilité**.
+
+## Les protéines végétales peuvent-elles égaler ?
+
+### Oui, avec des ajustements :
+
+1. **Augmentez la quantité totale** (+10-20%)
+2. **Combinez les sources** (riz + pois = profil complet)
+3. **Ajoutez de la leucine** (2-3g par repas)
+4. **Distribuez sur plus de repas**
+
+## Études comparatives
+
+Les recherches récentes montrent que **les végétaliens peuvent atteindre des gains comparables** quand :
+- L'apport protéique total est équivalent
+- Les sources sont diversifiées
+- La leucine est suffisante
+
+## Recommandations
+
+### Omnivores
+Visez 1.6-2.2g/kg de protéines mixtes.
+
+### Végétaliens
+Visez **2.0-2.4g/kg** avec sources variées + supplémentation en leucine si nécessaire.
+
+---
+
+**Optimisez vos protéines.** L'[Blood Analysis](/offers/blood-analysis) mesure vos marqueurs nutritionnels. Pour un plan adapté à votre régime, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "57",
+    slug: "periodisation-musculation",
+    title: "Périodisation en musculation : Au-delà du chaos",
+    excerpt: "Changer d'exercices au hasard n'est pas de la périodisation. Voici comment vraiment structurer vos cycles.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-12",
+    readTime: "7 min",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
+    content: `
+## Qu'est-ce que la périodisation ?
+
+La manipulation planifiée des variables d'entraînement sur le temps pour :
+- Maximiser les adaptations
+- Éviter les plateaux
+- Gérer la fatigue
+
+## Les modèles principaux
+
+### Périodisation linéaire
+Progression constante : volume diminue, intensité augmente.
+
+**Exemple sur 12 semaines :**
+- Semaines 1-4 : 4x12 @ 65%
+- Semaines 5-8 : 4x8 @ 75%
+- Semaines 9-12 : 4x5 @ 85%
+
+### Périodisation ondulée
+Variation des variables au sein de la semaine.
+
+**Exemple :**
+- Lundi : Force (5x5)
+- Mercredi : Hypertrophie (4x10)
+- Vendredi : Puissance (6x3)
+
+### Périodisation par blocs
+Phases distinctes de 3-4 semaines chacune.
+
+## Quelle méthode choisir ?
+
+### Pour l'hypertrophie
+La périodisation ondulée quotidienne montre des **résultats légèrement supérieurs** pour la masse musculaire.
+
+### Pour la force
+La périodisation linéaire ou par blocs convient mieux aux pics de performance.
+
+## L'essentiel
+
+La **variation systématique** surpasse l'entraînement monotone OU chaotique.
+
+Choisissez une méthode, appliquez-la 8-12 semaines, évaluez, ajustez.
+
+---
+
+**Structurez votre progression.** L'[Ultimate Scan](/offers/ultimate-scan) analyse votre historique d'entraînement. Pour une périodisation optimisée, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "58",
+    slug: "entrainement-malade",
+    title: "S'entraîner malade : Quand c'est OK et quand s'arrêter",
+    excerpt: "Un rhume devrait-il vous éloigner de la salle ? Le guide pour décider intelligemment.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-10",
+    readTime: "5 min",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
+    content: `
+## La règle du "au-dessus du cou"
+
+### S'entraîner est probablement OK si :
+- Nez qui coule
+- Éternuements
+- Légère congestion
+- Mal de gorge mineur
+
+### STOP si :
+- Fièvre
+- Douleurs musculaires (de la maladie)
+- Toux profonde/thoracique
+- Fatigue extrême
+- Symptômes gastro-intestinaux
+
+## L'impact sur la récupération
+
+### Système immunitaire + entraînement
+L'exercice intense **supprime temporairement** l'immunité (fenêtre "open window" de 3-72h).
+
+S'entraîner dur quand on est déjà malade peut :
+- Prolonger la maladie
+- Aggraver les symptômes
+- Retarder la récupération
+
+## Recommandations
+
+### Si vous décidez de vous entraîner :
+- Réduisez l'intensité de 50%
+- Raccourcissez la durée
+- Évitez l'échec musculaire
+- Hydratez-vous davantage
+
+### Après la guérison :
+- Attendez 24-48h sans symptômes
+- Reprenez progressivement (50% → 75% → 100%)
+- Priorisez le sommeil
+
+## Le contexte social
+
+**Pensez aux autres.** Si vous êtes contagieux, restez chez vous. Un entraînement manqué vaut mieux que contaminer toute la salle.
+
+---
+
+**Écoutez votre corps.** L'[Ultimate Scan](/offers/ultimate-scan) analyse votre état de récupération. Pour un suivi de santé global, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "59",
+    slug: "fatigue-systeme-nerveux",
+    title: "Fatigue du système nerveux central : Mythe ou réalité ?",
+    excerpt: "Le SNC fatigue-t-il vraiment ? Ce que la science dit sur cette excuse populaire.",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-08",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    content: `
+## Qu'est-ce que la "fatigue du SNC" ?
+
+La croyance que des entraînements intenses épuisent le système nerveux central, nécessitant des jours de récupération.
+
+## Ce que la recherche montre
+
+### La fatigue du SNC existe, mais...
+Elle est **de courte durée** – généralement récupérée en quelques heures, pas en jours.
+
+### Ce qui ressemble à de la fatigue du SNC
+- Fatigue musculaire périphérique
+- Déplétion en glycogène
+- Déshydratation
+- Manque de sommeil
+- Stress psychologique
+
+## Les vrais signes de surentraînement
+
+- Performances en baisse sur plusieurs semaines
+- Troubles du sommeil
+- Changements d'humeur persistants
+- Perte d'appétit
+- Susceptibilité accrue aux infections
+
+## Implications pratiques
+
+### Ce que ça signifie
+Vous pouvez probablement vous entraîner plus souvent que vous ne le pensez.
+
+### Ce qu'il ne faut PAS faire
+Utiliser la "fatigue du SNC" comme excuse pour éviter les entraînements difficiles.
+
+### Quand vraiment récupérer
+- Après une compétition
+- Pendant une maladie
+- En période de stress majeur
+- Quand les performances déclinent sur 2+ semaines
+
+---
+
+**Distinguez vraie fatigue et excuses.** L'[Burnout Engine](/offers/burnout-detection) analyse votre état réel. Pour une gestion optimale, réservez un [coaching](https://www.achzodcoaching.com).
+    `,
+  },
+  {
+    id: "60",
+    slug: "cyclage-glucides-efficace",
+    title: "Cyclage des glucides : Stratégie efficace ou complication inutile ?",
+    excerpt: "Alterner jours hauts et bas en glucides améliore-t-il vraiment les résultats ?",
+    category: "musculation",
+    author: "ACHZOD",
+    date: "2024-08-05",
+    readTime: "6 min",
+    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    content: `
+## Le concept
+
+Alterner l'apport en glucides selon les jours :
+- **Jours hauts** : entraînement intense
+- **Jours modérés** : entraînement léger
+- **Jours bas** : repos
+
+## Les arguments théoriques
+
+### Pour
+- Optimise l'utilisation des glucides
+- Améliore la sensibilité à l'insuline
+- Permet plus de flexibilité alimentaire
+
+### Contre
+- Complexité accrue
+- Peu de preuves de supériorité
+- Difficile à maintenir long terme
+
+## Ce que dit la science
+
+Les études comparant le cyclage des glucides à un apport constant montrent **peu ou pas de différence** en composition corporelle.
+
+L'**apport calorique total** reste le facteur déterminant.
+
+## Quand le cyclage peut aider
+
+- **Athlètes de compétition** avec besoins précis
+- **Personnes qui tolèrent mal** les glucides constants
+- **Psychologiquement** : permet des "refeeds" planifiés
+
+## Application simple
+
+Si vous voulez essayer :
+
+| Jour | Glucides | Calories |
+|------|----------|----------|
+| Entraînement lourd | 3-4g/kg | Maintenance |
+| Entraînement léger | 2-3g/kg | -200 |
+| Repos | 1-2g/kg | -400 |
+
+## Le verdict
+
+Le cyclage des glucides est un **outil optionnel**, pas une nécessité. La constance dans l'apport calorique total compte davantage.
+
+---
+
+**Simplifiez votre nutrition.** L'[Ultimate Scan](/offers/ultimate-scan) identifie ce qui marche pour vous. Pour un plan personnalisé, découvrez mon [coaching](https://www.achzodcoaching.com).
+    `,
+  },
 ];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
