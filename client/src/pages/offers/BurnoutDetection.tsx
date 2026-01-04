@@ -240,7 +240,7 @@ export default function BurnoutDetection() {
                 <span className="text-purple-400">Protocole 4 semaines.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Notre algorithme evalue ton niveau de stress et de fatigue.
+                J'evalue ton niveau de stress et de fatigue a travers 80+ questions ciblees.
                 Tu recois un score de risque burnout et un protocole de recuperation adapte.
               </p>
               <ul className="space-y-4">

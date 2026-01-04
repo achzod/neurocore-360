@@ -295,127 +295,82 @@ function FiveOffersSection() {
 }
 
 // ============================================================================
-// CERTIFICATIONS SECTION - Ultrahuman Style
+// CERTIFICATIONS SECTION - Clean & Compact
 // ============================================================================
 function CertificationsSection() {
   const certifications = [
-    { logo: issaLogo, name: "ISSA", certs: ["CPT", "Nutritionist", "Bodybuilding Specialist"] },
-    { logo: pnLogo, name: "Precision Nutrition", certs: ["Level 1 Certified", "Sleep, Stress & Recovery"] },
-    { logo: preScriptLogo, name: "Pre-Script", certs: ["Movement Assessment", "Corrective Exercise"] },
-    { logo: nasmLogo, name: "NASM", certs: ["CPT", "CES", "PES"] },
+    {
+      logo: nasmLogo,
+      name: "NASM",
+      certs: ["CPT", "CES", "PES", "FNS", "WFS"]
+    },
+    {
+      logo: issaLogo,
+      name: "ISSA",
+      certs: ["CPT", "Nutritionist", "Bodybuilding"]
+    },
+    {
+      logo: pnLogo,
+      name: "Precision Nutrition",
+      certs: ["Level 1", "Sleep & Recovery"]
+    },
+    {
+      logo: preScriptLogo,
+      name: "Pre-Script",
+      certs: ["Movement", "Corrective Ex."]
+    },
   ];
 
   return (
-    <section className="border-y border-gray-900 bg-black py-16 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-4">
+    <section className="border-y border-gray-900 bg-black py-12">
+      <div className="mx-auto max-w-6xl px-4">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mb-10 text-center"
+          className="mb-8 text-center"
         >
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-600">
-            10+ Certifications Internationales
+          <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-600">
+            11 Certifications Internationales
           </p>
         </motion.div>
-        {/* Scrolling container */}
-        <div className="relative">
-          <div className="flex animate-scroll gap-20">
-            {/* First set */}
-            {certifications.map((cert, index) => (
-              <motion.div
-                key={`first-${index}`}
-                className="flex flex-col items-center gap-3 min-w-[200px]"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-              >
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          {certifications.map((cert, index) => (
+            <motion.div
+              key={cert.name}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="flex flex-col items-center text-center group"
+            >
+              <div className="h-10 mb-3 flex items-center justify-center">
                 <img
                   src={cert.logo}
                   alt={cert.name}
-                  className="h-14 w-auto object-contain brightness-0 invert opacity-40 hover:opacity-80 transition-all duration-300"
+                  className="h-8 w-auto object-contain brightness-0 invert opacity-50 group-hover:opacity-80 transition-opacity duration-300"
                 />
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-500">{cert.name}</p>
-                </div>
-              </motion.div>
-            ))}
-            {/* Duplicate for seamless loop */}
-            {certifications.map((cert, index) => (
-              <motion.div
-                key={`second-${index}`}
-                className="flex flex-col items-center gap-3 min-w-[200px]"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-              >
-                <img
-                  src={cert.logo}
-                  alt={cert.name}
-                  className="h-14 w-auto object-contain brightness-0 invert opacity-40 hover:opacity-80 transition-all duration-300"
-                />
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-500">{cert.name}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+              <p className="text-[11px] font-semibold text-gray-400 mb-1.5">{cert.name}</p>
+              <div className="flex flex-wrap justify-center gap-1">
+                {cert.certs.map((c) => (
+                  <span
+                    key={c}
+                    className="text-[9px] text-gray-600 bg-gray-900 px-1.5 py-0.5 rounded"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-// ============================================================================
-// MEDIA LOGOS SECTION - Ultrahuman Style
-// ============================================================================
-function MediaLogosSection() {
-  const mediaLogos = [
-    { name: "Yahoo Finance", logo: "https://logo.clearbit.com/yahoo.com" },
-    { name: "Bloomberg", logo: "https://logo.clearbit.com/bloomberg.com" },
-    { name: "Business Insider", logo: "https://logo.clearbit.com/businessinsider.com" },
-    { name: "Reuters", logo: "https://logo.clearbit.com/reuters.com" },
-    { name: "Associated Press", logo: "https://logo.clearbit.com/ap.org" },
-    { name: "MarketWatch", logo: "https://logo.clearbit.com/marketwatch.com" },
-    { name: "Apple News", logo: "https://logo.clearbit.com/apple.com" },
-    { name: "Google News", logo: "https://logo.clearbit.com/google.com" },
-  ];
-
-  return (
-    <section className="py-10 bg-gray-950 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-8 text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-700">
-            Paru dans les médias
-          </p>
-        </div>
-        {/* Scrolling container */}
-        <div className="relative">
-          <div className="flex animate-scroll-fast gap-16 items-center">
-            {/* First set */}
-            {mediaLogos.map((media, index) => (
-              <Link key={`first-${index}`} href="/press">
-                <img
-                  src={media.logo}
-                  alt={media.name}
-                  className="h-7 w-auto object-contain brightness-0 invert opacity-30 hover:opacity-60 transition-all duration-300 cursor-pointer"
-                />
-              </Link>
-            ))}
-            {/* Duplicate for seamless loop */}
-            {mediaLogos.map((media, index) => (
-              <Link key={`second-${index}`} href="/press">
-                <img
-                  src={media.logo}
-                  alt={media.name}
-                  className="h-7 w-auto object-contain brightness-0 invert opacity-30 hover:opacity-60 transition-all duration-300 cursor-pointer"
-                />
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // ============================================================================
 // SOCIAL PROOF BANNER - Ultrahuman Style
@@ -464,44 +419,70 @@ function SocialProofBanner() {
 }
 
 // ============================================================================
-// SYNC WEARABLES SECTION - Ultrahuman Style
+// SYNC WEARABLES SECTION - With Brand Logos
 // ============================================================================
 function WearablesSection() {
   const wearables = [
-    { name: "Oura", icon: "◎" },
-    { name: "Whoop", icon: "◇" },
-    { name: "Garmin", icon: "▽" },
-    { name: "Apple Watch", icon: "◉" },
-    { name: "Fitbit", icon: "◈" },
+    { name: "Apple Health", type: "SDK", logo: "https://logo.clearbit.com/apple.com", available: true },
+    { name: "Garmin", type: "API", logo: "https://logo.clearbit.com/garmin.com", available: true },
+    { name: "Fitbit", type: "API", logo: "https://logo.clearbit.com/fitbit.com", available: true },
+    { name: "Oura", type: "API", logo: "https://logo.clearbit.com/ouraring.com", available: true },
+    { name: "Google Fit", type: "API", logo: "https://logo.clearbit.com/google.com", available: true },
+    { name: "Samsung Health", type: "SDK", logo: "https://logo.clearbit.com/samsung.com", available: true },
+    { name: "Withings", type: "API", logo: "https://logo.clearbit.com/withings.com", available: true },
+    { name: "WHOOP", type: "API", logo: "https://logo.clearbit.com/whoop.com", available: false, comingSoon: true },
+    { name: "Ultrahuman", type: "API", logo: "https://logo.clearbit.com/ultrahuman.com", available: true },
   ];
 
   return (
-    <section className="py-24 bg-black">
+    <section className="py-20 bg-black">
       <div className="mx-auto max-w-5xl px-4 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Intégrations</p>
-          <h2 className="mb-4 text-4xl sm:text-5xl font-bold text-white">Sync tes wearables</h2>
-          <p className="mb-16 text-lg text-gray-500">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-500 mb-3">Intégrations</p>
+          <h2 className="mb-3 text-3xl sm:text-4xl font-bold text-white">Sync tes wearables</h2>
+          <p className="mb-10 text-base text-gray-500">
             Connecte tes données pour une analyse plus précise
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {wearables.map((brand, index) => (
               <motion.div
                 key={brand.name}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ scale: 1.05, borderColor: "rgb(16 185 129 / 0.5)" }}
-                className="flex h-20 w-36 flex-col items-center justify-center rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3 transition-all duration-300 cursor-pointer hover:bg-gray-900"
+                transition={{ delay: index * 0.05 }}
+                className={`relative flex flex-col items-center justify-center rounded-xl border ${
+                  brand.available
+                    ? "border-gray-800 bg-gray-900/50 hover:border-emerald-500/30 hover:bg-gray-900"
+                    : "border-gray-800/50 bg-gray-900/30 opacity-60"
+                } px-3 py-4 transition-all duration-300`}
               >
-                <span className="text-2xl text-gray-600 mb-1">{brand.icon}</span>
-                <span className="text-sm font-medium text-gray-400">{brand.name}</span>
+                {brand.comingSoon && (
+                  <span className="absolute -top-2 right-2 text-[8px] bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded-full">
+                    Bientôt
+                  </span>
+                )}
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  className="h-6 w-6 object-contain mb-2 rounded"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <span className="text-[11px] font-medium text-gray-300 mb-1">{brand.name}</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                  brand.type === "API"
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : "bg-amber-500/10 text-amber-400"
+                }`}>
+                  {brand.type}
+                </span>
               </motion.div>
             ))}
           </div>
@@ -1406,31 +1387,51 @@ function DiscoveryScanSection() {
 }
 
 // ============================================================================
-// FAQ SECTION - Ultrahuman Style
+// FAQ SECTION - Comprehensive
 // ============================================================================
 function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const faqs = [
     {
-      question: "Comment fonctionne l'analyse ?",
-      answer: "Tes reponses au questionnaire (180+ questions) sont analysees pour generer un rapport personnalise de 50+ pages. Des milliers de data points sont croises pour identifier tes desequilibres et te proposer des protocoles adaptes.",
+      question: "Comment fonctionne l'analyse exactement ?",
+      answer: "Je t'envoie un questionnaire ultra-détaillé de 180+ questions qui couvre tous les aspects de ta santé : sommeil, énergie, digestion, stress, hormones, nutrition, activité physique, historique médical. Chaque réponse génère des points de données que je croise pour identifier tes déséquilibres cachés. Le rapport final fait 30 à 50+ pages selon l'offre, avec des protocoles personnalisés que j'ai développés sur des années de pratique avec mes clients en coaching.",
     },
     {
       question: "Combien de temps prend le questionnaire ?",
-      answer: "Entre 20 et 45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard.",
+      answer: "Compte entre 20 et 45 minutes selon l'offre choisie. Le Discovery Scan (gratuit) prend environ 15-20 minutes. L'Anabolic Bioscan et Ultimate Scan demandent 35-45 minutes car ils vont plus en profondeur. Tu peux sauvegarder ta progression à tout moment et reprendre plus tard - pas besoin de tout faire d'une traite.",
     },
     {
       question: "Le rapport remplace-t-il un médecin ?",
-      answer: "Non. Nos rapports sont des outils d'optimisation et de prévention, pas des diagnostics médicaux. Pour toute question de santé, consulte un professionnel.",
+      answer: "Non, et ce n'est pas le but. Mon rapport est un outil d'optimisation et de prévention basé sur mes 11 certifications internationales et mon expérience terrain. Je t'aide à identifier ce qui pourrait être amélioré AVANT que ça devienne un problème médical. Pour toute pathologie ou symptôme inquiétant, consulte toujours un professionnel de santé. Mon travail vient en complément, pas en remplacement.",
+    },
+    {
+      question: "Qui es-tu exactement, Achzod ?",
+      answer: "Je suis coach certifié avec 11 certifications internationales (NASM, ISSA, Precision Nutrition, Pre-Script...). J'ai accompagné des centaines de clients en coaching individuel pendant des années. NEUROCORE 360 est l'aboutissement de toute cette expérience : je voulais rendre accessible à tous l'analyse approfondie que je faisais en one-to-one. Chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique.",
     },
     {
       question: "Mes données sont-elles sécurisées ?",
-      answer: "Absolument. Tes données sont chiffrées et stockées en Europe (RGPD). Nous ne vendons jamais tes données à des tiers.",
+      answer: "Absolument. Tes données sont chiffrées (SSL/TLS) et stockées sur des serveurs européens conformes au RGPD. Je ne vends JAMAIS tes données à des tiers - c'est une ligne rouge pour moi. Tu peux demander la suppression complète de tes données à tout moment. Ta vie privée n'est pas négociable.",
+    },
+    {
+      question: "En combien de temps je reçois mon rapport ?",
+      answer: "Le rapport est généré automatiquement dès que tu termines le questionnaire - tu le reçois en quelques minutes par email. Pour les offres premium (Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum.",
+    },
+    {
+      question: "Comment se passe le Blood Analysis ?",
+      answer: "Tu uploades simplement le PDF de ton bilan sanguin (celui de ton labo). Je l'analyse avec des ranges optimaux de performance - pas les ranges 'normaux' des labos qui sont souvent trop larges. Tu obtiens une interprétation détaillée de chaque marqueur avec des protocoles ciblés pour corriger les déséquilibres identifiés.",
+    },
+    {
+      question: "Le montant est-il déductible de mon coaching ?",
+      answer: "Oui ! Si tu prends un coaching avec moi par la suite, le montant de ton rapport est intégralement déduit. Par exemple, si tu prends l'Ultimate Scan à 79€ puis un coaching, les 79€ sont déduits du prix du coaching. C'est ma façon de récompenser ceux qui veulent aller plus loin.",
     },
     {
       question: "Puis-je obtenir un remboursement ?",
-      answer: "Oui, tu as 14 jours pour demander un remboursement si le rapport ne te convient pas. Pas de questions.",
+      answer: "Oui, tu as 14 jours pour demander un remboursement si le rapport ne te convient pas. Pas de questions, pas de justification à fournir. Je préfère avoir des clients satisfaits que de garder quelqu'un qui n'est pas content. Envoie-moi simplement un email.",
+    },
+    {
+      question: "Je peux synchroniser mes wearables ?",
+      answer: "Oui ! Tu peux connecter Oura, Garmin, Fitbit, Apple Health, Google Fit, Samsung Health, Withings et Ultrahuman. Les données de tes wearables enrichissent l'analyse et permettent un suivi dans le temps. WHOOP arrive bientôt. Plus tu connectes de sources, plus l'analyse est précise.",
     },
   ];
 
@@ -1599,7 +1600,6 @@ export default function Landing() {
         <HeroSection />
         <FiveOffersSection />
         <CertificationsSection />
-        <MediaLogosSection />
         <SocialProofBanner />
         <WearablesSection />
         <MeasurableResultsSection />

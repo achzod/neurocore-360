@@ -111,65 +111,162 @@ export default function AuditGratuit() {
         </motion.div>
       </section>
 
-      {/* WHAT YOU GET - Bento Grid */}
+      {/* DETECTION DES BLOCAGES - Text + Image */}
       <section className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-6">
-              Ce que tu obtiens.
-            </h2>
-            <p className="text-white/50 text-lg max-w-xl mx-auto">
-              Un diagnostic precis. Sans flou. Sans bullshit.
-            </p>
-          </motion.div>
-
-          {/* Bento Grid - Ultrahuman Style */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Large Card */}
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            {/* Text */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 lg:row-span-2 relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0eff27]/10 to-transparent border border-white/5 p-10"
+              transition={{ duration: 0.8 }}
             >
-              <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#0eff27]/5 to-transparent" />
-              <div className="relative z-10">
-                <div className="text-[#0eff27] text-8xl font-bold tracking-[-0.04em] mb-4">15</div>
-                <h3 className="text-white text-3xl font-bold tracking-[-0.02em] mb-4">
-                  Domaines analyses
-                </h3>
-                <p className="text-white/50 text-lg leading-relaxed max-w-md">
-                  Sommeil, energie, hormones, digestion, stress, metabolisme,
-                  neurotransmetteurs, biomecanique, cardio, immunite...
-                </p>
+              <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Detection
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Identifie ce qui te bloque vraiment.
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                180 questions ciblees analysent chaque aspect de ta sante : sommeil,
+                hormones, digestion, stress, metabolisme, biomecanique. Je detecte
+                les desequilibres caches que tu ne soupconnes meme pas.
+              </p>
+              <ul className="space-y-4">
+                {["15 domaines analyses en profondeur", "Patterns metaboliques identifies", "Desequilibres hormonaux reveles"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0eff27]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Image */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0eff27]/10 to-black/50 border border-white/5">
+                <img
+                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop"
+                  alt="Health analysis"
+                  className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* SCORE GLOBAL - Text + Image (reversed) */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            {/* Image - Left on desktop */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative order-2 lg:order-1"
+            >
+              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0eff27]/10 to-black/50 border border-white/5">
+                <img
+                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
+                  alt="Data dashboard"
+                  className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
             </motion.div>
 
-            {/* Small Cards */}
-            {[
-              { number: "180", label: "Questions", desc: "Analyse exhaustive" },
-              { number: "100", label: "Score global", desc: "Sur 100 points" },
-              { number: "5-7", label: "Pages", desc: "Rapport detaille" },
-              { number: "0€", label: "Gratuit", desc: "Sans engagement" },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 hover:bg-white/[0.06] hover:border-[#0eff27]/20 hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
-                <div className="text-white text-lg font-medium mb-1">{item.label}</div>
-                <div className="text-white/40 text-sm">{item.desc}</div>
-              </motion.div>
-            ))}
+            {/* Text - Right on desktop */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="order-1 lg:order-2"
+            >
+              <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Score
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Un score global sur 100.
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Ton score reflète l'etat actuel de ton systeme. Plus il est bas,
+                plus tu as de leviers d'amelioration. Je te montre exactement
+                où tu perds des points et pourquoi.
+              </p>
+              <ul className="space-y-4">
+                {["Visualisation claire de tes forces", "Points faibles identifies", "Priorites d'action revelees"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0eff27]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* RAPPORT DETAILLE - Text + Image */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            {/* Text */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Rapport
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                5-7 pages de diagnostic.
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Pas de blabla. Un rapport clair qui te dit exactement ce qui
+                ne va pas. Chaque section explique tes resultats et ce qu'ils
+                signifient pour ta sante au quotidien.
+              </p>
+              <ul className="space-y-4">
+                {["Executive summary clair", "Analyse par domaine", "Points d'attention prioritaires"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0eff27]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Image */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0eff27]/10 to-black/50 border border-white/5">
+                <img
+                  src="https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=800&h=600&fit=crop"
+                  alt="Report analysis"
+                  className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -192,7 +289,7 @@ export default function AuditGratuit() {
                   Chaque aspect de ta sante, decode.
                 </h2>
                 <p className="text-white/50 text-lg leading-relaxed">
-                  Notre algorithme analyse tes reponses pour identifier les desequilibres
+                  J'analyse tes reponses pour identifier les desequilibres
                   caches qui limitent ta performance.
                 </p>
               </motion.div>
