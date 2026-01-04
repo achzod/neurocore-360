@@ -283,20 +283,93 @@ export default function BurnoutDetection() {
       <Header />
 
       <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-purple-950 via-purple-900/50 to-black py-20 lg:py-32">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-800/20 via-transparent to-transparent" />
+        {/* Hero Section - Glowing Orbs Style */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-red-950/80 via-purple-950 to-black py-20 lg:py-32">
+          {/* Main dark red gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/30 via-purple-950/50 to-transparent" />
 
-          {/* Subtle pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div
-              className="h-full w-full"
+          {/* Animated glowing orbs */}
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Large orb top-left */}
+            <motion.div
+              className="absolute -top-20 -left-20 w-[400px] h-[400px] rounded-full"
               style={{
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
-                backgroundSize: "50px 50px",
+                background: 'radial-gradient(circle, rgba(239,68,68,0.3) 0%, rgba(127,29,29,0.1) 50%, transparent 70%)',
+              }}
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.5, 0.7, 0.5],
+              }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
               }}
             />
+            {/* Large orb bottom-right */}
+            <motion.div
+              className="absolute -bottom-32 -right-20 w-[500px] h-[500px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(239,68,68,0.25) 0%, rgba(127,29,29,0.1) 50%, transparent 70%)',
+              }}
+              animate={{
+                scale: [1, 1.15, 1],
+                opacity: [0.4, 0.6, 0.4],
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1,
+              }}
+            />
+            {/* Medium orb center-right */}
+            <motion.div
+              className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(168,85,247,0.2) 0%, rgba(88,28,135,0.1) 50%, transparent 70%)',
+              }}
+              animate={{
+                scale: [1, 1.08, 1],
+                opacity: [0.3, 0.5, 0.3],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 2,
+              }}
+            />
+            {/* Small floating icons */}
+            <motion.div
+              className="absolute top-1/4 left-1/4 w-16 h-16 rounded-full bg-red-500/10 backdrop-blur-sm border border-red-500/20 flex items-center justify-center"
+              animate={{
+                y: [0, -10, 0],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <Activity className="w-6 h-6 text-red-400/60" />
+            </motion.div>
+            <motion.div
+              className="absolute bottom-1/3 right-1/3 w-14 h-14 rounded-full bg-purple-500/10 backdrop-blur-sm border border-purple-500/20 flex items-center justify-center"
+              animate={{
+                y: [0, -8, 0],
+                opacity: [0.4, 0.7, 0.4],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1,
+              }}
+            >
+              <Flame className="w-5 h-5 text-purple-400/60" />
+            </motion.div>
           </div>
 
           <div className="relative mx-auto max-w-6xl px-4">

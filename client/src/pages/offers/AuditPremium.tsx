@@ -492,20 +492,70 @@ export default function AuditPremium() {
       <Header />
 
       <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950 via-emerald-900/50 to-black py-20 lg:py-32">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-800/20 via-transparent to-transparent" />
+        {/* Hero Section - Green Grid/Heart Style */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950 via-emerald-900/30 to-black py-20 lg:py-32">
+          {/* Main gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-800/30 via-emerald-950/40 to-transparent" />
 
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div
-              className="h-full w-full"
+          {/* Animated grid pattern - rounded squares like in image */}
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Grid of glowing rounded squares */}
+            <div className="absolute inset-0 grid grid-cols-6 gap-4 p-8 opacity-30">
+              {[...Array(24)].map((_, i) => (
+                <motion.div
+                  key={`grid-${i}`}
+                  className="aspect-square rounded-2xl"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,95,70,0.05) 100%)',
+                    boxShadow: 'inset 0 0 30px rgba(16,185,129,0.1)',
+                  }}
+                  animate={{
+                    opacity: [0.2, 0.4, 0.2],
+                  }}
+                  transition={{
+                    duration: 3 + Math.random() * 2,
+                    repeat: Infinity,
+                    delay: Math.random() * 2,
+                    ease: "easeInOut",
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Center heart glow */}
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full flex items-center justify-center"
               style={{
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
-                backgroundSize: "50px 50px",
+                background: 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 50%, transparent 70%)',
+                boxShadow: '0 0 60px rgba(16,185,129,0.3)',
               }}
-            />
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <Heart className="w-12 h-12 text-emerald-400/50" />
+            </motion.div>
+
+            {/* Glowing lines connecting grid */}
+            <svg className="absolute inset-0 w-full h-full opacity-20">
+              <defs>
+                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(16,185,129,0.5)" />
+                  <stop offset="50%" stopColor="rgba(16,185,129,0.2)" />
+                  <stop offset="100%" stopColor="rgba(16,185,129,0.5)" />
+                </linearGradient>
+              </defs>
+              <line x1="20%" y1="30%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
+              <line x1="80%" y1="30%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
+              <line x1="20%" y1="70%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
+              <line x1="80%" y1="70%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
+            </svg>
           </div>
 
           <div className="relative mx-auto max-w-6xl px-4">

@@ -53,7 +53,7 @@ const proExclusives = [
     icon: Watch,
     title: "Sync Wearables Automatique",
     description: "Connecte Oura, Whoop, Garmin, Apple Health via Terra. Tes donnees sont importees automatiquement.",
-    color: "amber",
+    color: "cyan",
   },
   {
     icon: Activity,
@@ -220,20 +220,90 @@ export default function ProPanel() {
       <Header />
 
       <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-amber-950 via-amber-900/50 to-black py-20 lg:py-32">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-800/20 via-transparent to-transparent" />
+        {/* Hero Section - Blue Neural Network Style */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-blue-950 via-purple-950/50 to-black py-20 lg:py-32">
+          {/* Main gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-800/20 via-purple-900/20 to-transparent" />
 
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div
-              className="h-full w-full"
+          {/* Neural network lines */}
+          <div className="absolute inset-0 overflow-hidden">
+            <svg className="absolute inset-0 w-full h-full">
+              <defs>
+                <linearGradient id="neuralGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(59,130,246,0.3)" />
+                  <stop offset="100%" stopColor="rgba(147,51,234,0.3)" />
+                </linearGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              {/* Neural connections */}
+              <g filter="url(#glow)" opacity="0.4">
+                <line x1="10%" y1="20%" x2="30%" y2="40%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="30%" y1="40%" x2="50%" y2="30%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="50%" y1="30%" x2="70%" y2="50%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="70%" y1="50%" x2="90%" y2="35%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="20%" y1="60%" x2="40%" y2="70%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="40%" y1="70%" x2="60%" y2="60%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="60%" y1="60%" x2="80%" y2="75%" stroke="url(#neuralGradient)" strokeWidth="1" />
+                <line x1="30%" y1="40%" x2="40%" y2="70%" stroke="url(#neuralGradient)" strokeWidth="0.5" />
+                <line x1="50%" y1="30%" x2="60%" y2="60%" stroke="url(#neuralGradient)" strokeWidth="0.5" />
+              </g>
+            </svg>
+
+            {/* Neural nodes with glow */}
+            {[
+              { x: '30%', y: '40%', size: 8 },
+              { x: '50%', y: '30%', size: 12 },
+              { x: '70%', y: '50%', size: 8 },
+              { x: '40%', y: '70%', size: 6 },
+              { x: '60%', y: '60%', size: 10 },
+            ].map((node, i) => (
+              <motion.div
+                key={`node-${i}`}
+                className="absolute rounded-full bg-cyan-400"
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: node.size,
+                  height: node.size,
+                  boxShadow: `0 0 ${node.size * 3}px rgba(34,211,238,0.6)`,
+                }}
+                animate={{
+                  scale: [1, 1.3, 1],
+                  opacity: [0.6, 1, 0.6],
+                }}
+                transition={{
+                  duration: 2 + Math.random(),
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+
+            {/* Center icon glow - sleep/bed icon like in image */}
+            <motion.div
+              className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full flex items-center justify-center"
               style={{
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
-                backgroundSize: "50px 50px",
+                background: 'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)',
+                boxShadow: '0 0 40px rgba(59,130,246,0.3)',
               }}
-            />
+              animate={{
+                opacity: [0.4, 0.7, 0.4],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <Moon className="w-8 h-8 text-cyan-400/60" />
+            </motion.div>
           </div>
 
           <div className="relative mx-auto max-w-6xl px-4">
@@ -243,14 +313,14 @@ export default function ProPanel() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <Badge className="mb-6 bg-amber-500/20 text-amber-300 border-amber-500/30">
+                <Badge className="mb-6 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
                   <Zap className="mr-2 h-3 w-3" />
                   Elite
                 </Badge>
 
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
                   Ultimate Scan.
-                  <span className="block text-amber-400 mt-2">
+                  <span className="block text-cyan-400 mt-2">
                     Donnees reelles. Precision maximale.
                   </span>
                 </h1>
@@ -264,7 +334,7 @@ export default function ProPanel() {
                   <Link href="/audit-complet/questionnaire?tier=elite">
                     <Button
                       size="lg"
-                      className="gap-2 h-14 px-8 text-lg bg-amber-500 hover:bg-amber-600 text-black w-full sm:w-auto"
+                      className="gap-2 h-14 px-8 text-lg bg-cyan-500 hover:bg-cyan-600 text-black w-full sm:w-auto"
                     >
                       <Zap className="h-5 w-5" />
                       Lancer mon Ultimate Scan
@@ -273,7 +343,7 @@ export default function ProPanel() {
                   </Link>
                 </div>
 
-                <p className="mt-6 text-sm text-amber-400">
+                <p className="mt-6 text-sm text-cyan-400">
                   Deduit de ton coaching Private Lab
                 </p>
               </motion.div>
@@ -390,7 +460,7 @@ export default function ProPanel() {
                     </div>
                   </div>
                   {/* Glow */}
-                  <div className="absolute -inset-4 bg-amber-500/20 blur-3xl rounded-full -z-10" />
+                  <div className="absolute -inset-4 bg-cyan-500/20 blur-3xl rounded-full -z-10" />
                 </div>
               </motion.div>
             </div>
@@ -401,7 +471,7 @@ export default function ProPanel() {
         <section className="py-8 border-b border-border/30 bg-black/50">
           <div className="mx-auto max-w-6xl px-4">
             <div className="flex items-center justify-center gap-2 mb-6">
-              <Watch className="h-5 w-5 text-amber-400" />
+              <Watch className="h-5 w-5 text-cyan-400" />
               <span className="text-sm text-muted-foreground">Compatible avec</span>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
@@ -432,7 +502,7 @@ export default function ProPanel() {
         <section className="py-20 lg:py-28">
           <div className="mx-auto max-w-6xl px-4">
             <div className="text-center mb-16">
-              <Badge className="mb-4 bg-amber-500/20 text-amber-400 border-amber-500/30">
+              <Badge className="mb-4 bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
                 Exclusif Ultimate Scan
               </Badge>
               <h2 className="text-3xl lg:text-4xl font-bold mb-4">
@@ -463,7 +533,7 @@ export default function ProPanel() {
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
                   >
-                    <Card className="h-full hover:border-amber-500/30 transition-colors">
+                    <Card className="h-full hover:border-cyan-500/30 transition-colors">
                       <CardContent className="p-6">
                         <div
                           className="flex h-12 w-12 items-center justify-center rounded-xl mb-4"
@@ -493,7 +563,7 @@ export default function ProPanel() {
             <div className="grid lg:grid-cols-2 gap-16 items-start">
               {/* Left - Price Card */}
               <div className="lg:sticky lg:top-8">
-                <Card className="bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30">
+                <Card className="bg-gradient-to-b from-cyan-500/10 to-transparent border-cyan-500/30">
                   <CardContent className="p-8">
                     {/* Badge */}
                     <div className="flex items-center gap-2 mb-4">
@@ -506,10 +576,10 @@ export default function ProPanel() {
                     {/* Price */}
                     <div className="text-center mb-8">
                       <div className="flex items-baseline justify-center gap-2 mb-2">
-                        <span className="text-6xl font-bold text-amber-400">149€</span>
+                        <span className="text-6xl font-bold text-cyan-400">149€</span>
                       </div>
                       <p className="text-muted-foreground">Paiement unique</p>
-                      <p className="text-sm text-amber-400 mt-2">
+                      <p className="text-sm text-cyan-400 mt-2">
                         Deduit de ton coaching Private Lab
                       </p>
                     </div>
@@ -526,14 +596,14 @@ export default function ProPanel() {
                           }`}
                         >
                           {feature.startsWith("---") ? (
-                            <div className="w-full border-t border-amber-500/30 pt-2">
-                              <span className="text-xs text-amber-400 font-semibold">
+                            <div className="w-full border-t border-cyan-500/30 pt-2">
+                              <span className="text-xs text-cyan-400 font-semibold">
                                 {feature.replace(/---/g, "").trim()}
                               </span>
                             </div>
                           ) : (
                             <>
-                              <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                              <Check className="h-4 w-4 text-cyan-400 shrink-0" />
                               <span className="text-sm">{feature}</span>
                             </>
                           )}
@@ -544,7 +614,7 @@ export default function ProPanel() {
                     <Link href="/audit-complet/questionnaire?tier=elite">
                       <Button
                         size="lg"
-                        className="w-full gap-2 h-14 bg-amber-500 hover:bg-amber-600 text-black"
+                        className="w-full gap-2 h-14 bg-cyan-500 hover:bg-cyan-600 text-black"
                       >
                         <Zap className="h-5 w-5" />
                         Lancer mon Ultimate Scan
@@ -592,9 +662,9 @@ export default function ProPanel() {
                 </div>
 
                 {/* Note */}
-                <Card className="bg-amber-500/5 border-amber-500/20">
+                <Card className="bg-cyan-500/5 border-cyan-500/20">
                   <CardContent className="p-4 flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-cyan-400 shrink-0 mt-0.5" />
                     <p className="text-sm">
                       <strong>Pas de wearable ?</strong> Si tu n'utilises pas de montre
                       connectee, l'Ultimate Scan (79€) est probablement suffisant pour
@@ -621,14 +691,14 @@ export default function ProPanel() {
                   <div className="p-4 bg-emerald-500/10 text-center font-medium text-emerald-400">
                     Anabolic Bioscan (79€)
                   </div>
-                  <div className="p-4 bg-amber-500/10 text-center font-medium text-amber-400">
+                  <div className="p-4 bg-cyan-500/10 text-center font-medium text-cyan-400">
                     Ultimate Scan (149€)
                   </div>
 
                   {/* Rows */}
                   {[
                     { feature: "15 domaines analyse", ultimate: "✓", pro: "✓" },
-                    { feature: "Analyse photos IA", ultimate: "✓", pro: "✓" },
+                    { feature: "Analyse visuelle", ultimate: "✓", pro: "✓" },
                     { feature: "Protocole supplements", ultimate: "✓", pro: "✓" },
                     { feature: "Feuille route 90j", ultimate: "✓", pro: "✓" },
                     { feature: "Sync wearables", ultimate: "—", pro: "✓" },
@@ -653,7 +723,7 @@ export default function ProPanel() {
                       </div>
                       <div
                         key={`pro-${i}`}
-                        className="p-4 border-t border-border/30 bg-amber-500/5 text-center text-sm font-medium"
+                        className="p-4 border-t border-border/30 bg-cyan-500/5 text-center text-sm font-medium"
                       >
                         {row.pro}
                       </div>
@@ -690,25 +760,25 @@ export default function ProPanel() {
         </section>
 
         {/* Final CTA */}
-        <section className="py-20 lg:py-28 bg-gradient-to-b from-amber-950/50 to-black text-center">
+        <section className="py-20 lg:py-28 bg-gradient-to-b from-cyan-950/50 to-black text-center">
           <div className="mx-auto max-w-3xl px-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <Zap className="h-16 w-16 text-amber-400 mx-auto mb-8" />
+              <Zap className="h-16 w-16 text-cyan-400 mx-auto mb-8" />
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
                 Pret pour l'analyse ultime ?
               </h2>
               <p className="text-xl text-gray-400 mb-10">
-                Tes donnees wearables + notre IA = precision maximale.
+                Tes donnees wearables + analyse experte = precision maximale.
               </p>
 
               <Link href="/audit-complet/questionnaire?tier=elite">
                 <Button
                   size="lg"
-                  className="gap-2 h-16 px-12 text-lg bg-amber-500 hover:bg-amber-600 text-black"
+                  className="gap-2 h-16 px-12 text-lg bg-cyan-500 hover:bg-cyan-600 text-black"
                 >
                   <Zap className="h-5 w-5" />
                   Lancer mon Ultimate Scan
@@ -740,11 +810,11 @@ export default function ProPanel() {
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/50 py-4 z-50 lg:hidden">
         <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
           <div>
-            <p className="text-2xl font-bold text-amber-400">149€</p>
+            <p className="text-2xl font-bold text-cyan-400">149€</p>
             <p className="text-xs text-muted-foreground">Deduit du coaching</p>
           </div>
           <Link href="/audit-complet/questionnaire?tier=elite">
-            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-black">
+            <Button className="gap-2 bg-cyan-500 hover:bg-cyan-600 text-black">
               Ultimate Scan
               <ArrowRight className="h-4 w-4" />
             </Button>
