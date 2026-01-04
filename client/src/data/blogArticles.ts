@@ -40,7 +40,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     author: "ACHZOD",
     date: "2025-01-02",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800",
+    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop",
     featured: true,
     content: `
 ## Introduction : Pourquoi votre cœur ne bat pas comme un métronome
@@ -276,7 +276,7 @@ Votre système nerveux vous parlera si vous prenez le temps de l'écouter.
     author: "ACHZOD",
     date: "2025-01-01",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800",
+    image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le superpouvoir caché que vous ne connaissez pas
 
@@ -587,7 +587,7 @@ Votre nerf vague est votre superpouvoir parasympathique. Il est temps de l'activ
     author: "ACHZOD",
     date: "2024-12-28",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    image: "https://images.unsplash.com/photo-1507120878965-54b2d3939100?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Pourquoi votre HRV mérite votre attention immédiate
 
@@ -1029,7 +1029,7 @@ Votre HRV n'est pas juste un chiffre. C'est le reflet direct de la santé de vot
     author: "ACHZOD",
     date: "2024-12-25",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
+    image: "https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La Guerre Silencieuse en Vous
 
@@ -1320,7 +1320,7 @@ La bonne nouvelle ? Ces changements ne prennent pas des mois. Une semaine de rou
     author: "ACHZOD",
     date: "2024-12-22",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1545389336-cf090694435e?w=800",
+    image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop",
     content: `## Introduction : Le Pouvoir Immédiat de Respirer
 
 Votre respiration est le seul système automatique de votre corps que vous pouvez contrôler consciemment. Votre cœur bat sans votre consentement, votre digestion fonctionne sans instruction explicite, votre système immunitaire se mobilise sans que vous le commandiez. Mais votre respiration ? C'est le seul portail volontaire vers votre système nerveux autonome.
@@ -1590,7 +1590,7 @@ C'est votre superpouvoir. Commencez dès maintenant.
     author: "ACHZOD",
     date: "2024-12-20",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800",
+    image: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800&auto=format&fit=crop",
     featured: true,
     content: `## Introduction : L'Or Biologique Caché du Sommeil Profond
 
@@ -1933,7 +1933,7 @@ Dormir mieux, c'est changer votre vie. Commencez ce soir.
     author: "ACHZOD",
     date: "2024-12-18",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1495364141860-b0d03eccd065?w=800",
+    image: "https://images.unsplash.com/photo-1520206183501-b80df61043c2?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Pourquoi vous vous sentez productif à certaines heures et pas à d'autres
 
@@ -2162,7 +2162,7 @@ Votre productivité, votre créativité, votre santé mentale et physique en dé
     author: "ACHZOD",
     date: "2024-12-15",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800",
+    image: "https://images.unsplash.com/photo-1515894203077-9cd36032142f?w=800&auto=format&fit=crop",
     content: `
 ## Comment la caféine affecte vraiment votre corps
 
@@ -2281,7 +2281,7 @@ Avec ces ajustements, vous verrez dans 2-3 semaines :
     author: "ACHZOD",
     date: "2024-12-12",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=800",
+    image: "https://images.unsplash.com/photo-1531353826977-0941b4779a1c?w=800&auto=format&fit=crop",
     content: `
 ## Qu'est-ce que vraiment votre rythme circadien ?
 
@@ -2457,7 +2457,7 @@ Une fois que vous avez resynchronisé votre rythme circadien (généralement 2-4
     author: "ACHZOD",
     date: "2024-12-10",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1515894203077-9cd36032142f?w=800",
+    image: "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&auto=format&fit=crop",
     content: `
 ## La sieste : un outil de performance mal compris
 
@@ -2707,7 +2707,7 @@ Votre corps a évolué pendant des millions d'années avec un pattern de sommeil
     author: "ACHZOD",
     date: "2024-12-08",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format&fit=crop",
     featured: true,
     content: `
 ## Le piège des glucides nus : pourquoi manger des glucides isolés sabote votre énergie
@@ -2916,7 +2916,7 @@ Après ce mois d'ajustements progressifs, vous remarquerez :
     author: "ACHZOD",
     date: "2024-12-05",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop",
     content: `## La grande question des fruits : amis ou ennemis de votre glycémie ?
 
 Les fruits occupent une place paradoxale dans le monde de la nutrition moderne. D'un côté, on nous répète depuis l'enfance qu'ils sont sains, riches en vitamines et essentiels à notre alimentation. De l'autre, l'explosion des capteurs de glucose en continu révèle une vérité plus nuancée : tous les fruits ne sont pas égaux face à votre métabolisme, et certains peuvent créer des pics glycémiques aussi importants qu'une pâtisserie.
@@ -3168,7 +3168,7 @@ Et rappelez-vous : ces recommandations sont des points de départ, pas des véri
     author: "ACHZOD",
     date: "2024-12-02",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800",
+    image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop",
     content: `## Votre glycémie : le chef d'orchestre silencieux de votre santé
 
 La glycémie - votre taux de glucose sanguin - est probablement le marqueur de santé le plus sous-estimé et pourtant le plus critique de votre biologie. Pendant des décennies, la médecine conventionnelle s'est concentrée uniquement sur les cas extrêmes : diabète de type 1, diabète de type 2. Si vous n'aviez pas ces conditions, on vous disait que votre glycémie était "normale" et qu'il n'y avait pas de quoi s'inquiéter.
@@ -3476,7 +3476,7 @@ Ces objectifs peuvent sembler stricts comparés aux standards médicaux conventi
     author: "ACHZOD",
     date: "2024-11-30",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1532168881420-27ec4ba493a6?w=800",
+    image: "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&auto=format&fit=crop",
     content: `## IIFYM : la révolution flexible qui a changé la nutrition sportive
 
 Si vous évoluez dans le monde du fitness et de la nutrition depuis quelques années, vous avez probablement entendu parler d'IIFYM - "If It Fits Your Macros" (Si ça rentre dans tes macros). Ce mouvement, né dans les forums de musculation au début des années 2010, a complètement bouleversé l'approche dogmatique et restrictive de la nutrition sportive qui dominait l'industrie.
@@ -3827,7 +3827,7 @@ C'est cette approche équilibrée - que j'appelle IIFYM 2.0 - qui produit les me
     author: "ACHZOD",
     date: "2024-11-28",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800",
+    image: "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le paradoxe du café et du sucre
 
@@ -3961,7 +3961,7 @@ La clé est de personnaliser votre consommation en fonction de votre situation i
     author: "ACHZOD",
     date: "2024-11-25",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Pourquoi la variabilité de la fréquence cardiaque change tout
 
@@ -4199,7 +4199,7 @@ En suivant ces six règles, vous transformerez votre approche de l'entraînement
     author: "ACHZOD",
     date: "2024-11-22",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
     featured: true,
     content: `
 ## Introduction : Le paradoxe de l'entraînement moderne
@@ -4431,7 +4431,7 @@ La tortue bat le lièvre. Toujours.
     author: "ACHZOD",
     date: "2024-11-20",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le débat qui divise le monde du fitness
 
@@ -4667,7 +4667,7 @@ Arrêtez de penser en termes de tribu. Vous n'êtes ni un coureur ni un pratiqua
     author: "ACHZOD",
     date: "2024-11-18",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le glucose, carburant de la performance
 
@@ -4829,7 +4829,7 @@ Une stratégie glucidique bien pensée peut faire la différence entre une séan
     author: "ACHZOD",
     date: "2024-11-15",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
+    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La récupération, clé de la progression
 
@@ -4993,7 +4993,7 @@ La récupération n'est pas de la paresse, c'est de l'intelligence. Respectez-la
     author: "ACHZOD",
     date: "2024-11-12",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1415604934674-561df9abf539?w=800",
+    image: "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le mystère des réveils nocturnes
 
@@ -5150,7 +5150,7 @@ Un sommeil de qualité n'est pas un luxe, c'est une nécessité absolue pour vot
     author: "ACHZOD",
     date: "2024-11-10",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    image: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=800&auto=format&fit=crop",
     content: `
 ## Comprendre l'âge métabolique : bien au-delà de votre date de naissance
 
@@ -5320,7 +5320,7 @@ Votre âge métabolique n'est pas une sentence définitive mais un indicateur dy
     author: "ACHZOD",
     date: "2024-11-08",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800",
+    image: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&auto=format&fit=crop",
     content: `
 ## La ménopause et le métabolisme du glucose : comprendre les bouleversements hormonaux
 
@@ -5508,7 +5508,7 @@ Chaque femme traverse cette transition différemment. L'approche personnalisée,
     author: "ACHZOD",
     date: "2024-11-05",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800",
+    image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&auto=format&fit=crop",
     content: `
 ## Décoder vos analyses sanguines : un guide complet pour optimiser votre santé
 
@@ -5692,7 +5692,7 @@ Investir dans des bilans réguliers et complets représente l'une des meilleures
     author: "ACHZOD",
     date: "2024-11-02",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
     content: `
 ## La variabilité de la fréquence cardiaque : votre fenêtre sur le système nerveux autonome
 
@@ -5896,7 +5896,7 @@ La HRV ne constitue pas un outil magique mais un guide parmi d'autres. Combinez-
     author: "ACHZOD",
     date: "2024-10-30",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    image: "https://images.unsplash.com/photo-1542884748-2b87b36c6b90?w=800&auto=format&fit=crop",
     content: `
 ## La graisse viscérale : le tueur silencieux logé au cœur de votre abdomen
 
@@ -6100,7 +6100,7 @@ La graisse viscérale répond mieux aux interventions de mode de vie que la grai
     author: "ACHZOD",
     date: "2024-10-28",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Une tendance qui fait débat
 
@@ -6277,7 +6277,7 @@ La respiration est notre acte physiologique le plus fondamental. Toute intervent
     author: "ACHZOD",
     date: "2024-10-25",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
+    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La découverte accidentelle qui change tout
 
@@ -6500,7 +6500,7 @@ Il y a de fortes chances que vous découvriez un nouvel outil précieux dans vot
     author: "ACHZOD",
     date: "2024-10-22",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800",
+    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La nouvelle obsession du sommeil
 
@@ -6704,7 +6704,7 @@ Le meilleur sommeil n'est pas celui qu'on traque obsessionnellement, c'est celui
     author: "ACHZOD",
     date: "2024-10-20",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800",
+    image: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Votre cycle, votre super-pouvoir méconnu
 
@@ -7015,7 +7015,7 @@ Le cycle menstruel n'est pas un handicap. C'est un système adaptatif complexe q
     author: "ACHZOD",
     date: "2024-10-18",
     readTime: "4 min",
-    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800",
+    image: "https://images.unsplash.com/photo-1571019613576-2b22c76fd955?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Briser le tabou du sport pendant les règles
 
@@ -7299,7 +7299,7 @@ Trackez, adaptez, optimisez. Et surtout : zéro culpabilité. Manquer 1-2 jours 
     author: "ACHZOD",
     date: "2024-10-15",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1515894203077-9cd36032142f?w=800",
+    image: "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Pourquoi les femmes dorment différemment
 
@@ -7625,7 +7625,7 @@ Votre sommeil est complexe, cyclique, et unique. Il mérite d'être compris et o
     author: "ACHZOD",
     date: "2024-10-12",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800",
+    image: "https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Vos hormones, ces chefs d'orchestre méconnus
 
@@ -8009,7 +8009,7 @@ Vos hormones sont vos alliées. Apprenez à les écouter, à les tester, et à l
     author: "ACHZOD",
     date: "2024-10-10",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
     featured: true,
     content: `
 ## Introduction au concept de temps sous tension
@@ -8138,7 +8138,7 @@ L'entraînement lourd, progressif, avec une forme stricte et une proximité rais
     author: "ACHZOD",
     date: "2024-10-08",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : le débat de l'échec musculaire
 
@@ -8281,7 +8281,7 @@ Rappelez-vous : stimulez, n'annihilez pas. Votre croissance musculaire dépend a
     author: "ACHZOD",
     date: "2024-10-05",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
+    image: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : le principe fondamental de la croissance
 
@@ -8444,7 +8444,7 @@ La surcharge progressive n'est pas un sprint, c'est un marathon. Progressez inte
     author: "ACHZOD",
     date: "2024-10-02",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800",
+    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : comprendre les mécanismes de l'hypertrophie
 
@@ -8667,7 +8667,7 @@ Cette approche fondée sur la science vous permettra de maximiser votre croissan
     author: "ACHZOD",
     date: "2024-09-30",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
     featured: true,
     content: `
 ## Introduction : le mythe de l'impossible
@@ -8876,7 +8876,7 @@ Si vous respectez ces principes avec cohérence sur 8-12 semaines, vous serez su
     author: "ACHZOD",
     date: "2024-09-28",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800",
+    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : le supplément le plus étudié
 
@@ -9085,7 +9085,7 @@ La créatine est un supplément extraordinairement efficace, mais gardons la per
     author: "ACHZOD",
     date: "2024-09-25",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800",
+    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : le problème des recommandations standards
 
@@ -9308,7 +9308,7 @@ N'ayez pas peur de consommer beaucoup de protéines. Votre croissance musculaire
     author: "ACHZOD",
     date: "2024-09-22",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
     content: `
 ## Qu'est-ce que la mémoire musculaire ?
 
@@ -9422,7 +9422,7 @@ Vous construisez un patrimoine biologique qui vous suivra toute votre vie. Même
     author: "ACHZOD",
     date: "2024-09-20",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800",
+    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
     content: `
 ## La connexion esprit-muscle : mythe ou science ?
 
@@ -9582,7 +9582,7 @@ La clé est de développer la **flexibilité cognitive** : savoir basculer d'un 
     author: "ACHZOD",
     date: "2024-09-18",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
+    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
     content: `
 ## Le paradoxe de l'entraînement : plus n'est pas toujours mieux
 
@@ -9746,7 +9746,7 @@ Apprenez à écouter votre corps plutôt que de suivre des règles arbitraires. 
     author: "ACHZOD",
     date: "2024-09-15",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    image: "https://images.unsplash.com/photo-1521805103424-d8f8430e8933?w=800&auto=format&fit=crop",
     content: `
 ## La sèche : un art délicat entre perte de graisse et préservation musculaire
 
@@ -9929,7 +9929,7 @@ La clé : **déficit modéré, protéines élevées, intensité maintenue, patie
     author: "ACHZOD",
     date: "2024-09-12",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    image: "https://images.unsplash.com/photo-1567598508481-65985588e295?w=800&auto=format&fit=crop",
     content: `
 ## Le mythe tenace de la phase excentrique
 
@@ -10101,7 +10101,7 @@ Le muscle ne fait pas la différence entre concentrique et excentrique – il r�
     author: "ACHZOD",
     date: "2024-09-10",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=800",
+    image: "https://images.unsplash.com/photo-1583454155184-870a1f63aebc?w=800&auto=format&fit=crop",
     content: `
 ## Le problème des mollets : pourquoi ils résistent
 
@@ -10317,7 +10317,7 @@ Arrêtez de faire 3 séries de mollets le vendredi soir et de vous plaindre qu'i
     author: "ACHZOD",
     date: "2024-09-08",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800",
+    image: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=800&auto=format&fit=crop",
     content: `
 ## L'alcool et la musculation : la question qu'on évite
 
@@ -10513,7 +10513,7 @@ La clé : la **cohérence** et l'**honnêteté avec vous-même**. Ne vous plaign
     author: "ACHZOD",
     date: "2024-09-05",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800",
+    image: "https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=800&auto=format&fit=crop",
     content: `
 ## La fréquence d'entraînement : Un débat qui divise la communauté
 
@@ -10719,7 +10719,7 @@ Rappelez-vous : **plus n'est pas toujours mieux. Mieux est mieux.**
     author: "ACHZOD",
     date: "2024-09-02",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
     content: `
 ## L'entraînement des pectoraux : Bien plus complexe qu'il n'y paraît
 
@@ -11009,7 +11009,7 @@ Dans 12 mois, la différence sera spectaculaire.
     author: "ACHZOD",
     date: "2024-08-30",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800",
+    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
     content: `
 ## L'entraînement à jeun : Entre mythes marketing et réalité scientifique
 
@@ -11313,7 +11313,7 @@ L'entraînement optimal n'est pas celui qui est parfait sur le papier, c'est cel
     author: "ACHZOD",
     date: "2024-08-28",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800",
+    image: "https://images.unsplash.com/photo-1584466977773-e625c37cdd50?w=800&auto=format&fit=crop",
     content: `
 ## Le potentiel génétique : Entre déterminisme et liberté
 
@@ -11617,7 +11617,7 @@ Une fois que vous aurez fait tout cela, vous pourrez légitimement parler de lim
     author: "ACHZOD",
     date: "2024-08-25",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    image: "https://images.unsplash.com/photo-1597347343908-2937e7dcc560?w=800&auto=format&fit=crop",
     content: `
 ## Le timing des nutriments : Démêler l'essentiel de l'accessoire
 
@@ -11936,7 +11936,7 @@ Le timing parfait d'une nutrition médiocre reste médiocre. Le timing imparfait
     author: "ACHZOD",
     date: "2024-08-22",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800",
+    image: "https://images.unsplash.com/photo-1580086319619-3ed498161c77?w=800&auto=format&fit=crop",
     content: `
 ## La fréquence des repas : Le mythe qui refuse de mourir
 
@@ -12296,7 +12296,7 @@ Arrêtez de stresser sur le nombre de repas. Stressez sur la qualité de votre n
     author: "ACHZOD",
     date: "2024-08-20",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800",
+    image: "https://images.unsplash.com/photo-1623200216581-969d9479cf7d?w=800&auto=format&fit=crop",
     content: `
 ## Les BCAAs : L'industrie du supplément face à la science
 
@@ -12693,7 +12693,7 @@ Investissez dans ce qui fonctionne vraiment : nourriture de qualité, programme 
     author: "ACHZOD",
     date: "2024-08-18",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    image: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=800&auto=format&fit=crop",
     content: `
 ## L'amplitude de mouvement : Un débat scientifique complexe
 
@@ -12843,7 +12843,7 @@ La clé est l'intentionnalité : chaque répétition, qu'elle soit complète ou 
     author: "ACHZOD",
     date: "2024-08-15",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800",
+    image: "https://images.unsplash.com/photo-1598268030450-7a476f602aae?w=800&auto=format&fit=crop",
     content: `
 ## Le débat protéines végétales versus animales : Un affrontement scientifique
 
@@ -13052,7 +13052,7 @@ L'important n'est pas tant la source de vos protéines, mais **l'atteinte de vos
     author: "ACHZOD",
     date: "2024-08-12",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
+    image: "https://images.unsplash.com/photo-1596357395217-80de13130e92?w=800&auto=format&fit=crop",
     content: `
 ## La périodisation : L'art de structurer la progression
 
@@ -13340,7 +13340,7 @@ Votre corps ne progresse pas dans le chaos, mais dans la structure intelligente.
     author: "ACHZOD",
     date: "2024-08-10",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
+    image: "https://images.unsplash.com/photo-1562771379-eafdca7a02f8?w=800&auto=format&fit=crop",
     content: `
 ## S'entraîner malade : Entre sagesse et paranoïa
 
@@ -13586,7 +13586,7 @@ La vraie force, c'est savoir écouter son corps.
     author: "ACHZOD",
     date: "2024-08-08",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    image: "https://images.unsplash.com/photo-1584863231364-2edc166de576?w=800&auto=format&fit=crop",
     content: `
 ## La fatigue du système nerveux central : L'excuse la plus surutilisée
 
@@ -13893,7 +13893,7 @@ La discipline, ce n'est pas s'entraîner coûte que coûte. C'est être honnête
     author: "ACHZOD",
     date: "2024-08-05",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    image: "https://images.unsplash.com/photo-1579758629938-03607ccdbaba?w=800&auto=format&fit=crop",
     content: `
 ## Le cyclage des glucides : Stratégie avancée ou complexité inutile ?
 
@@ -14176,7 +14176,7 @@ Arrêtez de chercher la complexité quand la simplicité fonctionne parfaitement
     author: "ACHZOD",
     date: "2024-08-03",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=800&auto=format&fit=crop",
     content: `
 ## La résistance accommodante : L'arme secrète des powerlifters
 
@@ -14576,7 +14576,7 @@ Comme toujours en musculation, **les fondamentaux priment** : surcharge progress
     author: "ACHZOD",
     date: "2024-08-01",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800",
+    image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop",
     content: `
 ## L'hydratation : Le facteur le plus sous-estimé de la performance
 
@@ -14979,7 +14979,7 @@ C'est le "supplément" le moins cher et le plus efficace qui existe. Il coule de
     author: "ACHZOD",
     date: "2024-07-30",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800",
+    image: "https://images.unsplash.com/photo-1604480132736-44c188fe4d20?w=800&auto=format&fit=crop",
     content: `
 ## Le débat qui divise la communauté fitness
 
@@ -15152,7 +15152,7 @@ Cette combinaison vous offre :
     author: "ACHZOD",
     date: "2024-07-28",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800",
+    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=800&auto=format&fit=crop",
     content: `
 ## La caféine : l'ergogène le plus étudié au monde
 
@@ -15401,7 +15401,7 @@ La caféine a un léger effet diurétique. Assurez-vous d'être bien hydraté av
     author: "ACHZOD",
     date: "2024-07-26",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=800",
+    image: "https://images.unsplash.com/photo-1581122584612-713f89daa8eb?w=800&auto=format&fit=crop",
     content: `
 ## Le mythe qui persiste
 
@@ -15651,7 +15651,7 @@ Vos genoux, votre performance, et votre physique vous remercieront.
     author: "ACHZOD",
     date: "2024-07-24",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=800",
+    image: "https://images.unsplash.com/photo-1533560904424-a0c61dc306fc?w=800&auto=format&fit=crop",
     content: `
 ## La question qui divise
 
@@ -15923,7 +15923,7 @@ Traitez-le comme la cerise sur le gâteau d'un programme de dos complet, pas com
     author: "ACHZOD",
     date: "2024-07-22",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800",
+    image: "https://images.unsplash.com/photo-1595078475328-1ab05d0a6a0e?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La peur du soulevé de terre
 
@@ -16161,7 +16161,7 @@ Arrêtez d'avoir peur. Apprenez à le faire correctement. Et récoltez les bén�
     author: "ACHZOD",
     date: "2024-07-20",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+    image: "https://images.unsplash.com/photo-1574680088814-c9e8a10d8a4a?w=800&auto=format&fit=crop",
     content: `
 ## Le mythe répété à l'infini
 
@@ -16374,7 +16374,7 @@ Mais ne vous attendez pas à ce qu'un dos plus fort améliore directement votre 
     author: "ACHZOD",
     date: "2024-07-18",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800",
+    image: "https://images.unsplash.com/photo-1580261450046-d0a30080dc9b?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : L'art de dépasser ses limites
 
@@ -16601,7 +16601,7 @@ Utilisez-les stratégiquement, cycliquement, et toujours en respectant votre cap
     author: "ACHZOD",
     date: "2024-07-16",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800",
+    image: "https://images.unsplash.com/photo-1611672585731-fa10603fb9e0?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le débat fondamental de la croissance musculaire
 
@@ -16764,7 +16764,7 @@ Concentrez-vous sur ce qui fonctionne, entraînez-vous intelligemment, nourrisse
     author: "ACHZOD",
     date: "2024-07-14",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800",
+    image: "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le dilemme du soulagement de la douleur
 
@@ -16991,7 +16991,7 @@ La clé est de comprendre que l'inflammation post-exercice n'est pas votre ennem
     author: "ACHZOD",
     date: "2024-07-12",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Quand la salle n'est pas une option
 
@@ -17283,7 +17283,7 @@ Votre maison peut devenir votre salle. Tout ce qu'il faut, c'est la connaissance
     author: "ACHZOD",
     date: "2024-07-10",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800",
+    image: "https://images.unsplash.com/photo-1585735073471-84e6dc48d4b2?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : L'architecture musculaire et la performance
 
@@ -17582,7 +17582,7 @@ Votre génétique détermine la distribution de vos types de fibres, et vous ne 
     author: "ACHZOD",
     date: "2024-07-08",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800",
+    image: "https://images.unsplash.com/photo-1546817372-628669db4f39?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Au-delà des mythes et des stéréotypes
 
@@ -17864,7 +17864,7 @@ Le meilleur programme d'entraînement n'est pas celui conçu pour votre genre, m
     author: "ACHZOD",
     date: "2024-07-06",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800",
+    image: "https://images.unsplash.com/photo-1520877880798-5ee004e3f11e?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le mythe qui effraie les débutants
 
@@ -18027,7 +18027,7 @@ Ne laissez pas le mythe vous priver de cet outil extraordinaire de développemen
     author: "ACHZOD",
     date: "2024-07-04",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+    image: "https://images.unsplash.com/photo-1571388208497-71bedc66e932?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le principe universel de la transformation physique
 
@@ -18236,7 +18236,7 @@ La maîtrise de la balance énergétique transforme la nutrition d'une série de
     author: "ACHZOD",
     date: "2024-07-02",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    image: "https://images.unsplash.com/photo-1544033527-b192c28c13f2?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : Le débat qui divise la musculation
 
@@ -18478,7 +18478,7 @@ La patience, la consistance et l'exécution impeccable des fondamentaux battront
     author: "ACHZOD",
     date: "2024-06-30",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+    image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La quête obsessionnelle du métabolisme rapide
 
@@ -18671,7 +18671,7 @@ Le "métabolisme lent" n'est pas une condamnation, c'est généralement un mode 
     author: "ACHZOD",
     date: "2024-06-28",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1544991875-5dc1b05f607d?w=800",
+    image: "https://images.unsplash.com/photo-1518459031867-a89b944bffe4?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : L'industrie des promesses en pilules
 
@@ -18894,7 +18894,7 @@ Redirigez cette énergie mentale et financière vers ce qui compte vraiment : ap
     author: "ACHZOD",
     date: "2024-06-26",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800",
+    image: "https://images.unsplash.com/photo-1556817411-92f527c78645?w=800&auto=format&fit=crop",
     content: `
 ## Introduction : La science cachée derrière chaque répétition
 
