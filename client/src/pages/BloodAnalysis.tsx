@@ -240,8 +240,8 @@ export default function BloodAnalysis() {
             <span className="block text-red-500">avec les ranges OPTIMAUX</span>
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Upload ton PDF de bilan sanguin. Notre IA l'analyse avec les ranges utilises par
-            Peter Attia, Marek Health, et les meilleurs coaches en medecine fonctionnelle.
+            Upload ton PDF de bilan sanguin. Analyse avec les ranges utilises par
+            Peter Attia, Marek Health, et les meilleurs en medecine fonctionnelle.
           </p>
         </motion.div>
 
@@ -433,7 +433,7 @@ export default function BloodAnalysis() {
 
                   <h2 className="text-xl font-bold mb-2">Analyse en cours...</h2>
                   <p className="text-muted-foreground mb-8">
-                    Notre IA extrait et analyse chaque biomarqueur de ton bilan.
+                    Extraction et analyse de chaque biomarqueur de ton bilan.
                   </p>
 
                   <div className="space-y-4">
@@ -447,7 +447,7 @@ export default function BloodAnalysis() {
 
                     <div>
                       <div className="flex justify-between text-sm mb-2">
-                        <span>Analyse IA</span>
+                        <span>Analyse Expert</span>
                         <span>{analysisProgress}%</span>
                       </div>
                       <Progress value={analysisProgress} className="h-2" />

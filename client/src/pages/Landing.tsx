@@ -132,7 +132,7 @@ function FiveOffersSection() {
       id: "blood",
       name: "Blood Analysis",
       price: "99€",
-      subtitle: "Ton sang décrypté par l'IA",
+      subtitle: "Ton sang decode",
       icon: Droplet,
       color: "red",
       href: "/offers/blood-analysis",
@@ -141,12 +141,12 @@ function FiveOffersSection() {
     {
       id: "ultimate",
       name: "Ultimate Scan",
-      price: "79€",
-      subtitle: "L'analyse complète",
+      price: "149€",
+      subtitle: "L'analyse ultime + wearables",
       icon: Zap,
-      color: "amber",
+      color: "cyan",
       href: "/offers/ultimate-scan",
-      features: ["15 sections complètes", "Analyse photos", "Sync wearables"],
+      features: ["Tout l'Anabolic Bioscan", "Sync wearables", "Analyse HRV avancee"],
     },
     {
       id: "burnout",
@@ -533,7 +533,7 @@ function BloodAnalysisSection() {
             <Badge className="mb-4 bg-primary/10 text-primary">Analyse sanguine</Badge>
             <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
               Blood Analysis
-              <span className="block text-muted-foreground">Ton sang décrypté par l'IA</span>
+              <span className="block text-muted-foreground">Ton sang decode</span>
             </h2>
             <p className="mb-8 text-lg text-muted-foreground">
               Upload ton bilan sanguin et obtiens une analyse avec les ranges optimaux utilisés par les médecins de performance, pas les ranges "normaux" des labos.
@@ -790,8 +790,8 @@ function FAQSection() {
 
   const faqs = [
     {
-      question: "Comment fonctionne l'analyse IA ?",
-      answer: "Notre IA analyse tes réponses au questionnaire (180+ questions) pour générer un rapport personnalisé de 50+ pages. L'algorithme croise des milliers de data points pour identifier tes déséquilibres et te proposer des protocoles adaptés.",
+      question: "Comment fonctionne l'analyse ?",
+      answer: "Tes reponses au questionnaire (180+ questions) sont analysees pour generer un rapport personnalise de 50+ pages. Des milliers de data points sont croises pour identifier tes desequilibres et te proposer des protocoles adaptes.",
     },
     {
       question: "Combien de temps prend le questionnaire ?",
