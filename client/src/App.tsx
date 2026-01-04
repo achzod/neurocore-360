@@ -27,6 +27,7 @@ import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
 import Press from "@/pages/Press";
 import DeductionCoaching from "@/pages/DeductionCoaching";
+import ApexLabs from "@/pages/ApexLabs";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
@@ -50,6 +51,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/apexlabs" component={ApexLabs} />
       <Route path="/audit-complet" component={Landing} />
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
