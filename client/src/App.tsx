@@ -21,6 +21,14 @@ import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
 import BloodAnalysis from "@/pages/BloodAnalysis";
+import BurnoutDetectionPage from "@/pages/BurnoutDetectionPage";
+
+// Offer Pages
+import AuditGratuit from "@/pages/offers/AuditGratuit";
+import AuditPremium from "@/pages/offers/AuditPremium";
+import BloodAnalysisOffer from "@/pages/offers/BloodAnalysisOffer";
+import ProPanel from "@/pages/offers/ProPanel";
+import BurnoutDetection from "@/pages/offers/BurnoutDetection";
 
 function Router() {
   return (
@@ -30,6 +38,15 @@ function Router() {
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
       <Route path="/blood-analysis" component={BloodAnalysis} />
+      <Route path="/burnout-detection" component={BurnoutDetectionPage} />
+
+      {/* Offer Pages */}
+      <Route path="/offers/audit-gratuit" component={AuditGratuit} />
+      <Route path="/offers/audit-premium" component={AuditPremium} />
+      <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
+      <Route path="/offers/pro-panel" component={ProPanel} />
+      <Route path="/offers/burnout-detection" component={BurnoutDetection} />
+
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
       <Route path="/auth/login" component={Login} />

@@ -1,9 +1,9 @@
 /**
  * NEUROCORE 360 - Blood Analysis Page
- * Premium blood work analysis with AI-powered insights
+ * PDF Upload + AI-powered expert analysis with optimal ranges
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Beaker,
+  Upload,
+  FileText,
   ArrowRight,
   Activity,
   Heart,
@@ -25,23 +26,179 @@ import {
   Shield,
   CheckCircle2,
   TrendingUp,
-  Target,
-  Zap,
   AlertTriangle,
-  Info,
+  Loader2,
+  X,
+  Download,
+  Zap,
+  Target,
 } from "lucide-react";
-import { BLOOD_PANELS, type BloodMarkerQuestion } from "@/lib/blood-questionnaire";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+
+type AnalysisStep = "upload" | "processing" | "payment" | "results";
+
+interface MarkerResult {
+  name: string;
+  value: number;
+  unit: string;
+  labRange: { min: number; max: number };
+  optimalRange: { min: number; max: number };
+  status: "optimal" | "suboptimal" | "action";
+  interpretation: string;
+}
+
+interface CategoryAnalysis {
+  category: string;
+  icon: string;
+  score: number;
+  markers: MarkerResult[];
+  summary: string;
+  recommendations: string[];
+}
+
+interface AnalysisResult {
+  categories: CategoryAnalysis[];
+  patterns: { name: string; description: string; severity: "low" | "medium" | "high" }[];
+  protocols: {
+    nutrition: string[];
+    supplements: { name: string; dosage: string; reason: string }[];
+    lifestyle: string[];
+  };
+  globalScore: number;
+  executiveSummary: string;
+}
 
 export default function BloodAnalysis() {
   const { toast } = useToast();
-  const [activePanel, setActivePanel] = useState("hormonal");
-  const [gender, setGender] = useState<"homme" | "femme">("homme");
-  const [markerValues, setMarkerValues] = useState<Record<string, string>>({});
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [step, setStep] = useState<AnalysisStep>("upload");
+  const [file, setFile] = useState<File | null>(null);
+  const [email, setEmail] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
-  const panelIcons: Record<string, typeof Activity> = {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile?.type === "application/pdf") {
+      setFile(droppedFile);
+    } else {
+      toast({
+        title: "Format non supporte",
+        description: "Seuls les fichiers PDF sont acceptes.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile?.type === "application/pdf") {
+      setFile(selectedFile);
+    } else if (selectedFile) {
+      toast({
+        title: "Format non supporte",
+        description: "Seuls les fichiers PDF sont acceptes.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!file || !email) {
+      toast({
+        title: "Informations manquantes",
+        description: "Upload ton PDF et entre ton email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStep("processing");
+
+    // Simulate upload progress
+    const uploadInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(uploadInterval);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 200);
+
+    try {
+      // Create form data
+      const formData = new FormData();
+      formData.append("pdf", file);
+      formData.append("email", email);
+
+      // Upload and analyze
+      const response = await fetch("/api/blood-analysis/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearInterval(uploadInterval);
+      setUploadProgress(100);
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      // Start analysis progress
+      const analysisInterval = setInterval(() => {
+        setAnalysisProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(analysisInterval);
+            return 90;
+          }
+          return prev + 5;
+        });
+      }, 500);
+
+      const data = await response.json();
+
+      clearInterval(analysisInterval);
+      setAnalysisProgress(100);
+
+      if (data.requiresPayment) {
+        setStep("payment");
+      } else {
+        setAnalysisResult(data.analysis);
+        setStep("results");
+      }
+
+      toast({
+        title: "Analyse terminee",
+        description: "Tes resultats sont prets.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'analyser le fichier. Reessaie.",
+        variant: "destructive",
+      });
+      setStep("upload");
+      setUploadProgress(0);
+      setAnalysisProgress(0);
+    }
+  };
+
+  const categoryIcons: Record<string, typeof Activity> = {
     hormonal: TrendingUp,
     thyroid: Activity,
     metabolic: Flame,
@@ -50,60 +207,16 @@ export default function BloodAnalysis() {
     liver_kidney: Heart,
   };
 
-  const handleMarkerChange = (markerId: string, value: string) => {
-    setMarkerValues((prev) => ({ ...prev, [markerId]: value }));
-  };
-
-  const getFilledMarkersCount = () => {
-    return Object.values(markerValues).filter((v) => v && v.trim() !== "").length;
-  };
-
-  const handleAnalyze = async () => {
-    const filledMarkers = Object.entries(markerValues)
-      .filter(([_, value]) => value && value.trim() !== "")
-      .map(([id, value]) => ({
-        id,
-        value: parseFloat(value),
-      }));
-
-    if (filledMarkers.length < 3) {
-      toast({
-        title: "Donnees insuffisantes",
-        description: "Entre au moins 3 biomarqueurs pour lancer l'analyse.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
-      const response = await fetch("/api/blood-analysis/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          markers: filledMarkers,
-          profile: { gender },
-        }),
-      });
-
-      if (!response.ok) throw new Error("Analyse failed");
-
-      const data = await response.json();
-      setAnalysisResult(data);
-
-      toast({
-        title: "Analyse terminee",
-        description: `${filledMarkers.length} biomarqueurs analyses avec succes.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de lancer l'analyse. Reessaie.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "optimal":
+        return "text-green-500 bg-green-500/10 border-green-500/20";
+      case "suboptimal":
+        return "text-yellow-500 bg-yellow-500/10 border-yellow-500/20";
+      case "action":
+        return "text-red-500 bg-red-500/10 border-red-500/20";
+      default:
+        return "";
     }
   };
 
@@ -111,7 +224,7 @@ export default function BloodAnalysis() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:py-12">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -120,251 +233,490 @@ export default function BloodAnalysis() {
         >
           <Badge className="mb-4 bg-red-500/20 text-red-600 border-red-500/30">
             <Beaker className="mr-2 h-3 w-3" />
-            Blood Analysis
+            Blood Analysis - 99€
           </Badge>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4">
-            Analyse ton bilan sanguin
-            <span className="block text-primary">avec les ranges OPTIMAUX</span>
+            Decode ton bilan sanguin
+            <span className="block text-red-500">avec les ranges OPTIMAUX</span>
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Entre tes valeurs ci-dessous. Notre IA les compare aux ranges utilises par
-            Peter Attia, Marek Health, et les meilleurs coaches en biohacking.
+            Upload ton PDF de bilan sanguin. Notre IA l'analyse avec les ranges utilises par
+            Peter Attia, Marek Health, et les meilleurs coaches en medecine fonctionnelle.
           </p>
         </motion.div>
 
-        {/* Gender Selection */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-4 p-2 rounded-xl bg-muted/50">
-            <Label className="text-sm text-muted-foreground">Sexe :</Label>
-            <Select value={gender} onValueChange={(v: "homme" | "femme") => setGender(v)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="homme">Homme</SelectItem>
-                <SelectItem value="femme">Femme</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left - Input Panels */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Beaker className="h-5 w-5 text-primary" />
-                    Tes Biomarqueurs
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center gap-4">
+            {["Upload", "Analyse", "Resultats"].map((label, i) => {
+              const stepIndex = ["upload", "processing", "results"].indexOf(step);
+              const isActive = i <= stepIndex || (step === "payment" && i <= 1);
+              return (
+                <div key={label} className="flex items-center">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                      isActive
+                        ? "bg-red-500 text-white"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                  <span className={`ml-2 text-sm ${isActive ? "" : "text-muted-foreground"}`}>
+                    {label}
                   </span>
-                  <Badge variant="outline">
-                    {getFilledMarkersCount()} remplis
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Tabs value={activePanel} onValueChange={setActivePanel}>
-                  <TabsList className="w-full justify-start rounded-none border-b h-auto p-0 bg-transparent overflow-x-auto">
-                    {BLOOD_PANELS.map((panel) => {
-                      const Icon = panelIcons[panel.id] || Activity;
-                      return (
-                        <TabsTrigger
-                          key={panel.id}
-                          value={panel.id}
-                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 text-xs sm:text-sm"
-                        >
-                          <Icon className="h-4 w-4 mr-2" />
-                          <span className="hidden sm:inline">{panel.title}</span>
-                          <span className="sm:hidden">{panel.id.slice(0, 4)}</span>
-                        </TabsTrigger>
-                      );
-                    })}
-                  </TabsList>
-
-                  {BLOOD_PANELS.map((panel) => (
-                    <TabsContent key={panel.id} value={panel.id} className="p-4 sm:p-6">
-                      <div className="mb-4">
-                        <h3 className="font-semibold">{panel.title}</h3>
-                        <p className="text-sm text-muted-foreground">{panel.subtitle}</p>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {panel.markers
-                          .filter((m) => !m.genderSpecific || m.genderSpecific === gender)
-                          .map((marker) => (
-                            <div key={marker.id} className="space-y-2">
-                              <Label className="text-sm flex items-center gap-2">
-                                {marker.name}
-                                {marker.required && (
-                                  <span className="text-red-500">*</span>
-                                )}
-                              </Label>
-                              <div className="relative">
-                                <Input
-                                  type="number"
-                                  step="any"
-                                  placeholder={marker.placeholder}
-                                  value={markerValues[marker.id] || ""}
-                                  onChange={(e) =>
-                                    handleMarkerChange(marker.id, e.target.value)
-                                  }
-                                  className="pr-16"
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                  {marker.unit}
-                                </span>
-                              </div>
-                              {marker.hint && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Info className="h-3 w-3" />
-                                  {marker.hint}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right - Summary & CTA */}
-          <div className="space-y-6">
-            {/* Pricing Card */}
-            <Card className="border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
-              <CardContent className="p-6">
-                <div className="text-center mb-6">
-                  <div className="text-4xl font-bold text-primary mb-1">99€</div>
-                  <p className="text-sm text-muted-foreground">Paiement unique</p>
+                  {i < 2 && <div className="mx-4 h-px w-12 bg-border" />}
                 </div>
-
-                <ul className="space-y-3 mb-6">
-                  {[
-                    "35+ biomarqueurs analyses",
-                    "Ranges OPTIMAUX vs normaux",
-                    "Detection patterns cliniques",
-                    "Protocole supplements personnalise",
-                    "Sources scientifiques citees",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  size="lg"
-                  className="w-full gap-2"
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || getFilledMarkersCount() < 3}
-                >
-                  {isAnalyzing ? (
-                    <>Analyse en cours...</>
-                  ) : (
-                    <>
-                      <Beaker className="h-5 w-5" />
-                      Lancer l'analyse
-                      <ArrowRight className="h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground mt-4">
-                  <Shield className="h-3 w-3 inline mr-1" />
-                  Donnees chiffrees et securisees
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Info Box */}
-            <Card className="bg-amber-500/10 border-amber-500/20">
-              <CardContent className="p-4">
-                <div className="flex gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                      Disclaimer medical
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cette analyse ne remplace pas une consultation medicale.
-                      Consulte ton medecin pour toute decision therapeutique.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              );
+            })}
           </div>
         </div>
 
-        {/* Analysis Result */}
-        {analysisResult && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-12"
-          >
-            <Card>
-              <CardHeader className="border-b bg-primary/5">
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  Resultat de l'analyse
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {analysisResult.aiReport ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: analysisResult.aiReport.replace(/\n/g, "<br />"),
-                      }}
+        <AnimatePresence mode="wait">
+          {/* Step 1: Upload */}
+          {step === "upload" && (
+            <motion.div
+              key="upload"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="grid lg:grid-cols-2 gap-8"
+            >
+              {/* Left - Upload Zone */}
+              <Card className="border-dashed border-2">
+                <CardContent className="p-8">
+                  <div
+                    className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                      isDragging
+                        ? "border-red-500 bg-red-500/5"
+                        : file
+                        ? "border-green-500 bg-green-500/5"
+                        : "border-muted-foreground/30 hover:border-red-500/50"
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <p className="text-sm font-medium text-green-600 mb-1">Optimal</p>
-                        <p className="text-2xl font-bold text-green-600">
-                          {analysisResult.analysis?.summary?.optimal?.length || 0}
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                        <p className="text-sm font-medium text-yellow-600 mb-1">A surveiller</p>
-                        <p className="text-2xl font-bold text-yellow-600">
-                          {analysisResult.analysis?.summary?.suboptimal?.length || 0}
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <p className="text-sm font-medium text-red-600 mb-1">Action requise</p>
-                        <p className="text-2xl font-bold text-red-600">
-                          {analysisResult.analysis?.summary?.action?.length || 0}
-                        </p>
-                      </div>
-                    </div>
 
-                    {analysisResult.analysis?.patterns?.length > 0 && (
-                      <div className="p-4 rounded-lg bg-muted">
-                        <p className="font-medium mb-2">Patterns detectes:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {analysisResult.analysis.patterns.map((p: any, i: number) => (
-                            <Badge key={i} variant="secondary">
-                              {p.name}
-                            </Badge>
-                          ))}
+                    {file ? (
+                      <div className="space-y-4">
+                        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-green-500/10">
+                          <FileText className="h-8 w-8 text-green-500" />
                         </div>
+                        <div>
+                          <p className="font-medium text-green-600">{file.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFile(null);
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Changer de fichier
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-red-500/10">
+                          <Upload className="h-8 w-8 text-red-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Glisse ton PDF ici</p>
+                          <p className="text-sm text-muted-foreground">
+                            ou clique pour selectionner
+                          </p>
+                        </div>
+                        <Badge variant="outline">PDF uniquement</Badge>
                       </div>
                     )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+
+                  <div className="mt-6 space-y-4">
+                    <div>
+                      <Label htmlFor="email">Email pour recevoir le rapport</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="ton@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="mt-2"
+                      />
+                    </div>
+
+                    <Button
+                      size="lg"
+                      className="w-full gap-2 bg-red-500 hover:bg-red-600"
+                      onClick={handleAnalyze}
+                      disabled={!file || !email}
+                    >
+                      <Beaker className="h-5 w-5" />
+                      Analyser mon bilan - 99€
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Right - What's included */}
+              <div className="space-y-6">
+                <Card className="border-red-500/20 bg-gradient-to-b from-red-500/5 to-transparent">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-red-500" />
+                      Ce que tu vas recevoir
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {[
+                      "Extraction automatique de tous tes biomarqueurs",
+                      "Comparaison ranges LABO vs ranges OPTIMAUX",
+                      "Radar de risques par categorie (hormonal, thyroide, metabolique...)",
+                      "Detection de patterns cliniques (Low T, Thyroid Slowdown, Insuline Resistance...)",
+                      "Protocole nutrition personnalise",
+                      "Stack supplements avec dosages precis",
+                      "Sources scientifiques pour chaque recommandation",
+                      "Rapport PDF de 20+ pages exportable",
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-amber-500/10 border-amber-500/20">
+                  <CardContent className="p-4 flex gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">
+                        Disclaimer medical
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cette analyse ne remplace pas une consultation medicale.
+                        Consulte ton medecin pour toute decision therapeutique.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 2: Processing */}
+          {step === "processing" && (
+            <motion.div
+              key="processing"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-lg mx-auto"
+            >
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-red-500/10 mb-6">
+                    <Loader2 className="h-10 w-10 text-red-500 animate-spin" />
+                  </div>
+
+                  <h2 className="text-xl font-bold mb-2">Analyse en cours...</h2>
+                  <p className="text-muted-foreground mb-8">
+                    Notre IA extrait et analyse chaque biomarqueur de ton bilan.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Upload du PDF</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <Progress value={uploadProgress} className="h-2" />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Analyse IA</span>
+                        <span>{analysisProgress}%</span>
+                      </div>
+                      <Progress value={analysisProgress} className="h-2" />
+                    </div>
+                  </div>
+
+                  <div className="mt-8 text-xs text-muted-foreground">
+                    <p>Extraction des valeurs... Detection des patterns...</p>
+                    <p>Generation des recommandations personnalisees...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 3: Payment */}
+          {step === "payment" && (
+            <motion.div
+              key="payment"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-lg mx-auto"
+            >
+              <Card className="border-red-500/20">
+                <CardContent className="p-8 text-center">
+                  <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-green-500/10 mb-6">
+                    <CheckCircle2 className="h-8 w-8 text-green-500" />
+                  </div>
+
+                  <h2 className="text-xl font-bold mb-2">PDF analyse avec succes</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Nous avons extrait tous tes biomarqueurs. Finalise le paiement pour
+                    acceder a ton rapport complet.
+                  </p>
+
+                  <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                    <div className="text-4xl font-bold text-red-500 mb-1">99€</div>
+                    <p className="text-sm text-muted-foreground">Paiement unique</p>
+                    <p className="text-xs text-green-600 mt-2">
+                      Deduit de ton coaching si tu prends un accompagnement
+                    </p>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full gap-2 bg-red-500 hover:bg-red-600"
+                    onClick={() => {
+                      // Redirect to Stripe checkout
+                      window.location.href = `/api/blood-analysis/checkout?email=${encodeURIComponent(email)}`;
+                    }}
+                  >
+                    <Shield className="h-5 w-5" />
+                    Payer et voir mes resultats
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Paiement securise par Stripe
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 4: Results */}
+          {step === "results" && analysisResult && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              {/* Global Score */}
+              <Card className="border-red-500/20 bg-gradient-to-r from-red-500/10 to-transparent">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-red-500/20">
+                      <span className="text-3xl font-bold text-red-500">
+                        {analysisResult.globalScore}/100
+                      </span>
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                      <h2 className="text-xl font-bold mb-2">Score Global Sante</h2>
+                      <p className="text-muted-foreground">
+                        {analysisResult.executiveSummary}
+                      </p>
+                    </div>
+                    <Button variant="outline" className="gap-2">
+                      <Download className="h-4 w-4" />
+                      Telecharger PDF
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Patterns Detected */}
+              {analysisResult.patterns.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      Patterns cliniques detectes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {analysisResult.patterns.map((pattern, i) => (
+                        <div
+                          key={i}
+                          className={`p-4 rounded-lg border ${
+                            pattern.severity === "high"
+                              ? "bg-red-500/10 border-red-500/20"
+                              : pattern.severity === "medium"
+                              ? "bg-amber-500/10 border-amber-500/20"
+                              : "bg-yellow-500/10 border-yellow-500/20"
+                          }`}
+                        >
+                          <h4 className="font-semibold">{pattern.name}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {pattern.description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Categories Radar */}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {analysisResult.categories.map((cat, i) => {
+                  const Icon = categoryIcons[cat.icon] || Activity;
+                  return (
+                    <Card key={i}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center justify-between text-base">
+                          <span className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-red-500" />
+                            {cat.category}
+                          </span>
+                          <Badge
+                            className={
+                              cat.score >= 80
+                                ? "bg-green-500/20 text-green-600"
+                                : cat.score >= 60
+                                ? "bg-yellow-500/20 text-yellow-600"
+                                : "bg-red-500/20 text-red-600"
+                            }
+                          >
+                            {cat.score}/100
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {cat.summary}
+                        </p>
+                        <div className="space-y-2">
+                          {cat.markers.slice(0, 3).map((marker, j) => (
+                            <div
+                              key={j}
+                              className={`flex items-center justify-between text-xs p-2 rounded ${getStatusColor(
+                                marker.status
+                              )}`}
+                            >
+                              <span>{marker.name}</span>
+                              <span className="font-mono">
+                                {marker.value} {marker.unit}
+                              </span>
+                            </div>
+                          ))}
+                          {cat.markers.length > 3 && (
+                            <p className="text-xs text-muted-foreground text-center pt-2">
+                              +{cat.markers.length - 3} autres marqueurs
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Protocols */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Nutrition */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      Protocole Nutrition
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {analysisResult.protocols.nutrition.map((rec, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Supplements */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Pill className="h-4 w-4 text-cyan-500" />
+                      Stack Supplements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {analysisResult.protocols.supplements.map((supp, i) => (
+                        <li key={i} className="text-sm">
+                          <div className="font-medium">{supp.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {supp.dosage} - {supp.reason}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Lifestyle */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Heart className="h-4 w-4 text-pink-500" />
+                      Ajustements Lifestyle
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {analysisResult.protocols.lifestyle.map((rec, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-pink-500 shrink-0 mt-0.5" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* CTA */}
+              <Card className="bg-gradient-to-r from-red-500/10 to-purple-500/10 border-red-500/20">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-xl font-bold mb-2">
+                    Tu veux un accompagnement expert ?
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    Les 99€ de cette analyse sont deduits si tu prends un coaching.
+                  </p>
+                  <Link href="/offers/pro-panel">
+                    <Button size="lg" className="gap-2 bg-red-500 hover:bg-red-600">
+                      Voir les coachings
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <Footer />

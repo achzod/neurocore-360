@@ -2843,93 +2843,138 @@ function BentoTestimonialsSection() {
 }
 
 // BENTO PRICING
-function BentoPricingSection() {
-  return (
-    <section id="pricing" className="py-12 lg:py-16 bg-muted/20" data-testid="section-pricing">
-      <div className="mx-auto max-w-7xl px-4">
+// 5 Offers Pricing Section
+function FiveOffersPricingSection() {
+  const iconMap: Record<string, typeof Star> = {
+    Star: Star,
+    Crown: Award,
+    Beaker: Beaker,
+    Zap: Zap,
+    Brain: Brain,
+  };
 
+  const colorMap: Record<string, string> = {
+    slate: "from-slate-500/20 to-slate-600/10 border-slate-500/30",
+    emerald: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
+    red: "from-red-500/20 to-red-600/10 border-red-500/30",
+    amber: "from-amber-500/20 to-amber-600/10 border-amber-500/30",
+    purple: "from-purple-500/20 to-purple-600/10 border-purple-500/30",
+  };
+
+  const iconColorMap: Record<string, string> = {
+    slate: "text-slate-400",
+    emerald: "text-emerald-400",
+    red: "text-red-400",
+    amber: "text-amber-400",
+    purple: "text-purple-400",
+  };
+
+  return (
+    <section id="pricing" className="py-16 lg:py-24 bg-black" data-testid="section-pricing">
+      <div className="mx-auto max-w-7xl px-4">
         {/* Header */}
-        <div className="mb-10 text-center">
-          <Badge variant="outline" className="mb-4">
-            Tarification transparente
+        <div className="mb-12 text-center">
+          <Badge variant="outline" className="mb-4 border-primary/50 text-primary">
+            5 Offres Distinctes
           </Badge>
-          <h2 className="text-2xl font-bold tracking-[-0.03em] sm:text-3xl" data-testid="text-pricing-title">
-            Choisis ton niveau d'analyse
+          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl" data-testid="text-pricing-title">
+            Choisis ton analyse
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Tu décides après avoir rempli le questionnaire
+          <p className="mx-auto mt-4 max-w-2xl text-gray-400">
+            Chaque offre repond a un besoin specifique. Clique pour decouvrir les details.
           </p>
         </div>
 
-        {/* Bento Pricing Grid */}
-        <div className="grid gap-6 md:grid-cols-2 max-w-5xl mx-auto">
-          {PRICING_PLANS.map((plan, index) => (
-            <motion.div
-              key={plan.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="relative"
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-                  <Badge className="gap-1 px-4 py-1.5 bg-primary text-primary-foreground">
-                    <Star className="h-3 w-3" />
-                    Le + populaire
-                  </Badge>
-                </div>
-              )}
-              <div
-                className={`${bentoStyles.cardLarge} h-full flex flex-col ${
-                  plan.popular ? "ring-2 ring-primary" : ""
-                }`}
-                data-testid={`card-pricing-${plan.id}`}
+        {/* 5 Offers Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {PRICING_PLANS.map((plan, index) => {
+            const Icon = iconMap[plan.icon] || Star;
+            const colorClass = colorMap[plan.color] || colorMap.slate;
+            const iconColor = iconColorMap[plan.color] || iconColorMap.slate;
+
+            return (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.08 }}
+                className="relative group"
               >
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold tracking-[-0.02em]">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground">{plan.subtitle}</p>
-                </div>
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                    <Badge className="gap-1 px-3 py-1 bg-emerald-500 text-white text-xs">
+                      Populaire
+                    </Badge>
+                  </div>
+                )}
 
-                <div className="mb-8">
-                  <span className="text-5xl font-bold tracking-[-0.03em]">{plan.priceLabel}</span>
-                  {"coachingNote" in plan && plan.coachingNote && (
-                    <p className="mt-2 text-sm text-primary font-medium">{plan.coachingNote}</p>
-                  )}
-                </div>
-
-                <ul className="mb-8 flex-1 space-y-4">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/20">
-                        <Check className="h-3 w-3 text-primary" />
-                      </div>
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                  {"lockedFeatures" in plan && plan.lockedFeatures?.map((feature, i) => (
-                    <li key={`locked-${i}`} className="flex items-start gap-3 text-muted-foreground">
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <Lock className="h-3 w-3" />
-                      </div>
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href="/audit-complet/questionnaire">
-                  <Button
-                    className={`w-full h-12 rounded-xl ${plan.popular ? '' : 'bg-muted hover:bg-muted/80 text-foreground'}`}
-                    variant={plan.popular ? "default" : "outline"}
-                    data-testid={`button-pricing-${plan.id}`}
+                <Link href={plan.href}>
+                  <div
+                    className={`relative h-full rounded-2xl bg-gradient-to-b ${colorClass} border p-5 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-white/30 ${
+                      plan.popular ? "ring-2 ring-emerald-500/50" : ""
+                    }`}
+                    data-testid={`card-pricing-${plan.id}`}
                   >
-                    {plan.cta}
-                  </Button>
+                    {/* Icon */}
+                    <div className={`mb-4 inline-flex p-3 rounded-xl bg-white/5 ${iconColor}`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
+                    <p className="text-xs text-gray-500 mb-4 line-clamp-2">{plan.description}</p>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-3xl font-bold text-white">{plan.priceLabel}</span>
+                      <span className="text-gray-500 text-xs ml-1">{plan.subtitle}</span>
+                    </div>
+
+                    {/* Features (compact) */}
+                    <ul className="space-y-2 mb-5">
+                      {plan.features.slice(0, 4).map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
+                          <Check className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                          <span className="line-clamp-1">{feature}</span>
+                        </li>
+                      ))}
+                      {plan.features.length > 4 && (
+                        <li className="text-xs text-gray-500">+{plan.features.length - 4} autres...</li>
+                      )}
+                    </ul>
+
+                    {/* CTA */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-primary font-medium group-hover:underline">
+                        Decouvrir
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
                 </Link>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mt-12 text-center"
+        >
+          <p className="text-gray-500 text-sm mb-4">
+            Pas sur de ton choix ?
+          </p>
+          <Link href="/audit-complet/questionnaire">
+            <Button variant="outline" className="gap-2">
+              Commencer par le questionnaire gratuit
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
@@ -3338,8 +3383,7 @@ export default function Landing() {
         <BentoDomainesSection />
         <BloodVisionSection />
         <BentoProcessSection />
-        <Pricing />
-        <BloodAnalysisPremiumSection />
+        <FiveOffersPricingSection />
         <FloatingCTABar />
         <BentoTestimonialsSection />
         <PrivacySection />
