@@ -1,274 +1,124 @@
 /**
- * NEUROCORE 360 - Anabolic Bioscan Offer Page (ex Audit Premium)
- * Ultrahuman-style premium sales page - 59€
+ * NEUROCORE 360 - Anabolic Bioscan Offer Page
+ * Ultrahuman-inspired premium design - 59€
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { Link } from "wouter";
 import {
   ArrowRight,
   Check,
-  FileText,
+  ChevronDown,
+  Shield,
+  Clock,
   Target,
   Activity,
   Zap,
-  Pill,
   Brain,
   Heart,
   Flame,
-  ChevronDown,
-  Lock,
-  Shield,
   Moon,
   Dumbbell,
   Utensils,
   Sparkles,
   BarChart3,
-  Clock,
   Scan,
   FlaskConical,
   Coffee,
   Bone,
   HeartHandshake,
+  FileText,
+  Lock,
+  Play,
   Users,
 } from "lucide-react";
 
-// 15 Real Analysis domains from Dashboard
+// 16 Analysis domains with their icons and gradients
 const analysisDomains = [
+  { name: "Profil de Base", icon: Target, gradient: "from-emerald-500 to-green-600" },
+  { name: "Composition Corporelle", icon: Activity, gradient: "from-blue-500 to-cyan-500" },
+  { name: "Metabolisme & Energie", icon: Flame, gradient: "from-orange-500 to-amber-500" },
+  { name: "Nutrition & Tracking", icon: Utensils, gradient: "from-green-500 to-emerald-500" },
+  { name: "Digestion & Microbiome", icon: FlaskConical, gradient: "from-yellow-500 to-orange-500" },
+  { name: "Activite & Performance", icon: Dumbbell, gradient: "from-purple-500 to-violet-500" },
+  { name: "Sommeil & Recuperation", icon: Moon, gradient: "from-indigo-500 to-blue-500" },
+  { name: "HRV & Cardiaque", icon: Heart, gradient: "from-red-500 to-rose-500" },
+  { name: "Analyses & Biomarqueurs", icon: FlaskConical, gradient: "from-cyan-500 to-teal-500" },
+  { name: "Hormones & Stress", icon: Zap, gradient: "from-amber-500 to-yellow-500" },
+  { name: "Lifestyle & Substances", icon: Coffee, gradient: "from-pink-500 to-rose-500" },
+  { name: "Biomecanique & Mobilite", icon: Bone, gradient: "from-teal-500 to-cyan-500" },
+  { name: "Psychologie & Mental", icon: Brain, gradient: "from-violet-500 to-purple-500" },
+  { name: "Neurotransmetteurs", icon: Sparkles, gradient: "from-rose-500 to-pink-500" },
+  { name: "Hormones Sexuelles", icon: HeartHandshake, gradient: "from-lime-500 to-green-500" },
+  { name: "Score Global", icon: BarChart3, gradient: "from-emerald-400 to-cyan-500" },
+];
+
+// Protocol cards
+const protocols = [
   {
-    id: "profilbase",
-    name: "Profil de Base",
-    description: "Age, objectifs, historique medical, mode de vie actuel",
-    icon: Target,
-    color: "emerald",
-  },
-  {
-    id: "compositioncorporelle",
-    name: "Composition Corporelle",
-    description: "Poids, mensurations, estimation masse grasse, morphotype",
-    icon: Activity,
-    color: "blue",
-  },
-  {
-    id: "metabolismeenergie",
-    name: "Metabolisme & Energie",
-    description: "Depense calorique, niveaux d'energie, fatigue, thyroide",
+    title: "Protocole Matin Anti-Cortisol",
+    desc: "Routine matinale scientifique pour optimiser ton eveil et reduire le stress chronique",
     icon: Flame,
-    color: "orange",
+    color: "orange"
   },
   {
-    id: "nutritiontracking",
-    name: "Nutrition & Tracking",
-    description: "Habitudes alimentaires, macros, timing, intolerances",
-    icon: Utensils,
-    color: "green",
-  },
-  {
-    id: "digestionmicrobiome",
-    name: "Digestion & Microbiome",
-    description: "Transit, ballonnements, intolerance, sante intestinale",
-    icon: FlaskConical,
-    color: "yellow",
-  },
-  {
-    id: "activiteperformance",
-    name: "Activite & Performance",
-    description: "Entrainement, volume, intensite, progression, recuperation",
-    icon: Dumbbell,
-    color: "purple",
-  },
-  {
-    id: "sommeilrecuperation",
-    name: "Sommeil & Recuperation",
-    description: "Qualite, duree, latence, reveils, chronotype",
+    title: "Protocole Soir Sommeil",
+    desc: "Sequence du coucher pour maximiser la qualite du sommeil profond et REM",
     icon: Moon,
-    color: "indigo",
+    color: "indigo"
   },
   {
-    id: "hrvcardiaque",
-    name: "HRV & Sante Cardiaque",
-    description: "Variabilite cardiaque, resting HR, capacite cardiovasculaire",
-    icon: Heart,
-    color: "red",
-  },
-  {
-    id: "analysesbiomarqueurs",
-    name: "Analyses & Biomarqueurs",
-    description: "Bilans sanguins recents, carences, marqueurs cles",
+    title: "Protocole Digestion 14J",
+    desc: "Reset digestif complet pour restaurer la fonction intestinale optimale",
     icon: FlaskConical,
-    color: "cyan",
+    color: "green"
   },
   {
-    id: "hormonesstress",
-    name: "Hormones & Stress",
-    description: "Cortisol, thyroide, signes de dereglement hormonal",
+    title: "Stack Supplements",
+    desc: "Dosages precis, timing d'administration, interactions et sources recommandees",
     icon: Zap,
-    color: "amber",
+    color: "amber"
   },
   {
-    id: "lifestylesubstances",
-    name: "Lifestyle & Substances",
-    description: "Alcool, cafeine, tabac, supplements actuels",
-    icon: Coffee,
-    color: "pink",
-  },
-  {
-    id: "biomecaniquemobilite",
-    name: "Biomecanique & Mobilite",
-    description: "Posture, douleurs, restrictions, blessures",
-    icon: Bone,
-    color: "teal",
-  },
-  {
-    id: "psychologiemental",
-    name: "Psychologie & Mental",
-    description: "Motivation, stress percu, anxiete, humeur generale",
-    icon: Brain,
-    color: "violet",
-  },
-  {
-    id: "neurotransmetteurs",
-    name: "Neurotransmetteurs",
-    description: "Profil dopamine, serotonine, GABA, acetylcholine estime",
-    icon: Sparkles,
-    color: "rose",
-  },
-  {
-    id: "hormonessexuelles",
-    name: "Hormones Sexuelles & Libido",
-    description: "Testosterone, estrogenes, libido, fertilite",
-    icon: HeartHandshake,
-    color: "lime",
-  },
-];
-
-// How it works steps
-const howItWorks = [
-  {
-    step: 1,
-    title: "Questionnaire Detaille",
-    description:
-      "180+ questions sur 15 domaines : sommeil, stress, nutrition, hormones, energie, digestion... Compte 25-30 minutes pour des reponses precises.",
-    icon: FileText,
-    color: "emerald",
-  },
-  {
-    step: 2,
-    title: "Analyse Complete",
-    description:
-      "Tes reponses sont analysees et croisees avec les derniers protocoles de medecine fonctionnelle et biohacking.",
-    icon: BarChart3,
-    color: "blue",
-  },
-  {
-    step: 3,
-    title: "Scores & Insights",
-    description:
-      "Chaque domaine recoit un score de 0 a 100. Tes forces et faiblesses sont identifiees en priorite.",
+    title: "Plan 30-60-90 Jours",
+    desc: "Roadmap semaine par semaine avec objectifs mesurables et checkpoints",
     icon: Target,
-    color: "purple",
-  },
-  {
-    step: 4,
-    title: "Protocoles Personnalises",
-    description:
-      "Rapport interactif + PDF 40+ pages avec recommandations nutrition, supplements, training et lifestyle.",
-    icon: Sparkles,
-    color: "amber",
+    color: "cyan"
   },
 ];
 
-// What makes it different
-const differentiators = [
-  {
-    title: "180+ Questions",
-    description: "Le questionnaire le plus complet du marche",
-    icon: FileText,
-  },
-  {
-    title: "15 Domaines",
-    description: "Analyse holistique corps-esprit",
-    icon: BarChart3,
-  },
-  {
-    title: "Scores Precis",
-    description: "Chaque domaine note de 0 a 100",
-    icon: Target,
-  },
-  {
-    title: "Protocoles Sciences",
-    description: "Base sur Huberman, Attia, Marek",
-    icon: Sparkles,
-  },
-];
-
-// FAQ items - updated to reflect actual product
+// FAQ items
 const faqItems = [
   {
     question: "Combien de temps prend le questionnaire ?",
-    answer:
-      "Le questionnaire complet prend environ 25-30 minutes. Il est divise en 15 sections thematiques et tu peux sauvegarder ta progression a tout moment. Nous recommandons de le faire au calme, sans distractions, pour des reponses precises. La qualite de ton rapport depend directement de la qualite de tes reponses.",
-  },
-  {
-    question: "Quels sont les 15 domaines analyses ?",
-    answer:
-      "Les 15 domaines sont : Profil de Base, Composition Corporelle, Metabolisme & Energie, Nutrition & Tracking, Digestion & Microbiome, Activite & Performance, Sommeil & Recuperation, HRV & Cardiaque, Analyses & Biomarqueurs, Hormones & Stress, Lifestyle & Substances, Biomecanique & Mobilite, Psychologie & Mental, Neurotransmetteurs, et Hormones Sexuelles.",
+    answer: "25-30 minutes. Divise en 16 sections. Tu peux sauvegarder et reprendre a tout moment."
   },
   {
     question: "Comment sont calcules les scores ?",
-    answer:
-      "Chaque domaine recoit un score de 0 a 100 base sur tes reponses. Les scores sont ponderes selon l'impact sur ta sante globale. Un score global est calcule, et tes points forts/faiblesses sont identifies automatiquement pour prioriser les actions.",
+    answer: "Chaque domaine recoit un score de 0 a 100. Les scores sont ponderes selon l'impact sur ta sante. Un score global est calcule, et tes priorites sont identifiees automatiquement."
   },
   {
-    question: "Sur quelles sources scientifiques te bases-tu ?",
-    answer:
-      "Les protocoles sont bases sur les travaux de Andrew Huberman (Stanford), Peter Attia (medecine de longevite), Marek Health (hormones), Bryan Johnson (Blueprint), et la litterature scientifique peer-reviewed. Chaque recommandation est sourcee.",
+    question: "C'est quoi la difference avec l'Ultimate Scan ?",
+    answer: "L'Anabolic Bioscan analyse via questionnaire. L'Ultimate Scan (79€) ajoute l'analyse photo : posture, morphotype, repartition graisseuse, biomecanique."
   },
   {
-    question: "Quelle est la difference avec l'Ultimate Scan ?",
-    answer:
-      "L'Anabolic Bioscan (59€) analyse 16 sections via questionnaire. L'Ultimate Scan (79€) ajoute l'analyse visuelle et posturale complete + l'analyse biomecanique (psoas, diaphragme, sangle profonde) basee sur tes photos. Si tu veux l'analyse photo, prends l'Ultimate.",
+    question: "Les 59€ sont deduits du coaching ?",
+    answer: "Oui. Si tu prends un coaching Essential ou Private Lab dans les 30 jours, les 59€ sont integralement deduits. Ton scan devient gratuit."
   },
   {
-    question: "Les 59€ sont-ils deduits du coaching ?",
-    answer:
-      "Oui ! Si tu decides de prendre un coaching Essential ou Private Lab dans les 30 jours suivant ton Anabolic Bioscan, les 59€ sont integralement deduits. Ton scan devient donc gratuit retroactivement.",
-  },
-  {
-    question: "Combien de temps pour recevoir mon rapport ?",
-    answer:
-      "Ton rapport est genere sous 24 a 48h apres completion du questionnaire. Tu recois un email avec acces a ton dashboard interactif et le PDF telechargeabe de 25-30 pages.",
-  },
-  {
-    question: "Puis-je refaire le scan pour suivre mes progres ?",
-    answer:
-      "Oui, je recommande de refaire le scan tous les 3-6 mois pour mesurer tes progres objectivement. Chaque scan est facture 59€, mais les clients coaching beneficient de scans illimites inclus dans leur forfait.",
-  },
-  {
-    question: "Le rapport remplace-t-il un avis medical ?",
-    answer:
-      "Non. L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas un diagnostic medical. Pour toute condition de sante, consulte un professionnel. Le rapport peut servir de base de discussion avec ton medecin en documentant tes symptomes et habitudes.",
-  },
-  {
-    question: "Que contient exactement le rapport PDF ?",
-    answer:
-      "Le rapport PDF fait 25-30 pages et inclut : synthese executive, scores par domaine avec explications, analyse de tes points forts et priorites d'amelioration, 5 protocoles fermes (matin, soir, digestion, bureau, entrainement), stack supplements avec dosages precis, et plan 30-60-90 jours.",
+    question: "Combien de temps pour le rapport ?",
+    answer: "24-48h apres completion. Tu recois un email avec acces au dashboard interactif + PDF 25-30 pages."
   },
 ];
 
-// FAQ Accordion component
-function FAQAccordion({
-  item,
-  isOpen,
-  onToggle,
-  index,
-}: {
-  item: (typeof faqItems)[0];
+// FAQ Accordion
+function FAQItem({ item, isOpen, onToggle, index }: {
+  item: typeof faqItems[0];
   isOpen: boolean;
   onToggle: () => void;
   index: number;
@@ -279,19 +129,20 @@ function FAQAccordion({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.05 }}
-      className="border-b border-border/30"
+      className="border-b border-white/10"
     >
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between py-5 text-left hover:text-primary transition-colors"
+        className="w-full flex items-center justify-between py-6 text-left group"
       >
-        <span className="font-medium pr-4">{item.question}</span>
+        <span className="text-lg font-medium text-white group-hover:text-emerald-400 transition-colors">
+          {item.question}
+        </span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-          className="shrink-0"
+          className="ml-4 shrink-0"
         >
-          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          <ChevronDown className="h-5 w-5 text-white/40" />
         </motion.div>
       </button>
       <AnimatePresence>
@@ -300,9 +151,8 @@ function FAQAccordion({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
           >
-            <p className="pb-5 text-muted-foreground leading-relaxed">
+            <p className="pb-6 text-white/60 leading-relaxed">
               {item.answer}
             </p>
           </motion.div>
@@ -312,664 +162,479 @@ function FAQAccordion({
   );
 }
 
-// Domain card
-function DomainCard({
-  domain,
-  index,
-}: {
-  domain: (typeof analysisDomains)[0];
-  index: number;
-}) {
-  const colorMap: Record<string, string> = {
-    emerald: "#10b981",
-    blue: "#3b82f6",
-    orange: "#f97316",
-    red: "#ef4444",
-    indigo: "#6366f1",
-    amber: "#f59e0b",
-    purple: "#a855f7",
-    green: "#22c55e",
-    rose: "#f43f5e",
-    yellow: "#eab308",
-    lime: "#84cc16",
-    cyan: "#06b6d4",
-    pink: "#ec4899",
-    violet: "#8b5cf6",
-    teal: "#14b8a6",
-  };
+// Animated score display
+function AnimatedScore({ score, label, color }: { score: number; label: string; color: string }) {
+  const [displayScore, setDisplayScore] = useState(0);
 
-  const bgColorMap: Record<string, string> = {
-    emerald: "rgba(16, 185, 129, 0.1)",
-    blue: "rgba(59, 130, 246, 0.1)",
-    orange: "rgba(249, 115, 22, 0.1)",
-    red: "rgba(239, 68, 68, 0.1)",
-    indigo: "rgba(99, 102, 241, 0.1)",
-    amber: "rgba(245, 158, 11, 0.1)",
-    purple: "rgba(168, 85, 247, 0.1)",
-    green: "rgba(34, 197, 94, 0.1)",
-    rose: "rgba(244, 63, 94, 0.1)",
-    yellow: "rgba(234, 179, 8, 0.1)",
-    lime: "rgba(132, 204, 22, 0.1)",
-    cyan: "rgba(6, 182, 212, 0.1)",
-    pink: "rgba(236, 72, 153, 0.1)",
-    violet: "rgba(139, 92, 246, 0.1)",
-    teal: "rgba(20, 184, 166, 0.1)",
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let current = 0;
+      const interval = setInterval(() => {
+        current += 1;
+        setDisplayScore(current);
+        if (current >= score) clearInterval(interval);
+      }, 20);
+      return () => clearInterval(interval);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [score]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.03 }}
-    >
-      <Card className="h-full hover:border-emerald-500/30 transition-colors">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-              style={{ backgroundColor: bgColorMap[domain.color] }}
-            >
-              <domain.icon
-                className="h-5 w-5"
-                style={{ color: colorMap[domain.color] }}
-              />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm mb-1">{domain.name}</h3>
-              <p className="text-xs text-muted-foreground">{domain.description}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-// Animated Radar Chart Component
-function AnimatedRadarChart({ isHovered }: { isHovered: boolean }) {
-  // Base points for the radar
-  const basePoints = [
-    { x: 100, y: 25, label: "Energie", score: 85 },
-    { x: 165, y: 62, label: "Hormones", score: 72 },
-    { x: 158, y: 140, label: "Sommeil", score: 68 },
-    { x: 100, y: 170, label: "Digestion", score: 78 },
-    { x: 42, y: 125, label: "Mental", score: 82 },
-    { x: 35, y: 60, label: "Stress", score: 65 },
-  ];
-
-  // Calculate animated points based on hover state
-  const getAnimatedPoint = (base: typeof basePoints[0], index: number) => {
-    const centerX = 100;
-    const centerY = 100;
-    const maxRadius = 80;
-    const angle = (index * 60 - 90) * (Math.PI / 180);
-
-    const scoreRadius = isHovered
-      ? (base.score / 100) * maxRadius
-      : (base.score / 100) * maxRadius * 0.85;
-
-    return {
-      x: centerX + Math.cos(angle) * scoreRadius,
-      y: centerY + Math.sin(angle) * scoreRadius,
-    };
-  };
-
-  const animatedPoints = basePoints.map((p, i) => getAnimatedPoint(p, i));
-  const polygonPoints = animatedPoints.map(p => `${p.x},${p.y}`).join(' ');
-
-  return (
-    <div className="relative w-full aspect-square">
-      <svg viewBox="0 0 200 200" className="w-full h-full">
-        {/* Background hexagons */}
-        <motion.polygon
-          points="100,10 178,55 178,145 100,190 22,145 22,55"
-          fill="none"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="1"
-        />
-        <motion.polygon
-          points="100,40 154,70 154,130 100,160 46,130 46,70"
-          fill="none"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="1"
-        />
-        <motion.polygon
-          points="100,70 130,85 130,115 100,130 70,115 70,85"
-          fill="none"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="1"
-        />
-
-        {/* Animated data polygon */}
-        <motion.polygon
-          initial={{ opacity: 0.6 }}
-          animate={{
-            points: polygonPoints,
-            opacity: isHovered ? 1 : 0.8,
-          }}
-          transition={{
-            duration: 0.5,
-            ease: "easeOut",
-          }}
-          fill={isHovered ? "rgba(16, 185, 129, 0.35)" : "rgba(16, 185, 129, 0.2)"}
-          stroke="#10b981"
-          strokeWidth={isHovered ? 3 : 2}
-        />
-
-        {/* Animated data points */}
-        {animatedPoints.map((point, i) => (
-          <motion.circle
-            key={i}
-            animate={{
-              cx: point.x,
-              cy: point.y,
-              r: isHovered ? 6 : 4,
-            }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            fill="#10b981"
-          />
-        ))}
-      </svg>
-
-      {/* Labels */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 text-xs text-gray-400">Energie</div>
-      <div className="absolute top-1/4 right-0 text-xs text-gray-400">Hormones</div>
-      <div className="absolute bottom-1/4 right-0 text-xs text-gray-400">Sommeil</div>
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-400">Digestion</div>
-      <div className="absolute bottom-1/4 left-0 text-xs text-gray-400">Mental</div>
-      <div className="absolute top-1/4 left-0 text-xs text-gray-400">Stress</div>
+    <div className="text-center">
+      <div className={`text-4xl font-black ${color}`}>{displayScore}</div>
+      <div className="text-xs text-white/40 mt-1">{label}</div>
     </div>
   );
 }
 
 export default function AuditPremium() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [isRadarHovered, setIsRadarHovered] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
       <Header />
 
       <main>
-        {/* Hero Section - Green Grid/Heart Style */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950 via-emerald-900/30 to-black py-20 lg:py-32">
-          {/* Main gradient */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-800/30 via-emerald-950/40 to-transparent" />
-
-          {/* Animated grid pattern - rounded squares like in image */}
+        {/* === HERO SECTION === */}
+        <section
+          ref={heroRef}
+          className="relative min-h-screen flex items-center overflow-hidden"
+        >
+          {/* Animated background orbs */}
           <div className="absolute inset-0 overflow-hidden">
-            {/* Grid of glowing rounded squares */}
-            <div className="absolute inset-0 grid grid-cols-6 gap-4 p-8 opacity-30">
-              {[...Array(24)].map((_, i) => (
-                <motion.div
-                  key={`grid-${i}`}
-                  className="aspect-square rounded-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,95,70,0.05) 100%)',
-                    boxShadow: 'inset 0 0 30px rgba(16,185,129,0.1)',
-                  }}
-                  animate={{
-                    opacity: [0.2, 0.4, 0.2],
-                  }}
-                  transition={{
-                    duration: 3 + Math.random() * 2,
-                    repeat: Infinity,
-                    delay: Math.random() * 2,
-                    ease: "easeInOut",
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Center heart glow */}
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full flex items-center justify-center"
-              style={{
-                background: 'radial-gradient(circle, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.1) 50%, transparent 70%)',
-                boxShadow: '0 0 60px rgba(16,185,129,0.3)',
-              }}
-              animate={{
-                scale: [1, 1.1, 1],
-                opacity: [0.5, 0.8, 0.5],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              <Heart className="w-12 h-12 text-emerald-400/50" />
-            </motion.div>
-
-            {/* Glowing lines connecting grid */}
-            <svg className="absolute inset-0 w-full h-full opacity-20">
-              <defs>
-                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="rgba(16,185,129,0.5)" />
-                  <stop offset="50%" stopColor="rgba(16,185,129,0.2)" />
-                  <stop offset="100%" stopColor="rgba(16,185,129,0.5)" />
-                </linearGradient>
-              </defs>
-              <line x1="20%" y1="30%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
-              <line x1="80%" y1="30%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
-              <line x1="20%" y1="70%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
-              <line x1="80%" y1="70%" x2="50%" y2="50%" stroke="url(#lineGradient)" strokeWidth="1" />
-            </svg>
+            <div className="absolute top-1/3 left-1/4 w-[700px] h-[700px] bg-emerald-500/20 rounded-full blur-[180px] animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/3 w-[500px] h-[500px] bg-green-500/15 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: "1.5s" }} />
+            <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] bg-teal-500/10 rounded-full blur-[120px]" />
           </div>
 
-          <div className="relative mx-auto max-w-6xl px-4">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left - Text */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
-                  Anabolic Bioscan.
-                  <span className="block text-emerald-400 mt-2">
-                    15 domaines. 1 rapport.
+          {/* Grid overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.015]"
+            style={{
+              backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
+              backgroundSize: "80px 80px",
+            }}
+          />
+
+          <motion.div
+            style={{ opacity: heroOpacity, scale: heroScale }}
+            className="relative z-10 mx-auto max-w-7xl px-4 py-32"
+          >
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              {/* Left - Content */}
+              <div>
+                {/* Badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Badge className="mb-8 px-6 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-sm font-medium backdrop-blur-xl">
+                    16 SECTIONS D'ANALYSE
+                  </Badge>
+                </motion.div>
+
+                {/* Main headline */}
+                <motion.h1
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.8 }}
+                  className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9]"
+                  style={{ letterSpacing: "-0.04em" }}
+                >
+                  <span className="text-white">Anabolic</span>
+                  <br />
+                  <span className="bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 bg-clip-text text-transparent">
+                    Bioscan.
                   </span>
-                </h1>
+                </motion.h1>
 
-                <p className="text-xl text-gray-400 mb-8 leading-relaxed">
-                  L'analyse metabolique la plus complete. Questionnaire 180+ questions,
-                  profils hormonaux estimes, protocoles personnalises.
-                </p>
+                {/* Subheadline */}
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-8 text-xl sm:text-2xl text-white/60 max-w-xl font-light leading-relaxed"
+                >
+                  L'analyse metabolique la plus complete.
+                  <br />
+                  <span className="text-white/40">Diagnostic + Protocoles + Plan d'action.</span>
+                </motion.p>
 
-                <div className="flex flex-col sm:flex-row gap-4">
+                {/* Price */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-8 flex items-baseline gap-3"
+                >
+                  <span className="text-5xl font-black text-emerald-400">59€</span>
+                  <span className="text-white/40">one-time</span>
+                  <Badge className="ml-2 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                    Deduit du coaching
+                  </Badge>
+                </motion.div>
+
+                {/* CTA */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="mt-10 flex flex-col sm:flex-row gap-4"
+                >
                   <Link href="/audit-complet/questionnaire">
                     <Button
                       size="lg"
-                      className="gap-2 h-14 px-8 text-lg bg-emerald-500 hover:bg-emerald-600 w-full sm:w-auto"
+                      className="h-16 px-10 text-lg font-semibold rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all duration-300 shadow-[0_0_60px_rgba(16,185,129,0.4)]"
                     >
-                      <Scan className="h-5 w-5" />
-                      Lancer mon Anabolic Bioscan
-                      <ArrowRight className="h-5 w-5" />
+                      <Scan className="mr-3 h-5 w-5" />
+                      Lancer mon Bioscan
+                      <ArrowRight className="ml-3 h-5 w-5" />
                     </Button>
                   </Link>
-                </div>
+                </motion.div>
 
-                <p className="mt-6 text-sm text-emerald-400">
-                  Deduit de ton coaching Essential ou Private Lab
-                </p>
-              </motion.div>
+                {/* Trust indicators */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.9 }}
+                  className="mt-10 flex flex-wrap gap-6 text-sm text-white/40"
+                >
+                  <span className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" /> 25-30 min
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" /> Resultats 24-48h
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" /> +500 scans
+                  </span>
+                </motion.div>
+              </div>
 
-              {/* Right - Video + Report Preview */}
+              {/* Right - Visual */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
                 className="relative"
               >
-                <div className="relative mx-auto w-full max-w-[450px]">
-                  {/* Video container */}
-                  <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-6">
-                    <video
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-auto"
-                    >
-                      <source
-                        src="https://public-web-assets.uh-static.com/web_v2/blood-vision/buy/desktop/Web2K_1.mp4"
-                        type="video/mp4"
-                      />
-                    </video>
-                    {/* Overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                    {/* Video overlay text */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <p className="text-white text-sm font-medium">Analyse metabolique avancee</p>
-                      <p className="text-gray-300 text-xs">Scores en temps reel sur 15 domaines</p>
-                    </div>
-                  </div>
-
-                  {/* Mini Report card below video */}
-                  <div
-                    className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-4 shadow-xl cursor-pointer transition-transform hover:scale-[1.02]"
-                    onMouseEnter={() => setIsRadarHovered(true)}
-                    onMouseLeave={() => setIsRadarHovered(false)}
+                {/* Video container with glassmorphism */}
+                <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full aspect-video object-cover"
                   >
-                    <div className="flex items-center gap-4">
-                      {/* Mini radar */}
-                      <div className="w-24 h-24 shrink-0">
-                        <AnimatedRadarChart isHovered={isRadarHovered} />
-                      </div>
-                      {/* Scores */}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs text-gray-500">Score Global</p>
-                          <motion.p
-                            className="text-xl font-bold text-emerald-400"
-                            animate={{ scale: isRadarHovered ? 1.1 : 1 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            78
-                          </motion.p>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
-                          <div className="text-center">
-                            <p className="text-[9px] text-gray-500">Meta</p>
-                            <p className="text-xs font-semibold text-emerald-400">82</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-[9px] text-gray-500">HRV</p>
-                            <p className="text-xs font-semibold text-amber-400">71</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-[9px] text-gray-500">Neuro</p>
-                            <p className="text-xs font-semibold text-purple-400">76</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    <source
+                      src="https://public-web-assets.uh-static.com/web_v2/blood-vision/buy/desktop/Web2K_1.mp4"
+                      type="video/mp4"
+                    />
+                  </video>
 
-                  {/* Glow */}
-                  <motion.div
-                    className="absolute -inset-4 bg-emerald-500/20 blur-3xl rounded-full -z-10"
-                    animate={{ opacity: isRadarHovered ? 0.4 : 0.2 }}
-                    transition={{ duration: 0.3 }}
-                  />
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+
+                  {/* Video caption */}
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <p className="text-white font-semibold mb-1">Analyse metabolique avancee</p>
+                    <p className="text-white/60 text-sm">Visualisation en temps reel de tes biomarqueurs</p>
+                  </div>
                 </div>
+
+                {/* Floating score cards */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="absolute -bottom-8 left-4 right-4 p-6 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl"
+                >
+                  <div className="grid grid-cols-4 gap-4">
+                    <AnimatedScore score={82} label="Metabolisme" color="text-emerald-400" />
+                    <AnimatedScore score={71} label="Hormones" color="text-amber-400" />
+                    <AnimatedScore score={78} label="Sommeil" color="text-indigo-400" />
+                    <AnimatedScore score={76} label="Mental" color="text-purple-400" />
+                  </div>
+                </motion.div>
+
+                {/* Background glow */}
+                <div className="absolute -inset-8 bg-emerald-500/20 blur-[100px] rounded-full -z-10" />
               </motion.div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
-        {/* Social Proof */}
-        <section className="py-8 border-b border-border/30 bg-muted/20">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-emerald-500" />
-                <span>+500 scans realises</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-emerald-500" />
-                <span>15 domaines analyses</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-emerald-500" />
-                <span>Resultats sous 24-48h</span>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* === DOMAINS BENTO GRID === */}
+        <section className="relative py-32 overflow-hidden">
+          {/* Background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent" />
 
-        {/* How It Works */}
-        <section className="py-20 lg:py-28 border-b border-border/30">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Comment ca marche</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Du questionnaire au rapport complet en 4 etapes simples
+          <div className="relative mx-auto max-w-7xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-20"
+            >
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
+                16 domaines <span className="text-emerald-400">analyses</span>
+              </h2>
+              <p className="mt-6 text-xl text-white/50 max-w-2xl mx-auto">
+                L'analyse la plus complete du marche. Chaque domaine score de 0 a 100.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {howItWorks.map((step, i) => (
+            {/* Bento Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {analysisDomains.map((domain, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="group relative p-5 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl hover:border-emerald-500/30 hover:bg-white/[0.04] transition-all duration-500"
                 >
-                  <Card className="h-full bg-gradient-to-b from-muted/50 to-transparent">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-sm">
-                          {step.step}
-                        </div>
-                        <div
-                          className="flex h-10 w-10 items-center justify-center rounded-xl"
-                          style={{
-                            backgroundColor:
-                              step.color === "emerald"
-                                ? "rgba(16, 185, 129, 0.1)"
-                                : step.color === "blue"
-                                  ? "rgba(59, 130, 246, 0.1)"
-                                  : step.color === "purple"
-                                    ? "rgba(168, 85, 247, 0.1)"
-                                    : "rgba(245, 158, 11, 0.1)",
-                          }}
-                        >
-                          <step.icon
-                            className="h-5 w-5"
-                            style={{
-                              color:
-                                step.color === "emerald"
-                                  ? "#10b981"
-                                  : step.color === "blue"
-                                    ? "#3b82f6"
-                                    : step.color === "purple"
-                                      ? "#a855f7"
-                                      : "#f59e0b",
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <h3 className="font-semibold mb-2">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {step.description}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${domain.gradient} mb-3`}>
+                    <domain.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-white group-hover:text-emerald-400 transition-colors">
+                    {domain.name}
+                  </h3>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* 15 Domains */}
-        <section className="py-20 lg:py-28">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                15 domaines d'analyse
+        {/* === WHAT YOU GET === */}
+        <section className="relative py-32 overflow-hidden">
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[200px]" />
+
+          <div className="relative mx-auto max-w-7xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-20"
+            >
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
+                Ce que tu <span className="text-emerald-400">recois</span>
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                L'analyse la plus complete du marche. Chaque domaine est evalue,
-                score de 0 a 100 et accompagne de recommandations personnalisees.
+              <p className="mt-6 text-xl text-white/50">
+                Bien plus qu'un simple questionnaire
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analysisDomains.map((domain, i) => (
-                <DomainCard key={domain.id} domain={domain} index={i} />
-              ))}
-            </div>
-          </div>
-        </section>
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Report Preview */}
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl"
+              >
+                <Badge className="absolute top-6 right-6 bg-emerald-500/20 text-emerald-400">
+                  25-30 pages
+                </Badge>
 
-        {/* Price + Features */}
-        <section className="py-20 lg:py-28 bg-gradient-to-b from-muted/30 to-transparent">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
-              {/* Left - Price card */}
-              <div className="lg:sticky lg:top-8">
-                <Card className="bg-gradient-to-b from-emerald-500/10 to-transparent border-emerald-500/30">
-                  <CardContent className="p-8">
-                    <div className="text-center mb-8">
-                      <div className="flex items-baseline justify-center gap-2 mb-2">
-                        <span className="text-6xl font-bold text-emerald-400">59€</span>
-                      </div>
-                      <p className="text-muted-foreground">Paiement unique</p>
-                      <p className="text-sm text-emerald-400 mt-2">
-                        Deduit de ton coaching
-                      </p>
-                    </div>
+                <h3 className="text-2xl font-bold text-white mb-6">Rapport PDF Complet</h3>
 
-                    <div className="space-y-3 mb-8">
-                      {[
-                        "Questionnaire 180+ questions",
-                        "15 domaines d'analyse",
-                        "Scores de 0 a 100 par domaine",
-                        "Profil hormonal estime",
-                        "Profil neurotransmetteurs",
-                        "Points forts & priorites identifies",
-                        "Protocole nutrition personnalise",
-                        "Stack supplements avec dosages",
-                        "Feuille de route 90 jours",
-                        "Rapport PDF 25-30 pages",
-                        "Dashboard interactif avec radar",
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <Check className="h-5 w-5 text-emerald-400 shrink-0" />
-                          <span className="text-sm">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <Link href="/audit-complet/questionnaire">
-                      <Button
-                        size="lg"
-                        className="w-full gap-2 h-14 bg-emerald-500 hover:bg-emerald-600"
-                      >
-                        <Scan className="h-5 w-5" />
-                        Lancer mon Anabolic Bioscan
-                        <ArrowRight className="h-5 w-5" />
-                      </Button>
-                    </Link>
-
-                    <p className="text-center text-sm text-muted-foreground mt-4">
-                      25-30 minutes - Resultats sous 24-48h
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right - Differentiators */}
-              <div>
-                <h2 className="text-3xl font-bold mb-6">
-                  Ce qui rend l'Anabolic Bioscan unique
-                </h2>
-                <p className="text-muted-foreground mb-8 leading-relaxed">
-                  Pas un simple questionnaire. Une analyse complete basee sur les
-                  protocoles des meilleurs praticiens en medecine fonctionnelle.
-                </p>
-
-                <div className="grid sm:grid-cols-2 gap-4 mb-8">
-                  {differentiators.map((item, i) => (
+                <div className="space-y-4">
+                  {[
+                    "Synthese executive avec priorites",
+                    "Scores detailles par domaine",
+                    "Analyse forces et faiblesses",
+                    "Graphiques et visualisations",
+                    "Recommandations personnalisees",
+                    "Sources scientifiques citees",
+                  ].map((item, i) => (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: i * 0.1 }}
+                      className="flex items-center gap-3"
                     >
-                      <Card>
-                        <CardContent className="p-4 flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-                            <item.icon className="h-5 w-5 text-emerald-400" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-sm">{item.title}</h3>
-                            <p className="text-xs text-muted-foreground">
-                              {item.description}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <Check className="h-5 w-5 text-emerald-400 shrink-0" />
+                      <span className="text-white/70">{item}</span>
                     </motion.div>
                   ))}
                 </div>
 
-                {/* Sources */}
-                <Card className="bg-muted/30">
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold mb-4">Base sur les protocoles de :</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        "Andrew Huberman",
-                        "Peter Attia",
-                        "Bryan Johnson",
-                        "Marek Health",
-                        "Examine.com",
-                      ].map((source, i) => (
-                        <span key={i} className="text-xs bg-muted px-3 py-1 rounded-full">
-                          {source}
-                        </span>
-                      ))}
+                {/* Mock PDF preview */}
+                <div className="mt-8 p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex gap-4">
+                    <div className="w-16 h-20 rounded bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-emerald-400" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="font-semibold text-white">anabolic-bioscan-rapport.pdf</p>
+                      <p className="text-sm text-white/40">Genere sous 24-48h</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Protocols Grid */}
+              <div className="space-y-4">
+                {protocols.map((protocol, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: 40 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="p-6 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl hover:border-emerald-500/30 transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-xl bg-gradient-to-br ${
+                        protocol.color === "orange" ? "from-orange-500 to-amber-500" :
+                        protocol.color === "indigo" ? "from-indigo-500 to-blue-500" :
+                        protocol.color === "green" ? "from-green-500 to-emerald-500" :
+                        protocol.color === "amber" ? "from-amber-500 to-yellow-500" :
+                        "from-cyan-500 to-teal-500"
+                      }`}>
+                        <protocol.icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white mb-1">{protocol.title}</h4>
+                        <p className="text-sm text-white/50">{protocol.desc}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        {/* Comparison with Ultimate */}
-        <section className="py-16 border-y border-border/30">
-          <div className="mx-auto max-w-4xl px-4">
-            <h2 className="text-2xl font-bold text-center mb-8">
-              Anabolic Bioscan vs Ultimate Scan
-            </h2>
-            <Card>
-              <CardContent className="p-0 overflow-hidden">
-                <div className="grid grid-cols-3">
-                  {/* Header */}
-                  <div className="p-4 bg-muted/30 font-medium">Feature</div>
-                  <div className="p-4 bg-emerald-500/10 text-center font-medium text-emerald-400">
-                    Anabolic Bioscan (59€)
-                  </div>
-                  <div className="p-4 bg-cyan-500/10 text-center font-medium text-cyan-400">
-                    Ultimate Scan (79€)
-                  </div>
+        {/* === COMPARISON === */}
+        <section className="relative py-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent" />
 
-                  {/* Rows */}
+          <div className="relative mx-auto max-w-5xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl sm:text-5xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
+                Anabolic vs <span className="text-cyan-400">Ultimate</span>
+              </h2>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Anabolic Bioscan */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="p-8 rounded-3xl border border-emerald-500/30 bg-emerald-500/5"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-emerald-400">Anabolic Bioscan</h3>
+                  <span className="text-3xl font-black text-emerald-400">59€</span>
+                </div>
+
+                <div className="space-y-3">
                   {[
-                    { feature: "Sections d'analyse", anabolic: "16", ultimate: "18" },
-                    { feature: "Protocoles fermes", anabolic: "5", ultimate: "5" },
-                    { feature: "Stack supplements", anabolic: "✓", ultimate: "✓" },
-                    { feature: "Plan 30-60-90 jours", anabolic: "✓", ultimate: "✓" },
-                    { feature: "Analyse visuelle posturale", anabolic: "—", ultimate: "✓" },
-                    { feature: "Analyse biomecanique", anabolic: "—", ultimate: "✓" },
-                    { feature: "Morphotype & graisses", anabolic: "—", ultimate: "✓" },
-                    { feature: "Pages Rapport", anabolic: "25-30", ultimate: "40-50" },
-                  ].map((row, i) => (
-                    <div key={i} className="contents">
-                      <div className="p-4 border-t border-border/30 text-sm">
-                        {row.feature}
-                      </div>
-                      <div className="p-4 border-t border-border/30 bg-emerald-500/5 text-center text-sm font-medium">
-                        {row.anabolic}
-                      </div>
-                      <div className="p-4 border-t border-border/30 bg-cyan-500/5 text-center text-sm font-medium">
-                        {row.ultimate}
-                      </div>
+                    "16 sections d'analyse",
+                    "180+ questions",
+                    "5 protocoles fermes",
+                    "Stack supplements",
+                    "Plan 30-60-90 jours",
+                    "Rapport PDF 25-30 pages",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-emerald-400" />
+                      <span className="text-white/70">{item}</span>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-            <div className="text-center mt-6">
-              <Link href="/offers/ultimate-scan">
-                <Button variant="outline" className="gap-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10">
-                  Voir Ultimate Scan
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+
+                <Link href="/audit-complet/questionnaire">
+                  <Button className="w-full mt-8 h-14 text-lg font-semibold rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white">
+                    Choisir Anabolic
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Ultimate Scan */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative p-8 rounded-3xl border border-cyan-500/30 bg-cyan-500/5"
+              >
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-500 text-white">
+                  LE PLUS COMPLET
+                </Badge>
+
+                <div className="flex items-center justify-between mb-6 mt-2">
+                  <h3 className="text-2xl font-bold text-cyan-400">Ultimate Scan</h3>
+                  <span className="text-3xl font-black text-cyan-400">79€</span>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    "Tout l'Anabolic Bioscan +",
+                    "18 sections d'analyse",
+                    "Analyse photo posturale",
+                    "Morphotype & graisses",
+                    "Analyse biomecanique",
+                    "Rapport PDF 40-50 pages",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Check className="h-5 w-5 text-cyan-400" />
+                      <span className="text-white/70">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link href="/offers/ultimate-scan">
+                  <Button className="w-full mt-8 h-14 text-lg font-semibold rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-white shadow-[0_0_40px_rgba(6,182,212,0.3)]">
+                    Choisir Ultimate
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </motion.div>
             </div>
           </div>
         </section>
 
-        {/* FAQ Section */}
-        <section className="py-20 lg:py-28 bg-muted/20">
+        {/* === FAQ === */}
+        <section className="relative py-32">
           <div className="mx-auto max-w-3xl px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Questions frequentes</h2>
-              <p className="text-muted-foreground">
-                Tout ce que tu dois savoir sur l'Anabolic Bioscan
-              </p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl sm:text-5xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
+                Questions <span className="text-emerald-400">frequentes</span>
+              </h2>
+            </motion.div>
 
-            <div className="space-y-0">
+            <div>
               {faqItems.map((item, i) => (
-                <FAQAccordion
+                <FAQItem
                   key={i}
                   item={item}
                   index={i}
@@ -981,92 +646,64 @@ export default function AuditPremium() {
           </div>
         </section>
 
-        {/* Disclaimer */}
-        <section className="py-12 border-t border-border/30">
-          <div className="mx-auto max-w-4xl px-4">
-            <Card className="bg-amber-500/5 border-amber-500/20">
-              <CardContent className="p-6 flex items-start gap-4">
-                <Shield className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-amber-600 mb-2">
-                    Information importante
-                  </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas
-                    un diagnostic medical. Les profils hormonaux et neurotransmetteurs
-                    sont des estimations basees sur vos symptomes et reponses, pas des dosages
-                    sanguins. Pour toute condition medicale, consultez un professionnel
-                    de sante qualifie.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+        {/* === FINAL CTA === */}
+        <section className="relative py-32 overflow-hidden">
+          {/* Background glow */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-emerald-500/20 rounded-full blur-[200px]" />
           </div>
-        </section>
 
-        {/* Final CTA */}
-        <section className="py-20 lg:py-28 bg-gradient-to-b from-emerald-950/50 to-black text-center">
-          <div className="mx-auto max-w-3xl px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="relative mx-auto max-w-4xl px-4 text-center"
+          >
+            <Scan className="h-20 w-20 text-emerald-400 mx-auto mb-8" />
+
+            <h2
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-8"
+              style={{ letterSpacing: "-0.04em" }}
             >
-              <Scan className="h-16 w-16 text-emerald-400 mx-auto mb-8" />
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                Pret pour ton Anabolic Bioscan ?
-              </h2>
-              <p className="text-xl text-gray-400 mb-10">
-                L'analyse metabolique complete. 59€ deduits si tu prends un
-                coaching.
-              </p>
+              Pret pour ton
+              <br />
+              <span className="bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 bg-clip-text text-transparent">
+                Anabolic Bioscan ?
+              </span>
+            </h2>
 
-              <Link href="/audit-complet/questionnaire">
-                <Button
-                  size="lg"
-                  className="gap-2 h-16 px-12 text-lg bg-emerald-500 hover:bg-emerald-600"
-                >
-                  <Scan className="h-5 w-5" />
-                  Lancer mon Anabolic Bioscan
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
+            <p className="text-xl text-white/50 mb-12 max-w-xl mx-auto">
+              59€ deduits si tu prends un coaching.
+              <br />
+              L'investissement le plus rentable pour ta sante.
+            </p>
 
-              {/* Trust badges */}
-              <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  <span>Paiement securise</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>25-30 minutes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  <span>Donnees RGPD</span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+            <Link href="/audit-complet/questionnaire">
+              <Button
+                size="lg"
+                className="h-16 px-12 text-lg font-semibold rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all duration-300 shadow-[0_0_80px_rgba(16,185,129,0.5)]"
+              >
+                <Scan className="mr-3 h-5 w-5" />
+                Lancer mon Anabolic Bioscan
+                <ArrowRight className="ml-3 h-5 w-5" />
+              </Button>
+            </Link>
+
+            {/* Trust badges */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-white/30">
+              <span className="flex items-center gap-2">
+                <Lock className="h-4 w-4" /> Paiement securise
+              </span>
+              <span className="flex items-center gap-2">
+                <Clock className="h-4 w-4" /> 25-30 minutes
+              </span>
+              <span className="flex items-center gap-2">
+                <Shield className="h-4 w-4" /> Donnees RGPD
+              </span>
+            </div>
+          </motion.div>
         </section>
       </main>
-
-      {/* Sticky Footer CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/50 py-4 z-50 lg:hidden">
-        <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-emerald-400">59€</p>
-            <p className="text-xs text-muted-foreground">Deduit du coaching</p>
-          </div>
-          <Link href="/audit-complet/questionnaire">
-            <Button className="gap-2 bg-emerald-500 hover:bg-emerald-600">
-              Anabolic Bioscan
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      </div>
 
       <Footer />
     </div>
