@@ -204,7 +204,7 @@ const faqItems = [
   {
     question: "Quels types de bilans sanguins acceptez-vous ?",
     answer:
-      "Nous acceptons tous les bilans sanguins au format PDF provenant de laboratoires francais et internationaux. Que ce soit un bilan standard de medecine generale ou un panel hormonal complet, notre IA s'adapte. Les formats images (JPG, PNG) sont aussi acceptes mais le PDF offre une meilleure precision d'extraction.",
+      "Tous les bilans sanguins au format PDF provenant de laboratoires francais et internationaux sont acceptes. Bilan standard ou panel hormonal complet, le systeme s'adapte. Les formats images (JPG, PNG) sont aussi acceptes mais le PDF offre une meilleure precision d'extraction.",
   },
   {
     question: "Quelle est la difference entre vos ranges et ceux du laboratoire ?",
@@ -214,7 +214,7 @@ const faqItems = [
   {
     question: "Comment fonctionne la detection de patterns ?",
     answer:
-      "Notre IA analyse les correlations entre vos biomarqueurs pour identifier des syndromes cliniques. Par exemple, une testosterone basse isolee n'a pas la meme signification qu'une testosterone basse + SHBG elevee + LH basse (qui suggere un probleme hypophysaire). Nous detectons 15+ patterns cliniques documentes.",
+      "L'analyse croise les correlations entre tes biomarqueurs pour identifier des syndromes cliniques. Par exemple, une testosterone basse isolee n'a pas la meme signification qu'une testosterone basse + SHBG elevee + LH basse (qui suggere un probleme hypophysaire). 15+ patterns cliniques sont detectes.",
   },
   {
     question: "Les resultats sont-ils fiables ?",
@@ -224,7 +224,7 @@ const faqItems = [
   {
     question: "Combien de temps pour recevoir mon analyse ?",
     answer:
-      "L'analyse est quasi-instantanee. Des que vous uploadez votre PDF, notre IA extrait les valeurs et genere votre rapport en moins de 2 minutes. Vous recevez immediatement votre rapport interactif + version PDF telechargeable.",
+      "L'analyse est quasi-instantanee. Des que tu uploades ton PDF, les valeurs sont extraites et ton rapport genere en moins de 2 minutes. Tu recois immediatement ton rapport interactif + version PDF telechargeable.",
   },
   {
     question: "Que contient le protocole supplements ?",
@@ -695,9 +695,9 @@ export default function BloodAnalysisOffer() {
                 },
                 {
                   step: 2,
-                  title: "Analyse IA",
+                  title: "Analyse Expert",
                   description:
-                    "Notre IA extrait les valeurs, les compare aux ranges optimaux et detecte les patterns cliniques.",
+                    "Les valeurs sont extraites, comparees aux ranges optimaux et les patterns cliniques detectes.",
                   icon: Brain,
                   color: "purple",
                 },
@@ -942,7 +942,7 @@ export default function BloodAnalysisOffer() {
                 Detection de patterns cliniques
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Notre IA ne regarde pas les marqueurs isolement. Elle detecte les
+                Les marqueurs ne sont pas regardes isolement. L'analyse detecte les
                 correlations qui revelent des syndromes sous-jacents.
               </p>
             </div>
