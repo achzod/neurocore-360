@@ -128,16 +128,26 @@ const SECTIONS_GRATUIT: SectionName[] = [
   "Synthese et Prochaines Etapes",    // Débloqué - avec sections cadenas listées
 ];
 
-// Sections affichées comme CADENAS dans le rapport gratuit (teasers seulement)
-export const SECTIONS_LOCKED_GRATUIT = [
-  { name: "Analyse Prise de Sang", teaser: "Tes biomarqueurs révèlent ton état hormonal, inflammatoire et métabolique..." },
-  { name: "Analyse Visuelle & Posturale", teaser: "Ta posture cache des indices sur tes déséquilibres musculaires..." },
-  { name: "Analyse Biomécanique", teaser: "Ton psoas, ton diaphragme et ta sangle profonde forment un système..." },
-  { name: "Protocole Matin Anti-Cortisol", teaser: "Un protocole minute par minute pour resynchroniser ton cortisol..." },
-  { name: "Protocole Soir Sommeil", teaser: "La routine H-3 à H-0 qui maximise ta GH nocturne..." },
-  { name: "Stack Suppléments Personnalisé", teaser: "Magnésium, Omega-3, Vitamine D, Zinc... dosages et timing précis..." },
+// Sections affichées comme CADENAS dans le rapport gratuit - divisées par offre
+export const SECTIONS_LOCKED_ANABOLIC = [
+  { name: "Analyse Biomarqueurs Sanguins", teaser: "Tes hormones, inflammation et métabolisme révélés par ton bilan sanguin..." },
+  { name: "Profil Hormonal Complet", teaser: "Testosterone, cortisol, thyroïde, insuline - ton équilibre hormonal décrypté..." },
+  { name: "Stack Suppléments Personnalisé", teaser: "Dosages précis et timing optimal basés sur tes carences réelles..." },
+  { name: "Plan Nutrition Hormonal", teaser: "Alimentation calibrée sur ton profil métabolique et hormonal..." },
   { name: "Roadmap 30-60-90 Jours", teaser: "Ton plan semaine par semaine avec KPIs et checkpoints..." },
 ];
+
+export const SECTIONS_LOCKED_ULTIMATE = [
+  { name: "Analyse Photo Posturale", teaser: "Ta posture et composition corporelle analysées en détail..." },
+  { name: "Analyse Biomécanique", teaser: "Psoas, diaphragme, sangle profonde - ton système de stabilisation..." },
+  { name: "Suivi HRV Cardiaque", teaser: "Variabilité cardiaque et récupération nerveuse en temps réel..." },
+  { name: "Protocoles Cardio Zone 2", teaser: "Seuils personnalisés et périodisation cardio optimale..." },
+  { name: "Analyse Psychologique", teaser: "Blocages mentaux et patterns comportementaux décryptés..." },
+  { name: "18 Sections d'Analyse", teaser: "Rapport de 40-50 pages ultra-détaillé..." },
+];
+
+// Combined for backward compatibility
+export const SECTIONS_LOCKED_GRATUIT = [...SECTIONS_LOCKED_ANABOLIC, ...SECTIONS_LOCKED_ULTIMATE];
 
 export function getSectionsForTier(tier: AuditTier): SectionName[] {
   if (tier === "GRATUIT") return SECTIONS_GRATUIT;
@@ -1182,28 +1192,32 @@ Les 5 metriques a mesurer chaque semaine :
 ...
 Format simple, pas de tableau complexe.
 
-4. CE QUI TE MANQUE (SECTIONS CADENAS) (1200 chars) :
-IMPORTANT : Presente les sections locked comme des "zones non explorees" :
+4. CE QUI TE MANQUE - 2 OFFRES (1500 chars) :
+Presente les 2 upgrades possibles :
 
-"Ce Discovery Scan t'a donne une vue d'ensemble. Mais il te manque encore :
+"Ce Discovery Scan t'a donne une vue d'ensemble. Pour aller plus loin, 2 options :
 
-ANALYSE PRISE DE SANG - Tes biomarqueurs revelent ton etat hormonal, inflammatoire et metabolique...
+ANABOLIC BIOSCAN (niveau intermediaire) :
+- Analyse de tes biomarqueurs sanguins (hormones, inflammation, metabolisme)
+- Profil hormonal complet (testosterone, cortisol, thyroide, insuline)
+- Stack supplements personnalise avec dosages precis
+- Plan nutrition et entrainement adapte a ton profil hormonal
+- Roadmap 30-60-90 jours avec checkpoints
 
-ANALYSE VISUELLE & POSTURALE - Ta posture cache des indices sur tes desequilibres musculaires...
+ULTIMATE SCAN - PRO PANEL 360 (niveau expert) :
+Tout l'Anabolic Bioscan + :
+- Analyse photo posturale et composition corporelle
+- Analyse biomecanique complete (psoas, diaphragme, sangle profonde)
+- Suivi HRV et variabilite cardiaque
+- Protocoles cardio Zone 2 et seuils personnalises
+- Analyse psychologique et blocages mentaux
+- 18 sections d'analyse au lieu de 4
+- Rapport de 40-50 pages ultra-detaille
 
-ANALYSE BIOMECANIQUE - Ton psoas, ton diaphragme et ta sangle profonde forment un systeme...
+Choisis ton niveau selon tes objectifs."
 
-PROTOCOLE MATIN ANTI-CORTISOL - Un protocole minute par minute pour resynchroniser ton cortisol...
-
-PROTOCOLE SOIR SOMMEIL - La routine H-3 a H-0 qui maximise ta GH nocturne...
-
-STACK SUPPLEMENTS PERSONNALISE - Magnesium, Omega-3, Vitamine D, Zinc... dosages et timing precis...
-
-ROADMAP 30-60-90 JOURS - Ton plan semaine par semaine avec KPIs et checkpoints...
-
-Pour debloquer ces 7 analyses + tes protocoles complets, passe a l'Anabolic Bioscan."
-
-Style : creer l'envie sans etre pushy. Le client doit SENTIR qu'il lui manque quelque chose d'important.
+Style : presenter les 2 comme des niveaux d'engagement different, pas comme "achete plus cher".
+Le client doit comprendre la difference de profondeur entre les 2.
 `;
   }
 
