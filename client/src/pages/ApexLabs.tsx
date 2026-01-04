@@ -9,7 +9,6 @@ import {
   Brain,
   Check,
   Mail,
-  ChevronRight,
 } from "lucide-react";
 
 function HeroSection() {
@@ -28,22 +27,17 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-black">
-      {/* Multiple animated gradients */}
+      {/* Animated metallic gradients */}
       <div className="absolute inset-0">
         <motion.div
-          className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-500/20 rounded-full blur-[200px]"
-          animate={{ scale: [1, 1.3, 1], opacity: [0.15, 0.3, 0.15], x: [0, 50, 0], y: [0, 30, 0] }}
+          className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-white/10 via-gray-400/5 to-transparent rounded-full blur-[200px]"
+          animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1], x: [0, 50, 0], y: [0, 30, 0] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[150px]"
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.2, 0.1] }}
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-gray-500/10 via-white/5 to-transparent rounded-full blur-[150px]"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.05, 0.15, 0.05] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[120px]"
-          animate={{ scale: [1, 1.5, 1], opacity: [0.05, 0.15, 0.05] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
@@ -55,17 +49,17 @@ function HeroSection() {
           {/* Left - Content */}
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
             <motion.div
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm"
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm backdrop-blur-sm"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
             >
               <motion.span
-                className="h-2 w-2 rounded-full bg-emerald-500"
+                className="h-2 w-2 rounded-full bg-white"
                 animate={{ opacity: [1, 0.4, 1], scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
-              <span className="text-emerald-400 font-medium">Lancement imminent</span>
+              <span className="text-white/80 font-medium">Lancement imminent</span>
             </motion.div>
 
             <motion.h1
@@ -75,7 +69,7 @@ function HeroSection() {
               transition={{ delay: 0.4, duration: 0.8 }}
             >
               <span className="text-white">Apex</span>
-              <span className="italic text-emerald-400">Labs</span>
+              <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">Labs</span>
             </motion.h1>
 
             <motion.p
@@ -84,7 +78,7 @@ function HeroSection() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
             >
-              L'analyse corporelle la plus complète.
+              L'analyse corporelle la plus complete.
             </motion.p>
 
             <motion.p
@@ -93,10 +87,10 @@ function HeroSection() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              Découvre tes blocages cachés. Reçois des protocoles personnalisés basés sur 11 certifications internationales et des années d'expérience terrain.
+              Decouvre tes blocages caches. Recois des protocoles personnalises bases sur 11 certifications internationales et des annees d'experience terrain.
             </motion.p>
 
-            {/* Email form - UNIQUE */}
+            {/* Email form */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -112,14 +106,14 @@ function HeroSection() {
                       placeholder="ton@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-14 pl-12 pr-4 bg-white/5 border border-gray-700 text-white placeholder:text-gray-500 rounded-full focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all backdrop-blur-sm"
+                      className="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all backdrop-blur-sm"
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="h-14 px-8 bg-gradient-to-r from-gray-200 via-white to-gray-200 hover:from-white hover:via-gray-100 hover:to-white text-black font-bold rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <motion.div
@@ -139,15 +133,15 @@ function HeroSection() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-3 text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-6 py-4 max-w-md"
+                  className="flex items-center gap-3 text-white bg-white/10 border border-white/20 rounded-full px-6 py-4 max-w-md backdrop-blur-sm"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
                     <Check className="h-5 w-5 text-black" />
                   </div>
-                  <span className="font-semibold text-lg">Tu es sur la liste VIP !</span>
+                  <span className="font-semibold text-lg">Tu es sur la liste VIP</span>
                 </motion.div>
               )}
-              <p className="mt-4 text-sm text-gray-600">🎁 Offre de lancement exclusive réservée aux inscrits.</p>
+              <p className="mt-4 text-sm text-gray-600">Offre de lancement exclusive reservee aux inscrits.</p>
             </motion.div>
 
             {/* Stats */}
@@ -168,7 +162,7 @@ function HeroSection() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1 + i * 0.1 }}
                 >
-                  <div className="text-3xl font-bold text-white">{stat.value}</div>
+                  <div className="text-3xl font-bold bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">{stat.value}</div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</div>
                 </motion.div>
               ))}
@@ -184,18 +178,18 @@ function HeroSection() {
           >
             {/* Glow behind phone */}
             <motion.div
-              className="absolute w-[500px] h-[500px] bg-emerald-500/30 rounded-full blur-[120px]"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+              className="absolute w-[500px] h-[500px] bg-gradient-to-br from-white/20 via-gray-500/10 to-transparent rounded-full blur-[120px]"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
               transition={{ duration: 6, repeat: Infinity }}
             />
 
             {/* Phone */}
             <motion.div
               className="relative"
-              whileHover={{ scale: 1.02, rotateY: 5 }}
-              transition={{ duration: 0.3 }}
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >
-              <div className="relative w-[300px] bg-gradient-to-b from-gray-800 via-gray-900 to-black rounded-[3rem] p-3 shadow-[0_0_100px_rgba(16,185,129,0.2)] border border-gray-700/50">
+              <div className="relative w-[300px] bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 rounded-[3rem] p-3 shadow-[0_0_100px_rgba(255,255,255,0.1)] border border-white/10">
                 {/* Notch */}
                 <div className="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-6 bg-black rounded-full z-20" />
 
@@ -213,34 +207,34 @@ function HeroSection() {
                   <div className="px-5 pb-8 pt-4">
                     <div className="text-center mb-6">
                       <motion.div
-                        className="inline-flex items-center gap-1 text-emerald-400 text-xs font-medium mb-3"
+                        className="inline-flex items-center gap-1 text-white/60 text-xs font-medium mb-3"
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
                         APEX LABS
                       </motion.div>
                       <motion.div
-                        className="text-6xl font-bold text-white mb-1"
+                        className="text-6xl font-bold bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent mb-1"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 1.2, type: "spring" }}
                       >
                         87
                       </motion.div>
-                      <p className="text-emerald-400 text-sm font-medium">Score Global</p>
+                      <p className="text-white/60 text-sm font-medium">Score Global</p>
                     </div>
 
                     {/* Metrics */}
                     <div className="space-y-3">
                       {[
-                        { label: "ÉNERGIE", score: 92, color: "emerald" },
-                        { label: "SOMMEIL", score: 78, color: "cyan" },
-                        { label: "STRESS", score: 45, color: "amber" },
+                        { label: "ENERGIE", score: 92 },
+                        { label: "SOMMEIL", score: 78 },
+                        { label: "STRESS", score: 45 },
                       ].map((metric, i) => (
                         <motion.div
                           key={metric.label}
-                          className="bg-gray-900/80 rounded-2xl p-4 border border-gray-800/50"
+                          className="bg-white/5 rounded-2xl p-4 border border-white/5"
                           initial={{ opacity: 0, x: 30 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 1.4 + i * 0.15 }}
@@ -249,9 +243,9 @@ function HeroSection() {
                             <span className="text-[10px] text-gray-500 tracking-wider">{metric.label}</span>
                             <span className="text-2xl font-bold text-white">{metric.score}</span>
                           </div>
-                          <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                             <motion.div
-                              className={`h-full rounded-full ${metric.color === 'emerald' ? 'bg-emerald-500' : metric.color === 'cyan' ? 'bg-cyan-500' : 'bg-amber-500'}`}
+                              className="h-full rounded-full bg-gradient-to-r from-gray-400 to-white"
                               initial={{ width: 0 }}
                               animate={{ width: `${metric.score}%` }}
                               transition={{ delay: 1.6 + i * 0.15, duration: 0.8 }}
@@ -266,34 +260,34 @@ function HeroSection() {
 
               {/* Floating elements */}
               <motion.div
-                className="absolute -right-8 top-20 bg-gray-900 border border-gray-700 rounded-2xl px-4 py-3 shadow-xl"
+                className="absolute -right-8 top-20 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-sm"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 2 }}
               >
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <Zap className="h-4 w-4 text-emerald-400" />
+                  <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <Zap className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Protocole</p>
-                    <p className="text-sm font-semibold text-white">Optimisé</p>
+                    <p className="text-xs text-gray-500">Protocole</p>
+                    <p className="text-sm font-semibold text-white">Optimise</p>
                   </div>
                 </div>
               </motion.div>
 
               <motion.div
-                className="absolute -left-6 bottom-32 bg-gray-900 border border-gray-700 rounded-2xl px-4 py-3 shadow-xl"
+                className="absolute -left-6 bottom-32 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-sm"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 2.2 }}
               >
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-cyan-400" />
+                  <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <Activity className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Analyse</p>
+                    <p className="text-xs text-gray-500">Analyse</p>
                     <p className="text-sm font-semibold text-white">16 sections</p>
                   </div>
                 </div>
@@ -318,19 +312,19 @@ function HeroSection() {
 
 function OffersPreview() {
   const offers = [
-    { name: "Discovery Scan", description: "Diagnostic complet de tes blocages. Identifie ce qui te freine.", icon: Scan, color: "gray" },
-    { name: "Anabolic Bioscan", description: "16 sections d'analyse + protocoles personnalisés complets.", icon: Activity, color: "emerald" },
-    { name: "Ultimate Scan", description: "L'analyse la plus poussée. Visuelle + biomécanique + métabolique.", icon: Zap, color: "cyan", featured: true },
-    { name: "Blood Analysis", description: "Ton bilan sanguin décodé avec des ranges optimaux de performance.", icon: Droplet, color: "red" },
-    { name: "Burnout Engine", description: "Détecte les signaux faibles avant qu'il ne soit trop tard.", icon: Brain, color: "purple" },
+    { name: "Discovery Scan", description: "Diagnostic complet de tes blocages. Identifie ce qui te freine.", icon: Scan },
+    { name: "Anabolic Bioscan", description: "16 sections d'analyse + protocoles personnalises complets.", icon: Activity },
+    { name: "Ultimate Scan", description: "L'analyse la plus poussee. Visuelle + biomecanique + metabolique.", icon: Zap, featured: true },
+    { name: "Blood Analysis", description: "Ton bilan sanguin decode avec des ranges optimaux de performance.", icon: Droplet },
+    { name: "Burnout Engine", description: "Detecte les signaux faibles avant qu'il ne soit trop tard.", icon: Brain },
   ];
 
   return (
     <section className="py-32 bg-gradient-to-b from-black via-gray-950 to-black relative overflow-hidden">
       {/* Background glow */}
       <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/5 rounded-full blur-[200px]"
-        animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/5 rounded-full blur-[200px]"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.03, 0.08, 0.03] }}
         transition={{ duration: 10, repeat: Infinity }}
       />
 
@@ -342,7 +336,7 @@ function OffersPreview() {
           className="mb-20 text-center"
         >
           <motion.p
-            className="text-xs uppercase tracking-[0.3em] text-emerald-500 mb-4"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 mb-4"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -350,17 +344,17 @@ function OffersPreview() {
             5 Scans au lancement
           </motion.p>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-            Choisis ton <span className="italic text-emerald-400">scan</span>
+            Choisis ton <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">scan</span>
           </h2>
           <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-            Du simple diagnostic à l'optimisation complète de ta biologie.
+            Du simple diagnostic a l'optimisation complete de ta biologie.
           </p>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {offers.map((offer, index) => {
             const Icon = offer.icon;
-            const isFeautred = offer.featured;
+            const isFeatured = offer.featured;
             return (
               <motion.div
                 key={offer.name}
@@ -369,13 +363,13 @@ function OffersPreview() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
-                className={`group relative rounded-3xl border p-8 transition-all duration-500 cursor-pointer ${
-                  isFeautred
-                    ? "border-emerald-500/50 bg-gradient-to-b from-emerald-500/10 to-transparent lg:col-span-1 lg:row-span-1"
-                    : "border-gray-800 bg-gray-900/30 hover:border-gray-600 hover:bg-gray-900/60"
+                className={`group relative rounded-3xl border p-8 transition-all duration-500 ${
+                  isFeatured
+                    ? "border-white/20 bg-gradient-to-b from-white/10 to-transparent"
+                    : "border-white/5 bg-white/5 hover:border-white/10 hover:bg-white/10"
                 }`}
               >
-                {isFeautred && (
+                {isFeatured && (
                   <motion.div
                     className="absolute -top-4 left-1/2 -translate-x-1/2"
                     initial={{ opacity: 0, y: 10 }}
@@ -383,25 +377,20 @@ function OffersPreview() {
                     viewport={{ once: true }}
                     transition={{ delay: 0.5 }}
                   >
-                    <span className="bg-emerald-500 text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+                    <span className="bg-gradient-to-r from-gray-200 via-white to-gray-200 text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                       Le + populaire
                     </span>
                   </motion.div>
                 )}
 
                 <div className={`mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl ${
-                  isFeautred ? "bg-emerald-500/20 border border-emerald-500/30" : "bg-gray-800/50 border border-gray-700/50"
+                  isFeatured ? "bg-white/20 border border-white/20" : "bg-white/5 border border-white/10"
                 } transition-all duration-300 group-hover:scale-110`}>
-                  <Icon className={`h-7 w-7 ${isFeautred ? "text-emerald-400" : "text-gray-400 group-hover:text-white"}`} />
+                  <Icon className={`h-7 w-7 ${isFeatured ? "text-white" : "text-gray-400 group-hover:text-white"}`} />
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-3">{offer.name}</h3>
-                <p className="text-gray-400 leading-relaxed mb-6">{offer.description}</p>
-
-                <div className="flex items-center text-sm text-gray-500 group-hover:text-emerald-400 transition-colors">
-                  <span>En savoir plus</span>
-                  <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
-                </div>
+                <p className="text-gray-400 leading-relaxed">{offer.description}</p>
               </motion.div>
             );
           })}
@@ -425,13 +414,13 @@ function AchzodSection() {
 
       <div className="relative mx-auto max-w-5xl px-6 text-center">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-6">Créé par</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-6">Cree par</p>
 
           <h2 className="text-5xl sm:text-6xl font-bold text-white mb-6">Achzod</h2>
 
           <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Coach certifié avec <span className="text-white font-semibold">11 certifications internationales</span>.
-            Des années à accompagner des clients en coaching individuel, maintenant accessible à tous.
+            Coach certifie avec <span className="text-white font-semibold">11 certifications internationales</span>.
+            Des annees a accompagner des clients en coaching individuel, maintenant accessible a tous.
           </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -442,12 +431,12 @@ function AchzodSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all"
+                className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-all"
               >
                 <p className="text-white font-semibold mb-3">{org.name}</p>
                 <div className="flex flex-wrap justify-center gap-1.5">
                   {org.certs.map((cert) => (
-                    <span key={cert} className="text-xs text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 rounded-full">
+                    <span key={cert} className="text-xs text-gray-300 border border-white/20 bg-white/5 px-2 py-1 rounded-full">
                       {cert}
                     </span>
                   ))}
@@ -463,13 +452,13 @@ function AchzodSection() {
 
 function Footer() {
   return (
-    <footer className="py-12 bg-gray-950 border-t border-gray-800">
+    <footer className="py-12 bg-gray-950 border-t border-white/5">
       <div className="mx-auto max-w-7xl px-6 text-center">
         <p className="text-2xl font-bold mb-2">
           <span className="text-white">Apex</span>
-          <span className="italic text-emerald-400">Labs</span>
+          <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">Labs</span>
         </p>
-        <p className="text-gray-600 text-sm">by Achzod — Bientôt disponible</p>
+        <p className="text-gray-600 text-sm">by Achzod</p>
       </div>
     </footer>
   );
