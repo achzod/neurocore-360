@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
-import { AchzodMonogram } from "./AchzodLogo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const PRODUCTS = [
+  { name: "Discovery Scan", href: "/offers/discovery-scan" },
+  { name: "Anabolic Bioscan", href: "/offers/anabolic-bioscan" },
+  { name: "Blood Analysis", href: "/offers/blood-analysis" },
+  { name: "Ultimate Scan", href: "/offers/ultimate-scan" },
+  { name: "Burnout Engine", href: "/offers/burnout-detection" },
+];
 
 export function Header() {
   const [location, navigate] = useLocation();
@@ -28,80 +35,40 @@ export function Header() {
     navigate("/");
   };
 
-  const isLanding = location === "/" || location === "/audit-complet";
   const isDashboard = location.startsWith("/dashboard");
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-2">
-              <AchzodMonogram className="h-full w-full text-primary-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold tracking-tight" data-testid="text-brand-name">
-                NEUROCORE<span className="text-primary">360°</span>
-              </span>
-              <span className="hidden text-xs text-muted-foreground sm:block">
-                by ACHZOD
-              </span>
-            </div>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-xl font-black tracking-tighter" data-testid="text-brand-name">
+              APEX<span className="text-primary">LABS</span>
+            </span>
           </Link>
 
-          <nav className="hidden items-center gap-6 md:flex">
-            {isLanding && (
-              <>
-                <a
-                  href="#domaines"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  data-testid="link-domains"
-                >
-                  15 Domaines
-                </a>
-                <a
-                  href="#process"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  data-testid="link-process"
-                >
-                  Comment ca marche
-                </a>
-                <a
-                  href="#pricing"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  data-testid="link-pricing"
-                >
-                  Prix
-                </a>
-                <Link
-                  href="/faq"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  data-testid="link-faq"
-                >
-                  FAQ
-                </Link>
-              </>
-            )}
-            {isDashboard && (
+          {/* Desktop Navigation - Products */}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {PRODUCTS.map((product) => (
               <Link
-                href="/dashboard"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                data-testid="link-my-audits"
+                key={product.name}
+                href={product.href}
+                className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Mes audits
+                {product.name}
               </Link>
-            )}
+            ))}
+            <Link
+              href="/blog"
+              className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Blog
+            </Link>
           </nav>
 
-          <div className="flex items-center gap-1 sm:gap-3">
-            {/* Bouton Homepage visible partout sauf landing - caché sur mobile */}
-            {location !== "/" && location !== "/audit-complet" && (
-              <Link href="/" className="hidden sm:block">
-                <Button variant="ghost" size="sm" className="gap-2" data-testid="button-homepage">
-                  Accueil
-                </Button>
-              </Link>
-            )}
+          {/* Right side actions */}
+          <div className="flex items-center gap-2">
             <ThemeToggle />
 
             {userEmail ? (
@@ -130,7 +97,7 @@ export function Header() {
                     data-testid="button-logout"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Deconnexion
+                    Déconnexion
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -142,15 +109,17 @@ export function Header() {
               </Link>
             )}
 
-            <Link href="/audit-complet/questionnaire">
-              <Button size="sm" className="px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap" data-testid="button-start-audit">
+            <Link href="/offers/ultimate-scan">
+              <Button size="sm" className="px-4 text-sm font-semibold" data-testid="button-start-audit">
                 Commencer
               </Button>
             </Link>
+
+            {/* Mobile menu toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden ml-1"
+              className="lg:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -159,46 +128,33 @@ export function Header() {
           </div>
         </div>
 
+        {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="border-t border-border py-4 md:hidden">
-            <div className="flex flex-col gap-4">
-              {isLanding && (
-                <>
-                  <a
-                    href="#domaines"
-                    className="text-sm font-medium text-muted-foreground"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    15 Domaines
-                  </a>
-                  <a
-                    href="#process"
-                    className="text-sm font-medium text-muted-foreground"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Comment ca marche
-                  </a>
-                  <a
-                    href="#pricing"
-                    className="text-sm font-medium text-muted-foreground"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Prix
-                  </a>
-                  <Link
-                    href="/faq"
-                    className="text-sm font-medium text-muted-foreground"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    FAQ
-                  </Link>
-                </>
-              )}
-              {userEmail && (
+          <nav className="border-t border-border py-4 lg:hidden">
+            <div className="flex flex-col gap-2">
+              {PRODUCTS.map((product) => (
+                <Link
+                  key={product.name}
+                  href={product.href}
+                  className="px-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {product.name}
+                </Link>
+              ))}
+              <Link
+                href="/blog"
+                className="px-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Blog
+              </Link>
+              <div className="my-2 border-t border-border" />
+              {userEmail ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="text-sm font-medium text-muted-foreground"
+                    className="px-2 py-2 text-sm font-medium text-muted-foreground"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Mes audits
@@ -208,12 +164,20 @@ export function Header() {
                       handleLogout();
                       setMobileMenuOpen(false);
                     }}
-                    className="text-sm font-medium text-destructive text-left"
+                    className="px-2 py-2 text-sm font-medium text-destructive text-left"
                     data-testid="button-mobile-logout"
                   >
-                    Deconnexion
+                    Déconnexion
                   </button>
                 </>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="px-2 py-2 text-sm font-medium text-muted-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Connexion
+                </Link>
               )}
             </div>
           </nav>

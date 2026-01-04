@@ -22,6 +22,8 @@ import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
 import BloodAnalysis from "@/pages/BloodAnalysis";
 import BurnoutDetectionPage from "@/pages/BurnoutDetectionPage";
+import Blog from "@/pages/Blog";
+import BlogArticle from "@/pages/BlogArticle";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
@@ -40,12 +42,17 @@ function Router() {
       <Route path="/blood-analysis" component={BloodAnalysis} />
       <Route path="/burnout-detection" component={BurnoutDetectionPage} />
 
-      {/* Offer Pages */}
+      {/* Offer Pages - New Names */}
+      <Route path="/offers/discovery-scan" component={AuditGratuit} />
+      <Route path="/offers/anabolic-bioscan" component={AuditPremium} />
+      <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
+      <Route path="/offers/ultimate-scan" component={ProPanel} />
+      <Route path="/offers/burnout-detection" component={BurnoutDetection} />
+
+      {/* Legacy routes - redirects */}
       <Route path="/offers/audit-gratuit" component={AuditGratuit} />
       <Route path="/offers/audit-premium" component={AuditPremium} />
-      <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
       <Route path="/offers/pro-panel" component={ProPanel} />
-      <Route path="/offers/burnout-detection" component={BurnoutDetection} />
 
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
@@ -55,6 +62,8 @@ function Router() {
       <Route path="/mentions-legales" component={MentionsLegales} />
       <Route path="/cgv" component={CGV} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={BlogArticle} />
       <Route path="/test" component={TestAudit} />
       <Route path="/report" component={Report} />
       <Route path="/report/:auditId" component={Report} />

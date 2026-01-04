@@ -1,5 +1,4 @@
 import { Link } from "wouter";
-import { AchzodMonogram } from "./AchzodLogo";
 import { SiInstagram, SiYoutube, SiFacebook } from "react-icons/si";
 
 export function Footer() {
@@ -8,20 +7,14 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-2">
-                <AchzodMonogram className="h-full w-full text-primary-foreground" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold tracking-tight">
-                  NEUROCORE<span className="text-primary">360°</span>
-                </span>
-                <span className="text-xs text-muted-foreground">by ACHZOD</span>
-              </div>
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-black tracking-tighter">
+                APEX<span className="text-primary">LABS</span>
+              </span>
             </Link>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              L'audit NEUROCORE 360 le plus complet du marche. 180 questions, 15 domaines
-              d'expertise, rapport personnalise de 20+ pages.
+              L'analyse corporelle 360 la plus complète au monde. 180+ questions, 15 domaines
+              d'expertise, rapport IA personnalisé de 50+ pages.
             </p>
             <div className="mt-4 flex gap-4">
               <a 
@@ -55,32 +48,52 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-4 text-sm font-semibold">Navigation</h4>
+            <h4 className="mb-4 text-sm font-semibold">Nos Offres</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <Link href="/" className="hover:text-foreground">
-                  Accueil
+                <Link href="/offers/discovery-scan" className="hover:text-foreground">
+                  Discovery Scan
                 </Link>
               </li>
               <li>
-                <Link href="/audit-complet/questionnaire" className="hover:text-foreground">
-                  Questionnaire
+                <Link href="/offers/anabolic-bioscan" className="hover:text-foreground">
+                  Anabolic Bioscan
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard" className="hover:text-foreground">
-                  Dashboard
+                <Link href="/offers/blood-analysis" className="hover:text-foreground">
+                  Blood Analysis
+                </Link>
+              </li>
+              <li>
+                <Link href="/offers/ultimate-scan" className="hover:text-foreground">
+                  Ultimate Scan
+                </Link>
+              </li>
+              <li>
+                <Link href="/offers/burnout-detection" className="hover:text-foreground">
+                  Burnout Engine
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="mb-4 text-sm font-semibold">Contact</h4>
+            <h4 className="mb-4 text-sm font-semibold">Ressources</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
+                <Link href="/blog" className="hover:text-foreground">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-foreground">
+                  FAQ
+                </Link>
+              </li>
+              <li>
                 <a href="mailto:coaching@achzodcoaching.com" className="hover:text-foreground">
-                  coaching@achzodcoaching.com
+                  Contact
                 </a>
               </li>
               <li>
@@ -100,7 +113,7 @@ export function Footer() {
         <div className="mt-12 border-t border-border pt-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} ACHZOD - NEUROCORE 360°. Tous droits reserves.
+              © {new Date().getFullYear()} APEX LABS by ACHZOD. Tous droits réservés.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
               <Link href="/mentions-legales" className="hover:text-foreground">
