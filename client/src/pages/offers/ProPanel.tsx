@@ -498,6 +498,73 @@ export default function ProPanel() {
           </div>
         </section>
 
+        {/* Ring Video Section */}
+        <section className="py-16 lg:py-24 bg-gradient-to-b from-black to-cyan-950/20">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Video */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative"
+              >
+                <div className="relative rounded-2xl overflow-hidden aspect-square max-w-md mx-auto lg:mx-0">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  >
+                    <source
+                      src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/home/accuracy-section/CarousalRingVideo.mp4"
+                      type="video/mp4"
+                    />
+                  </video>
+                  {/* Glow effect */}
+                  <div className="absolute -inset-4 bg-cyan-500/10 blur-3xl rounded-full -z-10" />
+                </div>
+              </motion.div>
+
+              {/* Text */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="lg:pl-8"
+              >
+                <Badge className="mb-4 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                  <Watch className="mr-2 h-3 w-3" />
+                  Wearables
+                </Badge>
+                <h2 className="text-3xl lg:text-4xl font-bold mb-6">
+                  Tes donnees. <span className="text-cyan-400">Automatiquement.</span>
+                </h2>
+                <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+                  Ta bague, ta montre ou ton bracelet collecte tes donnees en continu.
+                  Sommeil, HRV, frequence cardiaque - tout est synchronise automatiquement
+                  dans ton Ultimate Scan via Terra API.
+                </p>
+                <div className="space-y-4">
+                  {[
+                    { icon: Heart, text: "HRV nocturne et frequence cardiaque au repos" },
+                    { icon: Moon, text: "Phases de sommeil et temps de recuperation" },
+                    { icon: Activity, text: "Variabilite cardiaque sur 7 et 30 jours" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
+                        <item.icon className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <span className="text-sm">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
         {/* Pro Exclusives */}
         <section className="py-20 lg:py-28">
           <div className="mx-auto max-w-6xl px-4">
