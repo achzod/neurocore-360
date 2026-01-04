@@ -55,7 +55,7 @@ function HeroSection() {
               transition={{ delay: 0.3 }}
             >
               <motion.span
-                className="h-2 w-2 rounded-full bg-white"
+                className="h-2 w-2 rounded-full bg-[#FCDD00]"
                 animate={{ opacity: [1, 0.4, 1], scale: [1, 1.2, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
@@ -377,7 +377,7 @@ function OffersPreview() {
                     viewport={{ once: true }}
                     transition={{ delay: 0.5 }}
                   >
-                    <span className="bg-gradient-to-r from-gray-200 via-white to-gray-200 text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                    <span className="bg-[#FCDD00] text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-[0_0_20px_rgba(252,221,0,0.4)]">
                       Le + populaire
                     </span>
                   </motion.div>
@@ -390,7 +390,7 @@ function OffersPreview() {
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2">{offer.name}</h3>
-                <div className={`text-2xl font-bold mb-3 ${isFeatured ? "bg-gradient-to-r from-white via-gray-200 to-white bg-clip-text text-transparent" : "text-gray-300"}`}>
+                <div className={`text-2xl font-bold mb-3 ${isFeatured ? "text-[#FCDD00]" : "text-gray-300"}`}>
                   {offer.price}
                 </div>
                 <p className="text-gray-500 text-sm leading-relaxed">{offer.description}</p>
