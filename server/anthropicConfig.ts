@@ -29,10 +29,10 @@ export const SECTION_TOKEN_LIMITS = {
   SUPPLEMENTS: 5000,            // géré par supplementEngine, pas Claude
   SYNTHESIS: 5000,              // ~20,000 chars - conclusion
   DEFAULT: 6000,
-  // Version GRATUIT (10-12 pages avec 4 sections)
-  GRATUIT_EXECUTIVE: 6000,
-  GRATUIT_ANALYSIS: 8000,       // Plus long car moins de sections
-  GRATUIT_SYNTHESIS: 6000,
+  // Version GRATUIT (5-7 pages avec 4 sections) - Discovery Scan
+  GRATUIT_EXECUTIVE: 3000,      // ~3500-4500 chars = court et percutant
+  GRATUIT_ANALYSIS: 4000,       // ~4000-5000 chars par section
+  GRATUIT_SYNTHESIS: 4000,      // Inclut les sections cadenas
 };
 
 export function validateAnthropicConfig(): boolean {

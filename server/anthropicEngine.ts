@@ -12,7 +12,7 @@ import { ANTHROPIC_CONFIG, validateAnthropicConfig, SECTION_TOKEN_LIMITS } from 
 import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
-import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier } from './geminiPremiumEngine';
+import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -379,13 +379,14 @@ ${photoAnalysisStr}
         return { section, text: generated, fromCache: false };
       }
 
-      console.log(`[Claude] Generation de la section "${section}"...`);
-      const specificInstructions = SECTION_INSTRUCTIONS[section] || "";
+      console.log(`[Claude] Generation de la section "${section}" (tier: ${tier})...`);
+      // Utilise les instructions spécifiques au tier (GRATUIT a ses propres prompts)
+      const specificInstructions = getSectionInstructionsForTier(section as SectionName, tier);
       const maxTokensForThisSection = getMaxTokensForSection(section as SectionName, tier);
 
       // Calcul de la longueur cible basé sur le tier
       const targetChars = tier === 'GRATUIT'
-        ? '6000-8000 caracteres (environ 150-200 lignes)' // 4 sections -> 10-12 pages
+        ? '3500-5000 caracteres (environ 90-130 lignes)' // Discovery Scan: 5-7 pages total
         : '5000-7000 caracteres (environ 120-175 lignes)'; // 18 sections -> 40-50 pages
 
       // Claude-specific prompt with enhanced instructions + length requirements

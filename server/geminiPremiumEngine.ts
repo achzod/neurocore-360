@@ -1021,90 +1021,189 @@ function buildDataStrForPrompt(data: ClientData): string {
   return lines.join("\n");
 }
 
-function getSectionInstructionsForTier(section: SectionName, tier: AuditTier): string {
+export function getSectionInstructionsForTier(section: SectionName, tier: AuditTier): string {
   if (tier !== "GRATUIT") return SECTION_INSTRUCTIONS[section] || "";
 
-  // Mode GRATUIT : 4 sections pour 10-12 pages total
-  // Calcul: 11 pages × 2800 chars = 30,800 chars / 4 sections = ~7,700 chars par section
+  // Mode GRATUIT (Discovery Scan) : 4 sections pour 5-7 pages total
+  // Calcul: 6 pages × 2800 chars = 16,800 chars / 4 sections = ~4,200 chars par section
 
   if (section === "Executive Summary") {
     return `
-MODE GRATUIT - EXECUTIVE SUMMARY COMPLET (CRITIQUE) :
-LONGUEUR : Cette section doit faire 6000-8000 caracteres (150-200 lignes).
-Le client gratuit doit recevoir une vraie valeur, pas un teaser creux.
+MODE DISCOVERY SCAN - EXECUTIVE SUMMARY (5-7 PAGES TOTAL)
+LONGUEUR : 3500-4500 caracteres max (90-120 lignes). Court mais PERCUTANT.
 
-STRUCTURE :
-1. DIAGNOSTIC COMPLET (2000 chars) : Analyse detaillee de ses 3 blocages principaux avec mecanismes biologiques
-2. CAUSES RACINES (2000 chars) : Pourquoi son corps est en mode "survie" - explique les connexions
-3. LEVIER PRINCIPAL (1500 chars) : L'action unique qui deverrouille 80% des resultats
-4. PROJECTION 30 JOURS (1500 chars) : Ce qui change s'il applique
+CONTEXTE : C'est son PREMIER contact avec NEUROCORE. Tu dois le scotcher en 60 secondes.
 
-Termine par une mention naturelle que l'analyse PREMIUM va plus loin (18 sections, protocoles detailles).
+DONNÉES DISPONIBLES (exploite-les au maximum) :
+- Profil (age, sexe, poids, taille, objectif)
+- Historique medical (diagnostic, traitement, bilan sanguin, plateau metabolique)
+- Mindset (frustration passee, peur, ideal 6 mois, niveau d'engagement)
+- Mode de vie (sommeil, stress, energie, travail)
+- Nutrition (repas, digestion, envies sucre)
+
+STRUCTURE EN 4 BLOCS :
+
+1. ACCROCHE PERSONNALISEE (500 chars) :
+Reprends SES mots (sa frustration, sa peur, son ideal).
+Exemple : "Tu m'as dit que ta plus grande peur c'est [X]. Et que si rien ne change dans 6 mois, [Y]. Je comprends."
+
+2. TON DIAGNOSTIC EN 30 SECONDES (1200 chars) :
+3 blocages principaux identifies. Pas de jargon. Style direct.
+Connecte son vecu (fatigue, plateau, envies sucre) aux mecanismes (cortisol, insuline, sommeil).
+Utilise le conditionnel si tu supposes ("ton profil suggere", "probablement lie a").
+
+3. LE LEVIER QUI CHANGE TOUT (800 chars) :
+UNE action prioritaire. Pas trois, UNE.
+Pourquoi CELLE-LA va debloquer 80% de ses resultats.
+
+4. VISION 30 JOURS (800 chars) :
+Ce qui change concretement s'il applique. Sois precis.
+
+INTERDICTIONS :
+- Pas de reference aux photos (il n'en a pas fourni)
+- Pas de chiffres inventes (WHR, %BF, etc.)
+- Pas de sections "pour aller plus loin" ici (c'est dans la synthese)
 `;
   }
 
   if (section === "Analyse energie et recuperation") {
     return `
-MODE GRATUIT - ANALYSE ENERGIE ET RECUPERATION (CRITIQUE) :
-LONGUEUR : Cette section doit faire 7000-9000 caracteres (175-225 lignes).
+MODE DISCOVERY SCAN - ANALYSE ENERGIE & RECUPERATION
+LONGUEUR : 4000-5000 caracteres max (100-130 lignes). Contenu dense et actionnable.
 
-STRUCTURE :
-1. PROFIL ENERGETIQUE (2500 chars) : Analyse des niveaux d'energie matin/aprem/soir bases sur ses reponses
-   - Courbe de cortisol probable
-   - Signes de fatigue surrenalienne ou dysregulation
-   - Impact du sommeil sur l'energie
+DONNÉES A EXPLOITER :
+- Energie matin/apres-midi/soir
+- Qualite sommeil, heure coucher/lever
+- Niveau stress, sources de stress
+- Coups de fatigue, horaires
+- Frilosite, transpiration
+- Metabolisme ressenti
+- Envies de sucre, frequence faim
 
-2. ANALYSE SOMMEIL ET RECUPERATION (2000 chars) :
-   - Qualite du sommeil declaree vs attendue
-   - Facteurs perturbateurs identifies (ecrans, cafe, stress)
-   - Mecanismes GH/cortisol nocturnes
+STRUCTURE EN 3 BLOCS :
 
-3. GESTION DU STRESS (2000 chars) :
-   - Niveau de stress declare et ses consequences metaboliques
-   - Impact sur la prise de gras abdominale
-   - Lien stress -> sommeil -> energie -> performance
+1. TON PROFIL ENERGETIQUE (1500 chars) :
+Cartographie ses 3 phases (matin/aprem/soir) avec courbe cortisol probable.
+Style direct : "Ton energie s'effondre vers [X]h - c'est le signe que..."
+Connecte les symptomes entre eux (fatigue + envies sucre = probable dysregulation insuline).
 
-4. MINI-PROTOCOLE ENERGIE 7 JOURS (1500 chars) :
-   - Actions concretes pour les 7 prochains jours
-   - Focus sur les quick wins (lumiere matin, heure cafe, routine soir)
+2. ANALYSE SOMMEIL-STRESS (1500 chars) :
+Qualite declaree vs ce qu'on devrait voir.
+Impact du stress chronique sur : cortisol, sommeil, recuperation musculaire, stockage graisseux.
+Si ecrans/cafe tard : explique le mecanisme (adenosine, melatonine, lumiere bleue).
 
-Base ton analyse UNIQUEMENT sur les reponses du questionnaire (sommeil, stress, energie, lifestyle).
-PAS de reference aux photos (le client n'en a pas fourni dans ce tier).
+3. QUICK WINS 7 JOURS (1500 chars) :
+5-7 actions immediates avec timing precis :
+- Lumiere naturelle : X min avant Y heure
+- Premier cafe : pas avant Xh (explique pourquoi en 1 ligne)
+- Dernier ecran : Xh avant coucher
+- Routine soir : 3 etapes simples
+Style : actionnable DEMAIN MATIN.
+
+INTERDICTIONS :
+- Pas de photos mentionnees
+- Pas de chiffres inventes
+- Pas de generalites ("dormez bien")
 `;
   }
 
   if (section === "Analyse metabolisme et nutrition") {
     return `
-MODE GRATUIT - ANALYSE METABOLISME COMPLETE (CRITIQUE) :
-LONGUEUR : Cette section doit faire 7000-9000 caracteres (175-225 lignes).
+MODE DISCOVERY SCAN - ANALYSE METABOLISME & NUTRITION
+LONGUEUR : 4000-5000 caracteres max (100-130 lignes). Dense et actionnable.
 
-STRUCTURE :
-1. PROFIL METABOLIQUE (2500 chars) : Type de metabolisme, sensibilite insuline, stockage graisseux
-2. ERREURS NUTRITIONNELLES DETECTEES (2000 chars) : Basees sur ses reponses, avec mecanismes
-3. MINI-PROTOCOLE 7 JOURS (2500 chars) : Actions concretes jour par jour (pas juste "mange mieux")
-4. ALIMENTS PRIORITAIRES (1500 chars) : Top 5 a ajouter, Top 5 a eliminer avec explications
+DONNÉES A EXPLOITER :
+- Objectif (perte gras, prise muscle, recomposition)
+- Poids actuel, objectif poids, evolution recente
+- Nombre de regimes passes (plateau metabolique probable si > 3)
+- Zones de stockage declarees
+- Retention eau, cellulite
+- Structure repas (nb repas, petit-dej, snacking)
+- Digestion (ballonnements, transit)
+- Envies sucre, frequence faim
+- Allergies alimentaires
 
-Donne une vraie valeur actionnable, pas des generalites.
+STRUCTURE EN 3 BLOCS :
+
+1. TON PROFIL METABOLIQUE (1500 chars) :
+Type de metabolisme probable (rapide/lent/mixte) base sur reponses.
+Sensibilite insuline (envies sucre = indice).
+Zones de stockage = signature hormonale (abdo = cortisol/insuline, hanches = oestrogenes, etc.)
+Si plateau ou yo-yo : explique le metabolisme adaptatif en 3 lignes.
+
+2. ERREURS DETECTEES (1500 chars) :
+2-3 erreurs probables basees sur ses reponses. Sois precis :
+- Si petit-dej sucre : "Ton pic d'insuline matinal provoque..."
+- Si trop peu de proteines : "Sans sufficient apport proteine, ton corps..."
+- Si grignotage : "Chaque prise alimentaire relance..."
+Connecte chaque erreur a une consequence metabolique concrete.
+
+3. PROTOCOLE NUTRITION 7 JOURS (1500 chars) :
+Plan simple et clair :
+- Jour 1-3 : [action specifique + pourquoi]
+- Jour 4-7 : [ajustement + objectif]
+Top 3 aliments a AJOUTER (avec portion et timing)
+Top 3 aliments a SUPPRIMER (avec alternative)
+Style : faisable sans calcul de macros.
+
+INTERDICTIONS :
+- Pas de plan calorique precis (pas assez de data)
+- Pas de photos mentionnees
+- Pas de conseils type "mange equilibre"
 `;
   }
 
   if (section === "Synthese et Prochaines Etapes") {
     return `
-MODE GRATUIT - SYNTHESE ET PLAN D'ACTION (CRITIQUE) :
-LONGUEUR : Cette section doit faire 6000-8000 caracteres (150-200 lignes).
+MODE DISCOVERY SCAN - SYNTHESE & PROCHAINES ETAPES
+LONGUEUR : 4000-5000 caracteres max (100-130 lignes).
 
-STRUCTURE :
-1. BILAN GLOBAL (2000 chars) : Resume des decouvertes cles avec score global
-2. FEUILLE DE ROUTE 14 JOURS (2500 chars) : Plan detaille jour par jour des premieres actions
-3. KPIs A SUIVRE (1500 chars) : 5 metriques a tracker avec seuils vert/jaune/rouge
-4. OUVERTURE PREMIUM (1500 chars) : Ce que l'analyse complete apporte en plus :
-   - 18 sections au lieu de 4
-   - Protocoles minute par minute (matin, soir, digestion, bureau)
-   - Stack supplements personnalise avec liens d'achat
-   - Plan 30/60/90 jours detaille
-   - KPIs complets et tableau de bord
+OBJECTIF : Clore le rapport avec impact + upsell naturel vers Anabolic Bioscan.
 
-Le client doit sentir qu'il a recu de la valeur ET qu'il y a encore plus a decouvrir.
+STRUCTURE EN 4 BLOCS :
+
+1. TON BILAN EN 60 SECONDES (1000 chars) :
+Resume percutant de ce qu'on a decouvert :
+- Ton score global : X/100 (base sur energie, metabolisme, lifestyle)
+- Les 3 forces qui jouent en ta faveur
+- Les 3 blocages qu'on a identifies
+Style : comme si tu resumais un dossier medical a un collegue.
+
+2. TON PLAN D'ACTION 14 JOURS (1500 chars) :
+Feuille de route ultra-concrete :
+- SEMAINE 1 : Focus sur [X] - actions quotidiennes
+- SEMAINE 2 : Consolider [Y] - ajustements
+Chaque jour = 1 action simple et mesurable.
+
+3. TES 5 KPIs A TRACKER (800 chars) :
+Les 5 metriques a mesurer chaque semaine :
+1. [Metrique] - objectif : [valeur]
+2. [Metrique] - objectif : [valeur]
+...
+Format simple, pas de tableau complexe.
+
+4. CE QUI TE MANQUE (SECTIONS CADENAS) (1200 chars) :
+IMPORTANT : Presente les sections locked comme des "zones non explorees" :
+
+"Ce Discovery Scan t'a donne une vue d'ensemble. Mais il te manque encore :
+
+ANALYSE PRISE DE SANG - Tes biomarqueurs revelent ton etat hormonal, inflammatoire et metabolique...
+
+ANALYSE VISUELLE & POSTURALE - Ta posture cache des indices sur tes desequilibres musculaires...
+
+ANALYSE BIOMECANIQUE - Ton psoas, ton diaphragme et ta sangle profonde forment un systeme...
+
+PROTOCOLE MATIN ANTI-CORTISOL - Un protocole minute par minute pour resynchroniser ton cortisol...
+
+PROTOCOLE SOIR SOMMEIL - La routine H-3 a H-0 qui maximise ta GH nocturne...
+
+STACK SUPPLEMENTS PERSONNALISE - Magnesium, Omega-3, Vitamine D, Zinc... dosages et timing precis...
+
+ROADMAP 30-60-90 JOURS - Ton plan semaine par semaine avec KPIs et checkpoints...
+
+Pour debloquer ces 7 analyses + tes protocoles complets, passe a l'Anabolic Bioscan."
+
+Style : creer l'envie sans etre pushy. Le client doit SENTIR qu'il lui manque quelque chose d'important.
 `;
   }
 
