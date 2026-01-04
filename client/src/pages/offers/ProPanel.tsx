@@ -1,13 +1,15 @@
 /**
- * NEUROCORE 360 - Pro Panel Offer Page
+ * NEUROCORE 360 - Ultimate Scan Offer Page
+ * Ultrahuman-style premium sales page - 149€
  */
 
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import {
   Zap,
@@ -21,176 +23,540 @@ import {
   Crown,
   Target,
   Pill,
+  ChevronDown,
+  Lock,
+  Shield,
+  Clock,
+  Sparkles,
+  TrendingUp,
+  BarChart3,
+  Moon,
+  Dumbbell,
+  AlertCircle,
 } from "lucide-react";
 
-const features = [
-  "Tout le Premium inclus (15 sections)",
-  "Sync wearables (Oura, Whoop, Garmin, Apple...)",
+// Wearables supported
+const wearables = [
+  { name: "Apple Health", logo: "🍎", color: "#000000", bgColor: "rgba(0,0,0,0.1)" },
+  { name: "Oura Ring", logo: "💍", color: "#C9A962", bgColor: "rgba(201,169,98,0.1)" },
+  { name: "Whoop", logo: "⌚", color: "#00A86B", bgColor: "rgba(0,168,107,0.1)" },
+  { name: "Garmin", logo: "⌚", color: "#007DC3", bgColor: "rgba(0,125,195,0.1)" },
+  { name: "Fitbit", logo: "⌚", color: "#00B0B9", bgColor: "rgba(0,176,185,0.1)" },
+  { name: "WHOOP", logo: "⌚", color: "#00A86B", bgColor: "rgba(0,168,107,0.1)" },
+  { name: "Ultrahuman", logo: "💫", color: "#FF4F00", bgColor: "rgba(255,79,0,0.1)" },
+  { name: "Polar", logo: "❄️", color: "#D40029", bgColor: "rgba(212,0,41,0.1)" },
+];
+
+// Ultimate Scan exclusive features
+const proExclusives = [
+  {
+    icon: Watch,
+    title: "Sync Wearables Automatique",
+    description: "Connecte Oura, Whoop, Garmin, Apple Health via Terra. Tes donnees sont importees automatiquement.",
+    color: "amber",
+  },
+  {
+    icon: Activity,
+    title: "Analyse HRV Avancee",
+    description: "SDNN, RMSSD, coherence cardiaque, variabilite nocturne. Comprends ta recuperation en profondeur.",
+    color: "red",
+  },
+  {
+    icon: Moon,
+    title: "Sommeil Detaille",
+    description: "Phases REM, profond, leger. Latence d'endormissement, reveils nocturnes, efficiency score.",
+    color: "indigo",
+  },
+  {
+    icon: Bone,
+    title: "Blessures & Douleurs",
+    description: "15 questions sur tes douleurs chroniques, mobilite articulaire, historique de blessures.",
+    color: "orange",
+  },
+  {
+    icon: Dumbbell,
+    title: "Protocole Rehabilitation",
+    description: "Exercices correctifs personnalises pour tes desequilibres musculaires et posturaux.",
+    color: "cyan",
+  },
+  {
+    icon: TrendingUp,
+    title: "Suivi Evolution",
+    description: "Compare tes scans dans le temps. Visualise tes progres mois apres mois.",
+    color: "emerald",
+  },
+];
+
+// What's included (Anabolic Bioscan + Ultimate extras)
+const includedFeatures = [
+  "Tout l'Anabolic Bioscan (15 domaines)",
+  "Questionnaire 180+ questions",
+  "Analyse photos IA",
+  "Profil hormonal estime",
+  "Profil neurotransmetteurs",
+  "Protocole nutrition",
+  "Stack supplements",
+  "Feuille de route 90 jours",
+  "--- Exclusifs Ultimate Scan ---",
+  "Sync wearables (Oura, Whoop, Garmin...)",
   "Analyse HRV avancee",
   "Donnees sommeil automatiques",
   "Questions blessures & douleurs",
   "Protocole rehabilitation",
   "Analyse mobilite articulaire",
-  "Acces coach prioritaire",
   "Suivi evolution dans le temps",
+  "Acces coach prioritaire",
 ];
 
-const wearables = [
-  { name: "Apple Health", color: "#000000" },
-  { name: "Oura Ring", color: "#C9A962" },
-  { name: "Whoop", color: "#00A86B" },
-  { name: "Garmin", color: "#007DC3" },
-  { name: "Fitbit", color: "#00B0B9" },
-  { name: "Ultrahuman", color: "#FF4F00" },
+// FAQ items
+const faqItems = [
+  {
+    question: "Quels wearables sont compatibles ?",
+    answer:
+      "Nous supportons via Terra : Apple Health, Oura Ring, Whoop, Garmin, Fitbit, Ultrahuman Ring, Polar, Samsung Health, et plus. La connexion prend 30 secondes et tes donnees sont synchronisees automatiquement.",
+  },
+  {
+    question: "Quelle est la difference avec l'Anabolic Bioscan ?",
+    answer:
+      "L'Anabolic Bioscan (79€) couvre les 15 domaines via questionnaire. L'Ultimate Scan (149€) ajoute : sync wearables avec donnees reelles (HRV, sommeil), analyse blessures/douleurs, protocole rehabilitation, et suivi evolution. C'est pour ceux qui veulent le maximum de precision.",
+  },
+  {
+    question: "Je n'ai pas de wearable, ca vaut le coup ?",
+    answer:
+      "Si tu n'as pas de wearable, l'Anabolic Bioscan (79€) est probablement suffisant. L'Ultimate Scan tire sa valeur de l'integration des donnees objectives de tes appareils. Sans wearable, tu beneficies quand meme de l'analyse blessures et du protocole rehab.",
+  },
+  {
+    question: "Mes donnees wearables sont-elles securisees ?",
+    answer:
+      "Oui, nous utilisons Terra (terraapi.com) pour la connexion securisee. Tes donnees sont cryptees, jamais revendues, et tu peux deconnecter ton appareil a tout moment. Nous sommes conformes RGPD.",
+  },
+  {
+    question: "Quelles metriques HRV analysez-vous ?",
+    answer:
+      "Nous analysons : SDNN (variabilite globale), RMSSD (activite parasympathique), HRV nocturne moyenne, coherence cardiaque, tendance sur 7/30 jours. Ces metriques revelent ta capacite de recuperation et ton niveau de stress chronique.",
+  },
+  {
+    question: "Le protocole rehabilitation est-il adapte a mes blessures ?",
+    answer:
+      "Oui, le questionnaire blessures couvre 15+ zones (epaule, genou, dos, hanche...) avec historique et niveau de douleur actuel. Le protocole genere des exercices correctifs specifiques a tes desequilibres identifies.",
+  },
+  {
+    question: "Les 149€ sont-ils deduits du coaching ?",
+    answer:
+      "Oui ! Si tu prends un coaching Private Lab dans les 30 jours, les 149€ sont integralement deduits. Le Ultimate Scan devient gratuit retroactivement.",
+  },
+  {
+    question: "Puis-je upgrader depuis l'Anabolic Bioscan ?",
+    answer:
+      "Oui, si tu as deja fait l'Anabolic Bioscan, tu peux upgrader vers Ultimate Scan pour 70€ (difference de prix). Contacte-nous avec ton email pour activer l'upgrade.",
+  },
+  {
+    question: "Pour qui est l'Ultimate Scan ?",
+    answer:
+      "Athletes serieux, biohackers avances, personnes avec blessures chroniques, ceux qui utilisent deja des wearables et veulent une analyse expert de leurs donnees. Si tu veux juste un apercu, commence par l'Anabolic Bioscan.",
+  },
+  {
+    question: "Combien de temps pour recevoir mon rapport ?",
+    answer:
+      "Le rapport est genere en moins de 5 minutes apres completion du questionnaire. Si tu connectes un wearable, nous importons tes 30 derniers jours de donnees instantanement via Terra.",
+  },
 ];
 
-const extras = [
-  { icon: Bone, title: "Blessures & Douleurs", desc: "15 questions sur tes douleurs, mobilite, historique" },
-  { icon: Activity, title: "HRV Avancee", desc: "SDNN, RMSSD, coherence cardiaque, variabilite nocturne" },
-  { icon: Heart, title: "Sommeil Detaille", desc: "Phases REM, profond, leger, latence, reveils" },
-  { icon: Brain, title: "Rehabilitation", desc: "Protocole personnalise pour corriger tes desequilibres" },
-];
+// FAQ Accordion component
+function FAQAccordion({
+  item,
+  isOpen,
+  onToggle,
+  index,
+}: {
+  item: (typeof faqItems)[0];
+  isOpen: boolean;
+  onToggle: () => void;
+  index: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-border/30"
+    >
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between py-5 text-left hover:text-primary transition-colors"
+      >
+        <span className="font-medium pr-4">{item.question}</span>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="shrink-0"
+        >
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <p className="pb-5 text-muted-foreground leading-relaxed">
+              {item.answer}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 export default function ProPanel() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-amber-900 to-black py-20 lg:py-32">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-800/30 via-transparent to-transparent" />
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-amber-950 via-amber-900/50 to-black py-20 lg:py-32">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-800/20 via-transparent to-transparent" />
 
-          <div className="relative mx-auto max-w-5xl px-4 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Badge className="mb-6 bg-amber-500/20 text-amber-300 border-amber-500/30">
-                <Zap className="mr-2 h-3 w-3" />
-                Elite
-              </Badge>
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div
+              className="h-full w-full"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
+                backgroundSize: "50px 50px",
+              }}
+            />
+          </div>
 
-              <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
-                Pro Panel
-                <span className="block text-amber-400">149€ - L'analyse ultime</span>
-              </h1>
+          <div className="relative mx-auto max-w-6xl px-4">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Left - Text */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Badge className="mb-6 bg-amber-500/20 text-amber-300 border-amber-500/30">
+                  <Zap className="mr-2 h-3 w-3" />
+                  Elite
+                </Badge>
 
-              <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
-                Tout le Premium + sync wearables + analyse blessures.
-                Pour ceux qui veulent le maximum de precision.
-              </p>
+                <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
+                  Ultimate Scan.
+                  <span className="block text-amber-400 mt-2">
+                    Donnees reelles. Precision maximale.
+                  </span>
+                </h1>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/audit-complet/questionnaire?tier=elite">
-                  <Button size="lg" className="gap-2 h-14 px-8 text-lg bg-amber-500 hover:bg-amber-600 text-black">
-                    Choisir Pro Panel
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
+                <p className="text-xl text-gray-400 mb-8 leading-relaxed">
+                  Tout l'Anabolic Bioscan + sync wearables + analyse blessures.
+                  Pour ceux qui veulent exploiter leurs donnees au maximum.
+                </p>
 
-              <p className="mt-6 text-sm text-amber-400">
-                Deduit de ton coaching Private Lab
-              </p>
-            </motion.div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link href="/audit-complet/questionnaire?tier=elite">
+                    <Button
+                      size="lg"
+                      className="gap-2 h-14 px-8 text-lg bg-amber-500 hover:bg-amber-600 text-black w-full sm:w-auto"
+                    >
+                      <Zap className="h-5 w-5" />
+                      Lancer mon Ultimate Scan
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+
+                <p className="mt-6 text-sm text-amber-400">
+                  Deduit de ton coaching Private Lab
+                </p>
+              </motion.div>
+
+              {/* Right - Wearables Mockup */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="relative"
+              >
+                <div className="relative mx-auto w-[320px] sm:w-[380px]">
+                  {/* Dashboard mockup */}
+                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-xs text-gray-400">Synced with Oura</span>
+                      </div>
+                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+                        Pro
+                      </Badge>
+                    </div>
+
+                    {/* HRV Card */}
+                    <div className="bg-gradient-to-br from-red-900/30 to-red-950/30 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-400">HRV (RMSSD)</span>
+                        <TrendingUp className="h-4 w-4 text-emerald-400" />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-white">47</span>
+                        <span className="text-sm text-gray-400">ms</span>
+                        <span className="text-xs text-emerald-400 ml-auto">+12% vs avg</span>
+                      </div>
+                    </div>
+
+                    {/* Sleep Card */}
+                    <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-950/30 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-400">Sleep Score</span>
+                        <Moon className="h-4 w-4 text-indigo-400" />
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-white">82</span>
+                        <span className="text-sm text-gray-400">/100</span>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <div className="flex-1 bg-indigo-500/30 rounded-full h-1.5">
+                          <div className="bg-indigo-400 rounded-full h-1.5 w-[75%]" />
+                        </div>
+                        <span className="text-xs text-gray-500">7h12 total</span>
+                      </div>
+                    </div>
+
+                    {/* Mini stats */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-gray-800 rounded-lg p-2 text-center">
+                        <p className="text-[10px] text-gray-500">REM</p>
+                        <p className="text-sm font-semibold text-purple-400">1h48</p>
+                      </div>
+                      <div className="bg-gray-800 rounded-lg p-2 text-center">
+                        <p className="text-[10px] text-gray-500">Deep</p>
+                        <p className="text-sm font-semibold text-blue-400">1h24</p>
+                      </div>
+                      <div className="bg-gray-800 rounded-lg p-2 text-center">
+                        <p className="text-[10px] text-gray-500">Efficiency</p>
+                        <p className="text-sm font-semibold text-emerald-400">91%</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Glow */}
+                  <div className="absolute -inset-4 bg-amber-500/20 blur-3xl rounded-full -z-10" />
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
 
-        {/* Wearables */}
-        <section className="py-12 border-b border-border/30 bg-black">
-          <div className="mx-auto max-w-5xl px-4">
+        {/* Wearables Banner */}
+        <section className="py-8 border-b border-border/30 bg-black/50">
+          <div className="mx-auto max-w-6xl px-4">
             <div className="flex items-center justify-center gap-2 mb-6">
-              <Watch className="h-5 w-5 text-primary" />
+              <Watch className="h-5 w-5 text-amber-400" />
               <span className="text-sm text-muted-foreground">Compatible avec</span>
             </div>
-            <div className="flex flex-wrap justify-center gap-4">
-              {wearables.map((w, i) => (
+            <div className="flex flex-wrap justify-center gap-3">
+              {wearables.slice(0, 6).map((w, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
-                  className="px-4 py-2 rounded-full border bg-white/5"
-                  style={{ borderColor: w.color + "50" }}
+                  className="px-4 py-2 rounded-full border bg-white/5 flex items-center gap-2"
+                  style={{ borderColor: w.color + "30" }}
                 >
+                  <span>{w.logo}</span>
                   <span className="text-sm font-medium" style={{ color: w.color }}>
                     {w.name}
                   </span>
                 </motion.div>
               ))}
+              <div className="px-4 py-2 rounded-full border border-border/30 bg-white/5">
+                <span className="text-sm text-muted-foreground">+ 10 autres</span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Content */}
-        <section className="py-16 lg:py-24">
-          <div className="mx-auto max-w-5xl px-4">
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
-              {/* Left - Pricing */}
-              <Card className="border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-transparent sticky top-8">
-                <CardContent className="p-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Crown className="h-5 w-5 text-emerald-400" />
-                    <span className="text-sm text-emerald-400">Inclut tout le Premium</span>
-                  </div>
+        {/* Pro Exclusives */}
+        <section className="py-20 lg:py-28">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="text-center mb-16">
+              <Badge className="mb-4 bg-amber-500/20 text-amber-400 border-amber-500/30">
+                Exclusif Ultimate Scan
+              </Badge>
+              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+                Ce qui fait la difference
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Le Ultimate Scan exploite tes donnees wearables pour une precision inegalee.
+                Plus de suppositions, des donnees reelles.
+              </p>
+            </div>
 
-                  <div className="text-center mb-8">
-                    <div className="text-6xl font-bold text-amber-400 mb-2">149€</div>
-                    <p className="text-muted-foreground">Paiement unique</p>
-                  </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {proExclusives.map((feature, i) => {
+                const colorMap: Record<string, { bg: string; text: string }> = {
+                  amber: { bg: "rgba(245, 158, 11, 0.1)", text: "#f59e0b" },
+                  red: { bg: "rgba(239, 68, 68, 0.1)", text: "#ef4444" },
+                  indigo: { bg: "rgba(99, 102, 241, 0.1)", text: "#6366f1" },
+                  orange: { bg: "rgba(249, 115, 22, 0.1)", text: "#f97316" },
+                  cyan: { bg: "rgba(6, 182, 212, 0.1)", text: "#06b6d4" },
+                  emerald: { bg: "rgba(16, 185, 129, 0.1)", text: "#10b981" },
+                };
 
-                  <div className="space-y-3 mb-8">
-                    {features.map((feature, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <Check className="h-5 w-5 text-amber-400 shrink-0" />
-                        <span className="text-sm">{feature}</span>
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Card className="h-full hover:border-amber-500/30 transition-colors">
+                      <CardContent className="p-6">
+                        <div
+                          className="flex h-12 w-12 items-center justify-center rounded-xl mb-4"
+                          style={{ backgroundColor: colorMap[feature.color].bg }}
+                        >
+                          <feature.icon
+                            className="h-6 w-6"
+                            style={{ color: colorMap[feature.color].text }}
+                          />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {feature.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section className="py-20 lg:py-28 bg-gradient-to-b from-muted/30 to-transparent">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              {/* Left - Price Card */}
+              <div className="lg:sticky lg:top-8">
+                <Card className="bg-gradient-to-b from-amber-500/10 to-transparent border-amber-500/30">
+                  <CardContent className="p-8">
+                    {/* Badge */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <Crown className="h-5 w-5 text-emerald-400" />
+                      <span className="text-sm text-emerald-400">
+                        Inclut tout l'Ultimate Scan
+                      </span>
+                    </div>
+
+                    {/* Price */}
+                    <div className="text-center mb-8">
+                      <div className="flex items-baseline justify-center gap-2 mb-2">
+                        <span className="text-6xl font-bold text-amber-400">149€</span>
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-muted-foreground">Paiement unique</p>
+                      <p className="text-sm text-amber-400 mt-2">
+                        Deduit de ton coaching Private Lab
+                      </p>
+                    </div>
 
-                  <Link href="/audit-complet/questionnaire?tier=elite">
-                    <Button size="lg" className="w-full gap-2 bg-amber-500 hover:bg-amber-600 text-black">
-                      Choisir Pro Panel
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+                    {/* Features */}
+                    <div className="space-y-2 mb-8 max-h-80 overflow-y-auto pr-2">
+                      {includedFeatures.map((feature, i) => (
+                        <div
+                          key={i}
+                          className={`flex items-center gap-3 ${
+                            feature.startsWith("---")
+                              ? "py-2 mt-2"
+                              : ""
+                          }`}
+                        >
+                          {feature.startsWith("---") ? (
+                            <div className="w-full border-t border-amber-500/30 pt-2">
+                              <span className="text-xs text-amber-400 font-semibold">
+                                {feature.replace(/---/g, "").trim()}
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                              <span className="text-sm">{feature}</span>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
 
-              {/* Right - Extras */}
+                    <Link href="/audit-complet/questionnaire?tier=elite">
+                      <Button
+                        size="lg"
+                        className="w-full gap-2 h-14 bg-amber-500 hover:bg-amber-600 text-black"
+                      >
+                        <Zap className="h-5 w-5" />
+                        Lancer mon Ultimate Scan
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right - Who is it for */}
               <div>
-                <h2 className="text-2xl font-bold mb-6">Ce qui fait la difference</h2>
-                <div className="space-y-4">
-                  {extras.map((extra, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                    >
-                      <Card>
-                        <CardContent className="flex items-start gap-4 p-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
-                            <extra.icon className="h-6 w-6 text-amber-400" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{extra.title}</h3>
-                            <p className="text-sm text-muted-foreground">{extra.desc}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                <h2 className="text-3xl font-bold mb-6">Pour qui ?</h2>
+                <p className="text-muted-foreground mb-8 leading-relaxed">
+                  Le Ultimate Scan est concu pour ceux qui veulent exploiter leurs donnees
+                  de sante au maximum. Pas un gadget, un outil de precision.
+                </p>
+
+                <div className="space-y-4 mb-8">
+                  {[
+                    {
+                      title: "Athletes serieux",
+                      desc: "Tu t'entraines regulierement et veux optimiser ta recuperation avec des donnees objectives.",
+                    },
+                    {
+                      title: "Biohackers avances",
+                      desc: "Tu trackes deja tes donnees et veux une analyse expert de tes metriques.",
+                    },
+                    {
+                      title: "Personnes avec douleurs chroniques",
+                      desc: "Tu as des blessures ou douleurs et veux un protocole rehabilitation personnalise.",
+                    },
+                    {
+                      title: "Utilisateurs de wearables",
+                      desc: "Tu as Oura, Whoop, Garmin ou Apple Watch et veux donner du sens a tes donnees.",
+                    },
+                  ].map((item, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold mb-1">{item.title}</h3>
+                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
 
-                <Card className="mt-6 bg-primary/5 border-primary/20">
-                  <CardContent className="p-4">
+                {/* Note */}
+                <Card className="bg-amber-500/5 border-amber-500/20">
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
                     <p className="text-sm">
-                      <strong className="text-primary">Pour qui ?</strong> Athletes, biohackers avances,
-                      ceux qui trackent deja leurs donnees et veulent une analyse expert de tout.
+                      <strong>Pas de wearable ?</strong> Si tu n'utilises pas de montre
+                      connectee, l'Ultimate Scan (79€) est probablement suffisant pour
+                      commencer.
                     </p>
                   </CardContent>
                 </Card>
@@ -199,23 +565,150 @@ export default function ProPanel() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-16 bg-amber-500/5 border-y border-amber-500/20">
-          <div className="mx-auto max-w-3xl px-4 text-center">
-            <Zap className="h-12 w-12 text-amber-400 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold mb-4">L'analyse la plus complete du marche</h2>
-            <p className="text-muted-foreground mb-8">
-              149€ deduits de ton coaching Private Lab. L'investissement le plus rentable pour ta sante.
-            </p>
-            <Link href="/audit-complet/questionnaire?tier=elite">
-              <Button size="lg" className="gap-2 h-14 px-8 bg-amber-500 hover:bg-amber-600 text-black">
-                Lancer mon Pro Panel
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            </Link>
+        {/* Comparison */}
+        <section className="py-16 border-y border-border/30">
+          <div className="mx-auto max-w-4xl px-4">
+            <h2 className="text-2xl font-bold text-center mb-8">
+              Ultimate Scan vs Anabolic Bioscan
+            </h2>
+            <Card>
+              <CardContent className="p-0 overflow-hidden">
+                <div className="grid grid-cols-3">
+                  {/* Header */}
+                  <div className="p-4 bg-muted/30 font-medium">Feature</div>
+                  <div className="p-4 bg-emerald-500/10 text-center font-medium text-emerald-400">
+                    Anabolic Bioscan (79€)
+                  </div>
+                  <div className="p-4 bg-amber-500/10 text-center font-medium text-amber-400">
+                    Ultimate Scan (149€)
+                  </div>
+
+                  {/* Rows */}
+                  {[
+                    { feature: "15 domaines analyse", ultimate: "✓", pro: "✓" },
+                    { feature: "Analyse photos IA", ultimate: "✓", pro: "✓" },
+                    { feature: "Protocole supplements", ultimate: "✓", pro: "✓" },
+                    { feature: "Feuille route 90j", ultimate: "✓", pro: "✓" },
+                    { feature: "Sync wearables", ultimate: "—", pro: "✓" },
+                    { feature: "Donnees HRV reelles", ultimate: "—", pro: "✓" },
+                    { feature: "Sommeil automatique", ultimate: "—", pro: "✓" },
+                    { feature: "Analyse blessures", ultimate: "—", pro: "✓" },
+                    { feature: "Protocole rehab", ultimate: "—", pro: "✓" },
+                    { feature: "Suivi evolution", ultimate: "—", pro: "✓" },
+                  ].map((row, i) => (
+                    <>
+                      <div
+                        key={`f-${i}`}
+                        className="p-4 border-t border-border/30 text-sm"
+                      >
+                        {row.feature}
+                      </div>
+                      <div
+                        key={`ult-${i}`}
+                        className="p-4 border-t border-border/30 bg-emerald-500/5 text-center text-sm"
+                      >
+                        {row.ultimate}
+                      </div>
+                      <div
+                        key={`pro-${i}`}
+                        className="p-4 border-t border-border/30 bg-amber-500/5 text-center text-sm font-medium"
+                      >
+                        {row.pro}
+                      </div>
+                    </>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-20 lg:py-28 bg-muted/20">
+          <div className="mx-auto max-w-3xl px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">Questions frequentes</h2>
+              <p className="text-muted-foreground">
+                Tout ce que tu dois savoir sur le Ultimate Scan
+              </p>
+            </div>
+
+            <div className="space-y-0">
+              {faqItems.map((item, i) => (
+                <FAQAccordion
+                  key={i}
+                  item={item}
+                  index={i}
+                  isOpen={openFaq === i}
+                  onToggle={() => setOpenFaq(openFaq === i ? null : i)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-20 lg:py-28 bg-gradient-to-b from-amber-950/50 to-black text-center">
+          <div className="mx-auto max-w-3xl px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <Zap className="h-16 w-16 text-amber-400 mx-auto mb-8" />
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+                Pret pour l'analyse ultime ?
+              </h2>
+              <p className="text-xl text-gray-400 mb-10">
+                Tes donnees wearables + notre IA = precision maximale.
+              </p>
+
+              <Link href="/audit-complet/questionnaire?tier=elite">
+                <Button
+                  size="lg"
+                  className="gap-2 h-16 px-12 text-lg bg-amber-500 hover:bg-amber-600 text-black"
+                >
+                  <Zap className="h-5 w-5" />
+                  Lancer mon Ultimate Scan
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  <span>Donnees securisees</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Watch className="h-4 w-4" />
+                  <span>Sync instantanee</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span>RGPD compliant</span>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
       </main>
+
+      {/* Sticky Footer CTA */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/50 py-4 z-50 lg:hidden">
+        <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
+          <div>
+            <p className="text-2xl font-bold text-amber-400">149€</p>
+            <p className="text-xs text-muted-foreground">Deduit du coaching</p>
+          </div>
+          <Link href="/audit-complet/questionnaire?tier=elite">
+            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-black">
+              Ultimate Scan
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       <Footer />
     </div>
