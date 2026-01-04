@@ -295,77 +295,117 @@ function FiveOffersSection() {
 }
 
 // ============================================================================
-// CERTIFICATIONS SECTION - Clean & Compact
+// CERTIFICATIONS SECTION - Premium Cards
 // ============================================================================
 function CertificationsSection() {
   const certifications = [
     {
-      logo: nasmLogo,
-      name: "NASM",
-      certs: ["CPT", "CES", "PES", "FNS", "WFS"]
-    },
-    {
       logo: issaLogo,
       name: "ISSA",
-      certs: ["CPT", "Nutritionist", "Bodybuilding"]
+      fullName: "International Sports Sciences Association",
+      certs: ["CPT", "SNS", "SFC", "SBC"],
+      country: "USA"
+    },
+    {
+      logo: nasmLogo,
+      name: "NASM",
+      fullName: "National Academy of Sports Medicine",
+      certs: ["CPT", "CNC", "PBC", "PES", "CSNC"],
+      country: "USA"
     },
     {
       logo: pnLogo,
       name: "Precision Nutrition",
-      certs: ["Level 1", "Sleep & Recovery"]
+      fullName: "PN1 Certified Coach",
+      certs: ["PN1"],
+      country: "CAN/USA/UK"
     },
     {
       logo: preScriptLogo,
       name: "Pre-Script",
-      certs: ["Movement", "Corrective Ex."]
+      fullName: "Mobility & Stability",
+      certs: ["Level 1"],
+      country: "CAN/USA"
     },
   ];
 
+  const mediaLogos = ["Yahoo Finance", "FOX 40", "BENZINGA", "StreetInsider", "MarketWatch"];
+
   return (
-    <section className="border-y border-gray-900 bg-black py-12">
-      <div className="mx-auto max-w-6xl px-4">
+    <section className="bg-black py-20">
+      <div className="mx-auto max-w-7xl px-4">
+        {/* Title */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mb-8 text-center"
+          className="mb-16 text-center"
         >
-          <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-gray-600">
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-gray-500">
             11 Certifications Internationales
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        {/* Certification Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
           {certifications.map((cert, index) => (
             <motion.div
               key={cert.name}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="flex flex-col items-center text-center group"
+              className="relative rounded-2xl border border-gray-800 bg-gray-950/50 p-6 hover:border-gray-700 transition-all duration-300"
             >
-              <div className="h-10 mb-3 flex items-center justify-center">
+              {/* Logo */}
+              <div className="h-16 mb-6 flex items-center justify-center">
                 <img
                   src={cert.logo}
                   alt={cert.name}
-                  className="h-8 w-auto object-contain brightness-0 invert opacity-50 group-hover:opacity-80 transition-opacity duration-300"
+                  className="h-12 w-auto object-contain"
                 />
               </div>
-              <p className="text-[11px] font-semibold text-gray-400 mb-1.5">{cert.name}</p>
-              <div className="flex flex-wrap justify-center gap-1">
+
+              {/* Name */}
+              <h3 className="text-xl font-bold text-white text-center mb-2">{cert.name}</h3>
+              <p className="text-sm text-gray-500 text-center mb-6">{cert.fullName}</p>
+
+              {/* Badges */}
+              <div className="flex flex-wrap justify-center gap-2 mb-4">
                 {cert.certs.map((c) => (
                   <span
                     key={c}
-                    className="text-[9px] text-gray-600 bg-gray-900 px-1.5 py-0.5 rounded"
+                    className="text-xs font-medium text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 rounded-full"
                   >
                     {c}
                   </span>
                 ))}
               </div>
+
+              {/* Country */}
+              <p className="text-xs text-gray-600 text-center">{cert.country}</p>
             </motion.div>
           ))}
         </div>
+
+        {/* Media Section */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-gray-600 mb-8">
+            Vu dans les médias
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+            {mediaLogos.map((media) => (
+              <span key={media} className="text-sm text-gray-500 hover:text-gray-400 transition-colors">
+                {media}
+              </span>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -419,19 +459,19 @@ function SocialProofBanner() {
 }
 
 // ============================================================================
-// SYNC WEARABLES SECTION - With Brand Logos
+// SYNC WEARABLES SECTION - Clean with Logos
 // ============================================================================
 function WearablesSection() {
   const wearables = [
-    { name: "Apple Health", type: "SDK", logo: "https://logo.clearbit.com/apple.com", available: true },
-    { name: "Garmin", type: "API", logo: "https://logo.clearbit.com/garmin.com", available: true },
-    { name: "Fitbit", type: "API", logo: "https://logo.clearbit.com/fitbit.com", available: true },
-    { name: "Oura", type: "API", logo: "https://logo.clearbit.com/ouraring.com", available: true },
-    { name: "Google Fit", type: "API", logo: "https://logo.clearbit.com/google.com", available: true },
-    { name: "Samsung Health", type: "SDK", logo: "https://logo.clearbit.com/samsung.com", available: true },
-    { name: "Withings", type: "API", logo: "https://logo.clearbit.com/withings.com", available: true },
-    { name: "WHOOP", type: "API", logo: "https://logo.clearbit.com/whoop.com", available: false, comingSoon: true },
-    { name: "Ultrahuman", type: "API", logo: "https://logo.clearbit.com/ultrahuman.com", available: true },
+    { name: "Apple Health", logo: "https://logo.clearbit.com/apple.com", available: true },
+    { name: "Garmin", logo: "https://logo.clearbit.com/garmin.com", available: true },
+    { name: "Fitbit", logo: "https://logo.clearbit.com/fitbit.com", available: true },
+    { name: "Oura", logo: "https://logo.clearbit.com/ouraring.com", available: true },
+    { name: "Google Fit", logo: "https://logo.clearbit.com/google.com", available: true },
+    { name: "Samsung Health", logo: "https://logo.clearbit.com/samsung.com", available: true },
+    { name: "Withings", logo: "https://logo.clearbit.com/withings.com", available: true },
+    { name: "WHOOP", logo: "https://logo.clearbit.com/whoop.com", available: false, comingSoon: true },
+    { name: "Ultrahuman", logo: "https://logo.clearbit.com/ultrahuman.com", available: true },
   ];
 
   return (
@@ -442,47 +482,38 @@ function WearablesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-500 mb-3">Intégrations</p>
-          <h2 className="mb-3 text-3xl sm:text-4xl font-bold text-white">Sync tes wearables</h2>
-          <p className="mb-10 text-base text-gray-500">
+          <p className="text-xs uppercase tracking-[0.3em] text-emerald-500 mb-4">Intégrations</p>
+          <h2 className="mb-4 text-3xl sm:text-4xl font-bold text-white">Sync tes wearables</h2>
+          <p className="mb-12 text-base text-gray-500">
             Connecte tes données pour une analyse plus précise
           </p>
 
-          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             {wearables.map((brand, index) => (
               <motion.div
                 key={brand.name}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
-                className={`relative flex flex-col items-center justify-center rounded-xl border ${
-                  brand.available
-                    ? "border-gray-800 bg-gray-900/50 hover:border-emerald-500/30 hover:bg-gray-900"
-                    : "border-gray-800/50 bg-gray-900/30 opacity-60"
-                } px-3 py-4 transition-all duration-300`}
+                className={`relative flex flex-col items-center ${
+                  !brand.available ? "opacity-40" : "hover:opacity-80"
+                } transition-opacity duration-300`}
               >
                 {brand.comingSoon && (
-                  <span className="absolute -top-2 right-2 text-[8px] bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded-full">
+                  <span className="absolute -top-3 text-[9px] text-gray-500">
                     Bientôt
                   </span>
                 )}
                 <img
                   src={brand.logo}
                   alt={brand.name}
-                  className="h-6 w-6 object-contain mb-2 rounded"
+                  className="h-8 w-8 object-contain mb-2 rounded grayscale hover:grayscale-0 transition-all duration-300"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-                <span className="text-[11px] font-medium text-gray-300 mb-1">{brand.name}</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                  brand.type === "API"
-                    ? "bg-emerald-500/10 text-emerald-400"
-                    : "bg-amber-500/10 text-amber-400"
-                }`}>
-                  {brand.type}
-                </span>
+                <span className="text-xs text-gray-500">{brand.name}</span>
               </motion.div>
             ))}
           </div>
