@@ -83,35 +83,72 @@ const GEMINI_MAX_TOKENS = GEMINI_CONFIG.GEMINI_MAX_TOKENS;
 const GEMINI_MAX_RETRIES = GEMINI_CONFIG.GEMINI_MAX_RETRIES;
 const GEMINI_SLEEP_BETWEEN = GEMINI_CONFIG.GEMINI_SLEEP_BETWEEN;
 
-const SECTIONS: SectionName[] = [
-  //  PAGE 1 : EXECUTIVE SUMMARY 
+// =============================================================================
+// ULTIMATE SCAN (ELITE) - 18 sections complètes avec analyse photo/biomécanique
+// =============================================================================
+const SECTIONS_ULTIMATE: SectionName[] = [
+  //  PAGE 1 : EXECUTIVE SUMMARY
   "Executive Summary",
-  
-  //  ANALYSES PROFONDES 
-  "Analyse visuelle et posturale complete",
-  "Analyse biomecanique et sangle profonde",
+
+  //  ANALYSES PROFONDES (avec photo/biomécanique)
+  "Analyse visuelle et posturale complete",    // ← ULTIMATE ONLY (photos)
+  "Analyse biomecanique et sangle profonde",   // ← ULTIMATE ONLY (photos)
   "Analyse entrainement et periodisation",
   "Analyse systeme cardiovasculaire",
   "Analyse metabolisme et nutrition",
   "Analyse sommeil et recuperation",
   "Analyse digestion et microbiote",
   "Analyse axes hormonaux",
-  
-  //  PROTOCOLES FERMES 
+
+  //  PROTOCOLES FERMES
   "Protocole Matin Anti-Cortisol",
   "Protocole Soir Verrouillage Sommeil",
   "Protocole Digestion 14 Jours",
   "Protocole Bureau Anti-Sedentarite",
   "Protocole Entrainement Personnalise",
-  
-  //  PLAN CONCRET 
+
+  //  PLAN CONCRET
   "Plan Semaine par Semaine 30-60-90",
   "KPI et Tableau de Bord",
   "Stack Supplements Optimise",
-  
-  //  CONCLUSION 
+
+  //  CONCLUSION
   "Synthese et Prochaines Etapes"
 ];
+
+// =============================================================================
+// ANABOLIC BIOSCAN (PREMIUM) - 16 sections SANS photo/biomécanique
+// =============================================================================
+const SECTIONS_ANABOLIC: SectionName[] = [
+  //  PAGE 1 : EXECUTIVE SUMMARY
+  "Executive Summary",
+
+  //  ANALYSES PROFONDES (sans photo/biomécanique)
+  "Analyse entrainement et periodisation",
+  "Analyse systeme cardiovasculaire",
+  "Analyse metabolisme et nutrition",
+  "Analyse sommeil et recuperation",
+  "Analyse digestion et microbiote",
+  "Analyse axes hormonaux",
+
+  //  PROTOCOLES FERMES
+  "Protocole Matin Anti-Cortisol",
+  "Protocole Soir Verrouillage Sommeil",
+  "Protocole Digestion 14 Jours",
+  "Protocole Bureau Anti-Sedentarite",
+  "Protocole Entrainement Personnalise",
+
+  //  PLAN CONCRET
+  "Plan Semaine par Semaine 30-60-90",
+  "KPI et Tableau de Bord",
+  "Stack Supplements Optimise",
+
+  //  CONCLUSION
+  "Synthese et Prochaines Etapes"
+];
+
+// Backward compatibility alias
+const SECTIONS = SECTIONS_ULTIMATE;
 
 // =============================================================================
 // VERSION GRATUITE (Discovery Scan) - 5-7 pages avec sections cadenas
@@ -128,30 +165,42 @@ const SECTIONS_GRATUIT: SectionName[] = [
   "Synthese et Prochaines Etapes",    // Débloqué - avec sections cadenas listées
 ];
 
-// Sections affichées comme CADENAS dans le rapport gratuit - divisées par offre
+// =============================================================================
+// SECTIONS LOCKED - Teasers pour upsell depuis Discovery Scan
+// =============================================================================
+
+// Ce que ANABOLIC BIOSCAN débloque (16 sections vs 4 dans Discovery)
 export const SECTIONS_LOCKED_ANABOLIC = [
-  { name: "Analyse Biomarqueurs Sanguins", teaser: "Tes hormones, inflammation et métabolisme révélés par ton bilan sanguin..." },
-  { name: "Profil Hormonal Complet", teaser: "Testosterone, cortisol, thyroïde, insuline - ton équilibre hormonal décrypté..." },
+  { name: "Analyse Axes Hormonaux", teaser: "Cortisol, insuline, testostérone, thyroïde - ton équilibre hormonal complet décrypté..." },
+  { name: "Analyse Entrainement & Périodisation", teaser: "Ton programme actuel audité avec corrections personnalisées..." },
+  { name: "Analyse Système Cardiovasculaire", teaser: "Ton profil cardio Zone 2 et optimisation mitochondriale..." },
+  { name: "Analyse Digestion & Microbiote", teaser: "Ton écosystème intestinal et l'axe intestin-cerveau décryptés..." },
+  { name: "5 Protocoles Fermés", teaser: "Matin anti-cortisol, soir sommeil, digestion 14j, bureau, entrainement..." },
   { name: "Stack Suppléments Personnalisé", teaser: "Dosages précis et timing optimal basés sur tes carences réelles..." },
-  { name: "Plan Nutrition Hormonal", teaser: "Alimentation calibrée sur ton profil métabolique et hormonal..." },
-  { name: "Roadmap 30-60-90 Jours", teaser: "Ton plan semaine par semaine avec KPIs et checkpoints..." },
+  { name: "Plan 30-60-90 Jours", teaser: "Ton roadmap semaine par semaine avec KPIs et checkpoints..." },
 ];
 
+// Ce que ULTIMATE SCAN débloque EN PLUS d'Anabolic (2 sections photo-only)
 export const SECTIONS_LOCKED_ULTIMATE = [
-  { name: "Analyse Photo Posturale", teaser: "Ta posture et composition corporelle analysées en détail..." },
-  { name: "Analyse Biomécanique", teaser: "Psoas, diaphragme, sangle profonde - ton système de stabilisation..." },
-  { name: "Suivi HRV Cardiaque", teaser: "Variabilité cardiaque et récupération nerveuse en temps réel..." },
-  { name: "Protocoles Cardio Zone 2", teaser: "Seuils personnalisés et périodisation cardio optimale..." },
-  { name: "Analyse Psychologique", teaser: "Blocages mentaux et patterns comportementaux décryptés..." },
-  { name: "18 Sections d'Analyse", teaser: "Rapport de 40-50 pages ultra-détaillé..." },
+  { name: "Analyse Photo Posturale Complète", teaser: "Ta posture analysée en détail sur tes photos - répartition graisseuse, signature endocrinienne..." },
+  { name: "Analyse Biomécanique & Sangle Profonde", teaser: "Psoas, diaphragme, tensegrité myofasciale - ton système de stabilisation décrypté..." },
+  { name: "18 Sections vs 16", teaser: "Rapport de 40-50 pages ultra-détaillé avec analyse visuelle experte..." },
 ];
 
 // Combined for backward compatibility
 export const SECTIONS_LOCKED_GRATUIT = [...SECTIONS_LOCKED_ANABOLIC, ...SECTIONS_LOCKED_ULTIMATE];
 
 export function getSectionsForTier(tier: AuditTier): SectionName[] {
-  if (tier === "GRATUIT") return SECTIONS_GRATUIT;
-  return SECTIONS;
+  switch (tier) {
+    case "GRATUIT":
+      return SECTIONS_GRATUIT;      // 4 sections - Discovery Scan
+    case "PREMIUM":
+      return SECTIONS_ANABOLIC;     // 16 sections - Anabolic Bioscan (sans photo/biomécanique)
+    case "ELITE":
+      return SECTIONS_ULTIMATE;     // 18 sections - Ultimate Scan (avec photo/biomécanique)
+    default:
+      return SECTIONS_ANABOLIC;
+  }
 }
 
 const PROMPT_SECTION = `Tu es Achzod, coach sportif d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
@@ -1452,4 +1501,4 @@ export function listPendingAudits(): string[] {
   }
 }
 
-export { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, callGemini, loadFromCache, deleteCache };
+export { SECTIONS, SECTIONS_ANABOLIC, SECTIONS_ULTIMATE, SECTION_INSTRUCTIONS, PROMPT_SECTION, callGemini, loadFromCache, deleteCache };
