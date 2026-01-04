@@ -46,12 +46,12 @@ export default function AuditGratuit() {
             Analyse Gratuite
           </motion.p>
 
-          {/* Main Headline - Ultrahuman Style */}
+          {/* Main Headline - TRUE Ultrahuman Style (9.6rem-12.5rem) */}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] tracking-[-0.04em] mb-8"
+            className="text-white text-[3rem] sm:text-[4.8rem] md:text-[7.2rem] lg:text-[9.6rem] xl:text-[12rem] font-bold leading-[0.9] tracking-[-0.04em] mb-8"
           >
             Discover what's
             <br />
@@ -76,7 +76,7 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/questionnaire">
-              <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-lg px-10 py-5 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02]">
+              <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 Commencer le scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -163,7 +163,7 @@ export default function AuditGratuit() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.02] border border-white/5 p-8 hover:bg-white/[0.04] transition-colors duration-300"
+                className="relative overflow-hidden rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 hover:bg-white/[0.06] hover:border-[#0eff27]/20 hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
                 <div className="text-white text-lg font-medium mb-1">{item.label}</div>
@@ -254,7 +254,7 @@ export default function AuditGratuit() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-[32px] border border-white/10 bg-white/[0.02] p-8"
+              className="rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 hover:border-white/20 transition-all duration-300"
             >
               <div className="text-[#0eff27] text-sm font-medium tracking-[0.15em] uppercase mb-4">Discovery Scan</div>
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">Gratuit</div>
@@ -284,7 +284,7 @@ export default function AuditGratuit() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="rounded-[32px] border border-[#0eff27]/30 bg-gradient-to-b from-[#0eff27]/5 to-transparent p-8"
+              className="rounded-[32px] border border-[#0eff27]/30 bg-gradient-to-b from-[#0eff27]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#0eff27]/50 transition-all duration-300 shadow-[0_0_60px_rgba(14,255,39,0.1)]"
             >
               <div className="text-[#0eff27] text-sm font-medium tracking-[0.15em] uppercase mb-4">Anabolic Bioscan</div>
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">59€</div>
@@ -329,7 +329,7 @@ export default function AuditGratuit() {
             5 minutes. 180 questions. Un diagnostic qui peut tout changer.
           </p>
           <Link href="/questionnaire">
-            <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-lg px-12 py-5 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02]">
+            <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
               Lancer mon Discovery Scan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>

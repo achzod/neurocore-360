@@ -61,7 +61,7 @@ export default function ProPanel() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] tracking-[-0.04em] mb-8"
+            className="text-white text-[3rem] sm:text-[4.8rem] md:text-[7.2rem] lg:text-[9.6rem] xl:text-[12rem] font-bold leading-[0.9] tracking-[-0.04em] mb-8"
           >
             Ultimate
             <br />
@@ -94,7 +94,7 @@ export default function ProPanel() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/questionnaire?plan=pro">
-              <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-lg px-10 py-5 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02]">
+              <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(34,211,238,0.3)]">
                 Commencer mon Ultimate Scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -164,7 +164,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.02] border border-white/5 p-10 hover:border-cyan-500/20 transition-all duration-300 group"
+                className="relative overflow-hidden rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-10 hover:border-cyan-500/30 hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center ${
                   item.color === 'cyan' ? 'bg-cyan-500/10' :
@@ -208,7 +208,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.02 }}
-                className="group rounded-2xl bg-white/[0.02] border border-white/5 p-4 hover:bg-white/[0.04] hover:border-cyan-500/20 transition-all duration-300"
+                className="group rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-4 hover:bg-white/[0.06] hover:border-cyan-500/30 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 group-hover:scale-125 transition-transform" />
@@ -343,7 +343,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-[32px] bg-white/[0.02] border border-white/5 p-8"
+                className="rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 hover:border-cyan-500/20 hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
                 <div className="text-white/40">{item.label}</div>
@@ -371,7 +371,7 @@ export default function ProPanel() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-cyan-500/30 bg-gradient-to-b from-cyan-500/5 to-transparent p-10"
+            className="rounded-[32px] border border-cyan-500/30 bg-gradient-to-b from-cyan-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(34,211,238,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -401,7 +401,7 @@ export default function ProPanel() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/questionnaire?plan=pro">
-                <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-lg px-10 py-5 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02]">
+                <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(34,211,238,0.3)]">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -511,7 +511,7 @@ export default function ProPanel() {
             Le maximum de donnees pour le maximum de resultats.
           </p>
           <Link href="/questionnaire?plan=pro">
-            <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-lg px-12 py-5 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02]">
+            <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(34,211,238,0.3)]">
               Lancer mon Ultimate Scan — 79€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>

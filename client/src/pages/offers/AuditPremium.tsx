@@ -63,7 +63,7 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] tracking-[-0.04em] mb-8"
+            className="text-white text-[3rem] sm:text-[4.8rem] md:text-[7.2rem] lg:text-[9.6rem] xl:text-[12rem] font-bold leading-[0.9] tracking-[-0.04em] mb-8"
           >
             Anabolic
             <br />
@@ -97,7 +97,7 @@ export default function AuditPremium() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link href="/questionnaire?plan=premium">
-              <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-lg px-10 py-5 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02]">
+              <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
                 Commencer mon scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -151,7 +151,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.03 }}
-                className="group relative overflow-hidden rounded-2xl bg-white/[0.02] border border-white/5 p-6 hover:bg-white/[0.04] hover:border-[#0eff27]/20 transition-all duration-300"
+                className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#0eff27]/20 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-[#0eff27] group-hover:scale-125 transition-transform" />
@@ -196,7 +196,7 @@ export default function AuditPremium() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-8 rounded-[24px] border border-white/5 hover:border-[#0eff27]/20 bg-white/[0.01] hover:bg-white/[0.02] transition-all duration-300"
+                  className="group p-8 rounded-[24px] border border-white/10 hover:border-[#0eff27]/30 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-[#0eff27]/10 border border-[#0eff27]/20 flex items-center justify-center">
@@ -276,7 +276,7 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-[#0eff27]/30 bg-gradient-to-b from-[#0eff27]/5 to-transparent p-10"
+            className="rounded-[32px] border border-[#0eff27]/30 bg-gradient-to-b from-[#0eff27]/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(14,255,39,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -304,7 +304,7 @@ export default function AuditPremium() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/questionnaire?plan=premium">
-                <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-lg px-10 py-5 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02]">
+                <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -413,7 +413,7 @@ export default function AuditPremium() {
             Diagnostic + protocoles + plan d'action. Tout ce qu'il te faut pour transformer ta sante.
           </p>
           <Link href="/questionnaire?plan=premium">
-            <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-lg px-12 py-5 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02]">
+            <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
               Lancer mon Anabolic Bioscan — 59€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
