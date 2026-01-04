@@ -47,14 +47,14 @@ const FEATURED_MEDIA = [
     logo: "https://logo.clearbit.com/reuters.com",
     reach: "110M",
     category: "News",
-    articleUrl: "https://www.reuters.com/markets/companies/",
+    articleUrl: "https://www.reuters.com/business/media-telecom/",
   },
   {
     name: "Apple News",
     logo: "https://logo.clearbit.com/apple.com",
     reach: "438M",
     category: "News",
-    articleUrl: "https://apple.news/",
+    articleUrl: "https://www.apple.com/apple-news/",
   },
   {
     name: "Benzinga",
@@ -68,7 +68,7 @@ const FEATURED_MEDIA = [
     logo: "https://logo.clearbit.com/theglobeandmail.com",
     reach: "17M",
     category: "News",
-    articleUrl: "https://www.theglobeandmail.com/investing/markets/markets-news/",
+    articleUrl: "https://www.theglobeandmail.com/business/",
   },
   {
     name: "Financial Post",
@@ -89,7 +89,7 @@ const FEATURED_MEDIA = [
     logo: "https://logo.clearbit.com/barchart.com",
     reach: "7.5M",
     category: "Finance",
-    articleUrl: "https://www.barchart.com/story/news/",
+    articleUrl: "https://www.barchart.com/news",
   },
 ];
 
