@@ -138,7 +138,7 @@ export default function Press() {
             >
               <Badge className="mb-4 bg-primary/10 text-primary">Press & Media</Badge>
               <h1 className="mb-6 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
-                Ils parlent de nous
+                Ils parlent de moi
               </h1>
               <p className="mx-auto mb-12 max-w-2xl text-lg text-muted-foreground">
                 ACHZOD Coaching a ete presente dans plus de 300 medias internationaux,
@@ -335,7 +335,7 @@ export default function Press() {
               Rejoignez le mouvement
             </h2>
             <p className="mb-8 text-lg text-muted-foreground">
-              Decouvrez pourquoi les medias internationaux parlent de notre approche
+              Decouvrez pourquoi les medias internationaux parlent de mon approche
               revolutionnaire du coaching athletique.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
