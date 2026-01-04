@@ -181,93 +181,61 @@ function FiveOffersSection() {
     },
   ];
 
-  const colorClasses: Record<string, { bg: string; text: string; glow: string; border: string }> = {
-    slate: { bg: "bg-slate-500/10", text: "text-slate-500", glow: "group-hover:shadow-slate-500/20", border: "group-hover:border-slate-500/50" },
-    emerald: { bg: "bg-emerald-500/10", text: "text-emerald-500", glow: "group-hover:shadow-emerald-500/20", border: "group-hover:border-emerald-500/50" },
-    cyan: { bg: "bg-cyan-500/10", text: "text-cyan-500", glow: "group-hover:shadow-cyan-500/30", border: "group-hover:border-cyan-500/50" },
-    red: { bg: "bg-red-500/10", text: "text-red-500", glow: "group-hover:shadow-red-500/20", border: "group-hover:border-red-500/50" },
-    purple: { bg: "bg-purple-500/10", text: "text-purple-500", glow: "group-hover:shadow-purple-500/20", border: "group-hover:border-purple-500/50" },
-  };
-
   return (
-    <section id="offers" className="py-24 bg-gradient-to-b from-background via-muted/30 to-background">
+    <section id="offers" className="py-32 bg-black">
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mb-16 text-center"
+          className="mb-20 text-center"
         >
-          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">5 offres. Un seul objectif.</h2>
-          <p className="text-lg text-muted-foreground">Optimiser ta performance.</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">Choisis ton scan.</h2>
+          <p className="text-lg text-gray-500">Du diagnostic à l'optimisation complète.</p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {offers.map((offer, index) => {
             const Icon = offer.icon;
-            const colors = colorClasses[offer.color];
+            const isPopular = offer.popular;
             return (
               <motion.div
                 key={offer.id}
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                transition={{ delay: index * 0.1 }}
               >
                 <Link href={offer.href}>
-                  <Card className={`group relative h-full cursor-pointer transition-all duration-300 ${colors.glow} ${colors.border} hover:shadow-xl ${offer.popular ? 'ring-2 ring-cyan-500' : ''}`}>
-                    {offer.popular && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        whileInView={{ scale: 1 }}
-                        transition={{ delay: 0.5, type: "spring" }}
-                        className="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
-                      >
-                        <Badge className="bg-cyan-500 text-white animate-pulse">Populaire</Badge>
-                      </motion.div>
+                  <div className={`group relative h-full cursor-pointer rounded-2xl border transition-all duration-300 hover:border-emerald-500/50 ${isPopular ? 'border-emerald-500 bg-emerald-500/5' : 'border-gray-800 bg-gray-900/50 hover:bg-gray-900'}`}>
+                    {isPopular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="bg-emerald-500 text-black text-xs font-semibold px-3 py-1 rounded-full">Populaire</span>
+                      </div>
                     )}
-                    <CardContent className="p-6">
-                      <motion.div
-                        className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl ${colors.bg} transition-transform duration-300 group-hover:scale-110`}
-                        whileHover={{ rotate: [0, -10, 10, 0] }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <Icon className={`h-6 w-6 ${colors.text}`} />
-                      </motion.div>
-                      <h3 className="mb-1 text-lg font-bold group-hover:text-foreground transition-colors">{offer.name}</h3>
-                      <p className="mb-3 text-sm text-muted-foreground">{offer.subtitle}</p>
-                      <motion.div
-                        className={`mb-4 text-2xl font-bold ${colors.text}`}
-                        whileHover={{ scale: 1.05 }}
-                      >
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <Icon className={`h-6 w-6 ${isPopular ? 'text-emerald-400' : 'text-gray-500'}`} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white mb-1">{offer.name}</h3>
+                      <p className="text-xs text-gray-500 mb-4">{offer.subtitle}</p>
+                      <div className={`text-3xl font-bold mb-6 ${isPopular ? 'text-emerald-400' : 'text-white'}`}>
                         {offer.price}
-                      </motion.div>
+                      </div>
                       <ul className="space-y-2">
-                        {offer.features.map((feature, i) => (
-                          <motion.li
-                            key={i}
-                            initial={{ opacity: 0, x: -10 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 + i * 0.05 }}
-                            className="flex items-center gap-2 text-sm text-muted-foreground"
-                          >
-                            <Check className={`h-4 w-4 ${colors.text}`} />
-                            {feature}
-                          </motion.li>
+                        {offer.features.slice(0, 4).map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                            <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                            <span>{feature}</span>
+                          </li>
                         ))}
                       </ul>
-                      <motion.div
-                        className={`mt-4 flex items-center gap-1 text-sm font-medium ${colors.text}`}
-                        initial={{ opacity: 0, x: -10 }}
-                        whileHover={{ x: 5 }}
-                      >
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity">En savoir plus</span>
-                        <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
-                      </motion.div>
-                    </CardContent>
-                  </Card>
+                      <div className="mt-6 flex items-center gap-1 text-sm text-gray-500 group-hover:text-emerald-400 transition-colors">
+                        <span>En savoir plus</span>
+                        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </div>
+                  </div>
                 </Link>
               </motion.div>
             );
@@ -509,111 +477,207 @@ function MeasurableResultsSection() {
 }
 
 // ============================================================================
-// ULTIMATE SCAN SECTION (Style Ultrahuman - Dark + Phone Mockup)
+// ULTIMATE SCAN SECTION (Style Ultrahuman Premium - Redesign complet)
 // ============================================================================
 function UltimateScanSection() {
   return (
-    <section className="relative py-32 overflow-hidden bg-black">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-emerald-950/20 to-black" />
+    <section className="relative min-h-screen overflow-hidden bg-black py-20 lg:py-0 lg:flex lg:items-center">
+      {/* Animated background gradients */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-emerald-950/10 to-black" />
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[128px]"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[128px]"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
 
-      <div className="relative mx-auto max-w-7xl px-4">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left - Big Headline */}
+      <div className="relative mx-auto max-w-7xl px-4 w-full">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+          {/* Left - Typography */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center lg:text-left"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-center lg:text-left order-2 lg:order-1"
           >
-            <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold italic text-emerald-400 leading-tight mb-8">
+            <motion.h2
+              className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold italic text-emerald-400 leading-[0.9] tracking-tight mb-12"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
               Tout en
               <br />
-              un scan.
-            </h2>
-            <p className="text-xl text-gray-400 mb-8 max-w-md mx-auto lg:mx-0">
-              Analyse visuelle, biomécanique, métabolique et hormonale. 18 sections. 40-50 pages.
-            </p>
-            <Link href="/offers/ultimate-scan">
-              <Button size="lg" className="gap-2 h-14 px-8 text-lg bg-emerald-500 hover:bg-emerald-600 text-black">
-                Ultimate Scan — 79€
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            </Link>
+              <span className="text-white">un scan.</span>
+            </motion.h2>
+
+            <motion.p
+              className="text-xl lg:text-2xl text-gray-400 mb-12 max-w-lg mx-auto lg:mx-0 leading-relaxed"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
+              Analyse visuelle. Biomécanique. Métabolique. Hormonale.
+              <span className="block mt-2 text-white font-medium">18 sections. 40-50 pages.</span>
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <Link href="/offers/ultimate-scan">
+                <Button
+                  size="lg"
+                  className="group relative h-16 px-10 text-lg font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]"
+                >
+                  <span className="relative z-10 flex items-center gap-3">
+                    Ultimate Scan — 79€
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Button>
+              </Link>
+            </motion.div>
           </motion.div>
 
-          {/* Right - Phone Mockup */}
+          {/* Right - Premium Phone Mockup */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
+            whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="relative flex justify-center"
+            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+            className="relative flex justify-center order-1 lg:order-2"
           >
-            {/* Phone Frame */}
-            <div className="relative w-[280px] sm:w-[320px]">
-              <div className="relative bg-gradient-to-b from-gray-900 to-black rounded-[2.5rem] p-3 shadow-2xl border border-gray-800">
-                {/* Screen */}
-                <div className="bg-black rounded-[2rem] overflow-hidden">
-                  {/* Header */}
-                  <div className="px-4 pt-8 pb-4 text-center">
-                    <p className="text-xs text-gray-500 mb-1">ULTIMATE SCAN</p>
-                    <p className="text-4xl font-bold text-white">87</p>
-                    <p className="text-emerald-400 text-sm">Score Global</p>
-                  </div>
+            {/* Outer glow */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                className="w-[400px] h-[400px] bg-emerald-500/20 rounded-full blur-[100px]"
+                animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.6, 0.4] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              />
+            </div>
 
-                  {/* Metrics Cards */}
-                  <div className="px-3 pb-4 space-y-2">
-                    {/* Posture Score */}
-                    <div className="bg-gray-900/80 rounded-xl p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">Analyse Posturale</span>
-                        <span className="text-emerald-400 text-xs">Optimal</span>
-                      </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold text-white">92</span>
-                        <span className="text-xs text-gray-500">/100</span>
+            {/* Phone */}
+            <div className="relative w-[300px] sm:w-[340px] perspective-1000">
+              <motion.div
+                className="relative"
+                whileHover={{ scale: 1.02, rotateY: 5 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Phone frame */}
+                <div className="relative bg-gradient-to-b from-gray-800 via-gray-900 to-black rounded-[3rem] p-2 shadow-[0_0_60px_rgba(0,0,0,0.8)] border border-gray-700/50">
+                  {/* Notch */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-20" />
+
+                  {/* Screen */}
+                  <div className="bg-black rounded-[2.5rem] overflow-hidden">
+                    {/* Status bar */}
+                    <div className="flex justify-between items-center px-8 pt-3 pb-2">
+                      <span className="text-white text-xs font-medium">9:41</span>
+                      <div className="flex gap-1">
+                        <div className="w-4 h-2 bg-white rounded-sm" />
                       </div>
                     </div>
 
-                    {/* Biomecanique */}
-                    <div className="bg-gray-900/80 rounded-xl p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">Biomécanique</span>
-                        <span className="text-amber-400 text-xs">À améliorer</span>
+                    {/* App content */}
+                    <div className="px-4 pb-6">
+                      {/* Header */}
+                      <div className="text-center py-6">
+                        <p className="text-[10px] text-gray-500 tracking-[0.2em] uppercase mb-2">Ultimate Scan</p>
+                        <motion.div
+                          className="relative inline-block"
+                          initial={{ scale: 0 }}
+                          whileInView={{ scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.8, type: "spring", stiffness: 100 }}
+                        >
+                          <span className="text-6xl font-bold text-white">87</span>
+                          <motion.div
+                            className="absolute -right-2 -top-1 w-3 h-3 bg-emerald-400 rounded-full"
+                            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          />
+                        </motion.div>
+                        <p className="text-emerald-400 text-sm mt-1 font-medium">Score Global</p>
                       </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold text-white">68</span>
-                        <span className="text-xs text-gray-500">/100</span>
-                      </div>
-                    </div>
 
-                    {/* Metabolique */}
-                    <div className="bg-gray-900/80 rounded-xl p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">Métabolisme</span>
-                        <span className="text-emerald-400 text-xs">Excellent</span>
+                      {/* Metrics */}
+                      <div className="space-y-3">
+                        {[
+                          { label: "ANALYSE POSTURALE", score: 92, status: "Optimal", color: "emerald" },
+                          { label: "BIOMÉCANIQUE", score: 68, status: "À améliorer", color: "amber" },
+                          { label: "MÉTABOLISME", score: 91, status: "Excellent", color: "emerald" },
+                        ].map((metric, i) => (
+                          <motion.div
+                            key={metric.label}
+                            className="bg-gradient-to-r from-gray-900/90 to-gray-900/50 rounded-2xl p-4 border border-gray-800/50"
+                            initial={{ opacity: 0, x: 20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 1 + i * 0.15 }}
+                          >
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-[9px] text-gray-500 tracking-[0.15em]">{metric.label}</span>
+                              <span className={`text-[10px] font-medium ${metric.color === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                {metric.status}
+                              </span>
+                            </div>
+                            <div className="flex items-end justify-between">
+                              <span className="text-3xl font-bold text-white">{metric.score}</span>
+                              <div className="flex-1 mx-4">
+                                <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                  <motion.div
+                                    className={`h-full rounded-full ${metric.color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                    initial={{ width: 0 }}
+                                    whileInView={{ width: `${metric.score}%` }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: 1.2 + i * 0.15, duration: 0.8, ease: "easeOut" }}
+                                  />
+                                </div>
+                              </div>
+                              <span className="text-xs text-gray-600">/100</span>
+                            </div>
+                          </motion.div>
+                        ))}
                       </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold text-white">91</span>
-                        <span className="text-xs text-gray-500">/100</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Bottom nav hint */}
-                  <div className="px-4 py-3 border-t border-gray-800/50">
-                    <div className="flex justify-around">
-                      {["Posture", "Bio", "Métabo", "Protocoles"].map((tab, i) => (
-                        <span key={i} className={`text-[9px] ${i === 0 ? 'text-emerald-400' : 'text-gray-600'}`}>{tab}</span>
-                      ))}
+                      {/* Bottom nav */}
+                      <div className="flex justify-around mt-6 pt-4 border-t border-gray-800/50">
+                        {[
+                          { icon: "◎", label: "Scan", active: true },
+                          { icon: "◇", label: "Protocoles", active: false },
+                          { icon: "▢", label: "Suivi", active: false },
+                          { icon: "◈", label: "Profile", active: false },
+                        ].map((item) => (
+                          <div key={item.label} className="flex flex-col items-center gap-1">
+                            <span className={`text-lg ${item.active ? 'text-emerald-400' : 'text-gray-700'}`}>{item.icon}</span>
+                            <span className={`text-[8px] uppercase tracking-wider ${item.active ? 'text-emerald-400' : 'text-gray-700'}`}>{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Glow effect */}
-              <div className="absolute -inset-8 bg-emerald-500/20 blur-3xl rounded-full -z-10" />
+                {/* Reflection */}
+                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-gradient-to-b from-gray-900/20 to-transparent blur-xl rounded-full" />
+              </motion.div>
             </div>
           </motion.div>
         </div>
