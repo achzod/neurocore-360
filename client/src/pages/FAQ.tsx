@@ -26,7 +26,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "L'analyse photo, ça marche comment ?",
-    answer: "Disponible avec le plan Elite. Tu uploades 2-3 photos (face, profil, dos) et notre système analyse : posture (épaules, bassin, lordose), composition corporelle estimée, asymétries musculaires, points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées."
+    answer: "Disponible avec le plan Elite. Tu uploades 2-3 photos (face, profil, dos) et j'analyse : posture (épaules, bassin, lordose), composition corporelle estimée, asymétries musculaires, points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées."
   },
   {
     question: "Ai-je besoin d'une prise de sang ?",

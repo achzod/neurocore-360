@@ -151,7 +151,7 @@ export const BLOOD_ANALYSIS_PRICING = {
   name: "Blood Analysis",
   price: 79,
   currency: "EUR",
-  description: "Analyse IA de ton bilan sanguin avec ranges OPTIMAUX",
+  description: "Analyse approfondie de ton bilan sanguin avec ranges OPTIMAUX",
   features: [
     "Analyse de +30 biomarqueurs",
     "Ranges OPTIMAUX vs normaux",

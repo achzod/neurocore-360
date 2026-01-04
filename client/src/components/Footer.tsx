@@ -13,7 +13,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              L'analyse corporelle 360 la plus complète au monde. Rapport IA personnalisé avec protocoles d'optimisation.
+              L'analyse corporelle 360 la plus complète au monde. Rapport personnalisé par Achzod avec protocoles d'optimisation.
             </p>
             <div className="mt-4 flex gap-4">
               <a 

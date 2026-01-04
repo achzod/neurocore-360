@@ -128,7 +128,7 @@ export default function BlogArticlePage() {
                 <div>
                   <div className="font-semibold">{article.author}</div>
                   <div className="text-sm text-muted-foreground">
-                    Équipe éditoriale
+                    Coach & Auteur
                   </div>
                 </div>
               </div>

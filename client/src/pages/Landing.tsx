@@ -57,7 +57,7 @@ function HeroSection() {
           {/* Badge */}
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-4 py-2 text-sm backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-muted-foreground">Powered by AI</span>
+            <span className="text-muted-foreground">par Achzod</span>
           </div>
 
           {/* Main headline */}
