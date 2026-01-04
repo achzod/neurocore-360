@@ -36,6 +36,13 @@ import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 // HERO SECTION
 // ============================================================================
 function HeroSection() {
+  const scrollToOffers = () => {
+    const element = document.getElementById("offers");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-background">
       {/* Subtle gradient background */}
@@ -69,33 +76,15 @@ function HeroSection() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/offers/ultimate-scan">
-              <Button size="lg" className="gap-2 px-8 text-base font-semibold">
-                Commencer l'analyse
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/offers/discovery-scan">
+            <Button size="lg" className="gap-2 px-8 text-base font-semibold" onClick={scrollToOffers}>
+              Unlock Your Potential
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Link href="/deduction-coaching">
               <Button variant="outline" size="lg" className="gap-2 px-8 text-base">
-                Essayer gratuitement
+                Montant 100% déduit
               </Button>
             </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-16 grid grid-cols-3 gap-8 border-t border-border/50 pt-10">
-            <div>
-              <div className="text-3xl font-bold text-foreground">15+</div>
-              <div className="text-sm text-muted-foreground">Domaines analysés</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-foreground">180+</div>
-              <div className="text-sm text-muted-foreground">Questions</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-foreground">50+</div>
-              <div className="text-sm text-muted-foreground">Pages de rapport</div>
-            </div>
           </div>
         </motion.div>
       </div>
@@ -221,19 +210,106 @@ function FiveOffersSection() {
 // CERTIFICATIONS SECTION
 // ============================================================================
 function CertificationsSection() {
+  const certifications = [
+    { logo: issaLogo, name: "ISSA", certs: ["CPT", "Nutritionist", "Bodybuilding Specialist"] },
+    { logo: pnLogo, name: "Precision Nutrition", certs: ["Level 1 Certified", "Sleep, Stress & Recovery"] },
+    { logo: preScriptLogo, name: "Pre-Script", certs: ["Movement Assessment", "Corrective Exercise"] },
+    { logo: nasmLogo, name: "NASM", certs: ["CPT", "CES", "PES"] },
+  ];
+
   return (
-    <section className="border-y border-border/50 bg-background py-12">
+    <section className="border-y border-border/50 bg-background py-12 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-8 text-center">
           <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            Certifications & Expertise
+            10+ Certifications Internationales
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-8 opacity-60 grayscale transition-all hover:opacity-80 hover:grayscale-0">
-          <img src={issaLogo} alt="ISSA" className="h-12 w-auto object-contain" />
-          <img src={pnLogo} alt="Precision Nutrition" className="h-12 w-auto object-contain" />
-          <img src={preScriptLogo} alt="Pre-Script" className="h-12 w-auto object-contain" />
-          <img src={nasmLogo} alt="NASM" className="h-12 w-auto object-contain" />
+        {/* Scrolling container */}
+        <div className="relative">
+          <div className="flex animate-scroll gap-16">
+            {/* First set */}
+            {certifications.map((cert, index) => (
+              <div key={`first-${index}`} className="flex flex-col items-center gap-2 min-w-[200px]">
+                <img
+                  src={cert.logo}
+                  alt={cert.name}
+                  className="h-16 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                />
+                <div className="text-center">
+                  <p className="text-xs font-semibold text-muted-foreground">{cert.name}</p>
+                  <p className="text-[10px] text-muted-foreground/70">{cert.certs.join(" • ")}</p>
+                </div>
+              </div>
+            ))}
+            {/* Duplicate for seamless loop */}
+            {certifications.map((cert, index) => (
+              <div key={`second-${index}`} className="flex flex-col items-center gap-2 min-w-[200px]">
+                <img
+                  src={cert.logo}
+                  alt={cert.name}
+                  className="h-16 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                />
+                <div className="text-center">
+                  <p className="text-xs font-semibold text-muted-foreground">{cert.name}</p>
+                  <p className="text-[10px] text-muted-foreground/70">{cert.certs.join(" • ")}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// MEDIA LOGOS SECTION (Paru dans les médias)
+// ============================================================================
+function MediaLogosSection() {
+  const mediaLogos = [
+    { name: "Yahoo Finance", logo: "https://logo.clearbit.com/yahoo.com" },
+    { name: "Bloomberg", logo: "https://logo.clearbit.com/bloomberg.com" },
+    { name: "Business Insider", logo: "https://logo.clearbit.com/businessinsider.com" },
+    { name: "Reuters", logo: "https://logo.clearbit.com/reuters.com" },
+    { name: "Associated Press", logo: "https://logo.clearbit.com/ap.org" },
+    { name: "MarketWatch", logo: "https://logo.clearbit.com/marketwatch.com" },
+    { name: "Apple News", logo: "https://logo.clearbit.com/apple.com" },
+    { name: "Google News", logo: "https://logo.clearbit.com/google.com" },
+  ];
+
+  return (
+    <section className="py-8 bg-muted/30 overflow-hidden">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-6 text-center">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Paru dans les médias
+          </p>
+        </div>
+        {/* Scrolling container */}
+        <div className="relative">
+          <div className="flex animate-scroll-fast gap-12 items-center">
+            {/* First set */}
+            {mediaLogos.map((media, index) => (
+              <Link key={`first-${index}`} href="/press">
+                <img
+                  src={media.logo}
+                  alt={media.name}
+                  className="h-8 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+                />
+              </Link>
+            ))}
+            {/* Duplicate for seamless loop */}
+            {mediaLogos.map((media, index) => (
+              <Link key={`second-${index}`} href="/press">
+                <img
+                  src={media.logo}
+                  alt={media.name}
+                  className="h-8 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+                />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -458,7 +534,7 @@ function TestimonialsSection() {
     <section id="reviews" className="py-24 bg-muted/30">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Ce qu'ils en disent</h2>
+          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Ce qu'en disent mes clients</h2>
           <p className="text-lg text-muted-foreground">Des résultats concrets, des vies transformées</p>
         </div>
 
@@ -933,6 +1009,7 @@ export default function Landing() {
         <HeroSection />
         <FiveOffersSection />
         <CertificationsSection />
+        <MediaLogosSection />
         <SocialProofBanner />
         <WearablesSection />
         <MeasurableResultsSection />

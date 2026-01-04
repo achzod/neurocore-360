@@ -13,8 +13,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              L'analyse corporelle 360 la plus complète au monde. 180+ questions, 15 domaines
-              d'expertise, rapport IA personnalisé de 50+ pages.
+              L'analyse corporelle 360 la plus complète au monde. Rapport IA personnalisé avec protocoles d'optimisation.
             </p>
             <div className="mt-4 flex gap-4">
               <a 

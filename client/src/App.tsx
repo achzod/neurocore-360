@@ -25,6 +25,7 @@ import BurnoutDetectionPage from "@/pages/BurnoutDetectionPage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
 import Press from "@/pages/Press";
+import DeductionCoaching from "@/pages/DeductionCoaching";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogArticle} />
       <Route path="/press" component={Press} />
+      <Route path="/deduction-coaching" component={DeductionCoaching} />
       <Route path="/test" component={TestAudit} />
       <Route path="/report" component={Report} />
       <Route path="/report/:auditId" component={Report} />
