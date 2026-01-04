@@ -31,20 +31,32 @@ import {
   BarChart3,
 } from "lucide-react";
 
-// What's included in free vs premium
-const features = [
-  { text: "Resume Executif personnalise", included: true, desc: "Synthese de ton profil en 1 page" },
-  { text: "Analyse Anthropometrique", included: true, desc: "IMC, composition, morphotype" },
-  { text: "Profil Metabolique de Base", included: true, desc: "Metabolisme, energie, fatigue" },
-  { text: "Score Global de Sante", included: true, desc: "Note sur 100 avec benchmarks" },
-  { text: "Plan d'Action 30 Jours", included: true, desc: "3 actions prioritaires a implementer" },
-  { text: "Profil Hormonal complet", included: false, desc: "Testosterone, cortisol, thyroide..." },
-  { text: "Profil Neurotransmetteurs", included: false, desc: "Dopamine, serotonine, GABA..." },
-  { text: "Analyse HRV & Recuperation", included: false, desc: "Stress, recuperation, variabilite" },
-  { text: "Digestion & Microbiome", included: false, desc: "Sante intestinale, inflammation" },
-  { text: "Protocole Supplements detaille", included: false, desc: "Stack personnalise avec dosages" },
-  { text: "Feuille de Route 90 Jours", included: false, desc: "Plan semaine par semaine" },
-  { text: "10 autres domaines d'analyse", included: false, desc: "Sommeil, stress, longevite..." },
+// What's included in Discovery Scan (free)
+const discoveryFeatures = [
+  { text: "Executive Summary personnalise", desc: "Synthese de ton profil en 1 page" },
+  { text: "Analyse energie & recuperation", desc: "Sommeil, stress, fatigue" },
+  { text: "Analyse metabolisme & nutrition", desc: "Digestion, habitudes alimentaires" },
+  { text: "Plan d'action 14 jours", desc: "Actions prioritaires a implementer" },
+  { text: "Rapport PDF 5-7 pages", desc: "Telechargeable immediatement" },
+];
+
+// What's included in Anabolic Bioscan (59€)
+const anabolicFeatures = [
+  { text: "16 sections d'analyse", desc: "Rapport complet 25-30 pages" },
+  { text: "Profil Hormonal complet", desc: "Testosterone, cortisol, thyroide..." },
+  { text: "5 protocoles personnalises", desc: "Matin, soir, digestion, bureau, training" },
+  { text: "Stack Supplements optimise", desc: "Dosages precis et timing" },
+  { text: "Plan 30-60-90 jours", desc: "Roadmap semaine par semaine" },
+  { text: "KPIs et tableau de bord", desc: "Metriques de suivi" },
+];
+
+// What's included in Ultimate Scan (79€)
+const ultimateFeatures = [
+  { text: "18 sections ultra-detaillees", desc: "Rapport 40-50 pages complet" },
+  { text: "Analyse photo posturale", desc: "Composition corporelle, morphotype" },
+  { text: "Analyse biomecanique complete", desc: "Psoas, diaphragme, sangle profonde" },
+  { text: "Tout l'Anabolic Bioscan inclus", desc: "16 sections + 2 exclusives" },
+  { text: "Support prioritaire", desc: "Reponse sous 24h" },
 ];
 
 // How it works steps
@@ -177,9 +189,6 @@ function FAQAccordion({
 
 export default function AuditGratuit() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  const includedFeatures = features.filter((f) => f.included);
-  const lockedFeatures = features.filter((f) => !f.included);
 
   return (
     <div className="min-h-screen bg-background">
@@ -419,106 +428,134 @@ export default function AuditGratuit() {
           </div>
         </section>
 
-        {/* What's Included */}
+        {/* What's Included - 3 Columns Comparison */}
         <section className="py-20 lg:py-28 bg-gradient-to-b from-muted/30 to-transparent">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
-              {/* Left - Included */}
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Compare les offres</h2>
+              <p className="text-muted-foreground">Choisis le niveau d'analyse adapte a tes objectifs</p>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6 items-start">
+              {/* Column 1 - Discovery Scan (Free) */}
               <div>
                 <div className="flex items-center gap-2 mb-6">
                   <Check className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-bold">Inclus dans Discovery Scan</h2>
+                  <h3 className="text-xl font-bold">Discovery Scan</h3>
+                  <Badge className="ml-auto bg-primary/20 text-primary">Gratuit</Badge>
                 </div>
                 <div className="space-y-3">
-                  {includedFeatures.map((feature, i) => (
+                  {discoveryFeatures.map((feature, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
+                      transition={{ delay: i * 0.05 }}
                     >
                       <Card className="border-primary/20 bg-primary/5">
                         <CardContent className="p-4 flex items-start gap-3">
                           <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                           <div>
-                            <p className="font-medium">{feature.text}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {feature.desc}
-                            </p>
+                            <p className="font-medium text-sm">{feature.text}</p>
+                            <p className="text-xs text-muted-foreground">{feature.desc}</p>
                           </div>
                         </CardContent>
                       </Card>
                     </motion.div>
                   ))}
                 </div>
-
-                {/* CTA */}
-                <div className="mt-8">
+                <div className="mt-6">
                   <Link href="/audit-complet/questionnaire?plan=free">
-                    <Button size="lg" className="gap-2 h-14 px-8 w-full sm:w-auto">
+                    <Button size="lg" className="gap-2 w-full">
                       <Compass className="h-5 w-5" />
-                      Commencer gratuitement
-                      <ArrowRight className="h-5 w-5" />
+                      Commencer gratuit
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              {/* Right - Locked (tease upgrade) */}
+              {/* Column 2 - Anabolic Bioscan (59€) */}
               <div>
                 <div className="flex items-center gap-2 mb-6">
-                  <Lock className="h-6 w-6 text-muted-foreground" />
-                  <h2 className="text-2xl font-bold text-muted-foreground">
-                    Disponible avec Anabolic Bioscan
-                  </h2>
+                  <Activity className="h-6 w-6 text-emerald-500" />
+                  <h3 className="text-xl font-bold">Anabolic Bioscan</h3>
+                  <Badge className="ml-auto bg-emerald-500/20 text-emerald-500">59€</Badge>
                 </div>
                 <div className="space-y-3">
-                  {lockedFeatures.map((feature, i) => (
+                  {anabolicFeatures.map((feature, i) => (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, x: 20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: i * 0.05 }}
                     >
-                      <Card className="bg-muted/30 border-border/30">
+                      <Card className="border-emerald-500/20 bg-emerald-500/5">
                         <CardContent className="p-4 flex items-start gap-3">
-                          <Lock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                          <Lock className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
                           <div>
-                            <p className="font-medium text-muted-foreground">
-                              {feature.text}
-                            </p>
-                            <p className="text-sm text-muted-foreground/70">
-                              {feature.desc}
-                            </p>
+                            <p className="font-medium text-sm">{feature.text}</p>
+                            <p className="text-xs text-muted-foreground">{feature.desc}</p>
                           </div>
-                          <Badge variant="outline" className="ml-auto shrink-0 text-xs">
-                            79€
-                          </Badge>
                         </CardContent>
                       </Card>
                     </motion.div>
                   ))}
                 </div>
+                <div className="mt-6">
+                  <Link href="/offers/anabolic-bioscan">
+                    <Button size="lg" variant="outline" className="gap-2 w-full border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10">
+                      Voir Anabolic Bioscan
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
 
-                {/* Upgrade CTA */}
-                <Card className="mt-8 bg-emerald-500/10 border-emerald-500/30">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="h-5 w-5 text-emerald-400" />
-                      <span className="font-semibold">Envie d'aller plus loin ?</span>
+              {/* Column 3 - Ultimate Scan (79€) - POPULAR */}
+              <div className="relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <Badge className="bg-cyan-500 text-white">Populaire</Badge>
+                </div>
+                <Card className="border-cyan-500/50 bg-cyan-500/5 pt-4">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-6">
+                      <Zap className="h-6 w-6 text-cyan-500" />
+                      <h3 className="text-xl font-bold">Ultimate Scan</h3>
+                      <Badge className="ml-auto bg-cyan-500/20 text-cyan-500">79€</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      L'Anabolic Bioscan (79€) debloque 15 domaines d'analyse, protocole
-                      supplements et feuille de route 90 jours.
-                    </p>
-                    <Link href="/offers/audit-premium">
-                      <Button variant="outline" className="gap-2">
-                        Voir Anabolic Bioscan
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                    <div className="space-y-3">
+                      {ultimateFeatures.map((feature, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: 20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.05 }}
+                        >
+                          <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                            <div className="flex items-start gap-3">
+                              <Zap className="h-5 w-5 text-cyan-500 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-medium text-sm">{feature.text}</p>
+                                <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    <div className="mt-6">
+                      <Link href="/offers/ultimate-scan">
+                        <Button size="lg" className="gap-2 w-full bg-cyan-500 hover:bg-cyan-600">
+                          <Zap className="h-5 w-5" />
+                          Obtenir Ultimate Scan
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
