@@ -334,7 +334,6 @@ function CertificationsSection() {
   return (
     <section className="bg-black py-20">
       <div className="mx-auto max-w-7xl px-4">
-        {/* Title */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -346,7 +345,6 @@ function CertificationsSection() {
           </p>
         </motion.div>
 
-        {/* Certification Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
           {certifications.map((cert, index) => (
             <motion.div
@@ -357,52 +355,28 @@ function CertificationsSection() {
               transition={{ delay: index * 0.1 }}
               className="relative rounded-2xl border border-gray-800 bg-gray-950/50 p-6 hover:border-gray-700 transition-all duration-300"
             >
-              {/* Logo */}
               <div className="h-16 mb-6 flex items-center justify-center">
-                <img
-                  src={cert.logo}
-                  alt={cert.name}
-                  className="h-12 w-auto object-contain"
-                />
+                <img src={cert.logo} alt={cert.name} className="h-12 w-auto object-contain" />
               </div>
-
-              {/* Name */}
               <h3 className="text-xl font-bold text-white text-center mb-2">{cert.name}</h3>
               <p className="text-sm text-gray-500 text-center mb-6">{cert.fullName}</p>
-
-              {/* Badges */}
               <div className="flex flex-wrap justify-center gap-2 mb-4">
                 {cert.certs.map((c) => (
-                  <span
-                    key={c}
-                    className="text-xs font-medium text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 rounded-full"
-                  >
+                  <span key={c} className="text-xs font-medium text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 rounded-full">
                     {c}
                   </span>
                 ))}
               </div>
-
-              {/* Country */}
               <p className="text-xs text-gray-600 text-center">{cert.country}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Media Section */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-gray-600 mb-8">
-            Vu dans les médias
-          </p>
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-gray-600 mb-8">Vu dans les médias</p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             {mediaLogos.map((media) => (
-              <span key={media} className="text-sm text-gray-500 hover:text-gray-400 transition-colors">
-                {media}
-              </span>
+              <span key={media} className="text-sm text-gray-500 hover:text-gray-400 transition-colors">{media}</span>
             ))}
           </div>
         </motion.div>
@@ -484,9 +458,7 @@ function WearablesSection() {
         >
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-500 mb-4">Intégrations</p>
           <h2 className="mb-4 text-3xl sm:text-4xl font-bold text-white">Sync tes wearables</h2>
-          <p className="mb-12 text-base text-gray-500">
-            Connecte tes données pour une analyse plus précise
-          </p>
+          <p className="mb-12 text-base text-gray-500">Connecte tes données pour une analyse plus précise</p>
 
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             {wearables.map((brand, index) => (
@@ -496,23 +468,10 @@ function WearablesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
-                className={`relative flex flex-col items-center ${
-                  !brand.available ? "opacity-40" : "hover:opacity-80"
-                } transition-opacity duration-300`}
+                className={`relative flex flex-col items-center ${!brand.available ? "opacity-40" : "hover:opacity-80"} transition-opacity duration-300`}
               >
-                {brand.comingSoon && (
-                  <span className="absolute -top-3 text-[9px] text-gray-500">
-                    Bientôt
-                  </span>
-                )}
-                <img
-                  src={brand.logo}
-                  alt={brand.name}
-                  className="h-8 w-8 object-contain mb-2 rounded grayscale hover:grayscale-0 transition-all duration-300"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+                {brand.comingSoon && <span className="absolute -top-3 text-[9px] text-gray-500">Bientôt</span>}
+                <img src={brand.logo} alt={brand.name} className="h-8 w-8 object-contain mb-2 rounded grayscale hover:grayscale-0 transition-all duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 <span className="text-xs text-gray-500">{brand.name}</span>
               </motion.div>
             ))}
