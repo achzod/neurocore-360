@@ -181,50 +181,91 @@ function FiveOffersSection() {
     },
   ];
 
+  const colorClasses: Record<string, { bg: string; text: string; glow: string; border: string }> = {
+    slate: { bg: "bg-slate-500/10", text: "text-slate-500", glow: "group-hover:shadow-slate-500/20", border: "group-hover:border-slate-500/50" },
+    emerald: { bg: "bg-emerald-500/10", text: "text-emerald-500", glow: "group-hover:shadow-emerald-500/20", border: "group-hover:border-emerald-500/50" },
+    cyan: { bg: "bg-cyan-500/10", text: "text-cyan-500", glow: "group-hover:shadow-cyan-500/30", border: "group-hover:border-cyan-500/50" },
+    red: { bg: "bg-red-500/10", text: "text-red-500", glow: "group-hover:shadow-red-500/20", border: "group-hover:border-red-500/50" },
+    purple: { bg: "bg-purple-500/10", text: "text-purple-500", glow: "group-hover:shadow-purple-500/20", border: "group-hover:border-purple-500/50" },
+  };
+
   return (
-    <section id="offers" className="py-24 bg-muted/30">
+    <section id="offers" className="py-24 bg-gradient-to-b from-background via-muted/30 to-background">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-16 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-16 text-center"
+        >
           <h2 className="mb-4 text-3xl font-bold sm:text-4xl">5 offres. Un seul objectif.</h2>
           <p className="text-lg text-muted-foreground">Optimiser ta performance.</p>
-        </div>
+        </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
           {offers.map((offer, index) => {
             const Icon = offer.icon;
+            const colors = colorClasses[offer.color];
             return (
               <motion.div
                 key={offer.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
               >
                 <Link href={offer.href}>
-                  <Card className={`group relative h-full cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 ${offer.popular ? 'ring-2 ring-primary' : ''}`}>
+                  <Card className={`group relative h-full cursor-pointer transition-all duration-300 ${colors.glow} ${colors.border} hover:shadow-xl ${offer.popular ? 'ring-2 ring-cyan-500' : ''}`}>
                     {offer.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-primary text-primary-foreground">Populaire</Badge>
-                      </div>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        whileInView={{ scale: 1 }}
+                        transition={{ delay: 0.5, type: "spring" }}
+                        className="absolute -top-3 left-1/2 -translate-x-1/2 z-10"
+                      >
+                        <Badge className="bg-cyan-500 text-white animate-pulse">Populaire</Badge>
+                      </motion.div>
                     )}
                     <CardContent className="p-6">
-                      <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-${offer.color}-500/10`}>
-                        <Icon className={`h-6 w-6 text-${offer.color}-500`} />
-                      </div>
-                      <h3 className="mb-1 text-lg font-bold">{offer.name}</h3>
+                      <motion.div
+                        className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl ${colors.bg} transition-transform duration-300 group-hover:scale-110`}
+                        whileHover={{ rotate: [0, -10, 10, 0] }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <Icon className={`h-6 w-6 ${colors.text}`} />
+                      </motion.div>
+                      <h3 className="mb-1 text-lg font-bold group-hover:text-foreground transition-colors">{offer.name}</h3>
                       <p className="mb-3 text-sm text-muted-foreground">{offer.subtitle}</p>
-                      <div className="mb-4 text-2xl font-bold">{offer.price}</div>
+                      <motion.div
+                        className={`mb-4 text-2xl font-bold ${colors.text}`}
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        {offer.price}
+                      </motion.div>
                       <ul className="space-y-2">
                         {offer.features.map((feature, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Check className="h-4 w-4 text-primary" />
+                          <motion.li
+                            key={i}
+                            initial={{ opacity: 0, x: -10 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: index * 0.1 + i * 0.05 }}
+                            className="flex items-center gap-2 text-sm text-muted-foreground"
+                          >
+                            <Check className={`h-4 w-4 ${colors.text}`} />
                             {feature}
-                          </li>
+                          </motion.li>
                         ))}
                       </ul>
-                      <div className="mt-4 flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                        En savoir plus <ChevronRight className="h-4 w-4" />
-                      </div>
+                      <motion.div
+                        className={`mt-4 flex items-center gap-1 text-sm font-medium ${colors.text}`}
+                        initial={{ opacity: 0, x: -10 }}
+                        whileHover={{ x: 5 }}
+                      >
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity">En savoir plus</span>
+                        <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                      </motion.div>
                     </CardContent>
                   </Card>
                 </Link>
