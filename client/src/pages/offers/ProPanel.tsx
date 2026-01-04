@@ -1,6 +1,6 @@
 /**
  * NEUROCORE 360 - Ultimate Scan Offer Page
- * Ultrahuman-style premium sales page - 149€
+ * Ultrahuman-style premium sales page - 79€
  */
 
 import { useState } from "react";
@@ -117,12 +117,12 @@ const faqItems = [
   {
     question: "Quelle est la difference avec l'Anabolic Bioscan ?",
     answer:
-      "L'Anabolic Bioscan (79€) couvre les 15 domaines via questionnaire. L'Ultimate Scan (149€) ajoute : sync wearables avec donnees reelles (HRV, sommeil), analyse blessures/douleurs, protocole rehabilitation, et suivi evolution. C'est pour ceux qui veulent le maximum de precision.",
+      "L'Anabolic Bioscan (59€) analyse 16 sections via questionnaire. L'Ultimate Scan (79€) ajoute l'analyse visuelle et posturale complete + l'analyse biomecanique (psoas, diaphragme, sangle profonde) basee sur tes photos. 18 sections, rapport 40-50 pages.",
   },
   {
     question: "Je n'ai pas de wearable, ca vaut le coup ?",
     answer:
-      "Si tu n'as pas de wearable, l'Anabolic Bioscan (79€) est probablement suffisant. L'Ultimate Scan tire sa valeur de l'integration des donnees objectives de tes appareils. Sans wearable, tu beneficies quand meme de l'analyse blessures et du protocole rehab.",
+      "Si tu n'as pas de wearable, l'Anabolic Bioscan (59€) est probablement suffisant. L'Ultimate Scan tire sa valeur de l'integration des donnees objectives de tes appareils. Sans wearable, tu beneficies quand meme de l'analyse blessures et du protocole rehab.",
   },
   {
     question: "Mes donnees wearables sont-elles securisees ?",
@@ -140,14 +140,14 @@ const faqItems = [
       "Oui, le questionnaire blessures couvre 15+ zones (epaule, genou, dos, hanche...) avec historique et niveau de douleur actuel. Le protocole genere des exercices correctifs specifiques a tes desequilibres identifies.",
   },
   {
-    question: "Les 149€ sont-ils deduits du coaching ?",
+    question: "Les 79€ sont-ils deduits du coaching ?",
     answer:
-      "Oui ! Si tu prends un coaching Private Lab dans les 30 jours, les 149€ sont integralement deduits. Le Ultimate Scan devient gratuit retroactivement.",
+      "Oui ! Si tu prends un coaching Essential ou Private Lab dans les 30 jours, les 79€ sont integralement deduits. Le Ultimate Scan devient gratuit retroactivement.",
   },
   {
     question: "Puis-je upgrader depuis l'Anabolic Bioscan ?",
     answer:
-      "Oui, si tu as deja fait l'Anabolic Bioscan, tu peux upgrader vers Ultimate Scan pour 70€ (difference de prix). Contacte-nous avec ton email pour activer l'upgrade.",
+      "Oui, si tu as deja fait l'Anabolic Bioscan, tu peux upgrader vers Ultimate Scan pour 20€ (difference de prix). Contacte-moi avec ton email pour activer l'upgrade.",
   },
   {
     question: "Pour qui est l'Ultimate Scan ?",
@@ -157,7 +157,7 @@ const faqItems = [
   {
     question: "Combien de temps pour recevoir mon rapport ?",
     answer:
-      "Le rapport est genere en moins de 5 minutes apres completion du questionnaire. Si tu connectes un wearable, nous importons tes 30 derniers jours de donnees instantanement via Terra.",
+      "Ton rapport est genere sous 24 a 48h apres completion du questionnaire. Tu recois un email avec acces a ton dashboard interactif et le PDF telechargeabe de 40-50 pages.",
   },
 ];
 
@@ -643,7 +643,7 @@ export default function ProPanel() {
                     {/* Price */}
                     <div className="text-center mb-8">
                       <div className="flex items-baseline justify-center gap-2 mb-2">
-                        <span className="text-6xl font-bold text-cyan-400">149€</span>
+                        <span className="text-6xl font-bold text-cyan-400">79€</span>
                       </div>
                       <p className="text-muted-foreground">Paiement unique</p>
                       <p className="text-sm text-cyan-400 mt-2">
@@ -756,10 +756,10 @@ export default function ProPanel() {
                   {/* Header */}
                   <div className="p-4 bg-muted/30 font-medium">Feature</div>
                   <div className="p-4 bg-emerald-500/10 text-center font-medium text-emerald-400">
-                    Anabolic Bioscan (79€)
+                    Anabolic Bioscan (59€)
                   </div>
                   <div className="p-4 bg-cyan-500/10 text-center font-medium text-cyan-400">
-                    Ultimate Scan (149€)
+                    Ultimate Scan (79€)
                   </div>
 
                   {/* Rows */}
@@ -877,7 +877,7 @@ export default function ProPanel() {
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/50 py-4 z-50 lg:hidden">
         <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
           <div>
-            <p className="text-2xl font-bold text-cyan-400">149€</p>
+            <p className="text-2xl font-bold text-cyan-400">79€</p>
             <p className="text-xs text-muted-foreground">Deduit du coaching</p>
           </div>
           <Link href="/audit-complet/questionnaire?tier=elite">

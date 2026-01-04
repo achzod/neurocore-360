@@ -1,6 +1,6 @@
 /**
  * NEUROCORE 360 - Anabolic Bioscan Offer Page (ex Audit Premium)
- * Ultrahuman-style premium sales page - 79€
+ * Ultrahuman-style premium sales page - 59€
  */
 
 import { useState } from "react";
@@ -225,39 +225,39 @@ const faqItems = [
       "Chaque domaine recoit un score de 0 a 100 base sur tes reponses. Les scores sont ponderes selon l'impact sur ta sante globale. Un score global est calcule, et tes points forts/faiblesses sont identifies automatiquement pour prioriser les actions.",
   },
   {
-    question: "Sur quelles sources scientifiques vous basez-vous ?",
+    question: "Sur quelles sources scientifiques te bases-tu ?",
     answer:
       "Les protocoles sont bases sur les travaux de Andrew Huberman (Stanford), Peter Attia (medecine de longevite), Marek Health (hormones), Bryan Johnson (Blueprint), et la litterature scientifique peer-reviewed. Chaque recommandation est sourcee.",
   },
   {
-    question: "Quelle est la difference avec le Discovery Scan gratuit ?",
+    question: "Quelle est la difference avec l'Ultimate Scan ?",
     answer:
-      "Le Discovery Scan gratuit couvre 5 domaines de base avec un rapport resume. L'Anabolic Bioscan couvre les 15 domaines en profondeur avec profils hormonaux/neurotransmetteurs estimes, protocoles supplements detailles avec dosages, et feuille de route 90 jours. C'est 10x plus complet.",
+      "L'Anabolic Bioscan (59€) analyse 16 sections via questionnaire. L'Ultimate Scan (79€) ajoute l'analyse visuelle et posturale complete + l'analyse biomecanique (psoas, diaphragme, sangle profonde) basee sur tes photos. Si tu veux l'analyse photo, prends l'Ultimate.",
   },
   {
-    question: "Les 79€ sont-ils deduits du coaching ?",
+    question: "Les 59€ sont-ils deduits du coaching ?",
     answer:
-      "Oui ! Si tu decides de prendre un coaching Essential (797€) ou Private Lab dans les 30 jours suivant ton Anabolic Bioscan, les 79€ sont integralement deduits. Ton scan devient donc gratuit retroactivement.",
+      "Oui ! Si tu decides de prendre un coaching Essential ou Private Lab dans les 30 jours suivant ton Anabolic Bioscan, les 59€ sont integralement deduits. Ton scan devient donc gratuit retroactivement.",
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
     answer:
-      "Le rapport est genere instantanement apres validation du questionnaire. Tu recois immediatement acces a ton dashboard interactif avec radar chart, scores par domaine, points forts/faiblesses, et le PDF telechargeabe de 40+ pages.",
+      "Ton rapport est genere sous 24 a 48h apres completion du questionnaire. Tu recois un email avec acces a ton dashboard interactif et le PDF telechargeabe de 25-30 pages.",
   },
   {
     question: "Puis-je refaire le scan pour suivre mes progres ?",
     answer:
-      "Oui, nous recommandons de refaire le scan tous les 3-6 mois pour mesurer tes progres objectivement. Chaque scan est facture 79€, mais les clients coaching beneficient de scans illimites inclus dans leur forfait.",
+      "Oui, je recommande de refaire le scan tous les 3-6 mois pour mesurer tes progres objectivement. Chaque scan est facture 59€, mais les clients coaching beneficient de scans illimites inclus dans leur forfait.",
   },
   {
     question: "Le rapport remplace-t-il un avis medical ?",
     answer:
-      "Non. L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas un diagnostic medical. Pour toute condition de sante, consulte un professionnel. Notre rapport peut servir de base de discussion avec ton medecin en documentant tes symptomes et habitudes.",
+      "Non. L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas un diagnostic medical. Pour toute condition de sante, consulte un professionnel. Le rapport peut servir de base de discussion avec ton medecin en documentant tes symptomes et habitudes.",
   },
   {
     question: "Que contient exactement le rapport PDF ?",
     answer:
-      "Le rapport PDF fait 40+ pages et inclut : synthese executive, radar chart global, scores par domaine avec explications, analyse de tes points forts et priorites d'amelioration, profils hormonaux/neurotransmetteurs estimes, protocole nutrition personnalise, stack supplements avec dosages precis, et feuille de route 90 jours.",
+      "Le rapport PDF fait 25-30 pages et inclut : synthese executive, scores par domaine avec explications, analyse de tes points forts et priorites d'amelioration, 5 protocoles fermes (matin, soir, digestion, bureau, entrainement), stack supplements avec dosages precis, et plan 30-60-90 jours.",
   },
 ];
 
@@ -693,7 +693,7 @@ export default function AuditPremium() {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-emerald-500" />
-                <span>Resultats instantanes</span>
+                <span>Resultats sous 24-48h</span>
               </div>
             </div>
           </div>
@@ -795,7 +795,7 @@ export default function AuditPremium() {
                   <CardContent className="p-8">
                     <div className="text-center mb-8">
                       <div className="flex items-baseline justify-center gap-2 mb-2">
-                        <span className="text-6xl font-bold text-emerald-400">79€</span>
+                        <span className="text-6xl font-bold text-emerald-400">59€</span>
                       </div>
                       <p className="text-muted-foreground">Paiement unique</p>
                       <p className="text-sm text-emerald-400 mt-2">
@@ -814,7 +814,7 @@ export default function AuditPremium() {
                         "Protocole nutrition personnalise",
                         "Stack supplements avec dosages",
                         "Feuille de route 90 jours",
-                        "Rapport PDF 40+ pages",
+                        "Rapport PDF 25-30 pages",
                         "Dashboard interactif avec radar",
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-3">
@@ -836,7 +836,7 @@ export default function AuditPremium() {
                     </Link>
 
                     <p className="text-center text-sm text-muted-foreground mt-4">
-                      25-30 minutes - Resultats instantanes
+                      25-30 minutes - Resultats sous 24-48h
                     </p>
                   </CardContent>
                 </Card>
@@ -902,48 +902,58 @@ export default function AuditPremium() {
           </div>
         </section>
 
-        {/* Comparison with Free */}
+        {/* Comparison with Ultimate */}
         <section className="py-16 border-y border-border/30">
           <div className="mx-auto max-w-4xl px-4">
             <h2 className="text-2xl font-bold text-center mb-8">
-              Anabolic Bioscan vs Discovery Scan
+              Anabolic Bioscan vs Ultimate Scan
             </h2>
             <Card>
               <CardContent className="p-0 overflow-hidden">
                 <div className="grid grid-cols-3">
                   {/* Header */}
                   <div className="p-4 bg-muted/30 font-medium">Feature</div>
-                  <div className="p-4 bg-muted/30 text-center font-medium">Discovery (Gratuit)</div>
                   <div className="p-4 bg-emerald-500/10 text-center font-medium text-emerald-400">
-                    Anabolic Bioscan
+                    Anabolic Bioscan (59€)
+                  </div>
+                  <div className="p-4 bg-cyan-500/10 text-center font-medium text-cyan-400">
+                    Ultimate Scan (79€)
                   </div>
 
                   {/* Rows */}
                   {[
-                    { feature: "Questions", free: "~50", premium: "180+" },
-                    { feature: "Domaines", free: "5", premium: "15" },
-                    { feature: "Scores detailles", free: "Basique", premium: "0-100 par domaine" },
-                    { feature: "Profil Hormonal", free: "Non", premium: "Complet" },
-                    { feature: "Neurotransmetteurs", free: "Non", premium: "Oui" },
-                    { feature: "Protocole Supplements", free: "Resume", premium: "Detaille + dosages" },
-                    { feature: "Feuille Route 90j", free: "Non", premium: "Oui" },
-                    { feature: "Pages Rapport", free: "~10", premium: "40+" },
+                    { feature: "Sections d'analyse", anabolic: "16", ultimate: "18" },
+                    { feature: "Protocoles fermes", anabolic: "5", ultimate: "5" },
+                    { feature: "Stack supplements", anabolic: "✓", ultimate: "✓" },
+                    { feature: "Plan 30-60-90 jours", anabolic: "✓", ultimate: "✓" },
+                    { feature: "Analyse visuelle posturale", anabolic: "—", ultimate: "✓" },
+                    { feature: "Analyse biomecanique", anabolic: "—", ultimate: "✓" },
+                    { feature: "Morphotype & graisses", anabolic: "—", ultimate: "✓" },
+                    { feature: "Pages Rapport", anabolic: "25-30", ultimate: "40-50" },
                   ].map((row, i) => (
                     <div key={i} className="contents">
                       <div className="p-4 border-t border-border/30 text-sm">
                         {row.feature}
                       </div>
-                      <div className="p-4 border-t border-border/30 text-center text-sm text-muted-foreground">
-                        {row.free}
-                      </div>
                       <div className="p-4 border-t border-border/30 bg-emerald-500/5 text-center text-sm font-medium">
-                        {row.premium}
+                        {row.anabolic}
+                      </div>
+                      <div className="p-4 border-t border-border/30 bg-cyan-500/5 text-center text-sm font-medium">
+                        {row.ultimate}
                       </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
+            <div className="text-center mt-6">
+              <Link href="/offers/ultimate-scan">
+                <Button variant="outline" className="gap-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10">
+                  Voir Ultimate Scan
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -1007,7 +1017,7 @@ export default function AuditPremium() {
                 Pret pour ton Anabolic Bioscan ?
               </h2>
               <p className="text-xl text-gray-400 mb-10">
-                L'analyse metabolique la plus complete. 79€ deduits si tu prends un
+                L'analyse metabolique complete. 59€ deduits si tu prends un
                 coaching.
               </p>
 
@@ -1046,7 +1056,7 @@ export default function AuditPremium() {
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/50 py-4 z-50 lg:hidden">
         <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
           <div>
-            <p className="text-2xl font-bold text-emerald-400">79€</p>
+            <p className="text-2xl font-bold text-emerald-400">59€</p>
             <p className="text-xs text-muted-foreground">Deduit du coaching</p>
           </div>
           <Link href="/audit-complet/questionnaire">
