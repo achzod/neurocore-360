@@ -7,15 +7,12 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import {
-  Crown,
   ArrowRight,
   Check,
-  Camera,
   FileText,
   Target,
   Activity,
@@ -30,121 +27,123 @@ import {
   Moon,
   Dumbbell,
   Utensils,
-  Eye,
   Sparkles,
   BarChart3,
   Clock,
-  TrendingUp,
   Scan,
-  Layers,
+  FlaskConical,
+  Coffee,
+  Bone,
+  HeartHandshake,
+  Users,
 } from "lucide-react";
 
-// 15 Analysis domains
+// 15 Real Analysis domains from Dashboard
 const analysisDomains = [
   {
-    id: "base",
+    id: "profilbase",
     name: "Profil de Base",
-    description: "Age metabolique, composition corporelle estimee, objectifs",
+    description: "Age, objectifs, historique medical, mode de vie actuel",
     icon: Target,
     color: "emerald",
   },
   {
-    id: "body",
+    id: "compositioncorporelle",
     name: "Composition Corporelle",
-    description: "Analyse photos IA, posture, asymetries, masse grasse estimee",
-    icon: Camera,
+    description: "Poids, mensurations, estimation masse grasse, morphotype",
+    icon: Activity,
     color: "blue",
   },
   {
-    id: "metabolism",
+    id: "metabolismeenergie",
     name: "Metabolisme & Energie",
-    description: "Depense calorique, flexibilite metabolique, mitochondries",
+    description: "Depense calorique, niveaux d'energie, fatigue, thyroide",
     icon: Flame,
     color: "orange",
   },
   {
-    id: "hrv",
-    name: "HRV & Recuperation",
-    description: "Variabilite cardiaque, equilibre sympathique/parasympathique",
-    icon: Heart,
-    color: "red",
+    id: "nutritiontracking",
+    name: "Nutrition & Tracking",
+    description: "Habitudes alimentaires, macros, timing, intolerances",
+    icon: Utensils,
+    color: "green",
   },
   {
-    id: "sleep",
-    name: "Sommeil & Circadien",
-    description: "Qualite du sommeil, architecture, chronotype, optimisation",
+    id: "digestionmicrobiome",
+    name: "Digestion & Microbiome",
+    description: "Transit, ballonnements, intolerance, sante intestinale",
+    icon: FlaskConical,
+    color: "yellow",
+  },
+  {
+    id: "activiteperformance",
+    name: "Activite & Performance",
+    description: "Entrainement, volume, intensite, progression, recuperation",
+    icon: Dumbbell,
+    color: "purple",
+  },
+  {
+    id: "sommeilrecuperation",
+    name: "Sommeil & Recuperation",
+    description: "Qualite, duree, latence, reveils, chronotype",
     icon: Moon,
     color: "indigo",
   },
   {
-    id: "hormones",
-    name: "Profil Hormonal",
-    description: "Testosterone, cortisol, thyroide, estrogenes - estimation",
-    icon: TrendingUp,
-    color: "amber",
+    id: "hrvcardiaque",
+    name: "HRV & Sante Cardiaque",
+    description: "Variabilite cardiaque, resting HR, capacite cardiovasculaire",
+    icon: Heart,
+    color: "red",
   },
   {
-    id: "neuro",
-    name: "Neurotransmetteurs",
-    description: "Dopamine, serotonine, GABA, acetylcholine - profil estime",
-    icon: Brain,
-    color: "purple",
-  },
-  {
-    id: "digestion",
-    name: "Digestion & Microbiome",
-    description: "Sante intestinale, permeabilite, dysbiose potentielle",
-    icon: Activity,
-    color: "green",
-  },
-  {
-    id: "inflammation",
-    name: "Inflammation & Immunite",
-    description: "Marqueurs inflammatoires, resilience immunitaire",
-    icon: Shield,
-    color: "rose",
-  },
-  {
-    id: "stress",
-    name: "Stress & Resilience",
-    description: "Charge allostatique, capacite d'adaptation, burnout risk",
-    icon: Zap,
-    color: "yellow",
-  },
-  {
-    id: "nutrition",
-    name: "Protocole Nutrition",
-    description: "Plan alimentaire personnalise, timing, macros optimaux",
-    icon: Utensils,
-    color: "lime",
-  },
-  {
-    id: "training",
-    name: "Entrainement Optimal",
-    description: "Type d'exercice adapte, frequence, intensite, recuperation",
-    icon: Dumbbell,
+    id: "analysesbiomarqueurs",
+    name: "Analyses & Biomarqueurs",
+    description: "Bilans sanguins recents, carences, marqueurs cles",
+    icon: FlaskConical,
     color: "cyan",
   },
   {
-    id: "supplements",
-    name: "Protocole Supplements",
-    description: "Stack personnalise avec dosages, timing et interactions",
-    icon: Pill,
+    id: "hormonesstress",
+    name: "Hormones & Stress",
+    description: "Cortisol, thyroide, signes de dereglement hormonal",
+    icon: Zap,
+    color: "amber",
+  },
+  {
+    id: "lifestylesubstances",
+    name: "Lifestyle & Substances",
+    description: "Alcool, cafeine, tabac, supplements actuels",
+    icon: Coffee,
     color: "pink",
   },
   {
-    id: "longevity",
-    name: "Longevite & Prevention",
-    description: "Risques identifies, strategies anti-aging, biomarqueurs cles",
-    icon: Sparkles,
+    id: "biomecaniquemobilite",
+    name: "Biomecanique & Mobilite",
+    description: "Posture, douleurs, restrictions, blessures",
+    icon: Bone,
+    color: "teal",
+  },
+  {
+    id: "psychologiemental",
+    name: "Psychologie & Mental",
+    description: "Motivation, stress percu, anxiete, humeur generale",
+    icon: Brain,
     color: "violet",
   },
   {
-    id: "roadmap",
-    name: "Feuille de Route 90 Jours",
-    description: "Plan d'action structure semaine par semaine",
-    icon: BarChart3,
-    color: "teal",
+    id: "neurotransmetteurs",
+    name: "Neurotransmetteurs",
+    description: "Profil dopamine, serotonine, GABA, acetylcholine estime",
+    icon: Sparkles,
+    color: "rose",
+  },
+  {
+    id: "hormonessexuelles",
+    name: "Hormones Sexuelles & Libido",
+    description: "Testosterone, estrogenes, libido, fertilite",
+    icon: HeartHandshake,
+    color: "lime",
   },
 ];
 
@@ -152,34 +151,34 @@ const analysisDomains = [
 const howItWorks = [
   {
     step: 1,
-    title: "Questionnaire Complet",
+    title: "Questionnaire Detaille",
     description:
-      "180+ questions sur 15 domaines : sommeil, stress, nutrition, hormones, energie, digestion... Compte 25-30 minutes.",
+      "180+ questions sur 15 domaines : sommeil, stress, nutrition, hormones, energie, digestion... Compte 25-30 minutes pour des reponses precises.",
     icon: FileText,
     color: "emerald",
   },
   {
     step: 2,
-    title: "Upload Photos (optionnel)",
+    title: "Analyse Complete",
     description:
-      "Photos face/profil/dos pour analyse posture et composition corporelle par IA. 100% confidentiel.",
-    icon: Camera,
+      "Tes reponses sont analysees et croisees avec les derniers protocoles de medecine fonctionnelle et biohacking.",
+    icon: BarChart3,
     color: "blue",
   },
   {
     step: 3,
-    title: "Analyse IA Avancee",
+    title: "Scores & Insights",
     description:
-      "Notre IA croise tes reponses avec les dernieres recherches en medecine fonctionnelle et biohacking.",
-    icon: Brain,
+      "Chaque domaine recoit un score de 0 a 100. Tes forces et faiblesses sont identifiees en priorite.",
+    icon: Target,
     color: "purple",
   },
   {
     step: 4,
-    title: "Rapport Personnalise",
+    title: "Protocoles Personnalises",
     description:
-      "Rapport interactif + PDF 40+ pages avec scores, analyses detaillees et protocoles actionnables.",
-    icon: Layers,
+      "Rapport interactif + PDF 40+ pages avec recommandations nutrition, supplements, training et lifestyle.",
+    icon: Sparkles,
     color: "amber",
   },
 ];
@@ -194,12 +193,12 @@ const differentiators = [
   {
     title: "15 Domaines",
     description: "Analyse holistique corps-esprit",
-    icon: Layers,
+    icon: BarChart3,
   },
   {
-    title: "Analyse Photos IA",
-    description: "Posture et composition corporelle",
-    icon: Camera,
+    title: "Scores Precis",
+    description: "Chaque domaine note de 0 a 100",
+    icon: Target,
   },
   {
     title: "Protocoles Sciences",
@@ -208,32 +207,32 @@ const differentiators = [
   },
 ];
 
-// FAQ items
+// FAQ items - updated to reflect actual product
 const faqItems = [
   {
     question: "Combien de temps prend le questionnaire ?",
     answer:
-      "Le questionnaire complet prend environ 25-30 minutes. Il est divise en sections thematiques et tu peux faire des pauses. Nous recommandons de le faire au calme, sans distractions, pour des reponses precises. La qualite de ton rapport depend de la qualite de tes reponses.",
+      "Le questionnaire complet prend environ 25-30 minutes. Il est divise en 15 sections thematiques et tu peux sauvegarder ta progression a tout moment. Nous recommandons de le faire au calme, sans distractions, pour des reponses precises. La qualite de ton rapport depend directement de la qualite de tes reponses.",
   },
   {
-    question: "L'analyse photos est-elle obligatoire ?",
+    question: "Quels sont les 15 domaines analyses ?",
     answer:
-      "Non, l'upload photos est optionnel. Sans photos, tu recevras quand meme un rapport complet base sur le questionnaire. Avec photos, tu obtiens en plus une analyse posture (asymetries, desequilibres) et une estimation de composition corporelle plus precise.",
+      "Les 15 domaines sont : Profil de Base, Composition Corporelle, Metabolisme & Energie, Nutrition & Tracking, Digestion & Microbiome, Activite & Performance, Sommeil & Recuperation, HRV & Cardiaque, Analyses & Biomarqueurs, Hormones & Stress, Lifestyle & Substances, Biomecanique & Mobilite, Psychologie & Mental, Neurotransmetteurs, et Hormones Sexuelles.",
   },
   {
-    question: "Comment sont utilisees mes photos ?",
+    question: "Comment sont calcules les scores ?",
     answer:
-      "Tes photos sont traitees par notre IA de maniere securisee. Elles ne sont jamais vues par un humain, stockees temporairement pour l'analyse, puis supprimees. Elles ne sont jamais partagees. Tu peux demander leur suppression immediate a tout moment.",
+      "Chaque domaine recoit un score de 0 a 100 base sur tes reponses. Les scores sont ponderes selon l'impact sur ta sante globale. Un score global est calcule, et tes points forts/faiblesses sont identifies automatiquement pour prioriser les actions.",
   },
   {
     question: "Sur quelles sources scientifiques vous basez-vous ?",
     answer:
-      "Notre IA est entrainee sur les protocoles de Andrew Huberman (Stanford), Peter Attia (medecine de longevite), Marek Health (hormones), Bryan Johnson (Blueprint), et la litterature peer-reviewed. Chaque recommandation cite ses sources dans le rapport.",
+      "Les protocoles sont bases sur les travaux de Andrew Huberman (Stanford), Peter Attia (medecine de longevite), Marek Health (hormones), Bryan Johnson (Blueprint), et la litterature scientifique peer-reviewed. Chaque recommandation est sourcee.",
   },
   {
-    question: "Quelle est la difference avec l'Audit Gratuit ?",
+    question: "Quelle est la difference avec le Discovery Scan gratuit ?",
     answer:
-      "L'Audit Gratuit couvre 5 domaines de base avec un rapport resume. L'Anabolic Bioscan couvre 15 domaines en profondeur avec analyse photos, profils hormonaux/neurotransmetteurs estimes, protocoles supplements detailles et feuille de route 90 jours. C'est 10x plus complet.",
+      "Le Discovery Scan gratuit couvre 5 domaines de base avec un rapport resume. L'Anabolic Bioscan couvre les 15 domaines en profondeur avec profils hormonaux/neurotransmetteurs estimes, protocoles supplements detailles avec dosages, et feuille de route 90 jours. C'est 10x plus complet.",
   },
   {
     question: "Les 79€ sont-ils deduits du coaching ?",
@@ -243,22 +242,22 @@ const faqItems = [
   {
     question: "Combien de temps pour recevoir mon rapport ?",
     answer:
-      "Le rapport est genere instantanement apres validation du questionnaire. Tu recois immediatement acces a ton dashboard interactif + le PDF telechargeabe. L'analyse complete prend moins de 2 minutes cote serveur.",
+      "Le rapport est genere instantanement apres validation du questionnaire. Tu recois immediatement acces a ton dashboard interactif avec radar chart, scores par domaine, points forts/faiblesses, et le PDF telechargeabe de 40+ pages.",
   },
   {
     question: "Puis-je refaire le scan pour suivre mes progres ?",
     answer:
-      "Oui, nous recommandons de refaire le scan tous les 3-6 mois pour mesurer tes progres. Chaque scan est facture 79€, mais les clients coaching beneficient de scans illimites inclus dans leur forfait.",
+      "Oui, nous recommandons de refaire le scan tous les 3-6 mois pour mesurer tes progres objectivement. Chaque scan est facture 79€, mais les clients coaching beneficient de scans illimites inclus dans leur forfait.",
   },
   {
     question: "Le rapport remplace-t-il un avis medical ?",
     answer:
-      "Non. L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas un diagnostic medical. Pour toute condition de sante, consulte un professionnel. Notre rapport peut servir de base de discussion avec ton medecin en documentant tes symptomes.",
+      "Non. L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas un diagnostic medical. Pour toute condition de sante, consulte un professionnel. Notre rapport peut servir de base de discussion avec ton medecin en documentant tes symptomes et habitudes.",
   },
   {
     question: "Que contient exactement le rapport PDF ?",
     answer:
-      "Le rapport PDF fait 40+ pages et inclut : synthese executive, scores par domaine, graphiques radar, analyse detaillee de chaque section, profils hormonaux/neurotransmetteurs estimes, protocole nutrition personnalise, stack supplements avec dosages, et feuille de route 90 jours semaine par semaine.",
+      "Le rapport PDF fait 40+ pages et inclut : synthese executive, radar chart global, scores par domaine avec explications, analyse de tes points forts et priorites d'amelioration, profils hormonaux/neurotransmetteurs estimes, protocole nutrition personnalise, stack supplements avec dosages precis, et feuille de route 90 jours.",
   },
 ];
 
@@ -313,7 +312,7 @@ function FAQAccordion({
   );
 }
 
-// Domain card with expand
+// Domain card
 function DomainCard({
   domain,
   index,
@@ -387,8 +386,106 @@ function DomainCard({
   );
 }
 
+// Animated Radar Chart Component
+function AnimatedRadarChart({ isHovered }: { isHovered: boolean }) {
+  // Base points for the radar
+  const basePoints = [
+    { x: 100, y: 25, label: "Energie", score: 85 },
+    { x: 165, y: 62, label: "Hormones", score: 72 },
+    { x: 158, y: 140, label: "Sommeil", score: 68 },
+    { x: 100, y: 170, label: "Digestion", score: 78 },
+    { x: 42, y: 125, label: "Mental", score: 82 },
+    { x: 35, y: 60, label: "Stress", score: 65 },
+  ];
+
+  // Calculate animated points based on hover state
+  const getAnimatedPoint = (base: typeof basePoints[0], index: number) => {
+    const centerX = 100;
+    const centerY = 100;
+    const maxRadius = 80;
+    const angle = (index * 60 - 90) * (Math.PI / 180);
+
+    const scoreRadius = isHovered
+      ? (base.score / 100) * maxRadius
+      : (base.score / 100) * maxRadius * 0.85;
+
+    return {
+      x: centerX + Math.cos(angle) * scoreRadius,
+      y: centerY + Math.sin(angle) * scoreRadius,
+    };
+  };
+
+  const animatedPoints = basePoints.map((p, i) => getAnimatedPoint(p, i));
+  const polygonPoints = animatedPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+  return (
+    <div className="relative w-full aspect-square">
+      <svg viewBox="0 0 200 200" className="w-full h-full">
+        {/* Background hexagons */}
+        <motion.polygon
+          points="100,10 178,55 178,145 100,190 22,145 22,55"
+          fill="none"
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="1"
+        />
+        <motion.polygon
+          points="100,40 154,70 154,130 100,160 46,130 46,70"
+          fill="none"
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="1"
+        />
+        <motion.polygon
+          points="100,70 130,85 130,115 100,130 70,115 70,85"
+          fill="none"
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="1"
+        />
+
+        {/* Animated data polygon */}
+        <motion.polygon
+          initial={{ opacity: 0.6 }}
+          animate={{
+            points: polygonPoints,
+            opacity: isHovered ? 1 : 0.8,
+          }}
+          transition={{
+            duration: 0.5,
+            ease: "easeOut",
+          }}
+          fill={isHovered ? "rgba(16, 185, 129, 0.35)" : "rgba(16, 185, 129, 0.2)"}
+          stroke="#10b981"
+          strokeWidth={isHovered ? 3 : 2}
+        />
+
+        {/* Animated data points */}
+        {animatedPoints.map((point, i) => (
+          <motion.circle
+            key={i}
+            animate={{
+              cx: point.x,
+              cy: point.y,
+              r: isHovered ? 6 : 4,
+            }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            fill="#10b981"
+          />
+        ))}
+      </svg>
+
+      {/* Labels */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 text-xs text-gray-400">Energie</div>
+      <div className="absolute top-1/4 right-0 text-xs text-gray-400">Hormones</div>
+      <div className="absolute bottom-1/4 right-0 text-xs text-gray-400">Sommeil</div>
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-400">Digestion</div>
+      <div className="absolute bottom-1/4 left-0 text-xs text-gray-400">Mental</div>
+      <div className="absolute top-1/4 left-0 text-xs text-gray-400">Stress</div>
+    </div>
+  );
+}
+
 export default function AuditPremium() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isRadarHovered, setIsRadarHovered] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -418,11 +515,6 @@ export default function AuditPremium() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <Badge className="mb-6 bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
-                  <Crown className="mr-2 h-3 w-3" />
-                  Le + Populaire
-                </Badge>
-
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl mb-6">
                   Anabolic Bioscan.
                   <span className="block text-emerald-400 mt-2">
@@ -432,7 +524,7 @@ export default function AuditPremium() {
 
                 <p className="text-xl text-gray-400 mb-8 leading-relaxed">
                   L'analyse metabolique la plus complete. Questionnaire 180+ questions,
-                  analyse photos IA, profils hormonaux estimes, protocoles personnalises.
+                  profils hormonaux estimes, protocoles personnalises.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -453,94 +545,106 @@ export default function AuditPremium() {
                 </p>
               </motion.div>
 
-              {/* Right - Report Preview Mockup */}
+              {/* Right - Video + Report Preview */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
                 className="relative"
               >
-                <div className="relative mx-auto w-[320px] sm:w-[380px]">
-                  {/* Report card mockup */}
-                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <p className="text-xs text-gray-500">NEUROCORE 360</p>
-                        <p className="font-bold text-white">Anabolic Bioscan</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500">Score Global</p>
-                        <p className="text-2xl font-bold text-emerald-400">78</p>
-                      </div>
+                <div className="relative mx-auto w-full max-w-[450px]">
+                  {/* Video container */}
+                  <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-6">
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-auto"
+                    >
+                      <source
+                        src="https://public-web-assets.uh-static.com/web_v2/blood-vision/buy/desktop/Web2K_1.mp4"
+                        type="video/mp4"
+                      />
+                    </video>
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                    {/* Video overlay text */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <p className="text-white text-sm font-medium">Analyse complete en 15 domaines</p>
+                      <p className="text-gray-300 text-xs">Resultats instantanes</p>
                     </div>
+                  </div>
 
-                    {/* Radar chart placeholder */}
-                    <div className="relative w-full aspect-square mb-6 flex items-center justify-center">
-                      <svg viewBox="0 0 200 200" className="w-full h-full">
-                        {/* Background hexagon */}
-                        <polygon
-                          points="100,10 178,55 178,145 100,190 22,145 22,55"
-                          fill="none"
-                          stroke="rgba(255,255,255,0.1)"
-                          strokeWidth="1"
-                        />
-                        <polygon
-                          points="100,40 154,70 154,130 100,160 46,130 46,70"
-                          fill="none"
-                          stroke="rgba(255,255,255,0.1)"
-                          strokeWidth="1"
-                        />
-                        <polygon
-                          points="100,70 130,85 130,115 100,130 70,115 70,85"
-                          fill="none"
-                          stroke="rgba(255,255,255,0.1)"
-                          strokeWidth="1"
-                        />
-                        {/* Data polygon */}
-                        <polygon
-                          points="100,25 165,62 158,140 100,170 42,125 35,60"
-                          fill="rgba(16, 185, 129, 0.2)"
-                          stroke="#10b981"
-                          strokeWidth="2"
-                        />
-                        {/* Data points */}
-                        <circle cx="100" cy="25" r="4" fill="#10b981" />
-                        <circle cx="165" cy="62" r="4" fill="#10b981" />
-                        <circle cx="158" cy="140" r="4" fill="#10b981" />
-                        <circle cx="100" cy="170" r="4" fill="#10b981" />
-                        <circle cx="42" cy="125" r="4" fill="#10b981" />
-                        <circle cx="35" cy="60" r="4" fill="#10b981" />
-                      </svg>
-                      {/* Labels */}
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 text-xs text-gray-400">Energie</div>
-                      <div className="absolute top-1/4 right-0 text-xs text-gray-400">Hormones</div>
-                      <div className="absolute bottom-1/4 right-0 text-xs text-gray-400">Sommeil</div>
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-gray-400">Digestion</div>
-                      <div className="absolute bottom-1/4 left-0 text-xs text-gray-400">Mental</div>
-                      <div className="absolute top-1/4 left-0 text-xs text-gray-400">Stress</div>
-                    </div>
-
-                    {/* Mini domain scores */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-gray-800 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-gray-500">Metabolisme</p>
-                        <p className="text-sm font-semibold text-emerald-400">82</p>
+                  {/* Mini Report card below video */}
+                  <div
+                    className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-4 shadow-xl cursor-pointer transition-transform hover:scale-[1.02]"
+                    onMouseEnter={() => setIsRadarHovered(true)}
+                    onMouseLeave={() => setIsRadarHovered(false)}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Mini radar */}
+                      <div className="w-24 h-24 shrink-0">
+                        <AnimatedRadarChart isHovered={isRadarHovered} />
                       </div>
-                      <div className="bg-gray-800 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-gray-500">HRV</p>
-                        <p className="text-sm font-semibold text-amber-400">71</p>
-                      </div>
-                      <div className="bg-gray-800 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-gray-500">Neuros</p>
-                        <p className="text-sm font-semibold text-purple-400">76</p>
+                      {/* Scores */}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-gray-500">Score Global</p>
+                          <motion.p
+                            className="text-xl font-bold text-emerald-400"
+                            animate={{ scale: isRadarHovered ? 1.1 : 1 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            78
+                          </motion.p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1">
+                          <div className="text-center">
+                            <p className="text-[9px] text-gray-500">Meta</p>
+                            <p className="text-xs font-semibold text-emerald-400">82</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[9px] text-gray-500">HRV</p>
+                            <p className="text-xs font-semibold text-amber-400">71</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[9px] text-gray-500">Neuro</p>
+                            <p className="text-xs font-semibold text-purple-400">76</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
+
                   {/* Glow */}
-                  <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl rounded-full -z-10" />
+                  <motion.div
+                    className="absolute -inset-4 bg-emerald-500/20 blur-3xl rounded-full -z-10"
+                    animate={{ opacity: isRadarHovered ? 0.4 : 0.2 }}
+                    transition={{ duration: 0.3 }}
+                  />
                 </div>
               </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Social Proof */}
+        <section className="py-8 border-b border-border/30 bg-muted/20">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-emerald-500" />
+                <span>+500 scans realises</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-emerald-500" />
+                <span>15 domaines analyses</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-emerald-500" />
+                <span>Resultats instantanes</span>
+              </div>
             </div>
           </div>
         </section>
@@ -619,7 +723,7 @@ export default function AuditPremium() {
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 L'analyse la plus complete du marche. Chaque domaine est evalue,
-                score et accompagne de recommandations personnalisees.
+                score de 0 a 100 et accompagne de recommandations personnalisees.
               </p>
             </div>
 
@@ -640,9 +744,6 @@ export default function AuditPremium() {
                 <Card className="bg-gradient-to-b from-emerald-500/10 to-transparent border-emerald-500/30">
                   <CardContent className="p-8">
                     <div className="text-center mb-8">
-                      <Badge className="mb-4 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                        Le + Populaire
-                      </Badge>
                       <div className="flex items-baseline justify-center gap-2 mb-2">
                         <span className="text-6xl font-bold text-emerald-400">79€</span>
                       </div>
@@ -656,14 +757,15 @@ export default function AuditPremium() {
                       {[
                         "Questionnaire 180+ questions",
                         "15 domaines d'analyse",
-                        "Analyse photos IA (optionnel)",
+                        "Scores de 0 a 100 par domaine",
                         "Profil hormonal estime",
                         "Profil neurotransmetteurs",
+                        "Points forts & priorites identifies",
                         "Protocole nutrition personnalise",
                         "Stack supplements avec dosages",
                         "Feuille de route 90 jours",
                         "Rapport PDF 40+ pages",
-                        "Dashboard interactif",
+                        "Dashboard interactif avec radar",
                       ].map((item, i) => (
                         <div key={i} className="flex items-center gap-3">
                           <Check className="h-5 w-5 text-emerald-400 shrink-0" />
@@ -738,9 +840,9 @@ export default function AuditPremium() {
                         "Marek Health",
                         "Examine.com",
                       ].map((source, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
+                        <span key={i} className="text-xs bg-muted px-3 py-1 rounded-full">
                           {source}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
                   </CardContent>
@@ -754,49 +856,40 @@ export default function AuditPremium() {
         <section className="py-16 border-y border-border/30">
           <div className="mx-auto max-w-4xl px-4">
             <h2 className="text-2xl font-bold text-center mb-8">
-              Anabolic Bioscan vs Audit Gratuit
+              Anabolic Bioscan vs Discovery Scan
             </h2>
             <Card>
               <CardContent className="p-0 overflow-hidden">
                 <div className="grid grid-cols-3">
                   {/* Header */}
                   <div className="p-4 bg-muted/30 font-medium">Feature</div>
-                  <div className="p-4 bg-muted/30 text-center font-medium">Gratuit</div>
+                  <div className="p-4 bg-muted/30 text-center font-medium">Discovery (Gratuit)</div>
                   <div className="p-4 bg-emerald-500/10 text-center font-medium text-emerald-400">
                     Anabolic Bioscan
                   </div>
 
                   {/* Rows */}
                   {[
-                    { feature: "Questions", free: "50", premium: "180+" },
+                    { feature: "Questions", free: "~50", premium: "180+" },
                     { feature: "Domaines", free: "5", premium: "15" },
-                    { feature: "Analyse Photos", free: "Non", premium: "Oui" },
-                    { feature: "Profil Hormonal", free: "Basique", premium: "Complet" },
+                    { feature: "Scores detailles", free: "Basique", premium: "0-100 par domaine" },
+                    { feature: "Profil Hormonal", free: "Non", premium: "Complet" },
                     { feature: "Neurotransmetteurs", free: "Non", premium: "Oui" },
-                    { feature: "Protocole Supplements", free: "Resume", premium: "Detaille" },
+                    { feature: "Protocole Supplements", free: "Resume", premium: "Detaille + dosages" },
                     { feature: "Feuille Route 90j", free: "Non", premium: "Oui" },
                     { feature: "Pages Rapport", free: "~10", premium: "40+" },
                   ].map((row, i) => (
-                    <>
-                      <div
-                        key={`f-${i}`}
-                        className="p-4 border-t border-border/30 text-sm"
-                      >
+                    <div key={i} className="contents">
+                      <div className="p-4 border-t border-border/30 text-sm">
                         {row.feature}
                       </div>
-                      <div
-                        key={`free-${i}`}
-                        className="p-4 border-t border-border/30 text-center text-sm text-muted-foreground"
-                      >
+                      <div className="p-4 border-t border-border/30 text-center text-sm text-muted-foreground">
                         {row.free}
                       </div>
-                      <div
-                        key={`prem-${i}`}
-                        className="p-4 border-t border-border/30 bg-emerald-500/5 text-center text-sm font-medium"
-                      >
+                      <div className="p-4 border-t border-border/30 bg-emerald-500/5 text-center text-sm font-medium">
                         {row.premium}
                       </div>
-                    </>
+                    </div>
                   ))}
                 </div>
               </CardContent>
@@ -841,7 +934,7 @@ export default function AuditPremium() {
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     L'Anabolic Bioscan est un outil d'optimisation et de prevention, pas
                     un diagnostic medical. Les profils hormonaux et neurotransmetteurs
-                    sont des estimations basees sur vos symptomes, pas des dosages
+                    sont des estimations basees sur vos symptomes et reponses, pas des dosages
                     sanguins. Pour toute condition medicale, consultez un professionnel
                     de sante qualifie.
                   </p>
