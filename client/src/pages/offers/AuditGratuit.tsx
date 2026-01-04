@@ -58,8 +58,8 @@ const howItWorks = [
   },
   {
     step: 2,
-    title: "L'IA analyse ton profil",
-    description: "Notre moteur IA croise tes reponses avec les dernieres recherches en sante metabolique.",
+    title: "Analyse de ton profil",
+    description: "Tes reponses sont analysees et croisees avec les dernieres recherches en sante metabolique.",
     icon: Brain,
     color: "purple",
   },
@@ -110,7 +110,7 @@ const faqItems = [
   {
     question: "Le rapport est-il vraiment personnalise ?",
     answer:
-      "Oui, chaque rapport est genere par notre IA en fonction de TES reponses specifiques. Ce n'est pas un template generique. Les recommandations sont adaptees a ton profil unique.",
+      "Oui, chaque rapport est genere en fonction de TES reponses specifiques. Ce n'est pas un template generique. Les recommandations sont adaptees a ton profil unique basees sur les dernieres recherches en sante metabolique.",
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
@@ -275,9 +275,9 @@ export default function AuditGratuit() {
                     {/* Mini sections */}
                     <div className="space-y-2">
                       {[
-                        { name: "Metabolisme", score: 78, color: "emerald" },
-                        { name: "Energie", score: 65, color: "amber" },
-                        { name: "Composition", score: 71, color: "blue" },
+                        { name: "Profil de Base", score: 78, color: "emerald" },
+                        { name: "Composition Corporelle", score: 65, color: "amber" },
+                        { name: "Metabolisme & Energie", score: 71, color: "blue" },
                       ].map((section, i) => (
                         <div
                           key={i}
@@ -315,9 +315,13 @@ export default function AuditGratuit() {
                           </div>
                         </div>
                       ))}
-                      {/* Locked section */}
+                      {/* Locked sections */}
                       <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg opacity-50">
-                        <span className="text-sm text-gray-500">Hormones</span>
+                        <span className="text-sm text-gray-500">Nutrition & Tracking</span>
+                        <Lock className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg opacity-50">
+                        <span className="text-sm text-gray-500">Digestion & Microbiome</span>
                         <Lock className="h-4 w-4 text-gray-500" />
                       </div>
                     </div>
