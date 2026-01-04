@@ -2935,6 +2935,155 @@ function BentoPricingSection() {
   );
 }
 
+// Blood Analysis Premium Section - Ultrahuman Style
+function BloodAnalysisPremiumSection() {
+  const biomarkers = [
+    { category: "Hormonal", items: ["Testosterone", "Estradiol", "DHEA-S", "Cortisol", "IGF-1", "Prolactine"] },
+    { category: "Thyroide", items: ["TSH", "T3 libre", "T4 libre", "T3 reverse", "Anti-TPO"] },
+    { category: "Metabolique", items: ["Glycemie", "HbA1c", "Insuline", "HOMA-IR", "ApoB", "Lp(a)"] },
+    { category: "Inflammatoire", items: ["CRP-us", "Homocysteine", "Ferritine", "Saturation transferrine"] },
+    { category: "Vitamines", items: ["Vitamine D", "B12", "Folate", "Magnesium RBC", "Zinc"] },
+    { category: "Hepatique/Renal", items: ["ALT", "AST", "GGT", "Creatinine", "eGFR"] },
+  ];
+
+  const features = [
+    { icon: Target, title: "Ranges OPTIMAUX", desc: "Pas les normes labo, les vraies valeurs pour performer" },
+    { icon: Brain, title: "Analyse IA Clinique", desc: "Detection patterns: Low T, Thyroid, Resistance Insuline" },
+    { icon: Beaker, title: "35+ Biomarqueurs", desc: "Panel complet hormonal, metabolique, inflammatoire" },
+    { icon: TrendingUp, title: "Protocole Personnalise", desc: "Supplements, dosages, timing bases sur tes resultats" },
+  ];
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-black via-[#050505] to-black py-24">
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <Badge className="mb-6 bg-red-500/20 text-red-400 border-red-500/30 px-4 py-2">
+            <Beaker className="mr-2 h-4 w-4" />
+            Nouvelle Offre
+          </Badge>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6">
+            Blood Analysis
+            <span className="block bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 bg-clip-text text-transparent">
+              Decode ton sang
+            </span>
+          </h2>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Upload ton bilan sanguin. Notre IA l'analyse avec les ranges OPTIMAUX utilises par les meilleurs coaches en biohacking.
+          </p>
+        </motion.div>
+
+        {/* Main Grid */}
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          {/* Left - Pricing Card */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="relative rounded-3xl bg-gradient-to-b from-white/10 to-white/5 border border-white/10 p-8 lg:p-10 backdrop-blur-sm">
+              {/* Price */}
+              <div className="mb-8">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-6xl font-bold text-white">99€</span>
+                  <span className="text-gray-400">paiement unique</span>
+                </div>
+                <p className="text-primary text-sm font-medium">
+                  Deduit de ton coaching Essential ou Private Lab
+                </p>
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                {features.map((feature, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/5">
+                    <feature.icon className="h-6 w-6 text-primary mb-3" />
+                    <p className="text-white font-semibold text-sm mb-1">{feature.title}</p>
+                    <p className="text-gray-500 text-xs">{feature.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <Link href="/blood-analysis">
+                <Button size="lg" className="w-full h-14 text-lg gap-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 border-0">
+                  <Beaker className="h-5 w-5" />
+                  Analyser mon bilan sanguin
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+
+              {/* Trust badges */}
+              <div className="mt-6 flex items-center justify-center gap-6 text-gray-500 text-xs">
+                <span className="flex items-center gap-1">
+                  <Shield className="h-4 w-4" />
+                  Donnees chiffrees
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Sources medicales
+                </span>
+              </div>
+            </div>
+
+            {/* Glow */}
+            <div className="absolute -inset-4 -z-10 bg-gradient-to-r from-red-500/20 via-orange-500/20 to-amber-500/20 blur-3xl opacity-50" />
+          </motion.div>
+
+          {/* Right - Biomarkers Panel */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-4"
+          >
+            <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              35+ Biomarqueurs analyses
+            </h3>
+
+            {biomarkers.map((panel, idx) => (
+              <div key={idx} className="rounded-xl bg-white/5 border border-white/5 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-white font-medium text-sm">{panel.category}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {panel.items.map((item, i) => (
+                    <span key={i} className="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-xs border border-white/5">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Bottom note */}
+            <div className="rounded-xl bg-primary/10 border border-primary/20 p-4 mt-6">
+              <p className="text-primary text-sm font-medium mb-1">
+                Ranges OPTIMAUX vs Normes Labo
+              </p>
+              <p className="text-gray-400 text-xs">
+                Les ranges de labo sont bases sur la population generale (souvent malade).
+                Nos ranges sont bases sur les protocoles de Peter Attia, Marek Health, et Huberman Lab.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Floating CTA Bar - below pricing
 function FloatingCTABar() {
   return (
@@ -3190,6 +3339,7 @@ export default function Landing() {
         <BloodVisionSection />
         <BentoProcessSection />
         <Pricing />
+        <BloodAnalysisPremiumSection />
         <FloatingCTABar />
         <BentoTestimonialsSection />
         <PrivacySection />

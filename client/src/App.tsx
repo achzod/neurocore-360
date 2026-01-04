@@ -20,6 +20,7 @@ import CGV from "@/pages/CGV";
 import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
+import BloodAnalysis from "@/pages/BloodAnalysis";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/audit-complet" component={Landing} />
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
+      <Route path="/blood-analysis" component={BloodAnalysis} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
       <Route path="/auth/login" component={Login} />
