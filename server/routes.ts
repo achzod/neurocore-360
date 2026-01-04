@@ -426,25 +426,62 @@ export async function registerRoutes(
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
-          
+
+          // Helper pour calculer le level
+          const getLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
+            if (score >= 80) return "excellent";
+            if (score >= 65) return "bon";
+            if (score >= 50) return "moyen";
+            return "faible";
+          };
+
           // On mappe le format dashboard vers le format attendu par AuditDetail.tsx
-          const mappedReport = {
-            global: audit.scores?.global || 0,
-            heroSummary: dashboard.resumeExecutif || "",
-            sections: dashboard.sections
-              .filter(s => s.category !== 'executive') // On exclut le summary du loop principal
-              .map(s => ({
+          const globalScore = audit.scores?.global || 76;
+          const mappedSections = dashboard.sections
+            .filter(s => s.category !== 'executive')
+            .map(s => {
+              // Extraire le score de la section depuis le contenu si disponible
+              const scoreMatch = s.content.match(/Score\s*:\s*(\d+)/i);
+              const sectionScore = scoreMatch ? parseInt(scoreMatch[1]) : 70;
+              return {
                 id: s.id,
                 title: s.title,
-                score: 0,
+                score: sectionScore,
+                level: getLevel(sectionScore),
+                isPremium: true,
                 introduction: s.content,
-                isPremium: true
-              })),
+                whatIsWrong: "",
+                personalizedAnalysis: "",
+                recommendations: "",
+                supplements: [],
+                actionPlan: "",
+                scienceDeepDive: ""
+              };
+            });
+
+          const mappedReport = {
+            global: globalScore,
+            heroSummary: dashboard.resumeExecutif || "",
+            executiveNarrative: dashboard.resumeExecutif || "",
+            globalDiagnosis: "",
+            sections: mappedSections,
+            prioritySections: mappedSections.filter(s => s.score < 60).slice(0, 3).map(s => s.id),
+            strengthSections: mappedSections.filter(s => s.score >= 70).slice(0, 3).map(s => s.id),
+            supplementStack: [],
+            lifestyleProtocol: "",
+            weeklyPlan: {
+              week1: "Mise en place des fondations: posture, respiration, activation neuromusculaire",
+              week2: "Consolidation des habitudes et ajustements selon ressentis",
+              weeks3_4: "Intensification progressive et optimisation des protocoles",
+              months2_3: "Maintenance et cycles de progression avancee"
+            },
+            conclusion: "Ce rapport constitue une feuille de route personnalisee basee sur ton profil unique. Applique ces recommandations de maniere progressive et constante pour des resultats durables.",
             auditType: audit.type,
             clientName: dashboard.clientName,
-            generatedAt: dashboard.generatedAt
+            generatedAt: dashboard.generatedAt,
+            photoAnalysis: report.photoAnalysis || null
           };
-          
+
           res.json(mappedReport);
           return;
         }
@@ -856,10 +893,13 @@ export async function registerRoutes(
       }
 
       await forceRegenerate(auditId);
-      
+
       await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING", narrativeReport: null });
       await startReportGeneration(auditId, audit.responses, audit.scores || {}, audit.type);
-      
+
+      // Lancer le workflow complet (attente + email + admin notification)
+      processReportAndSendEmail(auditId, audit.email, audit.type);
+
       console.log(`[Regenerate] Force regenerating report for audit ${auditId} (cache cleared)`);
       
       res.json({ 
