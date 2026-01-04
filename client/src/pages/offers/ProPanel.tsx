@@ -91,7 +91,6 @@ const proExclusives = [
 const includedFeatures = [
   "Tout l'Anabolic Bioscan (15 domaines)",
   "Questionnaire 180+ questions",
-  "Analyse photos IA",
   "Profil hormonal estime",
   "Profil neurotransmetteurs",
   "Protocole nutrition",
@@ -99,7 +98,7 @@ const includedFeatures = [
   "Feuille de route 90 jours",
   "--- Exclusifs Ultimate Scan ---",
   "Sync wearables (Oura, Whoop, Garmin...)",
-  "Analyse HRV avancee",
+  "Analyse VFC avancee (RMSSD, SDNN)",
   "Donnees sommeil automatiques",
   "Questions blessures & douleurs",
   "Protocole rehabilitation",
@@ -279,7 +278,7 @@ export default function ProPanel() {
                 </p>
               </motion.div>
 
-              {/* Right - Wearables Mockup */}
+              {/* Right - Wearables Mockup style Ultrahuman */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -287,63 +286,106 @@ export default function ProPanel() {
                 className="relative"
               >
                 <div className="relative mx-auto w-[320px] sm:w-[380px]">
-                  {/* Dashboard mockup */}
-                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-xs text-gray-400">Synced with Oura</span>
-                      </div>
-                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
-                        Pro
-                      </Badge>
-                    </div>
-
-                    {/* HRV Card */}
-                    <div className="bg-gradient-to-br from-red-900/30 to-red-950/30 rounded-xl p-4 mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-400">HRV (RMSSD)</span>
-                        <TrendingUp className="h-4 w-4 text-emerald-400" />
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-white">47</span>
-                        <span className="text-sm text-gray-400">ms</span>
-                        <span className="text-xs text-emerald-400 ml-auto">+12% vs avg</span>
-                      </div>
-                    </div>
-
-                    {/* Sleep Card */}
-                    <div className="bg-gradient-to-br from-indigo-900/30 to-indigo-950/30 rounded-xl p-4 mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-400">Sleep Score</span>
-                        <Moon className="h-4 w-4 text-indigo-400" />
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-white">82</span>
-                        <span className="text-sm text-gray-400">/100</span>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <div className="flex-1 bg-indigo-500/30 rounded-full h-1.5">
-                          <div className="bg-indigo-400 rounded-full h-1.5 w-[75%]" />
+                  {/* Phone mockup container */}
+                  <div className="relative bg-gradient-to-b from-emerald-950 to-black rounded-[2.5rem] p-4 shadow-2xl border border-gray-800">
+                    {/* Screen content */}
+                    <div className="bg-gradient-to-b from-emerald-900/40 to-black rounded-2xl overflow-hidden">
+                      {/* Header */}
+                      <div className="px-4 pt-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-4xl font-bold text-white">85</p>
+                            <p className="text-lg text-emerald-400">Recuperation</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500">Lun, 4 Jan</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="text-xs text-gray-400">Oura sync</span>
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-500">7h12 total</span>
-                      </div>
-                    </div>
 
-                    {/* Mini stats */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-gray-800 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-gray-500">REM</p>
-                        <p className="text-sm font-semibold text-purple-400">1h48</p>
+                        {/* Weekly bars */}
+                        <div className="flex items-end justify-center gap-1 mt-4 h-16">
+                          {[72, 68, 65, 78, 82, 85].map((score, i) => (
+                            <div key={i} className="flex flex-col items-center gap-1">
+                              <div
+                                className={`w-6 rounded-t ${i === 5 ? 'bg-white' : 'bg-gray-600'}`}
+                                style={{ height: `${score * 0.6}px` }}
+                              />
+                              <span className="text-[9px] text-gray-500">
+                                {['M', 'M', 'J', 'V', 'S', 'D'][i]}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="bg-gray-800 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-gray-500">Deep</p>
-                        <p className="text-sm font-semibold text-blue-400">1h24</p>
-                      </div>
-                      <div className="bg-gray-800 rounded-lg p-2 text-center">
-                        <p className="text-[10px] text-gray-500">Efficiency</p>
-                        <p className="text-sm font-semibold text-emerald-400">91%</p>
+
+                      {/* Contributors section */}
+                      <div className="px-4 py-3">
+                        <p className="text-xs text-gray-500 mb-3">Contributeurs</p>
+
+                        {/* Metrics grid */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* FC au repos */}
+                          <div className="bg-gray-900/60 rounded-xl p-3">
+                            <p className="text-[10px] text-gray-500">FC au Repos</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-bold text-white">48</span>
+                              <span className="text-xs text-gray-500">BPM</span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400">Optimal</span>
+                          </div>
+
+                          {/* Sommeil */}
+                          <div className="bg-gray-900/60 rounded-xl p-3">
+                            <p className="text-[10px] text-gray-500">Indice Sommeil</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-bold text-white">82</span>
+                              <span className="text-xs text-gray-500">/100</span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400">Excellent</span>
+                          </div>
+
+                          {/* VFC 7j */}
+                          <div className="bg-gray-900/60 rounded-xl p-3">
+                            <p className="text-[10px] text-gray-500">VFC 7 jours</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-bold text-white">52</span>
+                              <span className="text-xs text-gray-500">ms</span>
+                            </div>
+                            <span className="text-[10px] text-amber-400">A surveiller</span>
+                          </div>
+
+                          {/* VFC nuit */}
+                          <div className="bg-gray-900/60 rounded-xl p-3">
+                            <p className="text-[10px] text-gray-500">VFC Nuit</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xl font-bold text-white">56</span>
+                              <span className="text-xs text-gray-500">ms</span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400">Optimal</span>
+                          </div>
+                        </div>
+
+                        {/* Additional metrics */}
+                        <div className="mt-2 space-y-2">
+                          <div className="bg-gray-900/60 rounded-xl p-3 flex items-center justify-between">
+                            <div>
+                              <p className="text-[10px] text-gray-500">Sommeil Total</p>
+                              <span className="text-lg font-bold text-white">7h 31m</span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400 px-2 py-0.5 bg-emerald-500/10 rounded-full">Excellent</span>
+                          </div>
+                          <div className="bg-gray-900/60 rounded-xl p-3 flex items-center justify-between">
+                            <div>
+                              <p className="text-[10px] text-gray-500">Sommeil Reparateur</p>
+                              <span className="text-lg font-bold text-white">31%</span>
+                            </div>
+                            <span className="text-[10px] text-amber-400 px-2 py-0.5 bg-amber-500/10 rounded-full">A surveiller</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
