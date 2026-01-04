@@ -32,6 +32,7 @@ import {
 } from "./terraService";
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
+import { registerBurnoutRoutes } from "./burnout-detection";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1930,6 +1931,9 @@ export async function registerRoutes(
 
   // ==================== BLOOD ANALYSIS ROUTES ====================
   registerBloodAnalysisRoutes(app);
+
+  // ==================== BURNOUT DETECTION ROUTES ====================
+  registerBurnoutRoutes(app);
 
   return httpServer;
 }
