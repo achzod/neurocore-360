@@ -113,13 +113,30 @@ const SECTIONS: SectionName[] = [
   "Synthese et Prochaines Etapes"
 ];
 
-// Version GRATUITE : on donne un aperçu concret + CTA vers PREMIUM (pas de protocoles détaillés, pas de stack complète).
-// NOTE: Pas de photos dans le tier FREE, donc pas d'analyse visuelle/posturale
+// =============================================================================
+// VERSION GRATUITE (Discovery Scan) - 5-7 pages avec sections cadenas
+// =============================================================================
+// Structure :
+// 1. Sections DÉBLOQUÉES (vraies analyses basées sur questionnaire)
+// 2. Sections CADENAS (teasers + preview flouté + CTA vers Anabolic Bioscan)
+// =============================================================================
+
 const SECTIONS_GRATUIT: SectionName[] = [
-  "Executive Summary",
-  "Analyse energie et recuperation",
-  "Analyse metabolisme et nutrition",
-  "Synthese et Prochaines Etapes",
+  "Executive Summary",           // Débloqué - court et percutant
+  "Analyse energie et recuperation",  // Débloqué - basé sur sommeil/stress/energie
+  "Analyse metabolisme et nutrition", // Débloqué - basé sur nutrition/digestion
+  "Synthese et Prochaines Etapes",    // Débloqué - avec sections cadenas listées
+];
+
+// Sections affichées comme CADENAS dans le rapport gratuit (teasers seulement)
+export const SECTIONS_LOCKED_GRATUIT = [
+  { name: "Analyse Prise de Sang", teaser: "Tes biomarqueurs révèlent ton état hormonal, inflammatoire et métabolique..." },
+  { name: "Analyse Visuelle & Posturale", teaser: "Ta posture cache des indices sur tes déséquilibres musculaires..." },
+  { name: "Analyse Biomécanique", teaser: "Ton psoas, ton diaphragme et ta sangle profonde forment un système..." },
+  { name: "Protocole Matin Anti-Cortisol", teaser: "Un protocole minute par minute pour resynchroniser ton cortisol..." },
+  { name: "Protocole Soir Sommeil", teaser: "La routine H-3 à H-0 qui maximise ta GH nocturne..." },
+  { name: "Stack Suppléments Personnalisé", teaser: "Magnésium, Omega-3, Vitamine D, Zinc... dosages et timing précis..." },
+  { name: "Roadmap 30-60-90 Jours", teaser: "Ton plan semaine par semaine avec KPIs et checkpoints..." },
 ];
 
 export function getSectionsForTier(tier: AuditTier): SectionName[] {
