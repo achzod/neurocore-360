@@ -1,550 +1,342 @@
 /**
- * NEUROCORE 360 - Blood Analysis Offer Page
- * Ultrahuman-inspired premium design - 99€
+ * NEUROCORE 360 - Blood Analysis
+ * TRUE Ultrahuman Design - 99€
  */
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "wouter";
-import {
-  Beaker,
-  ArrowRight,
-  Check,
-  Upload,
-  Brain,
-  Target,
-  TrendingUp,
-  Shield,
-  FileText,
-  Activity,
-  ChevronDown,
-  Zap,
-  Clock,
-  Lock,
-  Heart,
-  Flame,
-  Droplets,
-  Pill,
-  Microscope,
-  BarChart3,
-  Users,
-} from "lucide-react";
-
-// Biomarker categories
-const biomarkerCategories = [
-  { name: "Cardiovasculaire", count: 12, color: "red", gradient: "from-red-500 to-rose-500" },
-  { name: "Thyroidien", count: 5, color: "purple", gradient: "from-purple-500 to-violet-500" },
-  { name: "Hormonal", count: 8, color: "amber", gradient: "from-amber-500 to-orange-500" },
-  { name: "Metabolique", count: 6, color: "emerald", gradient: "from-emerald-500 to-green-500" },
-  { name: "Hepatique", count: 6, color: "orange", gradient: "from-orange-500 to-amber-500" },
-  { name: "Renal", count: 5, color: "blue", gradient: "from-blue-500 to-cyan-500" },
-  { name: "Vitamines", count: 8, color: "cyan", gradient: "from-cyan-500 to-teal-500" },
-  { name: "Inflammatoire", count: 4, color: "rose", gradient: "from-rose-500 to-pink-500" },
-];
-
-// Clinical patterns
-const clinicalPatterns = [
-  { name: "Low Testosterone Syndrome", desc: "Testosterone basse + SHBG elevee", icon: TrendingUp, color: "amber" },
-  { name: "Hypothyroidie Subclinique", desc: "TSH haute + T3/T4 basses", icon: Activity, color: "purple" },
-  { name: "Resistance a l'Insuline", desc: "HOMA-IR > 2.5 + HDL bas", icon: Flame, color: "orange" },
-  { name: "Inflammation Chronique", desc: "hs-CRP elevee + Homocysteine haute", icon: Heart, color: "red" },
-  { name: "Deficience Nutritionnelle", desc: "Vitamine D < 40 + B12 basse", icon: Droplets, color: "cyan" },
-  { name: "Stress Surrenalien", desc: "Cortisol eleve + DHEA-S bas", icon: Brain, color: "emerald" },
-];
-
-// FAQ items
-const faqItems = [
-  {
-    question: "Quels bilans sanguins acceptez-vous ?",
-    answer: "Tous les bilans PDF de laboratoires francais et internationaux. Bilan standard ou panel hormonal complet."
-  },
-  {
-    question: "C'est quoi la difference avec les ranges labo ?",
-    answer: "Les ranges labo sont bases sur la population malade. Nos ranges optimaux viennent de Peter Attia, Marek Health, Bryan Johnson."
-  },
-  {
-    question: "Combien de temps pour l'analyse ?",
-    answer: "Moins de 2 minutes. Upload, extraction, analyse, rapport instantane."
-  },
-  {
-    question: "Les 99€ sont deduits du coaching ?",
-    answer: "Oui. Si tu prends un coaching dans les 30 jours, les 99€ sont integralement deduits."
-  },
-];
-
-// FAQ Accordion
-function FAQItem({ item, isOpen, onToggle, index }: {
-  item: typeof faqItems[0];
-  isOpen: boolean;
-  onToggle: () => void;
-  index: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
-      className="border-b border-white/10"
-    >
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between py-6 text-left group"
-      >
-        <span className="text-lg font-medium text-white group-hover:text-red-400 transition-colors">
-          {item.question}
-        </span>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          className="ml-4 shrink-0"
-        >
-          <ChevronDown className="h-5 w-5 text-white/40" />
-        </motion.div>
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-          >
-            <p className="pb-6 text-white/60 leading-relaxed">
-              {item.answer}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
+import { ArrowRight, Check, Upload, Beaker } from "lucide-react";
 
 export default function BloodAnalysisOffer() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
+    target: containerRef,
+    offset: ["start start", "end start"]
   });
 
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
+
+  const biomarkers = [
+    { category: "Metabolisme", count: 12, color: "red" },
+    { category: "Hormones", count: 8, color: "purple" },
+    { category: "Inflammation", count: 6, color: "orange" },
+    { category: "Thyroide", count: 5, color: "blue" },
+    { category: "Vitamines", count: 8, color: "green" },
+    { category: "Mineraux", count: 7, color: "cyan" },
+    { category: "Lipides", count: 6, color: "yellow" },
+    { category: "Foie & Reins", count: 8, color: "pink" },
+  ];
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <div ref={containerRef} className="bg-black min-h-screen">
       <Header />
 
-      <main>
-        {/* === HERO SECTION === */}
-        <section
-          ref={heroRef}
-          className="relative min-h-screen flex items-center overflow-hidden"
-        >
-          {/* Animated background orbs */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-[700px] h-[700px] bg-red-500/20 rounded-full blur-[180px] animate-pulse" />
-            <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-rose-500/15 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: "1s" }} />
-            <div className="absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-[120px]" />
-          </div>
+      {/* HERO */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-500/5 rounded-full blur-[150px]" />
+          <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]" />
+        </div>
 
-          {/* Grid overlay */}
-          <div
-            className="absolute inset-0 opacity-[0.015]"
-            style={{
-              backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)",
-              backgroundSize: "80px 80px",
-            }}
-          />
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale }}
+          className="relative z-10 max-w-5xl mx-auto px-6 text-center"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-2 mb-8"
+          >
+            <span className="text-red-400 text-sm font-medium">Analyse Sanguine</span>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[0.95] tracking-[-0.04em] mb-8"
+          >
+            Blood
+            <br />
+            <span className="text-red-400">Analysis.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
+          >
+            Upload ton bilan sanguin. Notre IA decode 50+ biomarqueurs
+            et te donne des protocoles d'optimisation personnalises.
+          </motion.p>
 
           <motion.div
-            style={{ opacity: heroOpacity, scale: heroScale }}
-            className="relative z-10 mx-auto max-w-7xl px-4 py-32"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex items-center justify-center gap-4 mb-12"
           >
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              {/* Left - Content */}
-              <div>
-                {/* Badge */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Badge className="mb-8 px-6 py-2 bg-red-500/10 text-red-400 border border-red-500/30 text-sm font-medium backdrop-blur-xl">
-                    <Beaker className="mr-2 h-4 w-4" />
-                    50+ BIOMARQUEURS
-                  </Badge>
-                </motion.div>
-
-                {/* Main headline */}
-                <motion.h1
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.8 }}
-                  className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9]"
-                  style={{ letterSpacing: "-0.04em" }}
-                >
-                  <span className="text-white">Blood</span>
-                  <br />
-                  <span className="bg-gradient-to-r from-red-400 via-rose-400 to-orange-400 bg-clip-text text-transparent">
-                    Analysis.
-                  </span>
-                </motion.h1>
-
-                {/* Subheadline */}
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-8 text-xl sm:text-2xl text-white/60 max-w-xl font-light leading-relaxed"
-                >
-                  Upload ton bilan. Ranges optimaux.
-                  <br />
-                  <span className="text-white/40">Detection de patterns cliniques.</span>
-                </motion.p>
-
-                {/* Price */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="mt-8 flex items-baseline gap-3"
-                >
-                  <span className="text-5xl font-black text-red-400">99€</span>
-                  <span className="text-white/40">one-time</span>
-                  <Badge className="ml-2 bg-red-500/20 text-red-400 border-red-500/30">
-                    Deduit du coaching
-                  </Badge>
-                </motion.div>
-
-                {/* CTA */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="mt-10 flex flex-col sm:flex-row gap-4"
-                >
-                  <Link href="/blood-analysis">
-                    <Button
-                      size="lg"
-                      className="h-16 px-10 text-lg font-semibold rounded-2xl bg-red-500 hover:bg-red-400 text-white hover:scale-105 transition-all duration-300 shadow-[0_0_60px_rgba(239,68,68,0.4)]"
-                    >
-                      <Upload className="mr-3 h-5 w-5" />
-                      Analyser mon bilan
-                      <ArrowRight className="ml-3 h-5 w-5" />
-                    </Button>
-                  </Link>
-                </motion.div>
-
-                {/* Trust indicators */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.9 }}
-                  className="mt-10 flex flex-wrap gap-6 text-sm text-white/40"
-                >
-                  <span className="flex items-center gap-2">
-                    <Zap className="h-4 w-4" /> Resultats en 2 min
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" /> Tous labos compatibles
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Users className="h-4 w-4" /> +300 analyses
-                  </span>
-                </motion.div>
-              </div>
-
-              {/* Right - Visual */}
-              <motion.div
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="relative"
-              >
-                {/* Video container */}
-                <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full aspect-video object-cover"
-                  >
-                    <source
-                      src="https://public-web-assets.uh-static.com/web_v2/blood-vision/buy/desktop/Web2K_1.mp4"
-                      type="video/mp4"
-                    />
-                  </video>
-
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Overlay content */}
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <p className="text-white font-semibold mb-1">Analyse sanguine avancee</p>
-                    <p className="text-white/60 text-sm">Ranges optimaux vs ranges laboratoire</p>
-                  </div>
-                </div>
-
-                {/* Floating biomarker values */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="absolute -bottom-6 left-4 right-4 grid grid-cols-4 gap-2"
-                >
-                  {[
-                    { label: "TSH", value: "1.8", status: "optimal" },
-                    { label: "Vit D", value: "52", status: "optimal" },
-                    { label: "CRP", value: "0.4", status: "optimal" },
-                    { label: "Testo", value: "687", status: "optimal" },
-                  ].map((marker, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-black/80 backdrop-blur-xl border border-white/10 text-center">
-                      <div className="text-xs text-white/40 mb-1">{marker.label}</div>
-                      <div className="text-lg font-bold text-emerald-400">{marker.value}</div>
-                    </div>
-                  ))}
-                </motion.div>
-
-                {/* Background glow */}
-                <div className="absolute -inset-8 bg-red-500/20 blur-[100px] rounded-full -z-10" />
-              </motion.div>
-            </div>
+            <span className="text-white text-6xl font-bold tracking-[-0.04em]">99€</span>
+            <span className="text-white/40">one-time</span>
           </motion.div>
-        </section>
 
-        {/* === BIOMARKERS GRID === */}
-        <section className="relative py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-500/5 to-transparent" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            <Link href="/blood-analysis">
+              <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-lg px-10 py-5 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02]">
+                Analyser mon bilan
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </Link>
+          </motion.div>
+        </motion.div>
 
-          <div className="relative mx-auto max-w-7xl px-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="absolute bottom-12 left-1/2 -translate-x-1/2"
+        >
+          <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-20"
-            >
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
-                50+ <span className="text-red-400">biomarqueurs</span>
-              </h2>
-              <p className="mt-6 text-xl text-white/50 max-w-2xl mx-auto">
-                8 categories analysees avec les ranges optimaux de medecine fonctionnelle
-              </p>
-            </motion.div>
-
-            {/* Biomarker categories grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {biomarkerCategories.map((cat, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="group relative p-6 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl hover:border-red-500/30 transition-all duration-500"
-                >
-                  <div className={`inline-flex p-2.5 rounded-xl bg-gradient-to-br ${cat.gradient} mb-4`}>
-                    <Beaker className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-1">{cat.name}</h3>
-                  <p className="text-sm text-white/40">{cat.count} marqueurs</p>
-                </motion.div>
-              ))}
-            </div>
+              animate={{ y: [0, 12, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="w-1.5 h-1.5 bg-white/60 rounded-full"
+            />
           </div>
-        </section>
+        </motion.div>
+      </section>
 
-        {/* === CLINICAL PATTERNS === */}
-        <section className="relative py-32 overflow-hidden">
-          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-red-500/10 rounded-full blur-[200px]" />
-
-          <div className="relative mx-auto max-w-7xl px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-20"
-            >
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
-                Detection de <span className="text-red-400">patterns</span>
-              </h2>
-              <p className="mt-6 text-xl text-white/50 max-w-2xl mx-auto">
-                Les marqueurs ne sont pas regardes isolement. 15+ syndromes detectes.
-              </p>
-            </motion.div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {clinicalPatterns.map((pattern, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="p-6 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl hover:border-red-500/30 transition-all duration-500"
-                >
-                  <div className={`inline-flex p-3 rounded-xl bg-${pattern.color}-500/10 mb-4`}>
-                    <pattern.icon className={`h-5 w-5 text-${pattern.color}-400`} />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{pattern.name}</h3>
-                  <p className="text-sm text-white/50">{pattern.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* === WHAT YOU GET === */}
-        <section className="relative py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent" />
-
-          <div className="relative mx-auto max-w-4xl px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
-                Ce que tu <span className="text-red-400">recois</span>
-              </h2>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="p-8 rounded-3xl border border-red-500/30 bg-red-500/5"
-            >
-              <div className="grid sm:grid-cols-2 gap-4 mb-8">
-                {[
-                  "Analyse 50+ biomarqueurs",
-                  "Ranges optimaux vs labo",
-                  "Detection 15+ patterns",
-                  "Protocole supplements",
-                  "Rapport PDF complet",
-                  "Dashboard interactif",
-                  "Sources scientifiques",
-                  "Resultats en 2 minutes",
-                ].map((feature, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-3"
-                  >
-                    <Check className="h-5 w-5 text-red-400 shrink-0" />
-                    <span className="text-white/70">{feature}</span>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="pt-8 border-t border-white/10 flex items-center justify-between">
-                <div>
-                  <span className="text-4xl font-black text-red-400">99€</span>
-                  <span className="text-white/40 ml-2">one-time</span>
-                </div>
-                <Link href="/blood-analysis">
-                  <Button className="h-14 px-8 text-lg font-semibold rounded-2xl bg-red-500 hover:bg-red-400 text-white">
-                    Analyser mon bilan
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* === FAQ === */}
-        <section className="relative py-32">
-          <div className="mx-auto max-w-3xl px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight" style={{ letterSpacing: "-0.03em" }}>
-                Questions <span className="text-red-400">frequentes</span>
-              </h2>
-            </motion.div>
-
-            <div>
-              {faqItems.map((item, i) => (
-                <FAQItem
-                  key={i}
-                  item={item}
-                  index={i}
-                  isOpen={openFaq === i}
-                  onToggle={() => setOpenFaq(openFaq === i ? null : i)}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* === FINAL CTA === */}
-        <section className="relative py-32 overflow-hidden">
-          <div className="absolute inset-0">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-red-500/20 rounded-full blur-[200px]" />
-          </div>
-
+      {/* HOW IT WORKS */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative mx-auto max-w-4xl px-4 text-center"
+            className="text-center mb-20"
           >
-            <Beaker className="h-20 w-20 text-red-400 mx-auto mb-8" />
-
-            <h2
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-8"
-              style={{ letterSpacing: "-0.04em" }}
-            >
-              Pret a decoder
-              <br />
-              <span className="bg-gradient-to-r from-red-400 via-rose-400 to-orange-400 bg-clip-text text-transparent">
-                ton sang ?
-              </span>
-            </h2>
-
-            <p className="text-xl text-white/50 mb-12 max-w-xl mx-auto">
-              Upload ton PDF. Resultats en 2 minutes.
-              <br />
-              99€ deduits si tu prends un coaching.
+            <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              Comment ca marche
             </p>
+            <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em]">
+              3 etapes. C'est tout.
+            </h2>
+          </motion.div>
 
-            <Link href="/blood-analysis">
-              <Button
-                size="lg"
-                className="h-16 px-12 text-lg font-semibold rounded-2xl bg-red-500 hover:bg-red-400 text-white hover:scale-105 transition-all duration-300 shadow-[0_0_80px_rgba(239,68,68,0.5)]"
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { step: "01", title: "Upload", desc: "Telecharge ton bilan sanguin en PDF", icon: Upload },
+              { step: "02", title: "Analyse", desc: "Notre IA decode 50+ biomarqueurs", icon: Beaker },
+              { step: "03", title: "Protocoles", desc: "Recois des recommandations personnalisees", icon: Check },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="relative overflow-hidden rounded-[32px] bg-white/[0.02] border border-white/5 p-10"
               >
-                <Upload className="mr-3 h-5 w-5" />
-                Analyser mon bilan sanguin
-                <ArrowRight className="ml-3 h-5 w-5" />
-              </Button>
-            </Link>
+                <div className="text-red-500/20 text-8xl font-bold absolute top-4 right-4">{item.step}</div>
+                <div className="relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+                    <item.icon className="w-7 h-7 text-red-400" />
+                  </div>
+                  <h3 className="text-white text-2xl font-bold mb-3">{item.title}</h3>
+                  <p className="text-white/50">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Trust badges */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-white/30">
-              <span className="flex items-center gap-2">
-                <Lock className="h-4 w-4" /> Paiement securise
-              </span>
-              <span className="flex items-center gap-2">
-                <Zap className="h-4 w-4" /> Resultats instantanes
-              </span>
-              <span className="flex items-center gap-2">
-                <Shield className="h-4 w-4" /> Donnees RGPD
-              </span>
+      {/* BIOMARKERS GRID */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              50+ Biomarqueurs
+            </p>
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+              Analyse complete de ton sang.
+            </h2>
+            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+              8 categories. 50+ marqueurs analyses. Chaque valeur interpretee
+              et mise en contexte avec ton profil.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {biomarkers.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="group rounded-[24px] bg-white/[0.02] border border-white/5 p-6 hover:bg-white/[0.04] hover:border-red-500/20 transition-all duration-300"
+              >
+                <div className="text-white text-3xl font-bold tracking-[-0.04em] mb-2">{item.count}</div>
+                <div className="text-white/70 font-medium">{item.category}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT YOU GET */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Ton Rapport
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+                Pas juste des chiffres.
+                <br />
+                <span className="text-red-400">Des reponses.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Chaque biomarqueur est analyse, interprete et compare
+                aux valeurs optimales (pas juste "normales").
+                Tu recois des protocoles concrets pour corriger les desequilibres.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Interpretation de chaque marqueur",
+                  "Radars visuels par categorie",
+                  "Detection des patterns a risque",
+                  "Protocoles de correction",
+                  "Supplements recommandes",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <Check className="w-5 h-5 text-red-400" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="aspect-square rounded-[48px] bg-gradient-to-br from-red-500/20 to-transparent border border-white/5 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-red-400 text-8xl font-bold tracking-[-0.04em] mb-4">50+</div>
+                  <p className="text-white/30 text-lg">Biomarqueurs analyses</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+              Tout ce qui est inclus.
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-[32px] border border-red-500/30 bg-gradient-to-b from-red-500/5 to-transparent p-10"
+          >
+            <div className="grid sm:grid-cols-2 gap-6">
+              {[
+                "Analyse 50+ biomarqueurs",
+                "8 categories de marqueurs",
+                "Radars visuels interactifs",
+                "Detection patterns a risque",
+                "Interpretation personnalisee",
+                "Protocoles de correction",
+                "Stack supplements optimise",
+                "Rapport PDF complet",
+                "Livraison sous 24-48h",
+                "Support par email",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Check className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <span className="text-white/80">{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <span className="text-white text-5xl font-bold tracking-[-0.04em]">99€</span>
+                <span className="text-white/40 ml-2">one-time</span>
+              </div>
+              <Link href="/blood-analysis">
+                <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-lg px-10 py-5 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02]">
+                  Analyser mon bilan
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
             </div>
           </motion.div>
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="py-32 px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto text-center"
+        >
+          <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
+            Ton sang,
+            <br />
+            <span className="text-red-400">decode.</span>
+          </h2>
+          <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
+            Upload ton bilan. Notre IA fait le reste.
+            50+ biomarqueurs analyses. Protocoles personnalises.
+          </p>
+          <Link href="/blood-analysis">
+            <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-lg px-12 py-5 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02]">
+              Lancer mon Blood Analysis — 99€
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </Link>
+        </motion.div>
+      </section>
 
       <Footer />
     </div>
