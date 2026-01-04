@@ -46,31 +46,33 @@ export interface Section {
 // ============================================================================
 
 export const SECTIONS: Section[] = [
-  // FREE SECTIONS (8)
+  // FREE SECTIONS (9)
   { id: "profil-base", title: "Profil de Base", subtitle: "Informations générales", icon: "User", tier: "free", order: 1 },
-  { id: "sommeil", title: "Sommeil", subtitle: "Qualité et habitudes", icon: "Moon", tier: "free", order: 2 },
-  { id: "stress-nerveux", title: "Stress & Nerveux", subtitle: "Gestion du stress", icon: "Brain", tier: "free", order: 3 },
-  { id: "energie", title: "Énergie", subtitle: "Niveaux d'énergie", icon: "Zap", tier: "free", order: 4 },
-  { id: "digestion", title: "Digestion", subtitle: "Santé digestive", icon: "Activity", tier: "free", order: 5 },
-  { id: "training", title: "Entraînement", subtitle: "Activité physique", icon: "Dumbbell", tier: "free", order: 6 },
-  { id: "nutrition-base", title: "Nutrition", subtitle: "Habitudes alimentaires", icon: "Utensils", tier: "free", order: 7 },
-  { id: "lifestyle", title: "Lifestyle", subtitle: "Mode de vie", icon: "Heart", tier: "free", order: 8 },
+  { id: "sante-historique", title: "Santé & Historique", subtitle: "Antécédents et blocages", icon: "Stethoscope", tier: "free", order: 2 },
+  { id: "sommeil", title: "Sommeil", subtitle: "Qualité et habitudes", icon: "Moon", tier: "free", order: 3 },
+  { id: "stress-nerveux", title: "Stress & Nerveux", subtitle: "Gestion du stress", icon: "Brain", tier: "free", order: 4 },
+  { id: "energie", title: "Énergie", subtitle: "Niveaux d'énergie", icon: "Zap", tier: "free", order: 5 },
+  { id: "digestion", title: "Digestion", subtitle: "Santé digestive", icon: "Activity", tier: "free", order: 6 },
+  { id: "training", title: "Entraînement", subtitle: "Activité physique", icon: "Dumbbell", tier: "free", order: 7 },
+  { id: "nutrition-base", title: "Nutrition", subtitle: "Habitudes alimentaires", icon: "Utensils", tier: "free", order: 8 },
+  { id: "lifestyle", title: "Lifestyle", subtitle: "Mode de vie", icon: "Heart", tier: "free", order: 9 },
+  { id: "mindset", title: "Mindset & Objectifs", subtitle: "Motivation et engagement", icon: "Target", tier: "free", order: 10 },
 
   // ANABOLIC BIOSCAN SECTIONS (+6)
-  { id: "hormones-homme", title: "Hormones Homme", subtitle: "Profil hormonal masculin", icon: "TrendingUp", tier: "essential", order: 9 },
-  { id: "hormones-femme", title: "Hormones Femme", subtitle: "Profil hormonal féminin", icon: "TrendingUp", tier: "essential", order: 10 },
-  { id: "axes-cliniques", title: "Axes Cliniques", subtitle: "Thyroïde, SII, diabète", icon: "Stethoscope", tier: "essential", order: 11 },
-  { id: "supplements", title: "Suppléments", subtitle: "Stack actuel", icon: "Pill", tier: "essential", order: 12 },
-  { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 13 },
-  { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 14 },
+  { id: "hormones-homme", title: "Hormones Homme", subtitle: "Profil hormonal masculin", icon: "TrendingUp", tier: "essential", order: 11 },
+  { id: "hormones-femme", title: "Hormones Femme", subtitle: "Profil hormonal féminin", icon: "TrendingUp", tier: "essential", order: 12 },
+  { id: "axes-cliniques", title: "Axes Cliniques", subtitle: "Thyroïde, SII, diabète", icon: "Stethoscope", tier: "essential", order: 13 },
+  { id: "supplements", title: "Suppléments", subtitle: "Stack actuel", icon: "Pill", tier: "essential", order: 14 },
+  { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 15 },
+  { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 16 },
 
   // PRO PANEL 360 SECTIONS (+6)
-  { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 15 },
-  { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 16 },
-  { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 17 },
-  { id: "blessures-douleurs", title: "Blessures & Douleurs", subtitle: "Douleurs, mobilité, prévention", icon: "Bone", tier: "elite", order: 18 },
-  { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 19 },
-  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 20 },
+  { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 17 },
+  { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 18 },
+  { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 19 },
+  { id: "blessures-douleurs", title: "Blessures & Douleurs", subtitle: "Douleurs, mobilité, prévention", icon: "Bone", tier: "elite", order: 20 },
+  { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 21 },
+  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 22 },
 ];
 
 // ============================================================================
@@ -78,13 +80,23 @@ export const SECTIONS: Section[] = [
 // ============================================================================
 
 export const QUESTIONS_FREE: Question[] = [
-  // PROFIL BASE (6 questions)
+  // PROFIL BASE (8 questions)
   { id: "sexe", sectionId: "profil-base", type: "radio", label: "Tu es ?", tier: "free", options: [{ value: "homme", label: "Homme" }, { value: "femme", label: "Femme" }], required: true },
   { id: "prenom", sectionId: "profil-base", type: "text", label: "Ton prénom ?", tier: "free", placeholder: "Ex: Marc, Sophie...", required: true },
+  { id: "email", sectionId: "profil-base", type: "email", label: "Ton email ?", tier: "free", placeholder: "pour recevoir ton rapport", required: true },
+  { id: "instagram", sectionId: "profil-base", type: "text", label: "Ton Instagram ? (optionnel)", tier: "free", placeholder: "@ton_pseudo" },
   { id: "age", sectionId: "profil-base", type: "select", label: "Ton âge ?", tier: "free", options: [{ value: "18-25", label: "18-25 ans" }, { value: "26-35", label: "26-35 ans" }, { value: "36-45", label: "36-45 ans" }, { value: "46-55", label: "46-55 ans" }, { value: "56+", label: "56+ ans" }], required: true },
   { id: "taille", sectionId: "profil-base", type: "select", label: "Ta taille ?", tier: "free", options: [{ value: "150-160", label: "150-160 cm" }, { value: "161-170", label: "161-170 cm" }, { value: "171-180", label: "171-180 cm" }, { value: "181-190", label: "181-190 cm" }, { value: "191+", label: "190+ cm" }], required: true },
   { id: "poids", sectionId: "profil-base", type: "select", label: "Ton poids ?", tier: "free", options: [{ value: "50-60", label: "50-60 kg" }, { value: "61-70", label: "61-70 kg" }, { value: "71-80", label: "71-80 kg" }, { value: "81-90", label: "81-90 kg" }, { value: "91-100", label: "91-100 kg" }, { value: "100+", label: "100+ kg" }], required: true },
   { id: "objectif", sectionId: "profil-base", type: "select", label: "Ton objectif principal ?", tier: "free", options: [{ value: "perte-graisse", label: "Perte de graisse" }, { value: "prise-muscle", label: "Prise de muscle" }, { value: "recomposition", label: "Recomposition" }, { value: "performance", label: "Performance" }, { value: "sante", label: "Santé générale" }, { value: "energie", label: "Plus d'énergie" }], required: true },
+
+  // SANTÉ & HISTORIQUE (6 questions)
+  { id: "diagnostic-medical", sectionId: "sante-historique", type: "checkbox", label: "Diagnostic médical connu ?", tier: "free", options: [{ value: "thyroide", label: "Thyroïde" }, { value: "diabete", label: "Diabète/prédiabète" }, { value: "sopk", label: "SOPK" }, { value: "hypogonadisme", label: "Hypogonadisme" }, { value: "autre", label: "Autre" }, { value: "aucun", label: "Aucun" }] },
+  { id: "traitement-medical", sectionId: "sante-historique", type: "select", label: "Traitement affectant poids/énergie ?", tier: "free", options: [{ value: "non", label: "Non" }, { value: "oui-hormones", label: "Oui (hormones)" }, { value: "oui-antidep", label: "Oui (antidépresseurs)" }, { value: "oui-autre", label: "Oui (autre)" }] },
+  { id: "bilan-sanguin-recent", sectionId: "sante-historique", type: "select", label: "Bilan sanguin récent ?", tier: "free", options: [{ value: "jamais", label: "Jamais fait" }, { value: "plus-1an", label: "+1 an" }, { value: "moins-1an", label: "Moins d'1 an" }, { value: "moins-6mois", label: "Moins de 6 mois" }] },
+  { id: "plateau-metabolique", sectionId: "sante-historique", type: "select", label: "Déjà eu un plateau (bloqué malgré régime/sport) ?", tier: "free", options: [{ value: "jamais", label: "Jamais" }, { value: "une-fois", label: "Oui, une fois" }, { value: "plusieurs", label: "Plusieurs fois" }, { value: "actuellement", label: "Actuellement" }] },
+  { id: "tca-historique", sectionId: "sante-historique", type: "select", label: "Troubles alimentaires passés/actuels ?", tier: "free", options: [{ value: "jamais", label: "Jamais" }, { value: "passe", label: "Dans le passé" }, { value: "actuel", label: "Actuellement" }] },
+  { id: "experience-sportive", sectionId: "sante-historique", type: "select", label: "Expérience sportive ?", tier: "free", options: [{ value: "debutant", label: "Débutant (<1 an)" }, { value: "intermediaire", label: "Intermédiaire (1-3 ans)" }, { value: "avance", label: "Avancé (3+ ans)" }, { value: "expert", label: "Expert (5+ ans)" }] },
 
   // SOMMEIL (6 questions)
   { id: "heures-sommeil", sectionId: "sommeil", type: "select", label: "Heures de sommeil par nuit ?", tier: "free", options: [{ value: "moins-5", label: "Moins de 5h" }, { value: "5-6", label: "5-6h" }, { value: "6-7", label: "6-7h" }, { value: "7-8", label: "7-8h" }, { value: "8+", label: "8h+" }] },
@@ -143,6 +155,16 @@ export const QUESTIONS_FREE: Question[] = [
   { id: "exposition-soleil", sectionId: "lifestyle", type: "select", label: "Exposition au soleil ?", tier: "free", options: [{ value: "rare", label: "Rarement" }, { value: "parfois", label: "Parfois" }, { value: "regulier", label: "Régulièrement" }] },
   { id: "profession", sectionId: "lifestyle", type: "select", label: "Type de travail ?", tier: "free", options: [{ value: "bureau", label: "Bureau (assis)" }, { value: "mixte", label: "Mixte" }, { value: "actif", label: "Actif/physique" }, { value: "teletravail", label: "Télétravail" }] },
   { id: "heures-assis", sectionId: "lifestyle", type: "select", label: "Heures assis par jour ?", tier: "free", options: [{ value: "moins-4h", label: "Moins de 4h" }, { value: "4-6h", label: "4-6h" }, { value: "6-8h", label: "6-8h" }, { value: "8h+", label: "8h+" }] },
+
+  // MINDSET & OBJECTIFS (8 questions)
+  { id: "frustration-passee", sectionId: "mindset", type: "textarea", label: "Qu'est-ce qui t'a le plus frustré dans tes précédents essais de transformation ?", tier: "free", placeholder: "Sois honnête..." },
+  { id: "si-rien-change", sectionId: "mindset", type: "textarea", label: "Si tu ne changes rien, où en seras-tu dans 1 an ?", tier: "free", placeholder: "Corps, énergie, confiance..." },
+  { id: "ideal-6mois", sectionId: "mindset", type: "textarea", label: "Décris ton idéal physique et mental dans 6 mois", tier: "free", placeholder: "Qu'est-ce qui change dans ta vie ?" },
+  { id: "plus-grosse-peur", sectionId: "mindset", type: "textarea", label: "Quelle est ta plus grosse peur si tu échoues ?", tier: "free", placeholder: "Sois honnête avec toi-même..." },
+  { id: "engagement-niveau", sectionId: "mindset", type: "select", label: "De 1 à 10, à quel point es-tu prêt à t'engager ?", tier: "free", options: [{ value: "1-3", label: "1-3 (pas prêt)" }, { value: "4-5", label: "4-5 (hésitant)" }, { value: "6-7", label: "6-7 (motivé)" }, { value: "8-9", label: "8-9 (très motivé)" }, { value: "10", label: "10 (all-in)" }], required: true },
+  { id: "motivation-principale", sectionId: "mindset", type: "select", label: "Ce qui te motive le plus ?", tier: "free", options: [{ value: "esthetique", label: "Esthétique" }, { value: "performance", label: "Performance" }, { value: "sante", label: "Santé" }, { value: "confiance", label: "Confiance en soi" }, { value: "mental", label: "Mental" }], required: true },
+  { id: "consignes-strictes", sectionId: "mindset", type: "select", label: "Prêt à suivre des consignes strictes si ça garantit des résultats ?", tier: "free", options: [{ value: "non", label: "Non, j'ai besoin de flexibilité" }, { value: "partiellement", label: "Partiellement" }, { value: "oui", label: "Oui, je suis discipliné" }] },
+  { id: "temps-training-semaine", sectionId: "mindset", type: "select", label: "Temps dispo pour t'entraîner par semaine ?", tier: "free", options: [{ value: "moins-2h", label: "Moins de 2h" }, { value: "2-4h", label: "2-4h" }, { value: "4-6h", label: "4-6h" }, { value: "6h+", label: "6h+" }] },
 ];
 
 // ============================================================================
