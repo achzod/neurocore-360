@@ -42,21 +42,20 @@ const discoveryFeatures = [
 
 // What's included in Anabolic Bioscan (59€) - DIAGNOSTIC + PROTOCOLS
 const anabolicFeatures = [
-  { text: "Tout le Discovery Scan", desc: "Diagnostic complet inclus" },
-  { text: "5 protocoles personnalises", desc: "Matin, soir, digestion, bureau, training" },
-  { text: "Stack Supplements avec dosages", desc: "Exactement quoi prendre et quand" },
-  { text: "Plan 30-60-90 jours", desc: "Roadmap semaine par semaine" },
-  { text: "Recommandations precises", desc: "Quoi faire pour corriger chaque probleme" },
-  { text: "Rapport action 25-30 pages", desc: "Diagnostic + Solutions detaillees" },
+  { text: "16 sections d'analyse", desc: "Rapport complet 25-30 pages" },
+  { text: "Protocole Matin Anti-Cortisol", desc: "Routine matinale optimisee" },
+  { text: "Protocole Soir Sommeil", desc: "Verrouillage du sommeil" },
+  { text: "Protocole Digestion 14 Jours", desc: "Reset digestif complet" },
+  { text: "Stack Supplements Optimise", desc: "Dosages et timing precis" },
+  { text: "Plan 30-60-90 Jours", desc: "Roadmap semaine par semaine" },
 ];
 
 // What's included in Ultimate Scan (79€) - DIAGNOSTIC + PROTOCOLS + PHOTO ANALYSIS
 const ultimateFeatures = [
-  { text: "Tout l'Anabolic Bioscan", desc: "Diagnostic + Protocoles inclus" },
-  { text: "Analyse photo posturale", desc: "Composition corporelle, morphotype" },
+  { text: "Tout l'Anabolic Bioscan", desc: "16 sections + protocoles" },
+  { text: "Analyse visuelle et posturale", desc: "Morphotype, repartition graisseuse" },
   { text: "Analyse biomecanique complete", desc: "Psoas, diaphragme, sangle profonde" },
-  { text: "18 sections ultra-detaillees", desc: "Rapport 40-50 pages complet" },
-  { text: "Support prioritaire", desc: "Reponse sous 24h" },
+  { text: "18 sections d'analyse", desc: "Rapport 40-50 pages" },
 ];
 
 // How it works steps
