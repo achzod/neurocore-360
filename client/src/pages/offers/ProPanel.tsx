@@ -239,7 +239,7 @@ export default function ProPanel() {
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
                 Envoie 4 photos (face, dos, profil gauche, profil droit).
-                Notre IA detecte les desequilibres posturaux, les compensations
+                J'analyse ta posture, les desequilibres, les compensations
                 et les zones de tension.
               </p>
               <ul className="space-y-4">
@@ -376,7 +376,7 @@ export default function ProPanel() {
             <div className="grid sm:grid-cols-2 gap-6">
               {[
                 "Analyse complete 18 sections",
-                "Analyse photo IA (posture)",
+                "Analyse photo posturale",
                 "Integration wearables",
                 "Score global sur 100",
                 "Protocole Matin Anti-Cortisol",
