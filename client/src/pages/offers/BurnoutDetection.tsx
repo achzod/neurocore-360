@@ -341,16 +341,38 @@ export default function BurnoutDetection() {
                 </p>
               </motion.div>
 
-              {/* Right - Score Visualization */}
+              {/* Right - Video + Score Visualization */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
                 className="relative"
               >
-                {/* Score mockup */}
-                <div className="relative mx-auto w-[300px] sm:w-[340px]">
-                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2rem] p-6 shadow-2xl">
+                <div className="relative mx-auto w-full max-w-[400px]">
+                  {/* Video container */}
+                  <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-4">
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-auto"
+                    >
+                      <source
+                        src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4"
+                        type="video/mp4"
+                      />
+                    </video>
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <p className="text-white text-sm font-medium">Detection neuro-endocrinienne</p>
+                      <p className="text-gray-300 text-xs">Protocole de recuperation personnalise</p>
+                    </div>
+                  </div>
+
+                  {/* Score mockup */}
+                  <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-4 shadow-xl">
                     {/* Score circle */}
                     <div className="relative w-48 h-48 mx-auto mb-6">
                       <svg className="w-full h-full transform -rotate-90">
@@ -413,8 +435,11 @@ export default function BurnoutDetection() {
                       </div>
                     </div>
                   </div>
+
                   {/* Glow */}
-                  <div className="absolute -inset-4 bg-purple-500/20 blur-3xl rounded-full -z-10" />
+                  <motion.div
+                    className="absolute -inset-4 bg-purple-500/20 blur-3xl rounded-full -z-10"
+                  />
                 </div>
               </motion.div>
             </div>

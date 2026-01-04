@@ -568,11 +568,11 @@ export default function AuditPremium() {
                       />
                     </video>
                     {/* Overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
                     {/* Video overlay text */}
                     <div className="absolute bottom-4 left-4 right-4">
-                      <p className="text-white text-sm font-medium">Analyse complete en 15 domaines</p>
-                      <p className="text-gray-300 text-xs">Resultats instantanes</p>
+                      <p className="text-white text-sm font-medium">Analyse metabolique avancee</p>
+                      <p className="text-gray-300 text-xs">Scores en temps reel sur 15 domaines</p>
                     </div>
                   </div>
 
