@@ -953,7 +953,7 @@ function ApprovedReviewsSection() {
         <CardTitle className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Star className="h-5 w-5 text-yellow-400" />
-            Avis de nos clients
+            Avis clients
           </div>
           <div className="flex items-center gap-2 text-sm font-normal">
             {renderStars(Math.round(averageRating))}

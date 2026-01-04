@@ -192,7 +192,7 @@ export default function AuditGratuit() {
                   Chaque aspect de ta sante, decode.
                 </h2>
                 <p className="text-white/50 text-lg leading-relaxed">
-                  Notre algorithme analyse tes reponses pour identifier les desequilibres
+                  J'analyse tes reponses pour identifier les desequilibres
                   caches qui limitent ta performance.
                 </p>
               </motion.div>

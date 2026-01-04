@@ -13,52 +13,64 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: "Qu'est-ce que l'audit NEUROCORE 360° ?",
-    answer: "L'audit NEUROCORE 360° est une analyse métabolique complète couvrant 15 domaines : sommeil, hormones, digestion, stress, nutrition, training, biomécanique et plus. Selon ton plan (Gratuit, Essential ou Elite), tu reçois un rapport de 8 à 25+ sections avec des protocoles personnalisés basés sur tes données réelles, pas des conseils génériques."
+    question: "Qu'est-ce que NEUROCORE 360 exactement ?",
+    answer: "NEUROCORE 360 est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€ ou Burnout Engine 39€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
   },
   {
-    question: "Quelle est la différence entre Gratuit, Essential et Elite ?",
-    answer: "GRATUIT (0€) : 50 questions essentielles + dashboard interactif + scores des 5 domaines + radar de performance. Tu obtiens une vue d'ensemble de ton profil. ESSENTIAL (49€) : 150 questions approfondies + rapport ~25 pages (17 sections) + axes cliniques (thyroïde, SII...) + stack suppléments personnalisé + plan 90 jours. Le meilleur rapport qualité/prix. ELITE (99€) : 210 questions ultra-détaillées + rapport ~45 pages (25+ sections) + sync wearables + analyse photo (posture, composition) + nutrition timing avancé + support prioritaire. L'expérience complète."
+    question: "Quelle est la différence entre les différentes offres ?",
+    answer: "DISCOVERY SCAN (Gratuit) : 180 questions, diagnostic complet, score global sur 100, rapport 5-7 pages. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles matin/soir personnalisés, stack suppléments optimisé, plan 30-60-90 jours. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle), 18 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance. BURNOUT ENGINE (39€) : Détection du risque de burnout + protocole récupération 4 semaines."
   },
   {
-    question: "Comment fonctionne la synchronisation wearables (Elite) ?",
-    answer: "Avec le plan Elite, tu connectes tes wearables via Terra API. CONNEXION DIRECTE (1 clic) : Oura, Garmin, Fitbit, Ultrahuman, Withings. VIA TERRA AVENGERS APP (gratuite) : Apple Health, Samsung Health, Google Fit - tu télécharges l'app sur ton téléphone, tu autorises l'accès, et c'est synchro automatiquement. On récupère : HRV, sommeil (profond/REM/léger), fréquence cardiaque, SpO2, activité. Ces données enrichissent ton analyse pour des recommandations ultra-précises basées sur ta biologie réelle."
+    question: "Comment fonctionne la synchronisation des wearables ?",
+    answer: "Tu peux connecter Oura, Garmin, Fitbit, Apple Health, Google Fit, Samsung Health, Withings et Ultrahuman. WHOOP arrive bientôt. La connexion se fait en 1 clic pour la plupart des appareils. Je récupère tes données de HRV, sommeil (profond/REM/léger), fréquence cardiaque, SpO2 et activité. Ces données enrichissent ton analyse pour des recommandations ultra-précises basées sur ta biologie réelle, pas sur des moyennes génériques."
   },
   {
     question: "L'analyse photo, ça marche comment ?",
-    answer: "Disponible avec le plan Elite. Tu uploades 2-3 photos (face, profil, dos) et j'analyse : posture (épaules, bassin, lordose), composition corporelle estimée, asymétries musculaires, points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées."
+    answer: "Disponible avec l'Ultimate Scan. Tu uploades 2-3 photos (face, profil, dos) et j'analyse ta posture (épaules, bassin, lordose), j'estime ta composition corporelle, j'identifie les asymétries musculaires et les points de tension. Le rapport intègre ensuite des recommandations correctives personnalisées pour corriger tes déséquilibres posturaux et améliorer ta biomécanique."
   },
   {
     question: "Ai-je besoin d'une prise de sang ?",
-    answer: "Non, l'audit se base sur le questionnaire (et tes wearables/photos pour Elite). Si tu as des bilans récents, partage-les : je les décoderai pour identifier déséquilibres hormonaux, inflammatoires et métaboliques. Sinon, selon ton profil, je recommanderai les analyses pertinentes."
+    answer: "Non, le questionnaire suffit pour la plupart des offres. Si tu as des bilans récents, tu peux utiliser le Blood Analysis (99€) et je les décoderai avec des ranges optimaux de performance - pas les ranges 'normaux' des labos qui sont souvent trop larges. Sinon, selon ton profil, je te recommanderai les analyses pertinentes à demander à ton médecin."
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
-    answer: "Le questionnaire prend 10-35 min selon le plan choisi. Ton rapport est généré sous 24-48h. Le rapport inclut scores par domaine, analyses approfondies, cause racine des blocages, et protocoles sur 90 jours (Essential/Elite)."
+    answer: "Le questionnaire prend 15-45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est généré automatiquement dès que tu termines - tu le reçois en quelques minutes par email. Pour les offres premium (Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum."
   },
   {
-    question: "Qui analyse mes résultats ?",
-    answer: "Le système NEUROCORE, développé par Achzod (coach certifié ISSA, Precision Nutrition, PreScript Level 1) avec 8+ ans d'expertise en coaching métabolique. Chaque rapport est basé sur des algorithmes cliniques validés et produit des recommandations personnalisées à 100% basées sur TES données."
+    question: "Qui es-tu exactement, Achzod ?",
+    answer: "Je suis coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel pendant des années. NEUROCORE 360 est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique."
   },
   {
     question: "Est-ce adapté aux débutants ?",
-    answer: "Absolument. Le questionnaire détecte automatiquement ton niveau. Si tu débutes → fondations solides (split 3-4x/sem, nutrition simple, sommeil). Si tu es avancé → optimisations fines (timing péri-workout, cycling glucidique, HRV). Le plan Gratuit est parfait pour commencer."
+    answer: "Absolument. Le questionnaire détecte automatiquement ton niveau et ton contexte. Si tu débutes → je te donne des fondations solides (routine simple, nutrition de base, hygiène de sommeil). Si tu es avancé → optimisations fines (timing péri-workout, cycling glucidique, protocoles HRV). Le Discovery Scan gratuit est parfait pour commencer et voir si ça te correspond."
   },
   {
     question: "Les suppléments sont-ils obligatoires ?",
-    answer: "Non. Mais avec Essential/Elite, tu reçois un stack personnalisé avec dosages précis selon TON profil. Ex: stress + sommeil → Magnésium Bisglycinate 400mg + Glycine 3g le soir. Budget estimé : 50-100€/mois si besoin."
+    answer: "Absolument pas. Je te recommande uniquement ce qui est pertinent pour TON profil. Si tu n'as pas besoin de suppléments, je te le dis clairement. Quand je recommande des suppléments, je te donne les dosages précis, les meilleures marques et le timing optimal. Exemple : stress chronique + sommeil perturbé → Magnésium Bisglycinate 400mg + Glycine 3g avant le coucher. Budget estimé : 30-80€/mois selon les besoins."
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Gratuit = 0€ pour toujours. Essential = 49€ une fois. Elite = 99€ une fois. Pas d'abonnement caché. Tu gardes l'accès à ton rapport à vie."
+    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois. Burnout Engine = 39€ une fois."
+  },
+  {
+    question: "Le montant est-il déductible de mon coaching ?",
+    answer: "Oui ! Si tu décides de prendre un coaching avec moi par la suite, le montant de ton rapport est intégralement déduit du prix du coaching. Par exemple, si tu prends l'Ultimate Scan à 79€ puis un coaching, les 79€ sont déduits. C'est ma façon de récompenser ceux qui veulent aller plus loin dans leur transformation."
   },
   {
     question: "Que se passe-t-il si je ne suis pas satisfait ?",
-    answer: "Garantie satisfait ou remboursé 14 jours sur Essential et Elite. Si le rapport n'apporte pas de valeur, remboursement intégral sans question. Notre taux de satisfaction est > 97%."
+    answer: "Garantie satisfait ou remboursé 14 jours sur toutes les offres payantes. Si le rapport ne t'apporte pas de valeur, tu m'envoies un email et je te rembourse intégralement. Pas de questions, pas de justification. Je préfère avoir des clients satisfaits que de garder quelqu'un qui n'est pas content. Mon taux de satisfaction est supérieur à 97%."
   },
   {
-    question: "Puis-je upgrader mon plan après ?",
-    answer: "Oui ! Tu peux commencer Gratuit pour découvrir, puis passer à Essential ou Elite quand tu veux. Ton questionnaire est sauvegardé, tu ne refais que les questions supplémentaires du nouveau plan."
+    question: "Puis-je upgrader mon offre après ?",
+    answer: "Oui ! Tu peux commencer par le Discovery Scan gratuit pour découvrir le système, puis passer à l'Anabolic Bioscan ou l'Ultimate Scan quand tu veux. Ton questionnaire est sauvegardé, tu ne refais que les questions supplémentaires du nouveau plan. Et si tu as déjà payé une offre, la différence est déduite si tu upgrades."
+  },
+  {
+    question: "Le rapport remplace-t-il un médecin ?",
+    answer: "Non, et ce n'est pas le but. Mon rapport est un outil d'optimisation et de prévention basé sur mes 11 certifications et mon expérience terrain. Je t'aide à identifier ce qui pourrait être amélioré AVANT que ça devienne un problème médical. Pour toute pathologie, symptôme inquiétant ou question de santé, consulte toujours un professionnel de santé. Mon travail vient en complément, pas en remplacement."
+  },
+  {
+    question: "Mes données sont-elles sécurisées ?",
+    answer: "Absolument. Tes données sont chiffrées (SSL/TLS) et stockées sur des serveurs européens conformes au RGPD. Je ne vends JAMAIS tes données à des tiers - c'est une ligne rouge pour moi. Tu peux demander la suppression complète de tes données à tout moment par simple email. Ta vie privée n'est pas négociable."
   }
 ];
 
@@ -164,22 +176,22 @@ export default function FAQ() {
                 Prêt à découvrir ton potentiel ?
               </h2>
               <p className="text-lg text-gray-400">
-                Commence gratuitement ou passe directement à Essential/Elite.
+                Commence gratuitement ou passe directement à une offre premium.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-                <Link href="/audit-complet/questionnaire?plan=free">
+                <Link href="/offers/discovery-scan">
                   <Button size="lg" variant="outline" className="gap-2">
-                    Gratuit (0€)
+                    Discovery Scan (Gratuit)
                   </Button>
                 </Link>
-                <Link href="/audit-complet/questionnaire?plan=essential">
+                <Link href="/offers/anabolic-bioscan">
                   <Button size="lg" className="gap-2 bg-primary text-black hover:bg-primary/90">
-                    Essential (49€)
+                    Anabolic Bioscan (59€)
                   </Button>
                 </Link>
-                <Link href="/audit-complet/questionnaire?plan=elite">
-                  <Button size="lg" className="gap-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90">
-                    Elite (99€)
+                <Link href="/offers/ultimate-scan">
+                  <Button size="lg" className="gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:opacity-90">
+                    Ultimate Scan (79€)
                   </Button>
                 </Link>
               </div>
