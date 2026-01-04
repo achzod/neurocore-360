@@ -33,7 +33,7 @@ import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
 // ============================================================================
-// HERO SECTION
+// HERO SECTION - Ultrahuman Style
 // ============================================================================
 function HeroSection() {
   const scrollToOffers = () => {
@@ -44,48 +44,96 @@ function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-background">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-
-      <div className="relative z-10 mx-auto max-w-5xl px-4 py-20 text-center">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
+      {/* Animated background */}
+      <div className="absolute inset-0">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[150px]"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8 }}
         >
           {/* Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-4 py-2 text-sm backdrop-blur-sm">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-muted-foreground">par Achzod</span>
-          </div>
+          <motion.div
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-gray-800 bg-gray-900/50 px-5 py-2.5 text-sm backdrop-blur-sm"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <motion.span
+              className="h-2 w-2 rounded-full bg-emerald-500"
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            <span className="text-gray-400">par Achzod</span>
+          </motion.div>
 
-          {/* Main headline */}
-          <h1 className="mb-6 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            L'analyse corporelle 360
+          {/* Main headline - Large italic like Ultrahuman */}
+          <motion.h1
+            className="mb-8 text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+          >
+            <span className="text-white">L'analyse corporelle</span>
             <br />
-            <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
-              la plus complète au monde.
-            </span>
-          </h1>
+            <span className="italic text-emerald-400">la plus complète.</span>
+          </motion.h1>
 
           {/* Tagline */}
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
+          <motion.p
+            className="mx-auto mb-12 max-w-xl text-xl text-gray-500"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+          >
             Unlocking human potential
-          </p>
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button size="lg" className="gap-2 px-8 text-base font-semibold" onClick={scrollToOffers}>
+          <motion.div
+            className="flex flex-col items-center justify-center gap-4 sm:flex-row"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
+          >
+            <Button
+              size="lg"
+              className="h-14 gap-3 px-10 text-base font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]"
+              onClick={scrollToOffers}
+            >
               Unlock Your Potential
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </Button>
             <Link href="/deduction-coaching">
-              <Button variant="outline" size="lg" className="gap-2 px-8 text-base">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-14 gap-2 px-10 text-base border-gray-700 text-white hover:bg-gray-900 hover:border-gray-600 rounded-full"
+              >
                 Montant 100% déduit
               </Button>
             </Link>
-          </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <ChevronDown className="h-6 w-6 text-gray-600" />
         </motion.div>
       </div>
     </section>
@@ -247,7 +295,7 @@ function FiveOffersSection() {
 }
 
 // ============================================================================
-// CERTIFICATIONS SECTION
+// CERTIFICATIONS SECTION - Ultrahuman Style
 // ============================================================================
 function CertificationsSection() {
   const certifications = [
@@ -258,43 +306,56 @@ function CertificationsSection() {
   ];
 
   return (
-    <section className="border-y border-border/50 bg-background py-12 overflow-hidden">
+    <section className="border-y border-gray-900 bg-black py-16 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-8 text-center">
-          <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mb-10 text-center"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-600">
             10+ Certifications Internationales
           </p>
-        </div>
+        </motion.div>
         {/* Scrolling container */}
         <div className="relative">
-          <div className="flex animate-scroll gap-16">
+          <div className="flex animate-scroll gap-20">
             {/* First set */}
             {certifications.map((cert, index) => (
-              <div key={`first-${index}`} className="flex flex-col items-center gap-2 min-w-[200px]">
+              <motion.div
+                key={`first-${index}`}
+                className="flex flex-col items-center gap-3 min-w-[200px]"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
                 <img
                   src={cert.logo}
                   alt={cert.name}
-                  className="h-16 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                  className="h-14 w-auto object-contain brightness-0 invert opacity-40 hover:opacity-80 transition-all duration-300"
                 />
                 <div className="text-center">
-                  <p className="text-xs font-semibold text-muted-foreground">{cert.name}</p>
-                  <p className="text-[10px] text-muted-foreground/70">{cert.certs.join(" • ")}</p>
+                  <p className="text-xs font-medium text-gray-500">{cert.name}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
             {/* Duplicate for seamless loop */}
             {certifications.map((cert, index) => (
-              <div key={`second-${index}`} className="flex flex-col items-center gap-2 min-w-[200px]">
+              <motion.div
+                key={`second-${index}`}
+                className="flex flex-col items-center gap-3 min-w-[200px]"
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
+              >
                 <img
                   src={cert.logo}
                   alt={cert.name}
-                  className="h-16 w-auto object-contain grayscale hover:grayscale-0 transition-all"
+                  className="h-14 w-auto object-contain brightness-0 invert opacity-40 hover:opacity-80 transition-all duration-300"
                 />
                 <div className="text-center">
-                  <p className="text-xs font-semibold text-muted-foreground">{cert.name}</p>
-                  <p className="text-[10px] text-muted-foreground/70">{cert.certs.join(" • ")}</p>
+                  <p className="text-xs font-medium text-gray-500">{cert.name}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -304,7 +365,7 @@ function CertificationsSection() {
 }
 
 // ============================================================================
-// MEDIA LOGOS SECTION (Paru dans les médias)
+// MEDIA LOGOS SECTION - Ultrahuman Style
 // ============================================================================
 function MediaLogosSection() {
   const mediaLogos = [
@@ -319,23 +380,23 @@ function MediaLogosSection() {
   ];
 
   return (
-    <section className="py-8 bg-muted/30 overflow-hidden">
+    <section className="py-10 bg-gray-950 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-6 text-center">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-700">
             Paru dans les médias
           </p>
         </div>
         {/* Scrolling container */}
         <div className="relative">
-          <div className="flex animate-scroll-fast gap-12 items-center">
+          <div className="flex animate-scroll-fast gap-16 items-center">
             {/* First set */}
             {mediaLogos.map((media, index) => (
               <Link key={`first-${index}`} href="/press">
                 <img
                   src={media.logo}
                   alt={media.name}
-                  className="h-8 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+                  className="h-7 w-auto object-contain brightness-0 invert opacity-30 hover:opacity-60 transition-all duration-300 cursor-pointer"
                 />
               </Link>
             ))}
@@ -345,7 +406,7 @@ function MediaLogosSection() {
                 <img
                   src={media.logo}
                   alt={media.name}
-                  className="h-8 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+                  className="h-7 w-auto object-contain brightness-0 invert opacity-30 hover:opacity-60 transition-all duration-300 cursor-pointer"
                 />
               </Link>
             ))}
@@ -357,7 +418,7 @@ function MediaLogosSection() {
 }
 
 // ============================================================================
-// SOCIAL PROOF BANNER (petit bloc en haut)
+// SOCIAL PROOF BANNER - Ultrahuman Style
 // ============================================================================
 function SocialProofBanner() {
   const scrollToReviews = () => {
@@ -368,61 +429,80 @@ function SocialProofBanner() {
   };
 
   return (
-    <section className="py-12 bg-muted/50">
+    <section className="py-16 bg-black border-y border-gray-900">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-2xl font-bold sm:text-3xl">
-              <span className="text-muted-foreground">Rejoins </span>
-              <span className="text-foreground">500+</span>
-              <span className="text-muted-foreground"> membres qui ont </span>
-              <span className="text-foreground">transformé leur vie</span>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between"
+        >
+          <div className="text-center sm:text-left">
+            <h3 className="text-3xl sm:text-4xl font-bold">
+              <span className="text-gray-500">Rejoins </span>
+              <span className="text-white">500+</span>
+              <span className="text-gray-500"> membres</span>
             </h3>
-            <div className="mt-2 flex gap-1">
+            <div className="mt-3 flex gap-1 justify-center sm:justify-start">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                <Star key={i} className="h-5 w-5 fill-emerald-500 text-emerald-500" />
               ))}
+              <span className="ml-2 text-sm text-gray-500">4.9/5</span>
             </div>
           </div>
           <Button
             onClick={scrollToReviews}
             size="lg"
-            variant="default"
-            className="rounded-full px-6"
+            className="h-12 px-8 bg-transparent border border-gray-700 text-white hover:bg-gray-900 hover:border-emerald-500/50 rounded-full transition-all duration-300"
           >
             Voir les avis
           </Button>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 }
 
 // ============================================================================
-// SYNC WEARABLES SECTION
+// SYNC WEARABLES SECTION - Ultrahuman Style
 // ============================================================================
 function WearablesSection() {
+  const wearables = [
+    { name: "Oura", icon: "◎" },
+    { name: "Whoop", icon: "◇" },
+    { name: "Garmin", icon: "▽" },
+    { name: "Apple Watch", icon: "◉" },
+    { name: "Fitbit", icon: "◈" },
+  ];
+
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="py-24 bg-black">
       <div className="mx-auto max-w-5xl px-4 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Sync tes wearables</h2>
-          <p className="mb-12 text-lg text-muted-foreground">
-            Connecte tes données pour une analyse encore plus précise
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Intégrations</p>
+          <h2 className="mb-4 text-4xl sm:text-5xl font-bold text-white">Sync tes wearables</h2>
+          <p className="mb-16 text-lg text-gray-500">
+            Connecte tes données pour une analyse plus précise
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-8">
-            {["Oura", "Whoop", "Garmin", "Apple Watch", "Fitbit"].map((brand) => (
-              <div
-                key={brand}
-                className="flex h-16 w-32 items-center justify-center rounded-xl border border-border/50 bg-background px-4 py-3 text-lg font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {wearables.map((brand, index) => (
+              <motion.div
+                key={brand.name}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.05, borderColor: "rgb(16 185 129 / 0.5)" }}
+                className="flex h-20 w-36 flex-col items-center justify-center rounded-2xl border border-gray-800 bg-gray-900/50 px-4 py-3 transition-all duration-300 cursor-pointer hover:bg-gray-900"
               >
-                {brand}
-              </div>
+                <span className="text-2xl text-gray-600 mb-1">{brand.icon}</span>
+                <span className="text-sm font-medium text-gray-400">{brand.name}</span>
+              </motion.div>
             ))}
           </div>
         </motion.div>
@@ -432,41 +512,63 @@ function WearablesSection() {
 }
 
 // ============================================================================
-// MEASURABLE RESULTS SECTION
+// MEASURABLE RESULTS SECTION - Ultrahuman Style
 // ============================================================================
 function MeasurableResultsSection() {
   const results = [
     { metric: "+34%", label: "Énergie moyenne", icon: Zap },
-    { metric: "-45min", label: "Temps d'endormissement", icon: Clock },
-    { metric: "+28%", label: "Performance training", icon: TrendingUp },
-    { metric: "2x", label: "Meilleure récupération", icon: Activity },
+    { metric: "-45min", label: "Endormissement", icon: Clock },
+    { metric: "+28%", label: "Performance", icon: TrendingUp },
+    { metric: "2x", label: "Récupération", icon: Activity },
   ];
 
   return (
-    <section className="py-24 bg-background">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Des résultats mesurables</h2>
-          <p className="text-lg text-muted-foreground">Nos utilisateurs constatent des améliorations significatives</p>
-        </div>
+    <section className="relative py-32 bg-black overflow-hidden">
+      {/* Subtle gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-black to-black" />
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="relative mx-auto max-w-7xl px-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mb-20 text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Résultats</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white">Des améliorations mesurables</h2>
+        </motion.div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {results.map((result, index) => {
             const Icon = result.icon;
             return (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="text-center"
+                className="group relative"
               >
-                <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                  <Icon className="h-8 w-8 text-primary" />
+                <div className="relative p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-emerald-500/30 hover:bg-gray-900/50">
+                  {/* Icon */}
+                  <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                    <Icon className="h-7 w-7 text-emerald-500" />
+                  </div>
+
+                  {/* Metric with animated counter effect */}
+                  <motion.div
+                    className="mb-2 text-5xl font-bold text-white"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 + index * 0.1, type: "spring", stiffness: 100 }}
+                  >
+                    {result.metric}
+                  </motion.div>
+
+                  <div className="text-gray-500 text-sm uppercase tracking-wider">{result.label}</div>
                 </div>
-                <div className="mb-2 text-4xl font-black text-foreground">{result.metric}</div>
-                <div className="text-muted-foreground">{result.label}</div>
               </motion.div>
             );
           })}
@@ -687,7 +789,7 @@ function UltimateScanSection() {
 }
 
 // ============================================================================
-// TESTIMONIALS SECTION (Avis clients)
+// TESTIMONIALS SECTION - Ultrahuman Style
 // ============================================================================
 function TestimonialsSection() {
   const testimonials = [
@@ -712,37 +814,46 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section id="reviews" className="py-24 bg-muted/30">
+    <section id="reviews" className="py-32 bg-black">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Ce qu'en disent mes clients</h2>
-          <p className="text-lg text-muted-foreground">Des résultats concrets, des vies transformées</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mb-20 text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Témoignages</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white">Ce qu'en disent mes clients</h2>
+        </motion.div>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.15 }}
+              className="group"
             >
-              <Card className="h-full">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex gap-1">
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <Quote className="mb-4 h-8 w-8 text-muted-foreground/20" />
-                  <p className="mb-6 text-foreground">{testimonial.content}</p>
-                  <div>
-                    <div className="font-semibold">{testimonial.name}</div>
-                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="h-full p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-emerald-500/30 hover:bg-gray-900/50">
+                {/* Rating */}
+                <div className="mb-6 flex gap-1">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+                  ))}
+                </div>
+
+                {/* Quote */}
+                <Quote className="mb-4 h-6 w-6 text-gray-700" />
+                <p className="mb-8 text-gray-300 leading-relaxed">{testimonial.content}</p>
+
+                {/* Author */}
+                <div className="pt-6 border-t border-gray-800">
+                  <div className="font-semibold text-white">{testimonial.name}</div>
+                  <div className="text-sm text-gray-500">{testimonial.role}</div>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -752,66 +863,128 @@ function TestimonialsSection() {
 }
 
 // ============================================================================
-// BLOOD ANALYSIS SECTION
+// BLOOD ANALYSIS SECTION - Ultrahuman Style
 // ============================================================================
 function BloodAnalysisSection() {
-  const features = [
-    "Upload ton PDF en 30 secondes",
-    "Ranges OPTIMAUX vs normaux du labo",
-    "Radars de risques par catégorie",
-    "Explication de chaque marqueur",
-    "Protocoles suppléments personnalisés",
-    "Sources scientifiques citées",
+  const markers = [
+    { label: "TESTOSTÉRONE", value: 687, unit: "ng/dL", status: "optimal", range: "600-900" },
+    { label: "CORTISOL", value: 12.3, unit: "μg/dL", status: "watch", range: "8-15" },
+    { label: "VITAMINE D", value: 58, unit: "ng/mL", status: "optimal", range: "50-80" },
   ];
 
   return (
-    <section className="py-24 bg-background">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+    <section className="relative py-32 bg-black overflow-hidden">
+      {/* Background glow */}
+      <motion.div
+        className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[150px]"
+        animate={{ opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 6, repeat: Infinity }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+          {/* Phone mockup */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="order-2 lg:order-1"
+            transition={{ duration: 0.8 }}
+            className="order-2 lg:order-1 flex justify-center"
           >
-            {/* Mockup placeholder */}
-            <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
-              <div className="h-full w-full rounded-2xl border border-primary/20 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-                <Droplet className="h-24 w-24 text-primary/30" />
+            <div className="relative w-[280px]">
+              {/* Glow */}
+              <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-[80px]" />
+
+              {/* Phone */}
+              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-2 border border-gray-700/50">
+                <div className="bg-black rounded-[2rem] overflow-hidden p-4">
+                  {/* Header */}
+                  <div className="text-center mb-6">
+                    <Droplet className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Blood Analysis</p>
+                    <p className="text-2xl font-bold text-white mt-1">12 marqueurs</p>
+                  </div>
+
+                  {/* Markers */}
+                  <div className="space-y-3">
+                    {markers.map((marker, i) => (
+                      <motion.div
+                        key={marker.label}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.5 + i * 0.1 }}
+                        className="bg-gray-900/80 rounded-xl p-3 border border-gray-800"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[9px] text-gray-500 tracking-wider">{marker.label}</span>
+                          <span className={`text-[9px] ${marker.status === 'optimal' ? 'text-emerald-400' : 'text-gray-400'}`}>
+                            {marker.status === 'optimal' ? 'OPTIMAL' : 'À SURVEILLER'}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl font-bold text-white">{marker.value}</span>
+                          <span className="text-xs text-gray-600">{marker.unit}</span>
+                        </div>
+                        <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full ${marker.status === 'optimal' ? 'bg-emerald-500' : 'bg-gray-500'}`}
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${(marker.value / 100) * 10}%` }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.7 + i * 0.1, duration: 0.6 }}
+                          />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
 
+          {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
             className="order-1 lg:order-2"
           >
-            <Badge className="mb-4 bg-primary/10 text-primary">Analyse sanguine</Badge>
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Blood Analysis
-              <span className="block text-muted-foreground">Ton sang decode</span>
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Analyse sanguine</p>
+            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
+              <span className="text-white">Blood</span>
+              <span className="italic text-emerald-400"> Analysis</span>
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Upload ton bilan sanguin et obtiens une analyse avec les ranges optimaux utilisés par les médecins de performance, pas les ranges "normaux" des labos.
+            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
+              Upload ton bilan sanguin. Ranges optimaux de performance, pas les ranges "normaux" des labos.
             </p>
 
-            <ul className="mb-8 space-y-3">
-              {features.map((feature, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
-                    <Check className="h-4 w-4 text-primary" />
+            <ul className="mb-10 space-y-4">
+              {["Upload PDF en 30 sec", "Ranges optimaux", "Protocoles personnalisés"].map((feature, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
                   </div>
-                  <span>{feature}</span>
-                </li>
+                  <span className="text-gray-300">{feature}</span>
+                </motion.li>
               ))}
             </ul>
 
             <Link href="/offers/blood-analysis">
-              <Button size="lg" className="gap-2">
-                Analyser mon sang — 99€
-                <ArrowRight className="h-4 w-4" />
+              <Button
+                size="lg"
+                className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+              >
+                Blood Analysis — 99€
+                <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </Link>
           </motion.div>
@@ -822,66 +995,125 @@ function BloodAnalysisSection() {
 }
 
 // ============================================================================
-// BURNOUT ENGINE SECTION
+// BURNOUT ENGINE SECTION - Ultrahuman Style
 // ============================================================================
 function BurnoutEngineSection() {
-  const symptoms = [
-    "Fatigue chronique inexpliquée",
-    "Difficultés de concentration",
-    "Irritabilité croissante",
-    "Troubles du sommeil",
-    "Perte de motivation",
-    "Douleurs physiques diffuses",
+  const riskFactors = [
+    { label: "Stress chronique", level: 78 },
+    { label: "Fatigue", level: 65 },
+    { label: "Concentration", level: 42 },
   ];
 
   return (
-    <section className="py-24 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+    <section className="relative py-32 bg-gray-950 overflow-hidden">
+      {/* Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+          {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
           >
-            <Badge className="mb-4 bg-primary/10 text-primary">Prévention</Badge>
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Burnout Engine
-              <span className="block text-muted-foreground">Détecte avant la crise</span>
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Prévention</p>
+            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
+              <span className="text-white">Burnout</span>
+              <span className="italic text-emerald-400"> Engine</span>
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Le burnout ne prévient pas. Notre questionnaire neuro-endocrinien détecte les signaux faibles avant qu'il ne soit trop tard.
+            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
+              Le burnout ne prévient pas. Détecte les signaux faibles avant qu'il ne soit trop tard.
             </p>
 
-            <div className="mb-8">
-              <p className="mb-4 font-semibold">Tu ressens ces symptômes ?</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {symptoms.map((symptom, index) => (
-                  <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    {symptom}
-                  </div>
-                ))}
-              </div>
+            <div className="mb-10 grid grid-cols-2 gap-3">
+              {["Fatigue chronique", "Concentration", "Irritabilité", "Troubles sommeil"].map((symptom, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  className="flex items-center gap-2 text-sm text-gray-400"
+                >
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  {symptom}
+                </motion.div>
+              ))}
             </div>
 
             <Link href="/offers/burnout-detection">
-              <Button size="lg" className="gap-2">
+              <Button
+                size="lg"
+                className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+              >
                 Détecter mon risque — 29€
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </Link>
           </motion.div>
 
+          {/* Dashboard mockup */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="relative"
+            transition={{ duration: 0.8 }}
+            className="flex justify-center"
           >
-            {/* Mockup placeholder */}
-            <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
-              <div className="h-full w-full rounded-2xl border border-primary/20 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-                <Brain className="h-24 w-24 text-primary/30" />
+            <div className="relative w-full max-w-sm">
+              {/* Glow */}
+              <motion.div
+                className="absolute inset-0 bg-emerald-500/10 rounded-full blur-[100px]"
+                animate={{ opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 5, repeat: Infinity }}
+              />
+
+              {/* Card */}
+              <div className="relative bg-gray-900/80 rounded-3xl border border-gray-800 p-8 backdrop-blur-sm">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <Brain className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Score Burnout</p>
+                  <motion.p
+                    className="text-6xl font-bold text-white mt-2"
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5, type: "spring" }}
+                  >
+                    32
+                  </motion.p>
+                  <p className="text-sm text-emerald-400 mt-1">Risque modéré</p>
+                </div>
+
+                {/* Risk bars */}
+                <div className="space-y-4">
+                  {riskFactors.map((factor, i) => (
+                    <motion.div
+                      key={factor.label}
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.6 + i * 0.1 }}
+                    >
+                      <div className="flex justify-between text-xs mb-2">
+                        <span className="text-gray-500">{factor.label}</span>
+                        <span className="text-white">{factor.level}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${factor.level > 70 ? 'bg-emerald-500' : factor.level > 50 ? 'bg-gray-400' : 'bg-gray-600'}`}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${factor.level}%` }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.8 + i * 0.1, duration: 0.6 }}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -892,66 +1124,127 @@ function BurnoutEngineSection() {
 }
 
 // ============================================================================
-// ANABOLIC BIOSCAN SECTION
+// ANABOLIC BIOSCAN SECTION - Ultrahuman Style
 // ============================================================================
 function AnabolicBioscanSection() {
-  const features = [
-    "16 sections d'analyse complète",
-    "6 analyses profondes (hormones, métabolisme, sommeil...)",
-    "5 protocoles fermés personnalisés",
-    "Stack suppléments optimisé",
-    "Plan 30-60-90 jours avec KPIs",
-    "Rapport de 25-30 pages",
+  const sections = [
+    { name: "Hormones", score: 78 },
+    { name: "Métabolisme", score: 85 },
+    { name: "Sommeil", score: 62 },
+    { name: "Énergie", score: 91 },
   ];
 
   return (
-    <section className="py-24 bg-background">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+    <section className="relative py-32 bg-black overflow-hidden">
+      {/* Background glow */}
+      <motion.div
+        className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[150px]"
+        animate={{ opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 7, repeat: Infinity }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+          {/* Phone mockup */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="order-2 lg:order-1"
+            transition={{ duration: 0.8 }}
+            className="order-2 lg:order-1 flex justify-center"
           >
-            {/* Mockup placeholder */}
-            <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
-              <div className="h-full w-full rounded-2xl border border-primary/20 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-                <Activity className="h-24 w-24 text-primary/30" />
+            <div className="relative w-[280px]">
+              {/* Glow */}
+              <div className="absolute inset-0 bg-emerald-500/15 rounded-full blur-[80px]" />
+
+              {/* Phone */}
+              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-2 border border-gray-700/50">
+                <div className="bg-black rounded-[2rem] overflow-hidden p-4">
+                  {/* Header */}
+                  <div className="text-center mb-6">
+                    <Activity className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Anabolic Bioscan</p>
+                    <p className="text-2xl font-bold text-white mt-1">16 sections</p>
+                  </div>
+
+                  {/* Sections */}
+                  <div className="space-y-3">
+                    {sections.map((section, i) => (
+                      <motion.div
+                        key={section.name}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.5 + i * 0.1 }}
+                        className="bg-gray-900/80 rounded-xl p-3 border border-gray-800"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-400">{section.name}</span>
+                          <span className={`text-lg font-bold ${section.score > 80 ? 'text-emerald-400' : section.score > 60 ? 'text-white' : 'text-gray-400'}`}>
+                            {section.score}
+                          </span>
+                        </div>
+                        <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full ${section.score > 80 ? 'bg-emerald-500' : section.score > 60 ? 'bg-gray-400' : 'bg-gray-600'}`}
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${section.score}%` }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.7 + i * 0.1, duration: 0.6 }}
+                          />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
 
+          {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
             className="order-1 lg:order-2"
           >
-            <Badge className="mb-4 bg-primary/10 text-primary">Le plus populaire</Badge>
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Anabolic Bioscan
-              <span className="block text-muted-foreground">16 sections d'analyse complète</span>
+            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
+              <span className="text-xs uppercase tracking-wider text-emerald-400">Le plus populaire</span>
+            </div>
+            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
+              <span className="text-white">Anabolic</span>
+              <span className="italic text-emerald-400"> Bioscan</span>
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
-              L'analyse qui a fait notre réputation. 6 analyses profondes, 5 protocoles personnalisés, stack suppléments, et plan 30-60-90 jours.
+            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
+              16 sections. 6 analyses profondes. 5 protocoles personnalisés. Plan 30-60-90 jours.
             </p>
 
-            <ul className="mb-8 space-y-3">
-              {features.map((feature, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
-                    <Check className="h-4 w-4 text-primary" />
+            <ul className="mb-10 space-y-4">
+              {["16 sections d'analyse", "Protocoles personnalisés", "Stack suppléments", "Plan 30-60-90 jours"].map((feature, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
                   </div>
-                  <span>{feature}</span>
-                </li>
+                  <span className="text-gray-300">{feature}</span>
+                </motion.li>
               ))}
             </ul>
 
             <Link href="/offers/anabolic-bioscan">
-              <Button size="lg" className="gap-2">
-                Obtenir Anabolic Bioscan — 59€
-                <ArrowRight className="h-4 w-4" />
+              <Button
+                size="lg"
+                className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+              >
+                Anabolic Bioscan — 59€
+                <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </Link>
           </motion.div>
@@ -962,75 +1255,147 @@ function AnabolicBioscanSection() {
 }
 
 // ============================================================================
-// DISCOVERY SCAN SECTION (avec mockup dashboard)
+// DISCOVERY SCAN SECTION - Ultrahuman Style
 // ============================================================================
 function DiscoveryScanSection() {
   return (
-    <section className="py-24 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+    <section className="relative py-32 bg-gray-950 overflow-hidden">
+      {/* Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+          {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
           >
-            <Badge className="mb-4">Gratuit</Badge>
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Discovery Scan
-              <span className="block text-muted-foreground">4 sections gratuites</span>
+            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-gray-700 bg-gray-900/50">
+              <span className="text-xs uppercase tracking-wider text-gray-400">Gratuit</span>
+            </div>
+            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
+              <span className="text-white">Discovery</span>
+              <span className="italic text-emerald-400"> Scan</span>
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Commence gratuitement et découvre ton profil en 4 sections. Rapport de 5-7 pages. Pas de carte bancaire requise.
+            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
+              Commence gratuitement. 4 sections. Rapport 5-7 pages. Pas de carte bancaire.
             </p>
 
-            <ul className="mb-8 space-y-3">
-              {["Executive Summary personnalisé", "Analyse énergie & récupération", "Analyse métabolisme & nutrition", "Plan d'action 14 jours"].map((feature, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
-                    <Check className="h-4 w-4 text-primary" />
+            <ul className="mb-10 space-y-4">
+              {["Executive Summary", "Analyse énergie", "Analyse métabolisme", "Plan 14 jours"].map((feature, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 + index * 0.1 }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
                   </div>
-                  <span>{feature}</span>
-                </li>
+                  <span className="text-gray-300">{feature}</span>
+                </motion.li>
               ))}
             </ul>
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Link href="/offers/discovery-scan">
-                <Button size="lg" className="gap-2">
+                <Button
+                  size="lg"
+                  className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+                >
                   Commencer gratuitement
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
               <Link href="/report">
-                <Button variant="outline" size="lg" className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Voir un rapport exemple
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-14 px-8 border-gray-700 text-white hover:bg-gray-900 rounded-full"
+                >
+                  <FileText className="h-5 w-5 mr-2" />
+                  Exemple rapport
                 </Button>
               </Link>
             </div>
           </motion.div>
 
+          {/* Dashboard mockup */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="relative"
+            transition={{ duration: 0.8 }}
+            className="flex justify-center"
           >
-            {/* Dashboard mockup */}
-            <div className="rounded-2xl border border-border bg-background p-4 shadow-2xl">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-red-500" />
-                <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                <div className="h-3 w-3 rounded-full bg-green-500" />
-              </div>
-              <div className="space-y-4">
-                <div className="h-8 w-1/3 rounded bg-muted" />
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="h-24 rounded-lg bg-muted" />
-                  <div className="h-24 rounded-lg bg-muted" />
-                  <div className="h-24 rounded-lg bg-muted" />
+            <div className="relative w-full max-w-md">
+              {/* Glow */}
+              <motion.div
+                className="absolute inset-0 bg-emerald-500/10 rounded-full blur-[100px]"
+                animate={{ opacity: [0.2, 0.4, 0.2] }}
+                transition={{ duration: 6, repeat: Infinity }}
+              />
+
+              {/* Dashboard */}
+              <div className="relative bg-gray-900/80 rounded-3xl border border-gray-800 p-6 backdrop-blur-sm">
+                {/* Window controls */}
+                <div className="mb-6 flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-gray-700" />
+                  <div className="h-3 w-3 rounded-full bg-gray-700" />
+                  <div className="h-3 w-3 rounded-full bg-gray-700" />
                 </div>
-                <div className="h-40 rounded-lg bg-muted" />
+
+                {/* Content */}
+                <div className="space-y-4">
+                  <motion.div
+                    className="h-8 w-1/2 rounded-lg bg-gray-800"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: "50%" }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {[72, 85].map((score, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.6 + i * 0.1 }}
+                        className="p-4 rounded-2xl bg-gray-800/50 border border-gray-700/50"
+                      >
+                        <div className="text-3xl font-bold text-white mb-1">{score}</div>
+                        <div className="text-xs text-gray-500">Score</div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <motion.div
+                    className="h-32 rounded-2xl bg-gray-800/50 border border-gray-700/50 p-4"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <div className="h-full flex items-end gap-2">
+                      {[40, 65, 45, 80, 55, 70, 60].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          className="flex-1 bg-emerald-500/30 rounded-t"
+                          initial={{ height: 0 }}
+                          whileInView={{ height: `${h}%` }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 1 + i * 0.05, duration: 0.4 }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -1041,7 +1406,7 @@ function DiscoveryScanSection() {
 }
 
 // ============================================================================
-// FAQ SECTION
+// FAQ SECTION - Ultrahuman Style
 // ============================================================================
 function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -1070,26 +1435,36 @@ function FAQSection() {
   ];
 
   return (
-    <section className="py-24 bg-background">
+    <section className="py-32 bg-gray-950">
       <div className="mx-auto max-w-3xl px-4">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Questions fréquentes</h2>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mb-16 text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">FAQ</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white">Questions fréquentes</h2>
+        </motion.div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {faqs.map((faq, index) => (
-            <div
+            <motion.div
               key={index}
-              className="rounded-lg border border-border bg-card overflow-hidden"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.05 }}
+              className="rounded-2xl border border-gray-800 bg-gray-900/50 overflow-hidden"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="flex w-full items-center justify-between p-4 text-left"
+                className="flex w-full items-center justify-between p-5 text-left hover:bg-gray-900/80 transition-colors"
               >
-                <span className="font-medium">{faq.question}</span>
+                <span className="font-medium text-white">{faq.question}</span>
                 <ChevronDown
-                  className={`h-5 w-5 text-muted-foreground transition-transform ${
-                    openIndex === index ? "rotate-180" : ""
+                  className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                    openIndex === index ? "rotate-180 text-emerald-500" : ""
                   }`}
                 />
               </button>
@@ -1101,78 +1476,31 @@ function FAQSection() {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="border-t border-border px-4 py-4 text-muted-foreground">
+                    <div className="border-t border-gray-800 px-5 py-5 text-gray-400">
                       {faq.answer}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           ))}
         </div>
 
-        <div className="mt-8 text-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mt-10 text-center"
+        >
           <Link href="/faq">
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2 border-gray-700 text-white hover:bg-gray-900 rounded-full px-6"
+            >
               Voir toutes les questions
               <ChevronRight className="h-4 w-4" />
             </Button>
           </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// FINAL CTA SECTION
-// ============================================================================
-function FinalCTASection() {
-  return (
-    <section className="py-24 bg-gradient-to-t from-primary/10 via-primary/5 to-background">
-      <div className="mx-auto max-w-4xl px-4 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="mb-6 text-3xl font-bold sm:text-4xl md:text-5xl">
-            Prêt à optimiser
-            <br />
-            <span className="text-primary">ta biologie ?</span>
-          </h2>
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
-            Rejoins les centaines d'utilisateurs qui ont déjà transformé leur performance grâce à APEX LABS.
-          </p>
-
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/offers/ultimate-scan">
-              <Button size="lg" className="gap-2 px-8 text-base font-semibold">
-                Commencer l'analyse — 79€
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/offers/discovery-scan">
-              <Button variant="outline" size="lg" className="gap-2 px-8 text-base">
-                Essayer gratuitement
-              </Button>
-            </Link>
-          </div>
-
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span>Paiement sécurisé</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Rapport en 24h</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>500+ utilisateurs</span>
-            </div>
-          </div>
         </motion.div>
       </div>
     </section>
@@ -1180,11 +1508,92 @@ function FinalCTASection() {
 }
 
 // ============================================================================
-// MAIN LANDING PAGE
+// FINAL CTA SECTION - Ultrahuman Style
+// ============================================================================
+function FinalCTASection() {
+  return (
+    <section className="relative py-32 bg-black overflow-hidden">
+      {/* Animated gradient */}
+      <div className="absolute inset-0">
+        <motion.div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/10 rounded-full blur-[150px]"
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div className="relative mx-auto max-w-4xl px-4 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          <h2 className="mb-6 text-4xl sm:text-5xl md:text-6xl font-bold">
+            <span className="text-white">Prêt à optimiser</span>
+            <br />
+            <span className="italic text-emerald-400">ta biologie ?</span>
+          </h2>
+          <p className="mx-auto mb-12 max-w-xl text-lg text-gray-500">
+            Rejoins 500+ utilisateurs qui ont transformé leur performance.
+          </p>
+
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link href="/offers/ultimate-scan">
+              <Button
+                size="lg"
+                className="h-16 gap-3 px-10 text-lg font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-full transition-all duration-300 hover:shadow-[0_0_50px_rgba(16,185,129,0.4)]"
+              >
+                Commencer — 79€
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/offers/discovery-scan">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-16 gap-2 px-10 text-lg border-gray-700 text-white hover:bg-gray-900 hover:border-gray-600 rounded-full"
+              >
+                Essayer gratuitement
+              </Button>
+            </Link>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600"
+          >
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-emerald-500/50" />
+              <span>Paiement sécurisé</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-emerald-500/50" />
+              <span>Rapport 24-48h</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-emerald-500/50" />
+              <span>500+ utilisateurs</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// MAIN LANDING PAGE - Full dark theme
 // ============================================================================
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       <Header />
       <main>
         <HeroSection />
@@ -1195,11 +1604,11 @@ export default function Landing() {
         <WearablesSection />
         <MeasurableResultsSection />
         <UltimateScanSection />
+        <TestimonialsSection />
         <BloodAnalysisSection />
         <BurnoutEngineSection />
         <AnabolicBioscanSection />
         <DiscoveryScanSection />
-        <TestimonialsSection />
         <FAQSection />
         <FinalCTASection />
       </main>
