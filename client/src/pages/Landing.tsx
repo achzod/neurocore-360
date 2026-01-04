@@ -468,66 +468,111 @@ function MeasurableResultsSection() {
 }
 
 // ============================================================================
-// ULTIMATE SCAN SECTION (Analyse 360 nouvelle génération)
+// ULTIMATE SCAN SECTION (Style Ultrahuman - Dark + Phone Mockup)
 // ============================================================================
 function UltimateScanSection() {
-  const features = [
-    "18 sections d'analyse ultra-détaillées",
-    "Analyse photo posturale complète",
-    "Analyse biomécanique & sangle profonde",
-    "Tout l'Anabolic Bioscan inclus",
-    "Rapport de 40-50 pages",
-    "Protocoles biohacking avancés",
-  ];
-
   return (
-    <section className="py-24 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+    <section className="relative py-32 overflow-hidden bg-black">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-emerald-950/20 to-black" />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left - Big Headline */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            className="text-center lg:text-left"
           >
-            <Badge className="mb-4 bg-primary/10 text-primary">L'analyse complète</Badge>
-            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">
-              Ultimate Scan
-              <span className="block text-muted-foreground">Analyse 360 nouvelle génération</span>
+            <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold italic text-emerald-400 leading-tight mb-8">
+              Tout en
+              <br />
+              un scan.
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Métabolique + Hormonale + Biomécanique + Biohacking. L'analyse la plus complète pour comprendre ton corps et optimiser ta performance.
+            <p className="text-xl text-gray-400 mb-8 max-w-md mx-auto lg:mx-0">
+              Analyse visuelle, biomécanique, métabolique et hormonale. 18 sections. 40-50 pages.
             </p>
-
-            <ul className="mb-8 space-y-3">
-              {features.map((feature, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
-                    <Check className="h-4 w-4 text-primary" />
-                  </div>
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="flex items-center gap-4">
-              <Link href="/offers/ultimate-scan">
-                <Button size="lg" className="gap-2">
-                  Obtenir Ultimate Scan — 79€
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+            <Link href="/offers/ultimate-scan">
+              <Button size="lg" className="gap-2 h-14 px-8 text-lg bg-emerald-500 hover:bg-emerald-600 text-black">
+                Ultimate Scan — 79€
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
           </motion.div>
 
+          {/* Right - Phone Mockup */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="relative"
+            transition={{ delay: 0.2 }}
+            className="relative flex justify-center"
           >
-            {/* Mockup placeholder */}
-            <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8">
-              <div className="h-full w-full rounded-2xl border border-primary/20 bg-background/50 backdrop-blur-sm" />
+            {/* Phone Frame */}
+            <div className="relative w-[280px] sm:w-[320px]">
+              <div className="relative bg-gradient-to-b from-gray-900 to-black rounded-[2.5rem] p-3 shadow-2xl border border-gray-800">
+                {/* Screen */}
+                <div className="bg-black rounded-[2rem] overflow-hidden">
+                  {/* Header */}
+                  <div className="px-4 pt-8 pb-4 text-center">
+                    <p className="text-xs text-gray-500 mb-1">ULTIMATE SCAN</p>
+                    <p className="text-4xl font-bold text-white">87</p>
+                    <p className="text-emerald-400 text-sm">Score Global</p>
+                  </div>
+
+                  {/* Metrics Cards */}
+                  <div className="px-3 pb-4 space-y-2">
+                    {/* Posture Score */}
+                    <div className="bg-gray-900/80 rounded-xl p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">Analyse Posturale</span>
+                        <span className="text-emerald-400 text-xs">Optimal</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-white">92</span>
+                        <span className="text-xs text-gray-500">/100</span>
+                      </div>
+                    </div>
+
+                    {/* Biomecanique */}
+                    <div className="bg-gray-900/80 rounded-xl p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">Biomécanique</span>
+                        <span className="text-amber-400 text-xs">À améliorer</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-white">68</span>
+                        <span className="text-xs text-gray-500">/100</span>
+                      </div>
+                    </div>
+
+                    {/* Metabolique */}
+                    <div className="bg-gray-900/80 rounded-xl p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wide">Métabolisme</span>
+                        <span className="text-emerald-400 text-xs">Excellent</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold text-white">91</span>
+                        <span className="text-xs text-gray-500">/100</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom nav hint */}
+                  <div className="px-4 py-3 border-t border-gray-800/50">
+                    <div className="flex justify-around">
+                      {["Posture", "Bio", "Métabo", "Protocoles"].map((tab, i) => (
+                        <span key={i} className={`text-[9px] ${i === 0 ? 'text-emerald-400' : 'text-gray-600'}`}>{tab}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Glow effect */}
+              <div className="absolute -inset-8 bg-emerald-500/20 blur-3xl rounded-full -z-10" />
             </div>
           </motion.div>
         </div>
