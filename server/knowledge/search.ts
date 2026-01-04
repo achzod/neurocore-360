@@ -172,16 +172,23 @@ export async function searchForSection(
   limit: number = 3
 ): Promise<ScrapedArticle[]> {
   const sectionKeywords: Record<string, string[]> = {
-    "executive-summary": ["optimisation", "performance", "santé", "health"],
-    "sommeil-recuperation": ["sommeil", "sleep", "récupération", "recovery", "hrv", "mélatonine"],
-    "hormones": ["testosterone", "cortisol", "hormone", "thyroïde", "shbg"],
-    "metabolisme-nutrition": ["métabolisme", "nutrition", "protéines", "glucides", "calories"],
-    "entrainement": ["training", "entraînement", "hypertrophie", "performance", "périodisation"],
-    "cardiovasculaire": ["cardio", "vo2max", "zone2", "endurance", "hiit"],
-    "digestion-microbiote": ["digestion", "microbiome", "probiotiques", "gut", "sibo"],
-    "supplements": ["supplément", "supplement", "vitamines", "magnésium", "créatine"],
-    "stress-mental": ["stress", "cortisol", "anxiété", "dopamine", "adaptogènes"],
-    "lifestyle": ["lifestyle", "lumière", "écrans", "soleil", "douche froide"],
+    "executive-summary": ["optimisation", "performance", "santé", "health", "biohacking"],
+    "sommeil-recuperation": ["sommeil", "sleep", "récupération", "recovery", "hrv", "mélatonine", "circadian", "adenosine"],
+    "hormones": ["testosterone", "cortisol", "hormone", "thyroïde", "shbg", "estrogen", "dhea", "gh", "igf-1"],
+    "metabolisme-nutrition": ["métabolisme", "nutrition", "protéines", "glucides", "calories", "insuline", "leptine", "ghreline"],
+    "entrainement": ["training", "entraînement", "hypertrophie", "performance", "périodisation", "volume", "intensité", "récupération"],
+    "cardiovasculaire": ["cardio", "vo2max", "zone2", "endurance", "hiit", "lactate", "aérobie", "anaérobie"],
+    "digestion-microbiote": ["digestion", "microbiome", "probiotiques", "gut", "sibo", "leaky gut", "enzymes", "estomac"],
+    "supplements": ["supplément", "supplement", "vitamines", "magnésium", "créatine", "oméga-3", "vitamine d", "zinc", "ashwagandha"],
+    "stress-mental": ["stress", "cortisol", "anxiété", "dopamine", "adaptogènes", "focus", "concentration", "nootropiques"],
+    "lifestyle": ["lifestyle", "lumière", "écrans", "soleil", "douche froide", "respiration", "méditation", "grounding"],
+    // Additional sections for complete coverage
+    "analyse-posturale": ["posture", "biomécanique", "déséquilibre", "mobilité", "activation musculaire"],
+    "analyse-photo": ["composition corporelle", "body fat", "masse musculaire", "symétrie", "développement"],
+    "burnout": ["burnout", "épuisement", "surmenage", "stress chronique", "fatigue surrénales", "hpa axis"],
+    "blood-analysis": ["bilan sanguin", "marqueurs", "biomarqueurs", "inflammation", "glycémie", "lipides"],
+    "hrv-analysis": ["hrv", "variabilité cardiaque", "système nerveux autonome", "sympathique", "parasympathique"],
+    "plan-action": ["protocole", "plan", "action", "routine", "habitudes", "implementation"],
   };
 
   const keywords = sectionKeywords[sectionType] || ["santé", "optimisation"];

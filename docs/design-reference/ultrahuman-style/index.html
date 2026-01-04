@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anabolic Bioscan — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              primary: 'var(--color-primary)',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              panBackground: {
+                '0%': { backgroundPosition: '0% 0%' },
+                '100%': { backgroundPosition: '100% 100%' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Default variables (will be overridden by React) */
+      :root {
+        --color-bg: #18181B;
+        --color-text: #E4E4E7;
+        --color-text-muted: #A1A1AA;
+        --color-surface: rgba(20, 20, 22, 0.6);
+        --color-border: rgba(255, 255, 255, 0.08);
+        --color-primary: #F97316;
+        --color-grid: rgba(255, 255, 255, 0.1);
+      }
+
+      body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+        transition: background-color 0.5s ease, color 0.5s ease;
+      }
+      
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--color-border); 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-muted); 
+      }
+
+      /* Glassmorphism Panels */
+      .glass-panel {
+        background: var(--color-surface);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--color-border);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+      }
+      
+      /* Animated Background Grid */
+      .tech-grid {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 200vw;
+        height: 200vh;
+        z-index: 0;
+        opacity: 1;
+        pointer-events: none;
+        background-size: 40px 40px;
+        animation: panBackground 120s linear infinite;
+        transform: perspective(500px) rotateX(20deg) translateY(-100px) translateZ(-100px);
+        transition: opacity 0.5s ease;
+      }
+      
+      .tech-vignette {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at center, transparent 0%, var(--color-bg) 120%);
+        z-index: 0;
+        opacity: 0.8;
+      }
+
+      @keyframes panBackground {
+        0% { transform: perspective(500px) rotateX(20deg) translateY(0) translateZ(-100px); }
+        100% { transform: perspective(500px) rotateX(20deg) translateY(-40px) translateZ(-100px); }
+      }
+
+      /* Utility classes for dynamic theming */
+      .text-theme-main { color: var(--color-text) !important; }
+      .text-theme-muted { color: var(--color-text-muted) !important; }
+      .bg-theme-surface { background-color: var(--color-surface) !important; }
+      .border-theme { border-color: var(--color-border) !important; }
+      
+      /* Button hover effects */
+      .hover-theme:hover {
+        background-color: var(--color-border);
+      }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "recharts": "https://esm.sh/recharts@2.12.2?deps=react@18.2.0,react-dom@18.2.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

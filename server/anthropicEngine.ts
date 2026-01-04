@@ -13,6 +13,7 @@ import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
+import { generateKnowledgeContext, searchForSection } from './knowledge';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -384,12 +385,40 @@ ${photoAnalysisStr}
       const specificInstructions = getSectionInstructionsForTier(section as SectionName, tier);
       const maxTokensForThisSection = getMaxTokensForSection(section as SectionName, tier);
 
+      // Mapping sections → types pour la recherche knowledge base
+      const sectionTypeMapping: Record<string, string> = {
+        "Executive Summary": "executive-summary",
+        "Sommeil & Recuperation": "sommeil-recuperation",
+        "Analyse Hormonale": "hormones",
+        "Metabolisme & Nutrition": "metabolisme-nutrition",
+        "Protocole d'Entrainement": "entrainement",
+        "Cardiovasculaire & Endurance": "cardiovasculaire",
+        "Digestion & Microbiote": "digestion-microbiote",
+        "Stack Supplements Optimise": "supplements",
+        "Gestion du Stress & Mental": "stress-mental",
+        "Optimisation Lifestyle": "lifestyle",
+      };
+
+      // Récupérer le contexte knowledge base pertinent pour cette section
+      let knowledgeContext = "";
+      const sectionType = sectionTypeMapping[section] || "";
+      if (sectionType) {
+        try {
+          knowledgeContext = await generateKnowledgeContext(clientData as Record<string, any>, sectionType);
+          if (knowledgeContext) {
+            console.log(`[Claude] Knowledge context loaded for section "${section}" (${knowledgeContext.length} chars)`);
+          }
+        } catch (kbError) {
+          console.log(`[Claude] Knowledge context unavailable for "${section}": ${kbError}`);
+        }
+      }
+
       // Calcul de la longueur cible basé sur le tier
       const targetChars = tier === 'GRATUIT'
         ? '3500-5000 caracteres (environ 90-130 lignes)' // Discovery Scan: 5-7 pages total
         : '5000-7000 caracteres (environ 120-175 lignes)'; // 18 sections -> 40-50 pages
 
-      // Claude-specific prompt with enhanced instructions + length requirements
+      // Claude-specific prompt with enhanced instructions + length requirements + knowledge context
       const claudePrompt = `Tu es un expert en sante integrative, biohacking et coaching performance.
 Tu analyses les donnees de ${firstName} pour lui fournir un audit personnalise de haute qualite.
 
@@ -409,6 +438,9 @@ LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Si c'est une analyse: explique le POURQUOI, les MECANISMES, les CONSEQUENCES, les SOLUTIONS
 - Si c'est un protocole: detaille chaque etape minute par minute avec variantes
 
+${knowledgeContext ? `
+${knowledgeContext}
+` : ""}
 ${PROMPT_SECTION.replace("{section}", section)
   .replace("{section_specific_instructions}", specificInstructions)
   .replace("{data}", fullDataStr)}`;
