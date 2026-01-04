@@ -3130,6 +3130,159 @@ function BloodAnalysisPremiumSection() {
   );
 }
 
+// Burnout Detection Section - similar to Blood Analysis
+function BurnoutDetectionSection() {
+  const phases = [
+    { name: "Alarme", desc: "Stress aigu, activation sympathique", color: "amber", symptoms: ["Fatigue inhabituelle", "Troubles sommeil", "Irritabilite"] },
+    { name: "Resistance", desc: "Adaptation chronique, cortisol eleve", color: "orange", symptoms: ["Epuisement constant", "Difficulte concentration", "Infections frequentes"] },
+    { name: "Epuisement", desc: "Burnout installe, crash hormonal", color: "red", symptoms: ["Incapacite a fonctionner", "Depression", "Problemes physiques"] },
+  ];
+
+  const protocol = [
+    { week: 1, focus: "Reset nerveux", desc: "Respiration, deconnexion, sommeil prioritaire" },
+    { week: 2, focus: "Nutrition anti-stress", desc: "Magnesium, adaptogenes, anti-inflammatoire" },
+    { week: 3, focus: "Mouvement doux", desc: "Marche, yoga, etirements, nature" },
+    { week: 4, focus: "Reconstruction", desc: "Routines durables, limites, prevention" },
+  ];
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-black via-purple-950/20 to-black py-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-500/10 via-transparent to-transparent" />
+
+      <div className="relative mx-auto max-w-7xl px-4">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <Badge className="mb-6 bg-purple-500/20 text-purple-400 border-purple-500/30 px-4 py-2">
+            <Brain className="mr-2 h-4 w-4" />
+            Prevention
+          </Badge>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6">
+            Burnout Detection
+            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
+              Detecte avant la crise
+            </span>
+          </h2>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Questionnaire neuro-endocrinien de 50 questions. Score de risque 0-100 + protocole de sortie personnalise 4 semaines.
+          </p>
+        </motion.div>
+
+        {/* Main Grid */}
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          {/* Left - Phases */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-4"
+          >
+            <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Les 3 phases du burnout
+            </h3>
+
+            {phases.map((phase, idx) => (
+              <div key={idx} className={`rounded-xl bg-${phase.color}-500/10 border border-${phase.color}-500/20 p-5`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-8 h-8 rounded-full bg-${phase.color}-500/20 flex items-center justify-center`}>
+                    <span className={`text-${phase.color}-400 font-bold`}>{idx + 1}</span>
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">{phase.name}</span>
+                    <p className="text-gray-500 text-xs">{phase.desc}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {phase.symptoms.map((s, i) => (
+                    <span key={i} className="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-xs">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Right - Pricing & Protocol */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="relative rounded-3xl bg-gradient-to-b from-purple-500/10 to-purple-500/5 border border-purple-500/20 p-8 lg:p-10">
+              {/* Price */}
+              <div className="mb-8">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-6xl font-bold text-white">49€</span>
+                  <span className="text-gray-400">paiement unique</span>
+                </div>
+                <p className="text-purple-400 text-sm font-medium">
+                  5 minutes peuvent t'eviter des mois de recuperation
+                </p>
+              </div>
+
+              {/* Protocol preview */}
+              <div className="mb-8">
+                <p className="text-white font-semibold mb-4">Protocole de sortie inclus:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {protocol.map((p, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-white/5 border border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
+                          <span className="text-purple-400 text-xs font-bold">{p.week}</span>
+                        </div>
+                        <span className="text-white text-xs font-medium">{p.focus}</span>
+                      </div>
+                      <p className="text-gray-500 text-xs">{p.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <Link href="/offers/burnout-detection">
+                <Button size="lg" className="w-full h-14 text-lg gap-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0">
+                  <Brain className="h-5 w-5" />
+                  Evaluer mon risque
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+
+              {/* Features */}
+              <div className="mt-6 grid grid-cols-2 gap-4 text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                  50 questions
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                  Score 0-100
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                  Detection phase
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                  Rapport PDF
+                </span>
+              </div>
+            </div>
+
+            {/* Glow */}
+            <div className="absolute -inset-4 -z-10 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-red-500/20 blur-3xl opacity-30" />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Floating CTA Bar - below pricing
 function FloatingCTABar() {
   return (
@@ -3379,15 +3532,19 @@ export default function Landing() {
       <Header />
       <main>
         <UltrahumanHero />
-        <WearablesSyncSection />
         <CertificationsBar />
         <MediaBar />
+        {/* 5 OFFRES - Visible en haut */}
+        <FiveOffersPricingSection />
+        {/* Sections dediees pour chaque offre premium */}
+        <BloodAnalysisPremiumSection />
+        <BurnoutDetectionSection />
+        {/* Autres sections */}
+        <WearablesSyncSection />
         <BentoHeroSection />
         <ScienceValidationSection />
         <BentoDomainesSection />
-        <BloodVisionSection />
         <BentoProcessSection />
-        <FiveOffersPricingSection />
         <FloatingCTABar />
         <BentoTestimonialsSection />
         <PrivacySection />
