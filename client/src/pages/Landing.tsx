@@ -101,42 +101,68 @@ function FiveOffersSection() {
       id: "discovery",
       name: "Discovery Scan",
       price: "Gratuit",
-      subtitle: "Ton profil de base en 4 sections",
+      subtitle: "Premier aperçu de ton potentiel",
       icon: Scan,
       color: "slate",
       href: "/offers/discovery-scan",
-      features: ["Executive Summary", "Analyse énergie & récupération", "Analyse métabolisme & nutrition", "Plan d'action 14 jours"],
+      features: [
+        "Executive Summary personnalisé",
+        "Analyse énergie & récupération",
+        "Analyse métabolisme & nutrition",
+        "Plan d'action 14 jours",
+        "Rapport 5-7 pages PDF",
+      ],
     },
     {
       id: "anabolic",
       name: "Anabolic Bioscan",
       price: "59€",
-      subtitle: "16 sections d'analyse complète",
+      subtitle: "Optimise tes hormones & métabolisme",
       icon: Activity,
       color: "emerald",
       href: "/offers/anabolic-bioscan",
-      features: ["6 analyses profondes", "5 protocoles fermés", "Stack suppléments personnalisé", "Plan 30-60-90 jours"],
+      features: [
+        "16 sections d'analyse",
+        "Profil hormonal complet",
+        "5 protocoles personnalisés",
+        "Stack suppléments optimisé",
+        "Plan 30-60-90 jours",
+        "Rapport 25-30 pages",
+      ],
+    },
+    {
+      id: "ultimate",
+      name: "Ultimate Scan",
+      price: "79€",
+      subtitle: "L'analyse la plus complète du marché",
+      icon: Zap,
+      color: "cyan",
+      href: "/offers/ultimate-scan",
+      features: [
+        "18 sections ultra-détaillées",
+        "Analyse photo posturale",
+        "Analyse biomécanique complète",
+        "Tout l'Anabolic Bioscan inclus",
+        "Rapport 40-50 pages",
+        "Support prioritaire",
+      ],
       popular: true,
     },
     {
       id: "blood",
       name: "Blood Analysis",
       price: "99€",
-      subtitle: "Ton sang decodé",
+      subtitle: "Décode ton bilan sanguin",
       icon: Droplet,
       color: "red",
       href: "/offers/blood-analysis",
-      features: ["Upload PDF bilan", "Radars de risques", "Protocoles ciblés"],
-    },
-    {
-      id: "ultimate",
-      name: "Ultimate Scan",
-      price: "149€",
-      subtitle: "18 sections + analyse photo",
-      icon: Zap,
-      color: "cyan",
-      href: "/offers/ultimate-scan",
-      features: ["Tout l'Anabolic Bioscan", "Analyse photo posturale", "Analyse biomécanique complète"],
+      features: [
+        "Upload PDF bilan sanguin",
+        "Radars de risques visuels",
+        "Interprétation experte",
+        "Protocoles ciblés",
+        "Suivi des marqueurs",
+      ],
     },
     {
       id: "burnout",
@@ -146,7 +172,13 @@ function FiveOffersSection() {
       icon: Brain,
       color: "purple",
       href: "/offers/burnout-detection",
-      features: ["Score de risque", "Protocole 4 semaines", "Dashboard temps réel"],
+      features: [
+        "Score de risque burnout",
+        "Analyse stress & fatigue",
+        "Protocole 4 semaines",
+        "Dashboard temps réel",
+        "Alertes personnalisées",
+      ],
     },
   ];
 
@@ -481,7 +513,7 @@ function UltimateScanSection() {
             <div className="flex items-center gap-4">
               <Link href="/offers/ultimate-scan">
                 <Button size="lg" className="gap-2">
-                  Obtenir Ultimate Scan — 149€
+                  Obtenir Ultimate Scan — 79€
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
