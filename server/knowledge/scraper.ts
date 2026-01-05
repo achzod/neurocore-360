@@ -12,7 +12,7 @@ import { ScrapedArticle, saveArticles } from "./storage";
 const SOURCES = {
   huberman: {
     name: "Huberman Lab",
-    rss: "https://feeds.megaphone.fm/hubaboratory",
+    rss: "https://feeds.megaphone.fm/hubermanlab",
     url: "https://www.hubermanlab.com"
   },
   sbs: {
