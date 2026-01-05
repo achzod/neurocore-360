@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -12,10 +12,18 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  Heart,
+  TrendingUp,
+  Moon,
+  Flame,
+  Target,
+  AlertTriangle,
+  Camera,
+  FileText,
 } from "lucide-react";
 
 // ============================================================================
-// HEADER WITH LOGO
+// HEADER
 // ============================================================================
 function Header() {
   return (
@@ -53,77 +61,45 @@ function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-black">
-      {/* Animated metallic gradients */}
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-black pt-20">
       <div className="absolute inset-0">
         <motion.div
           className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-white/10 via-gray-400/5 to-transparent rounded-full blur-[200px]"
-          animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1], x: [0, 50, 0], y: [0, 30, 0] }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-gray-500/10 via-white/5 to-transparent rounded-full blur-[150px]"
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.05, 0.15, 0.05] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
-      {/* Grid pattern overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left - Content */}
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
             <motion.div
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm backdrop-blur-sm"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
               <motion.span
                 className="h-2 w-2 rounded-full bg-[#FCDD00]"
-                animate={{ opacity: [1, 0.4, 1], scale: [1, 1.2, 1] }}
+                animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
               <span className="text-white/80 font-medium">Lancement imminent</span>
             </motion.div>
 
-            <motion.h1
-              className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.9] mb-6"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-            >
+            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.9] mb-6">
               <span className="text-white">Apex</span>
               <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">Labs</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              className="text-xl sm:text-2xl text-gray-300 mb-3 font-light"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              L'analyse corporelle la plus complete.
-            </motion.p>
+            <p className="text-xl text-gray-300 mb-3">L'analyse corporelle la plus complete.</p>
+            <p className="text-base text-gray-500 mb-10 max-w-lg">
+              Decouvre tes blocages caches. Protocoles personnalises bases sur 11 certifications internationales.
+            </p>
 
-            <motion.p
-              className="text-base text-gray-500 mb-10 max-w-lg leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              Decouvre tes blocages caches. Recois des protocoles personnalises bases sur 11 certifications internationales et des annees d'experience terrain.
-            </motion.p>
-
-            {/* Email form */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              className="mb-8"
-            >
+            <div className="mb-8">
               {!isSubmitted ? (
                 <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg">
                   <div className="relative flex-1">
@@ -133,387 +109,112 @@ function HeroSection() {
                       placeholder="ton@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all backdrop-blur-sm"
+                      className="w-full h-14 pl-12 pr-4 bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full focus:border-white/30 focus:outline-none transition-all"
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-14 px-8 bg-gradient-to-r from-gray-200 via-white to-gray-200 hover:from-white hover:via-gray-100 hover:to-white text-black font-bold rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="h-14 px-8 bg-gradient-to-r from-gray-200 via-white to-gray-200 text-black font-bold rounded-full transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
-                      <motion.div
-                        className="h-5 w-5 border-2 border-black/30 border-t-black rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
+                      <motion.div className="h-5 w-5 border-2 border-black/30 border-t-black rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
                     ) : (
-                      <>
-                        Rejoindre la liste VIP
-                        <ArrowRight className="h-5 w-5" />
-                      </>
+                      <>Rejoindre la liste VIP <ArrowRight className="h-5 w-5" /></>
                     )}
                   </button>
                 </form>
               ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-3 text-white bg-white/10 border border-white/20 rounded-full px-6 py-4 max-w-md backdrop-blur-sm"
-                >
+                <div className="flex items-center gap-3 text-white bg-white/10 border border-white/20 rounded-full px-6 py-4 max-w-md">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
                     <Check className="h-5 w-5 text-black" />
                   </div>
-                  <span className="font-semibold text-lg">Tu es sur la liste VIP</span>
-                </motion.div>
+                  <span className="font-semibold">Tu es sur la liste VIP</span>
+                </div>
               )}
-              <p className="mt-4 text-sm text-gray-600">Offre de lancement exclusive reservee aux inscrits.</p>
-            </motion.div>
+            </div>
 
-            {/* Stats */}
-            <motion.div
-              className="flex gap-10"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              {[
-                { value: "11", label: "Certifications" },
-                { value: "5", label: "Scans" },
-                { value: "50+", label: "Pages" },
-              ].map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1 + i * 0.1 }}
-                >
+            <div className="flex gap-10">
+              {[{ value: "11", label: "Certifications" }, { value: "5", label: "Scans" }, { value: "50+", label: "Pages" }].map((stat) => (
+                <div key={stat.label}>
                   <div className="text-3xl font-bold bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">{stat.value}</div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </motion.div>
 
-          {/* Right - Phone Mockup */}
+          {/* Phone mockup */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, rotateY: -20 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
-            className="relative hidden lg:flex justify-center items-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, delay: 0.5 }}
+            className="relative hidden lg:flex justify-center"
           >
-            {/* Glow behind phone */}
-            <motion.div
-              className="absolute w-[500px] h-[500px] bg-gradient-to-br from-white/20 via-gray-500/10 to-transparent rounded-full blur-[120px]"
-              animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-              transition={{ duration: 6, repeat: Infinity }}
-            />
-
-            {/* Phone */}
-            <motion.div
-              className="relative"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <div className="relative w-[300px] bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 rounded-[3rem] p-3 shadow-[0_0_100px_rgba(255,255,255,0.1)] border border-white/10">
-                {/* Notch */}
-                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-6 bg-black rounded-full z-20" />
-
-                {/* Screen */}
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity }}>
+              <div className="relative w-[280px] bg-gradient-to-b from-gray-700 to-gray-900 rounded-[3rem] p-3 border border-white/10">
                 <div className="bg-black rounded-[2.5rem] overflow-hidden">
-                  {/* Status bar */}
-                  <div className="flex justify-between items-center px-8 pt-4 pb-2">
-                    <span className="text-white text-xs font-medium">9:41</span>
-                    <div className="flex gap-1 items-center">
-                      <div className="w-4 h-2 bg-white rounded-sm" />
+                  <div className="px-5 py-6">
+                    <div className="text-center mb-4">
+                      <p className="text-white/60 text-xs mb-2">APEX LABS</p>
+                      <div className="text-5xl font-bold bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">87</div>
+                      <p className="text-white/60 text-sm">Score Global</p>
                     </div>
-                  </div>
-
-                  {/* App content */}
-                  <div className="px-5 pb-8 pt-4">
-                    <div className="text-center mb-6">
-                      <motion.div
-                        className="inline-flex items-center gap-1 text-white/60 text-xs font-medium mb-3"
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
-                        APEX LABS
-                      </motion.div>
-                      <motion.div
-                        className="text-6xl font-bold bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent mb-1"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 1.2, type: "spring" }}
-                      >
-                        87
-                      </motion.div>
-                      <p className="text-white/60 text-sm font-medium">Score Global</p>
-                    </div>
-
-                    {/* Metrics */}
-                    <div className="space-y-3">
-                      {[
-                        { label: "ENERGIE", score: 92 },
-                        { label: "SOMMEIL", score: 78 },
-                        { label: "STRESS", score: 45 },
-                      ].map((metric, i) => (
-                        <motion.div
-                          key={metric.label}
-                          className="bg-white/5 rounded-2xl p-4 border border-white/5"
-                          initial={{ opacity: 0, x: 30 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 1.4 + i * 0.15 }}
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] text-gray-500 tracking-wider">{metric.label}</span>
-                            <span className="text-2xl font-bold text-white">{metric.score}</span>
+                    <div className="space-y-2">
+                      {[{ label: "ENERGIE", score: 92 }, { label: "SOMMEIL", score: 78 }, { label: "STRESS", score: 45 }].map((m) => (
+                        <div key={m.label} className="bg-white/5 rounded-xl p-3">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-500">{m.label}</span>
+                            <span className="text-white font-bold">{m.score}</span>
                           </div>
-                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <motion.div
-                              className="h-full rounded-full bg-gradient-to-r from-gray-400 to-white"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${metric.score}%` }}
-                              transition={{ delay: 1.6 + i * 0.15, duration: 0.8 }}
-                            />
+                          <div className="h-1 bg-white/10 rounded-full">
+                            <motion.div className="h-full rounded-full bg-gradient-to-r from-gray-400 to-white" initial={{ width: 0 }} animate={{ width: `${m.score}%` }} transition={{ delay: 1.5, duration: 0.8 }} />
                           </div>
-                        </motion.div>
+                        </div>
                       ))}
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Floating elements */}
-              <motion.div
-                className="absolute -right-8 top-20 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-sm"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 2 }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <Zap className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Protocole</p>
-                    <p className="text-sm font-semibold text-white">Optimise</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="absolute -left-6 bottom-32 bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-sm"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 2.2 }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <Activity className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Analyse</p>
-                    <p className="text-sm font-semibold text-white">16 sections</p>
-                  </div>
-                </div>
-              </motion.div>
             </motion.div>
           </motion.div>
         </div>
       </div>
 
-      {/* by Achzod */}
-      <motion.div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-gray-600"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
-      >
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm text-gray-600">
         by <span className="text-gray-400 font-medium">Achzod</span>
-      </motion.div>
+      </div>
     </section>
   );
 }
 
 // ============================================================================
-// PRESS/MEDIA LOGOS - Scrolling
+// CERTIFICATIONS (moved above press)
 // ============================================================================
-function PressSection() {
-  const pressLogos = [
-    "BENZINGA",
-    "StreetInsider",
-    "MarketWatch",
-    "REUTERS",
-    "Yahoo Finance",
-    "Digital Journal",
-    "AP News",
+function CertificationsSection() {
+  const certs = [
+    { org: "NASM", items: ["CPT", "CNC", "PES"] },
+    { org: "ISSA", items: ["CPT", "SNS", "SFC", "SBC"] },
+    { org: "Precision Nutrition", items: ["PN1"] },
+    { org: "Pre-Script", items: ["Level 1"] },
   ];
 
   return (
-    <section className="py-8 bg-black border-y border-white/5 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 mb-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center">
-          Vu dans les medias
-        </p>
-      </div>
-
-      <div className="relative">
-        {/* Gradient masks */}
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
-
-        {/* Scrolling logos */}
-        <motion.div
-          className="flex gap-16 items-center"
-          animate={{ x: [0, -1000] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        >
-          {[...pressLogos, ...pressLogos, ...pressLogos].map((logo, i) => (
-            <span
-              key={i}
-              className="text-gray-500 text-lg font-semibold whitespace-nowrap tracking-wide"
-            >
-              {logo}
-            </span>
+    <section className="py-16 bg-black border-y border-white/5">
+      <div className="mx-auto max-w-5xl px-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">11 Certifications Internationales</p>
+        <div className="flex flex-wrap justify-center gap-4">
+          {certs.map((c) => (
+            <div key={c.org} className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5">
+              <span className="text-white font-medium text-sm">{c.org}</span>
+              <div className="flex gap-1">
+                {c.items.map((item) => (
+                  <span key={item} className="text-[10px] text-gray-400 bg-white/10 px-2 py-0.5 rounded">{item}</span>
+                ))}
+              </div>
+            </div>
           ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// OFFERS SECTION - Enhanced descriptions
-// ============================================================================
-function OffersPreview() {
-  const offers = [
-    {
-      name: "Discovery Scan",
-      price: "Gratuit",
-      description: "Ton diagnostic complet : detection de tes blocages, patterns problematiques, desequilibres reveles. Score global sur 100 avec rapport 5-7 pages.",
-      icon: Scan,
-      features: ["Score global /100", "Blocages identifies", "Rapport 5-7 pages"]
-    },
-    {
-      name: "Anabolic Bioscan",
-      price: "59€",
-      description: "16 sections d'analyse approfondie + protocoles matin anti-cortisol, soir sommeil, digestion 14 jours et stack supplements optimise.",
-      icon: Activity,
-      features: ["16 sections", "4 protocoles", "Plan 30-60-90 jours"]
-    },
-    {
-      name: "Ultimate Scan",
-      price: "79€",
-      description: "L'analyse ultime : tout l'Anabolic + analyse visuelle posturale, biomecanique complete. 18 sections, rapport 40-50 pages.",
-      icon: Zap,
-      featured: true,
-      features: ["18 sections", "Analyse photo", "Rapport 40-50 pages"]
-    },
-    {
-      name: "Blood Analysis",
-      price: "99€",
-      description: "Upload ton bilan sanguin PDF. Radars de risques visuels, interpretation experte avec ranges optimaux, protocoles cibles.",
-      icon: Droplet,
-      features: ["Ranges optimaux", "Radars visuels", "Protocoles cibles"]
-    },
-    {
-      name: "Burnout Engine",
-      price: "39€",
-      description: "Score de risque burnout, analyse stress et fatigue, protocole recuperation 4 semaines avec alertes personnalisees.",
-      icon: Brain,
-      features: ["Score burnout", "Protocole 4 sem.", "Alertes perso"]
-    },
-  ];
-
-  return (
-    <section className="py-32 bg-gradient-to-b from-black via-gray-950 to-black relative overflow-hidden">
-      {/* Background glow */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/5 rounded-full blur-[200px]"
-        animate={{ scale: [1, 1.2, 1], opacity: [0.03, 0.08, 0.03] }}
-        transition={{ duration: 10, repeat: Infinity }}
-      />
-
-      <div className="relative mx-auto max-w-7xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-20 text-center"
-        >
-          <motion.p
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 mb-4"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            5 Scans au lancement
-          </motion.p>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-            Choisis ton <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">scan</span>
-          </h2>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-            Du simple diagnostic a l'optimisation complete de ta biologie.
-          </p>
-        </motion.div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {offers.map((offer, index) => {
-            const Icon = offer.icon;
-            const isFeatured = offer.featured;
-            return (
-              <motion.div
-                key={offer.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -8, scale: 1.02 }}
-                className={`group relative rounded-3xl border p-8 transition-all duration-500 ${
-                  isFeatured
-                    ? "border-white/20 bg-gradient-to-b from-white/10 to-transparent"
-                    : "border-white/5 bg-white/5 hover:border-white/10 hover:bg-white/10"
-                }`}
-              >
-                {isFeatured && (
-                  <motion.div
-                    className="absolute -top-4 left-1/2 -translate-x-1/2"
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <span className="bg-[#FCDD00] text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-[0_0_20px_rgba(252,221,0,0.4)]">
-                      Le + populaire
-                    </span>
-                  </motion.div>
-                )}
-
-                <div className={`mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl ${
-                  isFeatured ? "bg-white/20 border border-white/20" : "bg-white/5 border border-white/10"
-                } transition-all duration-300 group-hover:scale-110`}>
-                  <Icon className={`h-7 w-7 ${isFeatured ? "text-white" : "text-gray-400 group-hover:text-white"}`} />
-                </div>
-
-                <h3 className="text-xl font-bold text-white mb-2">{offer.name}</h3>
-                <div className={`text-2xl font-bold mb-3 ${isFeatured ? "text-[#FCDD00]" : "text-gray-300"}`}>
-                  {offer.price}
-                </div>
-                <p className="text-gray-500 text-sm leading-relaxed mb-4">{offer.description}</p>
-
-                {/* Features list */}
-                <div className="flex flex-wrap gap-2">
-                  {offer.features.map((feature) => (
-                    <span key={feature} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-2 py-1 rounded-full">
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            );
-          })}
         </div>
       </div>
     </section>
@@ -521,68 +222,20 @@ function OffersPreview() {
 }
 
 // ============================================================================
-// WEARABLES SECTION
+// PRESS LOGOS
 // ============================================================================
-function WearablesSection() {
-  const wearables = [
-    { name: "Apple Health", logo: "https://logo.clearbit.com/apple.com" },
-    { name: "Garmin", logo: "https://logo.clearbit.com/garmin.com" },
-    { name: "Fitbit", logo: "https://logo.clearbit.com/fitbit.com" },
-    { name: "Oura", logo: "https://logo.clearbit.com/ouraring.com" },
-    { name: "Google Fit", logo: "https://logo.clearbit.com/google.com" },
-    { name: "Samsung Health", logo: "https://logo.clearbit.com/samsung.com" },
-    { name: "Withings", logo: "https://logo.clearbit.com/withings.com" },
-    { name: "WHOOP", logo: "https://logo.clearbit.com/whoop.com" },
-    { name: "Ultrahuman", logo: "https://logo.clearbit.com/ultrahuman.com" },
-  ];
+function PressSection() {
+  const logos = ["BENZINGA", "StreetInsider", "MarketWatch", "REUTERS", "Yahoo Finance", "AP News"];
 
   return (
-    <section className="py-20 bg-black">
-      <div className="mx-auto max-w-5xl px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-4">
-            Synchronise tes donnees
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Compatible avec tes <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">wearables</span>
-          </h2>
-          <p className="text-gray-500 mb-12 max-w-xl mx-auto">
-            Connecte ta montre ou ton ring pour une analyse encore plus precise de tes biomarqueurs.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="flex flex-wrap justify-center gap-6"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-        >
-          {wearables.map((device, i) => (
-            <motion.div
-              key={device.name}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className="group flex flex-col items-center gap-2"
-            >
-              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center p-3 transition-all group-hover:border-white/20 group-hover:bg-white/10">
-                <img
-                  src={device.logo}
-                  alt={device.name}
-                  className="w-full h-full object-contain filter grayscale opacity-60 group-hover:opacity-100 group-hover:grayscale-0 transition-all"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors">{device.name}</span>
-            </motion.div>
+    <section className="py-8 bg-black overflow-hidden">
+      <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-6">Vu dans les medias</p>
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
+        <motion.div className="flex gap-16 items-center" animate={{ x: [0, -800] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}>
+          {[...logos, ...logos, ...logos].map((logo, i) => (
+            <span key={i} className="text-gray-600 text-lg font-semibold whitespace-nowrap">{logo}</span>
           ))}
         </motion.div>
       </div>
@@ -591,152 +244,20 @@ function WearablesSection() {
 }
 
 // ============================================================================
-// IPAD DASHBOARD PREVIEW - Hands holding iPad
-// ============================================================================
-function DashboardPreview() {
-  return (
-    <section className="py-32 bg-black relative overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Une vue complete de ta <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">sante</span>
-          </h2>
-          <p className="text-gray-500 text-lg">dans le temps</p>
-
-          <motion.a
-            href="#"
-            className="inline-flex items-center gap-2 mt-8 px-8 py-4 rounded-full border border-white/20 bg-white/5 text-white font-medium hover:bg-white/10 transition-all"
-            whileHover={{ scale: 1.05 }}
-          >
-            Telecharger un exemple de rapport
-          </motion.a>
-        </motion.div>
-
-        {/* iPad with hands */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative max-w-4xl mx-auto"
-        >
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent blur-3xl" />
-
-          {/* iPad Frame */}
-          <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-4 shadow-2xl border border-white/10">
-            {/* iPad Screen */}
-            <div className="bg-white rounded-[2rem] overflow-hidden aspect-[4/3]">
-              {/* Dashboard Content */}
-              <div className="p-8 h-full">
-                {/* Header */}
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">ApexLabs : Rapport Complet</p>
-                    <p className="text-xs text-gray-400">client@example.com</p>
-                  </div>
-                  <p className="text-xs text-gray-400">Score Global : 87/100</p>
-                </div>
-
-                {/* Section Title */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Analyse Energie & Recuperation</h3>
-                  <p className="text-sm text-gray-500">Ta capacite a recuperer determine ta progression. Voici ton profil energetique actuel.</p>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Score Energie</p>
-                    <p className="text-2xl font-bold text-gray-900">78</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Qualite Sommeil</p>
-                    <p className="text-2xl font-bold text-gray-900">65</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Niveau Stress</p>
-                    <p className="text-2xl font-bold text-orange-500">42</p>
-                  </div>
-                </div>
-
-                {/* Progress Bars */}
-                <div className="space-y-4">
-                  {[
-                    { label: "Recuperation musculaire", value: 85, color: "bg-green-500" },
-                    { label: "Energie matinale", value: 62, color: "bg-yellow-500" },
-                    { label: "Gestion du stress", value: 45, color: "bg-orange-500" },
-                    { label: "Qualite du sommeil", value: 71, color: "bg-green-500" },
-                  ].map((item) => (
-                    <div key={item.label}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-600">{item.label}</span>
-                        <span className="text-gray-900 font-medium">{item.value}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <motion.div
-                          className={`h-full rounded-full ${item.color}`}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${item.value}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1, delay: 0.5 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Decorative hands silhouette (CSS-based) */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[120%] h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// VIDEO BACKGROUND SECTION
+// VIDEO SECTION
 // ============================================================================
 function VideoSection() {
   return (
-    <section className="relative h-[70vh] overflow-hidden">
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
+    <section className="relative h-[60vh] overflow-hidden">
+      <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
         <source src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4" type="video/mp4" />
       </video>
-
-      {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-black/50 to-black" />
-
-      {/* Content */}
       <div className="relative z-10 h-full flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center px-6"
-        >
-          <p className="text-xs uppercase tracking-[0.3em] text-[#FCDD00] mb-4">Technologie de pointe</p>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 max-w-3xl">
-            L'analyse la plus avancee du marche
-          </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Intelligence artificielle + 11 certifications internationales = des protocoles que personne d'autre ne peut offrir.
-          </p>
+        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center px-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-[#FCDD00] mb-4">5 Scans disponibles</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">Chaque aspect de ta biologie</h2>
+          <p className="text-gray-400 max-w-xl mx-auto">analyse en profondeur</p>
         </motion.div>
       </div>
     </section>
@@ -744,91 +265,63 @@ function VideoSection() {
 }
 
 // ============================================================================
-// BLUE HEALTH VISUAL SECTION
+// OFFER SECTION 1: DISCOVERY SCAN - Animated radar
 // ============================================================================
-function HealthVisualSection() {
-  const markers = [
-    { id: "01", label: "Metabolic Health", top: "10%", right: "15%" },
-    { id: "02", label: "Cardiovascular", top: "20%", left: "5%" },
-    { id: "03", label: "Liver Health", top: "35%", right: "10%" },
-    { id: "04", label: "Thyroid", bottom: "25%", left: "20%" },
-    { id: "05", label: "Hormone", bottom: "20%", right: "15%" },
-  ];
-
+function DiscoveryScanSection() {
   return (
-    <section className="py-32 bg-black">
+    <section className="py-24 bg-black">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Text */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <p className="text-xs uppercase tracking-[0.3em] text-blue-400 mb-4">Blood Analysis</p>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Decode ton bilan sanguin
-            </h2>
-            <p className="text-gray-400 text-lg leading-relaxed mb-8">
-              Upload ton PDF. Notre IA analyse chaque marqueur avec des ranges optimaux de performance, pas les ranges "normaux" de labo.
-            </p>
-            <ul className="space-y-4">
-              {["Radars de risques visuels", "Interpretation experte", "Protocoles cibles", "Suivi des marqueurs"].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-gray-300">
-                  <div className="h-2 w-2 rounded-full bg-blue-400" />
-                  {item}
-                </li>
-              ))}
-            </ul>
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Visual - Left */}
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
+            <div className="aspect-square max-w-md mx-auto relative">
+              {/* Animated radar */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-64 h-64">
+                  {/* Circles */}
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="absolute inset-0 border border-white/10 rounded-full" style={{ transform: `scale(${i * 0.25})` }} />
+                  ))}
+                  {/* Scanning line */}
+                  <motion.div
+                    className="absolute top-1/2 left-1/2 w-1/2 h-0.5 bg-gradient-to-r from-[#FCDD00] to-transparent origin-left"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  />
+                  {/* Center dot */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-[#FCDD00] rounded-full" />
+                  {/* Blips */}
+                  {[{ x: 30, y: -40 }, { x: -50, y: 20 }, { x: 20, y: 50 }].map((pos, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute top-1/2 left-1/2 w-2 h-2 bg-white rounded-full"
+                      style={{ x: pos.x, y: pos.y }}
+                      animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+                    />
+                  ))}
+                </div>
+              </div>
+              {/* Grid overlay */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
+            </div>
           </motion.div>
 
-          {/* Blue Visual */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <div className="relative aspect-square max-w-md mx-auto rounded-3xl overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 border border-blue-500/20">
-              {/* Silhouette gradient */}
-              <div className="absolute inset-0 bg-gradient-to-b from-blue-400/20 via-transparent to-blue-900/50" />
-
-              {/* Head silhouette (simplified CSS) */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-48 h-64 rounded-full bg-gradient-to-b from-blue-700/50 to-blue-900/80 blur-xl" />
-              </div>
-
-              {/* Markers */}
-              {markers.map((marker, i) => (
-                <motion.div
-                  key={marker.id}
-                  className="absolute"
-                  style={{ top: marker.top, bottom: marker.bottom, left: marker.left, right: marker.right }}
-                  initial={{ opacity: 0, scale: 0 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15 }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-blue-300/60">[{marker.id}]</span>
-                    <div className="px-3 py-1.5 rounded border border-blue-400/30 bg-blue-500/10 backdrop-blur-sm">
-                      <span className="text-xs text-blue-200">{marker.label}</span>
-                    </div>
-                  </div>
-                  {/* Connector dots */}
-                  <div className="flex gap-1 mt-2 ml-8">
-                    {[...Array(3)].map((_, j) => (
-                      <div key={j} className="w-1 h-1 rounded-full bg-blue-400/40" />
-                    ))}
-                  </div>
-                </motion.div>
+          {/* Text - Right */}
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <Scan className="h-5 w-5 text-[#FCDD00]" />
+              <span className="text-[#FCDD00] text-sm font-medium uppercase tracking-wider">Discovery Scan</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-2">Gratuit</h2>
+            <p className="text-gray-400 text-lg mb-6">Diagnostic complet de tes blocages</p>
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              Detection de tes patterns problematiques, desequilibres reveles. Score global sur 100 avec rapport 5-7 pages. Sans recommandations - juste le diagnostic brut.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["Score global /100", "Blocages identifies", "Rapport 5-7 pages"].map((f) => (
+                <span key={f} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{f}</span>
               ))}
-
-              {/* Corner decorations */}
-              <div className="absolute top-4 left-4 w-8 h-8 border-l border-t border-blue-400/30" />
-              <div className="absolute top-4 right-4 w-8 h-8 border-r border-t border-blue-400/30" />
-              <div className="absolute bottom-4 left-4 w-8 h-8 border-l border-b border-blue-400/30" />
-              <div className="absolute bottom-4 right-4 w-8 h-8 border-r border-b border-blue-400/30" />
             </div>
           </motion.div>
         </div>
@@ -838,103 +331,340 @@ function HealthVisualSection() {
 }
 
 // ============================================================================
-// REVIEWS SECTION - 127 beta testers
+// OFFER SECTION 2: ANABOLIC BIOSCAN - Hormone waves
 // ============================================================================
-function ReviewsSection() {
-  const [currentPage, setCurrentPage] = useState(0);
+function AnabolicBioscanSection() {
+  return (
+    <section className="py-24 bg-gradient-to-b from-black via-gray-950 to-black">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Text - Left */}
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <Activity className="h-5 w-5 text-emerald-400" />
+              <span className="text-emerald-400 text-sm font-medium uppercase tracking-wider">Anabolic Bioscan</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-2">59€</h2>
+            <p className="text-gray-400 text-lg mb-6">16 sections d'analyse approfondie</p>
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              L'ancien audit hormonal anabolique. Protocoles matin anti-cortisol, soir sommeil, digestion 14 jours et stack supplements optimise. Plan 30-60-90 jours structure.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["16 sections", "4 protocoles", "Plan 30-60-90 jours", "Stack supplements"].map((f) => (
+                <span key={f} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{f}</span>
+              ))}
+            </div>
+          </motion.div>
 
-  const reviews = [
-    // Discovery Scan
-    { name: "Thomas M.", date: "15 decembre 2025", content: "J'ai fait le Discovery Scan gratuit pour voir. Honnetement je m'attendais a un truc bateau mais non, le diagnostic etait spot on. Ca m'a motive a prendre l'Anabolic.", rating: 5 },
-    { name: "Lea P.", date: "13 decembre 2025", content: "Le scan gratuit c'est deja ouf. Mon score energie a 41/100 ca m'a fait un choc. Au moins maintenant je sais ou bosser.", rating: 5 },
-    // Anabolic Bioscan (ex audit hormonal anabolique)
-    { name: "Emma V.", date: "10 decembre 2025", content: "J'avais fait l'audit hormonal anabolique en beta. Les 16 sections c'est du lourd. Le protocole cortisol du matin m'a change la vie, je me reveille enfin reposee.", rating: 5 },
-    { name: "Romain D.", date: "29 novembre 2025", content: "L'Anabolic Bioscan pour 59 euros c'est donne. Le stack supplements est hyper precis, pas juste 'prends du zinc' mais le dosage, la forme, le timing. Pro.", rating: 5 },
-    { name: "Antoine P.", date: "15 novembre 2025", content: "J'etais beta testeur sur l'audit hormonal. Le plan 30-60-90 jours structure tout. J'en suis a J+60, -4kg de gras, +2kg de muscle. Les protos marchent.", rating: 5 },
-    // Ultimate Scan (ex audit complet metabolique)
-    { name: "Sophie L.", date: "25 novembre 2025", content: "L'Ultimate Scan (l'ancien audit complet metabolique) c'est next level. L'analyse photo a detecte mon antevertion pelvienne, meme mon osteo l'avait pas vue.", rating: 5 },
-    { name: "Julie R.", date: "18 novembre 2025", content: "45 pages de rapport. Au debut je me suis dit 'jamais je lis tout ca'. Mais c'est tellement bien ecrit que j'ai tout devore. Chaque section est actionable.", rating: 5 },
-    { name: "Nicolas H.", date: "1 novembre 2025", content: "J'ai pris l'audit metabolique complet en beta. L'analyse biomecanique a pointe mes compensations d'epaule. 2 mois apres, plus de douleur au bench.", rating: 5 },
-    // Blood Analysis
-    { name: "Lucas T.", date: "8 novembre 2025", content: "J'ai upload mon bilan sanguin de routine. Le Blood Analysis m'a montre que ma ferritine 'normale' a 45 etait en fait trop basse pour un sportif. Game changer.", rating: 5 },
-    { name: "Marie K.", date: "5 novembre 2025", content: "Mon medecin m'avait dit que tout etait 'dans les normes'. Le Blood Analysis m'a montre que mes normes et les ranges optimaux c'est pas pareil. Merci.", rating: 5 },
-    { name: "Kevin R.", date: "2 novembre 2025", content: "Les radars de risques sur le bilan sanguin c'est visuel et ca parle. J'ai pu montrer a mon doc exactement ce que je voulais surveiller.", rating: 5 },
-    // Burnout Engine
-    { name: "Marc B.", date: "20 novembre 2025", content: "Le Burnout Engine m'a sorti un score de 23/100. J'etais en deni total. Le protocole recuperation 4 semaines m'a force a lever le pied. Juste a temps.", rating: 5 },
-    { name: "Camille F.", date: "12 novembre 2025", content: "Entrepreneuse, je pensais que la fatigue c'etait normal. Score burnout a 31. Le protocole m'a appris a gerer mon stress. Je dors enfin.", rating: 5 },
-    { name: "Alexis M.", date: "30 octobre 2025", content: "J'ai fait le Burnout Engine apres 6 mois de surmenage. Les alertes personnalisees me rappellent de faire des pauses. Simple mais efficace.", rating: 5 },
-    // Mix
-    { name: "Laura G.", date: "28 octobre 2025", content: "Commencee par le Discovery gratuit, puis Anabolic, puis Blood Analysis. Chaque scan apporte vraiment quelque chose de different. Bien pense.", rating: 4 },
-  ];
+          {/* Visual - Right: Hormone waves */}
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
+            <div className="aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-950 to-black border border-emerald-500/20">
+              {/* Animated waves */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 400">
+                {[0, 1, 2].map((i) => (
+                  <motion.path
+                    key={i}
+                    d={`M0,${200 + i * 30} Q100,${150 + i * 30} 200,${200 + i * 30} T400,${200 + i * 30}`}
+                    fill="none"
+                    stroke={`rgba(52, 211, 153, ${0.3 - i * 0.1})`}
+                    strokeWidth="2"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                  />
+                ))}
+              </svg>
+              {/* Labels */}
+              <div className="absolute top-8 left-8 text-emerald-400 text-xs font-mono">CORTISOL</div>
+              <div className="absolute top-8 right-8 text-emerald-400 text-xs font-mono">TESTOSTERONE</div>
+              <div className="absolute bottom-8 left-8 text-emerald-400 text-xs font-mono">INSULIN</div>
+              {/* Center stats */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <motion.div
+                    className="text-5xl font-bold text-emerald-400"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    16
+                  </motion.div>
+                  <p className="text-emerald-400/60 text-sm">SECTIONS</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-  const reviewsPerPage = 3;
-  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
-  const displayedReviews = reviews.slice(currentPage * reviewsPerPage, (currentPage + 1) * reviewsPerPage);
+// ============================================================================
+// OFFER SECTION 3: ULTIMATE SCAN - Photo analysis visual
+// ============================================================================
+function UltimateScanSection() {
+  return (
+    <section className="py-24 bg-black">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Visual - Left: Body scan */}
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
+            <div className="aspect-[3/4] max-w-sm mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-b from-purple-950 to-black border border-purple-500/20">
+              {/* Scan lines */}
+              <motion.div
+                className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-400 to-transparent"
+                animate={{ top: ["0%", "100%", "0%"] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+              />
+              {/* Grid */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.05)_1px,transparent_1px)] bg-[size:30px_30px]" />
+              {/* Body outline placeholder */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-24 h-48 border-2 border-purple-400/30 rounded-full" />
+              </div>
+              {/* Markers */}
+              {[
+                { label: "Posture", top: "15%", right: "10%" },
+                { label: "Epaules", top: "25%", left: "10%" },
+                { label: "Bassin", top: "55%", right: "10%" },
+                { label: "Genoux", top: "75%", left: "10%" },
+              ].map((m, i) => (
+                <motion.div
+                  key={m.label}
+                  className="absolute px-2 py-1 rounded border border-purple-400/30 bg-purple-500/10 text-xs text-purple-300"
+                  style={{ top: m.top, left: m.left, right: m.right }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.2 }}
+                >
+                  {m.label}
+                </motion.div>
+              ))}
+              {/* Camera icon */}
+              <div className="absolute bottom-4 right-4">
+                <Camera className="h-6 w-6 text-purple-400/50" />
+              </div>
+              {/* Popular badge */}
+              <div className="absolute top-4 left-4 bg-[#FCDD00] text-black text-[10px] font-bold px-2 py-1 rounded-full uppercase">
+                Le + populaire
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Text - Right */}
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <Zap className="h-5 w-5 text-purple-400" />
+              <span className="text-purple-400 text-sm font-medium uppercase tracking-wider">Ultimate Scan</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-2">79€</h2>
+            <p className="text-gray-400 text-lg mb-6">L'analyse la plus complete</p>
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              L'ancien audit complet metabolique. Tout l'Anabolic + analyse visuelle posturale et biomecanique complete. 18 sections, rapport 40-50 pages. Detection des compensations invisibles.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["18 sections", "Analyse photo", "Rapport 40-50 pages", "Biomecanique"].map((f) => (
+                <span key={f} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{f}</span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// OFFER SECTION 4: BLOOD ANALYSIS - ECG Animation
+// ============================================================================
+function BloodAnalysisSection() {
+  const [bpm, setBpm] = useState(72);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBpm(70 + Math.floor(Math.random() * 8));
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <section className="py-32 bg-black">
+    <section className="py-24 bg-gradient-to-b from-black via-gray-950 to-black">
       <div className="mx-auto max-w-7xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-12"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Star key={i} className="h-6 w-6 fill-[#FCDD00] text-[#FCDD00]" />
-            ))}
-            <span className="text-2xl font-bold text-white ml-2">4.9/5</span>
-          </div>
-          <p className="text-gray-500">127 avis de beta-testeurs verifies</p>
-        </motion.div>
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Text - Left */}
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <Droplet className="h-5 w-5 text-red-400" />
+              <span className="text-red-400 text-sm font-medium uppercase tracking-wider">Blood Analysis</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-2">99€</h2>
+            <p className="text-gray-400 text-lg mb-6">Ton bilan sanguin decode</p>
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              Upload ton PDF de bilan sanguin. Notre IA analyse chaque marqueur avec des ranges optimaux de performance, pas les ranges "normaux" de labo. Radars de risques visuels et protocoles cibles.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["Ranges optimaux", "Radars visuels", "Protocoles cibles", "Upload PDF"].map((f) => (
+                <span key={f} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{f}</span>
+              ))}
+            </div>
+          </motion.div>
 
-        <div className="flex justify-between items-center mb-8">
-          <div />
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-              className="p-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={currentPage === totalPages - 1}
-              className="p-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
+          {/* Visual - Right: ECG */}
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
+            <div className="aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-br from-red-950 to-black border border-red-500/20">
+              {/* Grid */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {displayedReviews.map((review, index) => (
-            <motion.div
-              key={review.name + review.date}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="p-6 rounded-2xl border border-white/10 bg-white/5"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#FCDD00]/20 flex items-center justify-center text-[#FCDD00] font-bold">
-                  {review.name.charAt(0)}
+              {/* ECG Line */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 400" preserveAspectRatio="none">
+                <motion.path
+                  d="M0,200 L50,200 L60,200 L70,180 L80,220 L90,150 L100,250 L110,200 L120,200 L200,200 L210,200 L220,180 L230,220 L240,150 L250,250 L260,200 L270,200 L350,200 L360,200 L370,180 L380,220 L390,150 L400,250"
+                  fill="none"
+                  stroke="#ef4444"
+                  strokeWidth="3"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </svg>
+
+              {/* BPM Display */}
+              <div className="absolute top-8 left-8">
+                <div className="flex items-center gap-2">
+                  <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}>
+                    <Heart className="h-6 w-6 text-red-500 fill-red-500" />
+                  </motion.div>
+                  <span className="text-red-400 text-3xl font-mono font-bold">{bpm}</span>
+                  <span className="text-red-400/60 text-sm">BPM</span>
                 </div>
-                <div>
-                  <p className="text-white font-semibold">{review.name}</p>
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: review.rating }).map((_, i) => (
-                      <Star key={i} className="h-3 w-3 fill-[#FCDD00] text-[#FCDD00]" />
-                    ))}
+              </div>
+
+              {/* Markers */}
+              <div className="absolute bottom-8 left-8 right-8 flex justify-between text-xs font-mono text-red-400/60">
+                <span>FERRITINE</span>
+                <span>VITAMINE D</span>
+                <span>TSH</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// OFFER SECTION 5: BURNOUT ENGINE - Stress meter
+// ============================================================================
+function BurnoutEngineSection() {
+  const [stressLevel, setStressLevel] = useState(23);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStressLevel(20 + Math.floor(Math.random() * 15));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <section className="py-24 bg-black">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Visual - Left: Stress meter */}
+          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
+            <div className="aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-br from-orange-950 to-black border border-orange-500/20">
+              {/* Grid */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(249,115,22,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(249,115,22,0.05)_1px,transparent_1px)] bg-[size:25px_25px]" />
+
+              {/* Circular gauge */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-48 h-48">
+                  {/* Background circle */}
+                  <svg className="w-full h-full -rotate-90">
+                    <circle cx="96" cy="96" r="80" fill="none" stroke="rgba(249,115,22,0.2)" strokeWidth="12" />
+                    <motion.circle
+                      cx="96"
+                      cy="96"
+                      r="80"
+                      fill="none"
+                      stroke={stressLevel < 30 ? "#22c55e" : stressLevel < 60 ? "#f59e0b" : "#ef4444"}
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                      strokeDasharray={502}
+                      animate={{ strokeDashoffset: 502 - (502 * stressLevel) / 100 }}
+                      transition={{ duration: 1 }}
+                    />
+                  </svg>
+                  {/* Center value */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <motion.span
+                      className="text-5xl font-bold"
+                      style={{ color: stressLevel < 30 ? "#22c55e" : stressLevel < 60 ? "#f59e0b" : "#ef4444" }}
+                      key={stressLevel}
+                      initial={{ scale: 1.2 }}
+                      animate={{ scale: 1 }}
+                    >
+                      {stressLevel}
+                    </motion.span>
+                    <span className="text-orange-400/60 text-sm">/100</span>
                   </div>
                 </div>
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed mb-3">{review.content}</p>
-              <p className="text-xs text-gray-600">{review.date}</p>
-            </motion.div>
+
+              {/* Alert icon */}
+              <div className="absolute top-8 right-8">
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}>
+                  <AlertTriangle className="h-6 w-6 text-orange-500" />
+                </motion.div>
+              </div>
+
+              {/* Status */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center">
+                <p className="text-orange-400 text-sm font-medium">
+                  {stressLevel < 30 ? "Risque faible" : stressLevel < 60 ? "Attention requise" : "Risque eleve"}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Text - Right */}
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <Brain className="h-5 w-5 text-orange-400" />
+              <span className="text-orange-400 text-sm font-medium uppercase tracking-wider">Burnout Engine</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-2">39€</h2>
+            <p className="text-gray-400 text-lg mb-6">Detection avant qu'il ne soit trop tard</p>
+            <p className="text-gray-500 mb-8 leading-relaxed">
+              Score de risque burnout en temps reel. Analyse stress et fatigue accumulee. Protocole recuperation 4 semaines avec alertes personnalisees. Detecte les signaux faibles.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["Score burnout", "Protocole 4 sem.", "Alertes perso", "Signaux faibles"].map((f) => (
+                <span key={f} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{f}</span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// WEARABLES - Text logos
+// ============================================================================
+function WearablesSection() {
+  const wearables = ["Apple Health", "Garmin", "Fitbit", "Oura", "WHOOP", "Ultrahuman", "Samsung", "Withings", "Google Fit"];
+
+  return (
+    <section className="py-16 bg-black border-y border-white/5">
+      <div className="mx-auto max-w-5xl px-6 text-center">
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-6">Synchronise tes donnees</p>
+        <div className="flex flex-wrap justify-center gap-4">
+          {wearables.map((w) => (
+            <div key={w} className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-400 text-sm font-medium hover:border-white/20 hover:text-white transition-all">
+              {w}
+            </div>
           ))}
         </div>
       </div>
@@ -943,53 +673,50 @@ function ReviewsSection() {
 }
 
 // ============================================================================
-// ACHZOD SECTION
+// REVIEWS - Compact version
 // ============================================================================
-function AchzodSection() {
-  const certifications = [
-    { name: "NASM", certs: ["CPT", "CNC", "PES"] },
-    { name: "ISSA", certs: ["CPT", "SNS", "SFC", "SBC"] },
-    { name: "Precision Nutrition", certs: ["PN1"] },
-    { name: "Pre-Script", certs: ["Level 1"] },
+function ReviewsSection() {
+  const [page, setPage] = useState(0);
+  const reviews = [
+    { name: "Thomas M.", content: "Le Discovery Scan gratuit etait spot on. Ca m'a motive a prendre l'Anabolic.", rating: 5 },
+    { name: "Emma V.", content: "L'audit hormonal en beta m'a change la vie. Le protocole cortisol du matin, je me reveille enfin reposee.", rating: 5 },
+    { name: "Lucas T.", content: "Le Blood Analysis m'a montre que ma ferritine 'normale' etait trop basse pour un sportif.", rating: 5 },
+    { name: "Marc B.", content: "Burnout Engine score 23/100. J'etais en deni. Le protocole 4 semaines m'a sauve.", rating: 5 },
+    { name: "Sophie L.", content: "L'Ultimate Scan a detecte mon anteversion pelvienne. Meme mon osteo l'avait pas vue.", rating: 5 },
+    { name: "Romain D.", content: "L'Anabolic pour 59€ c'est donne. Stack supplements hyper precis.", rating: 5 },
   ];
+  const perPage = 3;
+  const displayed = reviews.slice(page * perPage, (page + 1) * perPage);
 
   return (
-    <section className="py-32 bg-black relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:80px_80px]" />
-
-      <div className="relative mx-auto max-w-5xl px-6 text-center">
-        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-6">Cree par</p>
-
-          <h2 className="text-5xl sm:text-6xl font-bold text-white mb-6">Achzod</h2>
-
-          <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Coach certifie avec <span className="text-white font-semibold">11 certifications internationales</span>.
-            Des annees a accompagner des clients en coaching individuel, maintenant accessible a tous.
-          </p>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {certifications.map((org, index) => (
-              <motion.div
-                key={org.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-all"
-              >
-                <p className="text-white font-semibold mb-3">{org.name}</p>
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {org.certs.map((cert) => (
-                    <span key={cert} className="text-xs text-gray-300 border border-white/20 bg-white/5 px-2 py-1 rounded-full">
-                      {cert}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
+    <section className="py-20 bg-black">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="h-4 w-4 fill-[#FCDD00] text-[#FCDD00]" />)}
+            <span className="text-white font-bold ml-2">4.9/5</span>
+            <span className="text-gray-500 text-sm ml-2">127 avis</span>
           </div>
-        </motion.div>
+          <div className="flex gap-2">
+            <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="p-1.5 rounded-lg border border-white/10 text-gray-500 disabled:opacity-30">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={() => setPage(Math.min(1, page + 1))} disabled={page === 1} className="p-1.5 rounded-lg border border-white/10 text-gray-500 disabled:opacity-30">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          {displayed.map((r) => (
+            <div key={r.name} className="p-4 rounded-xl border border-white/10 bg-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-full bg-[#FCDD00]/20 flex items-center justify-center text-[#FCDD00] text-sm font-bold">{r.name[0]}</div>
+                <span className="text-white text-sm font-medium">{r.name}</span>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed">{r.content}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1002,9 +729,9 @@ function Footer() {
   return (
     <footer className="py-12 bg-gray-950 border-t border-white/5">
       <div className="mx-auto max-w-7xl px-6 text-center">
-        <p className="text-2xl font-bold mb-2">
-          <span className="text-white">Apex</span>
-          <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">Labs</span>
+        <p className="text-xl font-bold mb-1">
+          <span className="text-[#FCDD00]">APEX</span>
+          <span className="text-white">LABS</span>
         </p>
         <p className="text-gray-600 text-sm">by Achzod</p>
       </div>
@@ -1013,21 +740,23 @@ function Footer() {
 }
 
 // ============================================================================
-// MAIN EXPORT
+// MAIN
 // ============================================================================
 export default function ApexLabs() {
   return (
     <div className="min-h-screen bg-black">
       <Header />
       <HeroSection />
+      <CertificationsSection />
       <PressSection />
-      <DashboardPreview />
       <VideoSection />
-      <OffersPreview />
-      <HealthVisualSection />
+      <DiscoveryScanSection />
+      <AnabolicBioscanSection />
+      <UltimateScanSection />
+      <BloodAnalysisSection />
+      <BurnoutEngineSection />
       <WearablesSection />
       <ReviewsSection />
-      <AchzodSection />
       <Footer />
     </div>
   );
