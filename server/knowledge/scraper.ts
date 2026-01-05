@@ -454,29 +454,56 @@ export async function scrapeExamine(limit: number = 20): Promise<ScrapedArticle[
 // ============================================
 
 export async function scrapePeterAttia(limit: number = 15): Promise<ScrapedArticle[]> {
-  console.log("[Scraper] Starting Peter Attia...");
+  console.log("[Scraper] Starting Peter Attia from /topics/...");
   const articles: ScrapedArticle[] = [];
 
   try {
-    // Try podcast page
-    const url = `${SOURCES.peter_attia.url}/podcast/`;
-    const response = await fetchWithRetry(url);
-    const html = await response.text();
+    // Scrape topics page first
+    const topicsUrl = `${SOURCES.peter_attia.url}/topics/`;
+    const topicsRes = await fetchWithRetry(topicsUrl);
+    const topicsHtml = await topicsRes.text();
 
-    // Find episode links
-    const linkPattern = /href="(https:\/\/peterattiamd\.com\/[^"]+)"/gi;
-    const links = [...new Set([...html.matchAll(linkPattern)].map(m => m[1]))];
+    // Find all topic links
+    const topicPattern = /href="(https:\/\/peterattiamd\.com\/topic\/[^"]+)"/gi;
+    const topicLinks = [...new Set([...topicsHtml.matchAll(topicPattern)].map(m => m[1]))];
+    console.log(`[Scraper] Found ${topicLinks.length} Attia topics`);
 
-    const episodeLinks = links.filter(l =>
+    // For each topic, get articles
+    const allLinks: string[] = [];
+    for (const topicUrl of topicLinks.slice(0, 10)) {
+      try {
+        const topicRes = await fetchWithRetry(topicUrl);
+        const topicPageHtml = await topicRes.text();
+        const linkPattern = /href="(https:\/\/peterattiamd\.com\/[^"\/]+\/)"/gi;
+        const links = [...topicPageHtml.matchAll(linkPattern)].map(m => m[1]);
+        allLinks.push(...links);
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {}
+    }
+
+    // Also try podcast page
+    const podcastRes = await fetchWithRetry(`${SOURCES.peter_attia.url}/podcast/`);
+    const podcastHtml = await podcastRes.text();
+    const podcastPattern = /href="(https:\/\/peterattiamd\.com\/[^"]+)"/gi;
+    const podcastLinks = [...podcastHtml.matchAll(podcastPattern)].map(m => m[1]);
+    allLinks.push(...podcastLinks);
+
+    // Deduplicate and filter
+    const episodeLinks = [...new Set(allLinks)].filter(l =>
+      !l.includes("/topic/") &&
+      !l.includes("/topics/") &&
       !l.includes("/podcast/") &&
       !l.includes("/category/") &&
       !l.includes("/tag/") &&
       !l.includes("/page/") &&
+      !l.includes("/author/") &&
       !l.includes(".xml") &&
-      !l.includes("/author/")
+      !l.includes("/about") &&
+      !l.includes("/contact") &&
+      !l.includes("/subscribe")
     );
 
-    console.log(`[Scraper] Found ${episodeLinks.length} Peter Attia links`);
+    console.log(`[Scraper] Found ${episodeLinks.length} Peter Attia articles`);
 
     for (const link of episodeLinks.slice(0, limit)) {
       try {
