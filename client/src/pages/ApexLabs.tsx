@@ -9,8 +9,14 @@ import {
   Brain,
   Check,
   Mail,
+  Star,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
+// ============================================================================
+// HERO SECTION
+// ============================================================================
 function HeroSection() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -310,13 +316,94 @@ function HeroSection() {
   );
 }
 
+// ============================================================================
+// PRESS/MEDIA LOGOS - Scrolling
+// ============================================================================
+function PressSection() {
+  const pressLogos = [
+    "BENZINGA",
+    "StreetInsider",
+    "MarketWatch",
+    "REUTERS",
+    "Yahoo Finance",
+    "Digital Journal",
+    "AP News",
+  ];
+
+  return (
+    <section className="py-8 bg-black border-y border-white/5 overflow-hidden">
+      <div className="mx-auto max-w-7xl px-6 mb-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center">
+          Vu dans les medias
+        </p>
+      </div>
+
+      <div className="relative">
+        {/* Gradient masks */}
+        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
+
+        {/* Scrolling logos */}
+        <motion.div
+          className="flex gap-16 items-center"
+          animate={{ x: [0, -1000] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        >
+          {[...pressLogos, ...pressLogos, ...pressLogos].map((logo, i) => (
+            <span
+              key={i}
+              className="text-gray-500 text-lg font-semibold whitespace-nowrap tracking-wide"
+            >
+              {logo}
+            </span>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// OFFERS SECTION - Enhanced descriptions
+// ============================================================================
 function OffersPreview() {
   const offers = [
-    { name: "Discovery Scan", price: "Gratuit", description: "Diagnostic complet, sans recommandations", icon: Scan },
-    { name: "Anabolic Bioscan", price: "59€", description: "Diagnostic + Protocoles d'action", icon: Activity },
-    { name: "Ultimate Scan", price: "79€", description: "Diagnostic + Protocoles + Analyse photo", icon: Zap, featured: true },
-    { name: "Blood Analysis", price: "99€", description: "Ton bilan sanguin decode + protocoles", icon: Droplet },
-    { name: "Burnout Engine", price: "39€", description: "Detection + Protocole recuperation", icon: Brain },
+    {
+      name: "Discovery Scan",
+      price: "Gratuit",
+      description: "Ton diagnostic complet : detection de tes blocages, patterns problematiques, desequilibres reveles. Score global sur 100 avec rapport 5-7 pages.",
+      icon: Scan,
+      features: ["Score global /100", "Blocages identifies", "Rapport 5-7 pages"]
+    },
+    {
+      name: "Anabolic Bioscan",
+      price: "59€",
+      description: "16 sections d'analyse approfondie + protocoles matin anti-cortisol, soir sommeil, digestion 14 jours et stack supplements optimise.",
+      icon: Activity,
+      features: ["16 sections", "4 protocoles", "Plan 30-60-90 jours"]
+    },
+    {
+      name: "Ultimate Scan",
+      price: "79€",
+      description: "L'analyse ultime : tout l'Anabolic + analyse visuelle posturale, biomecanique complete. 18 sections, rapport 40-50 pages.",
+      icon: Zap,
+      featured: true,
+      features: ["18 sections", "Analyse photo", "Rapport 40-50 pages"]
+    },
+    {
+      name: "Blood Analysis",
+      price: "99€",
+      description: "Upload ton bilan sanguin PDF. Radars de risques visuels, interpretation experte avec ranges optimaux, protocoles cibles.",
+      icon: Droplet,
+      features: ["Ranges optimaux", "Radars visuels", "Protocoles cibles"]
+    },
+    {
+      name: "Burnout Engine",
+      price: "39€",
+      description: "Score de risque burnout, analyse stress et fatigue, protocole recuperation 4 semaines avec alertes personnalisees.",
+      icon: Brain,
+      features: ["Score burnout", "Protocole 4 sem.", "Alertes perso"]
+    },
   ];
 
   return (
@@ -393,7 +480,16 @@ function OffersPreview() {
                 <div className={`text-2xl font-bold mb-3 ${isFeatured ? "text-[#FCDD00]" : "text-gray-300"}`}>
                   {offer.price}
                 </div>
-                <p className="text-gray-500 text-sm leading-relaxed">{offer.description}</p>
+                <p className="text-gray-500 text-sm leading-relaxed mb-4">{offer.description}</p>
+
+                {/* Features list */}
+                <div className="flex flex-wrap gap-2">
+                  {offer.features.map((feature) => (
+                    <span key={feature} className="text-xs text-gray-400 bg-white/5 border border-white/10 px-2 py-1 rounded-full">
+                      {feature}
+                    </span>
+                  ))}
+                </div>
               </motion.div>
             );
           })}
@@ -403,6 +499,175 @@ function OffersPreview() {
   );
 }
 
+// ============================================================================
+// WEARABLES SECTION
+// ============================================================================
+function WearablesSection() {
+  const wearables = [
+    { name: "Apple Health", logo: "https://logo.clearbit.com/apple.com" },
+    { name: "Garmin", logo: "https://logo.clearbit.com/garmin.com" },
+    { name: "Fitbit", logo: "https://logo.clearbit.com/fitbit.com" },
+    { name: "Oura", logo: "https://logo.clearbit.com/ouraring.com" },
+    { name: "Google Fit", logo: "https://logo.clearbit.com/google.com" },
+    { name: "Samsung Health", logo: "https://logo.clearbit.com/samsung.com" },
+    { name: "Withings", logo: "https://logo.clearbit.com/withings.com" },
+    { name: "WHOOP", logo: "https://logo.clearbit.com/whoop.com" },
+    { name: "Ultrahuman", logo: "https://logo.clearbit.com/ultrahuman.com" },
+  ];
+
+  return (
+    <section className="py-20 bg-black">
+      <div className="mx-auto max-w-5xl px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-4">
+            Synchronise tes donnees
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Compatible avec tes <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">wearables</span>
+          </h2>
+          <p className="text-gray-500 mb-12 max-w-xl mx-auto">
+            Connecte ta montre ou ton ring pour une analyse encore plus precise de tes biomarqueurs.
+          </p>
+        </motion.div>
+
+        <motion.div
+          className="flex flex-wrap justify-center gap-6"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+        >
+          {wearables.map((device, i) => (
+            <motion.div
+              key={device.name}
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+              className="group flex flex-col items-center gap-2"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center p-3 transition-all group-hover:border-white/20 group-hover:bg-white/10">
+                <img
+                  src={device.logo}
+                  alt={device.name}
+                  className="w-full h-full object-contain filter grayscale opacity-60 group-hover:opacity-100 group-hover:grayscale-0 transition-all"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+              <span className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors">{device.name}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// REVIEWS SECTION - 127 beta testers
+// ============================================================================
+function ReviewsSection() {
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const reviews = [
+    { name: "Thomas M.", date: "15 decembre 2025", content: "J'avais teste la version gratuite qui etait deja pas mal. J'ai pris le Premium par curiosite et franchement ca m'a ouvert les yeux sur mes desequilibres hormonaux. Le protocole matin a change ma vie.", rating: 5 },
+    { name: "Emma V.", date: "10 decembre 2025", content: "Ce qui m'a plu c'est les dosages precis des supplements. Pas juste 'prends du magnesium' mais vraiment quand, combien, quelle forme. Tres pro.", rating: 5 },
+    { name: "Romain D.", date: "29 novembre 2025", content: "Pour le prix c'est honnete. J'ai eu l'equivalent d'un mois de coaching personnalise. Les protocoles sont clairs et actionables.", rating: 5 },
+    { name: "Sophie L.", date: "25 novembre 2025", content: "L'analyse biomecanique a identifie mes compensations. Mon coach physio a confirme tout ce qui etait dans le rapport. Impressionnant.", rating: 5 },
+    { name: "Marc B.", date: "20 novembre 2025", content: "Le Burnout Engine m'a litteralement sauve. J'etais au bord du gouffre sans le savoir. Score de 23/100, j'ai tout arrete et suivi le protocole.", rating: 5 },
+    { name: "Julie R.", date: "18 novembre 2025", content: "Tres satisfaite de l'Ultimate Scan. L'analyse photo est bluffante, il a detecte ma scoliose legere que meme mon medecin n'avait pas vue.", rating: 5 },
+    { name: "Antoine P.", date: "15 novembre 2025", content: "Le rapport de 45 pages est dense mais bien structure. J'y reviens regulierement. Ca vaut largement le prix.", rating: 5 },
+    { name: "Camille F.", date: "12 novembre 2025", content: "Enfin quelqu'un qui explique le POURQUOI et pas juste le quoi faire. J'ai compris mes problemes de sommeil grace aux explications sur le cortisol.", rating: 5 },
+    { name: "Lucas T.", date: "8 novembre 2025", content: "J'ai fait le Blood Analysis avec mon dernier bilan. Les ranges optimaux vs les ranges 'normaux' du labo, c'est le jour et la nuit.", rating: 5 },
+    { name: "Marie K.", date: "5 novembre 2025", content: "Le plan 30-60-90 jours est genial. Ca structure vraiment la progression. Je suis a J+45 et je vois deja des resultats.", rating: 5 },
+    { name: "Nicolas H.", date: "1 novembre 2025", content: "Sceptique au debut, convaincu a la fin. L'analyse de mon entrainement a pointe exactement ce que je faisais mal depuis 2 ans.", rating: 5 },
+    { name: "Laura M.", date: "28 octobre 2025", content: "Le Discovery Scan gratuit m'a donne envie d'aller plus loin. Bon move marketing et le contenu est vraiment utile.", rating: 4 },
+  ];
+
+  const reviewsPerPage = 3;
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  const displayedReviews = reviews.slice(currentPage * reviewsPerPage, (currentPage + 1) * reviewsPerPage);
+
+  return (
+    <section className="py-32 bg-black">
+      <div className="mx-auto max-w-7xl px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Star key={i} className="h-6 w-6 fill-[#FCDD00] text-[#FCDD00]" />
+            ))}
+            <span className="text-2xl font-bold text-white ml-2">4.9/5</span>
+          </div>
+          <p className="text-gray-500">127 avis de beta-testeurs verifies</p>
+        </motion.div>
+
+        <div className="flex justify-between items-center mb-8">
+          <div />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="p-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage === totalPages - 1}
+              className="p-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {displayedReviews.map((review, index) => (
+            <motion.div
+              key={review.name + review.date}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="p-6 rounded-2xl border border-white/10 bg-white/5"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[#FCDD00]/20 flex items-center justify-center text-[#FCDD00] font-bold">
+                  {review.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-white font-semibold">{review.name}</p>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: review.rating }).map((_, i) => (
+                      <Star key={i} className="h-3 w-3 fill-[#FCDD00] text-[#FCDD00]" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed mb-3">{review.content}</p>
+              <p className="text-xs text-gray-600">{review.date}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// ACHZOD SECTION
+// ============================================================================
 function AchzodSection() {
   const certifications = [
     { name: "NASM", certs: ["CPT", "CNC", "PES"] },
@@ -453,6 +718,9 @@ function AchzodSection() {
   );
 }
 
+// ============================================================================
+// FOOTER
+// ============================================================================
 function Footer() {
   return (
     <footer className="py-12 bg-gray-950 border-t border-white/5">
@@ -467,11 +735,17 @@ function Footer() {
   );
 }
 
+// ============================================================================
+// MAIN EXPORT
+// ============================================================================
 export default function ApexLabs() {
   return (
     <div className="min-h-screen bg-black">
       <HeroSection />
+      <PressSection />
       <OffersPreview />
+      <WearablesSection />
+      <ReviewsSection />
       <AchzodSection />
       <Footer />
     </div>
