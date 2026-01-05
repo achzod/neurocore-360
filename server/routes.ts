@@ -889,12 +889,39 @@ export async function registerRoutes(
     try {
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
-      
+
       if (!audit) {
         res.status(404).json({ error: "Audit non trouve" });
         return;
       }
 
+      // Handle Discovery Scan (GRATUIT) differently - sync generation
+      if (audit.type === "GRATUIT") {
+        console.log(`[Regenerate] Regenerating Discovery Scan for audit ${auditId}...`);
+
+        await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING" });
+
+        // Generate new Discovery Scan report synchronously
+        const result = await analyzeDiscoveryScan(audit.responses as any);
+        const narrativeReport = convertToNarrativeReport(result, audit.responses as any);
+
+        await storage.updateAudit(auditId, {
+          narrativeReport,
+          reportDeliveryStatus: "READY"
+        });
+
+        console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
+
+        res.json({
+          success: true,
+          message: "Discovery Scan regenere",
+          auditId,
+          narrativeReport
+        });
+        return;
+      }
+
+      // For PREMIUM/ELITE audits - async generation
       await forceRegenerate(auditId);
 
       await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING", narrativeReport: null });
@@ -904,11 +931,11 @@ export async function registerRoutes(
       processReportAndSendEmail(auditId, audit.email, audit.type);
 
       console.log(`[Regenerate] Force regenerating report for audit ${auditId} (cache cleared)`);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message: "Generation du rapport relancee (cache efface)",
-        auditId 
+        auditId
       });
     } catch (error) {
       console.error("[Regenerate] Error:", error);
