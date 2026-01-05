@@ -20,13 +20,34 @@ interface Review {
   id: string;
   auditId: string;
   userId?: string;
+  email: string;
+  auditType: 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'BURNOUT';
   rating: number;
   comment: string;
   status: "pending" | "approved" | "rejected";
+  promoCode?: string;
+  promoCodeSentAt?: string;
+  adminNotes?: string;
   createdAt: string;
   reviewedAt?: string;
   reviewedBy?: string;
 }
+
+const AUDIT_TYPE_LABELS: Record<string, string> = {
+  'DISCOVERY': 'Discovery Scan',
+  'ANABOLIC_BIOSCAN': 'Anabolic Bioscan',
+  'ULTIMATE_SCAN': 'Ultimate Scan',
+  'BLOOD_ANALYSIS': 'Blood Analysis',
+  'BURNOUT': 'Burnout Engine',
+};
+
+const PROMO_CODES: Record<string, { code: string; description: string }> = {
+  'DISCOVERY': { code: 'DISCOVERY20', description: '-20% coaching' },
+  'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ deduits' },
+  'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ deduits' },
+  'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ deduits' },
+  'BURNOUT': { code: 'BURNOUT', description: '39€ deduits' },
+};
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -58,6 +79,7 @@ export default function AdminReviews() {
   }, []);
 
   const handleApprove = async (reviewId: string) => {
+    const review = reviews.find(r => r.id === reviewId);
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/approve`, {
@@ -68,9 +90,12 @@ export default function AdminReviews() {
       const data = await response.json();
       if (data.success) {
         setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+        const promoInfo = review ? PROMO_CODES[review.auditType] : null;
         toast({
           title: "Avis approuve",
-          description: "L'avis sera affiche sur le site",
+          description: promoInfo
+            ? `Code promo ${promoInfo.code} envoye a ${review?.email}`
+            : "L'avis sera affiche sur le site",
         });
       }
     } catch (error) {
@@ -184,9 +209,13 @@ export default function AdminReviews() {
                             <Clock className="w-3 h-3 mr-1" />
                             En attente
                           </Badge>
+                          <Badge variant="secondary">
+                            {AUDIT_TYPE_LABELS[review.auditType] || review.auditType}
+                          </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Audit: {review.auditId.substring(0, 8)}... | 
+                        <p className="text-sm font-medium">{review.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Audit: {review.auditId.substring(0, 8)}... |{" "}
                           {new Date(review.createdAt).toLocaleDateString("fr-FR")}
                         </p>
                       </div>
@@ -197,6 +226,25 @@ export default function AdminReviews() {
                       <MessageSquare className="w-5 h-5 text-muted-foreground mt-0.5" />
                       <p className="text-base">{review.comment}</p>
                     </div>
+
+                    {/* Promo code info */}
+                    {PROMO_CODES[review.auditType] && (
+                      <div className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <p className="text-sm">
+                          <span className="font-medium text-primary">Code promo:</span>{" "}
+                          <code className="font-mono bg-background px-1.5 py-0.5 rounded">
+                            {PROMO_CODES[review.auditType].code}
+                          </code>
+                          <span className="text-muted-foreground ml-2">
+                            ({PROMO_CODES[review.auditType].description})
+                          </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ce code sera envoye automatiquement a {review.email} apres approbation
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex gap-3">
                       <Button
                         onClick={() => handleApprove(review.id)}
@@ -209,7 +257,7 @@ export default function AdminReviews() {
                         ) : (
                           <CheckCircle2 className="w-4 h-4 mr-2" />
                         )}
-                        Approuver
+                        Approuver + Envoyer code
                       </Button>
                       <Button
                         variant="destructive"

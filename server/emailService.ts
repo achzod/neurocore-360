@@ -613,3 +613,131 @@ export async function sendPremiumJ14Email(
     return false;
   }
 }
+
+// Promo code email templates by audit type
+const PROMO_EMAIL_CONFIG: Record<string, {
+  title: string;
+  subtitle: string;
+  description: string;
+  discount: string;
+  gradient: string;
+}> = {
+  DISCOVERY: {
+    title: "Ton code promo -20%",
+    subtitle: "Merci pour ton avis sur le Discovery Scan",
+    description: "Utilise ce code pour bénéficier de 20% de réduction sur toutes les formules de coaching Achzod.",
+    discount: "-20% sur le coaching",
+    gradient: "linear-gradient(135deg, #0efc6d 0%, #059669 100%)",
+  },
+  ANABOLIC_BIOSCAN: {
+    title: "59€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur l'Anabolic Bioscan",
+    description: "Le montant de ton Anabolic Bioscan (59€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-59€ sur le coaching",
+    gradient: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
+  },
+  ULTIMATE_SCAN: {
+    title: "79€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur l'Ultimate Scan",
+    description: "Le montant de ton Ultimate Scan (79€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-79€ sur le coaching",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+  },
+  BLOOD_ANALYSIS: {
+    title: "99€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur la Blood Analysis",
+    description: "Le montant de ta Blood Analysis (99€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-99€ sur le coaching",
+    gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+  },
+  BURNOUT: {
+    title: "39€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur le Burnout Engine",
+    description: "Le montant de ton Burnout Engine (39€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-39€ sur le coaching",
+    gradient: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)",
+  },
+};
+
+export async function sendPromoCodeEmail(
+  email: string,
+  prenom: string,
+  auditType: string,
+  promoCode: string
+): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+    const config = PROMO_EMAIL_CONFIG[auditType] || PROMO_EMAIL_CONFIG.DISCOVERY;
+
+    const content = `
+      <p style="color: ${COLORS.text}; font-size: 18px; line-height: 1.6; margin: 0 0 24px;">
+        ${prenom},
+      </p>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+        ${config.description}
+      </p>
+
+      <!-- Promo Code Box -->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 32px 0;">
+        <tr>
+          <td align="center">
+            <div style="background: linear-gradient(135deg, rgba(14, 252, 109, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); border: 2px dashed ${COLORS.primary}; border-radius: 12px; padding: 32px; text-align: center;">
+              <p style="color: ${COLORS.textMuted}; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px;">Ton code promo</p>
+              <p style="color: ${COLORS.primary}; font-size: 36px; font-weight: 700; letter-spacing: 4px; margin: 0;">${promoCode}</p>
+              <p style="color: ${COLORS.text}; font-size: 14px; margin: 16px 0 0;">${config.discount}</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6; margin: 0 0 32px;">
+        Copie ce code et utilise-le lors de ta commande sur achzodcoaching.com
+      </p>
+
+      <!-- CTA Button -->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        <tr>
+          <td align="center">
+            <a href="https://www.achzodcoaching.com/formules-coaching"
+               style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+              Voir les formules coaching
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 12px; text-align: center; margin: 32px 0 0;">
+        Ce code est personnel et utilisable une seule fois.
+      </p>
+    `;
+
+    const htmlContent = getEmailWrapper(content, config.gradient)
+      .replace("Audit Metabolique", config.title)
+      .replace("15 Domaines d'Analyse", config.subtitle);
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: {
+          html: encodeBase64(htmlContent),
+          text: `${prenom}, voici ton code promo : ${promoCode}. ${config.discount}. Utilise-le sur achzodcoaching.com/formules-coaching`,
+          subject: `${config.title} - ${promoCode}`,
+          from: { name: "Achzod Coaching", email: SENDER_EMAIL },
+          to: [{ email }],
+        },
+      }),
+    });
+
+    const result = await response.json() as { result: boolean };
+    console.log(`[SendPulse] Promo code email sent to ${email} (${auditType}):`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending promo code email:", error);
+    return false;
+  }
+}

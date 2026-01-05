@@ -19,7 +19,10 @@ import {
   Lightbulb,
   Sun,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Star,
+  CheckCircle2,
+  Send
 } from 'lucide-react';
 
 // Theme definitions
@@ -116,6 +119,15 @@ const DiscoveryScanReport: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
+  // Review form state
+  const [reviewRating, setReviewRating] = useState<number>(0);
+  const [reviewComment, setReviewComment] = useState<string>('');
+  const [reviewEmail, setReviewEmail] = useState<string>('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [hasExistingReview, setHasExistingReview] = useState(false);
+
   // Fetch report data
   useEffect(() => {
     const fetchReport = async () => {
@@ -197,6 +209,62 @@ const DiscoveryScanReport: React.FC = () => {
     if (container) container.addEventListener('scroll', handleScroll);
     return () => container?.removeEventListener('scroll', handleScroll);
   }, [reportData]);
+
+  // Check if review already exists
+  useEffect(() => {
+    const checkExistingReview = async () => {
+      if (!auditId) return;
+      try {
+        const response = await fetch(`/api/review/check/${auditId}`);
+        const data = await response.json();
+        if (data.success && data.hasReview) {
+          setHasExistingReview(true);
+          setReviewSubmitted(true);
+        }
+      } catch (err) {
+        console.error('Error checking review:', err);
+      }
+    };
+    checkExistingReview();
+  }, [auditId]);
+
+  // Submit review handler
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
+      setReviewError('Veuillez remplir tous les champs (note, email, et commentaire de 10 caracteres minimum)');
+      return;
+    }
+
+    setReviewSubmitting(true);
+    setReviewError(null);
+
+    try {
+      const response = await fetch('/api/submit-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditId,
+          email: reviewEmail,
+          auditType: 'DISCOVERY',
+          rating: reviewRating,
+          comment: reviewComment
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setReviewSubmitted(true);
+      } else {
+        setReviewError(data.error || 'Erreur lors de la soumission');
+      }
+    } catch (err) {
+      setReviewError('Erreur de connexion au serveur');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -466,12 +534,135 @@ const DiscoveryScanReport: React.FC = () => {
             ))}
           </div>
 
+          {/* Review Section */}
+          <section className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <Star className="w-10 h-10 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
+                <h3 className="text-2xl font-bold mb-2">Ton avis compte</h3>
+                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  Laisse un avis et recois ton code promo <strong>-20%</strong> sur le coaching Achzod par email !
+                </p>
+              </div>
+
+              {reviewSubmitted ? (
+                <div className="text-center p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                  <h4 className="text-xl font-bold mb-2">Merci pour ton avis !</h4>
+                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    {hasExistingReview
+                      ? 'Tu as deja laisse un avis pour ce scan.'
+                      : 'Ton code promo te sera envoye par email apres validation.'}
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitReview} className="space-y-6 p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  {/* Star Rating */}
+                  <div className="text-center">
+                    <label className="text-sm font-medium block mb-3" style={{ color: 'var(--color-text-muted)' }}>
+                      Ta note
+                    </label>
+                    <div className="flex justify-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className="p-1 transition-transform hover:scale-110"
+                        >
+                          <Star
+                            size={32}
+                            className={star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="text-sm font-medium block mb-2" style={{ color: 'var(--color-text-muted)' }}>
+                      Ton email (pour recevoir le code promo)
+                    </label>
+                    <input
+                      type="email"
+                      value={reviewEmail}
+                      onChange={(e) => setReviewEmail(e.target.value)}
+                      placeholder="ton@email.com"
+                      required
+                      className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
+                      style={{
+                        backgroundColor: 'var(--color-bg)',
+                        border: `1px solid var(--color-border)`,
+                        color: 'var(--color-text)'
+                      }}
+                    />
+                  </div>
+
+                  {/* Comment */}
+                  <div>
+                    <label className="text-sm font-medium block mb-2" style={{ color: 'var(--color-text-muted)' }}>
+                      Ton commentaire (min. 10 caracteres)
+                    </label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Qu'as-tu pense de ce Discovery Scan ? Ton avis nous aide a nous ameliorer..."
+                      rows={4}
+                      required
+                      minLength={10}
+                      className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+                      style={{
+                        backgroundColor: 'var(--color-bg)',
+                        border: `1px solid var(--color-border)`,
+                        color: 'var(--color-text)'
+                      }}
+                    />
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                      {reviewComment.length}/10 caracteres minimum
+                    </p>
+                  </div>
+
+                  {/* Error */}
+                  {reviewError && (
+                    <div className="text-red-500 text-sm text-center p-3 rounded-lg bg-red-500/10">
+                      {reviewError}
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail}
+                    className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: currentTheme.colors.primary,
+                      color: currentTheme.type === 'dark' ? '#000' : '#fff'
+                    }}
+                  >
+                    {reviewSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Envoyer mon avis
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </section>
+
           {/* Footer */}
           <footer className="py-24 flex flex-col md:flex-row justify-between items-start gap-8" style={{ borderTop: `1px solid var(--color-border)` }}>
             <div>
-              <h4 className="font-bold text-lg mb-2 tracking-tight">Neurocore 360</h4>
+              <h4 className="font-bold text-lg mb-2 tracking-tight">ApexLabs by Achzod</h4>
               <p className="text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
-                Achzod Coaching - Excellence - Science - Transformation
+                Excellence - Science - Transformation
               </p>
             </div>
             <div className="text-right">

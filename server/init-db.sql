@@ -59,14 +59,19 @@ CREATE TABLE IF NOT EXISTS report_jobs (
   completed_at TIMESTAMP
 );
 
--- Table: reviews
+-- Table: reviews (with promo code workflow)
 CREATE TABLE IF NOT EXISTS reviews (
   id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
   audit_id VARCHAR(36) NOT NULL,
   user_id VARCHAR(36),
+  email VARCHAR(255) NOT NULL,
+  audit_type VARCHAR(50) NOT NULL, -- DISCOVERY, ANABOLIC_BIOSCAN, ULTIMATE_SCAN, BLOOD_ANALYSIS, BURNOUT
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
   comment TEXT NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, approved, rejected
+  promo_code VARCHAR(50), -- code sent to user
+  promo_code_sent_at TIMESTAMP,
+  admin_notes TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   reviewed_at TIMESTAMP,
   reviewed_by VARCHAR(255)
@@ -117,6 +122,27 @@ ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
 VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+-- Promo codes for review rewards (audit type specific)
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('DISCOVERY20', 20, 'Code Discovery Scan - 20% coaching Achzod', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('ANABOLICBIOSCAN', 0, 'Code Anabolic Bioscan - 59€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('ULTIMATESCAN', 0, 'Code Ultimate Scan - 79€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('BLOOD', 0, 'Code Blood Analysis - 99€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('BURNOUT', 0, 'Code Burnout Engine - 39€ déduits du coaching', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
 -- Index pour améliorer les performances

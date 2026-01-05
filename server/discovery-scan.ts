@@ -945,21 +945,175 @@ export function convertToNarrativeReport(
       });
     });
 
-  // Section CTA finale
+  // Section CTA 1: Scans with coaching deduction table
   sections.push({
-    id: "next",
-    title: "Prochaine étape",
-    subtitle: "Passer à l'action",
+    id: "scans",
+    title: "Approfondir l'analyse",
+    subtitle: "ApexLabs Scans",
     content: `<p>${result.ctaMessage.replace(/\n/g, '</p><p>')}</p>
-<div class="mt-8 flex flex-col sm:flex-row gap-4">
-  <a href="/offers/anabolic-bioscan" class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[var(--color-primary)] text-[var(--color-background)] font-bold hover:opacity-90 transition-all">
-    Anabolic Bioscan — 59€
-  </a>
-  <a href="/offers/ultimate-scan" class="inline-flex items-center justify-center px-6 py-3 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface)] transition-all">
-    Ultimate Scan — 79€
+
+<div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 2px solid var(--color-primary);">
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-primary);">Recommande</div>
+    <h4 class="text-xl font-bold mb-2">Anabolic Bioscan</h4>
+    <div class="text-3xl font-bold mb-4">59<span class="text-lg">€</span></div>
+    <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
+      <li>15 analyses approfondies</li>
+      <li>Analyse photos (posture, composition)</li>
+      <li>Protocole nutrition detaille</li>
+      <li>Stack supplements personnalise</li>
+      <li>Feuille de route 90 jours</li>
+    </ul>
+    <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all" style="background: var(--color-primary); color: var(--color-background);">
+      Choisir Anabolic Bioscan
+    </a>
+  </div>
+
+  <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-text-muted);">Complet</div>
+    <h4 class="text-xl font-bold mb-2">Ultimate Scan</h4>
+    <div class="text-3xl font-bold mb-4">79<span class="text-lg">€</span></div>
+    <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
+      <li>Tout l'Anabolic Bioscan inclus</li>
+      <li>Sync wearables (Oura, Whoop, Garmin)</li>
+      <li>Analyse HRV avancee</li>
+      <li>Questions blessures & douleurs</li>
+      <li>Protocole rehabilitation</li>
+    </ul>
+    <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all" style="border: 1px solid var(--color-border);">
+      Choisir Ultimate Scan
+    </a>
+  </div>
+</div>
+
+<div class="mt-8 p-4 rounded-lg" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3);">
+  <p class="text-sm font-medium" style="color: var(--color-primary);">Deduit de ton coaching</p>
+  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres ton scan, le montant est deduit de ta formule.</p>
+  <table class="w-full mt-3 text-xs">
+    <thead>
+      <tr style="color: var(--color-text-muted);">
+        <th class="text-left py-1">Formule</th>
+        <th class="text-center py-1">4 sem.</th>
+        <th class="text-center py-1">8 sem.</th>
+        <th class="text-center py-1">12 sem.</th>
+      </tr>
+    </thead>
+    <tbody style="color: var(--color-text);">
+      <tr>
+        <td class="py-1">Essential</td>
+        <td class="text-center">249€ → 190€</td>
+        <td class="text-center">399€ → 340€</td>
+        <td class="text-center">549€ → 490€</td>
+      </tr>
+      <tr>
+        <td class="py-1">Elite</td>
+        <td class="text-center">399€ → 340€</td>
+        <td class="text-center">649€ → 590€</td>
+        <td class="text-center">899€ → 840€</td>
+      </tr>
+      <tr>
+        <td class="py-1">Private Lab</td>
+        <td class="text-center">499€ → 420€</td>
+        <td class="text-center">799€ → 720€</td>
+        <td class="text-center">1199€ → 1120€</td>
+      </tr>
+    </tbody>
+  </table>
+</div>`,
+    chips: ["Protocoles", "Stack Supplements", "Plan 90 Jours"]
+  });
+
+  // Section CTA 2: Direct coaching with -20%
+  sections.push({
+    id: "coaching",
+    title: "Passer directement au coaching",
+    subtitle: "Sans scan supplementaire",
+    content: `<p>Tu n'as pas envie ou besoin de faire un autre scan ? Je te propose une alternative directe.</p>
+
+<p>Avec ton Discovery Scan tu as deja une vue d'ensemble de tes blocages. Si tu veux passer a l'action maintenant, je t'offre <strong>-20% sur le coaching Achzod</strong> avec le code que tu recevras apres avoir laisse ton avis.</p>
+
+<div class="mt-8 p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+  <h4 class="text-lg font-bold mb-4">Coaching Achzod - Formules</h4>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr style="color: var(--color-text-muted);">
+          <th class="text-left py-2 pr-4">Formule</th>
+          <th class="text-center py-2 px-2">4 semaines</th>
+          <th class="text-center py-2 px-2">8 semaines</th>
+          <th class="text-center py-2 px-2">12 semaines</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-top: 1px solid var(--color-border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium">Essential</div>
+            <div class="text-xs" style="color: var(--color-text-muted);">Fondations</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">249€</div>
+            <div class="font-bold" style="color: var(--color-primary);">199€</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">399€</div>
+            <div class="font-bold" style="color: var(--color-primary);">319€</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">549€</div>
+            <div class="font-bold" style="color: var(--color-primary);">439€</div>
+          </td>
+        </tr>
+        <tr style="border-top: 1px solid var(--color-border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium">Elite</div>
+            <div class="text-xs" style="color: var(--color-text-muted);">Performance</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">399€</div>
+            <div class="font-bold" style="color: var(--color-primary);">319€</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">649€</div>
+            <div class="font-bold" style="color: var(--color-primary);">519€</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">899€</div>
+            <div class="font-bold" style="color: var(--color-primary);">719€</div>
+          </td>
+        </tr>
+        <tr style="border-top: 1px solid var(--color-border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium">Private Lab</div>
+            <div class="text-xs" style="color: var(--color-text-muted);">VIP</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">499€</div>
+            <div class="font-bold" style="color: var(--color-primary);">399€</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">799€</div>
+            <div class="font-bold" style="color: var(--color-primary);">639€</div>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="line-through text-xs" style="color: var(--color-text-muted);">1199€</div>
+            <div class="font-bold" style="color: var(--color-primary);">959€</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-6 p-4 rounded-lg" style="background: rgba(34, 197, 94, 0.1);">
+    <p class="text-sm"><strong style="color: var(--color-primary);">Comment obtenir le code -20% ?</strong></p>
+    <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-bg);">DISCOVERY20</code> par email.</p>
+  </div>
+
+  <a href="https://achzodcoaching.com" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all" style="background: var(--color-primary); color: var(--color-background);">
+    Voir les formules sur achzodcoaching.com
   </a>
 </div>`,
-    chips: ["Protocoles", "Stack Suppléments", "Plan 30-60-90"]
+    chips: ["-20% Coaching", "Code Promo", "Avis"]
   });
 
   return {

@@ -1107,16 +1107,54 @@ export const storage = new PgStorage();
 
 // ==================== REVIEW STORAGE (PostgreSQL) ====================
 
-import type { Review, InsertReview, ReviewStatusEnum } from "@shared/schema";
+export type ReviewStatusEnum = 'pending' | 'approved' | 'rejected';
+export type AuditTypeEnum = 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'BURNOUT';
+
+export interface Review {
+  id: string;
+  auditId: string;
+  userId?: string;
+  email: string;
+  auditType: AuditTypeEnum;
+  rating: number;
+  comment: string;
+  status: ReviewStatusEnum;
+  promoCode?: string;
+  promoCodeSentAt?: Date;
+  adminNotes?: string;
+  createdAt: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+}
+
+export interface InsertReview {
+  auditId: string;
+  userId?: string;
+  email: string;
+  auditType: AuditTypeEnum;
+  rating: number;
+  comment: string;
+}
+
+// Promo codes mapping by audit type
+export const PROMO_CODES_BY_AUDIT_TYPE: Record<AuditTypeEnum, { code: string; description: string }> = {
+  'DISCOVERY': { code: 'DISCOVERY20', description: '-20% sur le coaching Achzod' },
+  'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ déduits du coaching' },
+  'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ déduits du coaching' },
+  'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ déduits du coaching' },
+  'BURNOUT': { code: 'BURNOUT', description: '39€ déduits du coaching' },
+};
 
 export interface IReviewStorage {
   createReview(data: InsertReview): Promise<Review>;
   getReviewById(id: string): Promise<Review | undefined>;
+  getReviewByAuditId(auditId: string): Promise<Review | undefined>;
   getApprovedReviews(): Promise<Review[]>;
   getPendingReviews(): Promise<Review[]>;
   getAllReviews(): Promise<Review[]>;
-  approveReview(id: string, reviewedBy?: string): Promise<Review | undefined>;
-  rejectReview(id: string, reviewedBy?: string): Promise<Review | undefined>;
+  approveReview(id: string, reviewedBy?: string, adminNotes?: string): Promise<Review | undefined>;
+  rejectReview(id: string, reviewedBy?: string, adminNotes?: string): Promise<Review | undefined>;
+  markPromoCodeSent(id: string, promoCode: string): Promise<Review | undefined>;
 }
 
 class PgReviewStorage implements IReviewStorage {
@@ -1125,9 +1163,14 @@ class PgReviewStorage implements IReviewStorage {
       id: row.id,
       auditId: row.audit_id,
       userId: row.user_id,
+      email: row.email,
+      auditType: row.audit_type as AuditTypeEnum,
       rating: row.rating,
       comment: row.comment,
       status: row.status as ReviewStatusEnum,
+      promoCode: row.promo_code,
+      promoCodeSentAt: row.promo_code_sent_at,
+      adminNotes: row.admin_notes,
       createdAt: row.created_at,
       reviewedAt: row.reviewed_at,
       reviewedBy: row.reviewed_by,
@@ -1137,10 +1180,10 @@ class PgReviewStorage implements IReviewStorage {
   async createReview(data: InsertReview): Promise<Review> {
     const id = randomUUID();
     const result = await pool.query(
-      `INSERT INTO reviews (id, audit_id, user_id, rating, comment, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'pending', NOW())
+      `INSERT INTO reviews (id, audit_id, user_id, email, audit_type, rating, comment, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW())
        RETURNING *`,
-      [id, data.auditId, data.userId || null, data.rating, data.comment]
+      [id, data.auditId, data.userId || null, data.email, data.auditType, data.rating, data.comment]
     );
     return this.rowToReview(result.rows[0]);
   }
@@ -1151,40 +1194,56 @@ class PgReviewStorage implements IReviewStorage {
     return this.rowToReview(result.rows[0]);
   }
 
+  async getReviewByAuditId(auditId: string): Promise<Review | undefined> {
+    const result = await pool.query("SELECT * FROM reviews WHERE audit_id = $1", [auditId]);
+    if (result.rows.length === 0) return undefined;
+    return this.rowToReview(result.rows[0]);
+  }
+
   async getApprovedReviews(): Promise<Review[]> {
     const result = await pool.query(
       "SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC"
     );
-    return result.rows.map(this.rowToReview);
+    return result.rows.map((row: any) => this.rowToReview(row));
   }
 
   async getPendingReviews(): Promise<Review[]> {
     const result = await pool.query(
       "SELECT * FROM reviews WHERE status = 'pending' ORDER BY created_at DESC"
     );
-    return result.rows.map(this.rowToReview);
+    return result.rows.map((row: any) => this.rowToReview(row));
   }
 
   async getAllReviews(): Promise<Review[]> {
     const result = await pool.query("SELECT * FROM reviews ORDER BY created_at DESC");
-    return result.rows.map(this.rowToReview);
+    return result.rows.map((row: any) => this.rowToReview(row));
   }
 
-  async approveReview(id: string, reviewedBy?: string): Promise<Review | undefined> {
+  async approveReview(id: string, reviewedBy?: string, adminNotes?: string): Promise<Review | undefined> {
     const result = await pool.query(
-      `UPDATE reviews SET status = 'approved', reviewed_at = NOW(), reviewed_by = $2
+      `UPDATE reviews SET status = 'approved', reviewed_at = NOW(), reviewed_by = $2, admin_notes = $3
        WHERE id = $1 RETURNING *`,
-      [id, reviewedBy || null]
+      [id, reviewedBy || null, adminNotes || null]
     );
     if (result.rows.length === 0) return undefined;
     return this.rowToReview(result.rows[0]);
   }
 
-  async rejectReview(id: string, reviewedBy?: string): Promise<Review | undefined> {
+  async rejectReview(id: string, reviewedBy?: string, adminNotes?: string): Promise<Review | undefined> {
     const result = await pool.query(
-      `UPDATE reviews SET status = 'rejected', reviewed_at = NOW(), reviewed_by = $2
+      `UPDATE reviews SET status = 'rejected', reviewed_at = NOW(), reviewed_by = $2, admin_notes = $3
        WHERE id = $1 RETURNING *`,
-      [id, reviewedBy || null]
+      [id, reviewedBy || null, adminNotes || null]
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToReview(result.rows[0]);
+  }
+
+  async markPromoCodeSent(id: string, promoCode: string): Promise<Review | undefined> {
+    const result = await pool.query(
+      `UPDATE reviews SET promo_code = $2, promo_code_sent_at = NOW()
+       WHERE id = $1 RETURNING *`,
+      [id, promoCode]
     );
     if (result.rows.length === 0) return undefined;
     return this.rowToReview(result.rows[0]);

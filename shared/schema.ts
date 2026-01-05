@@ -376,14 +376,28 @@ export const ReviewStatus = {
 
 export type ReviewStatusEnum = (typeof ReviewStatus)[keyof typeof ReviewStatus];
 
+export const ReviewAuditType = {
+  DISCOVERY: "DISCOVERY",
+  ANABOLIC_BIOSCAN: "ANABOLIC_BIOSCAN",
+  ULTIMATE_SCAN: "ULTIMATE_SCAN",
+  BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
+  BURNOUT: "BURNOUT",
+} as const;
+
+export type ReviewAuditTypeEnum = (typeof ReviewAuditType)[keyof typeof ReviewAuditType];
+
 export interface Review {
   id: string;
   auditId: string;
   userId?: string;
-  email?: string;
+  email: string;
+  auditType: ReviewAuditTypeEnum;
   rating: number;
   comment: string;
   status: ReviewStatusEnum;
+  promoCode?: string;
+  promoCodeSentAt?: string | Date;
+  adminNotes?: string;
   createdAt: string | Date;
   reviewedAt?: string | Date;
   reviewedBy?: string;
@@ -392,7 +406,8 @@ export interface Review {
 export const insertReviewSchema = z.object({
   auditId: z.string(),
   userId: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().email("Email invalide"),
+  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS", "BURNOUT"]),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, "Le commentaire doit contenir au moins 10 caractères"),
 });

@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage, reviewStorage } from "./storage";
+import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
@@ -13,6 +13,7 @@ import {
   sendGratuitUpsellEmail,
   sendPremiumJ7Email,
   sendPremiumJ14Email,
+  sendPromoCodeEmail,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -1334,12 +1335,38 @@ export async function registerRoutes(
   app.post("/api/admin/reviews/:reviewId/approve", async (req, res) => {
     try {
       const { reviewId } = req.params;
-      const { reviewedBy } = req.body;
-      const review = await reviewStorage.approveReview(reviewId, reviewedBy);
+      const { reviewedBy, adminNotes } = req.body;
+      const review = await reviewStorage.approveReview(reviewId, reviewedBy, adminNotes);
       if (!review) {
         res.status(404).json({ success: false, error: "Avis non trouvé" });
         return;
       }
+
+      // Get promo code based on audit type
+      const promoConfig = PROMO_CODES_BY_AUDIT_TYPE[review.auditType as keyof typeof PROMO_CODES_BY_AUDIT_TYPE];
+
+      if (promoConfig && review.email) {
+        // Get client name from audit
+        const audit = await storage.getAudit(review.auditId);
+        const clientName = (audit?.responses as any)?.prenom || review.email.split('@')[0];
+        const promoCode = promoConfig.code;
+
+        console.log(`[Review] Sending promo code ${promoCode} to ${review.email} (${review.auditType})`);
+        const emailSent = await sendPromoCodeEmail(
+          review.email,
+          clientName,
+          review.auditType,
+          promoCode
+        );
+
+        if (emailSent) {
+          await reviewStorage.markPromoCodeSent(reviewId, promoCode);
+          console.log(`[Review] ✅ Promo code email sent successfully to ${review.email}`);
+        } else {
+          console.error(`[Review] ❌ Failed to send promo code email to ${review.email}`);
+        }
+      }
+
       res.json({ success: true, review });
     } catch (error) {
       console.error("[Admin Approve] Error:", error);
@@ -1350,8 +1377,8 @@ export async function registerRoutes(
   app.post("/api/admin/reviews/:reviewId/reject", async (req, res) => {
     try {
       const { reviewId } = req.params;
-      const { reviewedBy } = req.body;
-      const review = await reviewStorage.rejectReview(reviewId, reviewedBy);
+      const { reviewedBy, adminNotes } = req.body;
+      const review = await reviewStorage.rejectReview(reviewId, reviewedBy, adminNotes);
       if (!review) {
         res.status(404).json({ success: false, error: "Avis non trouvé" });
         return;
@@ -1359,6 +1386,44 @@ export async function registerRoutes(
       res.json({ success: true, review });
     } catch (error) {
       console.error("[Admin Reject] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Get all reviews for admin dashboard
+  app.get("/api/admin/reviews", async (req, res) => {
+    try {
+      const { status } = req.query;
+      let reviews;
+
+      if (status === "pending") {
+        reviews = await reviewStorage.getPendingReviews();
+      } else if (status === "approved") {
+        reviews = await reviewStorage.getApprovedReviews();
+      } else {
+        // Get all reviews
+        reviews = await reviewStorage.getAllReviews();
+      }
+
+      res.json({ success: true, reviews });
+    } catch (error) {
+      console.error("[Admin Reviews] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Check if user already left a review for an audit
+  app.get("/api/review/check/:auditId", async (req, res) => {
+    try {
+      const { auditId } = req.params;
+      const review = await reviewStorage.getReviewByAuditId(auditId);
+      res.json({
+        success: true,
+        hasReview: !!review,
+        review: review || null
+      });
+    } catch (error) {
+      console.error("[Review Check] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
