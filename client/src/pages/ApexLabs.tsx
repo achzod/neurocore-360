@@ -591,6 +591,253 @@ function WearablesSection() {
 }
 
 // ============================================================================
+// IPAD DASHBOARD PREVIEW - Hands holding iPad
+// ============================================================================
+function DashboardPreview() {
+  return (
+    <section className="py-32 bg-black relative overflow-hidden">
+      <div className="mx-auto max-w-7xl px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+            Une vue complete de ta <span className="italic bg-gradient-to-r from-gray-300 via-white to-gray-400 bg-clip-text text-transparent">sante</span>
+          </h2>
+          <p className="text-gray-500 text-lg">dans le temps</p>
+
+          <motion.a
+            href="#"
+            className="inline-flex items-center gap-2 mt-8 px-8 py-4 rounded-full border border-white/20 bg-white/5 text-white font-medium hover:bg-white/10 transition-all"
+            whileHover={{ scale: 1.05 }}
+          >
+            Telecharger un exemple de rapport
+          </motion.a>
+        </motion.div>
+
+        {/* iPad with hands */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="relative max-w-4xl mx-auto"
+        >
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent blur-3xl" />
+
+          {/* iPad Frame */}
+          <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-4 shadow-2xl border border-white/10">
+            {/* iPad Screen */}
+            <div className="bg-white rounded-[2rem] overflow-hidden aspect-[4/3]">
+              {/* Dashboard Content */}
+              <div className="p-8 h-full">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">ApexLabs : Rapport Complet</p>
+                    <p className="text-xs text-gray-400">client@example.com</p>
+                  </div>
+                  <p className="text-xs text-gray-400">Score Global : 87/100</p>
+                </div>
+
+                {/* Section Title */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Analyse Energie & Recuperation</h3>
+                  <p className="text-sm text-gray-500">Ta capacite a recuperer determine ta progression. Voici ton profil energetique actuel.</p>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Score Energie</p>
+                    <p className="text-2xl font-bold text-gray-900">78</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Qualite Sommeil</p>
+                    <p className="text-2xl font-bold text-gray-900">65</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Niveau Stress</p>
+                    <p className="text-2xl font-bold text-orange-500">42</p>
+                  </div>
+                </div>
+
+                {/* Progress Bars */}
+                <div className="space-y-4">
+                  {[
+                    { label: "Recuperation musculaire", value: 85, color: "bg-green-500" },
+                    { label: "Energie matinale", value: 62, color: "bg-yellow-500" },
+                    { label: "Gestion du stress", value: 45, color: "bg-orange-500" },
+                    { label: "Qualite du sommeil", value: 71, color: "bg-green-500" },
+                  ].map((item) => (
+                    <div key={item.label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-600">{item.label}</span>
+                        <span className="text-gray-900 font-medium">{item.value}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full ${item.color}`}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${item.value}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1, delay: 0.5 }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Decorative hands silhouette (CSS-based) */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[120%] h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// VIDEO BACKGROUND SECTION
+// ============================================================================
+function VideoSection() {
+  return (
+    <section className="relative h-[70vh] overflow-hidden">
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source src="https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/m1/space.mp4" type="video/mp4" />
+      </video>
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-black/50 to-black" />
+
+      {/* Content */}
+      <div className="relative z-10 h-full flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center px-6"
+        >
+          <p className="text-xs uppercase tracking-[0.3em] text-[#FCDD00] mb-4">Technologie de pointe</p>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 max-w-3xl">
+            L'analyse la plus avancee du marche
+          </h2>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Intelligence artificielle + 11 certifications internationales = des protocoles que personne d'autre ne peut offrir.
+          </p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// BLUE HEALTH VISUAL SECTION
+// ============================================================================
+function HealthVisualSection() {
+  const markers = [
+    { id: "01", label: "Metabolic Health", top: "10%", right: "15%" },
+    { id: "02", label: "Cardiovascular", top: "20%", left: "5%" },
+    { id: "03", label: "Liver Health", top: "35%", right: "10%" },
+    { id: "04", label: "Thyroid", bottom: "25%", left: "20%" },
+    { id: "05", label: "Hormone", bottom: "20%", right: "15%" },
+  ];
+
+  return (
+    <section className="py-32 bg-black">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Text */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-400 mb-4">Blood Analysis</p>
+            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+              Decode ton bilan sanguin
+            </h2>
+            <p className="text-gray-400 text-lg leading-relaxed mb-8">
+              Upload ton PDF. Notre IA analyse chaque marqueur avec des ranges optimaux de performance, pas les ranges "normaux" de labo.
+            </p>
+            <ul className="space-y-4">
+              {["Radars de risques visuels", "Interpretation experte", "Protocoles cibles", "Suivi des marqueurs"].map((item) => (
+                <li key={item} className="flex items-center gap-3 text-gray-300">
+                  <div className="h-2 w-2 rounded-full bg-blue-400" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Blue Visual */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="relative aspect-square max-w-md mx-auto rounded-3xl overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 border border-blue-500/20">
+              {/* Silhouette gradient */}
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-400/20 via-transparent to-blue-900/50" />
+
+              {/* Head silhouette (simplified CSS) */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-48 h-64 rounded-full bg-gradient-to-b from-blue-700/50 to-blue-900/80 blur-xl" />
+              </div>
+
+              {/* Markers */}
+              {markers.map((marker, i) => (
+                <motion.div
+                  key={marker.id}
+                  className="absolute"
+                  style={{ top: marker.top, bottom: marker.bottom, left: marker.left, right: marker.right }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15 }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-blue-300/60">[{marker.id}]</span>
+                    <div className="px-3 py-1.5 rounded border border-blue-400/30 bg-blue-500/10 backdrop-blur-sm">
+                      <span className="text-xs text-blue-200">{marker.label}</span>
+                    </div>
+                  </div>
+                  {/* Connector dots */}
+                  <div className="flex gap-1 mt-2 ml-8">
+                    {[...Array(3)].map((_, j) => (
+                      <div key={j} className="w-1 h-1 rounded-full bg-blue-400/40" />
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Corner decorations */}
+              <div className="absolute top-4 left-4 w-8 h-8 border-l border-t border-blue-400/30" />
+              <div className="absolute top-4 right-4 w-8 h-8 border-r border-t border-blue-400/30" />
+              <div className="absolute bottom-4 left-4 w-8 h-8 border-l border-b border-blue-400/30" />
+              <div className="absolute bottom-4 right-4 w-8 h-8 border-r border-b border-blue-400/30" />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // REVIEWS SECTION - 127 beta testers
 // ============================================================================
 function ReviewsSection() {
@@ -774,7 +1021,10 @@ export default function ApexLabs() {
       <Header />
       <HeroSection />
       <PressSection />
+      <DashboardPreview />
+      <VideoSection />
       <OffersPreview />
+      <HealthVisualSection />
       <WearablesSection />
       <ReviewsSection />
       <AchzodSection />
