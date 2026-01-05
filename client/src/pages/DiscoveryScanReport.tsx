@@ -129,15 +129,23 @@ const DiscoveryScanReport: React.FC = () => {
         const response = await fetch(`/api/discovery-scan/${auditId}`);
         const data = await response.json();
 
-        if (!data.success || !data.narrativeReport) {
-          setError(data.error || 'Rapport non trouve');
+        // Check if error response
+        if (data.error) {
+          setError(data.error);
           setLoading(false);
           return;
         }
 
-        setReportData(data.narrativeReport);
-        if (data.narrativeReport.sections?.length > 0) {
-          setActiveSection(data.narrativeReport.sections[0].id);
+        // API returns ReportData directly (not wrapped)
+        if (!data.globalScore || !data.sections) {
+          setError('Format de rapport invalide');
+          setLoading(false);
+          return;
+        }
+
+        setReportData(data);
+        if (data.sections?.length > 0) {
+          setActiveSection(data.sections[0].id);
         }
       } catch (err) {
         setError('Erreur de chargement du rapport');
