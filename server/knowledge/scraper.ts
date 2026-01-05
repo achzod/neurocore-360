@@ -153,7 +153,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 
 // 1. HUBERMAN LAB - RSS Feed
 // ============================================
 
-export async function scrapeHuberman(limit: number = 20): Promise<ScrapedArticle[]> {
+export async function scrapeHuberman(limit: number = 100): Promise<ScrapedArticle[]> {
   console.log("[Scraper] Starting Huberman Lab (RSS)...");
   const articles: ScrapedArticle[] = [];
 
@@ -222,10 +222,29 @@ const SBS_ARTICLES = [
   "/strength-training-for-endurance/",
   "/progressive-overload/",
   "/joint-health-for-lifters/",
-  "/plateau-busting/"
+  "/plateau-busting/",
+  "/high-bar-vs-low-bar-squats/",
+  "/deficit-adaptation/",
+  "/rest-times/",
+  "/sumo-vs-conventional-deadlift/",
+  "/practical-nutrition-recommendations/",
+  "/training-recovery/",
+  "/soreness-hypertrophy/",
+  "/supercompensation-myth/",
+  "/bench-press/",
+  "/deadlift-technique/",
+  "/squat-technique/",
+  "/overhead-press/",
+  "/do-genetics-matter/",
+  "/stress-and-training/",
+  "/age-and-training/",
+  "/sex-differences-in-training/",
+  "/bodybuilding-vs-powerlifting/",
+  "/warming-up/",
+  "/range-of-motion/"
 ];
 
-export async function scrapeSBS(limit: number = 20): Promise<ScrapedArticle[]> {
+export async function scrapeSBS(limit: number = 50): Promise<ScrapedArticle[]> {
   console.log("[Scraper] Starting SBS...");
   const articles: ScrapedArticle[] = [];
 
@@ -294,8 +313,8 @@ export async function scrapeSBS(limit: number = 20): Promise<ScrapedArticle[]> {
 // 3. APPLIED METABOLICS - WordPress Login
 // ============================================
 
-export async function scrapeAppliedMetabolics(limit: number = 10): Promise<ScrapedArticle[]> {
-  console.log("[Scraper] Starting Applied Metabolics...");
+export async function scrapeAppliedMetabolics(limit: number = 500): Promise<ScrapedArticle[]> {
+  console.log("[Scraper] Starting Applied Metabolics (FULL SCRAPE)...");
   const articles: ScrapedArticle[] = [];
 
   if (!AM_PASSWORD) {
@@ -346,11 +365,13 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
       }
     }
 
-    console.log(`[Scraper] Applied Metabolics: ${archiveUrls.length} monthly archives to scrape`);
+    console.log(`[Scraper] Applied Metabolics: ${archiveUrls.length} monthly archives to scrape (NO LIMIT)`);
 
-    // Scrape archive pages to find article links
+    // Scrape ALL archive pages to find article links
     const allArticleLinks: string[] = [];
-    for (const archiveUrl of archiveUrls.slice(0, 50)) { // Limit archives to check
+    let archivesProcessed = 0;
+
+    for (const archiveUrl of archiveUrls) {
       try {
         const pageRes = await fetch(archiveUrl, {
           headers: { Cookie: cookies, "User-Agent": UA }
@@ -358,11 +379,28 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
         if (!pageRes.ok) continue;
         const html = await pageRes.text();
 
-        // Find article links in archive
-        const linkPattern = /href="(https:\/\/www\.appliedmetabolics\.com\/[^"\/]+\/)"/gi;
-        const links = [...html.matchAll(linkPattern)].map(m => m[1]);
-        allArticleLinks.push(...links);
-        await new Promise(r => setTimeout(r, 500));
+        // Find article links in archive - multiple patterns
+        const patterns = [
+          /href="(https:\/\/www\.appliedmetabolics\.com\/[a-z0-9-]+\/)"/gi,
+          /href="(https:\/\/www\.appliedmetabolics\.com\/\d{4}\/\d{2}\/[^"]+)"/gi,
+          /<a[^>]+href="([^"]+)"[^>]*class="[^"]*entry-title[^"]*"/gi,
+          /<h2[^>]*>\s*<a[^>]+href="([^"]+)"/gi
+        ];
+
+        for (const pattern of patterns) {
+          const matches = [...html.matchAll(pattern)];
+          for (const match of matches) {
+            if (match[1] && match[1].startsWith('http')) {
+              allArticleLinks.push(match[1]);
+            }
+          }
+        }
+
+        archivesProcessed++;
+        if (archivesProcessed % 20 === 0) {
+          console.log(`[Scraper] AM: processed ${archivesProcessed}/${archiveUrls.length} archives, found ${allArticleLinks.length} links`);
+        }
+        await new Promise(r => setTimeout(r, 300));
       } catch (e) {}
     }
 
@@ -376,21 +414,49 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
       !l.includes("/contact/") &&
       !l.includes("/subscribe/") &&
       !l.includes("/faqs") &&
-      !l.includes("/sitemap")
+      !l.includes("/sitemap") &&
+      !l.includes("/feed") &&
+      !l.includes("/wp-") &&
+      l !== SOURCES.applied_metabolics.url &&
+      l !== SOURCES.applied_metabolics.url + "/"
     );
 
-    console.log(`[Scraper] Applied Metabolics: found ${uniqueLinks.length} unique article links`);
+    console.log(`[Scraper] Applied Metabolics: found ${uniqueLinks.length} unique article links (processing up to ${limit})`);
 
+    let processed = 0;
     for (const link of uniqueLinks.slice(0, limit)) {
       try {
         const artRes = await fetch(link, { headers: { Cookie: cookies, "User-Agent": UA } });
         const artHtml = await artRes.text();
 
-        const titleMatch = artHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-        const contentMatch = artHtml.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+        const titleMatch = artHtml.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) ||
+                          artHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+
+        // Try multiple content extraction patterns
+        let content = "";
+        const contentPatterns = [
+          /<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div|<footer|<\/article)/i,
+          /<article[^>]*>([\s\S]*?)<\/article>/i,
+          /<div[^>]*class="[^"]*post-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i
+        ];
+
+        for (const pattern of contentPatterns) {
+          const match = artHtml.match(pattern);
+          if (match && cleanHtml(match[1]).length > 500) {
+            content = cleanHtml(match[1]);
+            break;
+          }
+        }
+
+        // Fallback: extract all paragraphs
+        if (!content || content.length < 500) {
+          const paragraphs = artHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+          if (paragraphs) {
+            content = paragraphs.map(p => cleanHtml(p)).filter(p => p.length > 50).join("\n\n");
+          }
+        }
 
         const title = titleMatch ? cleanHtml(titleMatch[1]) : "";
-        const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
 
         if (title && content.length > 500) {
           articles.push({
@@ -402,21 +468,22 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
             keywords: extractKeywords(title, content),
             scrapedAt: new Date()
           });
-          console.log(`[Scraper] ✓ AM: ${title.substring(0, 40)}...`);
+          processed++;
+          if (processed % 10 === 0) {
+            console.log(`[Scraper] AM: ${processed} articles saved (${title.substring(0, 30)}...)`);
+          }
         }
 
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 500));
       } catch (e) {
         console.error(`[Scraper] AM article error: ${link}`, e);
       }
-
-      if (articles.length >= limit) break;
     }
   } catch (error) {
     console.error("[Scraper] Applied Metabolics failed:", error);
   }
 
-  console.log(`[Scraper] ✓ Applied Metabolics: ${articles.length} articles`);
+  console.log(`[Scraper] ✓ Applied Metabolics: ${articles.length} articles (COMPLETE)`);
   return articles;
 }
 
@@ -428,10 +495,16 @@ const EXAMINE_SUPPLEMENTS = [
   "creatine", "caffeine", "vitamin-d", "magnesium", "omega-3", "zinc",
   "ashwagandha", "melatonin", "berberine", "curcumin", "fish-oil",
   "vitamin-b12", "iron", "calcium", "vitamin-k", "coq10", "alpha-gpc",
-  "rhodiola-rosea", "l-theanine", "beta-alanine", "citrulline"
+  "rhodiola-rosea", "l-theanine", "beta-alanine", "citrulline",
+  "tongkat-ali", "fadogia-agrestis", "shilajit", "boron", "glycine",
+  "taurine", "tyrosine", "acetyl-l-carnitine", "glutamine", "hmb",
+  "nac", "vitamin-c", "vitamin-e", "selenium", "iodine", "copper",
+  "maca", "ginseng", "saw-palmetto", "tribulus-terrestris", "fenugreek",
+  "vitamin-a", "vitamin-b6", "folate", "biotin", "pantothenic-acid",
+  "chromium", "potassium", "manganese", "dhea", "pregnenolone"
 ];
 
-export async function scrapeExamine(limit: number = 20): Promise<ScrapedArticle[]> {
+export async function scrapeExamine(limit: number = 50): Promise<ScrapedArticle[]> {
   console.log("[Scraper] Starting Examine.com...");
   const articles: ScrapedArticle[] = [];
 
@@ -490,7 +563,7 @@ export async function scrapeExamine(limit: number = 20): Promise<ScrapedArticle[
 // 5. PETER ATTIA - The Drive Podcast
 // ============================================
 
-export async function scrapePeterAttia(limit: number = 15): Promise<ScrapedArticle[]> {
+export async function scrapePeterAttia(limit: number = 100): Promise<ScrapedArticle[]> {
   console.log("[Scraper] Starting Peter Attia from /topics/...");
   const articles: ScrapedArticle[] = [];
 
