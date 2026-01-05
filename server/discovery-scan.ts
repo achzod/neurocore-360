@@ -892,6 +892,7 @@ INSTRUCTIONS SPECIFIQUES POUR "MINDSET":
 };
 
 // Function to generate AI content for a specific section
+// WITH VALIDATION: Minimum 20 lines, retry if too short, must use knowledge base
 async function generateSectionContentAI(
   domain: string,
   score: number,
@@ -906,10 +907,14 @@ async function generateSectionContentAI(
 
   // Extract relevant responses for this domain
   const domainResponses = extractDomainResponses(domain, responses);
-
   const instructions = SECTION_INSTRUCTIONS[domain] || '';
 
-  const userPrompt = `SECTION A REDIGER: ${domain.toUpperCase()}
+  // GARDE-FOUS: Minimum 20 lines = ~1200 characters
+  const MIN_CONTENT_LENGTH = 1200;
+  const MIN_LINE_COUNT = 18;
+  const MAX_RETRIES = 3;
+
+  const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
 
 PROFIL CLIENT:
 Prenom: ${prenom}
@@ -921,36 +926,92 @@ Score ${domain}: ${score}/100
 REPONSES QUESTIONNAIRE POUR CE DOMAINE:
 ${domainResponses}
 
-${knowledgeContext ? `DONNEES KNOWLEDGE BASE:\n${knowledgeContext}\n` : ''}
+${knowledgeContext ? `DONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
+${knowledgeContext}
+
+INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Cite les mecanismes, les protocoles, les chiffres mentionnes. Ne fais pas une analyse generique.
+` : ''}
 
 ${instructions}
 
-MISSION: Redige une analyse COMPLETE de 40-50 lignes (minimum 1500 caracteres) pour la section ${domain.toUpperCase()}.
+MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 40-50 lignes pour la section ${domain.toUpperCase()}.
+${attempt > 1 ? `
+ATTENTION: Ta reponse precedente etait TROP COURTE (moins de 20 lignes). Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 40-50 lignes de texte dense et technique.
+` : ''}
 
-Commence DIRECTEMENT par l'analyse, ne repete pas le titre. Tutoie ${prenom}. Explique les mecanismes, cite des chiffres, connecte avec les autres systemes. Ton direct et incarne.
+REGLES ABSOLUES:
+1. Commence DIRECTEMENT par l'analyse du client, jamais par un titre ou une intro generique
+2. Tutoie ${prenom} tout au long du texte (tu, ton, tes)
+3. Explique les MECANISMES biochimiques en detail (hormones, enzymes, recepteurs, cascades)
+4. Cite des CHIFFRES precis (pourcentages, durees, seuils, dosages)
+5. Connecte avec les autres systemes corporels (ex: cortisol affecte testosterone, sommeil affecte GH)
+6. Integre les donnees scientifiques de la knowledge base ci-dessus
+7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
 
-RAPPELS FORMAT:
-- JAMAIS de tiret long (—)
-- JAMAIS de markdown (**, ##, -, *)
+FORMAT OBLIGATOIRE:
+- JAMAIS de tiret long ou tiret cadratin (utilise : ou . a la place)
+- JAMAIS de markdown (pas de **, ##, -, *, puces, listes numerotees)
 - JAMAIS d'emojis
-- Prose fluide, paragraphes separes par lignes vides`;
+- JAMAIS de phrases meta comme "En tant qu'expert", "Je vais analyser", "Cette analyse montre", "Voici"
+- Prose fluide uniquement, paragraphes separes par lignes vides
+- Ecris a la deuxieme personne du singulier, comme si TU parlais directement a ${prenom}`;
 
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: SECTION_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }]
-    });
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3500, // Increased for longer content
+        system: SECTION_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildPrompt(attempt) }]
+      });
 
-    const textContent = response.content.find(c => c.type === 'text');
-    const rawText = textContent?.text || '';
+      const textContent = response.content.find(c => c.type === 'text');
+      let rawText = textContent?.text || '';
 
-    return cleanMarkdownToHTML(rawText);
-  } catch (error) {
-    console.error(`[Discovery] AI section ${domain} error:`, error);
-    return '';
+      // Clean AI indicators and formatting issues
+      rawText = rawText
+        .replace(/^(En tant qu['']expert[^.]*\.?\s*)/gi, '')
+        .replace(/^(Cette analyse (montre|revele|demontre)[^.]*\.?\s*)/gi, '')
+        .replace(/^(Je vais (analyser|examiner|etudier)[^.]*\.?\s*)/gi, '')
+        .replace(/^(Voici (mon analyse|l['']analyse|une analyse)[^.]*\.?\s*)/gi, '')
+        .replace(/^(Analyse de la section[^.]*\.?\s*)/gi, '')
+        .replace(/—/g, ':')
+        .replace(/–/g, '-')
+        .replace(/\*\*/g, '')
+        .replace(/##\s*/g, '')
+        .replace(/^\s*[-*]\s+/gm, '')
+        .replace(/^\s*\d+\.\s+/gm, '')
+        .trim();
+
+      // Count meaningful lines
+      const lines = rawText.split(/\n+/).filter(l => l.trim().length > 30);
+      const lineCount = lines.length;
+      const charCount = rawText.length;
+
+      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines`);
+
+      // VALIDATION: Check minimum length
+      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT) {
+        console.log(`[Discovery] ✓ Section ${domain} VALIDATED (${charCount} chars, ${lineCount} lines)`);
+        return cleanMarkdownToHTML(rawText);
+      }
+
+      // If last attempt, use what we have but log warning
+      if (attempt === MAX_RETRIES) {
+        console.warn(`[Discovery] ⚠️ Section ${domain} still short after ${MAX_RETRIES} attempts (${charCount} chars, ${lineCount} lines). Using anyway.`);
+        return cleanMarkdownToHTML(rawText);
+      }
+
+      console.log(`[Discovery] ✗ Section ${domain} TOO SHORT (${charCount} chars, ${lineCount} lines < ${MIN_LINE_COUNT}). Retrying...`);
+    } catch (error) {
+      console.error(`[Discovery] AI section ${domain} error (attempt ${attempt}):`, error);
+      if (attempt === MAX_RETRIES) {
+        return '';
+      }
+    }
   }
+
+  return '';
 }
 
 // Get knowledge context for a specific domain
