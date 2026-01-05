@@ -644,24 +644,28 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 // AI SYNTHESIS GENERATION
 // ============================================
 
-const DISCOVERY_SYSTEM_PROMPT = `Tu es un expert en santé et performance humaine, spécialisé dans l'analyse des blocages physiologiques.
+const DISCOVERY_SYSTEM_PROMPT = `Tu es un expert en physiologie et performance humaine de niveau doctoral.
 
-MISSION: Synthétiser les blocages détectés de manière claire, éducative et percutante.
+MISSION: Rédiger une analyse clinique approfondie des dysfonctionnements détectés.
 
-RÈGLES:
-1. Explique les MÉCANISMES sans donner de recommandations
-2. Utilise des termes scientifiques mais vulgarisés
-3. Montre les CONNEXIONS entre les différents systèmes
-4. Cite tes sources (Huberman, Attia, etc.)
-5. Sois direct et honnête sur la gravité des problèmes
-6. Ne propose JAMAIS de solutions - c'est le rôle des offres payantes
+RÈGLES ABSOLUES:
+1. JAMAIS de markdown (pas de ##, **, -, *, etc.)
+2. JAMAIS d'emojis
+3. JAMAIS de recommandations ou solutions
+4. Écris en prose fluide avec des paragraphes séparés par des lignes vides
+5. Utilise la terminologie scientifique précise (axe HPA, GH, T3/T4, cortisol, etc.)
+6. Cite les mécanismes physiologiques exacts avec sources
 
-FORMAT:
-- Synthèse globale (2-3 paragraphes)
-- Connexions inter-systèmes identifiées
-- Impact sur l'objectif du client
+STRUCTURE (en prose, pas de titres):
+Premier paragraphe: Diagnostic principal - quel est le blocage central et son mécanisme biochimique
+Deuxième paragraphe: Cascade physiologique - comment ce blocage affecte les autres systèmes (hormonal, métabolique, nerveux)
+Troisième paragraphe: Impact sur l'objectif - pourquoi les efforts actuels ne fonctionnent pas à cause de ces mécanismes
 
-TONE: Expert mais accessible, comme un médecin du sport qui explique clairement.`;
+STYLE:
+- Médecin spécialiste qui explique à un patient intelligent
+- Dense en information, chaque phrase apporte une donnée concrète
+- Références aux travaux de Huberman, Attia, Walker, Sapolsky intégrées naturellement
+- Tutoiement direct et franc`;
 
 async function generateAISynthesis(
   responses: DiscoveryResponses,
@@ -675,29 +679,25 @@ async function generateAISynthesis(
     `[${b.severity.toUpperCase()}] ${b.domain}: ${b.title}\n${b.mechanism}`
   ).join('\n\n');
 
-  const userPrompt = `Client: ${responses.prenom || 'Client'}, ${responses.sexe || 'N/A'}, ${responses.age || 'N/A'}
-Objectif: ${responses.objectif || 'Non précisé'}
+  const userPrompt = `PROFIL: ${responses.prenom}, ${responses.sexe}, ${responses.age} ans
+OBJECTIF: ${responses.objectif}
 
-SCORES PAR DOMAINE:
-- Sommeil: ${scores.sommeil}/100
-- Stress: ${scores.stress}/100
-- Énergie: ${scores.energie}/100
-- Digestion: ${scores.digestion}/100
-- Training: ${scores.training}/100
-- Nutrition: ${scores.nutrition}/100
-- Lifestyle: ${scores.lifestyle}/100
-- Mindset: ${scores.mindset}/100
+SCORES:
+Sommeil ${scores.sommeil}/100 | Stress ${scores.stress}/100 | Énergie ${scores.energie}/100 | Digestion ${scores.digestion}/100
+Training ${scores.training}/100 | Nutrition ${scores.nutrition}/100 | Lifestyle ${scores.lifestyle}/100 | Mindset ${scores.mindset}/100
 
-BLOCAGES DÉTECTÉS:
+BLOCAGES IDENTIFIÉS:
 ${blocagesSummary}
 
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ''}
+${knowledgeContext ? `DONNÉES SCIENTIFIQUES:\n${knowledgeContext}` : ''}
 
-Génère une synthèse percutante qui:
-1. Explique le "pourquoi" des blocages identifiés
-2. Montre comment ils s'interconnectent
-3. Évalue l'impact sur l'objectif "${responses.objectif}"
-4. NE DONNE PAS de recommandations (réservé aux offres payantes)`;
+Rédige 3 paragraphes denses (prose uniquement, pas de listes, pas de markdown, pas d'emoji):
+
+1) Le dysfonctionnement central et son mécanisme biochimique précis
+
+2) La cascade sur les autres systèmes (comment sommeil/stress/hormones s'interconnectent)
+
+3) Pourquoi ${responses.prenom} stagne malgré ses efforts - le lien direct avec ${responses.objectif}`;
 
   try {
     const response = await anthropic.messages.create({
@@ -767,23 +767,17 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
   const objectif = responses.objectif || 'tes objectifs';
 
   if (criticalCount >= 2) {
-    ctaMessage = `🚨 ${criticalCount} blocages CRITIQUES détectés qui sabotent directement ta "${objectif}".
+    ctaMessage = `${criticalCount} blocages critiques identifiés. Ces dysfonctionnements sabotent directement ton objectif de ${objectif}.
 
-Sans protocoles correctifs, ces déséquilibres vont continuer à te freiner. L'Anabolic Bioscan (59€) te donnera les protocoles personnalisés pour débloquer chaque système. L'Ultimate Scan (79€) ajoute l'analyse posturale et biomécanique complète.
-
-👉 Choisis ton scan pour passer à l'action.`;
+Sans intervention ciblée sur ces mécanismes, la stagnation va se prolonger. L'Anabolic Bioscan (59€) fournit les protocoles correctifs pour chaque système défaillant. L'Ultimate Scan (79€) ajoute l'analyse posturale et biomécanique.`;
   } else if (blocages.length >= 3) {
-    ctaMessage = `⚠️ ${blocages.length} déséquilibres identifiés qui limitent tes résultats.
+    ctaMessage = `${blocages.length} déséquilibres physiologiques détectés.
 
-Tu as maintenant la cartographie de tes blocages. Pour les résoudre, tu as besoin des protocoles adaptés à TON profil. L'Anabolic Bioscan (59€) te donne exactement ça : 16 sections d'analyse + protocoles matin/soir + stack suppléments.
-
-👉 Passe à l'Anabolic Bioscan pour débloquer ton potentiel.`;
+Tu as maintenant la cartographie précise de ce qui bloque ta progression. L'étape suivante : les protocoles adaptés à ton profil. L'Anabolic Bioscan (59€) inclut 16 analyses approfondies, protocoles matin/soir, et stack suppléments personnalisé.`;
   } else {
-    ctaMessage = `📊 Ton profil montre quelques points d'attention.
+    ctaMessage = `Ton profil révèle des axes d'optimisation.
 
-Pour optimiser ta "${objectif}" et éviter les erreurs classiques, découvre les protocoles personnalisés de l'Anabolic Bioscan (59€). Tu sauras exactement quoi faire, quand, et pourquoi.
-
-👉 Obtiens ton plan d'action personnalisé.`;
+Pour maximiser tes résultats sur ${objectif}, l'Anabolic Bioscan (59€) te donne les protocoles exacts : timing, dosages, séquençage. Chaque recommandation est calibrée sur tes données.`;
   }
 
   console.log(`[Discovery] Analysis complete. Score: ${globalScore}/100, Blocages: ${blocages.length}`);
@@ -1355,17 +1349,17 @@ export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses
     </div>
 
     <div class="blocages-section">
-      <h2>🔍 Blocages Identifiés (${result.blocages.length})</h2>
+      <h2>Blocages Identifiés (${result.blocages.length})</h2>
       ${blocagesHTML}
     </div>
 
     <div class="synthese">
-      <h2>📊 Synthèse</h2>
+      <h2>Synthèse</h2>
       ${result.synthese.split('\n\n').map(p => `<p>${p}</p>`).join('')}
     </div>
 
     <div class="cta-section">
-      <h2>🚀 Passe à l'Action</h2>
+      <h2>Prochaine Étape</h2>
       <p>${result.ctaMessage}</p>
       <div class="cta-buttons">
         <a href="/offers/anabolic-bioscan" class="cta-btn primary">Anabolic Bioscan - 59€</a>

@@ -3850,63 +3850,56 @@ Key points: ${s.content.substring(0,500)}...`).join(`
 
 ---
 
-`)}catch(n){return console.error("[Discovery] Knowledge search error:",n),""}}var nX=`Tu es un expert en sant\xE9 et performance humaine, sp\xE9cialis\xE9 dans l'analyse des blocages physiologiques.
+`)}catch(n){return console.error("[Discovery] Knowledge search error:",n),""}}var nX=`Tu es un expert en physiologie et performance humaine de niveau doctoral.
 
-MISSION: Synth\xE9tiser les blocages d\xE9tect\xE9s de mani\xE8re claire, \xE9ducative et percutante.
+MISSION: R\xE9diger une analyse clinique approfondie des dysfonctionnements d\xE9tect\xE9s.
 
-R\xC8GLES:
-1. Explique les M\xC9CANISMES sans donner de recommandations
-2. Utilise des termes scientifiques mais vulgaris\xE9s
-3. Montre les CONNEXIONS entre les diff\xE9rents syst\xE8mes
-4. Cite tes sources (Huberman, Attia, etc.)
-5. Sois direct et honn\xEAte sur la gravit\xE9 des probl\xE8mes
-6. Ne propose JAMAIS de solutions - c'est le r\xF4le des offres payantes
+R\xC8GLES ABSOLUES:
+1. JAMAIS de markdown (pas de ##, **, -, *, etc.)
+2. JAMAIS d'emojis
+3. JAMAIS de recommandations ou solutions
+4. \xC9cris en prose fluide avec des paragraphes s\xE9par\xE9s par des lignes vides
+5. Utilise la terminologie scientifique pr\xE9cise (axe HPA, GH, T3/T4, cortisol, etc.)
+6. Cite les m\xE9canismes physiologiques exacts avec sources
 
-FORMAT:
-- Synth\xE8se globale (2-3 paragraphes)
-- Connexions inter-syst\xE8mes identifi\xE9es
-- Impact sur l'objectif du client
+STRUCTURE (en prose, pas de titres):
+Premier paragraphe: Diagnostic principal - quel est le blocage central et son m\xE9canisme biochimique
+Deuxi\xE8me paragraphe: Cascade physiologique - comment ce blocage affecte les autres syst\xE8mes (hormonal, m\xE9tabolique, nerveux)
+Troisi\xE8me paragraphe: Impact sur l'objectif - pourquoi les efforts actuels ne fonctionnent pas \xE0 cause de ces m\xE9canismes
 
-TONE: Expert mais accessible, comme un m\xE9decin du sport qui explique clairement.`;async function iX(t,e,r,n){let i=new sL.default,s=r.map(o=>`[${o.severity.toUpperCase()}] ${o.domain}: ${o.title}
+STYLE:
+- M\xE9decin sp\xE9cialiste qui explique \xE0 un patient intelligent
+- Dense en information, chaque phrase apporte une donn\xE9e concr\xE8te
+- R\xE9f\xE9rences aux travaux de Huberman, Attia, Walker, Sapolsky int\xE9gr\xE9es naturellement
+- Tutoiement direct et franc`;async function iX(t,e,r,n){let i=new sL.default,s=r.map(o=>`[${o.severity.toUpperCase()}] ${o.domain}: ${o.title}
 ${o.mechanism}`).join(`
 
-`),a=`Client: ${t.prenom||"Client"}, ${t.sexe||"N/A"}, ${t.age||"N/A"}
-Objectif: ${t.objectif||"Non pr\xE9cis\xE9"}
+`),a=`PROFIL: ${t.prenom}, ${t.sexe}, ${t.age} ans
+OBJECTIF: ${t.objectif}
 
-SCORES PAR DOMAINE:
-- Sommeil: ${e.sommeil}/100
-- Stress: ${e.stress}/100
-- \xC9nergie: ${e.energie}/100
-- Digestion: ${e.digestion}/100
-- Training: ${e.training}/100
-- Nutrition: ${e.nutrition}/100
-- Lifestyle: ${e.lifestyle}/100
-- Mindset: ${e.mindset}/100
+SCORES:
+Sommeil ${e.sommeil}/100 | Stress ${e.stress}/100 | \xC9nergie ${e.energie}/100 | Digestion ${e.digestion}/100
+Training ${e.training}/100 | Nutrition ${e.nutrition}/100 | Lifestyle ${e.lifestyle}/100 | Mindset ${e.mindset}/100
 
-BLOCAGES D\xC9TECT\xC9S:
+BLOCAGES IDENTIFI\xC9S:
 ${s}
 
-${n?`
-CONTEXTE SCIENTIFIQUE:
+${n?`DONN\xC9ES SCIENTIFIQUES:
 ${n}`:""}
 
-G\xE9n\xE8re une synth\xE8se percutante qui:
-1. Explique le "pourquoi" des blocages identifi\xE9s
-2. Montre comment ils s'interconnectent
-3. \xC9value l'impact sur l'objectif "${t.objectif}"
-4. NE DONNE PAS de recommandations (r\xE9serv\xE9 aux offres payantes)`;try{return(await i.messages.create({model:"claude-sonnet-4-20250514",max_tokens:2e3,system:nX,messages:[{role:"user",content:a}]})).content.find(c=>c.type==="text")?.text||""}catch(o){return console.error("[Discovery] AI synthesis error:",o),`Analyse d\xE9tect\xE9e: ${r.length} blocages identifi\xE9s affectant ton objectif "${t.objectif}".`}}async function f1(t){console.log(`[Discovery] Analyzing scan for ${t.prenom||"Client"}...`);let e={sommeil:QY(t),stress:WY(t),energie:KY(t),digestion:JY(t),training:YY(t),nutrition:XY(t),lifestyle:ZY(t),mindset:eX(t)},r={sommeil:.15,stress:.15,energie:.15,digestion:.12,training:.12,nutrition:.12,lifestyle:.1,mindset:.09},n=Math.round(Object.entries(e).reduce((l,[u,d])=>l+d*(r[u]||.1),0)),i=tX(t,e),s=await rX(i),a=await iX(t,e,i,s),o,p=i.filter(l=>l.severity==="critique").length,c=t.objectif||"tes objectifs";return p>=2?o=`\u{1F6A8} ${p} blocages CRITIQUES d\xE9tect\xE9s qui sabotent directement ta "${c}".
+R\xE9dige 3 paragraphes denses (prose uniquement, pas de listes, pas de markdown, pas d'emoji):
 
-Sans protocoles correctifs, ces d\xE9s\xE9quilibres vont continuer \xE0 te freiner. L'Anabolic Bioscan (59\u20AC) te donnera les protocoles personnalis\xE9s pour d\xE9bloquer chaque syst\xE8me. L'Ultimate Scan (79\u20AC) ajoute l'analyse posturale et biom\xE9canique compl\xE8te.
+1) Le dysfonctionnement central et son m\xE9canisme biochimique pr\xE9cis
 
-\u{1F449} Choisis ton scan pour passer \xE0 l'action.`:i.length>=3?o=`\u26A0\uFE0F ${i.length} d\xE9s\xE9quilibres identifi\xE9s qui limitent tes r\xE9sultats.
+2) La cascade sur les autres syst\xE8mes (comment sommeil/stress/hormones s'interconnectent)
 
-Tu as maintenant la cartographie de tes blocages. Pour les r\xE9soudre, tu as besoin des protocoles adapt\xE9s \xE0 TON profil. L'Anabolic Bioscan (59\u20AC) te donne exactement \xE7a : 16 sections d'analyse + protocoles matin/soir + stack suppl\xE9ments.
+3) Pourquoi ${t.prenom} stagne malgr\xE9 ses efforts - le lien direct avec ${t.objectif}`;try{return(await i.messages.create({model:"claude-sonnet-4-20250514",max_tokens:2e3,system:nX,messages:[{role:"user",content:a}]})).content.find(c=>c.type==="text")?.text||""}catch(o){return console.error("[Discovery] AI synthesis error:",o),`Analyse d\xE9tect\xE9e: ${r.length} blocages identifi\xE9s affectant ton objectif "${t.objectif}".`}}async function f1(t){console.log(`[Discovery] Analyzing scan for ${t.prenom||"Client"}...`);let e={sommeil:QY(t),stress:WY(t),energie:KY(t),digestion:JY(t),training:YY(t),nutrition:XY(t),lifestyle:ZY(t),mindset:eX(t)},r={sommeil:.15,stress:.15,energie:.15,digestion:.12,training:.12,nutrition:.12,lifestyle:.1,mindset:.09},n=Math.round(Object.entries(e).reduce((l,[u,d])=>l+d*(r[u]||.1),0)),i=tX(t,e),s=await rX(i),a=await iX(t,e,i,s),o,p=i.filter(l=>l.severity==="critique").length,c=t.objectif||"tes objectifs";return p>=2?o=`${p} blocages critiques identifi\xE9s. Ces dysfonctionnements sabotent directement ton objectif de ${c}.
 
-\u{1F449} Passe \xE0 l'Anabolic Bioscan pour d\xE9bloquer ton potentiel.`:o=`\u{1F4CA} Ton profil montre quelques points d'attention.
+Sans intervention cibl\xE9e sur ces m\xE9canismes, la stagnation va se prolonger. L'Anabolic Bioscan (59\u20AC) fournit les protocoles correctifs pour chaque syst\xE8me d\xE9faillant. L'Ultimate Scan (79\u20AC) ajoute l'analyse posturale et biom\xE9canique.`:i.length>=3?o=`${i.length} d\xE9s\xE9quilibres physiologiques d\xE9tect\xE9s.
 
-Pour optimiser ta "${c}" et \xE9viter les erreurs classiques, d\xE9couvre les protocoles personnalis\xE9s de l'Anabolic Bioscan (59\u20AC). Tu sauras exactement quoi faire, quand, et pourquoi.
+Tu as maintenant la cartographie pr\xE9cise de ce qui bloque ta progression. L'\xE9tape suivante : les protocoles adapt\xE9s \xE0 ton profil. L'Anabolic Bioscan (59\u20AC) inclut 16 analyses approfondies, protocoles matin/soir, et stack suppl\xE9ments personnalis\xE9.`:o=`Ton profil r\xE9v\xE8le des axes d'optimisation.
 
-\u{1F449} Obtiens ton plan d'action personnalis\xE9.`,console.log(`[Discovery] Analysis complete. Score: ${n}/100, Blocages: ${i.length}`),{globalScore:n,scoresByDomain:e,blocages:i,synthese:a,ctaMessage:o}}var m1={sommeil:{label:"Sommeil",description:"R\xE9cup\xE9ration"},stress:{label:"Stress",description:"Syst\xE8me Nerveux"},energie:{label:"\xC9nergie",description:"Vitalit\xE9"},digestion:{label:"Digestion",description:"Absorption"},training:{label:"Training",description:"Performance"},nutrition:{label:"Nutrition",description:"M\xE9tabolisme"},lifestyle:{label:"Lifestyle",description:"Habitudes"},mindset:{label:"Mindset",description:"Mental"}};function h1(t,e){let r=e.prenom||"Client",n=e.objectif||"tes objectifs",i=Object.entries(t.scoresByDomain).map(([a,o])=>({label:m1[a]?.label||a,value:Math.round(o/10*10)/10,max:10,description:m1[a]?.description||"",key:a})),s=[];return s.push({id:"intro",title:"Message d'ouverture",subtitle:"Discovery Scan",content:`<p>${r}, ton dossier est ouvert. Voici une analyse sans filtre de ce qui bloque r\xE9ellement ta progression vers "${n}".</p>
+Pour maximiser tes r\xE9sultats sur ${c}, l'Anabolic Bioscan (59\u20AC) te donne les protocoles exacts : timing, dosages, s\xE9quen\xE7age. Chaque recommandation est calibr\xE9e sur tes donn\xE9es.`,console.log(`[Discovery] Analysis complete. Score: ${n}/100, Blocages: ${i.length}`),{globalScore:n,scoresByDomain:e,blocages:i,synthese:a,ctaMessage:o}}var m1={sommeil:{label:"Sommeil",description:"R\xE9cup\xE9ration"},stress:{label:"Stress",description:"Syst\xE8me Nerveux"},energie:{label:"\xC9nergie",description:"Vitalit\xE9"},digestion:{label:"Digestion",description:"Absorption"},training:{label:"Training",description:"Performance"},nutrition:{label:"Nutrition",description:"M\xE9tabolisme"},lifestyle:{label:"Lifestyle",description:"Habitudes"},mindset:{label:"Mindset",description:"Mental"}};function h1(t,e){let r=e.prenom||"Client",n=e.objectif||"tes objectifs",i=Object.entries(t.scoresByDomain).map(([a,o])=>({label:m1[a]?.label||a,value:Math.round(o/10*10)/10,max:10,description:m1[a]?.description||"",key:a})),s=[];return s.push({id:"intro",title:"Message d'ouverture",subtitle:"Discovery Scan",content:`<p>${r}, ton dossier est ouvert. Voici une analyse sans filtre de ce qui bloque r\xE9ellement ta progression vers "${n}".</p>
 <p>Ce rapport d\xE9cortique chaque syst\xE8me de ton corps \u2014 sommeil, stress, \xE9nergie, digestion, entra\xEEnement, nutrition, lifestyle, mindset \u2014 et surtout comment ils s'influencent mutuellement.</p>
 <p>Ton score global de <strong>${t.globalScore}/100</strong> cache une r\xE9alit\xE9 plus nuanc\xE9e. ${t.blocages.length} blocages identifi\xE9s qui expliquent pourquoi tes efforts ne paient pas comme ils le devraient.</p>`,chips:["Analyse Compl\xE8te",`${t.blocages.length} Blocages`]}),s.push({id:"global",title:"Lecture globale",subtitle:"Le Diagnostic",content:t.synthese.split(`
 
