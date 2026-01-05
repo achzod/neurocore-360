@@ -12,28 +12,7 @@ import {
 } from "lucide-react";
 
 // ============================================================================
-// HEADER - APEXLABS by Achzod
-// ============================================================================
-function Header() {
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/5">
-      <div className="mx-auto max-w-7xl px-6 py-4">
-        <div className="flex items-center">
-          <a href="/apexlabs" className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-[#FCDD00]">APEX</span>
-              <span className="text-white">LABS</span>
-            </span>
-            <span className="text-xs text-gray-500">by Achzod</span>
-          </a>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// ============================================================================
-// HERO SECTION
+// HERO SECTION (100% from zip)
 // ============================================================================
 function HeroSection() {
   const [email, setEmail] = useState("");
@@ -54,7 +33,7 @@ function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-black pt-16">
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-black">
       {/* Animated background */}
       <div className="absolute inset-0">
         <motion.div
@@ -292,7 +271,7 @@ function HeroSection() {
 }
 
 // ============================================================================
-// CERTIFICATIONS SECTION
+// CERTIFICATIONS SECTION (ajouté)
 // ============================================================================
 function CertificationsSection() {
   const certs = [
@@ -330,7 +309,7 @@ function CertificationsSection() {
 }
 
 // ============================================================================
-// PRESS/MEDIA SECTION
+// PRESS/MEDIA SECTION (ajouté)
 // ============================================================================
 function PressSection() {
   const logos = ["BENZINGA", "StreetInsider", "MarketWatch", "REUTERS", "Yahoo Finance", "AP News"];
@@ -356,7 +335,7 @@ function PressSection() {
 }
 
 // ============================================================================
-// OFFERS PREVIEW SECTION
+// OFFERS PREVIEW SECTION (100% from zip)
 // ============================================================================
 function OffersPreview() {
   const offers = [
@@ -450,7 +429,7 @@ function OffersPreview() {
 }
 
 // ============================================================================
-// ACHZOD SECTION
+// ACHZOD SECTION (100% from zip)
 // ============================================================================
 function AchzodSection() {
   const certifications = [
@@ -502,7 +481,7 @@ function AchzodSection() {
 }
 
 // ============================================================================
-// FINAL CTA
+// FINAL CTA (100% from zip)
 // ============================================================================
 function FinalCTA() {
   const [email, setEmail] = useState("");
@@ -591,7 +570,6 @@ function FinalCTA() {
 export default function ApexLabs() {
   return (
     <div className="min-h-screen bg-black">
-      <Header />
       <HeroSection />
       <CertificationsSection />
       <PressSection />
