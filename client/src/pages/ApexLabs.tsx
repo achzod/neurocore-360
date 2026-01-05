@@ -576,18 +576,27 @@ function ReviewsSection() {
   const [currentPage, setCurrentPage] = useState(0);
 
   const reviews = [
-    { name: "Thomas M.", date: "15 decembre 2025", content: "J'avais teste la version gratuite qui etait deja pas mal. J'ai pris le Premium par curiosite et franchement ca m'a ouvert les yeux sur mes desequilibres hormonaux. Le protocole matin a change ma vie.", rating: 5 },
-    { name: "Emma V.", date: "10 decembre 2025", content: "Ce qui m'a plu c'est les dosages precis des supplements. Pas juste 'prends du magnesium' mais vraiment quand, combien, quelle forme. Tres pro.", rating: 5 },
-    { name: "Romain D.", date: "29 novembre 2025", content: "Pour le prix c'est honnete. J'ai eu l'equivalent d'un mois de coaching personnalise. Les protocoles sont clairs et actionables.", rating: 5 },
-    { name: "Sophie L.", date: "25 novembre 2025", content: "L'analyse biomecanique a identifie mes compensations. Mon coach physio a confirme tout ce qui etait dans le rapport. Impressionnant.", rating: 5 },
-    { name: "Marc B.", date: "20 novembre 2025", content: "Le Burnout Engine m'a litteralement sauve. J'etais au bord du gouffre sans le savoir. Score de 23/100, j'ai tout arrete et suivi le protocole.", rating: 5 },
-    { name: "Julie R.", date: "18 novembre 2025", content: "Tres satisfaite de l'Ultimate Scan. L'analyse photo est bluffante, il a detecte ma scoliose legere que meme mon medecin n'avait pas vue.", rating: 5 },
-    { name: "Antoine P.", date: "15 novembre 2025", content: "Le rapport de 45 pages est dense mais bien structure. J'y reviens regulierement. Ca vaut largement le prix.", rating: 5 },
-    { name: "Camille F.", date: "12 novembre 2025", content: "Enfin quelqu'un qui explique le POURQUOI et pas juste le quoi faire. J'ai compris mes problemes de sommeil grace aux explications sur le cortisol.", rating: 5 },
-    { name: "Lucas T.", date: "8 novembre 2025", content: "J'ai fait le Blood Analysis avec mon dernier bilan. Les ranges optimaux vs les ranges 'normaux' du labo, c'est le jour et la nuit.", rating: 5 },
-    { name: "Marie K.", date: "5 novembre 2025", content: "Le plan 30-60-90 jours est genial. Ca structure vraiment la progression. Je suis a J+45 et je vois deja des resultats.", rating: 5 },
-    { name: "Nicolas H.", date: "1 novembre 2025", content: "Sceptique au debut, convaincu a la fin. L'analyse de mon entrainement a pointe exactement ce que je faisais mal depuis 2 ans.", rating: 5 },
-    { name: "Laura M.", date: "28 octobre 2025", content: "Le Discovery Scan gratuit m'a donne envie d'aller plus loin. Bon move marketing et le contenu est vraiment utile.", rating: 4 },
+    // Discovery Scan
+    { name: "Thomas M.", date: "15 decembre 2025", content: "J'ai fait le Discovery Scan gratuit pour voir. Honnetement je m'attendais a un truc bateau mais non, le diagnostic etait spot on. Ca m'a motive a prendre l'Anabolic.", rating: 5 },
+    { name: "Lea P.", date: "13 decembre 2025", content: "Le scan gratuit c'est deja ouf. Mon score energie a 41/100 ca m'a fait un choc. Au moins maintenant je sais ou bosser.", rating: 5 },
+    // Anabolic Bioscan (ex audit hormonal anabolique)
+    { name: "Emma V.", date: "10 decembre 2025", content: "J'avais fait l'audit hormonal anabolique en beta. Les 16 sections c'est du lourd. Le protocole cortisol du matin m'a change la vie, je me reveille enfin reposee.", rating: 5 },
+    { name: "Romain D.", date: "29 novembre 2025", content: "L'Anabolic Bioscan pour 59 euros c'est donne. Le stack supplements est hyper precis, pas juste 'prends du zinc' mais le dosage, la forme, le timing. Pro.", rating: 5 },
+    { name: "Antoine P.", date: "15 novembre 2025", content: "J'etais beta testeur sur l'audit hormonal. Le plan 30-60-90 jours structure tout. J'en suis a J+60, -4kg de gras, +2kg de muscle. Les protos marchent.", rating: 5 },
+    // Ultimate Scan (ex audit complet metabolique)
+    { name: "Sophie L.", date: "25 novembre 2025", content: "L'Ultimate Scan (l'ancien audit complet metabolique) c'est next level. L'analyse photo a detecte mon antevertion pelvienne, meme mon osteo l'avait pas vue.", rating: 5 },
+    { name: "Julie R.", date: "18 novembre 2025", content: "45 pages de rapport. Au debut je me suis dit 'jamais je lis tout ca'. Mais c'est tellement bien ecrit que j'ai tout devore. Chaque section est actionable.", rating: 5 },
+    { name: "Nicolas H.", date: "1 novembre 2025", content: "J'ai pris l'audit metabolique complet en beta. L'analyse biomecanique a pointe mes compensations d'epaule. 2 mois apres, plus de douleur au bench.", rating: 5 },
+    // Blood Analysis
+    { name: "Lucas T.", date: "8 novembre 2025", content: "J'ai upload mon bilan sanguin de routine. Le Blood Analysis m'a montre que ma ferritine 'normale' a 45 etait en fait trop basse pour un sportif. Game changer.", rating: 5 },
+    { name: "Marie K.", date: "5 novembre 2025", content: "Mon medecin m'avait dit que tout etait 'dans les normes'. Le Blood Analysis m'a montre que mes normes et les ranges optimaux c'est pas pareil. Merci.", rating: 5 },
+    { name: "Kevin R.", date: "2 novembre 2025", content: "Les radars de risques sur le bilan sanguin c'est visuel et ca parle. J'ai pu montrer a mon doc exactement ce que je voulais surveiller.", rating: 5 },
+    // Burnout Engine
+    { name: "Marc B.", date: "20 novembre 2025", content: "Le Burnout Engine m'a sorti un score de 23/100. J'etais en deni total. Le protocole recuperation 4 semaines m'a force a lever le pied. Juste a temps.", rating: 5 },
+    { name: "Camille F.", date: "12 novembre 2025", content: "Entrepreneuse, je pensais que la fatigue c'etait normal. Score burnout a 31. Le protocole m'a appris a gerer mon stress. Je dors enfin.", rating: 5 },
+    { name: "Alexis M.", date: "30 octobre 2025", content: "J'ai fait le Burnout Engine apres 6 mois de surmenage. Les alertes personnalisees me rappellent de faire des pauses. Simple mais efficace.", rating: 5 },
+    // Mix
+    { name: "Laura G.", date: "28 octobre 2025", content: "Commencee par le Discovery gratuit, puis Anabolic, puis Blood Analysis. Chaque scan apporte vraiment quelque chose de different. Bien pense.", rating: 4 },
   ];
 
   const reviewsPerPage = 3;
