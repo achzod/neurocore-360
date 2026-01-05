@@ -118,4 +118,19 @@ export type SectionName =
   | "Stack Supplements Optimise"
   | "Synthese et Prochaines Etapes";
 
+// Internal tier names (used in DB - keep for compatibility)
 export type AuditTier = 'GRATUIT' | 'PREMIUM' | 'ELITE';
+
+// Display names for frontend
+export const TierDisplayNames: Record<AuditTier, string> = {
+  GRATUIT: 'Discovery Scan',
+  PREMIUM: 'Anabolic Bioscan',
+  ELITE: 'Ultimate Scan'
+};
+
+// URL slugs to internal tier
+export const SlugToTier: Record<string, AuditTier> = {
+  'discovery-scan': 'GRATUIT',
+  'anabolic-bioscan': 'PREMIUM',
+  'ultimate-scan': 'ELITE'
+};

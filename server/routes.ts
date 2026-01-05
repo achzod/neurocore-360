@@ -33,6 +33,7 @@ import {
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBurnoutRoutes } from "./burnout-detection";
+import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1923,6 +1924,108 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin] Error sending sequence email:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // ==================== DISCOVERY SCAN ROUTES ====================
+
+  // Analyze Discovery Scan (free tier) - returns NarrativeReport format for dashboard
+  app.post("/api/discovery-scan/analyze", async (req, res) => {
+    try {
+      const { responses } = req.body;
+
+      if (!responses) {
+        res.status(400).json({ success: false, error: "Responses manquantes" });
+        return;
+      }
+
+      console.log(`[Discovery Scan] Starting analysis for ${responses.prenom || 'Client'}...`);
+
+      // Analyze and convert to dashboard format
+      const result = await analyzeDiscoveryScan(responses);
+      const narrativeReport = convertToNarrativeReport(result, responses);
+
+      res.json({
+        success: true,
+        narrativeReport
+      });
+    } catch (error: any) {
+      console.error("[Discovery Scan] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erreur analyse Discovery Scan"
+      });
+    }
+  });
+
+  // Create Discovery Scan audit and generate report
+  app.post("/api/discovery-scan/create", async (req, res) => {
+    try {
+      const { email, responses } = req.body;
+
+      if (!email || !responses) {
+        res.status(400).json({ success: false, error: "Email et responses requis" });
+        return;
+      }
+
+      // Create audit record
+      const audit = await storage.createAudit({
+        userId: "",
+        type: "GRATUIT",
+        email,
+        responses,
+      });
+
+      // Generate analysis and convert to NarrativeReport format
+      const result = await analyzeDiscoveryScan(responses);
+      const narrativeReport = convertToNarrativeReport(result, responses);
+
+      // Update audit with report (same format as PREMIUM/ELITE)
+      await storage.updateAudit(audit.id, {
+        narrativeReport,
+        reportDeliveryStatus: "READY"
+      });
+
+      console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
+
+      res.json({
+        success: true,
+        auditId: audit.id,
+        narrativeReport
+      });
+    } catch (error: any) {
+      console.error("[Discovery Scan] Create error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erreur création Discovery Scan"
+      });
+    }
+  });
+
+  // Get Discovery Scan report by audit ID (returns same format as /api/audits/:id/narrative)
+  app.get("/api/discovery-scan/:auditId", async (req, res) => {
+    try {
+      const { auditId } = req.params;
+      const audit = await storage.getAudit(auditId);
+
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      if (audit.type !== "GRATUIT") {
+        res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
+        return;
+      }
+
+      // Return narrativeReport in same format dashboard expects
+      res.json(audit.narrativeReport);
+    } catch (error: any) {
+      console.error("[Discovery Scan] Fetch error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erreur récupération Discovery Scan"
+      });
     }
   });
 

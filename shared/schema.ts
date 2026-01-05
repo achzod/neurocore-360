@@ -1,10 +1,24 @@
 import { z } from "zod";
 
-// Audit Types
+// Audit Types (internal DB names - DO NOT CHANGE, used in existing DB records)
 export const AuditType = {
   GRATUIT: "GRATUIT",
   PREMIUM: "PREMIUM",
   ELITE: "ELITE",
+} as const;
+
+// Display names mapping (frontend)
+export const AuditTypeDisplayNames = {
+  GRATUIT: "Discovery Scan",
+  PREMIUM: "Anabolic Bioscan",
+  ELITE: "Ultimate Scan",
+} as const;
+
+// Reverse mapping for URL slugs
+export const AuditTypeFromSlug = {
+  "discovery-scan": "GRATUIT",
+  "anabolic-bioscan": "PREMIUM",
+  "ultimate-scan": "ELITE",
 } as const;
 
 export type AuditTypeEnum = (typeof AuditType)[keyof typeof AuditType];
