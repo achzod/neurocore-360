@@ -879,7 +879,7 @@ export function convertToNarrativeReport(
     title: "Message d'ouverture",
     subtitle: "Discovery Scan",
     content: `<p>${prenom}, ton dossier est ouvert. Voici une analyse sans filtre de ce qui bloque réellement ta progression vers "${objectif}".</p>
-<p>Ce rapport décortique chaque système de ton corps — sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle, mindset — et surtout comment ils s'influencent mutuellement.</p>
+<p>Ce rapport decortique chaque systeme de ton corps : sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset. Et surtout comment ils s'influencent mutuellement.</p>
 <p>Ton score global de <strong>${result.globalScore}/100</strong> cache une réalité plus nuancée. ${result.blocages.length} blocages identifiés qui expliquent pourquoi tes efforts ne paient pas comme ils le devraient.</p>`,
     chips: ["Analyse Complète", `${result.blocages.length} Blocages`]
   });
@@ -909,7 +909,7 @@ export function convertToNarrativeReport(
       if (domainBlocages.length > 0) {
         // Domain with blocages - detailed analysis
         domainBlocages.forEach(b => {
-          content += `<p><strong>${b.title}</strong> — Sévérité: ${b.severity.toUpperCase()}</p>`;
+          content += `<p><strong>${b.title}</strong> <span style="color: ${b.severity === 'critique' ? '#ef4444' : b.severity === 'modere' ? '#FCDD00' : '#60a5fa'};">[${b.severity.toUpperCase()}]</span></p>`;
           content += `<p>${b.mechanism}</p>`;
           content += `<p><strong>Conséquences sur ton corps :</strong></p>`;
           content += `<ul class="list-disc pl-5 space-y-1 text-[var(--color-text-muted)]">`;
@@ -953,69 +953,69 @@ export function convertToNarrativeReport(
     content: `<p>${result.ctaMessage.replace(/\n/g, '</p><p>')}</p>
 
 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 2px solid var(--color-primary);">
-    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-primary);">Recommande</div>
-    <h4 class="text-xl font-bold mb-2">Anabolic Bioscan</h4>
-    <div class="text-3xl font-bold mb-4">59<span class="text-lg">€</span></div>
-    <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
-      <li>15 analyses approfondies</li>
-      <li>Analyse photos (posture, composition)</li>
-      <li>Protocole nutrition detaille</li>
-      <li>Stack supplements personnalise</li>
-      <li>Feuille de route 90 jours</li>
+  <div class="p-6 rounded-xl" style="background: #1a1a1a; border: 2px solid #FCDD00;">
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: #FCDD00;">Recommande</div>
+    <h4 class="text-xl font-bold mb-2" style="color: #fff;">Anabolic Bioscan</h4>
+    <div class="text-3xl font-bold mb-4" style="color: #FCDD00;">59<span class="text-lg">€</span></div>
+    <ul class="space-y-2 text-sm mb-6" style="color: #a1a1aa;">
+      <li>✓ 15 analyses approfondies</li>
+      <li>✓ Analyse photos (posture, composition)</li>
+      <li>✓ Protocole nutrition detaille</li>
+      <li>✓ Stack supplements personnalise</li>
+      <li>✓ Feuille de route 90 jours</li>
     </ul>
-    <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all" style="background: var(--color-primary); color: var(--color-background);">
+    <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: #FCDD00; color: #000;">
       Choisir Anabolic Bioscan
     </a>
   </div>
 
-  <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
-    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-text-muted);">Complet</div>
-    <h4 class="text-xl font-bold mb-2">Ultimate Scan</h4>
-    <div class="text-3xl font-bold mb-4">79<span class="text-lg">€</span></div>
-    <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
-      <li>Tout l'Anabolic Bioscan inclus</li>
-      <li>Sync wearables (Oura, Whoop, Garmin)</li>
-      <li>Analyse HRV avancee</li>
-      <li>Questions blessures & douleurs</li>
-      <li>Protocole rehabilitation</li>
+  <div class="p-6 rounded-xl" style="background: #1a1a1a; border: 1px solid #333;">
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: #a1a1aa;">Complet</div>
+    <h4 class="text-xl font-bold mb-2" style="color: #fff;">Ultimate Scan</h4>
+    <div class="text-3xl font-bold mb-4" style="color: #fff;">79<span class="text-lg">€</span></div>
+    <ul class="space-y-2 text-sm mb-6" style="color: #a1a1aa;">
+      <li>✓ Tout l'Anabolic Bioscan inclus</li>
+      <li>✓ Sync wearables (Oura, Whoop, Garmin)</li>
+      <li>✓ Analyse HRV avancee</li>
+      <li>✓ Questions blessures & douleurs</li>
+      <li>✓ Protocole rehabilitation</li>
     </ul>
-    <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all" style="border: 1px solid var(--color-border);">
+    <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid #FCDD00; color: #FCDD00;">
       Choisir Ultimate Scan
     </a>
   </div>
 </div>
 
-<div class="mt-8 p-4 rounded-lg" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3);">
-  <p class="text-sm font-medium" style="color: var(--color-primary);">Deduit de ton coaching</p>
-  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres ton scan, le montant est deduit de ta formule.</p>
+<div class="mt-8 p-4 rounded-lg" style="background: rgba(252, 221, 0, 0.1); border: 1px solid rgba(252, 221, 0, 0.3);">
+  <p class="text-sm font-medium" style="color: #FCDD00;">Deduit de ton coaching</p>
+  <p class="text-xs mt-1" style="color: #a1a1aa;">Si tu passes en coaching apres ton scan, le montant est deduit de ta formule.</p>
   <table class="w-full mt-3 text-xs">
     <thead>
-      <tr style="color: var(--color-text-muted);">
+      <tr style="color: #a1a1aa;">
         <th class="text-left py-1">Formule</th>
         <th class="text-center py-1">4 sem.</th>
         <th class="text-center py-1">8 sem.</th>
         <th class="text-center py-1">12 sem.</th>
       </tr>
     </thead>
-    <tbody style="color: var(--color-text);">
+    <tbody style="color: #fff;">
       <tr>
         <td class="py-1">Essential</td>
-        <td class="text-center">249€ → 190€</td>
-        <td class="text-center">399€ → 340€</td>
-        <td class="text-center">549€ → 490€</td>
+        <td class="text-center"><span style="color:#666;">249€</span> → <span style="color:#FCDD00;">190€</span></td>
+        <td class="text-center"><span style="color:#666;">399€</span> → <span style="color:#FCDD00;">340€</span></td>
+        <td class="text-center"><span style="color:#666;">549€</span> → <span style="color:#FCDD00;">490€</span></td>
       </tr>
       <tr>
         <td class="py-1">Elite</td>
-        <td class="text-center">399€ → 340€</td>
-        <td class="text-center">649€ → 590€</td>
-        <td class="text-center">899€ → 840€</td>
+        <td class="text-center"><span style="color:#666;">399€</span> → <span style="color:#FCDD00;">340€</span></td>
+        <td class="text-center"><span style="color:#666;">649€</span> → <span style="color:#FCDD00;">590€</span></td>
+        <td class="text-center"><span style="color:#666;">899€</span> → <span style="color:#FCDD00;">840€</span></td>
       </tr>
       <tr>
         <td class="py-1">Private Lab</td>
-        <td class="text-center">499€ → 420€</td>
-        <td class="text-center">799€ → 720€</td>
-        <td class="text-center">1199€ → 1120€</td>
+        <td class="text-center"><span style="color:#666;">499€</span> → <span style="color:#FCDD00;">420€</span></td>
+        <td class="text-center"><span style="color:#666;">799€</span> → <span style="color:#FCDD00;">720€</span></td>
+        <td class="text-center"><span style="color:#666;">1199€</span> → <span style="color:#FCDD00;">1120€</span></td>
       </tr>
     </tbody>
   </table>
@@ -1030,15 +1030,15 @@ export function convertToNarrativeReport(
     subtitle: "Sans scan supplementaire",
     content: `<p>Tu n'as pas envie ou besoin de faire un autre scan ? Je te propose une alternative directe.</p>
 
-<p>Avec ton Discovery Scan tu as deja une vue d'ensemble de tes blocages. Si tu veux passer a l'action maintenant, je t'offre <strong>-20% sur le coaching Achzod</strong> avec le code que tu recevras apres avoir laisse ton avis.</p>
+<p>Avec ton Discovery Scan tu as deja une vue d'ensemble de tes blocages. Si tu veux passer a l'action maintenant, je t'offre <strong style="color: #FCDD00;">-20% sur le coaching Achzod</strong> avec le code que tu recevras apres avoir laisse ton avis.</p>
 
-<div class="mt-8 p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
-  <h4 class="text-lg font-bold mb-4">Coaching Achzod - Formules</h4>
+<div class="mt-8 p-6 rounded-xl" style="background: #1a1a1a; border: 1px solid #333;">
+  <h4 class="text-lg font-bold mb-4" style="color: #fff;">Coaching Achzod - Formules</h4>
 
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr style="color: var(--color-text-muted);">
+        <tr style="color: #a1a1aa;">
           <th class="text-left py-2 pr-4">Formule</th>
           <th class="text-center py-2 px-2">4 semaines</th>
           <th class="text-center py-2 px-2">8 semaines</th>
@@ -1046,70 +1046,70 @@ export function convertToNarrativeReport(
         </tr>
       </thead>
       <tbody>
-        <tr style="border-top: 1px solid var(--color-border);">
+        <tr style="border-top: 1px solid #333;">
           <td class="py-3 pr-4">
-            <div class="font-medium">Essential</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Fondations</div>
+            <div class="font-medium" style="color: #fff;">Essential</div>
+            <div class="text-xs" style="color: #666;">Fondations</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">249€</div>
-            <div class="font-bold" style="color: var(--color-primary);">199€</div>
+            <div class="line-through text-xs" style="color: #666;">249€</div>
+            <div class="font-bold" style="color: #FCDD00;">199€</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">399€</div>
-            <div class="font-bold" style="color: var(--color-primary);">319€</div>
+            <div class="line-through text-xs" style="color: #666;">399€</div>
+            <div class="font-bold" style="color: #FCDD00;">319€</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">549€</div>
-            <div class="font-bold" style="color: var(--color-primary);">439€</div>
+            <div class="line-through text-xs" style="color: #666;">549€</div>
+            <div class="font-bold" style="color: #FCDD00;">439€</div>
           </td>
         </tr>
-        <tr style="border-top: 1px solid var(--color-border);">
+        <tr style="border-top: 1px solid #333;">
           <td class="py-3 pr-4">
-            <div class="font-medium">Elite</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Performance</div>
+            <div class="font-medium" style="color: #fff;">Elite</div>
+            <div class="text-xs" style="color: #666;">Performance</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">399€</div>
-            <div class="font-bold" style="color: var(--color-primary);">319€</div>
+            <div class="line-through text-xs" style="color: #666;">399€</div>
+            <div class="font-bold" style="color: #FCDD00;">319€</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">649€</div>
-            <div class="font-bold" style="color: var(--color-primary);">519€</div>
+            <div class="line-through text-xs" style="color: #666;">649€</div>
+            <div class="font-bold" style="color: #FCDD00;">519€</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">899€</div>
-            <div class="font-bold" style="color: var(--color-primary);">719€</div>
+            <div class="line-through text-xs" style="color: #666;">899€</div>
+            <div class="font-bold" style="color: #FCDD00;">719€</div>
           </td>
         </tr>
-        <tr style="border-top: 1px solid var(--color-border);">
+        <tr style="border-top: 1px solid #333;">
           <td class="py-3 pr-4">
-            <div class="font-medium">Private Lab</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">VIP</div>
+            <div class="font-medium" style="color: #fff;">Private Lab</div>
+            <div class="text-xs" style="color: #666;">VIP</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">499€</div>
-            <div class="font-bold" style="color: var(--color-primary);">399€</div>
+            <div class="line-through text-xs" style="color: #666;">499€</div>
+            <div class="font-bold" style="color: #FCDD00;">399€</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">799€</div>
-            <div class="font-bold" style="color: var(--color-primary);">639€</div>
+            <div class="line-through text-xs" style="color: #666;">799€</div>
+            <div class="font-bold" style="color: #FCDD00;">639€</div>
           </td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">1199€</div>
-            <div class="font-bold" style="color: var(--color-primary);">959€</div>
+            <div class="line-through text-xs" style="color: #666;">1199€</div>
+            <div class="font-bold" style="color: #FCDD00;">959€</div>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="mt-6 p-4 rounded-lg" style="background: rgba(34, 197, 94, 0.1);">
-    <p class="text-sm"><strong style="color: var(--color-primary);">Comment obtenir le code -20% ?</strong></p>
-    <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-bg);">DISCOVERY20</code> par email.</p>
+  <div class="mt-6 p-4 rounded-lg" style="background: rgba(252, 221, 0, 0.1); border: 1px solid rgba(252, 221, 0, 0.2);">
+    <p class="text-sm" style="color: #fff;"><strong style="color: #FCDD00;">Comment obtenir le code -20% ?</strong></p>
+    <p class="text-xs mt-1" style="color: #a1a1aa;">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: #333; color: #FCDD00;">DISCOVERY20</code> par email.</p>
   </div>
 
-  <a href="https://achzodcoaching.com" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all" style="background: var(--color-primary); color: var(--color-background);">
+  <a href="https://achzodcoaching.com" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: #FCDD00; color: #000;">
     Voir les formules sur achzodcoaching.com
   </a>
 </div>`,
