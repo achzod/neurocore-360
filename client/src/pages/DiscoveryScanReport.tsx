@@ -32,14 +32,14 @@ const THEMES: Theme[] = [
     name: 'M1 Black',
     type: 'dark',
     colors: {
-      primary: '#E1E1E1',
+      primary: '#FCDD00',
       background: '#000000',
-      surface: '#09090B',
-      border: 'rgba(255, 255, 255, 0.12)',
-      text: '#EDEDED',
-      textMuted: '#71717A',
-      grid: 'rgba(255, 255, 255, 0.08)',
-      glow: 'rgba(255, 255, 255, 0.1)'
+      surface: '#0a0a0a',
+      border: 'rgba(252, 221, 0, 0.15)',
+      text: '#FFFFFF',
+      textMuted: '#a1a1aa',
+      grid: 'rgba(252, 221, 0, 0.05)',
+      glow: 'rgba(252, 221, 0, 0.2)'
     }
   },
   {
@@ -47,14 +47,14 @@ const THEMES: Theme[] = [
     name: 'Metabolic Fire',
     type: 'dark',
     colors: {
-      primary: '#22c55e',
+      primary: '#FCDD00',
       background: '#050505',
       surface: '#111111',
-      border: 'rgba(34, 197, 94, 0.2)',
+      border: 'rgba(252, 221, 0, 0.15)',
       text: '#FFFFFF',
       textMuted: '#A1A1AA',
-      grid: 'rgba(34, 197, 94, 0.08)',
-      glow: 'rgba(34, 197, 94, 0.25)'
+      grid: 'rgba(252, 221, 0, 0.05)',
+      glow: 'rgba(252, 221, 0, 0.25)'
     }
   },
   {

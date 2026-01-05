@@ -644,28 +644,45 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 // AI SYNTHESIS GENERATION
 // ============================================
 
-const DISCOVERY_SYSTEM_PROMPT = `Tu es un expert en physiologie et performance humaine de niveau doctoral.
+const DISCOVERY_SYSTEM_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des clients qui veulent comprendre POURQUOI leur corps dysfonctionne.
 
-MISSION: Rédiger une analyse clinique approfondie des dysfonctionnements détectés.
+MISSION: Rediger une analyse clinique TRES LONGUE et TRES DETAILLEE (minimum 800 mots) des dysfonctionnements detectes. EXPLIQUER les mecanismes, PAS donner de solutions.
 
-RÈGLES ABSOLUES:
-1. JAMAIS de markdown (pas de ##, **, -, *, etc.)
-2. JAMAIS d'emojis
-3. JAMAIS de recommandations ou solutions
-4. Écris en prose fluide avec des paragraphes séparés par des lignes vides
-5. Utilise la terminologie scientifique précise (axe HPA, GH, T3/T4, cortisol, etc.)
-6. Cite les mécanismes physiologiques exacts avec sources
+REGLES ABSOLUES (VIOLATION = ECHEC):
+1. JAMAIS de tiret long (—) ou tiret cadratin. Utilise : ou . a la place
+2. JAMAIS de markdown (pas de ##, **, -, *, listes a puces)
+3. JAMAIS d'emojis
+4. JAMAIS de recommandations, solutions, ou conseils
+5. MINIMUM 800 mots, idealement 1000-1200 mots
+6. Chaque paragraphe doit faire au moins 150 mots
+7. Prose fluide uniquement, paragraphes separes par lignes vides
 
-STRUCTURE (en prose, pas de titres):
-Premier paragraphe: Diagnostic principal - quel est le blocage central et son mécanisme biochimique
-Deuxième paragraphe: Cascade physiologique - comment ce blocage affecte les autres systèmes (hormonal, métabolique, nerveux)
-Troisième paragraphe: Impact sur l'objectif - pourquoi les efforts actuels ne fonctionnent pas à cause de ces mécanismes
+CONTENU OBLIGATOIRE A COUVRIR:
+- Mecanismes biochimiques precis (enzymes, hormones, recepteurs)
+- Cascades physiologiques entre systemes
+- Impact neurologique (neurotransmetteurs, HPA, systeme nerveux autonome)
+- Impact metabolique (insuline, glycemie, mitochondries, oxidation des graisses)
+- Impact hormonal (cortisol, testosterone, T3/T4, GH, leptine, ghreline)
+- Impact digestif (microbiome, permeabilite intestinale, absorption)
+- Impact sur le sommeil (cycles, melatonine, adenosine)
+- Impact cardiovasculaire et inflammation (CRP, cytokines)
+- Donnees chiffrees (pourcentages, durees, seuils)
+
+SOURCES A INTEGRER NATURELLEMENT:
+- Andrew Huberman (neurosciences, protocoles)
+- Peter Attia (longevite, metabolisme)
+- Matthew Walker (sommeil)
+- Robert Sapolsky (stress, cortisol)
+- Ben Bikman (insuline, metabolisme)
+- Robert Lustig (sucre, metabolisme)
+- Stronger by Science (entrainement)
 
 STYLE:
-- Médecin spécialiste qui explique à un patient intelligent
-- Dense en information, chaque phrase apporte une donnée concrète
-- Références aux travaux de Huberman, Attia, Walker, Sapolsky intégrées naturellement
-- Tutoiement direct et franc`;
+- Medecin specialiste expliquant a un patient intelligent
+- Chaque phrase apporte une donnee concrete et chiffree
+- Tutoiement direct, sans condescendance
+- Ton grave mais pas alarmiste
+- References scientifiques integrees dans le texte`;
 
 async function generateAISynthesis(
   responses: DiscoveryResponses,
@@ -679,30 +696,51 @@ async function generateAISynthesis(
     `[${b.severity.toUpperCase()}] ${b.domain}: ${b.title}\n${b.mechanism}`
   ).join('\n\n');
 
-  const userPrompt = `PROFIL: ${responses.prenom}, ${responses.sexe}, ${responses.age} ans
-OBJECTIF: ${responses.objectif}
+  const userPrompt = `PROFIL CLIENT:
+Prenom: ${responses.prenom}
+Sexe: ${responses.sexe}
+Age: ${responses.age} ans
+Objectif principal: ${responses.objectif}
 
-SCORES:
-Sommeil ${scores.sommeil}/100 | Stress ${scores.stress}/100 | Énergie ${scores.energie}/100 | Digestion ${scores.digestion}/100
-Training ${scores.training}/100 | Nutrition ${scores.nutrition}/100 | Lifestyle ${scores.lifestyle}/100 | Mindset ${scores.mindset}/100
+SCORES DOMAINES (sur 100):
+Sommeil: ${scores.sommeil}/100
+Stress: ${scores.stress}/100
+Energie: ${scores.energie}/100
+Digestion: ${scores.digestion}/100
+Training: ${scores.training}/100
+Nutrition: ${scores.nutrition}/100
+Lifestyle: ${scores.lifestyle}/100
+Mindset: ${scores.mindset}/100
 
-BLOCAGES IDENTIFIÉS:
+BLOCAGES DETECTES:
 ${blocagesSummary}
 
-${knowledgeContext ? `DONNÉES SCIENTIFIQUES:\n${knowledgeContext}` : ''}
+${knowledgeContext ? `DONNEES SCIENTIFIQUES PERTINENTES:\n${knowledgeContext}` : ''}
 
-Rédige 3 paragraphes denses (prose uniquement, pas de listes, pas de markdown, pas d'emoji):
+MISSION: Redige une analyse TRES LONGUE et TRES DETAILLEE en 4 paragraphes de prose fluide. MINIMUM 1000 mots au total.
 
-1) Le dysfonctionnement central et son mécanisme biochimique précis
+STRUCTURE OBLIGATOIRE:
 
-2) La cascade sur les autres systèmes (comment sommeil/stress/hormones s'interconnectent)
+PARAGRAPHE 1 (minimum 250 mots): Le dysfonctionnement central. Explique le mecanisme biochimique precis du blocage principal. Cite les enzymes, recepteurs, hormones impliques. Donne des chiffres (pourcentages, durees, seuils). Explique la physiopathologie sans donner de solution.
 
-3) Pourquoi ${responses.prenom} stagne malgré ses efforts - le lien direct avec ${responses.objectif}`;
+PARAGRAPHE 2 (minimum 250 mots): La cascade systemique. Decris comment ce dysfonctionnement affecte les autres systemes de ${responses.prenom}. Explique les interactions sommeil/cortisol/insuline/testosterone. Cite les boucles de retroaction. Integre des donnees de Huberman, Attia, Walker.
+
+PARAGRAPHE 3 (minimum 250 mots): L'impact metabolique complet. Detail les consequences sur le metabolisme energetique, la thyroide, les mitochondries, la sensibilite a l'insuline. Explique pourquoi la perte de gras est bloquee ou pourquoi la prise de muscle est compromise. Chiffres et mecanismes.
+
+PARAGRAPHE 4 (minimum 250 mots): Pourquoi ${responses.prenom} stagne malgre ses efforts. Fais le lien direct avec son objectif "${responses.objectif}". Explique pourquoi les approches classiques ne fonctionnent pas dans son cas specifique. Conclus sur l'importance de comprendre ces mecanismes pour debloquer la situation.
+
+RAPPELS CRITIQUES:
+- JAMAIS de tiret long (—) ni de tiret cadratin
+- Prose fluide uniquement, PAS de listes
+- PAS de markdown (##, **, -, *)
+- PAS d'emojis
+- PAS de recommandations ni solutions
+- MINIMUM 1000 mots au total`;
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: DISCOVERY_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }]
     });
@@ -718,9 +756,14 @@ Rédige 3 paragraphes denses (prose uniquement, pas de listes, pas de markdown, 
   }
 }
 
-// Convert markdown artifacts to clean HTML
+// Convert markdown artifacts to clean HTML - CRITICAL: Remove all em dashes
 function cleanMarkdownToHTML(text: string): string {
   return text
+    // CRITICAL: Remove ALL em dashes (—) and en dashes (–) FIRST
+    .replace(/—/g, ':')
+    .replace(/–/g, '-')
+    .replace(/\u2014/g, ':')  // Unicode em dash
+    .replace(/\u2013/g, '-')  // Unicode en dash
     // Remove markdown headers (## Title -> Title)
     .replace(/^#{1,4}\s+(.+)$/gm, '$1')
     // Convert **bold** to <strong>
@@ -735,6 +778,9 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
     // Remove any remaining markdown artifacts
     .replace(/`([^`]+)`/g, '$1')
+    // Final pass: remove any remaining em dashes that slipped through
+    .replace(/—/g, ':')
+    .replace(/–/g, '-')
     .trim();
 }
 

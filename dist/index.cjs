@@ -3892,52 +3892,90 @@ Key points: ${s.content.substring(0,500)}...`).join(`
 
 ---
 
-`)}catch(n){return console.error("[Discovery] Knowledge search error:",n),""}}var aX=`Tu es un expert en physiologie et performance humaine de niveau doctoral.
+`)}catch(n){return console.error("[Discovery] Knowledge search error:",n),""}}var aX=`Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des clients qui veulent comprendre POURQUOI leur corps dysfonctionne.
 
-MISSION: R\xE9diger une analyse clinique approfondie des dysfonctionnements d\xE9tect\xE9s.
+MISSION: Rediger une analyse clinique TRES LONGUE et TRES DETAILLEE (minimum 800 mots) des dysfonctionnements detectes. EXPLIQUER les mecanismes, PAS donner de solutions.
 
-R\xC8GLES ABSOLUES:
-1. JAMAIS de markdown (pas de ##, **, -, *, etc.)
-2. JAMAIS d'emojis
-3. JAMAIS de recommandations ou solutions
-4. \xC9cris en prose fluide avec des paragraphes s\xE9par\xE9s par des lignes vides
-5. Utilise la terminologie scientifique pr\xE9cise (axe HPA, GH, T3/T4, cortisol, etc.)
-6. Cite les m\xE9canismes physiologiques exacts avec sources
+REGLES ABSOLUES (VIOLATION = ECHEC):
+1. JAMAIS de tiret long (\u2014) ou tiret cadratin. Utilise : ou . a la place
+2. JAMAIS de markdown (pas de ##, **, -, *, listes a puces)
+3. JAMAIS d'emojis
+4. JAMAIS de recommandations, solutions, ou conseils
+5. MINIMUM 800 mots, idealement 1000-1200 mots
+6. Chaque paragraphe doit faire au moins 150 mots
+7. Prose fluide uniquement, paragraphes separes par lignes vides
 
-STRUCTURE (en prose, pas de titres):
-Premier paragraphe: Diagnostic principal - quel est le blocage central et son m\xE9canisme biochimique
-Deuxi\xE8me paragraphe: Cascade physiologique - comment ce blocage affecte les autres syst\xE8mes (hormonal, m\xE9tabolique, nerveux)
-Troisi\xE8me paragraphe: Impact sur l'objectif - pourquoi les efforts actuels ne fonctionnent pas \xE0 cause de ces m\xE9canismes
+CONTENU OBLIGATOIRE A COUVRIR:
+- Mecanismes biochimiques precis (enzymes, hormones, recepteurs)
+- Cascades physiologiques entre systemes
+- Impact neurologique (neurotransmetteurs, HPA, systeme nerveux autonome)
+- Impact metabolique (insuline, glycemie, mitochondries, oxidation des graisses)
+- Impact hormonal (cortisol, testosterone, T3/T4, GH, leptine, ghreline)
+- Impact digestif (microbiome, permeabilite intestinale, absorption)
+- Impact sur le sommeil (cycles, melatonine, adenosine)
+- Impact cardiovasculaire et inflammation (CRP, cytokines)
+- Donnees chiffrees (pourcentages, durees, seuils)
+
+SOURCES A INTEGRER NATURELLEMENT:
+- Andrew Huberman (neurosciences, protocoles)
+- Peter Attia (longevite, metabolisme)
+- Matthew Walker (sommeil)
+- Robert Sapolsky (stress, cortisol)
+- Ben Bikman (insuline, metabolisme)
+- Robert Lustig (sucre, metabolisme)
+- Stronger by Science (entrainement)
 
 STYLE:
-- M\xE9decin sp\xE9cialiste qui explique \xE0 un patient intelligent
-- Dense en information, chaque phrase apporte une donn\xE9e concr\xE8te
-- R\xE9f\xE9rences aux travaux de Huberman, Attia, Walker, Sapolsky int\xE9gr\xE9es naturellement
-- Tutoiement direct et franc`;async function oX(t,e,r,n){let i=new cL.default,s=r.map(o=>`[${o.severity.toUpperCase()}] ${o.domain}: ${o.title}
+- Medecin specialiste expliquant a un patient intelligent
+- Chaque phrase apporte une donnee concrete et chiffree
+- Tutoiement direct, sans condescendance
+- Ton grave mais pas alarmiste
+- References scientifiques integrees dans le texte`;async function oX(t,e,r,n){let i=new cL.default,s=r.map(o=>`[${o.severity.toUpperCase()}] ${o.domain}: ${o.title}
 ${o.mechanism}`).join(`
 
-`),a=`PROFIL: ${t.prenom}, ${t.sexe}, ${t.age} ans
-OBJECTIF: ${t.objectif}
+`),a=`PROFIL CLIENT:
+Prenom: ${t.prenom}
+Sexe: ${t.sexe}
+Age: ${t.age} ans
+Objectif principal: ${t.objectif}
 
-SCORES:
-Sommeil ${e.sommeil}/100 | Stress ${e.stress}/100 | \xC9nergie ${e.energie}/100 | Digestion ${e.digestion}/100
-Training ${e.training}/100 | Nutrition ${e.nutrition}/100 | Lifestyle ${e.lifestyle}/100 | Mindset ${e.mindset}/100
+SCORES DOMAINES (sur 100):
+Sommeil: ${e.sommeil}/100
+Stress: ${e.stress}/100
+Energie: ${e.energie}/100
+Digestion: ${e.digestion}/100
+Training: ${e.training}/100
+Nutrition: ${e.nutrition}/100
+Lifestyle: ${e.lifestyle}/100
+Mindset: ${e.mindset}/100
 
-BLOCAGES IDENTIFI\xC9S:
+BLOCAGES DETECTES:
 ${s}
 
-${n?`DONN\xC9ES SCIENTIFIQUES:
+${n?`DONNEES SCIENTIFIQUES PERTINENTES:
 ${n}`:""}
 
-R\xE9dige 3 paragraphes denses (prose uniquement, pas de listes, pas de markdown, pas d'emoji):
+MISSION: Redige une analyse TRES LONGUE et TRES DETAILLEE en 4 paragraphes de prose fluide. MINIMUM 1000 mots au total.
 
-1) Le dysfonctionnement central et son m\xE9canisme biochimique pr\xE9cis
+STRUCTURE OBLIGATOIRE:
 
-2) La cascade sur les autres syst\xE8mes (comment sommeil/stress/hormones s'interconnectent)
+PARAGRAPHE 1 (minimum 250 mots): Le dysfonctionnement central. Explique le mecanisme biochimique precis du blocage principal. Cite les enzymes, recepteurs, hormones impliques. Donne des chiffres (pourcentages, durees, seuils). Explique la physiopathologie sans donner de solution.
 
-3) Pourquoi ${t.prenom} stagne malgr\xE9 ses efforts - le lien direct avec ${t.objectif}`;try{let c=(await i.messages.create({model:"claude-sonnet-4-20250514",max_tokens:2e3,system:aX,messages:[{role:"user",content:a}]})).content.find(l=>l.type==="text")?.text||"";return cX(c)}catch(o){return console.error("[Discovery] AI synthesis error:",o),`Analyse d\xE9tect\xE9e: ${r.length} blocages identifi\xE9s affectant ton objectif "${t.objectif}".`}}function cX(t){return t.replace(/^#{1,4}\s+(.+)$/gm,"$1").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/\*([^*]+)\*/g,"<em>$1</em>").replace(/^[-•]\s+/gm,"").replace(/^\d+\.\s+/gm,"").replace(/\n{3,}/g,`
+PARAGRAPHE 2 (minimum 250 mots): La cascade systemique. Decris comment ce dysfonctionnement affecte les autres systemes de ${t.prenom}. Explique les interactions sommeil/cortisol/insuline/testosterone. Cite les boucles de retroaction. Integre des donnees de Huberman, Attia, Walker.
 
-`).replace(/`([^`]+)`/g,"$1").trim()}async function zf(t){console.log(`[Discovery] Analyzing scan for ${t.prenom||"Client"}...`);let e={sommeil:JY(t),stress:YY(t),energie:XY(t),digestion:ZY(t),training:eX(t),nutrition:tX(t),lifestyle:rX(t),mindset:nX(t)},r={sommeil:.15,stress:.15,energie:.15,digestion:.12,training:.12,nutrition:.12,lifestyle:.1,mindset:.09},n=Math.round(Object.entries(e).reduce((l,[u,d])=>l+d*(r[u]||.1),0)),i=iX(t,e),s=await sX(i),a=await oX(t,e,i,s),o,p=i.filter(l=>l.severity==="critique").length,c=t.objectif||"tes objectifs";return p>=2?o=`${p} blocages critiques identifi\xE9s. Ces dysfonctionnements sabotent directement ton objectif de ${c}.
+PARAGRAPHE 3 (minimum 250 mots): L'impact metabolique complet. Detail les consequences sur le metabolisme energetique, la thyroide, les mitochondries, la sensibilite a l'insuline. Explique pourquoi la perte de gras est bloquee ou pourquoi la prise de muscle est compromise. Chiffres et mecanismes.
+
+PARAGRAPHE 4 (minimum 250 mots): Pourquoi ${t.prenom} stagne malgre ses efforts. Fais le lien direct avec son objectif "${t.objectif}". Explique pourquoi les approches classiques ne fonctionnent pas dans son cas specifique. Conclus sur l'importance de comprendre ces mecanismes pour debloquer la situation.
+
+RAPPELS CRITIQUES:
+- JAMAIS de tiret long (\u2014) ni de tiret cadratin
+- Prose fluide uniquement, PAS de listes
+- PAS de markdown (##, **, -, *)
+- PAS d'emojis
+- PAS de recommandations ni solutions
+- MINIMUM 1000 mots au total`;try{let c=(await i.messages.create({model:"claude-sonnet-4-20250514",max_tokens:4e3,system:aX,messages:[{role:"user",content:a}]})).content.find(l=>l.type==="text")?.text||"";return cX(c)}catch(o){return console.error("[Discovery] AI synthesis error:",o),`Analyse d\xE9tect\xE9e: ${r.length} blocages identifi\xE9s affectant ton objectif "${t.objectif}".`}}function cX(t){return t.replace(/—/g,":").replace(/–/g,"-").replace(/\u2014/g,":").replace(/\u2013/g,"-").replace(/^#{1,4}\s+(.+)$/gm,"$1").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>").replace(/\*([^*]+)\*/g,"<em>$1</em>").replace(/^[-•]\s+/gm,"").replace(/^\d+\.\s+/gm,"").replace(/\n{3,}/g,`
+
+`).replace(/`([^`]+)`/g,"$1").replace(/—/g,":").replace(/–/g,"-").trim()}async function zf(t){console.log(`[Discovery] Analyzing scan for ${t.prenom||"Client"}...`);let e={sommeil:JY(t),stress:YY(t),energie:XY(t),digestion:ZY(t),training:eX(t),nutrition:tX(t),lifestyle:rX(t),mindset:nX(t)},r={sommeil:.15,stress:.15,energie:.15,digestion:.12,training:.12,nutrition:.12,lifestyle:.1,mindset:.09},n=Math.round(Object.entries(e).reduce((l,[u,d])=>l+d*(r[u]||.1),0)),i=iX(t,e),s=await sX(i),a=await oX(t,e,i,s),o,p=i.filter(l=>l.severity==="critique").length,c=t.objectif||"tes objectifs";return p>=2?o=`${p} blocages critiques identifi\xE9s. Ces dysfonctionnements sabotent directement ton objectif de ${c}.
 
 Sans intervention cibl\xE9e sur ces m\xE9canismes, la stagnation va se prolonger. L'Anabolic Bioscan (59\u20AC) fournit les protocoles correctifs pour chaque syst\xE8me d\xE9faillant. L'Ultimate Scan (79\u20AC) ajoute l'analyse posturale et biom\xE9canique.`:i.length>=3?o=`${i.length} d\xE9s\xE9quilibres physiologiques d\xE9tect\xE9s.
 
