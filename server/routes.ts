@@ -14,6 +14,7 @@ import {
   sendPremiumJ7Email,
   sendPremiumJ14Email,
   sendPromoCodeEmail,
+  sendAdminReviewNotification,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -1328,6 +1329,18 @@ export async function registerRoutes(
         email: parsed.email ? sanitizeUserText(parsed.email, 255) : undefined,
       };
       const review = await reviewStorage.createReview(data as any);
+
+      // Notify admin of new review to validate
+      const auditType = (audit.planType as string) || "DISCOVERY";
+      sendAdminReviewNotification(
+        data.email,
+        auditType,
+        parsed.auditId,
+        parsed.rating,
+        data.comment
+      ).catch(err => console.error("[Review] Admin notification failed:", err));
+
+      console.log(`[Review] New review submitted for audit ${parsed.auditId} - Admin notified`);
       res.json({ success: true, review });
     } catch (error) {
       if (error instanceof z.ZodError) {

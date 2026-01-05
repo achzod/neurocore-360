@@ -44,17 +44,17 @@ const THEMES: Theme[] = [
   },
   {
     id: 'metabolic',
-    name: 'Metabolic Fire',
+    name: 'Chrome Steel',
     type: 'dark',
     colors: {
-      primary: '#FCDD00',
+      primary: '#C0C0C0',
       background: '#050505',
       surface: '#111111',
-      border: 'rgba(252, 221, 0, 0.15)',
+      border: 'rgba(192, 192, 192, 0.15)',
       text: '#FFFFFF',
       textMuted: '#A1A1AA',
-      grid: 'rgba(252, 221, 0, 0.05)',
-      glow: 'rgba(252, 221, 0, 0.25)'
+      grid: 'rgba(192, 192, 192, 0.05)',
+      glow: 'rgba(192, 192, 192, 0.25)'
     }
   },
   {
@@ -101,11 +101,13 @@ const METRIC_ICONS: Record<string, React.ElementType> = {
   mindset: Lightbulb
 };
 
+// Theme-aware score status - uses CSS custom property for theme consistency
 const getScoreStatus = (value: number) => {
-  if (value >= 8) return { label: 'FORT', color: 'bg-green-500/10 text-green-500' };
-  if (value >= 6) return { label: 'MOYEN', color: 'bg-yellow-500/10 text-yellow-500' };
-  if (value >= 4) return { label: 'FAIBLE', color: 'bg-orange-500/10 text-orange-500' };
-  return { label: 'CRITIQUE', color: 'bg-red-500/10 text-red-500' };
+  // All states use theme's primary color for M1 (yellow) consistency
+  if (value >= 8) return { label: 'FORT', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  if (value >= 6) return { label: 'MOYEN', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  if (value >= 4) return { label: 'FAIBLE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  return { label: 'CRITIQUE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
 };
 
 const DiscoveryScanReport: React.FC = () => {

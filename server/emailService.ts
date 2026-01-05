@@ -741,3 +741,77 @@ export async function sendPromoCodeEmail(
     return false;
   }
 }
+
+// Admin notification when a new review is submitted
+export async function sendAdminReviewNotification(
+  reviewerEmail: string | undefined,
+  auditType: string,
+  auditId: string,
+  rating: number,
+  comment: string
+): Promise<boolean> {
+  try {
+    const adminEmail = "achzodyt@gmail.com";
+    const token = await getAccessToken();
+    const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 24px; font-weight: 700;">
+        Nouvel avis client a valider
+      </h2>
+
+      <div style="background: ${COLORS.background}; border-radius: 8px; padding: 20px; border: 1px solid ${COLORS.border};">
+        <p style="color: ${COLORS.primary}; font-size: 24px; letter-spacing: 2px; margin: 0 0 16px;">
+          ${stars}
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
+          <strong style="color: ${COLORS.text};">Type d'audit:</strong> ${auditType}
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
+          <strong style="color: ${COLORS.text};">Email client:</strong> ${reviewerEmail || "Non fourni"}
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
+          <strong style="color: ${COLORS.text};">Audit ID:</strong> <code style="background: ${COLORS.border}; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${auditId}</code>
+        </p>
+        <div style="margin-top: 16px; padding: 16px; background: ${COLORS.surface}; border-radius: 8px; border-left: 3px solid ${COLORS.primary};">
+          <p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0; font-style: italic;">
+            "${comment.length > 300 ? comment.substring(0, 300) + "..." : comment}"
+          </p>
+        </div>
+      </div>
+
+      <p style="color: ${COLORS.primary}; font-size: 14px; line-height: 1.7; margin: 24px 0 0; text-align: center; font-weight: 500;">
+        Connecte-toi au dashboard admin pour valider ou rejeter cet avis.
+      </p>
+    `;
+
+    const emailContent = getEmailWrapper(content);
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: {
+          html: encodeBase64(emailContent),
+          text: `Nouvel avis ${rating}/5 pour ${auditType}: "${comment.substring(0, 100)}..." - A valider dans le dashboard admin.`,
+          subject: `[NEUROCORE 360] Nouvel avis ${stars} a valider`,
+          from: {
+            name: SENDER_NAME,
+            email: SENDER_EMAIL,
+          },
+          to: [{ email: adminEmail }],
+        },
+      }),
+    });
+
+    const result = await response.json() as { result: boolean };
+    console.log(`[SendPulse] Admin review notification sent:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending admin review notification:", error);
+    return false;
+  }
+}

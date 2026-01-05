@@ -1527,31 +1527,34 @@ export async function convertToNarrativeReport(
       let severityColor: string;
       let chips: string[] = [];
 
+      // Theme M1: All severity indicators use yellow (#FCDD00) for consistency
+      const primaryColor = '#FCDD00';
+
       if (domainBlocages.length > 0) {
         const maxSeverity = domainBlocages.some(b => b.severity === 'critique') ? 'critique' :
                           domainBlocages.some(b => b.severity === 'modere') ? 'modere' : 'leger';
         severityLabel = maxSeverity === 'critique' ? 'BLOCAGE CRITIQUE' : maxSeverity === 'modere' ? 'BLOCAGE MODERE' : 'BLOCAGE LEGER';
-        severityColor = maxSeverity === 'critique' ? '#ef4444' : maxSeverity === 'modere' ? '#FCDD00' : '#60a5fa';
+        severityColor = primaryColor; // Unified yellow for all blocages
         chips = domainBlocages[0]?.consequences.slice(0, 3).map(c => c.split(':')[0]) || [];
       } else if (score < 40) {
         severityLabel = 'CRITIQUE';
-        severityColor = '#ef4444';
+        severityColor = primaryColor;
         chips = ["Priorite Absolue", "Impact Direct"];
       } else if (score < 50) {
         severityLabel = 'INSUFFISANT';
-        severityColor = '#f59e0b';
+        severityColor = primaryColor;
         chips = ["A Corriger", "Impact"];
       } else if (score < 70) {
         severityLabel = 'A OPTIMISER';
-        severityColor = '#FCDD00';
+        severityColor = primaryColor;
         chips = ["Potentiel", "Optimisable"];
       } else if (score < 80) {
         severityLabel = 'CORRECT';
-        severityColor = '#3b82f6';
+        severityColor = primaryColor;
         chips = ["Base Solide", "Affinable"];
       } else {
         severityLabel = 'POINT FORT';
-        severityColor = '#22c55e';
+        severityColor = primaryColor;
         chips = ["Excellence", "Maintenir"];
       }
 
