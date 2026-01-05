@@ -329,50 +329,87 @@ export async function scrapeAppliedMetabolics(limit: number = 10): Promise<Scrap
 
     console.log("[Scraper] Applied Metabolics logged in");
 
-    // Fetch content pages
-    for (const page of ["/", "/category/articles/", "/category/protocols/"]) {
+    // Generate archive URLs from Sept 2014 to current
+    const archiveUrls: string[] = [];
+    const startYear = 2014;
+    const startMonth = 9;
+    const now = new Date();
+    const endYear = now.getFullYear();
+    const endMonth = now.getMonth() + 1;
+
+    for (let year = startYear; year <= endYear; year++) {
+      const monthStart = (year === startYear) ? startMonth : 1;
+      const monthEnd = (year === endYear) ? endMonth : 12;
+      for (let month = monthStart; month <= monthEnd; month++) {
+        const monthStr = month.toString().padStart(2, '0');
+        archiveUrls.push(`${SOURCES.applied_metabolics.url}/${year}/${monthStr}/`);
+      }
+    }
+
+    console.log(`[Scraper] Applied Metabolics: ${archiveUrls.length} monthly archives to scrape`);
+
+    // Scrape archive pages to find article links
+    const allArticleLinks: string[] = [];
+    for (const archiveUrl of archiveUrls.slice(0, 50)) { // Limit archives to check
       try {
-        const pageRes = await fetch(`${SOURCES.applied_metabolics.url}${page}`, {
+        const pageRes = await fetch(archiveUrl, {
           headers: { Cookie: cookies, "User-Agent": UA }
         });
+        if (!pageRes.ok) continue;
         const html = await pageRes.text();
 
-        // Find article links
+        // Find article links in archive
         const linkPattern = /href="(https:\/\/www\.appliedmetabolics\.com\/[^"\/]+\/)"/gi;
-        const links = [...new Set([...html.matchAll(linkPattern)].map(m => m[1]))];
-
-        for (const link of links.slice(0, Math.ceil(limit / 3))) {
-          if (link.includes("/category/") || link.includes("/tag/") || link.includes("/page/")) continue;
-
-          try {
-            const artRes = await fetch(link, { headers: { Cookie: cookies, "User-Agent": UA } });
-            const artHtml = await artRes.text();
-
-            const titleMatch = artHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-            const contentMatch = artHtml.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-
-            const title = titleMatch ? cleanHtml(titleMatch[1]) : "";
-            const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
-
-            if (title && content.length > 500) {
-              articles.push({
-                source: "applied_metabolics",
-                title,
-                content: content.substring(0, 50000),
-                url: link,
-                category: categorizeContent(title, content),
-                keywords: extractKeywords(title, content),
-                scrapedAt: new Date()
-              });
-              console.log(`[Scraper] ✓ AM: ${title.substring(0, 40)}...`);
-            }
-
-            await new Promise(r => setTimeout(r, 2000));
-          } catch (e) {}
-
-          if (articles.length >= limit) break;
-        }
+        const links = [...html.matchAll(linkPattern)].map(m => m[1]);
+        allArticleLinks.push(...links);
+        await new Promise(r => setTimeout(r, 500));
       } catch (e) {}
+    }
+
+    // Deduplicate and filter
+    const uniqueLinks = [...new Set(allArticleLinks)].filter(l =>
+      !l.includes("/category/") &&
+      !l.includes("/tag/") &&
+      !l.includes("/page/") &&
+      !l.includes("/author/") &&
+      !l.includes("/about/") &&
+      !l.includes("/contact/") &&
+      !l.includes("/subscribe/") &&
+      !l.includes("/faqs") &&
+      !l.includes("/sitemap")
+    );
+
+    console.log(`[Scraper] Applied Metabolics: found ${uniqueLinks.length} unique article links`);
+
+    for (const link of uniqueLinks.slice(0, limit)) {
+      try {
+        const artRes = await fetch(link, { headers: { Cookie: cookies, "User-Agent": UA } });
+        const artHtml = await artRes.text();
+
+        const titleMatch = artHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+        const contentMatch = artHtml.match(/<div[^>]*class="[^"]*entry-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+
+        const title = titleMatch ? cleanHtml(titleMatch[1]) : "";
+        const content = contentMatch ? cleanHtml(contentMatch[1]) : "";
+
+        if (title && content.length > 500) {
+          articles.push({
+            source: "applied_metabolics",
+            title,
+            content: content.substring(0, 50000),
+            url: link,
+            category: categorizeContent(title, content),
+            keywords: extractKeywords(title, content),
+            scrapedAt: new Date()
+          });
+          console.log(`[Scraper] ✓ AM: ${title.substring(0, 40)}...`);
+        }
+
+        await new Promise(r => setTimeout(r, 1000));
+      } catch (e) {
+        console.error(`[Scraper] AM article error: ${link}`, e);
+      }
+
       if (articles.length >= limit) break;
     }
   } catch (error) {
