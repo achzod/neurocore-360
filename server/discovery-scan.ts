@@ -868,7 +868,7 @@ export function convertToNarrativeReport(
   const prenom = responses.prenom || 'Client';
   const objectif = responses.objectif || 'tes objectifs';
 
-  // Generate sections from domain scores + blocages
+  // Generate FULL analysis sections - NO locks, complete content
   const sections: NarrativeSection[] = Object.entries(result.scoresByDomain).map(([domain, score]) => {
     // Find blocages for this domain
     const domainBlocages = result.blocages.filter(b =>
@@ -876,20 +876,35 @@ export function convertToNarrativeReport(
       domain.includes(b.domain.toLowerCase().split(' ')[0])
     );
 
-    // Build introduction with blocages analysis (NO recommendations)
+    // Build COMPLETE analysis content
     let introduction = '';
+    let whatIsWrong = '';
+    let personalizedAnalysis = '';
+
     if (domainBlocages.length > 0) {
+      // Full blocage analysis with mechanisms
       introduction = domainBlocages.map(b => {
-        return `**${b.title}** (${b.severity})\n\n` +
-          `*Mécanisme:* ${b.mechanism}\n\n` +
-          `*Conséquences:*\n${b.consequences.map(c => `- ${c}`).join('\n')}\n\n` +
-          `_Sources: ${b.sources.join(', ')}_`;
+        return `## ${b.title}\n\n` +
+          `**Sévérité:** ${b.severity.toUpperCase()}\n\n` +
+          `### Mécanisme physiologique\n${b.mechanism}\n\n` +
+          `### Conséquences sur ton corps\n${b.consequences.map(c => `• ${c}`).join('\n')}\n\n` +
+          `*Sources: ${b.sources.join(' | ')}*`;
       }).join('\n\n---\n\n');
+
+      whatIsWrong = `Ce domaine présente ${domainBlocages.length} dysfonctionnement(s) qui impacte(nt) directement "${objectif}".`;
+
+      // Personalized analysis based on responses
+      personalizedAnalysis = generateDomainAnalysis(domain, score, responses, domainBlocages);
+    } else if (score < 70) {
+      // Sub-optimal but no major blocage
+      introduction = generateSubOptimalAnalysis(domain, score, responses);
+      whatIsWrong = `Score de ${score}/100 - Des optimisations sont possibles dans ce domaine.`;
+      personalizedAnalysis = `Bien que ce domaine ne présente pas de blocage majeur, ton score de ${score}/100 indique une marge de progression. Les facteurs contributifs ont été identifiés dans ton questionnaire.`;
     } else {
-      // No blocage detected = good score
-      introduction = score >= 70
-        ? `Ce domaine est bien optimisé. Ton score de ${score}/100 indique de bonnes pratiques.`
-        : `Quelques points d'attention identifiés mais pas de blocage majeur.`;
+      // Good score - explain why
+      introduction = generateStrengthAnalysis(domain, score, responses);
+      whatIsWrong = '';
+      personalizedAnalysis = `Ton score de ${score}/100 dans ce domaine est un atout. Continue sur cette lancée.`;
     }
 
     return {
@@ -897,15 +912,13 @@ export function convertToNarrativeReport(
       title: DOMAIN_TITLES[domain] || domain,
       score,
       level: getLevel(score),
-      isPremium: false, // Discovery = all sections visible
+      isPremium: false,
       introduction,
-      whatIsWrong: domainBlocages.length > 0
-        ? `${domainBlocages.length} blocage(s) identifié(s) dans ce domaine.`
-        : '',
-      personalizedAnalysis: '', // Reserved for paid
-      recommendations: '🔒 Protocoles disponibles avec Anabolic Bioscan', // Teaser
+      whatIsWrong,
+      personalizedAnalysis,
+      recommendations: '', // Empty - reserved for paid offers
       supplements: [],
-      actionPlan: '🔒 Plan d\'action disponible avec Anabolic Bioscan',
+      actionPlan: '', // Empty - reserved for paid offers
       scienceDeepDive: ''
     };
   });
@@ -927,29 +940,119 @@ export function convertToNarrativeReport(
     global: result.globalScore,
     heroSummary,
     executiveNarrative: result.synthese,
-    globalDiagnosis: `Score global: ${result.globalScore}/100. ${result.blocages.length} blocages identifiés.`,
+    globalDiagnosis: generateGlobalDiagnosis(result, responses),
     sections,
     prioritySections,
     strengthSections,
-    supplementStack: [], // Reserved for paid
-    lifestyleProtocol: '🔒 Protocoles lifestyle disponibles avec Anabolic Bioscan',
+    supplementStack: [], // Empty - reserved for paid
+    lifestyleProtocol: '', // Empty - reserved for paid
     weeklyPlan: {
-      week1: '🔒 Semaine 1 disponible avec Anabolic Bioscan',
-      week2: '🔒 Semaine 2 disponible avec Anabolic Bioscan',
-      weeks3_4: '🔒 Semaines 3-4 disponibles avec Anabolic Bioscan',
-      months2_3: '🔒 Mois 2-3 disponibles avec Anabolic Bioscan'
+      week1: '',
+      week2: '',
+      weeks3_4: '',
+      months2_3: ''
     },
     conclusion: result.ctaMessage,
     auditType: "GRATUIT",
     clientName: prenom,
     generatedAt: new Date().toISOString(),
-    // Store raw discovery data for frontend access
     discoveryData: {
       scoresByDomain: result.scoresByDomain,
       blocages: result.blocages,
       ctaMessage: result.ctaMessage
     }
   };
+}
+
+// Generate domain-specific analysis based on responses
+function generateDomainAnalysis(domain: string, score: number, responses: DiscoveryResponses, blocages: BlockageAnalysis[]): string {
+  const prenom = responses.prenom || 'Tu';
+
+  switch (domain) {
+    case 'sommeil':
+      const heures = responses['heures-sommeil'];
+      const qualite = responses['qualite-sommeil'];
+      const reveilFatigue = responses['reveil-fatigue'];
+      return `${prenom}, ton sommeil est un frein majeur. Avec ${heures === '6-7' ? '6-7h' : heures === '5-6' ? '5-6h' : 'moins de 5h'} de sommeil et une qualité ${qualite}, ton corps ne récupère pas correctement. ${reveilFatigue === 'souvent' || reveilFatigue === 'toujours' ? 'Le fait que tu te réveilles fatigué confirme que tes cycles de sommeil profond sont insuffisants.' : ''} Cela impacte directement ta production d'hormones anaboliques et ta capacité à perdre du gras.`;
+
+    case 'stress':
+      const niveauStress = responses['niveau-stress'];
+      const gestionStress = responses['gestion-stress'];
+      const hasNoStressManagement = Array.isArray(gestionStress) && (gestionStress.includes('rien') || gestionStress.length === 0);
+      return `${prenom}, ton niveau de stress ${niveauStress} combiné à ${hasNoStressManagement ? 'l\'absence de techniques de gestion' : 'tes méthodes actuelles'} maintient ton corps en mode survie. Ton cortisol chroniquement élevé bloque la lipolyse et favorise le stockage abdominal - exactement ce que tu cherches à éviter.`;
+
+    case 'energie':
+      const energieMatin = responses['energie-matin'];
+      const coupFatigue = responses['coup-fatigue'];
+      const enviesSucre = responses['envies-sucre'];
+      return `${prenom}, ton énergie ${energieMatin} le matin et tes coups de fatigue ${coupFatigue === 'souvent' ? 'fréquents' : 'occasionnels'} révèlent un dysfonctionnement mitochondrial. ${enviesSucre === 'souvent' ? 'Tes envies de sucre fréquentes confirment que ton métabolisme est bloqué sur le glucose et n\'arrive plus à brûler les graisses efficacement.' : ''} C'est un facteur clé de ton plateau.`;
+
+    case 'digestion':
+      const digestQualite = responses['digestion-qualite'];
+      const ballonnements = responses['ballonnements'];
+      const transit = responses['transit'];
+      return `${prenom}, ta digestion ${digestQualite} avec ${ballonnements === 'souvent' ? 'des ballonnements fréquents' : ballonnements === 'parfois' ? 'des ballonnements occasionnels' : 'peu de ballonnements'} et un transit ${transit} impacte ton absorption des nutriments. Une digestion sous-optimale = moins de protéines assimilées = moins de muscle construit.`;
+
+    case 'training':
+      const frequence = responses['sport-frequence'];
+      const recuperation = responses['recuperation'];
+      const evolution = responses['performance-evolution'];
+      return `${prenom}, tu t'entraînes ${frequence} fois par semaine mais ta récupération est ${recuperation}. ${evolution === 'stagnation' ? 'Ta stagnation de performance n\'est pas due à un manque d\'effort mais à un environnement hormonal et métabolique défavorable.' : ''} Tes séances deviennent du stress supplémentaire au lieu de stimuli adaptatifs.`;
+
+    case 'nutrition':
+      const proteines = responses['proteines-jour'];
+      const transformes = responses['aliments-transformes'];
+      const sucres = responses['sucres-ajoutes'];
+      return `${prenom}, ton apport en protéines ${proteines === 'insuffisant' ? 'insuffisant' : proteines} combiné à une consommation ${transformes === 'souvent' ? 'élevée' : 'modérée'} d'aliments transformés et ${sucres === 'souvent' ? 'fréquente' : 'occasionnelle'} de sucres ajoutés crée un environnement inflammatoire. Cela amplifie ta résistance à l'insuline et ton stockage adipeux.`;
+
+    case 'lifestyle':
+      const ecrans = responses['temps-ecran'];
+      const soleil = responses['exposition-soleil'];
+      const assis = responses['heures-assis'];
+      return `${prenom}, ${assis === '8h-plus' ? 'tes 8h+ assis par jour' : 'ta sédentarité'} combinées à ${ecrans === 'plus-6h' ? '+6h d\'écrans' : 'ton temps d\'écran'} et ${soleil === 'rarement' ? 'un manque d\'exposition solaire' : 'une exposition solaire limitée'} perturbent tes rythmes circadiens et ta production de vitamine D. Cela impacte ton métabolisme et ta récupération.`;
+
+    case 'mindset':
+      const engagement = responses['engagement-niveau'];
+      const frustration = responses['frustration-passee'];
+      return `${prenom}, ton niveau d'engagement "${engagement}" est un atout. ${frustration ? `Ta frustration passée ("${frustration.substring(0, 100)}...") est compréhensible mais les blocages identifiés expliquent pourquoi tes efforts n'ont pas payé jusqu'ici.` : ''} Le problème n'est pas ton mindset mais tes systèmes physiologiques.`;
+
+    default:
+      return `Analyse détaillée du domaine ${domain} basée sur tes réponses.`;
+  }
+}
+
+// Generate analysis for sub-optimal domains without major blocages
+function generateSubOptimalAnalysis(domain: string, score: number, responses: DiscoveryResponses): string {
+  return `### État actuel: ${score}/100\n\nCe domaine présente des axes d'amélioration sans blocage critique identifié. Les réponses au questionnaire indiquent des habitudes qui peuvent être optimisées pour améliorer ton score et contribuer à tes objectifs.`;
+}
+
+// Generate analysis for strength domains
+function generateStrengthAnalysis(domain: string, score: number, responses: DiscoveryResponses): string {
+  return `### Point fort: ${score}/100\n\nCe domaine est bien maîtrisé. Tes habitudes actuelles dans ce domaine sont alignées avec tes objectifs. Continue sur cette lancée - c'est une fondation solide pour ta transformation.`;
+}
+
+// Generate global diagnosis
+function generateGlobalDiagnosis(result: DiscoveryAnalysisResult, responses: DiscoveryResponses): string {
+  const prenom = responses.prenom || 'Tu';
+  const objectif = responses.objectif || 'tes objectifs';
+  const critiques = result.blocages.filter(b => b.severity === 'critique').length;
+  const moderes = result.blocages.filter(b => b.severity === 'modere').length;
+  const legers = result.blocages.filter(b => b.severity === 'leger').length;
+
+  let diagnosis = `## Diagnostic Global: ${result.globalScore}/100\n\n`;
+  diagnosis += `${prenom}, ton profil révèle **${result.blocages.length} blocages** qui expliquent directement pourquoi tu stagnes malgré tes efforts pour "${objectif}".\n\n`;
+
+  if (critiques > 0) diagnosis += `• **${critiques} blocage(s) critique(s)** - Action urgente requise\n`;
+  if (moderes > 0) diagnosis += `• **${moderes} blocage(s) modéré(s)** - Impact significatif sur tes résultats\n`;
+  if (legers > 0) diagnosis += `• **${legers} blocage(s) léger(s)** - Optimisations possibles\n`;
+
+  diagnosis += `\n### Domaines prioritaires\n`;
+  const worst = Object.entries(result.scoresByDomain).sort((a, b) => a[1] - b[1]).slice(0, 3);
+  worst.forEach(([domain, score]) => {
+    diagnosis += `• **${DOMAIN_TITLES[domain]}**: ${score}/100\n`;
+  });
+
+  return diagnosis;
 }
 
 // ============================================
