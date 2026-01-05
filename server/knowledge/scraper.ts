@@ -821,6 +821,8 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
   console.log("[Scraper] Starting SendPulse newsletters...");
   const articles: ScrapedArticle[] = [];
 
+  console.log(`[Scraper] SendPulse credentials: CLIENT_ID=${SENDPULSE_CLIENT_ID ? "present" : "MISSING"}, SECRET=${SENDPULSE_SECRET ? "present" : "MISSING"}`);
+
   if (!SENDPULSE_CLIENT_ID || !SENDPULSE_SECRET) {
     console.log("[Scraper] ✗ SendPulse: no credentials configured");
     return articles;
@@ -828,6 +830,7 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
 
   try {
     // Get OAuth token
+    console.log("[Scraper] Getting SendPulse OAuth token...");
     const tokenRes = await fetch("https://api.sendpulse.com/oauth/access_token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -839,12 +842,31 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
     });
 
     const tokenData = await tokenRes.json();
+    console.log(`[Scraper] Token response: ${JSON.stringify(tokenData).substring(0, 200)}`);
+
     if (!tokenData.access_token) {
-      console.log("[Scraper] ✗ SendPulse: failed to get token");
+      console.log("[Scraper] ✗ SendPulse: failed to get token - " + JSON.stringify(tokenData));
       return articles;
     }
 
     const token = tokenData.access_token;
+    console.log("[Scraper] ✓ SendPulse token obtained");
+
+    // Try multiple endpoints to find campaigns
+    const endpoints = [
+      "https://api.sendpulse.com/campaigns",
+      "https://api.sendpulse.com/emails",
+      "https://api.sendpulse.com/addressbooks"
+    ];
+
+    for (const endpoint of endpoints) {
+      console.log(`[Scraper] Trying endpoint: ${endpoint}`);
+      const res = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      console.log(`[Scraper] ${endpoint} response: ${JSON.stringify(data).substring(0, 500)}`);
+    }
 
     // Get campaigns
     const campaignsRes = await fetch("https://api.sendpulse.com/campaigns", {
@@ -852,6 +874,8 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
     });
 
     const campaigns = await campaignsRes.json();
+    console.log(`[Scraper] Campaigns response type: ${typeof campaigns}, isArray: ${Array.isArray(campaigns)}`);
+    console.log(`[Scraper] Campaigns raw: ${JSON.stringify(campaigns).substring(0, 1000)}`);
     console.log(`[Scraper] Found ${Array.isArray(campaigns) ? campaigns.length : 0} campaigns`);
 
     if (Array.isArray(campaigns)) {
