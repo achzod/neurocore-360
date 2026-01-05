@@ -28,6 +28,7 @@ import BlogArticle from "@/pages/BlogArticle";
 import Press from "@/pages/Press";
 import DeductionCoaching from "@/pages/DeductionCoaching";
 import ApexLabs from "@/pages/ApexLabs";
+import DiscoveryScanReport from "@/pages/DiscoveryScanReport";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
@@ -69,6 +70,9 @@ function Router() {
       <Route path="/offers/audit-gratuit" component={AuditGratuit} />
       <Route path="/offers/audit-premium" component={AuditPremium} />
       <Route path="/offers/pro-panel" component={ProPanel} />
+
+      {/* Ultrahuman-style Reports */}
+      <Route path="/scan/:auditId" component={DiscoveryScanReport} />
 
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
