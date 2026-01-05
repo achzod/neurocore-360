@@ -955,29 +955,97 @@ RAPPELS FORMAT:
 
 // Get knowledge context for a specific domain
 async function getKnowledgeContextForDomain(domain: string): Promise<string> {
+  // Complete mapping for all 15 NEUROCORE domains + extras
   const domainKeywords: Record<string, string[]> = {
-    sommeil: ['sleep', 'circadian', 'melatonin', 'GH', 'adenosine', 'sommeil'],
-    stress: ['cortisol', 'HPA', 'stress', 'anxiety', 'adrenal'],
-    energie: ['mitochondria', 'ATP', 'metabolism', 'thyroid', 'energy', 'fatigue'],
-    digestion: ['gut', 'microbiome', 'digestion', 'SIBO', 'leaky gut', 'intestin'],
-    training: ['hypertrophy', 'recovery', 'muscle', 'protein synthesis', 'periodization'],
-    nutrition: ['protein', 'insulin', 'macros', 'nutrition', 'calorie'],
-    lifestyle: ['circadian', 'vitamin D', 'NEAT', 'light exposure', 'caffeine'],
-    mindset: ['dopamine', 'motivation', 'serotonin', 'neurotransmitter', 'adherence']
+    // Profil de Base
+    'profil-base': ['metabolism', 'body composition', 'BMR', 'TDEE', 'anthropometry'],
+    'composition-corporelle': ['body fat', 'lean mass', 'visceral fat', 'BMI', 'dexa', 'body composition'],
+
+    // Energie & Metabolisme
+    'metabolisme-energie': ['mitochondria', 'ATP', 'metabolism', 'thyroid', 'energy', 'fatigue', 'insulin', 'glucose'],
+    energie: ['mitochondria', 'ATP', 'metabolism', 'thyroid', 'energy', 'fatigue', 'insulin sensitivity'],
+
+    // Nutrition
+    'nutrition-tracking': ['protein', 'macros', 'nutrition', 'calorie', 'meal timing', 'carb', 'leucine', 'mTOR'],
+    nutrition: ['protein', 'insulin', 'macros', 'nutrition', 'calorie', 'meal frequency', 'fiber', 'micronutrients'],
+
+    // Digestion
+    'digestion-microbiome': ['gut', 'microbiome', 'digestion', 'SIBO', 'leaky gut', 'probiotics', 'zonulin', 'IBS'],
+    digestion: ['gut', 'microbiome', 'digestion', 'SIBO', 'leaky gut', 'probiotics', 'intestinal permeability'],
+
+    // Training & Performance
+    'activite-performance': ['hypertrophy', 'recovery', 'muscle', 'protein synthesis', 'periodization', 'progressive overload'],
+    training: ['hypertrophy', 'strength', 'muscle', 'protein synthesis', 'periodization', 'training frequency', 'volume'],
+
+    // Sommeil & Recuperation
+    'sommeil-recuperation': ['sleep', 'circadian', 'melatonin', 'GH', 'adenosine', 'deep sleep', 'REM', 'sleep architecture'],
+    sommeil: ['sleep', 'circadian', 'melatonin', 'GH', 'adenosine', 'sommeil', 'insomnia', 'sleep quality'],
+
+    // HRV & Cardiaque
+    'hrv-cardiaque': ['HRV', 'heart rate variability', 'parasympathetic', 'vagal tone', 'autonomic', 'resting HR'],
+
+    // Cardio & Endurance
+    'cardio-endurance': ['vo2max', 'zone 2', 'aerobic', 'lactate threshold', 'cardio', 'endurance', 'LISS'],
+
+    // Analyses & Biomarqueurs
+    'analyses-biomarqueurs': ['bloodwork', 'biomarkers', 'testosterone', 'estradiol', 'thyroid', 'ferritin', 'vitamin D', 'B12', 'ApoB', 'LDL', 'HDL', 'triglycerides', 'HbA1c', 'insulin', 'CRP', 'homocysteine'],
+
+    // Hormones & Stress
+    'hormones-stress': ['testosterone', 'cortisol', 'HPA axis', 'DHEA', 'estrogen', 'progesterone', 'thyroid', 'T3', 'T4', 'TSH', 'prolactin', 'SHBG'],
+    stress: ['cortisol', 'HPA', 'stress', 'anxiety', 'adrenal fatigue', 'burnout', 'catecholamines'],
+    hormones: ['testosterone', 'estradiol', 'cortisol', 'thyroid', 'insulin', 'growth hormone', 'IGF-1', 'TRT'],
+
+    // Lifestyle
+    'lifestyle-substances': ['caffeine', 'alcohol', 'smoking', 'circadian', 'vitamin D', 'light exposure', 'NEAT', 'sedentary'],
+    lifestyle: ['circadian', 'vitamin D', 'NEAT', 'light exposure', 'caffeine', 'alcohol', 'screen time'],
+
+    // Biomecanique & Mobilite
+    'biomecanique-mobilite': ['mobility', 'flexibility', 'posture', 'joint', 'fascia', 'movement pattern', 'ROM'],
+
+    // Psychologie & Mental
+    'psychologie-mental': ['dopamine', 'serotonin', 'motivation', 'adherence', 'habits', 'psychology', 'behavior change'],
+    mindset: ['dopamine', 'motivation', 'serotonin', 'neurotransmitter', 'adherence', 'discipline', 'habits'],
+
+    // Neurotransmetteurs
+    neurotransmetteurs: ['dopamine', 'serotonin', 'GABA', 'acetylcholine', 'norepinephrine', 'neurotransmitter', 'brain chemistry'],
+
+    // Supplements (bonus)
+    supplements: ['creatine', 'vitamin D', 'magnesium', 'omega-3', 'zinc', 'ashwagandha', 'protein powder', 'supplements']
   };
 
-  const keywords = domainKeywords[domain] || [domain];
+  // Get keywords for this domain (try exact match, then partial match)
+  let keywords = domainKeywords[domain];
+  if (!keywords) {
+    // Try to find partial match
+    const domainLower = domain.toLowerCase();
+    for (const [key, kws] of Object.entries(domainKeywords)) {
+      if (domainLower.includes(key) || key.includes(domainLower)) {
+        keywords = kws;
+        break;
+      }
+    }
+  }
+  keywords = keywords || [domain];
 
   try {
-    const articles = await searchArticles(keywords.slice(0, 3), 3);
+    // Search with more keywords and get more articles
+    const articles = await searchArticles(keywords.slice(0, 5), 6);
 
     if (articles.length === 0) {
+      // Try full-text search as fallback
+      const ftArticles = await searchFullText(domain, 4);
+      if (ftArticles.length > 0) {
+        return ftArticles.map(a =>
+          `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
+        ).join('\n\n---\n\n');
+      }
       return '';
     }
 
+    // Return more content per article (800 chars instead of 400)
     return articles.map(a =>
-      `[${a.source}] ${a.title}: ${a.content.substring(0, 400)}...`
-    ).join('\n\n');
+      `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
+    ).join('\n\n---\n\n');
   } catch (error) {
     console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
     return '';
@@ -986,18 +1054,76 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
 
 // Extract relevant responses for a specific domain
 function extractDomainResponses(domain: string, responses: DiscoveryResponses): string {
+  // Complete mapping for all NEUROCORE domains
   const domainKeys: Record<string, string[]> = {
-    sommeil: ['heures-sommeil', 'qualite-sommeil', 'reveil-fatigue', 'endormissement', 'reveils-nocturnes', 'heure-coucher', 'heure-reveil', 'sieste'],
-    stress: ['niveau-stress', 'anxiete', 'concentration', 'irritabilite', 'gestion-stress', 'sources-stress'],
+    // Profil de Base
+    'profil-base': ['prenom', 'sexe', 'age', 'taille', 'poids', 'objectif-principal', 'objectifs-specifiques'],
+
+    // Composition Corporelle
+    'composition-corporelle': ['tour-taille', 'tour-hanches', 'body-fat-estime', 'evolution-poids', 'silhouette-actuelle'],
+
+    // Metabolisme & Energie
+    'metabolisme-energie': ['energie-matin', 'energie-aprem', 'coup-fatigue', 'envies-sucre', 'thermogenese', 'tolerance-froid', 'transpiration'],
     energie: ['energie-matin', 'energie-aprem', 'coup-fatigue', 'envies-sucre', 'motivation', 'thermogenese'],
-    digestion: ['digestion-qualite', 'ballonnements', 'transit', 'reflux', 'intolerance', 'energie-post-repas'],
-    training: ['sport-frequence', 'type-sport', 'intensite', 'recuperation', 'courbatures', 'performance-evolution', 'anciennete-training'],
+
+    // Nutrition & Tracking
+    'nutrition-tracking': ['nb-repas', 'petit-dejeuner', 'proteines-jour', 'eau-jour', 'regime-alimentaire', 'aliments-transformes', 'sucres-ajoutes', 'tracking-calories'],
     nutrition: ['nb-repas', 'petit-dejeuner', 'proteines-jour', 'eau-jour', 'regime-alimentaire', 'aliments-transformes', 'sucres-ajoutes', 'alcool'],
+
+    // Digestion & Microbiome
+    'digestion-microbiome': ['digestion-qualite', 'ballonnements', 'transit', 'reflux', 'intolerance', 'energie-post-repas', 'selles-consistance', 'probiotiques'],
+    digestion: ['digestion-qualite', 'ballonnements', 'transit', 'reflux', 'intolerance', 'energie-post-repas'],
+
+    // Activite & Performance
+    'activite-performance': ['sport-frequence', 'type-sport', 'intensite', 'recuperation', 'courbatures', 'performance-evolution', 'anciennete-training', 'objectif-training'],
+    training: ['sport-frequence', 'type-sport', 'intensite', 'recuperation', 'courbatures', 'performance-evolution', 'anciennete-training'],
+
+    // Sommeil & Recuperation
+    'sommeil-recuperation': ['heures-sommeil', 'qualite-sommeil', 'reveil-fatigue', 'endormissement', 'reveils-nocturnes', 'heure-coucher', 'heure-reveil', 'sieste', 'reves', 'apnee'],
+    sommeil: ['heures-sommeil', 'qualite-sommeil', 'reveil-fatigue', 'endormissement', 'reveils-nocturnes', 'heure-coucher', 'heure-reveil', 'sieste'],
+
+    // HRV & Cardiaque
+    'hrv-cardiaque': ['hrv-mesure', 'hrv-moyenne', 'fc-repos', 'variabilite-fc', 'wearable-utilise'],
+
+    // Cardio & Endurance
+    'cardio-endurance': ['cardio-frequence', 'type-cardio', 'zone-2-temps', 'essoufflement', 'vo2max-estime', 'fcmax-connue'],
+
+    // Analyses & Biomarqueurs
+    'analyses-biomarqueurs': ['bilan-sanguin-recent', 'resultats-anormaux', 'testosterone-niveau', 'thyroide-tsh', 'ferritine', 'vitamine-d', 'hemoglobine'],
+
+    // Hormones & Stress
+    'hormones-stress': ['niveau-stress', 'anxiete', 'cortisol-signes', 'libido', 'testosterone-symptomes', 'thyroide-symptomes', 'cycle-menstruel'],
+    stress: ['niveau-stress', 'anxiete', 'concentration', 'irritabilite', 'gestion-stress', 'sources-stress'],
+    hormones: ['libido', 'testosterone-symptomes', 'thyroide-symptomes', 'cortisol-signes', 'cycle-menstruel'],
+
+    // Lifestyle & Substances
+    'lifestyle-substances': ['cafe-jour', 'tabac', 'alcool', 'cannabis', 'supplements-actuels', 'medicaments', 'temps-ecran', 'exposition-soleil', 'profession', 'heures-assis'],
     lifestyle: ['cafe-jour', 'tabac', 'temps-ecran', 'exposition-soleil', 'profession', 'heures-assis'],
-    mindset: ['engagement-niveau', 'frustration-passee', 'si-rien-change', 'ideal-6mois', 'plus-grosse-peur', 'motivation-principale', 'consignes-strictes']
+
+    // Biomecanique & Mobilite
+    'biomecanique-mobilite': ['douleurs-articulaires', 'posture-problemes', 'mobilite-limitation', 'blessures-passees', 'mal-dos', 'stretching-frequence'],
+
+    // Psychologie & Mental
+    'psychologie-mental': ['engagement-niveau', 'frustration-passee', 'si-rien-change', 'ideal-6mois', 'plus-grosse-peur', 'motivation-principale', 'consignes-strictes', 'discipline-niveau'],
+    mindset: ['engagement-niveau', 'frustration-passee', 'si-rien-change', 'ideal-6mois', 'plus-grosse-peur', 'motivation-principale', 'consignes-strictes'],
+
+    // Neurotransmetteurs
+    neurotransmetteurs: ['humeur-generale', 'anxiete', 'concentration', 'motivation', 'plaisir-activites', 'impulsivite', 'addiction-tendances']
   };
 
-  const keys = domainKeys[domain] || [];
+  // Get keys for this domain (try exact match, then partial match)
+  let keys = domainKeys[domain];
+  if (!keys) {
+    const domainLower = domain.toLowerCase();
+    for (const [key, vals] of Object.entries(domainKeys)) {
+      if (domainLower.includes(key) || key.includes(domainLower)) {
+        keys = vals;
+        break;
+      }
+    }
+  }
+  keys = keys || [];
+
   const relevantResponses: string[] = [];
 
   for (const key of keys) {
