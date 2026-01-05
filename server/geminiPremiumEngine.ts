@@ -13,6 +13,142 @@ import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
+import { searchArticles } from "./knowledge/storage";
+
+// =============================================================================
+// PREMIUM CONTENT VALIDATION - GARDE-FOUS
+// =============================================================================
+
+interface ContentValidation {
+  minChars: number;
+  minLines: number;
+  maxRetries: number;
+}
+
+// Minimum content requirements for PREMIUM tier (Anabolic Bioscan)
+const PREMIUM_VALIDATION: Record<string, ContentValidation> = {
+  analysis: { minChars: 4000, minLines: 50, maxRetries: 3 },
+  protocol: { minChars: 6000, minLines: 80, maxRetries: 3 },
+  summary: { minChars: 3000, minLines: 40, maxRetries: 3 }
+};
+
+// Minimum content requirements for ELITE tier (Ultimate Scan) - higher standards
+const ELITE_VALIDATION: Record<string, ContentValidation> = {
+  analysis: { minChars: 5000, minLines: 60, maxRetries: 3 },
+  protocol: { minChars: 8000, minLines: 100, maxRetries: 3 },
+  summary: { minChars: 4000, minLines: 50, maxRetries: 3 },
+  photo: { minChars: 6000, minLines: 70, maxRetries: 3 }
+};
+
+// Categorize sections for validation
+const SECTION_CATEGORIES: Record<string, 'analysis' | 'protocol' | 'summary' | 'photo'> = {
+  "Executive Summary": 'summary',
+  "Analyse visuelle et posturale complete": 'photo',
+  "Analyse biomecanique et sangle profonde": 'photo',
+  "Analyse entrainement et periodisation": 'analysis',
+  "Analyse systeme cardiovasculaire": 'analysis',
+  "Analyse metabolisme et nutrition": 'analysis',
+  "Analyse sommeil et recuperation": 'analysis',
+  "Analyse digestion et microbiote": 'analysis',
+  "Analyse axes hormonaux": 'analysis',
+  "Protocole Matin Anti-Cortisol": 'protocol',
+  "Protocole Soir Verrouillage Sommeil": 'protocol',
+  "Protocole Digestion 14 Jours": 'protocol',
+  "Protocole Bureau Anti-Sedentarite": 'protocol',
+  "Protocole Entrainement Personnalise": 'protocol',
+  "Plan Semaine par Semaine 30-60-90": 'protocol',
+  "KPI et Tableau de Bord": 'summary',
+  "Stack Supplements Optimise": 'analysis',
+  "Synthese et Prochaines Etapes": 'summary'
+};
+
+function getValidationForSection(section: string, tier: AuditTier): ContentValidation {
+  const category = SECTION_CATEGORIES[section] || 'analysis';
+  const validations = tier === 'ELITE' ? ELITE_VALIDATION : PREMIUM_VALIDATION;
+  return validations[category] || validations.analysis;
+}
+
+// Knowledge base keywords mapping for each section
+const SECTION_KEYWORDS: Record<string, string[]> = {
+  "Executive Summary": ['metabolism', 'hormones', 'energy', 'optimization', 'body composition'],
+  "Analyse visuelle et posturale complete": ['posture', 'body fat distribution', 'endocrine signature', 'adiposity', 'visceral fat', 'cortisol', 'insulin resistance'],
+  "Analyse biomecanique et sangle profonde": ['psoas', 'diaphragm', 'core stability', 'glutes activation', 'hip flexors', 'thoracic mobility', 'pelvic tilt'],
+  "Analyse entrainement et periodisation": ['hypertrophy', 'periodization', 'progressive overload', 'recovery', 'training volume', 'muscle protein synthesis', 'mTOR'],
+  "Analyse systeme cardiovasculaire": ['vo2max', 'zone 2', 'mitochondria', 'aerobic capacity', 'heart rate variability', 'lactate threshold', 'cardio'],
+  "Analyse metabolisme et nutrition": ['insulin', 'metabolism', 'TDEE', 'protein', 'macros', 'meal timing', 'metabolic flexibility', 'glucose'],
+  "Analyse sommeil et recuperation": ['sleep', 'circadian', 'melatonin', 'adenosine', 'GH', 'cortisol', 'REM', 'deep sleep'],
+  "Analyse digestion et microbiote": ['gut', 'microbiome', 'SIBO', 'leaky gut', 'probiotics', 'digestion', 'zonulin', 'inflammation'],
+  "Analyse axes hormonaux": ['testosterone', 'cortisol', 'thyroid', 'insulin', 'estrogen', 'HPA axis', 'hormones', 'pregnenolone steal'],
+  "Protocole Matin Anti-Cortisol": ['cortisol awakening response', 'circadian', 'morning routine', 'light exposure', 'coffee timing', 'adenosine'],
+  "Protocole Soir Verrouillage Sommeil": ['sleep hygiene', 'melatonin', 'blue light', 'magnesium', 'sleep architecture', 'temperature'],
+  "Protocole Digestion 14 Jours": ['elimination diet', 'gut healing', 'glutamine', 'probiotics', 'FODMAPs', 'food intolerance'],
+  "Protocole Bureau Anti-Sedentarite": ['NEAT', 'hip flexors', 'posture correction', 'sedentary', 'mobility', 'glute activation'],
+  "Protocole Entrainement Personnalise": ['training program', 'periodization', 'progressive overload', 'tempo', 'RPE', 'deload'],
+  "Plan Semaine par Semaine 30-60-90": ['habit formation', 'progressive implementation', 'behavior change', 'tracking', 'milestones'],
+  "KPI et Tableau de Bord": ['metrics', 'tracking', 'body composition', 'performance indicators', 'progress'],
+  "Stack Supplements Optimise": ['supplements', 'creatine', 'vitamin D', 'magnesium', 'omega-3', 'ashwagandha', 'dosing'],
+  "Synthese et Prochaines Etapes": ['action plan', 'priorities', 'implementation', 'lifestyle optimization']
+};
+
+// Get knowledge base context for a section
+async function getKnowledgeContextForSection(section: string): Promise<string> {
+  const keywords = SECTION_KEYWORDS[section] || [];
+  if (keywords.length === 0) return '';
+
+  try {
+    const articles = await searchArticles(keywords.slice(0, 5), 6, [
+      'huberman', 'peter_attia', 'examine', 'applied_metabolics', 'chris_masterjohn', 'rp', 'sbs'
+    ]);
+
+    if (articles.length === 0) return '';
+
+    // Build comprehensive context with more content
+    const context = articles.map((a: { source: string; title: string; content: string }) =>
+      `[${a.source.toUpperCase()}] ${a.title}\nContenu cle: ${a.content.substring(0, 800)}...`
+    ).join('\n\n---\n\n');
+
+    return context;
+  } catch (error) {
+    console.error(`[Premium] Knowledge search error for ${section}:`, error);
+    return '';
+  }
+}
+
+// Clean AI markers and formatting issues from generated content
+function cleanPremiumContent(content: string): string {
+  return content
+    // Remove meta phrases
+    .replace(/^(En tant qu['']expert[^.]*\.?\s*)/gi, '')
+    .replace(/^(Cette analyse (montre|revele|demontre)[^.]*\.?\s*)/gi, '')
+    .replace(/^(Je vais (analyser|examiner|etudier)[^.]*\.?\s*)/gi, '')
+    .replace(/^(Voici (mon analyse|l['']analyse|une analyse)[^.]*\.?\s*)/gi, '')
+    .replace(/^(Analyse de la section[^.]*\.?\s*)/gi, '')
+    .replace(/^(Permettez-moi|Laisse-moi|Laissez-moi)[^.]*\.?\s*/gi, '')
+    // Remove em dashes and special characters
+    .replace(/—/g, ':')
+    .replace(/–/g, '-')
+    .replace(/…/g, '...')
+    // Remove markdown
+    .replace(/\*\*/g, '')
+    .replace(/##\s*/g, '')
+    .replace(/__/g, '')
+    .replace(/\*/g, '')
+    // Remove bullet-style lists (but keep numbered protocols)
+    .replace(/^\s*[-•]\s+/gm, '')
+    // Clean up emojis
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[✓✗✔✘×]/g, '')
+    // Remove ASCII art bars
+    .replace(/[■□▪▫●○]/g, '')
+    .replace(/={4,}/g, '')
+    .replace(/-{4,}/g, '')
+    .replace(/\*{4,}/g, '')
+    .trim();
+}
 
 // 
 // SYSTÈME DE CACHE POUR SAUVEGARDE PROGRESSIVE
@@ -1305,6 +1441,104 @@ async function callGemini(prompt: string): Promise<string> {
   return "";
 }
 
+// =============================================================================
+// PREMIUM SECTION GENERATION WITH VALIDATION & KNOWLEDGE BASE
+// =============================================================================
+
+async function generateValidatedPremiumSection(
+  section: string,
+  tier: AuditTier,
+  fullDataStr: string,
+  clientName: string
+): Promise<string> {
+  const validation = getValidationForSection(section, tier);
+  const specificInstructions = getSectionInstructionsForTier(section, tier);
+
+  // Get knowledge base context for this section
+  const knowledgeContext = await getKnowledgeContextForSection(section);
+  const hasKnowledge = knowledgeContext.length > 100;
+
+  if (hasKnowledge) {
+    console.log(`[Premium] Section "${section}": Knowledge base loaded (${knowledgeContext.length} chars from 6 articles)`);
+  }
+
+  const buildPrompt = (attempt: number) => {
+    const retryWarning = attempt > 1
+      ? `\n\nATTENTION CRITIQUE: Ta reponse precedente etait BEAUCOUP TROP COURTE. Tu DOIS ecrire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres). Developpe CHAQUE mecanisme en detail. Donne des exemples concrets. Explique les cascades physiologiques. C'est un rapport PREMIUM que le client a PAYE.\n`
+      : '';
+
+    const knowledgeInsert = hasKnowledge
+      ? `\n\nDONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
+${knowledgeContext}
+
+INSTRUCTION CRITIQUE: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Cite les mecanismes, les protocoles, les chiffres mentionnes. Fais reference aux sources (Huberman, Attia, Examine, Applied Metabolics, etc.) de maniere naturelle. Ne fais PAS une analyse generique.\n`
+      : '';
+
+    return `${PROMPT_SECTION
+      .replace('{section}', section)
+      .replace('{section_specific_instructions}', specificInstructions)
+      .replace('{data}', fullDataStr)}
+
+${knowledgeInsert}
+${retryWarning}
+
+RAPPEL LONGUEUR OBLIGATOIRE (RAPPORT PREMIUM PAYANT):
+- Cette section DOIT faire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres)
+- Developpe en profondeur, pas de listes telegraphiques
+- Explique les MECANISMES BIOLOGIQUES derriere chaque point
+- Donne des EXEMPLES CONCRETS personnalises pour ${clientName}
+- Pour les protocoles: minute par minute, variantes, erreurs a eviter
+- Integre les references scientifiques de la knowledge base ci-dessus`;
+  };
+
+  // Attempt generation with validation and retries
+  for (let attempt = 1; attempt <= validation.maxRetries; attempt++) {
+    try {
+      const prompt = buildPrompt(attempt);
+      const rawContent = await callGemini(prompt);
+
+      if (!rawContent) {
+        console.error(`[Premium] Section "${section}" attempt ${attempt}: Empty response from Gemini`);
+        continue;
+      }
+
+      // Clean the content
+      const cleanedContent = cleanPremiumContent(rawContent);
+
+      // Count meaningful lines and characters
+      const lines = cleanedContent.split(/\n+/).filter(l => l.trim().length > 30);
+      const lineCount = lines.length;
+      const charCount = cleanedContent.length;
+
+      console.log(`[Premium] Section "${section}" attempt ${attempt}: ${charCount} chars, ${lineCount} lines (min: ${validation.minChars}/${validation.minLines})`);
+
+      // Validate content length
+      if (charCount >= validation.minChars && lineCount >= validation.minLines) {
+        console.log(`[Premium] ✓ Section "${section}" VALIDATED`);
+        return cleanedContent;
+      }
+
+      // If this is the last attempt, use what we have but log a warning
+      if (attempt === validation.maxRetries) {
+        console.warn(`[Premium] ⚠️ Section "${section}" still short after ${validation.maxRetries} attempts (${charCount}/${validation.minChars} chars, ${lineCount}/${validation.minLines} lines). Using anyway.`);
+        return cleanedContent;
+      }
+
+      console.log(`[Premium] ✗ Section "${section}" TOO SHORT. Retrying with stronger prompt...`);
+      // Add a small delay before retry
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+    } catch (error) {
+      console.error(`[Premium] Section "${section}" error (attempt ${attempt}):`, error);
+      if (attempt === validation.maxRetries) {
+        return '';
+      }
+    }
+  }
+
+  return '';
+}
+
 export async function generateAuditTxt(
   clientData: ClientData,
   photoAnalysis?: PhotoAnalysis | null,
@@ -1363,14 +1597,23 @@ export async function generateAuditTxt(
 
   const sectionsToGenerate = getSectionsForTier(tier);
 
-  // Génération en PARALLÈLE pour la vitesse
+  console.log(`\n[Premium] ====== GENERATION RAPPORT ${tier} ======`);
+  console.log(`[Premium] Client: ${fullName}`);
+  console.log(`[Premium] Sections a generer: ${sectionsToGenerate.length}`);
+  console.log(`[Premium] Sections du cache: ${sectionsFromCache}`);
+  console.log(`[Premium] Knowledge base: ACTIVE`);
+  console.log(`[Premium] Garde-fous: ACTIFS (min ${tier === 'ELITE' ? '5000-8000' : '4000-6000'} chars/section)\n`);
+
+  // Génération en PARALLÈLE avec validation et knowledge base
   const sectionPromises = sectionsToGenerate.map(async (section, i) => {
     if (cachedSections[section]) {
+      console.log(`[Premium] Section "${section}": FROM CACHE`);
       return { section, text: cachedSections[section], fromCache: true };
     }
 
-    // ✅ Stack supplements : on la génère depuis la bibliothèque (pas via l'IA)
+    // Stack supplements: generate from library (not via AI)
     if (section === "Stack Supplements Optimise" && tier !== "GRATUIT") {
+      console.log(`[Premium] Section "${section}": GENERATING FROM SUPPLEMENT ENGINE`);
       const scores = calculateScoresFromResponses(clientData as any);
       const generated = generateSupplementsSectionText({
         responses: clientData as any,
@@ -1381,31 +1624,26 @@ export async function generateAuditTxt(
       saveToCache(auditId, cacheData);
       return { section, text: generated, fromCache: false };
     }
-    
-    const specificInstructions = getSectionInstructionsForTier(section, tier);
 
-    const prompt = PROMPT_SECTION
-      .replace('{section}', section)
-      .replace('{section_specific_instructions}', specificInstructions)
-      .replace('{data}', fullDataStr);
-
-    const sectionText = await callGemini(prompt);
+    // Use the new validated generation with knowledge base
+    console.log(`[Premium] Section "${section}": GENERATING WITH VALIDATION...`);
+    const sectionText = await generateValidatedPremiumSection(
+      section,
+      tier,
+      fullDataStr,
+      fullName
+    );
 
     if (!sectionText) {
+      console.error(`[Premium] Section "${section}": FAILED - No content generated`);
       return { section, text: "", fromCache: false };
     }
 
-    const cleanedText = sectionText
-      .replace(/\*\*/g, '')
-      .replace(/##/g, '')
-      .replace(/__/g, '')
-      .replace(/\*/g, '');
-
-    // Sauvegarde immédiate dans le cache
-    cacheData.sections[section] = cleanedText;
+    // Save to cache immediately
+    cacheData.sections[section] = sectionText;
     saveToCache(auditId, cacheData);
 
-    return { section, text: cleanedText, fromCache: false };
+    return { section, text: sectionText, fromCache: false };
   });
 
   const results = await Promise.all(sectionPromises);
