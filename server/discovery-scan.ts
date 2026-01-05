@@ -708,11 +708,34 @@ Rédige 3 paragraphes denses (prose uniquement, pas de listes, pas de markdown, 
     });
 
     const textContent = response.content.find(c => c.type === 'text');
-    return textContent?.text || '';
+    const rawText = textContent?.text || '';
+
+    // Post-process: convert markdown to clean HTML and remove artifacts
+    return cleanMarkdownToHTML(rawText);
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
     return `Analyse détectée: ${blocages.length} blocages identifiés affectant ton objectif "${responses.objectif}".`;
   }
+}
+
+// Convert markdown artifacts to clean HTML
+function cleanMarkdownToHTML(text: string): string {
+  return text
+    // Remove markdown headers (## Title -> Title)
+    .replace(/^#{1,4}\s+(.+)$/gm, '$1')
+    // Convert **bold** to <strong>
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    // Convert *italic* to <em>
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    // Remove bullet points at start of lines
+    .replace(/^[-•]\s+/gm, '')
+    // Remove numbered lists
+    .replace(/^\d+\.\s+/gm, '')
+    // Clean up multiple newlines
+    .replace(/\n{3,}/g, '\n\n')
+    // Remove any remaining markdown artifacts
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
 }
 
 // ============================================
