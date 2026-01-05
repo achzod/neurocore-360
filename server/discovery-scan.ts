@@ -970,16 +970,19 @@ export function convertToNarrativeReport(
         // Add personalized context
         content += generateDomainHTML(domain, score, responses);
       } else if (score < 70) {
-        // Sub-optimal without major blocage
-        content = `<p>Score: <strong>${score}/100</strong></p>`;
-        content += `<p>Ce domaine présente des axes d'amélioration sans blocage critique identifié. Les réponses au questionnaire indiquent des habitudes qui peuvent être optimisées.</p>`;
+        // Sub-optimal without major blocage - FULL DETAILED ANALYSIS
+        const severityLabel = score < 40 ? 'CRITIQUE' : score < 50 ? 'INSUFFISANT' : 'A OPTIMISER';
+        const severityColor = score < 40 ? '#ef4444' : score < 50 ? '#f59e0b' : '#FCDD00';
+        content = `<p><strong>Analyse detaillee</strong> <span style="color: ${severityColor};">[${severityLabel}]</span></p>`;
         content += generateDomainHTML(domain, score, responses);
-        chips = ["À Optimiser"];
+        chips = score < 50 ? ["Priorite", "Impact Direct"] : ["A Optimiser", "Potentiel"];
       } else {
-        // Good score
-        content = `<p>Score: <strong>${score}/100</strong></p>`;
-        content += `<p>Ce domaine est bien maîtrisé. Tes habitudes actuelles sont alignées avec tes objectifs. C'est une fondation solide pour ta transformation.</p>`;
-        chips = ["Point Fort"];
+        // Good score - STILL PROVIDE DETAILED ANALYSIS
+        const severityLabel = score >= 80 ? 'POINT FORT' : 'CORRECT';
+        const severityColor = score >= 80 ? '#22c55e' : '#3b82f6';
+        content = `<p><strong>Analyse detaillee</strong> <span style="color: ${severityColor};">[${severityLabel}]</span></p>`;
+        content += generateDomainHTML(domain, score, responses);
+        chips = score >= 80 ? ["Point Fort", "Base Solide"] : ["Correct", "Optimisable"];
       }
 
       sections.push({
@@ -1172,56 +1175,191 @@ export function convertToNarrativeReport(
   };
 }
 
-// Generate domain-specific HTML based on responses
+// Generate DETAILED domain-specific HTML based on responses - RICH CONTENT for each section
 function generateDomainHTML(domain: string, score: number, responses: DiscoveryResponses): string {
   const prenom = responses.prenom || 'Tu';
+  const objectif = responses.objectif || 'tes objectifs';
+  const scoreLabel = score >= 80 ? 'excellent' : score >= 60 ? 'correct mais sous-optimal' : score >= 40 ? 'insuffisant' : 'critique';
 
   switch (domain) {
-    case 'sommeil':
+    case 'sommeil': {
       const heures = responses['heures-sommeil'];
       const qualite = responses['qualite-sommeil'];
       const reveilFatigue = responses['reveil-fatigue'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, avec ${heures === '6-7' ? '6-7h' : heures === '5-6' ? '5-6h' : 'moins de 5h'} de sommeil et une qualité ${qualite}, ton corps ne récupère pas correctement. ${reveilFatigue === 'souvent' || reveilFatigue === 'toujours' ? 'Le fait que tu te réveilles fatigué confirme que tes cycles de sommeil profond sont insuffisants.' : ''} Cela impacte directement ta production d'hormones anaboliques et ta capacité à perdre du gras.</p>`;
+      const endormissement = responses['endormissement'];
+      const reveils = responses['reveils-nocturnes'];
+      const heureCoucher = responses['heure-coucher'];
 
-    case 'stress':
+      return `
+<p class="mt-6"><strong>Analyse de ton sommeil</strong></p>
+
+<p>${prenom}, ton score sommeil de ${score}/100 est ${scoreLabel}. Avec ${heures === '7-8' ? '7-8h' : heures === '6-7' ? '6-7h' : heures === '5-6' ? '5-6h' : 'moins de 5h'} de sommeil par nuit et une qualite ${qualite}, ton architecture de sommeil merite une attention particuliere.</p>
+
+<p>Le sommeil n'est pas qu'une question de duree. C'est pendant les phases de sommeil profond (stades 3-4 NREM) que ton corps secretee 70% de son hormone de croissance quotidienne. Cette GH est essentielle pour la reparation musculaire, la lipolyse nocturne, et la consolidation de la memoire. ${reveilFatigue === 'souvent' || reveilFatigue === 'toujours' ? 'Le fait que tu te reveilles fatigue suggere que tu n\'atteins pas suffisamment ces phases profondes, malgre le temps passe au lit.' : 'Tes reveils semblent corrects, ce qui est un bon signe pour la qualite de tes cycles.'}</p>
+
+<p>${endormissement === 'souvent' || endormissement === 'toujours' ? 'Tes difficultes d\'endormissement peuvent indiquer un exces de cortisol le soir, une exposition tardive a la lumiere bleue, ou un systeme nerveux sympathique hyperactif. L\'adenosine, qui cree la pression de sommeil, pourrait etre bloquee par une consommation de cafeine trop tardive.' : 'Ton endormissement semble fluide, ce qui indique une bonne pression de sommeil et un rythme circadien relativement cale.'}</p>
+
+<p>${reveils === 'chaque-nuit' || reveils === 'souvent' ? 'Tes reveils nocturnes frequents fragmentent tes cycles de 90 minutes. Chaque reveil te ramene en sommeil leger, t\'empechant d\'accumuler le temps necessaire en sommeil profond et paradoxal (REM). Cela peut etre lie a des variations glycemiques nocturnes, de l\'apnee du sommeil, ou un desequilibre cortisol/melatonine.' : 'L\'absence de reveils nocturnes frequents est un atout majeur pour ta recuperation.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton deficit de sommeil compromet directement ta capacite a perdre du gras et construire du muscle. La resistance a l\'insuline induite par le manque de sommeil favorise le stockage abdominal, tandis que la GH effondree limite ta synthese proteique de 18-25%.' : 'Ton sommeil est une base solide, mais des optimisations circadiennes pourraient encore ameliorer ta production de GH et ta sensibilite a l\'insuline.'}</p>`;
+    }
+
+    case 'stress': {
       const niveauStress = responses['niveau-stress'];
+      const anxiete = responses['anxiete'];
+      const concentration = responses['concentration'];
+      const irritabilite = responses['irritabilite'];
       const gestionStress = responses['gestion-stress'];
       const hasNoStressManagement = Array.isArray(gestionStress) && (gestionStress.includes('rien') || gestionStress.length === 0);
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton niveau de stress ${niveauStress} combiné à ${hasNoStressManagement ? 'l\'absence de techniques de gestion' : 'tes méthodes actuelles'} maintient ton corps en mode survie. Ton cortisol chroniquement élevé bloque la lipolyse et favorise le stockage abdominal.</p>`;
 
-    case 'energie':
+      return `
+<p class="mt-6"><strong>Analyse de ton stress</strong></p>
+
+<p>${prenom}, ton score stress de ${score}/100 revele un axe HPA (hypothalamo-hypophyso-surrenalien) ${score < 50 ? 'en hyperactivation chronique' : score < 70 ? 'sous tension moderee' : 'relativement equilibre'}. Ton niveau de stress ${niveauStress} a des implications directes sur ta physiologie.</p>
+
+<p>Quand ton cerveau percoit un stress, l'hypothalamus libere du CRH qui stimule l'hypophyse a produire de l'ACTH, qui elle-meme pousse tes surrenales a secreter du cortisol. Ce mecanisme, concu pour des stress aigus et courts, devient deletere quand il est active en permanence. ${anxiete === 'souvent' ? 'Ton anxiete frequente maintient cette cascade en boucle, consommant 20% de ton glucose sanguin pour alimenter un cerveau en mode alerte constant.' : ''}</p>
+
+<p>${concentration === 'difficile' ? 'Tes difficultes de concentration sont un symptome classique de l\'exces de cortisol : il interfere avec l\'hippocampe et le cortex prefrontal, reduisant ta memoire de travail et ta capacite de decision.' : 'Ta concentration preservee suggere que ton cortex prefrontal n\'est pas encore sature par le cortisol.'} ${irritabilite === 'tres-souvent' || irritabilite === 'souvent' ? 'Ton irritabilite elevee indique une depletion en GABA et serotonine, les neurotransmetteurs inhibiteurs qui tempereraient normalement ta reactivite emotionnelle.' : ''}</p>
+
+<p>${hasNoStressManagement ? 'L\'absence de techniques de gestion du stress (meditation, respiration, marche en nature) laisse ton systeme nerveux sans outil de regulation. Ton nerf vague, qui activerait le mode parasympathique "repos et digestion", reste sous-stimule.' : 'Tes techniques de gestion du stress actuelles aident a activer ton systeme parasympathique, ce qui est un point positif pour contrebalancer le cortisol.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Le cortisol chronique bloque la lipolyse en inhibant la lipase hormono-sensible. Il favorise le stockage visceral via les recepteurs cortisol des adipocytes abdominaux. Simultanement, il inhibe la production de testosterone au niveau des cellules de Leydig, sabotant ta capacite anabolique.' : 'Ton stress est gerable, mais surveille les periodes d\'intensification qui pourraient faire basculer ton metabolisme en mode catabolique.'}</p>`;
+    }
+
+    case 'energie': {
       const energieMatin = responses['energie-matin'];
+      const energieAprem = responses['energie-aprem'];
       const coupFatigue = responses['coup-fatigue'];
       const enviesSucre = responses['envies-sucre'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton énergie ${energieMatin} le matin et tes coups de fatigue ${coupFatigue === 'souvent' ? 'fréquents' : 'occasionnels'} révèlent un dysfonctionnement mitochondrial. ${enviesSucre === 'souvent' ? 'Tes envies de sucre fréquentes confirment que ton métabolisme est bloqué sur le glucose.' : ''}</p>`;
+      const motivation = responses['motivation'];
+      const thermogenese = responses['thermogenese'];
 
-    case 'digestion':
+      return `
+<p class="mt-6"><strong>Analyse de ton energie</strong></p>
+
+<p>${prenom}, ton score energie de ${score}/100 est ${scoreLabel}. Avec une energie matinale ${energieMatin} et ${coupFatigue === 'quotidien' || coupFatigue === 'souvent' ? 'des coups de fatigue frequents' : 'des variations energetiques moderees'}, ton profil revele des informations cruciales sur ton metabolisme cellulaire.</p>
+
+<p>L'energie que tu ressens est directement liee a la production d'ATP par tes mitochondries. Ces organites utilisent soit le glucose, soit les acides gras pour generer l'energie cellulaire. ${enviesSucre === 'souvent' ? 'Tes envies de sucre frequentes signalent une inflexibilite metabolique : ton corps a perdu la capacite de basculer efficacement vers l\'oxidation des graisses, te rendant dependant du glucose comme carburant primaire.' : 'Tes envies de sucre controlees suggerent une flexibilite metabolique preservee.'}</p>
+
+<p>${energieAprem === 'crash' || energieAprem === 'baisse-moderee' ? 'Ta baisse d\'energie l\'apres-midi est typique d\'un pic glycemique post-prandial suivi d\'une hypoglycemie reactive. L\'insuline liberee en exces fait chuter ta glycemie sous le niveau basal, declenchant fatigue, irritabilite et nouvelles envies de sucre. C\'est un cercle vicieux qui maintient ton metabolisme en mode "stockage".' : 'Ta stabilite energetique l\'apres-midi indique une bonne gestion glycemique et une sensibilite a l\'insuline preservee.'}</p>
+
+<p>${thermogenese === 'toujours' || thermogenese === 'souvent' ? 'Ta frilosite chronique est un marqueur important. Elle peut indiquer une hypothyroidie subclinique (T3 libre basse), un metabolisme de base abaisse par restriction calorique chronique, ou une thermogenese adaptative reduite. Ton corps economise l\'energie au lieu de la dissiper en chaleur.' : 'Ta thermogenese normale suggere une fonction thyroidienne et un metabolisme de base corrects.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton inflexibilite metabolique t\'empeche de bruler efficacement les graisses, meme en deficit calorique. Les mitochondries dysfonctionnelles produisent moins d\'ATP et plus de radicaux libres, creant un environnement inflammatoire qui freine encore plus ta progression.' : 'Ton energie est un atout, mais des ajustements sur le timing nutritionnel et l\'exposition au froid pourraient encore optimiser ta flexibilite metabolique.'}</p>`;
+    }
+
+    case 'digestion': {
       const digestQualite = responses['digestion-qualite'];
       const ballonnements = responses['ballonnements'];
       const transit = responses['transit'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ta digestion ${digestQualite} avec ${ballonnements === 'souvent' ? 'des ballonnements fréquents' : ballonnements === 'parfois' ? 'des ballonnements occasionnels' : 'peu de ballonnements'} et un transit ${transit} impacte ton absorption des nutriments.</p>`;
+      const reflux = responses['reflux'];
+      const intolerance = responses['intolerance'] || [];
+      const energiePostRepas = responses['energie-post-repas'];
 
-    case 'training':
+      return `
+<p class="mt-6"><strong>Analyse de ta digestion</strong></p>
+
+<p>${prenom}, ton score digestion de ${score}/100 est ${scoreLabel}. Ta qualite digestive ${digestQualite} revele l'etat de ton axe intestin-cerveau et de ton microbiome, deux elements determinants pour ta sante globale et tes performances.</p>
+
+<p>Ton intestin heberge 70% de ton systeme immunitaire et produit 90% de ta serotonine. ${ballonnements === 'apres-repas' || ballonnements === 'souvent' ? 'Tes ballonnements frequents peuvent indiquer une dysbiose (desequilibre du microbiome), un SIBO (Small Intestinal Bacterial Overgrowth), une hypochlorhydrie (manque d\'acide gastrique), ou des intolerance alimentaires non identifiees. La fermentation excessive produit des gaz et des metabolites inflammatoires.' : 'L\'absence de ballonnements significatifs suggere une digestion enzymatique efficace et un microbiome equilibre.'}</p>
+
+<p>${transit === 'constipe' ? 'Ta constipation indique un transit ralenti, souvent lie au stress (le cortisol inhibe la motilite intestinale), a un manque de fibres, ou a une deshydratation. Les selles qui stagnent permettent une reabsorption excessive des toxines et des estrogenes, perturbant ton equilibre hormonal.' : transit === 'diarrhee' ? 'Tes selles frequentes peuvent indiquer une inflammation intestinale, une malabsorption, ou une intolerante alimentaire active. Les nutriments traversent trop vite pour etre correctement absorbes.' : transit === 'variable' ? 'Ton transit irregulier reflere probablement un axe intestin-cerveau perturbe par le stress, ou une sensibilite a certains aliments non encore identifies.' : 'Ton transit regulier est un excellent indicateur de sante intestinale.'}</p>
+
+<p>${energiePostRepas === 'crash' || energiePostRepas === 'somnolence' ? 'Ta fatigue post-prandiale n\'est pas normale. Elle peut indiquer une reponse insulinique excessive, une permeabilite intestinale (leaky gut) qui laisse passer des molecules pro-inflammatoires, ou une sensibilite alimentaire declenchant une reponse immunitaire energivore.' : 'Ton energie stable apres les repas indique une bonne tolerance alimentaire et une glycemie controlee.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Une digestion compromise limite l\'absorption des proteines necessaires a la synthese musculaire et des micronutriments (zinc, magnesium, B12) essentiels a ton metabolisme energetique. L\'inflammation intestinale chronique cree une resistance a l\'insuline et favorise le stockage graisseux.' : 'Ta digestion solide est un atout majeur pour l\'absorption des nutriments et le maintien d\'un environnement hormonal favorable.'}</p>`;
+    }
+
+    case 'training': {
       const frequence = responses['sport-frequence'];
+      const typeSport = responses['type-sport'] || [];
+      const intensite = responses['intensite'];
       const recuperation = responses['recuperation'];
+      const courbatures = responses['courbatures'];
       const evolution = responses['performance-evolution'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, tu t'entraînes ${frequence} fois par semaine mais ta récupération est ${recuperation}. ${evolution === 'stagnation' ? 'Ta stagnation n\'est pas due à un manque d\'effort mais à un environnement hormonal défavorable.' : ''}</p>`;
 
-    case 'nutrition':
+      return `
+<p class="mt-6"><strong>Analyse de ton entrainement</strong></p>
+
+<p>${prenom}, ton score training de ${score}/100 est ${scoreLabel}. Tu t'entraines ${frequence === '5+' ? 'plus de 5 fois' : frequence === '3-4' ? '3-4 fois' : frequence === '1-2' ? '1-2 fois' : '0 fois'} par semaine avec une intensite ${intensite}. Ces parametres determinent le stimulus d'adaptation que tu donnes a ton corps.</p>
+
+<p>L'entrainement cree un stress mecanique et metabolique qui, lorsqu'il est correctement dose et suivi d'une recuperation adequate, declenche des adaptations : hypertrophie musculaire, amelioration de la capacite aerobique, renforcement des tissus conjonctifs. ${recuperation === 'mauvaise' ? 'Ta mauvaise recuperation indique un desequilibre entre le stimulus d\'entrainement et ta capacite regenerative. Soit le volume/intensite est excessif, soit tes facteurs de recuperation (sommeil, nutrition, stress) sont insuffisants.' : recuperation === 'moyenne' ? 'Ta recuperation moyenne suggere une marge d\'amelioration, probablement en optimisant tes facteurs de recuperation plutot qu\'en reduisant l\'entrainement.' : 'Ta bonne recuperation indique un equilibre stimulus-adaptation correct.'}</p>
+
+<p>${courbatures === 'toujours' ? 'Tes courbatures systematiques (DOMS) peuvent indiquer un exces de dommages musculaires, une inflammation chronique, ou une carence en mineraux (magnesium, potassium) necessaires a la relaxation musculaire. Un certain niveau de DOMS est normal, mais leur persistance suggere une recuperation incomplete.' : courbatures === 'souvent' ? 'Tes courbatures frequentes meritent attention. Elles peuvent refleter un volume d\'entrainement eleve, un manque de sommeil profond, ou une nutrition post-entrainement inadequate.' : 'Tes courbatures moderees indiquent un stimulus adapte a ta capacite de recuperation.'}</p>
+
+<p>${evolution === 'regression' ? 'Ta regression de performance est un signal d\'alarme. Elle indique soit un surentrainement (HRV basse, cortisol eleve, testosterone en chute), soit un deficit energetique trop important, soit une accumulation de stress non-entrainement qui depasse ta capacite adaptative totale.' : evolution === 'stagnation' ? 'Ta stagnation n\'est pas due a un manque d\'effort. Elle revele souvent un plafond impose par tes facteurs limitants : sommeil, stress, nutrition, ou environnement hormonal. Pousser plus fort sans corriger ces facteurs est contre-productif.' : 'Ta progression continue est excellente et indique un bon equilibre stimulus-adaptation.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton desequilibre entrainement-recuperation cree un ratio testosterone/cortisol defavorable. En mode catabolique, tu perds du muscle et stockes du gras, l\'inverse de ton objectif. La MPS (synthese proteique musculaire) est bloquee quand le cortisol domine.' : 'Ton entrainement est bien structure. L\'optimisation des facteurs de recuperation pourrait debloquer de nouveaux gains.'}</p>`;
+    }
+
+    case 'nutrition': {
+      const nbRepas = responses['nb-repas'];
+      const petitDej = responses['petit-dejeuner'];
       const proteines = responses['proteines-jour'];
+      const eau = responses['eau-jour'];
+      const regime = responses['regime-alimentaire'];
       const transformes = responses['aliments-transformes'];
       const sucres = responses['sucres-ajoutes'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton apport en protéines ${proteines === 'insuffisant' ? 'insuffisant' : proteines} combiné à une consommation ${transformes === 'souvent' ? 'élevée' : 'modérée'} d'aliments transformés crée un environnement inflammatoire.</p>`;
+      const alcool = responses['alcool'];
 
-    case 'lifestyle':
+      return `
+<p class="mt-6"><strong>Analyse de ta nutrition</strong></p>
+
+<p>${prenom}, ton score nutrition de ${score}/100 est ${scoreLabel}. Avec ${nbRepas === '1-2' ? '1-2 repas' : nbRepas === '3' ? '3 repas' : '4+ repas'} par jour et un apport proteique ${proteines === 'insuffisant' ? 'insuffisant' : proteines === 'correct' ? 'correct' : 'eleve'}, ton alimentation joue un role central dans ta composition corporelle.</p>
+
+<p>Les proteines sont le macronutriment le plus important pour la recomposition corporelle. ${proteines === 'insuffisant' || proteines === 'faible' ? 'Ton apport proteique insuffisant (probablement <1.6g/kg) limite ta synthese proteique musculaire (MPS), reduit ta satiete (les proteines ont l\'effet thermic le plus eleve), et diminue ta thermogenese alimentaire de 20-30%. C\'est le frein numero un a la construction musculaire et a la perte de gras.' : proteines === 'correct' ? 'Ton apport proteique correct est une base, mais pour optimiser la MPS, viser 2-2.2g/kg en periode de recomposition serait ideal.' : 'Ton apport proteique eleve est optimal pour maximiser la MPS et la satiete.'}</p>
+
+<p>${eau === 'moins-1L' || eau === '1-1.5L' ? 'Ta consommation d\'eau insuffisante (<2L/jour) impacte directement tes performances (-10-20%), ton metabolisme, et toutes tes reactions enzymatiques. L\'eau est le solvant universel de ton corps : deshydrate, chaque fonction cellulaire est compromise.' : 'Ton hydratation correcte soutient tes fonctions metaboliques et ta performance.'} ${transformes === 'souvent' ? 'Ta consommation elevee d\'aliments transformes apporte des huiles vegetales pro-inflammatoires (omega-6), des sucres caches, des additifs qui perturbent ton microbiome, et des calories vides sans micronutriments.' : ''}</p>
+
+<p>${sucres === 'eleve' ? 'Ta consommation elevee de sucres ajoutes maintient ton insuline chroniquement elevee, bloquant la lipolyse et favorisant le stockage. Les pics glycemiques repetitifs creent une inflammation systemique et accelerent la resistance a l\'insuline.' : ''} ${alcool === '8+' || alcool === '4-7' ? 'Ta consommation d\'alcool est problematique. L\'ethanol est metabolise en priorite par le foie, mettant en pause l\'oxidation des graisses. Il perturbe le sommeil profond, reduit la testosterone de 20-30%, et apporte des calories vides. Chaque verre est un frein direct a ta progression.' : 'Ta consommation d\'alcool limitee preserve ton metabolisme hepatique et ta qualite de sommeil.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton alimentation actuelle cree un environnement inflammatoire et insulino-resistant qui bloque la perte de gras malgre un eventuel deficit calorique. Les carences en micronutriments (magnesium, zinc, D3) amplifient ces dysfonctionnements.' : 'Ta nutrition est une base solide. Des ajustements sur le timing proteique et la densite nutritionnelle pourraient optimiser ta recomposition.'}</p>`;
+    }
+
+    case 'lifestyle': {
+      const cafe = responses['cafe-jour'];
+      const tabac = responses['tabac'];
       const ecrans = responses['temps-ecran'];
       const soleil = responses['exposition-soleil'];
+      const profession = responses['profession'];
       const assis = responses['heures-assis'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ${assis === '8h-plus' ? 'tes 8h+ assis par jour' : 'ta sédentarité'} combinées à ${ecrans === 'plus-6h' ? '+6h d\'écrans' : 'ton temps d\'écran'} et ${soleil === 'rarement' ? 'un manque d\'exposition solaire' : 'une exposition solaire limitée'} perturbent tes rythmes circadiens.</p>`;
 
-    case 'mindset':
+      return `
+<p class="mt-6"><strong>Analyse de ton lifestyle</strong></p>
+
+<p>${prenom}, ton score lifestyle de ${score}/100 est ${scoreLabel}. Ton mode de vie quotidien : ${assis === '8h+' ? '+8h assis' : assis === '6-8h' ? '6-8h assis' : '< 6h assis'}, ${ecrans === '6h+' ? '+6h d\'ecrans' : ecrans === '4-6h' ? '4-6h d\'ecrans' : '< 4h d\'ecrans'}, ${soleil === 'rare' ? 'peu de soleil' : 'exposition solaire correcte'}, cree l'environnement dans lequel ton corps evolue 24h/24.</p>
+
+<p>${assis === '8h+' || assis === '6-8h' ? 'Ta sedentarite prolongee (>6h/jour assis) est un facteur de risque independant, meme si tu fais du sport. La position assise comprime tes disques vertebraux, desactive tes fessiers et ischio-jambiers, et reduit drastiquement ta NEAT (thermogenese d\'activite non-exercice). La NEAT peut representer 15-30% de ta depense energetique totale : la perdre ralentit significativement ta perte de gras.' : 'Ton temps assis limite preserve ta NEAT et ta sante posturale.'}</p>
+
+<p>${soleil === 'rare' ? 'Ton manque d\'exposition solaire a des consequences multiples. La lumiere du matin (10-30 min dans les 2h apres le reveil) est essentielle pour caler ton rythme circadien, supprimer le cortisol matinal excessif, et initier le timer de melatonine pour le soir. Sans ce signal lumineux, tes rythmes hormonaux derivent. De plus, la synthese de vitamine D cutanee est compromise, impactant ton immunite, tes hormones, et ta sante osseuse.' : 'Ton exposition solaire reguliere optimise ton rythme circadien et ta synthese de vitamine D.'}</p>
+
+<p>${cafe === '5+' ? 'Ta consommation excessive de cafe (5+/jour) cree une tolerance a l\'adenosine qui t\'oblige a augmenter les doses pour le meme effet. Le cafe apres 14h bloque ta melatonine le soir, fragmentant ton sommeil. L\'exces de cafeine peut aussi epuiser tes surrenales et amplifier ton anxiete.' : cafe === '3-4' ? 'Ta consommation de cafe moderee est acceptable si tu stoppes avant 14h pour preserver ton sommeil.' : 'Ta consommation de cafe limitee preserve ta sensibilite a la cafeine et ton sommeil.'} ${tabac === 'quotidien' ? 'Le tabac quotidien est le facteur lifestyle le plus deletere : inflammation systemique, vasoconstriction reduisant l\'apport d\'oxygene aux muscles, acceleration du vieillissement cellulaire, et interference avec pratiquement tous tes systemes hormonaux.' : ''}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton mode de vie actuel cree un environnement anti-physiologique : rythmes circadiens perturbes, NEAT effondree, inflammation chronique. Ces facteurs invisibles sabotent tes efforts conscients en entrainement et nutrition.' : 'Ton lifestyle est globalement sain. Des ajustements sur l\'exposition lumineuse et le mouvement quotidien pourraient encore optimiser ton metabolisme.'}</p>`;
+    }
+
+    case 'mindset': {
       const engagement = responses['engagement-niveau'];
-      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton niveau d'engagement "${engagement}" est un atout. Le problème n'est pas ton mindset mais tes systèmes physiologiques.</p>`;
+      const frustration = responses['frustration-passee'];
+      const siRienChange = responses['si-rien-change'];
+      const ideal6mois = responses['ideal-6mois'];
+      const peur = responses['plus-grosse-peur'];
+      const motivationPrincipale = responses['motivation-principale'];
+      const consignes = responses['consignes-strictes'];
+
+      return `
+<p class="mt-6"><strong>Analyse de ton mindset</strong></p>
+
+<p>${prenom}, ton score mindset de ${score}/100 est ${scoreLabel}. Ton niveau d'engagement "${engagement}" et ta motivation basee sur "${motivationPrincipale || 'tes objectifs personnels'}" revelent ta psychologie face a la transformation physique.</p>
+
+<p>Le mindset n'est pas qu'une question de volonte. Les neurotransmetteurs (dopamine, serotonine, noradrenaline) qui gouvernent ta motivation, ta perseverance et ta gestion du stress sont directement influences par ton sommeil, ta nutrition, et ton activite physique. ${engagement === '8-10' ? 'Ton engagement eleve indique un systeme dopaminergique fonctionnel et une capacite a maintenir des objectifs long terme. C\'est un atout majeur.' : engagement === '4-7' ? 'Ton engagement modere peut refleter une fatigue des systemes de motivation, souvent liee a un exces de stress chronique ou un deficit en precurseurs de neurotransmetteurs (tyrosine, tryptophane).' : 'Ton engagement bas peut indiquer un epuisement dopaminergique, souvent lie a une surexposition aux stimuli rapides (reseaux sociaux, sucre, divertissement constant) qui desensibilisent tes circuits de recompense.'}</p>
+
+<p>${frustration ? `Ta frustration passee ("${frustration.substring(0, 100)}...") est un signal important. Les echecs repetes peuvent creer des patterns d\'evitement ou de self-sabotage inconscients. Mais ils revelent aussi que les approches precedentes n\'adressaient probablement pas les vrais facteurs limitants.` : 'L\'analyse de tes experiences passees permet d\'eviter de repeter les memes erreurs et d\'identifier les patterns qui ont fonctionne ou non.'}</p>
+
+<p>${consignes === 'oui' ? 'Ta capacite a suivre des consignes strictes est un atout majeur pour la transformation. L\'adherence est le facteur numero un de succes : un protocole mediocre suivi a 100% bat un protocole parfait suivi a 50%.' : 'Ta difficulte avec les consignes strictes n\'est pas un defaut : elle indique qu\'une approche flexible et adaptee a ton style de vie sera plus efficace qu\'un plan rigide que tu ne tiendras pas.'}</p>
+
+<p><strong>Impact sur ${objectif} :</strong> ${score >= 80 ? 'Ton mindset est ton plus grand atout. Le probleme n\'est pas ton engagement mais les blocages physiologiques (sommeil, stress, hormones) qui empechent ton corps de repondre a tes efforts. Une fois ces facteurs corriges, ta determination fera la difference.' : 'Optimiser tes neurotransmetteurs via le sommeil, la nutrition, et l\'activite physique améliorera naturellement ta motivation et ta perseverance. Le mindset suit souvent l\'etat physiologique.'}</p>`;
+    }
 
     default:
       return '';
