@@ -901,9 +901,9 @@ export async function registerRoutes(
 
         await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING" });
 
-        // Generate new Discovery Scan report synchronously
+        // Generate new Discovery Scan report with AI content
         const result = await analyzeDiscoveryScan(audit.responses as any);
-        const narrativeReport = convertToNarrativeReport(result, audit.responses as any);
+        const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
 
         await storage.updateAudit(auditId, {
           narrativeReport,
@@ -2033,9 +2033,9 @@ export async function registerRoutes(
 
       console.log(`[Discovery Scan] Starting analysis for ${responses.prenom || 'Client'}...`);
 
-      // Analyze and convert to dashboard format
+      // Analyze and convert to dashboard format with AI content
       const result = await analyzeDiscoveryScan(responses);
-      const narrativeReport = convertToNarrativeReport(result, responses);
+      const narrativeReport = await convertToNarrativeReport(result, responses);
 
       res.json({
         success: true,
@@ -2068,9 +2068,9 @@ export async function registerRoutes(
         responses,
       });
 
-      // Generate analysis and convert to NarrativeReport format
+      // Generate analysis and convert to NarrativeReport format with AI content
       const result = await analyzeDiscoveryScan(responses);
-      const narrativeReport = convertToNarrativeReport(result, responses);
+      const narrativeReport = await convertToNarrativeReport(result, responses);
 
       // Update audit with report (same format as PREMIUM/ELITE)
       await storage.updateAudit(audit.id, {

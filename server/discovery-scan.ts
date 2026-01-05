@@ -641,10 +641,377 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 }
 
 // ============================================
-// AI SYNTHESIS GENERATION
+// AI SYNTHESIS GENERATION - STYLE ACHZOD
 // ============================================
 
-const DISCOVERY_SYSTEM_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des clients qui veulent comprendre POURQUOI leur corps dysfonctionne.
+// System prompt pour la synthèse globale
+const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
+
+Tu rediges un audit expert 100% personnalise, profondement humain, indetectable comme IA, avec un ton direct, precis, incarne, analytique et ultra vivant.
+
+REGLES ABSOLUES STYLE:
+- Humain, jamais robotique ou scolaire
+- Variation de rythmes : phrases courtes/longues, pauses..., metaphores simples
+- Style conversationnel expert : proximite + exigence
+- Tu tutoies TOUJOURS
+- Chaud, direct, incarne comme si tu parlais face a face
+- Analyse chirurgicale mais accessible
+- Images concretes, pas de jargon inutile
+
+REGLES ABSOLUES CONTENU:
+- NE JAMAIS INVENTER : analyse uniquement ce que le client a vraiment dit
+- Connecte TOUT : sommeil - cortisol - entrainement - plateaux - digestion - energie - stress - hormones
+- Explique SCIENTIFIQUEMENT ET EN PROFONDEUR :
+  * Mecanismes physiologiques precis (hormones, enzymes, neurotransmetteurs, cascades metaboliques)
+  * Chiffres, ratios, seuils cliniques quand pertinent
+  * Interactions complexes entre systemes (thyroide - cortisol - leptine - insuline - testosterone)
+  * Adaptations metaboliques (downregulation, upregulation, sensibilite receptorielle)
+  * Cascades de consequences (cause - effet 1 - effet 2 - effet 3 - plateau actuel)
+- MINIMUM 800 mots, riche, detaille, scientifiquement robuste
+- Comme si tu avais passe 3h a decortiquer son dossier
+
+REGLES ABSOLUES FORMAT:
+- Texte brut fluide (PAS de markdown : pas de **, ##, -, *, _)
+- JAMAIS de tiret long ou tiret cadratin (pas de —)
+- JAMAIS d'emojis
+- Paragraphes separes par des lignes vides
+- Commence DIRECTEMENT par l'analyse
+
+SOURCES A INTEGRER NATURELLEMENT:
+- Newsletters ACHZOD, Applied Metabolics
+- Andrew Huberman, Peter Attia, Matthew Walker
+- Robert Sapolsky, Ben Bikman, Stronger By Science
+- Renaissance Periodization, Examine, Marek Health`;
+
+// ============================================
+// SECTION-SPECIFIC AI GENERATION
+// ============================================
+
+const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach d'elite avec 11 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
+
+STYLE OBLIGATOIRE:
+- Humain, jamais robotique ou scolaire
+- Variation de rythmes : phrases courtes/longues, pauses..., metaphores
+- Tutoiement TOUJOURS, ton direct et incarne
+- Analyse chirurgicale mais accessible
+
+FORMAT OBLIGATOIRE:
+- MINIMUM 40-50 lignes (1500+ caracteres)
+- Texte brut fluide, PAS de markdown
+- JAMAIS de tiret long (—), JAMAIS d'emojis
+- NE JAMAIS repeter le titre de la section
+- Commence DIRECTEMENT par l'analyse
+- Paragraphes separes par lignes vides`;
+
+const SECTION_INSTRUCTIONS: Record<string, string> = {
+  sommeil: `
+INSTRUCTIONS SPECIFIQUES POUR "SOMMEIL":
+- Analyse sa DUREE reelle vs optimale (7-9h pour la plupart)
+- Analyse sa QUALITE : reveils nocturnes, difficulte endormissement, reveil fatigue
+- Explique l'ARCHITECTURE DU SOMMEIL : cycles de 90 min, phases N1/N2/N3/REM
+- N3 (sommeil profond) : 70% de la GH quotidienne, reparation tissulaire
+- REM : regulation emotionnelle, creativite, apprentissage moteur
+- Si reveils nocturnes : hypotheses (cortisol 3-4h du matin, hypoglycemie reactive, apnee)
+- CASCADE : manque sommeil - cortisol +37-45% - resistance insuline +30% en 4 nuits - leptine -18% - ghreline +28% - fringales - stockage
+- ADENOSINE et pression de sommeil, CHRONOTYPE
+- Sommeil et TESTOSTERONE : chaque heure en moins = -10-15% de T
+- Sommeil et RECUPERATION : synthese proteique reduite de 18-25%
+- Cite Huberman (Sleep Toolkit), Walker (Why We Sleep), Attia
+- MINIMUM 45-50 lignes tres detaillees
+`,
+
+  stress: `
+INSTRUCTIONS SPECIFIQUES POUR "STRESS":
+- Analyse son NIVEAU de stress chronique vs aigu
+- Explique l'AXE HPA en detail :
+  * Hypothalamus - CRH - Hypophyse - ACTH - Surrenales - Cortisol
+  * Boucle de retroaction negative et dysfonctionnement
+- EUSTRESS (adaptatif) vs DISTRESS (maladaptatif)
+- ALLOSTASIE et charge allostatique (Sapolsky)
+- CONSEQUENCES cortisol chronique :
+  * Catabolisme musculaire (activation ubiquitine-proteasome)
+  * Stockage visceral (recepteurs glucocorticoides abdominaux)
+  * Resistance insuline (GLUT4 downregulation)
+  * Inhibition thyroide (T4-T3 bloquee par 5'-deiodinase)
+  * Baisse testosterone (inhibition 17b-HSD, suppression LH)
+  * Permeabilite intestinale (leaky gut)
+- METHODES de gestion actuelles ou leur absence
+- NERF VAGUE et balance sympathique/parasympathique
+- Stress et INFLAMMATION : CRP, IL-6, TNF-alpha
+- Cite Sapolsky, Huberman, Applied Metabolics
+- MINIMUM 45-50 lignes
+`,
+
+  energie: `
+INSTRUCTIONS SPECIFIQUES POUR "ENERGIE":
+- Analyse son PATTERN energetique : matin, apres-midi, soir
+- Explique la FLEXIBILITE METABOLIQUE :
+  * Capacite a switcher glucose - acides gras
+  * Role de CPT1 pour entree des AG dans mitochondries
+  * Inhibition par malonyl-CoA quand insuline haute
+- Si crash apres-midi : hypotheses
+  * Pic glycemique post-prandial - hypoglycemie reactive
+  * Ratio insuline/glucagon defavorable
+  * Adenosine accumulee + dette de sommeil
+- ENVIES DE SUCRE : signe d'inflexibilite metabolique
+- BIOGENESE MITOCHONDRIALE :
+  * PGC-1a comme regulateur maitre
+  * Impact sommeil, exercice, froid sur mitochondries
+  * Dysfonction = moins ATP + plus de ROS
+- THERMOGENESE : frilosite = metabolisme ralenti, possible hypothyroidie subclinique
+- Energie et THYROIDE : T3 libre, conversion T4-T3, rT3
+- Cite Bikman (Why We Get Sick), Attia, Applied Metabolics
+- MINIMUM 45-50 lignes
+`,
+
+  digestion: `
+INSTRUCTIONS SPECIFIQUES POUR "DIGESTION":
+- Analyse son TRANSIT : frequence, consistance, regularite
+- Constipation : hypotheses (cortisol inhibe motilite, fibres, deshydratation, dysbiose)
+- Diarrhee : hypotheses (inflammation, malabsorption, SIBO, intolerances)
+- BALLONNEMENTS :
+  * Timing (apres repas = enzymes, permanent = dysbiose)
+  * Aliments declencheurs (FODMAPs, lactose, gluten)
+  * SIBO (Small Intestinal Bacterial Overgrowth)
+- AXE INTESTIN-CERVEAU :
+  * 70% systeme immunitaire dans intestin
+  * 90% serotonine produite dans intestin
+  * Nerf vague comme autoroute bidirectionnelle
+- MICROBIOME : diversite, Firmicutes/Bacteroidetes, butyrate, AGCC
+- PERMEABILITE INTESTINALE : zonuline, tight junctions, inflammation systemique
+- Digestion et ABSORPTION : manger parfait mais mal absorber
+- Fatigue post-repas : reponse insulinique excessive, leaky gut
+- Cite Masterjohn pour micronutriments
+- MINIMUM 40-45 lignes
+`,
+
+  training: `
+INSTRUCTIONS SPECIFIQUES POUR "TRAINING":
+- Analyse son VOLUME : seances/semaine, duree, groupes musculaires
+- Analyse son INTENSITE : RPE, proximite echec, techniques intensification
+- MECANISMES HYPERTROPHIE :
+  * Tension mecanique (charge)
+  * Stress metabolique (pump, lactate)
+  * Dommages musculaires (pas le facteur principal)
+- SYNTHESE PROTEIQUE MUSCULAIRE (MPS) :
+  * Fenetre anabolique elargie (24-48h post-training)
+  * mTOR comme regulateur maitre
+  * Leucine threshold (2.5-3g par repas)
+- Si STAGNATION : hypotheses
+  * Adaptation neurale complete, besoin nouveaux stimuli
+  * Volume insuffisant ou excessif (sous MEV ou au-dessus MRV)
+  * Recuperation insuffisante (sommeil, nutrition, stress)
+  * Environnement hormonal defavorable (cortisol > testosterone)
+- RATIO PUSH/PULL et desequilibres
+- PERIODISATION : lineaire, ondulee, en blocs
+- DELOAD et supercompensation
+- Recuperation mauvaise : HRV basse, cortisol chronique, deficit calorique trop agressif
+- Cite SBS, Renaissance Periodization, Applied Metabolics
+- MINIMUM 45-50 lignes techniques
+`,
+
+  nutrition: `
+INSTRUCTIONS SPECIFIQUES POUR "NUTRITION":
+- Analyse ses APPORTS : repas/jour, timing, composition
+- BESOINS estimes :
+  * BMR (Mifflin-St Jeor ou Katch-McArdle)
+  * TDEE avec multiplicateur activite
+  * Deficit/surplus selon objectif
+- PROTEINES :
+  * Apport actuel vs optimal (1.6-2.2g/kg pour recomp)
+  * Repartition journee (leucine threshold)
+  * Sources (completes vs incompletes, biodisponibilite)
+- GLUCIDES :
+  * Timing (peri-training, matin vs soir)
+  * Index glycemique et charge glycemique
+  * Impact insuline et partitionnement
+- LIPIDES :
+  * Ratio omega-3/omega-6 (viser 1:3, plupart a 1:20)
+  * AG satures, trans, mono-insatures
+  * Impact hormones steroidiens
+- HYDRATATION : impact performance (-10-20% si deshydrate)
+- ALCOOL :
+  * Metabolisme prioritaire foie (pause lipolyse)
+  * Impact sommeil (supprime REM)
+  * Impact testosterone (-20-30%)
+- ALIMENTS TRANSFORMES : huiles vegetales, additifs, sucres caches
+- Cite Examine, Bikman, SBS, Applied Metabolics
+- MINIMUM 50-55 lignes avec chiffres
+`,
+
+  lifestyle: `
+INSTRUCTIONS SPECIFIQUES POUR "LIFESTYLE":
+- SEDENTARITE : heures assis/jour
+  * Impact NEAT (15-30% du TDEE)
+  * Desactivation fessiers, raccourcissement psoas
+  * Compression disques vertebraux
+- EXPOSITION LUMINEUSE :
+  * Lumiere matinale (10-30 min dans 2h post-reveil)
+  * Impact cortisol matinal, melatonine le soir
+  * Lumiere bleue soir : suppression melatonine
+- EXPOSITION SOLAIRE :
+  * Synthese vitamine D cutanee
+  * Impact immunite, humeur, hormones
+- CAFEINE :
+  * Demi-vie 5-6h (cafe 14h = 50% encore a 20h)
+  * Blocage recepteurs adenosine
+  * Tolerance et cycling
+- TABAC : impact catastrophique (inflammation, vasoconstriction)
+- MOUVEMENT QUOTIDIEN : marche, escaliers, micro-mouvements
+- ENVIRONNEMENT TRAVAIL : stress, horaires, charge mentale
+- Lifestyle et RYTHME CIRCADIEN : alignement ou desalignement
+- Cite Huberman (lumiere, dopamine), Attia (NEAT, longevite)
+- MINIMUM 40-45 lignes
+`,
+
+  mindset: `
+INSTRUCTIONS SPECIFIQUES POUR "MINDSET":
+- NIVEAU ENGAGEMENT declare
+- FRUSTRATIONS PASSEES : qu'est-ce qui n'a pas marche et pourquoi
+- NEUROCHIMIE motivation :
+  * Dopamine : anticipation, motivation, poursuite objectifs
+  * Serotonine : satisfaction, contentement, patience
+  * Noradrenaline : focus, energie, urgence
+- Engagement bas : hypotheses
+  * Epuisement dopaminergique (surexposition stimuli rapides)
+  * Deficit precurseurs (tyrosine, tryptophane)
+  * Fatigue surrenalienne (cortisol effondre)
+- RELATION A L'ECHEC :
+  * Patterns evitement ou self-sabotage
+  * Fixed mindset vs growth mindset
+- ADHERENCE : "Un protocole mediocre suivi a 100% bat un parfait suivi a 50%"
+- Capacite SUIVRE CONSIGNES : flexibilite vs rigidite
+- Mindset et PHYSIOLOGIE : le mental suit souvent l'etat du corps
+  * Sommeil pourri - irritabilite - abandon
+  * Cortisol haut - anxiete - decisions impulsives
+- Valorise ses EFFORTS passes meme si resultats absents
+- Probleme souvent pas le mindset mais blocages physiologiques
+- Cite Huberman (dopamine), Sapolsky (stress et comportement)
+- MINIMUM 40-45 lignes
+`
+};
+
+// Function to generate AI content for a specific section
+async function generateSectionContentAI(
+  domain: string,
+  score: number,
+  responses: DiscoveryResponses,
+  knowledgeContext: string
+): Promise<string> {
+  const anthropic = new Anthropic();
+  const prenom = responses.prenom || 'Client';
+  const objectif = responses.objectif || 'tes objectifs';
+  const sexe = responses.sexe || 'homme';
+  const age = responses.age || 30;
+
+  // Extract relevant responses for this domain
+  const domainResponses = extractDomainResponses(domain, responses);
+
+  const instructions = SECTION_INSTRUCTIONS[domain] || '';
+
+  const userPrompt = `SECTION A REDIGER: ${domain.toUpperCase()}
+
+PROFIL CLIENT:
+Prenom: ${prenom}
+Sexe: ${sexe}
+Age: ${age} ans
+Objectif: ${objectif}
+Score ${domain}: ${score}/100
+
+REPONSES QUESTIONNAIRE POUR CE DOMAINE:
+${domainResponses}
+
+${knowledgeContext ? `DONNEES KNOWLEDGE BASE:\n${knowledgeContext}\n` : ''}
+
+${instructions}
+
+MISSION: Redige une analyse COMPLETE de 40-50 lignes (minimum 1500 caracteres) pour la section ${domain.toUpperCase()}.
+
+Commence DIRECTEMENT par l'analyse, ne repete pas le titre. Tutoie ${prenom}. Explique les mecanismes, cite des chiffres, connecte avec les autres systemes. Ton direct et incarne.
+
+RAPPELS FORMAT:
+- JAMAIS de tiret long (—)
+- JAMAIS de markdown (**, ##, -, *)
+- JAMAIS d'emojis
+- Prose fluide, paragraphes separes par lignes vides`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: SECTION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }]
+    });
+
+    const textContent = response.content.find(c => c.type === 'text');
+    const rawText = textContent?.text || '';
+
+    return cleanMarkdownToHTML(rawText);
+  } catch (error) {
+    console.error(`[Discovery] AI section ${domain} error:`, error);
+    return '';
+  }
+}
+
+// Get knowledge context for a specific domain
+async function getKnowledgeContextForDomain(domain: string): Promise<string> {
+  const domainKeywords: Record<string, string[]> = {
+    sommeil: ['sleep', 'circadian', 'melatonin', 'GH', 'adenosine', 'sommeil'],
+    stress: ['cortisol', 'HPA', 'stress', 'anxiety', 'adrenal'],
+    energie: ['mitochondria', 'ATP', 'metabolism', 'thyroid', 'energy', 'fatigue'],
+    digestion: ['gut', 'microbiome', 'digestion', 'SIBO', 'leaky gut', 'intestin'],
+    training: ['hypertrophy', 'recovery', 'muscle', 'protein synthesis', 'periodization'],
+    nutrition: ['protein', 'insulin', 'macros', 'nutrition', 'calorie'],
+    lifestyle: ['circadian', 'vitamin D', 'NEAT', 'light exposure', 'caffeine'],
+    mindset: ['dopamine', 'motivation', 'serotonin', 'neurotransmitter', 'adherence']
+  };
+
+  const keywords = domainKeywords[domain] || [domain];
+
+  try {
+    const articles = await searchArticles(keywords.slice(0, 3), 3);
+
+    if (articles.length === 0) {
+      return '';
+    }
+
+    return articles.map(a =>
+      `[${a.source}] ${a.title}: ${a.content.substring(0, 400)}...`
+    ).join('\n\n');
+  } catch (error) {
+    console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
+    return '';
+  }
+}
+
+// Extract relevant responses for a specific domain
+function extractDomainResponses(domain: string, responses: DiscoveryResponses): string {
+  const domainKeys: Record<string, string[]> = {
+    sommeil: ['heures-sommeil', 'qualite-sommeil', 'reveil-fatigue', 'endormissement', 'reveils-nocturnes', 'heure-coucher', 'heure-reveil', 'sieste'],
+    stress: ['niveau-stress', 'anxiete', 'concentration', 'irritabilite', 'gestion-stress', 'sources-stress'],
+    energie: ['energie-matin', 'energie-aprem', 'coup-fatigue', 'envies-sucre', 'motivation', 'thermogenese'],
+    digestion: ['digestion-qualite', 'ballonnements', 'transit', 'reflux', 'intolerance', 'energie-post-repas'],
+    training: ['sport-frequence', 'type-sport', 'intensite', 'recuperation', 'courbatures', 'performance-evolution', 'anciennete-training'],
+    nutrition: ['nb-repas', 'petit-dejeuner', 'proteines-jour', 'eau-jour', 'regime-alimentaire', 'aliments-transformes', 'sucres-ajoutes', 'alcool'],
+    lifestyle: ['cafe-jour', 'tabac', 'temps-ecran', 'exposition-soleil', 'profession', 'heures-assis'],
+    mindset: ['engagement-niveau', 'frustration-passee', 'si-rien-change', 'ideal-6mois', 'plus-grosse-peur', 'motivation-principale', 'consignes-strictes']
+  };
+
+  const keys = domainKeys[domain] || [];
+  const relevantResponses: string[] = [];
+
+  for (const key of keys) {
+    const value = responses[key as keyof DiscoveryResponses];
+    if (value !== undefined && value !== null && value !== '') {
+      relevantResponses.push(`- ${key}: ${Array.isArray(value) ? value.join(', ') : value}`);
+    }
+  }
+
+  return relevantResponses.join('\n') || 'Pas de reponses specifiques pour ce domaine';
+}
+
+// Original system prompt for global synthesis (kept for backward compatibility)
+const DISCOVERY_GLOBAL_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des clients qui veulent comprendre POURQUOI leur corps dysfonctionne.
 
 MISSION: Rediger une analyse clinique TRES LONGUE et TRES DETAILLEE (minimum 800 mots) des dysfonctionnements detectes. EXPLIQUER les mecanismes, PAS donner de solutions.
 
@@ -900,12 +1267,28 @@ const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   mindset: { label: "Mindset", description: "Mental" }
 };
 
-export function convertToNarrativeReport(
+export async function convertToNarrativeReport(
   result: DiscoveryAnalysisResult,
   responses: DiscoveryResponses
-): ReportData {
+): Promise<ReportData> {
   const prenom = responses.prenom || 'Client';
   const objectif = responses.objectif || 'tes objectifs';
+
+  console.log(`[Discovery] Generating AI content for 8 sections...`);
+
+  // Generate AI content for ALL 8 sections in parallel
+  const domains = Object.keys(result.scoresByDomain);
+  const aiContentPromises = domains.map(async (domain) => {
+    const score = result.scoresByDomain[domain as keyof typeof result.scoresByDomain];
+    const knowledgeContext = await getKnowledgeContextForDomain(domain);
+    const content = await generateSectionContentAI(domain, score, responses, knowledgeContext);
+    return { domain, content };
+  });
+
+  const aiContents = await Promise.all(aiContentPromises);
+  const aiContentMap = new Map(aiContents.map(({ domain, content }) => [domain, content]));
+
+  console.log(`[Discovery] AI content generated for all sections`);
 
   // Convert scores to metrics (scale 0-10)
   const metrics: Metric[] = Object.entries(result.scoresByDomain).map(([key, value]) => ({
@@ -939,7 +1322,7 @@ export function convertToNarrativeReport(
     chips: result.blocages.slice(0, 3).map(b => b.title.split(' ').slice(0, 2).join(' '))
   });
 
-  // Sections par domaine avec blocages
+  // Sections par domaine - ALL WITH AI-GENERATED CONTENT (40-50 lines each)
   Object.entries(result.scoresByDomain)
     .sort((a, b) => a[1] - b[1]) // Worst first
     .forEach(([domain, score]) => {
@@ -949,40 +1332,59 @@ export function convertToNarrativeReport(
         domain.includes(b.domain.toLowerCase().split(' ')[0])
       );
 
-      let content = '';
+      // Get AI-generated content for this domain
+      const aiContent = aiContentMap.get(domain) || '';
+
+      // Determine severity and color
+      let severityLabel: string;
+      let severityColor: string;
       let chips: string[] = [];
 
       if (domainBlocages.length > 0) {
-        // Domain with blocages - detailed analysis
-        domainBlocages.forEach(b => {
-          content += `<p><strong>${b.title}</strong> <span style="color: ${b.severity === 'critique' ? '#ef4444' : b.severity === 'modere' ? '#FCDD00' : '#60a5fa'};">[${b.severity.toUpperCase()}]</span></p>`;
-          content += `<p>${b.mechanism}</p>`;
-          content += `<p><strong>Conséquences sur ton corps :</strong></p>`;
-          content += `<ul class="list-disc pl-5 space-y-1 text-[var(--color-text-muted)]">`;
-          b.consequences.forEach(c => {
-            content += `<li>${c}</li>`;
-          });
-          content += `</ul>`;
-          content += `<p class="text-sm italic text-[var(--color-text-muted)] mt-4">Sources: ${b.sources.join(' | ')}</p>`;
-          chips = b.consequences.slice(0, 3).map(c => c.split(':')[0]);
-        });
-
-        // Add personalized context
-        content += generateDomainHTML(domain, score, responses);
+        const maxSeverity = domainBlocages.some(b => b.severity === 'critique') ? 'critique' :
+                          domainBlocages.some(b => b.severity === 'modere') ? 'modere' : 'leger';
+        severityLabel = maxSeverity === 'critique' ? 'BLOCAGE CRITIQUE' : maxSeverity === 'modere' ? 'BLOCAGE MODERE' : 'BLOCAGE LEGER';
+        severityColor = maxSeverity === 'critique' ? '#ef4444' : maxSeverity === 'modere' ? '#FCDD00' : '#60a5fa';
+        chips = domainBlocages[0]?.consequences.slice(0, 3).map(c => c.split(':')[0]) || [];
+      } else if (score < 40) {
+        severityLabel = 'CRITIQUE';
+        severityColor = '#ef4444';
+        chips = ["Priorite Absolue", "Impact Direct"];
+      } else if (score < 50) {
+        severityLabel = 'INSUFFISANT';
+        severityColor = '#f59e0b';
+        chips = ["A Corriger", "Impact"];
       } else if (score < 70) {
-        // Sub-optimal without major blocage - FULL DETAILED ANALYSIS
-        const severityLabel = score < 40 ? 'CRITIQUE' : score < 50 ? 'INSUFFISANT' : 'A OPTIMISER';
-        const severityColor = score < 40 ? '#ef4444' : score < 50 ? '#f59e0b' : '#FCDD00';
-        content = `<p><strong>Analyse detaillee</strong> <span style="color: ${severityColor};">[${severityLabel}]</span></p>`;
-        content += generateDomainHTML(domain, score, responses);
-        chips = score < 50 ? ["Priorite", "Impact Direct"] : ["A Optimiser", "Potentiel"];
+        severityLabel = 'A OPTIMISER';
+        severityColor = '#FCDD00';
+        chips = ["Potentiel", "Optimisable"];
+      } else if (score < 80) {
+        severityLabel = 'CORRECT';
+        severityColor = '#3b82f6';
+        chips = ["Base Solide", "Affinable"];
       } else {
-        // Good score - STILL PROVIDE DETAILED ANALYSIS
-        const severityLabel = score >= 80 ? 'POINT FORT' : 'CORRECT';
-        const severityColor = score >= 80 ? '#22c55e' : '#3b82f6';
-        content = `<p><strong>Analyse detaillee</strong> <span style="color: ${severityColor};">[${severityLabel}]</span></p>`;
+        severityLabel = 'POINT FORT';
+        severityColor = '#22c55e';
+        chips = ["Excellence", "Maintenir"];
+      }
+
+      // Build content with header + AI content
+      let content = `<p><strong>Score: ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
+
+      // Add blocage info if exists
+      if (domainBlocages.length > 0) {
+        domainBlocages.forEach(b => {
+          content += `<p><strong>${b.title}</strong></p>`;
+          content += `<p class="text-sm italic" style="color: #a1a1aa;">Sources: ${b.sources.join(' | ')}</p>\n`;
+        });
+      }
+
+      // Add AI-generated detailed analysis (40-50 lines)
+      if (aiContent) {
+        content += aiContent.split('\n\n').map(p => `<p>${p}</p>`).join('\n');
+      } else {
+        // Fallback to template if AI failed
         content += generateDomainHTML(domain, score, responses);
-        chips = score >= 80 ? ["Point Fort", "Base Solide"] : ["Correct", "Optimisable"];
       }
 
       sections.push({
