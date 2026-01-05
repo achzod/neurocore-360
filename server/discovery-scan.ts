@@ -798,174 +798,165 @@ Pour optimiser ta "${objectif}" et éviter les erreurs classiques, découvre les
 }
 
 // ============================================
-// CONVERT TO NARRATIVE REPORT FORMAT (for dashboard)
+// ULTRAHUMAN-STYLE REPORT FORMAT (for dashboard)
 // ============================================
 
-interface NarrativeSection {
+interface Metric {
+  label: string;
+  value: number;
+  max: number;
+  description: string;
+  key: string;
+}
+
+interface SectionContent {
   id: string;
   title: string;
-  score: number;
-  level: "excellent" | "bon" | "moyen" | "faible";
-  isPremium: boolean;
-  introduction: string;
-  whatIsWrong: string;
-  personalizedAnalysis: string;
-  recommendations: string;
-  supplements: any[];
-  actionPlan: string;
-  scienceDeepDive: string;
+  subtitle?: string;
+  content: string; // HTML string
+  chips?: string[];
 }
 
-interface NarrativeReport {
-  global: number;
-  heroSummary: string;
-  executiveNarrative: string;
-  globalDiagnosis: string;
-  sections: NarrativeSection[];
-  prioritySections: string[];
-  strengthSections: string[];
-  supplementStack: any[];
-  lifestyleProtocol: string;
-  weeklyPlan: {
-    week1: string;
-    week2: string;
-    weeks3_4: string;
-    months2_3: string;
-  };
-  conclusion: string;
-  auditType: "GRATUIT" | "PREMIUM" | "ELITE";
-  clientName?: string;
-  generatedAt?: string;
-  discoveryData?: {
-    scoresByDomain: Record<string, number>;
-    blocages: BlockageAnalysis[];
-    ctaMessage: string;
-  };
+interface ReportData {
+  globalScore: number;
+  metrics: Metric[];
+  sections: SectionContent[];
+  clientName: string;
+  generatedAt: string;
+  auditType: string;
 }
 
-function getLevel(score: number): "excellent" | "bon" | "moyen" | "faible" {
-  if (score >= 80) return "excellent";
-  if (score >= 65) return "bon";
-  if (score >= 50) return "moyen";
-  return "faible";
-}
-
-const DOMAIN_TITLES: Record<string, string> = {
-  sommeil: "Sommeil & Récupération",
-  stress: "Gestion du Stress",
-  energie: "Énergie & Vitalité",
-  digestion: "Digestion & Microbiote",
-  training: "Entraînement & Performance",
-  nutrition: "Nutrition & Métabolisme",
-  lifestyle: "Lifestyle & Habitudes",
-  mindset: "Mindset & Motivation"
+const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
+  sommeil: { label: "Sommeil", description: "Récupération" },
+  stress: { label: "Stress", description: "Système Nerveux" },
+  energie: { label: "Énergie", description: "Vitalité" },
+  digestion: { label: "Digestion", description: "Absorption" },
+  training: { label: "Training", description: "Performance" },
+  nutrition: { label: "Nutrition", description: "Métabolisme" },
+  lifestyle: { label: "Lifestyle", description: "Habitudes" },
+  mindset: { label: "Mindset", description: "Mental" }
 };
 
 export function convertToNarrativeReport(
   result: DiscoveryAnalysisResult,
   responses: DiscoveryResponses
-): NarrativeReport {
+): ReportData {
   const prenom = responses.prenom || 'Client';
   const objectif = responses.objectif || 'tes objectifs';
 
-  // Generate FULL analysis sections - NO locks, complete content
-  const sections: NarrativeSection[] = Object.entries(result.scoresByDomain).map(([domain, score]) => {
-    // Find blocages for this domain
-    const domainBlocages = result.blocages.filter(b =>
-      b.domain.toLowerCase().includes(domain) ||
-      domain.includes(b.domain.toLowerCase().split(' ')[0])
-    );
+  // Convert scores to metrics (scale 0-10)
+  const metrics: Metric[] = Object.entries(result.scoresByDomain).map(([key, value]) => ({
+    label: DOMAIN_CONFIG[key]?.label || key,
+    value: Math.round(value / 10 * 10) / 10, // Convert 0-100 to 0-10 with 1 decimal
+    max: 10,
+    description: DOMAIN_CONFIG[key]?.description || '',
+    key
+  }));
 
-    // Build COMPLETE analysis content
-    let introduction = '';
-    let whatIsWrong = '';
-    let personalizedAnalysis = '';
+  // Generate sections with HTML content
+  const sections: SectionContent[] = [];
 
-    if (domainBlocages.length > 0) {
-      // Full blocage analysis with mechanisms
-      introduction = domainBlocages.map(b => {
-        return `## ${b.title}\n\n` +
-          `**Sévérité:** ${b.severity.toUpperCase()}\n\n` +
-          `### Mécanisme physiologique\n${b.mechanism}\n\n` +
-          `### Conséquences sur ton corps\n${b.consequences.map(c => `• ${c}`).join('\n')}\n\n` +
-          `*Sources: ${b.sources.join(' | ')}*`;
-      }).join('\n\n---\n\n');
-
-      whatIsWrong = `Ce domaine présente ${domainBlocages.length} dysfonctionnement(s) qui impacte(nt) directement "${objectif}".`;
-
-      // Personalized analysis based on responses
-      personalizedAnalysis = generateDomainAnalysis(domain, score, responses, domainBlocages);
-    } else if (score < 70) {
-      // Sub-optimal but no major blocage
-      introduction = generateSubOptimalAnalysis(domain, score, responses);
-      whatIsWrong = `Score de ${score}/100 - Des optimisations sont possibles dans ce domaine.`;
-      personalizedAnalysis = `Bien que ce domaine ne présente pas de blocage majeur, ton score de ${score}/100 indique une marge de progression. Les facteurs contributifs ont été identifiés dans ton questionnaire.`;
-    } else {
-      // Good score - explain why
-      introduction = generateStrengthAnalysis(domain, score, responses);
-      whatIsWrong = '';
-      personalizedAnalysis = `Ton score de ${score}/100 dans ce domaine est un atout. Continue sur cette lancée.`;
-    }
-
-    return {
-      id: domain,
-      title: DOMAIN_TITLES[domain] || domain,
-      score,
-      level: getLevel(score),
-      isPremium: false,
-      introduction,
-      whatIsWrong,
-      personalizedAnalysis,
-      recommendations: '', // Empty - reserved for paid offers
-      supplements: [],
-      actionPlan: '', // Empty - reserved for paid offers
-      scienceDeepDive: ''
-    };
+  // Section 1: Message d'ouverture
+  sections.push({
+    id: "intro",
+    title: "Message d'ouverture",
+    subtitle: "Discovery Scan",
+    content: `<p>${prenom}, ton dossier est ouvert. Voici une analyse sans filtre de ce qui bloque réellement ta progression vers "${objectif}".</p>
+<p>Ce rapport décortique chaque système de ton corps — sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle, mindset — et surtout comment ils s'influencent mutuellement.</p>
+<p>Ton score global de <strong>${result.globalScore}/100</strong> cache une réalité plus nuancée. ${result.blocages.length} blocages identifiés qui expliquent pourquoi tes efforts ne paient pas comme ils le devraient.</p>`,
+    chips: ["Analyse Complète", `${result.blocages.length} Blocages`]
   });
 
-  // Sort sections by score (worst first = priority)
-  const sortedByScore = [...sections].sort((a, b) => a.score - b.score);
-  const prioritySections = sortedByScore.slice(0, 3).map(s => s.id);
-  const strengthSections = sortedByScore.slice(-3).reverse().map(s => s.id);
+  // Section 2: Lecture globale (synthèse IA)
+  sections.push({
+    id: "global",
+    title: "Lecture globale",
+    subtitle: "Le Diagnostic",
+    content: result.synthese.split('\n\n').map(p => `<p>${p}</p>`).join('\n'),
+    chips: result.blocages.slice(0, 3).map(b => b.title.split(' ').slice(0, 2).join(' '))
+  });
 
-  // Generate hero summary
-  const criticalCount = result.blocages.filter(b => b.severity === 'critique').length;
-  const heroSummary = criticalCount >= 2
-    ? `${prenom}, ${criticalCount} blocages critiques identifiés qui freinent directement "${objectif}".`
-    : result.blocages.length >= 3
-    ? `${prenom}, ${result.blocages.length} déséquilibres détectés qui limitent tes résultats.`
-    : `${prenom}, ton profil révèle quelques axes d'optimisation pour "${objectif}".`;
+  // Sections par domaine avec blocages
+  Object.entries(result.scoresByDomain)
+    .sort((a, b) => a[1] - b[1]) // Worst first
+    .forEach(([domain, score]) => {
+      const config = DOMAIN_CONFIG[domain];
+      const domainBlocages = result.blocages.filter(b =>
+        b.domain.toLowerCase().includes(domain) ||
+        domain.includes(b.domain.toLowerCase().split(' ')[0])
+      );
+
+      let content = '';
+      let chips: string[] = [];
+
+      if (domainBlocages.length > 0) {
+        // Domain with blocages - detailed analysis
+        domainBlocages.forEach(b => {
+          content += `<p><strong>${b.title}</strong> — Sévérité: ${b.severity.toUpperCase()}</p>`;
+          content += `<p>${b.mechanism}</p>`;
+          content += `<p><strong>Conséquences sur ton corps :</strong></p>`;
+          content += `<ul class="list-disc pl-5 space-y-1 text-[var(--color-text-muted)]">`;
+          b.consequences.forEach(c => {
+            content += `<li>${c}</li>`;
+          });
+          content += `</ul>`;
+          content += `<p class="text-sm italic text-[var(--color-text-muted)] mt-4">Sources: ${b.sources.join(' | ')}</p>`;
+          chips = b.consequences.slice(0, 3).map(c => c.split(':')[0]);
+        });
+
+        // Add personalized context
+        content += generateDomainHTML(domain, score, responses);
+      } else if (score < 70) {
+        // Sub-optimal without major blocage
+        content = `<p>Score: <strong>${score}/100</strong></p>`;
+        content += `<p>Ce domaine présente des axes d'amélioration sans blocage critique identifié. Les réponses au questionnaire indiquent des habitudes qui peuvent être optimisées.</p>`;
+        content += generateDomainHTML(domain, score, responses);
+        chips = ["À Optimiser"];
+      } else {
+        // Good score
+        content = `<p>Score: <strong>${score}/100</strong></p>`;
+        content += `<p>Ce domaine est bien maîtrisé. Tes habitudes actuelles sont alignées avec tes objectifs. C'est une fondation solide pour ta transformation.</p>`;
+        chips = ["Point Fort"];
+      }
+
+      sections.push({
+        id: domain,
+        title: config?.label || domain,
+        subtitle: config?.description || '',
+        content,
+        chips
+      });
+    });
+
+  // Section CTA finale
+  sections.push({
+    id: "next",
+    title: "Prochaine étape",
+    subtitle: "Passer à l'action",
+    content: `<p>${result.ctaMessage.replace(/\n/g, '</p><p>')}</p>
+<div class="mt-8 flex flex-col sm:flex-row gap-4">
+  <a href="/offers/anabolic-bioscan" class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[var(--color-primary)] text-[var(--color-background)] font-bold hover:opacity-90 transition-all">
+    Anabolic Bioscan — 59€
+  </a>
+  <a href="/offers/ultimate-scan" class="inline-flex items-center justify-center px-6 py-3 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface)] transition-all">
+    Ultimate Scan — 79€
+  </a>
+</div>`,
+    chips: ["Protocoles", "Stack Suppléments", "Plan 30-60-90"]
+  });
 
   return {
-    global: result.globalScore,
-    heroSummary,
-    executiveNarrative: result.synthese,
-    globalDiagnosis: generateGlobalDiagnosis(result, responses),
+    globalScore: Math.round(result.globalScore / 10 * 10) / 10, // Convert to 0-10 scale
+    metrics,
     sections,
-    prioritySections,
-    strengthSections,
-    supplementStack: [], // Empty - reserved for paid
-    lifestyleProtocol: '', // Empty - reserved for paid
-    weeklyPlan: {
-      week1: '',
-      week2: '',
-      weeks3_4: '',
-      months2_3: ''
-    },
-    conclusion: result.ctaMessage,
-    auditType: "GRATUIT",
     clientName: prenom,
     generatedAt: new Date().toISOString(),
-    discoveryData: {
-      scoresByDomain: result.scoresByDomain,
-      blocages: result.blocages,
-      ctaMessage: result.ctaMessage
-    }
+    auditType: "DISCOVERY_SCAN"
   };
 }
 
-// Generate domain-specific analysis based on responses
-function generateDomainAnalysis(domain: string, score: number, responses: DiscoveryResponses, blocages: BlockageAnalysis[]): string {
+// Generate domain-specific HTML based on responses
+function generateDomainHTML(domain: string, score: number, responses: DiscoveryResponses): string {
   const prenom = responses.prenom || 'Tu';
 
   switch (domain) {
@@ -973,86 +964,51 @@ function generateDomainAnalysis(domain: string, score: number, responses: Discov
       const heures = responses['heures-sommeil'];
       const qualite = responses['qualite-sommeil'];
       const reveilFatigue = responses['reveil-fatigue'];
-      return `${prenom}, ton sommeil est un frein majeur. Avec ${heures === '6-7' ? '6-7h' : heures === '5-6' ? '5-6h' : 'moins de 5h'} de sommeil et une qualité ${qualite}, ton corps ne récupère pas correctement. ${reveilFatigue === 'souvent' || reveilFatigue === 'toujours' ? 'Le fait que tu te réveilles fatigué confirme que tes cycles de sommeil profond sont insuffisants.' : ''} Cela impacte directement ta production d'hormones anaboliques et ta capacité à perdre du gras.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, avec ${heures === '6-7' ? '6-7h' : heures === '5-6' ? '5-6h' : 'moins de 5h'} de sommeil et une qualité ${qualite}, ton corps ne récupère pas correctement. ${reveilFatigue === 'souvent' || reveilFatigue === 'toujours' ? 'Le fait que tu te réveilles fatigué confirme que tes cycles de sommeil profond sont insuffisants.' : ''} Cela impacte directement ta production d'hormones anaboliques et ta capacité à perdre du gras.</p>`;
 
     case 'stress':
       const niveauStress = responses['niveau-stress'];
       const gestionStress = responses['gestion-stress'];
       const hasNoStressManagement = Array.isArray(gestionStress) && (gestionStress.includes('rien') || gestionStress.length === 0);
-      return `${prenom}, ton niveau de stress ${niveauStress} combiné à ${hasNoStressManagement ? 'l\'absence de techniques de gestion' : 'tes méthodes actuelles'} maintient ton corps en mode survie. Ton cortisol chroniquement élevé bloque la lipolyse et favorise le stockage abdominal - exactement ce que tu cherches à éviter.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton niveau de stress ${niveauStress} combiné à ${hasNoStressManagement ? 'l\'absence de techniques de gestion' : 'tes méthodes actuelles'} maintient ton corps en mode survie. Ton cortisol chroniquement élevé bloque la lipolyse et favorise le stockage abdominal.</p>`;
 
     case 'energie':
       const energieMatin = responses['energie-matin'];
       const coupFatigue = responses['coup-fatigue'];
       const enviesSucre = responses['envies-sucre'];
-      return `${prenom}, ton énergie ${energieMatin} le matin et tes coups de fatigue ${coupFatigue === 'souvent' ? 'fréquents' : 'occasionnels'} révèlent un dysfonctionnement mitochondrial. ${enviesSucre === 'souvent' ? 'Tes envies de sucre fréquentes confirment que ton métabolisme est bloqué sur le glucose et n\'arrive plus à brûler les graisses efficacement.' : ''} C'est un facteur clé de ton plateau.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton énergie ${energieMatin} le matin et tes coups de fatigue ${coupFatigue === 'souvent' ? 'fréquents' : 'occasionnels'} révèlent un dysfonctionnement mitochondrial. ${enviesSucre === 'souvent' ? 'Tes envies de sucre fréquentes confirment que ton métabolisme est bloqué sur le glucose.' : ''}</p>`;
 
     case 'digestion':
       const digestQualite = responses['digestion-qualite'];
       const ballonnements = responses['ballonnements'];
       const transit = responses['transit'];
-      return `${prenom}, ta digestion ${digestQualite} avec ${ballonnements === 'souvent' ? 'des ballonnements fréquents' : ballonnements === 'parfois' ? 'des ballonnements occasionnels' : 'peu de ballonnements'} et un transit ${transit} impacte ton absorption des nutriments. Une digestion sous-optimale = moins de protéines assimilées = moins de muscle construit.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ta digestion ${digestQualite} avec ${ballonnements === 'souvent' ? 'des ballonnements fréquents' : ballonnements === 'parfois' ? 'des ballonnements occasionnels' : 'peu de ballonnements'} et un transit ${transit} impacte ton absorption des nutriments.</p>`;
 
     case 'training':
       const frequence = responses['sport-frequence'];
       const recuperation = responses['recuperation'];
       const evolution = responses['performance-evolution'];
-      return `${prenom}, tu t'entraînes ${frequence} fois par semaine mais ta récupération est ${recuperation}. ${evolution === 'stagnation' ? 'Ta stagnation de performance n\'est pas due à un manque d\'effort mais à un environnement hormonal et métabolique défavorable.' : ''} Tes séances deviennent du stress supplémentaire au lieu de stimuli adaptatifs.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, tu t'entraînes ${frequence} fois par semaine mais ta récupération est ${recuperation}. ${evolution === 'stagnation' ? 'Ta stagnation n\'est pas due à un manque d\'effort mais à un environnement hormonal défavorable.' : ''}</p>`;
 
     case 'nutrition':
       const proteines = responses['proteines-jour'];
       const transformes = responses['aliments-transformes'];
       const sucres = responses['sucres-ajoutes'];
-      return `${prenom}, ton apport en protéines ${proteines === 'insuffisant' ? 'insuffisant' : proteines} combiné à une consommation ${transformes === 'souvent' ? 'élevée' : 'modérée'} d'aliments transformés et ${sucres === 'souvent' ? 'fréquente' : 'occasionnelle'} de sucres ajoutés crée un environnement inflammatoire. Cela amplifie ta résistance à l'insuline et ton stockage adipeux.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton apport en protéines ${proteines === 'insuffisant' ? 'insuffisant' : proteines} combiné à une consommation ${transformes === 'souvent' ? 'élevée' : 'modérée'} d'aliments transformés crée un environnement inflammatoire.</p>`;
 
     case 'lifestyle':
       const ecrans = responses['temps-ecran'];
       const soleil = responses['exposition-soleil'];
       const assis = responses['heures-assis'];
-      return `${prenom}, ${assis === '8h-plus' ? 'tes 8h+ assis par jour' : 'ta sédentarité'} combinées à ${ecrans === 'plus-6h' ? '+6h d\'écrans' : 'ton temps d\'écran'} et ${soleil === 'rarement' ? 'un manque d\'exposition solaire' : 'une exposition solaire limitée'} perturbent tes rythmes circadiens et ta production de vitamine D. Cela impacte ton métabolisme et ta récupération.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ${assis === '8h-plus' ? 'tes 8h+ assis par jour' : 'ta sédentarité'} combinées à ${ecrans === 'plus-6h' ? '+6h d\'écrans' : 'ton temps d\'écran'} et ${soleil === 'rarement' ? 'un manque d\'exposition solaire' : 'une exposition solaire limitée'} perturbent tes rythmes circadiens.</p>`;
 
     case 'mindset':
       const engagement = responses['engagement-niveau'];
-      const frustration = responses['frustration-passee'];
-      return `${prenom}, ton niveau d'engagement "${engagement}" est un atout. ${frustration ? `Ta frustration passée ("${frustration.substring(0, 100)}...") est compréhensible mais les blocages identifiés expliquent pourquoi tes efforts n'ont pas payé jusqu'ici.` : ''} Le problème n'est pas ton mindset mais tes systèmes physiologiques.`;
+      return `<p class="mt-4"><strong>Ton profil :</strong> ${prenom}, ton niveau d'engagement "${engagement}" est un atout. Le problème n'est pas ton mindset mais tes systèmes physiologiques.</p>`;
 
     default:
-      return `Analyse détaillée du domaine ${domain} basée sur tes réponses.`;
+      return '';
   }
-}
-
-// Generate analysis for sub-optimal domains without major blocages
-function generateSubOptimalAnalysis(domain: string, score: number, responses: DiscoveryResponses): string {
-  return `### État actuel: ${score}/100\n\nCe domaine présente des axes d'amélioration sans blocage critique identifié. Les réponses au questionnaire indiquent des habitudes qui peuvent être optimisées pour améliorer ton score et contribuer à tes objectifs.`;
-}
-
-// Generate analysis for strength domains
-function generateStrengthAnalysis(domain: string, score: number, responses: DiscoveryResponses): string {
-  return `### Point fort: ${score}/100\n\nCe domaine est bien maîtrisé. Tes habitudes actuelles dans ce domaine sont alignées avec tes objectifs. Continue sur cette lancée - c'est une fondation solide pour ta transformation.`;
-}
-
-// Generate global diagnosis
-function generateGlobalDiagnosis(result: DiscoveryAnalysisResult, responses: DiscoveryResponses): string {
-  const prenom = responses.prenom || 'Tu';
-  const objectif = responses.objectif || 'tes objectifs';
-  const critiques = result.blocages.filter(b => b.severity === 'critique').length;
-  const moderes = result.blocages.filter(b => b.severity === 'modere').length;
-  const legers = result.blocages.filter(b => b.severity === 'leger').length;
-
-  let diagnosis = `## Diagnostic Global: ${result.globalScore}/100\n\n`;
-  diagnosis += `${prenom}, ton profil révèle **${result.blocages.length} blocages** qui expliquent directement pourquoi tu stagnes malgré tes efforts pour "${objectif}".\n\n`;
-
-  if (critiques > 0) diagnosis += `• **${critiques} blocage(s) critique(s)** - Action urgente requise\n`;
-  if (moderes > 0) diagnosis += `• **${moderes} blocage(s) modéré(s)** - Impact significatif sur tes résultats\n`;
-  if (legers > 0) diagnosis += `• **${legers} blocage(s) léger(s)** - Optimisations possibles\n`;
-
-  diagnosis += `\n### Domaines prioritaires\n`;
-  const worst = Object.entries(result.scoresByDomain).sort((a, b) => a[1] - b[1]).slice(0, 3);
-  worst.forEach(([domain, score]) => {
-    diagnosis += `• **${DOMAIN_TITLES[domain]}**: ${score}/100\n`;
-  });
-
-  return diagnosis;
 }
 
 // ============================================
