@@ -1,50 +1,70 @@
 /**
  * NEUROCORE 360 - Burnout Detection Engine
  * Server-side analysis for burnout questionnaire
+ * Structure identique à Discovery Scan
  */
 
 import type { Express } from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { searchArticles } from "./knowledge/storage";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 interface BurnoutResponse {
   [questionId: string]: string; // "0" to "4" scale
 }
 
-interface BurnoutAnalysisResult {
-  score: number;
+// Format identique à Discovery
+interface BurnoutReportData {
+  globalScore: number;
   phase: "alarme" | "resistance" | "epuisement";
-  phaseDescription: string;
-  categories: {
-    name: string;
-    score: number;
-    level: "optimal" | "attention" | "critique";
+  phaseLabel: string;
+  clientName: string;
+  generatedAt: string;
+  metrics: {
+    key: string;
+    label: string;
+    value: number;
+    max: number;
+    description: string;
   }[];
-  recommendations: {
-    immediate: string[];
-    shortTerm: string[];
-    longTerm: string[];
-  };
-  protocols: {
-    supplements: { name: string; dosage: string; reason: string }[];
-    lifestyle: string[];
-    nutrition: string[];
-  };
-  knowledgeInsights?: {
+  sections: {
+    id: string;
     title: string;
-    source: string;
-    excerpt: string;
+    subtitle?: string;
+    chips?: string[];
+    content: string; // HTML
   }[];
 }
 
 // Burnout categories for analysis
 const BURNOUT_CATEGORIES = [
-  { id: "energy", name: "Energie", questionPrefix: "e" },
-  { id: "sleep", name: "Sommeil", questionPrefix: "s" },
-  { id: "cognitive", name: "Cognitif", questionPrefix: "c" },
-  { id: "emotional", name: "Emotionnel", questionPrefix: "em" },
-  { id: "physical", name: "Physique", questionPrefix: "p" },
-  { id: "social", name: "Social", questionPrefix: "so" },
+  { id: "energie", name: "Energie", questionPrefix: "e", description: "Vitalité" },
+  { id: "sommeil", name: "Sommeil", questionPrefix: "s", description: "Récupération" },
+  { id: "cognitif", name: "Cognitif", questionPrefix: "c", description: "Clarté mentale" },
+  { id: "emotionnel", name: "Emotionnel", questionPrefix: "em", description: "Équilibre" },
+  { id: "physique", name: "Physique", questionPrefix: "p", description: "Corps" },
+  { id: "social", name: "Social", questionPrefix: "so", description: "Relations" },
 ];
+
+// Phase descriptions
+const PHASE_INFO = {
+  alarme: {
+    label: "Phase d'Alarme",
+    color: "#22C55E",
+    description: "Ton corps réagit au stress mais a encore toutes ses ressources. C'est le moment idéal pour agir car tu peux rebondir rapidement."
+  },
+  resistance: {
+    label: "Phase de Résistance",
+    color: "#F59E0B",
+    description: "Ton corps compense depuis un moment et commence à s'épuiser. Tes surrénales travaillent en surcharge. Il est crucial d'agir maintenant."
+  },
+  epuisement: {
+    label: "Phase d'Épuisement",
+    color: "#EF4444",
+    description: "Tes ressources sont très faibles et ton corps montre des signes de burnout installé. Un repos profond et un accompagnement sont nécessaires."
+  }
+};
 
 // Protocols based on phase
 const PHASE_PROTOCOLS = {
@@ -74,8 +94,8 @@ const PHASE_PROTOCOLS = {
       { name: "Vitamine D3", dosage: "4000 UI/jour", reason: "Immunité et humeur" },
     ],
     lifestyle: [
-      "Arrêt total des stimulants artificiels (pré-workout, etc.)",
-      "Sieste de 20 minutes si possible entre 13h-15h",
+      "Arrêt total des stimulants artificiels",
+      "Sieste de 20 minutes entre 13h-15h",
       "Réduire l'intensité des entraînements de 50%",
       "Méditation guidée 10 minutes/jour",
       "Coucher avant 22h30 sans exception",
@@ -83,22 +103,22 @@ const PHASE_PROTOCOLS = {
     nutrition: [
       "Augmenter les glucides complexes le soir",
       "Bouillon d'os ou collagène pour les surrénales",
-      "Éviter l'alcool complètement pendant 4 semaines",
+      "Éviter l'alcool pendant 4 semaines",
       "Sel de qualité (Himalaya) pour les surrénales",
     ],
   },
   epuisement: {
     supplements: [
-      { name: "Magnésium bisglycinate", dosage: "600mg réparti sur la journée", reason: "Reconstruction nerveuse" },
+      { name: "Magnésium bisglycinate", dosage: "600mg réparti", reason: "Reconstruction nerveuse" },
       { name: "Phosphatidylsérine", dosage: "300mg le soir", reason: "Réduction du cortisol nocturne" },
       { name: "Adaptogènes combinés", dosage: "Selon formule", reason: "Support surrénalien profond" },
-      { name: "Vitamine C liposomale", dosage: "1-2g/jour", reason: "Synthèse des hormones surrénaliennes" },
+      { name: "Vitamine C liposomale", dosage: "1-2g/jour", reason: "Synthèse hormones surrénaliennes" },
       { name: "Zinc", dosage: "30mg le soir", reason: "Immunité et hormones" },
     ],
     lifestyle: [
       "Arrêt de tout exercice intense pendant 2-4 semaines",
       "Marche douce uniquement (30 min max)",
-      "Congé ou réduction significative de la charge de travail",
+      "Congé ou réduction significative du travail",
       "Consultation médicale recommandée",
       "Thérapie ou coaching recommandé",
       "10h de sommeil minimum",
@@ -113,153 +133,276 @@ const PHASE_PROTOCOLS = {
   },
 };
 
-// Get knowledge base context for burnout analysis
-async function getBurnoutKnowledgeContext(
-  phase: "alarme" | "resistance" | "epuisement",
-  criticalCategories: string[]
-): Promise<{ title: string; source: string; excerpt: string }[]> {
+// Get knowledge base context
+async function getBurnoutKnowledge(phase: string, categories: string[]): Promise<string> {
   try {
-    // Build keywords based on phase and critical categories
-    const keywords: string[] = ["cortisol", "stress", "burnout", "fatigue", "récupération"];
+    const keywords = ["cortisol", "stress", "burnout", "fatigue", "récupération", "HPA", "surrénales"];
+    if (categories.includes("sommeil")) keywords.push("sommeil", "mélatonine", "circadien");
+    if (categories.includes("energie")) keywords.push("mitochondrie", "ATP", "énergie");
+    if (categories.includes("cognitif")) keywords.push("cognition", "dopamine", "focus");
+    if (categories.includes("emotionnel")) keywords.push("anxiété", "sérotonine", "GABA");
 
-    if (phase === "epuisement") {
-      keywords.push("adrenal", "HPA", "épuisement", "surmenage");
-    } else if (phase === "resistance") {
-      keywords.push("adaptogène", "rhodiola", "ashwagandha", "adaptation");
-    }
+    const articles = await searchArticles(keywords, 6);
+    if (articles.length === 0) return "";
 
-    if (criticalCategories.includes("Sommeil")) {
-      keywords.push("sommeil", "mélatonine", "circadien", "insomnie");
-    }
-    if (criticalCategories.includes("Energie")) {
-      keywords.push("énergie", "mitochondrie", "ATP", "fatigue");
-    }
-    if (criticalCategories.includes("Cognitif")) {
-      keywords.push("cognition", "focus", "dopamine", "concentration");
-    }
-    if (criticalCategories.includes("Emotionnel")) {
-      keywords.push("anxiété", "sérotonine", "GABA", "humeur");
-    }
-
-    const articles = await searchArticles(keywords.slice(0, 8), 5);
-
-    return articles.map(a => ({
-      title: a.title,
-      source: a.source,
-      excerpt: a.content.substring(0, 300) + "..."
-    }));
+    return articles.map(a =>
+      `SOURCE: ${a.source}\nTITRE: ${a.title}\nCONTENU: ${a.content.substring(0, 800)}`
+    ).join("\n\n---\n\n");
   } catch (error) {
     console.error("[Burnout] Knowledge search error:", error);
-    return [];
+    return "";
   }
 }
 
-async function analyzeBurnout(responses: BurnoutResponse, email: string): Promise<BurnoutAnalysisResult> {
-  // Calculate scores per category
-  const categoryScores = BURNOUT_CATEGORIES.map((cat) => {
+// Generate section content with Gemini
+async function generateBurnoutSection(
+  sectionType: string,
+  data: {
+    phase: string;
+    phaseInfo: typeof PHASE_INFO.alarme;
+    globalScore: number;
+    metrics: { key: string; label: string; value: number }[];
+    protocols: typeof PHASE_PROTOCOLS.alarme;
+    knowledgeContext: string;
+    clientName: string;
+  }
+): Promise<string> {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
+  const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
+
+  const prompts: Record<string, string> = {
+    intro: `Tu es un expert en gestion du stress et burnout. Génère un message d'ouverture personnalisé pour ${data.clientName}.
+
+DONNÉES:
+- Score global: ${data.globalScore}/100 (score inversé: ${100 - data.globalScore}% de santé)
+- Phase: ${data.phase} (${data.phaseInfo.label})
+- Catégories critiques: ${criticalCategories.join(", ") || "Aucune"}
+- Catégories attention: ${attentionCategories.join(", ") || "Aucune"}
+
+CONTEXTE SCIENTIFIQUE:
+${data.knowledgeContext}
+
+Écris 3 paragraphes:
+1. Accueil empathique + résumé de la situation
+2. Ce que signifie la phase ${data.phase} pour le corps
+3. Pourquoi c'est le bon moment d'agir
+
+Format: HTML simple (<p>, <strong>). Pas de markdown. Pas d'emojis. Ton direct et bienveillant.`,
+
+    analyse: `Tu es un expert en burnout. Analyse les scores de ${data.clientName}.
+
+SCORES PAR CATÉGORIE:
+${data.metrics.map(m => `- ${m.label}: ${m.value}/10`).join("\n")}
+
+Phase: ${data.phase}
+
+CONTEXTE SCIENTIFIQUE:
+${data.knowledgeContext}
+
+Pour chaque catégorie critique ou attention, explique:
+1. Ce que ce score révèle sur l'état actuel
+2. Les mécanismes biologiques impliqués (cortisol, HPA, neurotransmetteurs)
+3. Comment cette catégorie impacte les autres
+
+Format: HTML (<p>, <strong>, <br/>). 4-5 paragraphes substantiels. Pas de listes à puces.`,
+
+    protocole: `Tu es un expert en récupération du burnout. Crée un protocole pour ${data.clientName} en phase ${data.phase}.
+
+PROTOCOLE À INTÉGRER:
+Suppléments: ${data.protocols.supplements.map(s => `${s.name} (${s.dosage})`).join(", ")}
+Lifestyle: ${data.protocols.lifestyle.join(", ")}
+Nutrition: ${data.protocols.nutrition.join(", ")}
+
+CONTEXTE SCIENTIFIQUE:
+${data.knowledgeContext}
+
+Structure en 3 parties:
+1. SEMAINE 1-2: Actions immédiates (urgence)
+2. SEMAINE 3-4: Consolidation
+3. MOIS 2-3: Reconstruction durable
+
+Pour chaque action, explique POURQUOI (mécanisme biologique). Sois précis sur les timings et dosages.
+
+Format: HTML (<p>, <strong>). Paragraphes narratifs, pas de listes.`,
+
+    supplements: `Tu es un expert en supplémentation. Détaille le stack pour la phase ${data.phase}.
+
+STACK:
+${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).join("\n")}
+
+CONTEXTE SCIENTIFIQUE:
+${data.knowledgeContext}
+
+Pour chaque supplément:
+1. Mécanisme d'action précis
+2. Pourquoi ce dosage spécifique
+3. Timing optimal et interactions
+4. Signes que ça fonctionne
+
+Format: HTML (<p>, <strong>). Paragraphes détaillés par supplément.`,
+
+    conclusion: `Tu es un coach en récupération burnout. Écris une conclusion motivante pour ${data.clientName}.
+
+SITUATION:
+- Phase: ${data.phase}
+- Score: ${data.globalScore}%
+- Points critiques: ${criticalCategories.join(", ") || "Aucun"}
+
+Écris:
+1. Résumé des 3 actions prioritaires
+2. Ce qui va changer dans 30/60/90 jours si le protocole est suivi
+3. Message d'encouragement réaliste
+
+Format: HTML (<p>, <strong>). Ton direct et motivant. Pas de promesses irréalistes.`
+  };
+
+  try {
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompts[sectionType] || prompts.intro }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+    });
+
+    let content = result.response.text() || "";
+    // Clean markdown artifacts
+    content = content
+      .replace(/\*\*/g, "<strong>").replace(/\*\*/g, "</strong>")
+      .replace(/##\s*/g, "")
+      .replace(/\*/g, "")
+      .replace(/^[-•]\s+/gm, "")
+      .replace(/={4,}/g, "")
+      .replace(/-{4,}/g, "")
+      .trim();
+
+    return content;
+  } catch (error) {
+    console.error(`[Burnout] Gemini error for ${sectionType}:`, error);
+    return `<p>Analyse en cours de génération...</p>`;
+  }
+}
+
+// Main analysis function
+async function analyzeBurnout(responses: BurnoutResponse, email: string): Promise<BurnoutReportData> {
+  const clientName = email.split("@")[0] || "Client";
+
+  // Calculate scores per category (0-10 scale for metrics)
+  const metrics = BURNOUT_CATEGORIES.map((cat) => {
     const categoryQuestions = Object.entries(responses).filter(([key]) =>
       key.startsWith(cat.questionPrefix)
     );
     const totalScore = categoryQuestions.reduce((acc, [, val]) => acc + parseInt(val || "0"), 0);
     const maxScore = categoryQuestions.length * 4;
     const percentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+    // Inverser: score élevé = mauvais, donc santé = 10 - (percentage/10)
+    const healthScore = Math.round(10 - (percentage / 10));
 
     return {
-      name: cat.name,
-      score: Math.round(percentage),
-      level: percentage >= 70 ? "critique" as const : percentage >= 40 ? "attention" as const : "optimal" as const,
+      key: cat.id,
+      label: cat.name,
+      value: Math.max(1, Math.min(10, healthScore)),
+      max: 10,
+      description: cat.description,
     };
   });
 
-  // Calculate global score
+  // Calculate global score (stress level)
   const totalScore = Object.values(responses).reduce((acc, v) => acc + parseInt(v || "0"), 0);
   const totalQuestions = Object.keys(responses).length;
   const maxScore = totalQuestions * 4;
-  const globalPercentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+  const stressPercentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+  // Score global = santé (inversé)
+  const globalScore = Math.round(100 - stressPercentage);
 
   // Determine phase
   let phase: "alarme" | "resistance" | "epuisement";
-  let phaseDescription: string;
-
-  if (globalPercentage >= 70) {
+  if (stressPercentage >= 70) {
     phase = "epuisement";
-    phaseDescription =
-      "Phase d'épuisement avancé. Ton corps et ton esprit montrent des signes de burnout installé. Une intervention est nécessaire.";
-  } else if (globalPercentage >= 40) {
+  } else if (stressPercentage >= 40) {
     phase = "resistance";
-    phaseDescription =
-      "Phase de résistance. Ton corps compense mais s'épuise progressivement. C'est le moment idéal pour agir.";
   } else {
     phase = "alarme";
-    phaseDescription =
-      "Phase d'alarme légère. Tu montres quelques signes de stress mais tu as les ressources pour rebondir rapidement.";
   }
 
-  // Get protocols for the phase
+  const phaseInfo = PHASE_INFO[phase];
   const protocols = PHASE_PROTOCOLS[phase];
 
-  // Build recommendations based on category scores
-  const criticalCategories = categoryScores.filter((c) => c.level === "critique");
-  const attentionCategories = categoryScores.filter((c) => c.level === "attention");
+  // Get knowledge context
+  const criticalCategories = metrics.filter(m => m.value <= 4).map(m => m.key);
+  const knowledgeContext = await getBurnoutKnowledge(phase, criticalCategories);
 
-  const immediate: string[] = [];
-  const shortTerm: string[] = [];
-  const longTerm: string[] = [];
+  console.log(`[Burnout] Generating sections for ${email}, phase=${phase}, score=${globalScore}`);
 
-  // Immediate actions based on critical categories
-  if (criticalCategories.some((c) => c.name === "Sommeil")) {
-    immediate.push("Priorité absolue: améliorer la qualité du sommeil");
-    immediate.push("Pas d'écrans 2h avant le coucher");
-  }
-  if (criticalCategories.some((c) => c.name === "Energie")) {
-    immediate.push("Réduire drastiquement les efforts physiques intenses");
-    immediate.push("Augmenter les temps de repos");
-  }
-  if (criticalCategories.some((c) => c.name === "Emotionnel")) {
-    immediate.push("Identifier et limiter les sources de stress émotionnel");
-    immediate.push("Parler à un proche ou professionnel");
-  }
+  // Generate sections with Gemini
+  const sectionData = { phase, phaseInfo, globalScore, metrics, protocols, knowledgeContext, clientName };
 
-  // Short term (2-4 weeks)
-  shortTerm.push(...protocols.lifestyle.slice(0, 3));
-  shortTerm.push("Mettre en place une routine de récupération quotidienne");
+  const [introContent, analyseContent, protocoleContent, supplementsContent, conclusionContent] = await Promise.all([
+    generateBurnoutSection("intro", sectionData),
+    generateBurnoutSection("analyse", sectionData),
+    generateBurnoutSection("protocole", sectionData),
+    generateBurnoutSection("supplements", sectionData),
+    generateBurnoutSection("conclusion", sectionData),
+  ]);
 
-  // Long term (1-3 months)
-  longTerm.push("Réévaluer tes priorités de vie");
-  longTerm.push("Construire des habitudes de gestion du stress durables");
-  longTerm.push("Équilibrer vie pro et personnelle");
-
-  // Get knowledge base insights
-  const criticalCategoryNames = criticalCategories.map(c => c.name);
-  const knowledgeInsights = await getBurnoutKnowledgeContext(phase, criticalCategoryNames);
-
-  console.log(`[Burnout] Knowledge base: ${knowledgeInsights.length} articles found for phase=${phase}`);
+  const sections = [
+    {
+      id: "intro",
+      title: "Diagnostic Burnout",
+      subtitle: phaseInfo.label,
+      chips: [phaseInfo.label, `Score: ${globalScore}/100`],
+      content: introContent,
+    },
+    {
+      id: "analyse",
+      title: "Analyse par Catégorie",
+      subtitle: "Tes systèmes en détail",
+      chips: criticalCategories.length > 0 ? [`${criticalCategories.length} zones critiques`] : ["Équilibre correct"],
+      content: analyseContent,
+    },
+    {
+      id: "protocole",
+      title: "Protocole de Récupération",
+      subtitle: "Plan d'action personnalisé",
+      chips: ["Semaine par semaine"],
+      content: protocoleContent,
+    },
+    {
+      id: "supplements",
+      title: "Stack Suppléments",
+      subtitle: `Adapté à la phase ${phase}`,
+      chips: protocols.supplements.map(s => s.name),
+      content: supplementsContent,
+    },
+    {
+      id: "conclusion",
+      title: "Prochaines Étapes",
+      subtitle: "Ton chemin vers la récupération",
+      chips: ["30/60/90 jours"],
+      content: conclusionContent,
+    },
+  ];
 
   return {
-    score: Math.round(globalPercentage),
+    globalScore,
     phase,
-    phaseDescription,
-    categories: categoryScores,
-    recommendations: { immediate, shortTerm, longTerm },
-    protocols,
-    knowledgeInsights,
+    phaseLabel: phaseInfo.label,
+    clientName,
+    generatedAt: new Date().toISOString(),
+    metrics,
+    sections,
   };
 }
 
-// In-memory store for burnout results (persists until server restart)
-const burnoutStore = new Map<string, BurnoutAnalysisResult & { email: string; createdAt: string }>();
+// In-memory store
+const burnoutStore = new Map<string, BurnoutReportData & { email: string }>();
 
 export function registerBurnoutRoutes(app: Express): void {
   /**
    * POST /api/burnout-detection/analyze
-   * Analyze burnout questionnaire responses
    */
   app.post("/api/burnout-detection/analyze", async (req, res) => {
     try {
-      const { responses, email } = req.body as {
-        responses: BurnoutResponse;
-        email: string;
-      };
+      const { responses, email } = req.body;
 
       if (!responses || Object.keys(responses).length === 0) {
         res.status(400).json({ error: "Aucune réponse fournie" });
@@ -271,22 +414,17 @@ export function registerBurnoutRoutes(app: Express): void {
         return;
       }
 
-      console.log(`[Burnout] Analyzing responses for ${email}, ${Object.keys(responses).length} questions`);
+      console.log(`[Burnout] Analyzing for ${email}, ${Object.keys(responses).length} questions`);
 
       const result = await analyzeBurnout(responses, email);
 
-      // Generate ID and store result
+      // Generate ID and store
       const id = `burnout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      burnoutStore.set(id, { ...result, email, createdAt: new Date().toISOString() });
+      burnoutStore.set(id, { ...result, email });
 
-      // Log for admin notification
-      console.log(`[Burnout] Result for ${email}: ID=${id}, Phase=${result.phase}, Score=${result.score}%, Knowledge=${result.knowledgeInsights?.length || 0} articles`);
+      console.log(`[Burnout] Result: ID=${id}, Phase=${result.phase}, Score=${result.globalScore}`);
 
-      res.json({
-        success: true,
-        id,
-        ...result,
-      });
+      res.json({ success: true, id, ...result });
     } catch (error) {
       console.error("[Burnout] Analysis error:", error);
       res.status(500).json({ error: "Erreur lors de l'analyse" });
@@ -295,20 +433,17 @@ export function registerBurnoutRoutes(app: Express): void {
 
   /**
    * GET /api/burnout-detection/:id
-   * Get burnout analysis result by ID
    */
   app.get("/api/burnout-detection/:id", async (req, res) => {
     try {
       const { id } = req.params;
-
-      // Check in-memory store
       const result = burnoutStore.get(id);
+
       if (result) {
         res.json(result);
         return;
       }
 
-      // ID not found
       res.status(404).json({ error: "Analyse non trouvée" });
     } catch (error) {
       console.error("[Burnout] Fetch error:", error);
@@ -318,68 +453,28 @@ export function registerBurnoutRoutes(app: Express): void {
 
   /**
    * POST /api/burnout-detection/create-test
-   * Create a test burnout result for demo purposes
    */
   app.post("/api/burnout-detection/create-test", async (req, res) => {
     try {
-      // Create test data - Phase Resistance (moderate burnout)
-      const testResult: BurnoutAnalysisResult = {
-        score: 55,
-        phase: "resistance",
-        phaseDescription: "Phase de résistance. Ton corps compense mais s'épuise progressivement. C'est le moment idéal pour agir.",
-        categories: [
-          { name: "Energie", score: 62, level: "attention" },
-          { name: "Sommeil", score: 71, level: "critique" },
-          { name: "Cognitif", score: 45, level: "attention" },
-          { name: "Emotionnel", score: 58, level: "attention" },
-          { name: "Physique", score: 38, level: "optimal" },
-          { name: "Social", score: 52, level: "attention" }
-        ],
-        recommendations: {
-          immediate: [
-            "Priorité absolue: améliorer la qualité du sommeil",
-            "Pas d'écrans 2h avant le coucher",
-            "Identifier et limiter les sources de stress émotionnel"
-          ],
-          shortTerm: [
-            "Arrêt total des stimulants artificiels (pré-workout, etc.)",
-            "Sieste de 20 minutes si possible entre 13h-15h",
-            "Réduire l'intensité des entraînements de 50%",
-            "Mettre en place une routine de récupération quotidienne"
-          ],
-          longTerm: [
-            "Réévaluer tes priorités de vie",
-            "Construire des habitudes de gestion du stress durables",
-            "Équilibrer vie pro et personnelle"
-          ]
-        },
-        protocols: PHASE_PROTOCOLS.resistance,
-        knowledgeInsights: [
-          {
-            title: "Cortisol et Phase de Résistance",
-            source: "huberman",
-            excerpt: "La phase de résistance du stress chronique est caractérisée par une élévation maintenue du cortisol. Le corps s'adapte mais épuise ses réserves de catécholamines..."
-          },
-          {
-            title: "Rhodiola pour la Fatigue Chronique",
-            source: "examine",
-            excerpt: "La Rhodiola rosea a démontré des effets significatifs sur la réduction de la fatigue mentale et physique dans les études cliniques, avec des dosages de 200-400mg..."
-          }
-        ]
-      };
-
-      // Generate ID and store
-      const id = `burnout-test-${Date.now()}`;
-      burnoutStore.set(id, { ...testResult, email: "test@example.com", createdAt: new Date().toISOString() });
-
-      console.log(`[Burnout] Test result created: ID=${id}`);
-
-      res.json({
-        success: true,
-        id,
-        url: `/burnout/${id}`,
-        ...testResult
+      // Create test responses (moderate burnout - resistance phase)
+      const testResponses: BurnoutResponse = {};
+      // Simulate responses: mix of 1-3 values
+      const prefixes = ["e", "s", "c", "em", "p", "so"];
+      prefixes.forEach((prefix, idx) => {
+        for (let i = 1; i <= 5; i++) {
+          // Vary scores: sleep and cognitive worse
+          const baseScore = prefix === "s" || prefix === "c" ? 3 : prefix === "p" ? 1 : 2;
+          testResponses[`${prefix}${i}`] = String(Math.min(4, baseScore + Math.floor(Math.random() * 2)));
+        }
       });
+
+      const result = await analyzeBurnout(testResponses, "test@example.com");
+      const id = `burnout-test-${Date.now()}`;
+      burnoutStore.set(id, { ...result, email: "test@example.com" });
+
+      console.log(`[Burnout] Test created: ID=${id}`);
+
+      res.json({ success: true, id, url: `/burnout/${id}`, ...result });
     } catch (error) {
       console.error("[Burnout] Create test error:", error);
       res.status(500).json({ error: "Erreur création test" });
