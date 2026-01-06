@@ -4,6 +4,7 @@
  */
 
 import type { Express } from "express";
+import { searchArticles } from "./knowledge/storage";
 
 interface BurnoutResponse {
   [questionId: string]: string; // "0" to "4" scale
@@ -28,6 +29,11 @@ interface BurnoutAnalysisResult {
     lifestyle: string[];
     nutrition: string[];
   };
+  knowledgeInsights?: {
+    title: string;
+    source: string;
+    excerpt: string;
+  }[];
 }
 
 // Burnout categories for analysis
@@ -107,7 +113,48 @@ const PHASE_PROTOCOLS = {
   },
 };
 
-function analyzeBurnout(responses: BurnoutResponse, email: string): BurnoutAnalysisResult {
+// Get knowledge base context for burnout analysis
+async function getBurnoutKnowledgeContext(
+  phase: "alarme" | "resistance" | "epuisement",
+  criticalCategories: string[]
+): Promise<{ title: string; source: string; excerpt: string }[]> {
+  try {
+    // Build keywords based on phase and critical categories
+    const keywords: string[] = ["cortisol", "stress", "burnout", "fatigue", "récupération"];
+
+    if (phase === "epuisement") {
+      keywords.push("adrenal", "HPA", "épuisement", "surmenage");
+    } else if (phase === "resistance") {
+      keywords.push("adaptogène", "rhodiola", "ashwagandha", "adaptation");
+    }
+
+    if (criticalCategories.includes("Sommeil")) {
+      keywords.push("sommeil", "mélatonine", "circadien", "insomnie");
+    }
+    if (criticalCategories.includes("Energie")) {
+      keywords.push("énergie", "mitochondrie", "ATP", "fatigue");
+    }
+    if (criticalCategories.includes("Cognitif")) {
+      keywords.push("cognition", "focus", "dopamine", "concentration");
+    }
+    if (criticalCategories.includes("Emotionnel")) {
+      keywords.push("anxiété", "sérotonine", "GABA", "humeur");
+    }
+
+    const articles = await searchArticles(keywords.slice(0, 8), 5);
+
+    return articles.map(a => ({
+      title: a.title,
+      source: a.source,
+      excerpt: a.content.substring(0, 300) + "..."
+    }));
+  } catch (error) {
+    console.error("[Burnout] Knowledge search error:", error);
+    return [];
+  }
+}
+
+async function analyzeBurnout(responses: BurnoutResponse, email: string): Promise<BurnoutAnalysisResult> {
   // Calculate scores per category
   const categoryScores = BURNOUT_CATEGORIES.map((cat) => {
     const categoryQuestions = Object.entries(responses).filter(([key]) =>
@@ -182,6 +229,12 @@ function analyzeBurnout(responses: BurnoutResponse, email: string): BurnoutAnaly
   longTerm.push("Construire des habitudes de gestion du stress durables");
   longTerm.push("Équilibrer vie pro et personnelle");
 
+  // Get knowledge base insights
+  const criticalCategoryNames = criticalCategories.map(c => c.name);
+  const knowledgeInsights = await getBurnoutKnowledgeContext(phase, criticalCategoryNames);
+
+  console.log(`[Burnout] Knowledge base: ${knowledgeInsights.length} articles found for phase=${phase}`);
+
   return {
     score: Math.round(globalPercentage),
     phase,
@@ -189,6 +242,7 @@ function analyzeBurnout(responses: BurnoutResponse, email: string): BurnoutAnaly
     categories: categoryScores,
     recommendations: { immediate, shortTerm, longTerm },
     protocols,
+    knowledgeInsights,
   };
 }
 
@@ -216,10 +270,10 @@ export function registerBurnoutRoutes(app: Express): void {
 
       console.log(`[Burnout] Analyzing responses for ${email}, ${Object.keys(responses).length} questions`);
 
-      const result = analyzeBurnout(responses, email);
+      const result = await analyzeBurnout(responses, email);
 
       // Log for admin notification
-      console.log(`[Burnout] Result for ${email}: Phase=${result.phase}, Score=${result.score}%`);
+      console.log(`[Burnout] Result for ${email}: Phase=${result.phase}, Score=${result.score}%, Knowledge=${result.knowledgeInsights?.length || 0} articles`);
 
       res.json({
         success: true,
