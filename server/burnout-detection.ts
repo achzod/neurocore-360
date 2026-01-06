@@ -133,6 +133,60 @@ const PHASE_PROTOCOLS = {
   },
 };
 
+// Generate CTA section for burnout report
+function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globalScore: number): string {
+  const urgencyText = phase === "epuisement"
+    ? "Ta situation nécessite un accompagnement sérieux. Le burnout installé ne se règle pas seul."
+    : phase === "resistance"
+    ? "Tu es dans une fenêtre critique. Agir maintenant peut éviter l'épuisement total."
+    : "C'est le moment idéal pour optimiser. Tu as encore toutes tes ressources.";
+
+  return `
+<div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.02) 100%); border: 1px solid rgba(94, 234, 212, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+  <p style="font-size: 1.1rem; color: var(--text); margin-bottom: 16px;"><strong>${urgencyText}</strong></p>
+</div>
+
+<p style="font-size: 1.05rem; color: var(--text); line-height: 1.7; margin-bottom: 20px;">
+  Cette analyse t'a donné une cartographie de ta situation. Mais l'information seule ne change rien.
+  Ce qui fait la différence, c'est l'exécution et l'accompagnement.
+</p>
+
+<h4 style="font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 24px 0 16px;">OPTION 1 : ANABOLIC BIOSCAN (59€)</h4>
+<p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+  Une analyse complète de ton profil métabolique avec 16 domaines analysés, 5 protocoles fermés,
+  stack supplements personnalisée et plan 30-60-90 jours. Idéal pour avoir une feuille de route complète.
+</p>
+
+<h4 style="font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 24px 0 16px;">OPTION 2 : COACHING PERSONNALISÉ</h4>
+<p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+  Si tu veux un accompagnement réel avec ajustements en temps réel, suivi de tes KPIs,
+  et quelqu'un qui te tient accountable.
+</p>
+<ul style="margin: 12px 0; padding-left: 20px; color: var(--text-secondary);">
+  <li style="margin-bottom: 8px;"><strong>Essential Elite</strong> : Suivi hebdomadaire, ajustements continus</li>
+  <li style="margin-bottom: 8px;"><strong>Private Lab</strong> : Coaching intensif, analyses avancées</li>
+</ul>
+<p style="font-size: 1rem; color: var(--accent-ok); font-weight: 600; margin: 16px 0;">
+  BONUS : Si tu prends un Anabolic Bioscan avant le coaching, les 59€ sont déduits à 100% du prix.
+</p>
+<p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 8px;">
+  CODE PROMO : <strong>neurocore20</strong> (-25% sur Essential Elite et Private Lab)
+</p>
+
+<div style="background: var(--surface-2); border-radius: 12px; padding: 20px; margin-top: 24px;">
+  <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 12px;">Prochaine étape :</p>
+  <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6;">
+    Réponds à cet email ou contacte-moi directement pour qu'on échange sur ta situation.
+    On fait un call de 15 min pour voir si on est un bon fit. Pas de pression, pas de bullshit.
+  </p>
+  <p style="font-size: 1rem; color: var(--primary); margin-top: 16px;">
+    <strong>Email</strong> : coaching@achzodcoaching.com<br/>
+    <strong>Site</strong> : achzodcoaching.com
+  </p>
+</div>
+`;
+}
+
 // Get knowledge base context
 async function getBurnoutKnowledge(phase: string, categories: string[]): Promise<string> {
   try {
@@ -172,11 +226,33 @@ async function generateBurnoutSection(
   const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
   const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
 
+  // RÈGLES ANTI-IA COMMUNES À TOUS LES PROMPTS
+  const antiAIRules = `
+RÈGLES ANTI-IA (CRITIQUES - TON TEXTE DOIT ÊTRE 100% INDÉTECTABLE):
+INTERDITS ABSOLUS:
+- "Bonjour [Prénom]" ou formules de salutation
+- "J'espère que...", "N'hésite pas à...", "Je t'encourage à..."
+- "Il est important de noter que...", "Il convient de souligner..."
+- "En conclusion,", "Pour résumer,", "En somme,"
+- Listes à puces génériques
+- Ton robotique ou structure trop prévisible
+- Excès de politesse
+
+CE QUI REND TON TEXTE HUMAIN:
+- Commence DIRECTEMENT par l'analyse
+- Phrases courtes percutantes entre paragraphes argumentés
+- Apartés personnels ("Honnêtement...", "Ce que je vois...")
+- Observations spécifiques qui prouvent que tu as LU ses données
+- Varie la longueur des phrases
+- Sois direct, pas condescendant`;
+
   const prompts: Record<string, string> = {
-    intro: `Tu es un expert en gestion du stress et burnout. Génère un message d'ouverture personnalisé pour ${data.clientName}.
+    intro: `Tu es Achzod, expert en gestion du stress et burnout avec 11 certifications internationales. Tu analyses le profil de ${data.clientName}.
+
+${antiAIRules}
 
 DONNÉES:
-- Score global: ${data.globalScore}/100 (score inversé: ${100 - data.globalScore}% de santé)
+- Score global: ${data.globalScore}/100 (niveau de santé)
 - Phase: ${data.phase} (${data.phaseInfo.label})
 - Catégories critiques: ${criticalCategories.join(", ") || "Aucune"}
 - Catégories attention: ${attentionCategories.join(", ") || "Aucune"}
@@ -184,14 +260,16 @@ DONNÉES:
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-Écris 3 paragraphes:
-1. Accueil empathique + résumé de la situation
-2. Ce que signifie la phase ${data.phase} pour le corps
-3. Pourquoi c'est le bon moment d'agir
+Écris 3 paragraphes PERCUTANTS:
+1. Diagnostic direct de la situation (pas de "bienvenue" - va droit au but)
+2. Ce que la phase ${data.phase} signifie biologiquement pour son corps (cortisol, HPA, surrénales)
+3. Pourquoi agir MAINTENANT est critique
 
-Format: HTML simple (<p>, <strong>). Pas de markdown. Pas d'emojis. Ton direct et bienveillant.`,
+Format: HTML simple (<p>, <strong>). Pas de markdown. Pas d'emojis. Ton direct et expert.`,
 
-    analyse: `Tu es un expert en burnout. Analyse les scores de ${data.clientName}.
+    analyse: `Tu es Achzod, expert en burnout. Analyse chirurgicale des scores de ${data.clientName}.
+
+${antiAIRules}
 
 SCORES PAR CATÉGORIE:
 ${data.metrics.map(m => `- ${m.label}: ${m.value}/10`).join("\n")}
@@ -201,14 +279,18 @@ Phase: ${data.phase}
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-Pour chaque catégorie critique ou attention, explique:
-1. Ce que ce score révèle sur l'état actuel
-2. Les mécanismes biologiques impliqués (cortisol, HPA, neurotransmetteurs)
-3. Comment cette catégorie impacte les autres
+Pour chaque catégorie critique ou attention:
+1. Ce que ce score RÉVÈLE vraiment (pas de langue de bois)
+2. Les mécanismes biologiques impliqués (cortisol, HPA, neurotransmetteurs) - sois PRÉCIS
+3. Comment cette catégorie SABOTE les autres (interconnexions)
 
-Format: HTML (<p>, <strong>, <br/>). 4-5 paragraphes substantiels. Pas de listes à puces.`,
+Écris comme si tu parlais à ce client après avoir passé 2h sur son dossier. Pas de généralités.
 
-    protocole: `Tu es un expert en récupération du burnout. Crée un protocole pour ${data.clientName} en phase ${data.phase}.
+Format: HTML (<p>, <strong>). 4-5 paragraphes substantiels et PERSONNALISÉS.`,
+
+    protocole: `Tu es Achzod, expert en récupération du burnout. Protocole pour ${data.clientName} en phase ${data.phase}.
+
+${antiAIRules}
 
 PROTOCOLE À INTÉGRER:
 Suppléments: ${data.protocols.supplements.map(s => `${s.name} (${s.dosage})`).join(", ")}
@@ -219,15 +301,18 @@ CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
 Structure en 3 parties:
-1. SEMAINE 1-2: Actions immédiates (urgence)
-2. SEMAINE 3-4: Consolidation
-3. MOIS 2-3: Reconstruction durable
+1. SEMAINE 1-2: Actions d'URGENCE (ce qu'il doit faire DÈS DEMAIN)
+2. SEMAINE 3-4: Consolidation (pourquoi chaque action compte biologiquement)
+3. MOIS 2-3: Reconstruction durable (objectifs mesurables)
 
-Pour chaque action, explique POURQUOI (mécanisme biologique). Sois précis sur les timings et dosages.
+Pour chaque action, explique le POURQUOI biologique. Sois précis sur les timings et dosages.
+Ne sois pas vague. Donne des heures, des quantités, des protocoles exacts.
 
-Format: HTML (<p>, <strong>). Paragraphes narratifs, pas de listes.`,
+Format: HTML (<p>, <strong>). Paragraphes narratifs, pas de listes génériques.`,
 
-    supplements: `Tu es un expert en supplémentation. Détaille le stack pour la phase ${data.phase}.
+    supplements: `Tu es Achzod, expert en supplémentation niveau EXPERT. Stack pour la phase ${data.phase}.
+
+${antiAIRules}
 
 STACK:
 ${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).join("\n")}
@@ -235,27 +320,40 @@ ${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-Pour chaque supplément:
-1. Mécanisme d'action précis
-2. Pourquoi ce dosage spécifique
-3. Timing optimal et interactions
-4. Signes que ça fonctionne
+Pour CHAQUE supplément, explique comme un EXPERT (pas comme une notice):
+
+1. POURQUOI ce supplément dans SON cas précis
+2. MÉCANISME D'ACTION précis (récepteurs, enzymes, voies métaboliques)
+3. DOSAGE: pourquoi cette quantité, pas plus, pas moins
+4. TIMING optimal et POURQUOI (chronobiologie)
+5. COMMENT LIRE L'ÉTIQUETTE: ce qu'il doit vérifier avant d'acheter
+6. SIGNES que ça fonctionne (quand il saura que ça marche)
+7. PRÉCAUTIONS spécifiques à sa phase
+
+Le client doit COMPRENDRE ce qu'il prend et POURQUOI. Pas juste une liste de produits.
 
 Format: HTML (<p>, <strong>). Paragraphes détaillés par supplément.`,
 
-    conclusion: `Tu es un coach en récupération burnout. Écris une conclusion motivante pour ${data.clientName}.
+    conclusion: `Tu es Achzod, coach expert. Conclusion pour ${data.clientName}.
+
+${antiAIRules}
 
 SITUATION:
 - Phase: ${data.phase}
 - Score: ${data.globalScore}%
 - Points critiques: ${criticalCategories.join(", ") || "Aucun"}
 
-Écris:
-1. Résumé des 3 actions prioritaires
-2. Ce qui va changer dans 30/60/90 jours si le protocole est suivi
-3. Message d'encouragement réaliste
+Écris une conclusion qui POUSSE À L'ACTION:
 
-Format: HTML (<p>, <strong>). Ton direct et motivant. Pas de promesses irréalistes.`
+1. LES 3 ACTIONS NON-NÉGOCIABLES (cette semaine, pas "un jour")
+2. CE QUI SE PASSE dans 30/60/90 jours SI il applique
+3. CE QUI SE PASSE SI IL NE FAIT RIEN (sois honnête, pas alarmiste mais réaliste)
+4. Message final direct et personnel
+
+PAS de "je crois en toi" ou de formules creuses.
+Une phrase finale qui résonne avec SA situation spécifique.
+
+Format: HTML (<p>, <strong>). Ton direct et motivant.`
   };
 
   try {
@@ -379,6 +477,13 @@ async function analyzeBurnout(responses: BurnoutResponse, email: string): Promis
       subtitle: "Ton chemin vers la récupération",
       chips: ["30/60/90 jours"],
       content: conclusionContent,
+    },
+    {
+      id: "cta",
+      title: "Aller Plus Loin",
+      subtitle: "Accompagnement personnalisé",
+      chips: ["Coaching", "Anabolic Bioscan"],
+      content: generateBurnoutCTA(phase, globalScore),
     },
   ];
 
