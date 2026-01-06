@@ -45,7 +45,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2">
             <div className="flex flex-col">
               <span className="text-xl font-black tracking-tighter leading-none" data-testid="text-brand-name">
-                APEX<span className="text-primary">LABS</span>
+                APEX<span className="text-[#FCDD00]">LABS</span>
               </span>
               <span className="text-[10px] text-muted-foreground tracking-wide">by Achzod</span>
             </div>
@@ -113,9 +113,9 @@ export function Header() {
             )}
 
             <Link href="/offers/ultimate-scan">
-              <Button size="sm" className="px-4 text-sm font-semibold" data-testid="button-start-audit">
+              <button className="px-4 py-2 text-sm font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(252,221,0,0.4)]" data-testid="button-start-audit">
                 Commencer
-              </Button>
+              </button>
             </Link>
 
             {/* Mobile menu toggle */}
