@@ -516,9 +516,7 @@ function Header() {
       <div className="container mx-auto px-6 flex justify-between items-center">
         {/* Logo Section - APEXLABS (White/Yellow) + by Achzod */}
         <a
-          href="https://www.achzodcoaching.com/"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/"
           className="flex flex-col leading-none group cursor-pointer"
         >
           <span className="text-2xl font-black tracking-tighter text-white uppercase">
