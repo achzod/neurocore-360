@@ -4,6 +4,7 @@
  */
 
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -150,6 +151,7 @@ interface BurnoutResult {
 
 export default function BurnoutDetectionPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [step, setStep] = useState<Step>("intro");
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -205,13 +207,15 @@ export default function BurnoutDetectionPage() {
       if (!response.ok) throw new Error("Analysis failed");
 
       const data = await response.json();
-      setResult(data.result);
-      setStep("results");
+      // Save to localStorage for the dashboard to retrieve
+      localStorage.setItem('burnoutResult', JSON.stringify(data));
+      // Redirect to the new Ultrahuman-style dashboard
+      setLocation('/burnout/latest');
     } catch (error) {
       // Fallback: calculate locally if API fails
       const localResult = calculateBurnoutScore(responses);
-      setResult(localResult);
-      setStep("results");
+      localStorage.setItem('burnoutResult', JSON.stringify(localResult));
+      setLocation('/burnout/latest');
     } finally {
       setIsProcessing(false);
     }

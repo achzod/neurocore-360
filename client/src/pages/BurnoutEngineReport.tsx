@@ -210,6 +210,31 @@ const BurnoutEngineReport: React.FC = () => {
         return;
       }
 
+      // Special case: load from localStorage for "latest" results
+      if (auditId === 'latest') {
+        try {
+          const stored = localStorage.getItem('burnoutResult');
+          if (stored) {
+            const data = JSON.parse(stored);
+            // Validate burnout data structure
+            if (typeof data.score !== 'number' || !data.phase || !data.categories) {
+              setError('Format de rapport invalide');
+              setLoading(false);
+              return;
+            }
+            setReportData(data);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error('Error loading from localStorage:', e);
+        }
+        setError('Aucune analyse récente trouvée');
+        setLoading(false);
+        return;
+      }
+
+      // Normal case: fetch from API
       try {
         const response = await fetch(`/api/burnout-detection/${auditId}`);
         const data = await response.json();
