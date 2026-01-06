@@ -26,18 +26,20 @@ interface ContentValidation {
 }
 
 // Minimum content requirements for PREMIUM tier (Anabolic Bioscan)
+// NOUVEAU: 20-25 lignes minimum par section = ~1000-1500 chars
 const PREMIUM_VALIDATION: Record<string, ContentValidation> = {
-  analysis: { minChars: 4000, minLines: 50, maxRetries: 3 },
-  protocol: { minChars: 6000, minLines: 80, maxRetries: 3 },
-  summary: { minChars: 3000, minLines: 40, maxRetries: 3 }
+  analysis: { minChars: 5000, minLines: 60, maxRetries: 3 },
+  protocol: { minChars: 7000, minLines: 90, maxRetries: 3 },
+  summary: { minChars: 4000, minLines: 50, maxRetries: 3 }
 };
 
 // Minimum content requirements for ELITE tier (Ultimate Scan) - higher standards
+// NOUVEAU: 25-30 lignes minimum par section = ~1500-2000 chars
 const ELITE_VALIDATION: Record<string, ContentValidation> = {
-  analysis: { minChars: 5000, minLines: 60, maxRetries: 3 },
-  protocol: { minChars: 8000, minLines: 100, maxRetries: 3 },
-  summary: { minChars: 4000, minLines: 50, maxRetries: 3 },
-  photo: { minChars: 6000, minLines: 70, maxRetries: 3 }
+  analysis: { minChars: 6000, minLines: 75, maxRetries: 3 },
+  protocol: { minChars: 9000, minLines: 120, maxRetries: 3 },
+  summary: { minChars: 5000, minLines: 60, maxRetries: 3 },
+  photo: { minChars: 7000, minLines: 85, maxRetries: 3 }
 };
 
 // Categorize sections for validation
@@ -68,43 +70,49 @@ function getValidationForSection(section: string, tier: AuditTier): ContentValid
   return validations[category] || validations.analysis;
 }
 
-// Knowledge base keywords mapping for each section
+// Knowledge base keywords mapping for each section - ENRICHI pour Ultimate Scan
 const SECTION_KEYWORDS: Record<string, string[]> = {
-  "Executive Summary": ['metabolism', 'hormones', 'energy', 'optimization', 'body composition'],
-  "Analyse visuelle et posturale complete": ['posture', 'body fat distribution', 'endocrine signature', 'adiposity', 'visceral fat', 'cortisol', 'insulin resistance'],
-  "Analyse biomecanique et sangle profonde": ['psoas', 'diaphragm', 'core stability', 'glutes activation', 'hip flexors', 'thoracic mobility', 'pelvic tilt'],
-  "Analyse entrainement et periodisation": ['hypertrophy', 'periodization', 'progressive overload', 'recovery', 'training volume', 'muscle protein synthesis', 'mTOR'],
-  "Analyse systeme cardiovasculaire": ['vo2max', 'zone 2', 'mitochondria', 'aerobic capacity', 'heart rate variability', 'lactate threshold', 'cardio'],
-  "Analyse metabolisme et nutrition": ['insulin', 'metabolism', 'TDEE', 'protein', 'macros', 'meal timing', 'metabolic flexibility', 'glucose'],
-  "Analyse sommeil et recuperation": ['sleep', 'circadian', 'melatonin', 'adenosine', 'GH', 'cortisol', 'REM', 'deep sleep'],
-  "Analyse digestion et microbiote": ['gut', 'microbiome', 'SIBO', 'leaky gut', 'probiotics', 'digestion', 'zonulin', 'inflammation'],
-  "Analyse axes hormonaux": ['testosterone', 'cortisol', 'thyroid', 'insulin', 'estrogen', 'HPA axis', 'hormones', 'pregnenolone steal'],
-  "Protocole Matin Anti-Cortisol": ['cortisol awakening response', 'circadian', 'morning routine', 'light exposure', 'coffee timing', 'adenosine'],
-  "Protocole Soir Verrouillage Sommeil": ['sleep hygiene', 'melatonin', 'blue light', 'magnesium', 'sleep architecture', 'temperature'],
-  "Protocole Digestion 14 Jours": ['elimination diet', 'gut healing', 'glutamine', 'probiotics', 'FODMAPs', 'food intolerance'],
-  "Protocole Bureau Anti-Sedentarite": ['NEAT', 'hip flexors', 'posture correction', 'sedentary', 'mobility', 'glute activation'],
-  "Protocole Entrainement Personnalise": ['training program', 'periodization', 'progressive overload', 'tempo', 'RPE', 'deload'],
-  "Plan Semaine par Semaine 30-60-90": ['habit formation', 'progressive implementation', 'behavior change', 'tracking', 'milestones'],
-  "KPI et Tableau de Bord": ['metrics', 'tracking', 'body composition', 'performance indicators', 'progress'],
-  "Stack Supplements Optimise": ['supplements', 'creatine', 'vitamin D', 'magnesium', 'omega-3', 'ashwagandha', 'dosing'],
-  "Synthese et Prochaines Etapes": ['action plan', 'priorities', 'implementation', 'lifestyle optimization']
+  "Executive Summary": ['metabolism', 'hormones', 'energy', 'optimization', 'body composition', 'cortisol', 'testosterone', 'insulin'],
+  "Analyse visuelle et posturale complete": ['posture', 'body fat distribution', 'endocrine signature', 'adiposity', 'visceral fat', 'cortisol', 'insulin resistance', 'gynecomastie', 'estrogen', 'android fat', 'gynoid'],
+  "Analyse biomecanique et sangle profonde": ['psoas', 'diaphragm', 'core stability', 'glutes activation', 'hip flexors', 'thoracic mobility', 'pelvic tilt', 'pronation', 'supination', 'acromion', 'humerus', 'scapula', 'subacromial', 'impingement', 'rotator cuff'],
+  "Analyse entrainement et periodisation": ['hypertrophy', 'periodization', 'progressive overload', 'recovery', 'training volume', 'muscle protein synthesis', 'mTOR', 'RPE', 'tempo', 'mechanical tension', 'metabolic stress'],
+  "Analyse systeme cardiovasculaire": ['vo2max', 'zone 2', 'mitochondria', 'aerobic capacity', 'heart rate variability', 'lactate threshold', 'cardio', 'HRV', 'resting heart rate', 'parasympathetic'],
+  "Analyse metabolisme et nutrition": ['insulin', 'metabolism', 'TDEE', 'protein', 'macros', 'meal timing', 'metabolic flexibility', 'glucose', 'gluconeogenesis', 'glycogen', 'lipogenesis', 'lipolysis'],
+  "Analyse sommeil et recuperation": ['sleep', 'circadian', 'melatonin', 'adenosine', 'GH', 'cortisol', 'REM', 'deep sleep', 'sleep architecture', 'orexin', 'glymphatic'],
+  "Analyse digestion et microbiote": ['gut', 'microbiome', 'SIBO', 'leaky gut', 'probiotics', 'digestion', 'zonulin', 'inflammation', 'butyrate', 'akkermansia', 'bile acids'],
+  "Analyse axes hormonaux": ['testosterone', 'cortisol', 'thyroid', 'insulin', 'estrogen', 'HPA axis', 'hormones', 'pregnenolone steal', 'SHBG', 'aromatase', 'DHT', 'LH', 'FSH', 'prolactin', 'DIM', 'zinc'],
+  "Protocole Matin Anti-Cortisol": ['cortisol awakening response', 'circadian', 'morning routine', 'light exposure', 'coffee timing', 'adenosine', 'sunlight', 'cold exposure'],
+  "Protocole Soir Verrouillage Sommeil": ['sleep hygiene', 'melatonin', 'blue light', 'magnesium', 'sleep architecture', 'temperature', 'glycine', 'apigenin', 'GABA'],
+  "Protocole Digestion 14 Jours": ['elimination diet', 'gut healing', 'glutamine', 'probiotics', 'FODMAPs', 'food intolerance', 'collagen', 'bone broth', 'zinc carnosine'],
+  "Protocole Bureau Anti-Sedentarite": ['NEAT', 'hip flexors', 'posture correction', 'sedentary', 'mobility', 'glute activation', 'thoracic spine', 'anterior pelvic tilt'],
+  "Protocole Entrainement Personnalise": ['training program', 'periodization', 'progressive overload', 'tempo', 'RPE', 'deload', 'shoulder impingement', 'rotator cuff', 'scapular stability'],
+  "Plan Semaine par Semaine 30-60-90": ['habit formation', 'progressive implementation', 'behavior change', 'tracking', 'milestones', 'accountability'],
+  "KPI et Tableau de Bord": ['metrics', 'tracking', 'body composition', 'performance indicators', 'progress', 'waist circumference', 'resting heart rate'],
+  "Stack Supplements Optimise": ['supplements', 'creatine', 'vitamin D', 'magnesium', 'omega-3', 'ashwagandha', 'dosing', 'zinc', 'boron', 'tongkat ali', 'DIM', 'calcium d-glucarate'],
+  "Synthese et Prochaines Etapes": ['action plan', 'priorities', 'implementation', 'lifestyle optimization', 'protocol', 'correction']
 };
 
-// Get knowledge base context for a section
+// Get knowledge base context for a section - UTILISE TOUTE LA BIBLIOTHEQUE
 async function getKnowledgeContextForSection(section: string): Promise<string> {
   const keywords = SECTION_KEYWORDS[section] || [];
   if (keywords.length === 0) return '';
 
   try {
-    const articles = await searchArticles(keywords.slice(0, 5), 6, [
-      'huberman', 'peter_attia', 'examine', 'applied_metabolics', 'chris_masterjohn', 'rp', 'sbs'
-    ]);
+    // TOUTES LES SOURCES de la bibliotheque - y compris achzod, newsletter, manual
+    const allSources = [
+      'huberman', 'peter_attia', 'examine', 'applied_metabolics', 'chris_masterjohn',
+      'renaissance_periodization', 'sbs', 'mpmd', 'marek_health',
+      'achzod', 'newsletter', 'manual'  // Sources ACHZOD coaching
+    ];
+
+    // Recherche avec plus de keywords et plus d'articles
+    const articles = await searchArticles(keywords.slice(0, 8), 10, allSources);
 
     if (articles.length === 0) return '';
 
-    // Build comprehensive context with more content
+    // Build comprehensive context with MORE content per article (1200 chars au lieu de 800)
     const context = articles.map((a: { source: string; title: string; content: string }) =>
-      `[${a.source.toUpperCase()}] ${a.title}\nContenu cle: ${a.content.substring(0, 800)}...`
+      `[${a.source.toUpperCase()}] ${a.title}\nContenu cle: ${a.content.substring(0, 1200)}...`
     ).join('\n\n---\n\n');
 
     return context;
@@ -382,12 +390,19 @@ COUVERTURE DES REPONSES (CRITIQUE)
 - Si une reponse importante n'est PAS exploitable (trop vague / incoherente) : transforme ca en "PROCHAINE ETAPE GUIDEE" (workflow) au lieu de le dire comme un manque.
 
 LONGUEUR DE SECTION (OBLIGATOIRE POUR RAPPORT PREMIUM)
-- Chaque section ANALYSE doit faire 5000-7000 caracteres minimum (120-175 lignes)
+- Chaque section ANALYSE doit faire 5000-7000 caracteres minimum (120-175 lignes soit 20-25 lignes substantielles)
 - Chaque section PROTOCOLE doit faire 6000-8000 caracteres minimum (150-200 lignes)
 - Developpe en profondeur : pas de listes telegraphiques, des paragraphes argumentes
 - Explique les MECANISMES BIOLOGIQUES derriere chaque recommandation
 - Donne des EXEMPLES CONCRETS personnalises au client
 - Pour les protocoles : minute par minute, variantes selon contraintes, erreurs a eviter
+
+KNOWLEDGE BASE OBLIGATOIRE (100% BASE SCIENTIFIQUE)
+- Tu DOIS te baser a 100% sur les donnees scientifiques fournies dans la knowledge base
+- Cite les sources : Huberman, Attia, Examine, Applied Metabolics, ACHZOD, newsletters
+- Donne des PROTOCOLES PRECIS avec dosages, timing, duree (comme dans la bibli)
+- INTERDICTION de donner des conseils generiques sans base scientifique
+- Pour chaque recommandation, explique le POURQUOI biochimique/physiologique
 
 {section_specific_instructions}
 
@@ -450,14 +465,33 @@ INTERDICTION : Pas de tirets, pas de schémas texte. Uniquement de la narration 
 INSTRUCTIONS POUR "ANALYSE BIOMECANIQUE ET SANGLE PROFONDE" :
 
 TU ES UN CLINICIEN DU MOUVEMENT. Rédige un RAPPORT D'EXPERTISE DE HAUT VOL.
+
+DONNÉES QUESTIONNAIRE ELITE À EXPLOITER (si disponibles):
+- zones-douleur : Zones de douleur déclarées (épaule, coude, dos-haut, dos-bas, hanche, genou, cheville)
+- type-douleur : Articulaire, musculaire, tendineux, nerveux
+- douleur-moment : Repos, pendant exo, après exo, réveil, fin de journée
+- epaule-douleur-detail : Quand la douleur épaule apparaît (développé, traction, élévation latérale, rotation)
+- dos-douleur-detail : Quand la douleur dos apparaît (squat, soulevé de terre, position assise)
+- genou-douleur-detail : Quand la douleur genou apparaît (squat profond, fentes, course, escaliers)
+- mobilite-generale : Niveau de mobilité générale
+- mobilite-limitee : Zones spécifiques limitées (épaules, thoracique, hanches, chevilles)
+- blessures-passees : Tendinite, entorse, hernie, déchirure, chirurgie
+- adaptations-exos : Exercices que le client évite
+
 1. DIAGNOSTIC DE TENSEGRITÉ :
 Décris l'interaction entre le psoas, le diaphragme et la sangle profonde non pas comme des muscles, mais comme un système de haubans et de pressions.
 
 2. MÉCANISMES DE DÉFAILLANCE :
 Explique pourquoi le "bas du dos" est la victime collatérale d'une inhibition neurologique (amnésie des fessiers).
 
-3. RÉÉDUCATION NEUROLOGIQUE :
+3. ANALYSE DES DOULEURS SPÉCIFIQUES (si données disponibles) :
+- Si douleur épaule au développé : explique le conflit sous-acromial, le rôle de la PRONATION qui réduit l'espace sous-acromial, la position de la scapula. Recommande la SUPINATION/rotation externe pour libérer l'espace.
+- Si douleur dos bas : analyse psoas/quadratus, antéversion du bassin, inhibition des fessiers.
+- Si douleur genou : chaîne postérieure, contrôle valgus, force du VMO.
+
+4. RÉÉDUCATION NEUROLOGIQUE :
 Propose une intégration neurologique (Stomach Vacuum, activation ciblée) expliquée de manière scientifique.
+Inclus des CORRECTIONS BIOMÉCANIQUES précises basées sur les douleurs déclarées.
 
 INTERDICTION : Pas de listes, pas de tirets, pas de graphiques texte. Uniquement de la narration experte.`,
 
@@ -466,14 +500,37 @@ INSTRUCTIONS POUR "ANALYSE ENTRAINEMENT ET PERIODISATION" :
 
 Tu fais un AUDIT de son programme actuel BASE UNIQUEMENT sur ses reponses (split, frequence, niveau, objectifs, contraintes).
 
+DONNÉES QUESTIONNAIRE ELITE À EXPLOITER (si disponibles):
+- glucides-reveil : Petit-déjeuner (glucides rapides, complexes, protéines, jeûne)
+- glucides-pre-muscu : Stratégie avant musculation (repas, collation, jeun)
+- glucides-intra : Glucides pendant l'entraînement (boisson, solide, non)
+- bcaa-intra : BCAA/EAA pendant l'entraînement
+- repas-post-training : Délai du repas post-training (<30min, 1h, 1-2h, +2h)
+- shake-post : Type de shake post-training (whey seule, whey+glucides, gaineur)
+- timing-training : Moment de l'entraînement (matin jeun, matin post-pdj, midi, aprem, soir)
+- zones-douleur : Douleurs actuelles (épaule, coude, dos-bas, hanche, genou, cheville)
+- blessures-passees : Historique blessures (tendinite, entorse, hernie, déchirure)
+- adaptations-exos : Exercices que le client évite actuellement
+
 OBJECTIF :
 - Expliquer pourquoi son corps progresse OU pourquoi il stagne (mecanismes nerveux + metabolique + gestion de la fatigue).
 - Identifier 2-3 erreurs probables (en les presentant comme hypotheses si l'info n'est pas explicite).
 - Donner une direction de periodisation simple et actionnable (blocs), sans inventer de chiffres si non fournis.
 
+NUTRITION TIMING PÉRI-WORKOUT (si données ELITE disponibles):
+- Analyse critique du timing nutritionnel actuel du client
+- Pré-workout : glycogène musculaire, timing caféine (minimum 1h avant), substrats énergétiques
+- Intra-workout : quand c'est vraiment utile (séances >90min, haut volume hypertrophie) vs overkill
+- Post-workout : fenêtre anabolique (mythe des 30min vs réalité des 24h de synthèse protéique)
+- Timing d'entraînement : implications selon matin/soir (cortisol, température corporelle, force maximale)
+
+GESTION DES DOULEURS (si données ELITE disponibles):
+- Si douleur épaule au développé : recommande rotation externe, grip neutre, inclinaison 30° max
+- Si douleur dos bas : recommande hip hinge pattern, renforcement gainage, mobilité hanches
+- Si douleur genou : recommande travail excentrique contrôlé, éviter rebond en bas de squat
+
 REGLES :
-- Si tu n'as pas la donnee exacte (volume, series, charges) : ne mets pas de "X". Parle en qualitatif ("volume probablement trop stable", "intensite percue").
-- Pas de diagnostic definitif sur les blessures : "si douleur", "si gene", "a confirmer".
+- Si tu n'as pas la donnee exacte (volume, series, charges) : ne mets pas de "X". Parle en qualitatif.
 - Tu peux utiliser 3 lignes maximum en format ✓/✗/→ (pas de listes longues).
 
 FIN OBLIGATOIRE :
@@ -483,16 +540,38 @@ FIN OBLIGATOIRE :
   "Analyse systeme cardiovasculaire": `
 INSTRUCTIONS POUR "ANALYSE SYSTEME CARDIOVASCULAIRE" :
 
+DONNÉES QUESTIONNAIRE ELITE À EXPLOITER (si disponibles):
+- cardio-frequence : Séances cardio/semaine (0, 1-2, 3-4, 5+)
+- zone2-connaissance : Connaissance de l'entraînement Zone 2 (non, vaguement, oui pas pratiqué, oui pratiqué)
+- zone2-temps : Temps en Zone 2/semaine (0, <60min, 60-120min, 120-180min, 180+min)
+- vo2max : VO2max estimée (<30 faible, 30-40 moyen, 40-50 bon, 50+ excellent)
+- fc-cardio : FC habituelle en cardio (<120, 120-140 Zone 2, 140-160 Zone 3, 160+ Zone 4+)
+- hiit-ratio : Ratio HIIT vs basse intensité (100% HIIT à 100% LISS)
+- lactate-threshold : Connaissance du seuil lactique (non, oui test, oui estimé montre)
+- hrv-mesure : Mesure de HRV (non, parfois, régulièrement)
+- hrv-valeur : HRV moyenne (<30ms, 30-50ms, 50-70ms, 70+ms)
+- fc-repos : FC au repos (<50, 50-60, 60-70, 70-80, 80+ bpm)
+- montre-connectee : Type de montre (Apple, Garmin, Oura, Whoop, autre)
+- palpitations : Fréquence des palpitations
+
 STRUCTURE :
 - Titre principal unique : "ANALYSE SYSTEME CARDIOVASCULAIRE"
 - Sous-section 1 : "1. Positionnement métabolique"
-  Rédige un paragraphe narratif situant le client sur le spectre entre "Sédentaire Actif" et "Athlète Métabolique". 
-  Utilise des phrases complètes, pas seulement des emojis. Explique pourquoi il est à cette position.
+  Rédige un paragraphe narratif situant le client sur le spectre entre "Sédentaire Actif" et "Athlète Métabolique".
+  Si données ELITE disponibles : utilise la FC repos, HRV, VO2max estimée pour qualifier le niveau.
+  FC repos >70 bpm = système nerveux sympathique dominant, stress chronique probable.
+  HRV <30ms = récupération compromise, adaptation limitée.
 
 - Sous-section 2 : "2. Récit clinique cardiovasculaire"
-  Interprète la fréquence cardiaque au repos avec des phrases complètes. 
-  Explique la différence entre "faire du cardio" et "construire ses mitochondries" de manière narrative. 
+  Interprète la fréquence cardiaque au repos avec des phrases complètes.
+  Explique la différence entre "faire du cardio" et "construire ses mitochondries" de manière narrative.
+  Si le client fait 100% HIIT : explique pourquoi c'est contre-productif pour les mitochondries.
   Explique pourquoi la Zone 2 est le socle de la combustion des graisses avec des exemples concrets.
+
+- Sous-section 3 : "3. Plan d'optimisation cardiovasculaire" (si données ELITE)
+  Si zone2-temps < 120min/semaine : recommande augmentation progressive vers 150-180min/semaine
+  Si hiit-ratio > 50% : recommande inversion vers 80% Zone 2 / 20% haute intensité (modèle polarisé)
+  Si HRV basse : recommande travail parasympathique (respiration, Zone 2)
 
 Minimum 60 lignes de texte narratif.`,
 
@@ -828,56 +907,60 @@ Ce protocole est VITAL pour debloquer tes hanches et sauver ton dos.
   "Protocole Entrainement Personnalise": `
 INSTRUCTIONS POUR "PROTOCOLE ENTRAINEMENT PERSONNALISE" :
 
-PROGRAMME DETAILLE base sur ses donnees.
+DONNÉES QUESTIONNAIRE ELITE À EXPLOITER (si disponibles):
+- zones-douleur : Zones de douleur (épaule, coude, poignet, dos-haut, dos-bas, hanche, genou, cheville)
+- type-douleur : Type de douleur (articulaire, musculaire, tendineux, nerveux)
+- douleur-moment : Quand la douleur apparaît (repos, pendant exo, après exo, réveil, fin journée)
+- epaule-douleur-detail : Si épaule - quel mouvement déclenche (développé, traction, élévation lat, rotation)
+- dos-douleur-detail : Si dos - quel mouvement déclenche (squat, soulevé de terre, position assise, flexion)
+- genou-douleur-detail : Si genou - quel mouvement déclenche (squat profond, fentes, course, escaliers)
+- mobilite-generale : Niveau de mobilité (excellente à très limitée)
+- mobilite-limitee : Zones limitées (épaules, thoracique, hanches, chevilles)
+- blessures-passees : Historique (tendinite, entorse, fracture, hernie, déchirure, luxation, chirurgie)
+- echauffement : Qualité échauffement actuel (complet 10-15min, rapide 5min, minimal, aucun)
+- travail-mobilite : Travail mobilité actuel (quotidien, 2-3x/semaine, occasionnel, jamais)
+- adaptations-exos : Exercices que le client évite actuellement
+
+PROGRAMME DETAILLE base sur ses donnees AVEC ADAPTATIONS SI DOULEURS.
 
 FORMAT OBLIGATOIRE :
 
- PROTOCOLE ENTRAINEMENT PERSONNALISE 
+ PROTOCOLE ENTRAINEMENT PERSONNALISE
 Objectif : [son objectif principal]
 Frequence : [X seances/semaine]
 Split : [type de split]
 
-STRUCTURE DE SEANCE :
+ADAPTATIONS BLESSURES/DOULEURS (si données ELITE) :
+- Si douleur épaule au développé : SUBSTITUER par floor press, incliné 15-30°, grip neutre haltères, passer en SUPINATION pour ouvrir l'espace sous-acromial
+- Si douleur dos bas : EVITER soulevé de terre conventionnel → trap bar ou RDL roumain, renforcer gainage anti-rotation
+- Si douleur genou : EVITER squat profond avec rebond → box squat contrôlé, Bulgarian split squat sans amplitude extrême
 
 ECHAUFFEMENT (10 min - NON NEGOCIABLE) :
 1. Foam rolling zones tendues : 2 min
 2. Activation fessiers : 2 min
-   - Clam shells : 10/cote
+   - Clam shells : 10/côté
    - Pont fessier : 10 reps
-3. Mobilite specifique : 3 min
-   - [Exercices selon la seance]
+3. Mobilité spécifique (ADAPTER AUX LIMITATIONS DU CLIENT) : 3 min
+   - Si mobilité épaule limitée : dislocations bâton, rotations externes band
+   - Si mobilité hanches limitée : 90/90 stretches, hip circles
+   - Si mobilité chevilles limitée : stretches mollets, dorsiflexion avec élastique
 4. Rampe progressive : 3 min
 
 SEANCE A - [NOM] :
-Exercice 1 : [Nom]
+Exercice 1 : [Nom] (ou SUBSTITUTION si douleur dans cette zone)
 - Tempo : [X-X-X-X]
-- Series x Reps : [X x X]
+- Séries x Reps : [X x X]
 - Repos : [X sec]
-- Consigne : [point technique cle]
-
-Exercice 2 : [Nom]
-...
-(6-8 exercices par seance)
-
-FINISHER (optionnel) :
-[Circuit metabolique ou core]
-
-RETOUR AU CALME (5 min) :
-- Etirements statiques zones travaillees
-- Respiration diaphragmatique 2 min
-
-SEANCE B - [NOM] :
-[Meme format]
-
-SEANCE C - [NOM] :
-[Meme format]
+- Consigne : [point technique clé - INCLURE CORRECTIONS BIOMÉCANIQUES]
+  Ex épaule : "Maintenir rotation externe, omoplates serrées, pas de protraction"
+  Ex dos : "Neutre lombaire, respiration verrouillée, serrer les fessiers"
 
 SEMAINE TYPE :
-Lundi : Seance A
-Mardi : Cardio Zone 2 (30 min) + Mobilite
-Mercredi : Seance B
-Jeudi : Repos actif ou cardio leger
-Vendredi : Seance C
+Lundi : Séance A
+Mardi : Cardio Zone 2 (30 min) + Mobilité (focus zones limitées)
+Mercredi : Séance B
+Jeudi : Repos actif + travail correctif/mobilité
+Vendredi : Séance C
 Samedi : Cardio ou sport plaisir
 Dimanche : Repos complet
 
@@ -887,12 +970,6 @@ PROGRESSION :
 - Semaines 5-6 : Introduction techniques d'intensification
 - Semaine 7 : Deload (-40% volume)
 - Reprise cycle
-
-SI STAGNATION :
-- Ajouter 1 serie
-- Varier le tempo
-- Changer l'angle
-- Augmenter le temps sous tension
 `,
 
   // 
@@ -1468,10 +1545,18 @@ async function generateValidatedPremiumSection(
       : '';
 
     const knowledgeInsert = hasKnowledge
-      ? `\n\nDONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
+      ? `\n\nDONNEES SCIENTIFIQUES DE REFERENCE (BASE 100% OBLIGATOIRE):
 ${knowledgeContext}
 
-INSTRUCTION CRITIQUE: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Cite les mecanismes, les protocoles, les chiffres mentionnes. Fais reference aux sources (Huberman, Attia, Examine, Applied Metabolics, etc.) de maniere naturelle. Ne fais PAS une analyse generique.\n`
+INSTRUCTION CRITIQUE ABSOLUE:
+1. Tu DOIS te baser a 100% sur ces donnees scientifiques pour ton analyse
+2. Cite les sources explicitement : "Selon Huberman...", "D'apres les etudes citees par Attia...", "La recherche d'Examine montre..."
+3. Reprends les PROTOCOLES PRECIS mentionnes dans les articles (dosages, timing, duree)
+4. Explique les MECANISMES BIOLOGIQUES (enzymes, hormones, voies metaboliques) exactement comme dans les sources
+5. Si un protocole correctif est mentionne (ex: pronation pour espace sous-acromial, DIM pour dominance estrogene), tu DOIS l'inclure
+6. ZERO conseil generique - tout doit etre source et precis
+7. Pour les recommandations d'entrainement : inclus les corrections biomecaniques si pertinentes (rotation externe, position de la scapula, etc.)
+\n`
       : '';
 
     return `${PROMPT_SECTION
@@ -1483,12 +1568,14 @@ ${knowledgeInsert}
 ${retryWarning}
 
 RAPPEL LONGUEUR OBLIGATOIRE (RAPPORT PREMIUM PAYANT):
-- Cette section DOIT faire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres)
+- Cette section DOIT faire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres) = 20-25 LIGNES SUBSTANTIELLES minimum
 - Developpe en profondeur, pas de listes telegraphiques
-- Explique les MECANISMES BIOLOGIQUES derriere chaque point
+- Explique les MECANISMES BIOLOGIQUES derriere chaque point (enzymes, hormones, cascades)
 - Donne des EXEMPLES CONCRETS personnalises pour ${clientName}
-- Pour les protocoles: minute par minute, variantes, erreurs a eviter
-- Integre les references scientifiques de la knowledge base ci-dessus`;
+- Pour les protocoles: minute par minute, variantes, erreurs a eviter, DOSAGES PRECIS
+- BASE TOI A 100% SUR LA KNOWLEDGE BASE fournie ci-dessus - ZERO conseil generique
+- Cite les sources (Huberman, Attia, Examine, ACHZOD, etc.) naturellement dans le texte
+- Inclus les PROTOCOLES CORRECTIFS specifiques (biomeca, hormones, nutrition) quand pertinents`;
   };
 
   // Attempt generation with validation and retries
