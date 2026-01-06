@@ -371,6 +371,7 @@ async function generateReportAsync(
           clientName: result.clientName,
           metadata: result.metadata,
           validationResult: validation,
+          photoAnalysis: photoAnalysis, // Include photo analysis for frontend display
         },
         reportTxt: result.txt || '',
         reportHtml: reportHtml,
@@ -390,6 +391,7 @@ async function generateReportAsync(
       clientName: result.clientName,
       metadata: result.metadata,
       validationResult: validation,
+      photoAnalysis: photoAnalysis, // Include photo analysis for frontend display
     };
 
     // Sauvegarder le rapport dans l'audit AVANT de marquer comme COMPLETED
