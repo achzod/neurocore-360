@@ -214,7 +214,7 @@ function FiveOffersSection() {
       price: "59€",
       subtitle: "Diagnostic + Protocoles d'action",
       icon: Activity,
-      color: "emerald",
+      color: "[#FCDD00]",
       href: "/offers/anabolic-bioscan",
       features: [
         "16 sections d'analyse",
@@ -231,7 +231,7 @@ function FiveOffersSection() {
       price: "79€",
       subtitle: "Diagnostic + Protocoles + Analyse photo",
       icon: Zap,
-      color: "cyan",
+      color: "[#FCDD00]",
       href: "/offers/ultimate-scan",
       features: [
         "Tout l'Anabolic Bioscan",
@@ -467,13 +467,12 @@ function SocialProofBanner() {
               <span className="ml-2 text-sm text-gray-500">4.9/5</span>
             </div>
           </div>
-          <Button
+          <button
             onClick={scrollToReviews}
-            size="lg"
-            className="h-12 px-8 bg-transparent border border-gray-700 text-white hover:bg-gray-900 hover:border-[#FCDD00]/50 rounded-full transition-all duration-300"
+            className="h-12 px-8 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)]"
           >
             Voir les avis
-          </Button>
+          </button>
         </motion.div>
       </div>
     </section>
@@ -605,7 +604,7 @@ function UltimateScanSection() {
     <section className="relative min-h-screen overflow-hidden bg-black py-20 lg:py-0 lg:flex lg:items-center">
       {/* Animated background gradients */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-emerald-950/10 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-[#2a2000]/10 to-black" />
         <motion.div
           className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FCDD00]/10 rounded-full blur-[128px]"
           animate={{
@@ -615,7 +614,7 @@ function UltimateScanSection() {
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[128px]"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FCDD00]/10 rounded-full blur-[128px]"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.2, 0.4, 0.2],
@@ -664,15 +663,13 @@ function UltimateScanSection() {
               transition={{ duration: 0.6, delay: 0.6 }}
             >
               <Link href="/offers/ultimate-scan">
-                <Button
-                  size="lg"
-                  className="group relative h-16 px-10 text-lg font-semibold bg-[#FCDD00] hover:bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(252,221,0,0.4)]"
-                >
+                <button className="group relative h-16 px-10 text-lg font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
                   <span className="relative z-10 flex items-center gap-3">
                     Ultimate Scan — 79€
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </span>
-                </Button>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                </button>
               </Link>
             </motion.div>
           </motion.div>
@@ -741,9 +738,9 @@ function UltimateScanSection() {
                       {/* Metrics */}
                       <div className="space-y-3">
                         {[
-                          { label: "ANALYSE POSTURALE", score: 92, status: "Optimal", color: "emerald" },
+                          { label: "ANALYSE POSTURALE", score: 92, status: "Optimal", color: "[#FCDD00]" },
                           { label: "BIOMÉCANIQUE", score: 68, status: "À améliorer", color: "amber" },
-                          { label: "MÉTABOLISME", score: 91, status: "Excellent", color: "emerald" },
+                          { label: "MÉTABOLISME", score: 91, status: "Excellent", color: "[#FCDD00]" },
                         ].map((metric, i) => (
                           <motion.div
                             key={metric.label}
@@ -755,7 +752,7 @@ function UltimateScanSection() {
                           >
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-[9px] text-gray-500 tracking-[0.15em]">{metric.label}</span>
-                              <span className={`text-[10px] font-medium ${metric.color === 'emerald' ? 'text-[#FCDD00]' : 'text-amber-400'}`}>
+                              <span className={`text-[10px] font-medium ${metric.color === '[#FCDD00]' ? 'text-[#FCDD00]' : 'text-amber-400'}`}>
                                 {metric.status}
                               </span>
                             </div>
@@ -764,7 +761,7 @@ function UltimateScanSection() {
                               <div className="flex-1 mx-4">
                                 <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                                   <motion.div
-                                    className={`h-full rounded-full ${metric.color === 'emerald' ? 'bg-[#FCDD00]' : 'bg-amber-500'}`}
+                                    className={`h-full rounded-full ${metric.color === '[#FCDD00]' ? 'bg-[#FCDD00]' : 'bg-amber-500'}`}
                                     initial={{ width: 0 }}
                                     whileInView={{ width: `${metric.score}%` }}
                                     viewport={{ once: true }}
@@ -998,13 +995,13 @@ function BloodAnalysisSection() {
             </ul>
 
             <Link href="/offers/blood-analysis">
-              <Button
-                size="lg"
-                className="h-14 px-8 bg-[#FCDD00] hover:bg-[#FCDD00] text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]"
-              >
-                Blood Analysis — 99€
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Blood Analysis — 99€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
           </motion.div>
         </div>
@@ -1063,13 +1060,13 @@ function BurnoutEngineSection() {
             </div>
 
             <Link href="/offers/burnout-detection">
-              <Button
-                size="lg"
-                className="h-14 px-8 bg-[#FCDD00] hover:bg-[#FCDD00] text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]"
-              >
-                Détecter mon risque — 39€
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Détecter mon risque — 39€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
           </motion.div>
 
@@ -1258,13 +1255,13 @@ function AnabolicBioscanSection() {
             </ul>
 
             <Link href="/offers/anabolic-bioscan">
-              <Button
-                size="lg"
-                className="h-14 px-8 bg-[#FCDD00] hover:bg-[#FCDD00] text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]"
-              >
-                Anabolic Bioscan — 59€
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Anabolic Bioscan — 59€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
           </motion.div>
         </div>
@@ -1322,23 +1319,19 @@ function DiscoveryScanSection() {
 
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link href="/offers/discovery-scan">
-                <Button
-                  size="lg"
-                  className="h-14 px-8 bg-[#FCDD00] hover:bg-[#FCDD00] text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]"
-                >
-                  Commencer gratuitement
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
+                <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                  <span className="relative z-10 flex items-center gap-2">
+                    Commencer gratuitement
+                    <ArrowRight className="h-5 w-5" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                </button>
               </Link>
               <Link href="/report">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-14 px-8 border-gray-700 text-white hover:bg-gray-900 rounded-full"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
+                <button className="h-14 px-8 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center gap-2">
+                  <FileText className="h-5 w-5" />
                   Exemple rapport
-                </Button>
+                </button>
               </Link>
             </div>
           </motion.div>
@@ -1532,13 +1525,10 @@ function FAQSection() {
           className="mt-10 text-center"
         >
           <Link href="/faq">
-            <Button
-              variant="outline"
-              className="gap-2 border-gray-700 text-white hover:bg-gray-900 rounded-full px-6"
-            >
+            <button className="gap-2 px-6 py-3 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
               Voir toutes les questions
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </button>
           </Link>
         </motion.div>
       </div>
