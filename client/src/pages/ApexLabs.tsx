@@ -97,6 +97,134 @@ function Button({ variant = 'primary', children, className = '', ...props }: But
 }
 
 // ============================================================================
+// DNA HELIX ANIMATION COMPONENT
+// ============================================================================
+function DNAHelix() {
+  const nucleotides = 12;
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-black">
+      {/* Background particles */}
+      <div className="absolute inset-0">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              opacity: [0.2, 0.8, 0.2],
+              scale: [1, 1.5, 1],
+            }}
+            transition={{
+              duration: 2 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Glowing orbs */}
+      <motion.div
+        className="absolute w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 4, repeat: Infinity }}
+      />
+      <motion.div
+        className="absolute w-48 h-48 bg-cyan-400/20 rounded-full blur-[60px] translate-x-20"
+        animate={{
+          scale: [1.2, 1, 1.2],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{ duration: 5, repeat: Infinity }}
+      />
+
+      {/* DNA Double Helix */}
+      <div className="relative h-[80%] w-32 flex items-center justify-center">
+        {[...Array(nucleotides)].map((_, i) => {
+          const delay = i * 0.15;
+          const yPos = (i / nucleotides) * 100;
+
+          return (
+            <div key={i} className="absolute w-full" style={{ top: `${yPos}%` }}>
+              {/* Left strand nucleotide */}
+              <motion.div
+                className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
+                animate={{
+                  x: ['-50px', '50px', '-50px'],
+                  scale: [1, 0.8, 1],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay,
+                  ease: 'easeInOut',
+                }}
+              />
+
+              {/* Right strand nucleotide */}
+              <motion.div
+                className="absolute right-0 w-4 h-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_15px_rgba(34,211,238,0.8)]"
+                animate={{
+                  x: ['50px', '-50px', '50px'],
+                  scale: [0.8, 1, 0.8],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay,
+                  ease: 'easeInOut',
+                }}
+              />
+
+              {/* Connecting bar */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-blue-400 via-white/50 to-cyan-400"
+                animate={{
+                  width: ['20px', '80px', '20px'],
+                  opacity: [0.3, 0.8, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay,
+                  ease: 'easeInOut',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Data overlay text */}
+      <div className="absolute top-4 left-4 text-[10px] font-mono text-blue-400/60 space-y-1">
+        <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }}>
+          SÉQUENÇAGE ADN
+        </motion.div>
+        <div className="text-cyan-400/40">BIOMARQUEURS: 50+</div>
+      </div>
+
+      <div className="absolute bottom-4 right-4 text-[10px] font-mono text-blue-400/60 text-right space-y-1">
+        <div className="text-cyan-400/40">ANALYSE EN COURS</div>
+        <motion.div
+          className="text-blue-300/60"
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          ████████░░ 82%
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // HEADER COMPONENT
 // ============================================================================
 function Header() {
@@ -339,7 +467,7 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
 
         {/* Image Side with HUD/Tech Overlay */}
         <div className="w-full lg:w-1/2 relative">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
+          <div className={`relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900 border transition-all duration-500 ${isBloodAnalysis ? 'border-blue-500/30 group-hover:border-blue-400/60 shadow-[0_0_50px_rgba(59,130,246,0.2)] group-hover:shadow-[0_0_80px_rgba(59,130,246,0.35)]' : 'border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)]'}`}>
 
             {/* Scan Line Animation */}
             <div className="absolute inset-0 z-30 pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity duration-700">
@@ -359,36 +487,34 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
             <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-white/30 z-20 rounded-br-lg group-hover:border-white/80 transition-colors" />
 
             {/* Floating Label */}
-            <div className="absolute top-8 left-8 z-20 backdrop-blur-md px-3 py-1 border rounded text-[10px] tracking-widest uppercase font-bold shadow-lg bg-black/60 border-[#FCDD00]/30 text-[#FCDD00]">
-               {isBloodAnalysis ? 'RHYTHM ANALYSIS // ACTIVE' : 'SYSTEM ONLINE'}
+            <div className={`absolute top-8 left-8 z-20 backdrop-blur-md px-3 py-1 border rounded text-[10px] tracking-widest uppercase font-bold shadow-lg ${isBloodAnalysis ? 'bg-black/60 border-blue-400/30 text-blue-400' : 'bg-black/60 border-[#FCDD00]/30 text-[#FCDD00]'}`}>
+               {isBloodAnalysis ? 'ADN SEQUENCING // ACTIVE' : 'SYSTEM ONLINE'}
             </div>
 
              {/* Overlay Gradient for Noir effect */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 z-10" />
 
-            {/* Main Image */}
-            <img
-              src={imageUrl}
-              alt={title}
-              className={`
-                w-full h-full object-cover transition-all duration-700 transform
-                ${isBloodAnalysis
-                  ? 'opacity-80 group-hover:opacity-100 scale-100 hover:scale-105 contrast-125 brightness-110 saturate-150 hue-rotate-[180deg] sepia-[1]'
-                  : 'opacity-70 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-110 group-hover:rotate-1'
-                }
-              `}
-            />
+            {/* Main Image or DNA Animation */}
+            {isBloodAnalysis ? (
+              <DNAHelix />
+            ) : (
+              <img
+                src={imageUrl}
+                alt={title}
+                className="w-full h-full object-cover transition-all duration-700 transform opacity-70 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-110 group-hover:rotate-1"
+              />
+            )}
           </div>
 
           {/* Decorative glowing orb behind */}
-          <div className="absolute -inset-4 bg-[#FCDD00]/20 blur-[60px] rounded-full -z-10 opacity-20 group-hover:opacity-50 transition-opacity duration-700 animate-pulse" />
+          <div className={`absolute -inset-4 blur-[60px] rounded-full -z-10 opacity-20 group-hover:opacity-50 transition-opacity duration-700 animate-pulse ${isBloodAnalysis ? 'bg-blue-500/30' : 'bg-[#FCDD00]/20'}`} />
         </div>
 
         {/* Content Side */}
         <div className="w-full lg:w-1/2 space-y-8">
           <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-3 text-[#FCDD00]">
-              <span className="w-2 h-2 rounded-full animate-pulse bg-[#FCDD00] shadow-[0_0_10px_#FCDD00]"></span>
+            <div className={`text-xs font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-3 ${isBloodAnalysis ? 'text-blue-400' : 'text-[#FCDD00]'}`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${isBloodAnalysis ? 'bg-blue-400 shadow-[0_0_10px_#3b82f6]' : 'bg-[#FCDD00] shadow-[0_0_10px_#FCDD00]'}`}></span>
               {subtitle}
             </div>
 
@@ -405,17 +531,17 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
             {features.map((feature, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 hover:border-[#FCDD00]/30 hover:bg-white/10 transition-all duration-300 hover:translate-x-1"
+                className={`flex items-center gap-3 text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 transition-all duration-300 hover:translate-x-1 ${isBloodAnalysis ? 'hover:border-blue-400/30 hover:bg-white/10' : 'hover:border-[#FCDD00]/30 hover:bg-white/10'}`}
                 style={{ transitionDelay: `${idx * 100}ms` }}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
+                <div className={`w-1.5 h-1.5 rounded-full ${isBloodAnalysis ? 'bg-blue-400' : 'bg-[#FCDD00]'}`} />
                 <span className="text-sm font-medium tracking-wide">{feature}</span>
               </div>
             ))}
           </div>
 
           <div className="pt-6">
-            <Button variant="secondary" onClick={onSelect} className="w-full sm:w-auto !border-white/20 hover:!border-[#FCDD00]/50 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]">
+            <Button variant="secondary" onClick={onSelect} className={`w-full sm:w-auto !border-white/20 ${isBloodAnalysis ? 'hover:!border-blue-400/50 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'hover:!border-[#FCDD00]/50 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]'}`}>
               Sélectionner le protocole
             </Button>
           </div>
