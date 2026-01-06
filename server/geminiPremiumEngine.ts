@@ -597,28 +597,58 @@ Minimum 60 lignes de texte narratif.`,
   "Analyse metabolisme et nutrition": `
 INSTRUCTIONS POUR "ANALYSE METABOLISME ET NUTRITION" :
 
-TU ES UN EXPERT EN BIOCHIMIE NUTRITIONNELLE.
+TU ES UN EXPERT EN BIOCHIMIE NUTRITIONNELLE ET EN CHRONONUTRITION.
+
+DONNÉES NUTRITION DETAILLEE À EXPLOITER OBLIGATOIREMENT (si fournies) :
+- petit-dej-heure, petit-dej-contenu, petit-dej-type : Analyse si le petit-déjeuner sucré bloque la lipolyse matinale
+- dejeuner-heure, dejeuner-contenu, dejeuner-lieu : Évalue la qualité et le contexte (fast-food = inflammatoire)
+- diner-heure, diner-contenu, diner-glucides, diner-coucher-delai : CRUCIAL - Impact sur sécrétion GH et sommeil
+- grignotage-frequence, grignotage-contenu, grignotage-moment : Détecte les pics d'insuline parasites
+- cheatmeal-frequence, cheatmeal-contenu : Évalue la charge inflammatoire hebdomadaire
+- huiles-cuisson : Huile tournesol/margarine = oméga-6 pro-inflammatoires
+- aliments-inflammatoires : Liste des aliments consommés 3x+/semaine à cibler
 
 STRUCTURE :
 - Titre principal unique : "ANALYSE METABOLISME ET NUTRITION"
-- Sous-section 1 : "1. Timeline métabolique quotidienne"
-  Rédige un récit narratif expliquant le cycle de l'insuline sur une journée type si on suit tes conseils.
-  Utilise des phrases complètes : "Le matin, l'insuline reste basse car... En fin de journée, après l'entraînement, on crée un pic contrôlé car..."
-  Pas de simples termes techniques isolés. Explique chaque phase avec des phrases complètes.
 
-- Sous-section 2 : "2. Récit narratif métabolique"
-  Analyse le TDEE et les apports avec des phrases complètes. 
-  Explique le mécanisme de la Lipase Hormone-Sensible (HSL) de manière narrative et accessible.
-  Parle du "Vol de la prégnénolone" de manière fluide et pédagogique.
+- Sous-section 1 : "1. Audit de ta journée alimentaire type"
+  Analyse PRÉCISÉMENT ce que le client mange vraiment (pas des généralités).
+  SI petit-dej sucré (céréales, pain, confiture, viennoiseries) : Explique pourquoi ça bloque la lipolyse matinale.
+  L'insuline monte → HSL (lipase hormone-sensible) désactivée → tu ne brûles pas de gras pendant 4-6h.
+  SI petit-dej salé/protéiné : Félicite et explique pourquoi c'est optimal (glucagon, cortisol matinal bien utilisé).
+
+- Sous-section 2 : "2. L'impact de ton dîner sur tes hormones nocturnes"
+  ANALYSE CRITIQUE du dîner rapporté.
+  SI diner-glucides = "beaucoup" ET diner-coucher-delai = "moins-1h" ou "1h-2h" :
+    → Pic d'insuline au coucher = inhibition de la GH (hormone de croissance)
+    → La GH est sécrétée dans les 90 premières minutes de sommeil profond
+    → Insuline haute = GH basse = moins de récupération, moins de lipolyse nocturne, moins de synthèse protéique
+  SI diner après 21h : Impact sur température corporelle et qualité du sommeil profond.
+
+- Sous-section 3 : "3. Détection des aliments inflammatoires"
+  Analyse les réponses aliments-inflammatoires et huiles-cuisson.
+  ALIMENTS À PROBLÈME : pain blanc, pâtes blanches, céréales sucrées, viennoiseries, charcuterie, fritures, sodas, plats préparés
+  HUILES PROBLÉMATIQUES : tournesol, margarine = ratio oméga-6/oméga-3 catastrophique → inflammation chronique
+  Explique comment l'inflammation systémique crée rétention d'eau, résistance à l'insuline, difficulté à perdre du gras.
+
+- Sous-section 4 : "4. Le problème du grignotage"
+  SI grignotage-frequence = "souvent" ou "tres-souvent" :
+    → Chaque grignotage = pic d'insuline = reset de la lipolyse
+    → Analyse le CONTENU du grignotage (sucre? salé? fruits?)
+    → Analyse le MOMENT (après-midi = crash énergétique, soirée = ennui/stress)
+  Propose des alternatives concrètes selon le contenu rapporté.
+
+- Sous-section 5 : "5. Timeline métabolique optimisée"
+  Rédige un récit narratif expliquant le cycle de l'insuline sur une journée OPTIMISEE.
+  Utilise des phrases complètes : "Le matin, l'insuline reste basse car tu as opté pour [alternative au pdj sucré]... Le soir, en finissant de manger 3h avant le coucher avec peu de glucides, tu permets à ta GH de..."
 
 INTERDICTION CHIFFRES NON FOURNIS :
 - Si distribution graisseuse observée : utilise "tendance de stockage abdominal" ou "distribution de type androïde" (SANS chiffres WHR)
 - Si tu veux parler risques cardio/diabète : utilise "la distribution abdominale est souvent corrélée à..." puis renvoie à mesures/analyses si besoin
-- Si tu suggères mesures : "Mesure tour de taille / hanches selon protocole standardisé pour affiner l'analyse"
 
 ÉVITE LES RÉPÉTITIONS : Ne répète pas les mêmes informations dans plusieurs sections. Chaque section apporte une valeur unique.
 
-Minimum 80 lignes de texte narratif.`,
+Minimum 100 lignes de texte narratif - cette section est CRUCIALE.`,
 
   "Analyse sommeil et recuperation": `
 INSTRUCTIONS POUR "ANALYSE SOMMEIL ET RECUPERATION" :
