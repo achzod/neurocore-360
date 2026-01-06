@@ -17,11 +17,13 @@ export interface ScrapedArticle {
     | "marek_health"
     | "chris_masterjohn"
     | "renaissance_periodization"
-    | "mpmd";
+    | "mpmd"
+    | "achzod"  // Articles manuels ACHZOD - biomécanique, protocoles, expérience terrain
+    | "manual"; // Articles ajoutés manuellement
   title: string;
   content: string;
   url: string;
-  category?: string; // "sommeil", "hormones", "nutrition", "bloodwork", etc.
+  category?: string; // "sommeil", "hormones", "nutrition", "bloodwork", "biomecanique", etc.
   keywords?: string[];
   scrapedAt: Date;
   contentHash?: string; // Pour détecter les doublons
