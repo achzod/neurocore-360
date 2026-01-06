@@ -156,45 +156,168 @@ function DNAHelix() {
 }
 
 // ============================================================================
-// ECG SECTION
+// OFFERS DATA (ApexLabs Style)
 // ============================================================================
-function ECGSection() {
+interface Offer {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  features: string[];
+  imageUrl: string;
+  reverse: boolean;
+  useCustomVisual?: boolean;
+  price: string;
+  href: string;
+}
+
+const LANDING_OFFERS: Offer[] = [
+  {
+    id: 'discovery-scan',
+    title: "DISCOVERY SCAN",
+    subtitle: "L'Analyse Initiale",
+    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D.",
+    features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
+    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
+    reverse: false,
+    price: "Gratuit",
+    href: "/offers/discovery-scan"
+  },
+  {
+    id: 'anabolic-bioscan',
+    title: "ANABOLIC BIOSCAN",
+    subtitle: "Performance Musculaire",
+    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire et du profil hormonal anabolique.",
+    features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
+    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
+    reverse: true,
+    price: "59€",
+    href: "/offers/anabolic-bioscan"
+  },
+  {
+    id: 'blood-analysis',
+    title: "BLOOD ANALYSIS",
+    subtitle: "La Vérité Biologique",
+    description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance.",
+    features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
+    imageUrl: "",
+    reverse: false,
+    useCustomVisual: true,
+    price: "99€",
+    href: "/offers/blood-analysis"
+  },
+  {
+    id: 'ultimate-scan',
+    title: "ULTIMATE SCAN",
+    subtitle: "L'Omniscience Corporelle",
+    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie.",
+    features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
+    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
+    reverse: true,
+    price: "79€",
+    href: "/offers/ultimate-scan"
+  },
+  {
+    id: 'burnout-detection',
+    title: "BURNOUT DETECTION",
+    subtitle: "Préservation du Système Nerveux",
+    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détectez les signes physiologiques de l'épuisement.",
+    features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
+    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
+    reverse: false,
+    price: "39€",
+    href: "/offers/burnout-detection"
+  }
+];
+
+// ============================================================================
+// OFFER CARD COMPONENT (ApexLabs Style)
+// ============================================================================
+function OfferCard({ offer }: { offer: Offer }) {
+  const { title, subtitle, description, features, imageUrl, reverse, useCustomVisual, price, href } = offer;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
+      { threshold: 0.2 }
+    );
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => { if (cardRef.current) observer.unobserve(cardRef.current); };
+  }, []);
+
   return (
-    <div className="py-16 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-red-950/20 to-black" />
-      <div className="relative max-w-4xl mx-auto px-6">
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.8, repeat: Infinity }} className="relative">
-            <svg className="w-12 h-12 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          </motion.div>
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-white">ANALYSE CARDIAQUE</h3>
-            <motion.span className="text-red-400 font-mono text-lg" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity }}>72 BPM</motion.span>
+    <div
+      ref={cardRef}
+      className={`py-24 border-b border-white/5 last:border-0 group transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}
+    >
+      <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-24`}>
+        {/* Image Side with HUD/Tech Overlay */}
+        <div className="w-full lg:w-1/2 relative">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
+            {/* Scan Line Animation */}
+            <div className="absolute inset-0 z-30 pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity duration-700">
+              <motion.div
+                className="absolute left-0 w-full h-[10%] bg-gradient-to-b from-transparent via-[#FCDD00]/20 to-transparent"
+                animate={{ top: ['0%', '90%', '0%'] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+            {/* HUD Corners */}
+            <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-white/30 z-20 rounded-tl-lg group-hover:border-white/80 transition-colors" />
+            <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-white/30 z-20 rounded-tr-lg group-hover:border-white/80 transition-colors" />
+            <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-white/30 z-20 rounded-bl-lg group-hover:border-white/80 transition-colors" />
+            <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-white/30 z-20 rounded-br-lg group-hover:border-white/80 transition-colors" />
+            {/* Floating Label */}
+            <div className="absolute top-8 left-8 z-20 backdrop-blur-md px-3 py-1 border rounded text-[10px] tracking-widest uppercase font-bold shadow-lg bg-black/60 border-[#FCDD00]/30 text-[#FCDD00]">
+              SYSTEM ONLINE
+            </div>
+            {/* Overlay Gradient */}
+            {!useCustomVisual && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 z-10" />
+            )}
+            {/* Main Image or DNA Helix */}
+            {useCustomVisual ? (
+              <DNAHelix />
+            ) : (
+              <img src={imageUrl} alt={title} className="w-full h-full object-cover transition-all duration-700 transform opacity-70 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-110 group-hover:rotate-1" />
+            )}
           </div>
+          {/* Glowing orb */}
+          <div className="absolute -inset-4 bg-[#FCDD00]/20 blur-[60px] rounded-full -z-10 opacity-20 group-hover:opacity-50 transition-opacity duration-700 animate-pulse" />
         </div>
-        <div className="relative h-24 bg-black/50 rounded-2xl border border-red-500/20 overflow-hidden">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
-          <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
-            <motion.path
-              d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
-              fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-            />
-          </svg>
-          <motion.div
-            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-red-500 to-transparent"
-            animate={{ left: ['-5%', '105%'] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-          />
-        </div>
-        <div className="flex justify-center gap-8 mt-6 text-sm font-mono">
-          <div className="text-center"><div className="text-gray-500">VFC</div><motion.div className="text-[#FCDD00]" animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity }}>68ms</motion.div></div>
-          <div className="text-center"><div className="text-gray-500">SPO2</div><div className="text-[#FCDD00]">98%</div></div>
-          <div className="text-center"><div className="text-gray-500">STRESS</div><div className="text-[#FCDD00]">Faible</div></div>
+
+        {/* Content Side */}
+        <div className="w-full lg:w-1/2 space-y-8">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-3 text-[#FCDD00]">
+              <span className="w-2 h-2 rounded-full animate-pulse bg-[#FCDD00] shadow-[0_0_10px_#FCDD00]"></span>
+              {subtitle}
+            </div>
+            <h3 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+              {title}
+            </h3>
+            <p className="text-gray-400 text-lg leading-relaxed border-l border-white/10 pl-6 group-hover:border-white/40 transition-colors duration-500">
+              {description}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {features.map((feature, idx) => (
+              <div key={idx} className="flex items-center gap-3 text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 hover:border-[#FCDD00]/30 hover:bg-white/10 transition-all duration-300 hover:translate-x-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
+                <span className="text-sm font-medium tracking-wide">{feature}</span>
+              </div>
+            ))}
+          </div>
+          <div className="pt-6">
+            <Link href={href}>
+              <button className="group/btn relative px-8 py-3 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_30px_rgba(252,221,0,0.3)] hover:shadow-[0_0_50px_rgba(252,221,0,0.5)] hover:scale-[1.02]">
+                <span className="relative z-10">{price === "Gratuit" ? "Commencer gratuitement" : `Sélectionner — ${price}`}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-700" />
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -202,89 +325,24 @@ function ECGSection() {
 }
 
 // ============================================================================
-// BODY SCAN SECTION
+// OFFERS SECTION (ApexLabs Style)
 // ============================================================================
-function BodyScanSection() {
-  const organs = [
-    { id: 'brain', cx: 50, cy: 8, label: 'CERVEAU', color: '#60a5fa', status: '98%', side: 'right' },
-    { id: 'heart', cx: 44, cy: 28, label: 'CŒUR', color: '#f87171', status: '72 BPM', side: 'left' },
-    { id: 'lungs', cx: 56, cy: 26, label: 'POUMONS', color: '#4ade80', status: '16/min', side: 'right' },
-    { id: 'liver', cx: 42, cy: 38, label: 'FOIE', color: '#fbbf24', status: 'Optimal', side: 'left' },
-    { id: 'stomach', cx: 54, cy: 42, label: 'DIGESTIF', color: '#a78bfa', status: 'Actif', side: 'right' },
-    { id: 'spine', cx: 50, cy: 55, label: 'COLONNE', color: '#22d3ee', status: 'Alignée', side: 'left' },
-  ];
-
+function OffersSection() {
   return (
-    <div className="py-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-cyan-950/20 to-black" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
-      <div className="relative max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
-            animate={{ boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.4)', '0 0 20px rgba(34,211,238,0.2)'] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-cyan-400 text-sm font-mono tracking-wider">SCAN CORPOREL EN COURS</span>
-          </motion.div>
-          <h3 className="text-3xl font-bold text-white">CARTOGRAPHIE BIOMÉTRIQUE</h3>
+    <section id="detailed-offers" className="bg-black py-24 relative">
+      <div className="container mx-auto px-6">
+        <div className="mb-20 text-center max-w-3xl mx-auto">
+          <span className="text-[#FCDD00] text-sm font-bold tracking-widest uppercase mb-4 block">Nos Protocoles</span>
+          <h2 className="text-3xl md:text-5xl font-black mb-6 text-white">NOS <span className="text-[#FCDD00]">OFFRES</span></h2>
+          <p className="text-gray-400">Des solutions adaptées à chaque niveau d'exigence. Choisissez votre voie vers l'excellence.</p>
         </div>
-        <div className="relative flex items-center justify-center" style={{ height: '400px' }}>
-          <div className="absolute left-0 md:left-[15%] top-0 bottom-0 flex flex-col justify-around py-8">
-            {organs.filter(o => o.side === 'left').map((organ, idx) => (
-              <motion.div key={organ.id} className="flex items-center gap-2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.2 }}>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
-                  <motion.div className="text-sm font-bold" style={{ color: organ.color }} animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}>{organ.status}</motion.div>
-                </div>
-                <motion.div className="w-8 h-[1px]" style={{ backgroundColor: organ.color }} animate={{ scaleX: [0, 1] }} transition={{ duration: 0.5, delay: idx * 0.2 }} />
-              </motion.div>
-            ))}
-          </div>
-          <svg viewBox="0 0 100 100" className="h-full w-auto max-w-[200px]">
-            <defs>
-              <linearGradient id="bodyScanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="transparent" />
-                <stop offset="45%" stopColor="transparent" />
-                <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.6" />
-                <stop offset="55%" stopColor="transparent" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-            <g>
-              <ellipse cx="50" cy="8" rx="7" ry="8" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.8" />
-              <rect x="47" y="15" width="6" height="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" rx="1" opacity="0.6" />
-              <path d="M 30 22 Q 40 18 50 20 Q 60 18 70 22 L 68 24 Q 50 22 32 24 Z" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
-              <path d="M 32 24 L 34 50 Q 50 54 66 50 L 68 24" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
-              <path d="M 30 22 Q 22 30 18 42 Q 15 52 14 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
-              <path d="M 70 22 Q 78 30 82 42 Q 85 52 86 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
-              <ellipse cx="50" cy="54" rx="14" ry="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" opacity="0.6" />
-              <path d="M 40 58 L 38 75 L 36 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
-              <path d="M 60 58 L 62 75 L 64 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
-            </g>
-            <motion.rect x="0" width="100" height="8" fill="url(#bodyScanGradient)" initial={{ y: 0 }} animate={{ y: [0, 92, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
-            {organs.map((organ, idx) => (
-              <g key={organ.id}>
-                <motion.circle cx={organ.cx} cy={organ.cy} r="3" fill="none" stroke={organ.color} strokeWidth="0.3" initial={{ r: 1.5, opacity: 1 }} animate={{ r: 5, opacity: 0 }} transition={{ duration: 1.5, repeat: Infinity, delay: idx * 0.2 }} />
-                <motion.circle cx={organ.cx} cy={organ.cy} r="1.5" fill={organ.color} animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1, repeat: Infinity, delay: idx * 0.15 }} style={{ filter: `drop-shadow(0 0 3px ${organ.color})` }} />
-              </g>
-            ))}
-          </svg>
-          <div className="absolute right-0 md:right-[15%] top-0 bottom-0 flex flex-col justify-around py-8">
-            {organs.filter(o => o.side === 'right').map((organ, idx) => (
-              <motion.div key={organ.id} className="flex items-center gap-2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.2 }}>
-                <motion.div className="w-8 h-[1px]" style={{ backgroundColor: organ.color }} animate={{ scaleX: [0, 1] }} transition={{ duration: 0.5, delay: idx * 0.2 }} />
-                <div className="text-left">
-                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
-                  <motion.div className="text-sm font-bold" style={{ color: organ.color }} animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}>{organ.status}</motion.div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+        <div className="flex flex-col">
+          {LANDING_OFFERS.map((offer) => (
+            <OfferCard key={offer.id} offer={offer} />
+          ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -798,214 +856,6 @@ function MeasurableResultsSection() {
 }
 
 // ============================================================================
-// ULTIMATE SCAN SECTION (Style Ultrahuman Premium - Redesign complet)
-// ============================================================================
-function UltimateScanSection() {
-  return (
-    <section className="relative min-h-screen overflow-hidden bg-black py-20 lg:py-0 lg:flex lg:items-center">
-      {/* Animated background gradients */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-[#2a2000]/10 to-black" />
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FCDD00]/10 rounded-full blur-[128px]"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FCDD00]/10 rounded-full blur-[128px]"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 w-full">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          {/* Left - Typography */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-center lg:text-left order-2 lg:order-1"
-          >
-            <motion.h2
-              className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold italic text-[#FCDD00] leading-[0.9] tracking-tight mb-12"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              Tout en
-              <br />
-              <span className="text-white">un scan.</span>
-            </motion.h2>
-
-            <motion.p
-              className="text-xl lg:text-2xl text-gray-400 mb-12 max-w-lg mx-auto lg:mx-0 leading-relaxed"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-            >
-              Analyse visuelle. Biomécanique. Métabolique. Hormonale.
-              <span className="block mt-2 text-white font-medium">18 sections. 40-50 pages.</span>
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <Link href="/offers/ultimate-scan">
-                <button className="group relative h-16 px-10 text-lg font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
-                  <span className="relative z-10 flex items-center gap-3">
-                    Ultimate Scan — 79€
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                </button>
-              </Link>
-            </motion.div>
-          </motion.div>
-
-          {/* Right - Premium Phone Mockup */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
-            whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-            className="relative flex justify-center order-1 lg:order-2"
-          >
-            {/* Outer glow */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                className="w-[400px] h-[400px] bg-[#FCDD00]/20 rounded-full blur-[100px]"
-                animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.6, 0.4] }}
-                transition={{ duration: 4, repeat: Infinity }}
-              />
-            </div>
-
-            {/* Phone */}
-            <div className="relative w-[300px] sm:w-[340px] perspective-1000">
-              <motion.div
-                className="relative"
-                whileHover={{ scale: 1.02, rotateY: 5 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Phone frame */}
-                <div className="relative bg-gradient-to-b from-gray-800 via-gray-900 to-black rounded-[3rem] p-2 shadow-[0_0_60px_rgba(0,0,0,0.8)] border border-gray-700/50">
-                  {/* Notch */}
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full z-20" />
-
-                  {/* Screen */}
-                  <div className="bg-black rounded-[2.5rem] overflow-hidden">
-                    {/* Status bar */}
-                    <div className="flex justify-between items-center px-8 pt-3 pb-2">
-                      <span className="text-white text-xs font-medium">9:41</span>
-                      <div className="flex gap-1">
-                        <div className="w-4 h-2 bg-white rounded-sm" />
-                      </div>
-                    </div>
-
-                    {/* App content */}
-                    <div className="px-4 pb-6">
-                      {/* Header */}
-                      <div className="text-center py-6">
-                        <p className="text-[10px] text-gray-500 tracking-[0.2em] uppercase mb-2">Ultimate Scan</p>
-                        <motion.div
-                          className="relative inline-block"
-                          initial={{ scale: 0 }}
-                          whileInView={{ scale: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.8, type: "spring", stiffness: 100 }}
-                        >
-                          <span className="text-6xl font-bold text-white">87</span>
-                          <motion.div
-                            className="absolute -right-2 -top-1 w-3 h-3 bg-[#FCDD00] rounded-full"
-                            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                        </motion.div>
-                        <p className="text-[#FCDD00] text-sm mt-1 font-medium">Score Global</p>
-                      </div>
-
-                      {/* Metrics */}
-                      <div className="space-y-3">
-                        {[
-                          { label: "ANALYSE POSTURALE", score: 92, status: "Optimal", color: "[#FCDD00]" },
-                          { label: "BIOMÉCANIQUE", score: 68, status: "À améliorer", color: "amber" },
-                          { label: "MÉTABOLISME", score: 91, status: "Excellent", color: "[#FCDD00]" },
-                        ].map((metric, i) => (
-                          <motion.div
-                            key={metric.label}
-                            className="bg-gradient-to-r from-gray-900/90 to-gray-900/50 rounded-2xl p-4 border border-gray-800/50"
-                            initial={{ opacity: 0, x: 20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 1 + i * 0.15 }}
-                          >
-                            <div className="flex justify-between items-center mb-3">
-                              <span className="text-[9px] text-gray-500 tracking-[0.15em]">{metric.label}</span>
-                              <span className={`text-[10px] font-medium ${metric.color === '[#FCDD00]' ? 'text-[#FCDD00]' : 'text-amber-400'}`}>
-                                {metric.status}
-                              </span>
-                            </div>
-                            <div className="flex items-end justify-between">
-                              <span className="text-3xl font-bold text-white">{metric.score}</span>
-                              <div className="flex-1 mx-4">
-                                <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                                  <motion.div
-                                    className={`h-full rounded-full ${metric.color === '[#FCDD00]' ? 'bg-[#FCDD00]' : 'bg-amber-500'}`}
-                                    initial={{ width: 0 }}
-                                    whileInView={{ width: `${metric.score}%` }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: 1.2 + i * 0.15, duration: 0.8, ease: "easeOut" }}
-                                  />
-                                </div>
-                              </div>
-                              <span className="text-xs text-gray-600">/100</span>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-
-                      {/* Bottom nav */}
-                      <div className="flex justify-around mt-6 pt-4 border-t border-gray-800/50">
-                        {[
-                          { icon: "◎", label: "Scan", active: true },
-                          { icon: "◇", label: "Protocoles", active: false },
-                          { icon: "▢", label: "Suivi", active: false },
-                          { icon: "◈", label: "Profile", active: false },
-                        ].map((item) => (
-                          <div key={item.label} className="flex flex-col items-center gap-1">
-                            <span className={`text-lg ${item.active ? 'text-[#FCDD00]' : 'text-gray-700'}`}>{item.icon}</span>
-                            <span className={`text-[8px] uppercase tracking-wider ${item.active ? 'text-[#FCDD00]' : 'text-gray-700'}`}>{item.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Reflection */}
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-gradient-to-b from-gray-900/20 to-transparent blur-xl rounded-full" />
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
 // TESTIMONIALS SECTION - Ultrahuman Style
 // ============================================================================
 function TestimonialsSection() {
@@ -1073,545 +923,6 @@ function TestimonialsSection() {
               </div>
             </motion.div>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// BLOOD ANALYSIS SECTION - Ultrahuman Style
-// ============================================================================
-function BloodAnalysisSection() {
-  const markers = [
-    { label: "TESTOSTÉRONE", value: 687, unit: "ng/dL", status: "optimal", range: "600-900" },
-    { label: "CORTISOL", value: 12.3, unit: "μg/dL", status: "watch", range: "8-15" },
-    { label: "VITAMINE D", value: 58, unit: "ng/mL", status: "optimal", range: "50-80" },
-  ];
-
-  return (
-    <section className="relative py-32 bg-black overflow-hidden">
-      {/* Background glow */}
-      <motion.div
-        className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-[#FCDD00]/5 rounded-full blur-[150px]"
-        animate={{ opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 6, repeat: Infinity }}
-      />
-
-      <div className="relative mx-auto max-w-7xl px-4">
-        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
-          {/* Phone mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="order-2 lg:order-1 flex justify-center"
-          >
-            <div className="relative w-[280px]">
-              {/* Glow */}
-              <div className="absolute inset-0 bg-[#FCDD00]/20 rounded-full blur-[80px]" />
-
-              {/* Phone */}
-              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-2 border border-gray-700/50">
-                <div className="bg-black rounded-[2rem] overflow-hidden p-4">
-                  {/* Header */}
-                  <div className="text-center mb-6">
-                    <Droplet className="h-8 w-8 text-[#FCDD00] mx-auto mb-2" />
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Blood Analysis</p>
-                    <p className="text-2xl font-bold text-white mt-1">12 marqueurs</p>
-                  </div>
-
-                  {/* Markers */}
-                  <div className="space-y-3">
-                    {markers.map((marker, i) => (
-                      <motion.div
-                        key={marker.label}
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.5 + i * 0.1 }}
-                        className="bg-gray-900/80 rounded-xl p-3 border border-gray-800"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-[9px] text-gray-500 tracking-wider">{marker.label}</span>
-                          <span className={`text-[9px] ${marker.status === 'optimal' ? 'text-[#FCDD00]' : 'text-gray-400'}`}>
-                            {marker.status === 'optimal' ? 'OPTIMAL' : 'À SURVEILLER'}
-                          </span>
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-xl font-bold text-white">{marker.value}</span>
-                          <span className="text-xs text-gray-600">{marker.unit}</span>
-                        </div>
-                        <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
-                          <motion.div
-                            className={`h-full rounded-full ${marker.status === 'optimal' ? 'bg-[#FCDD00]' : 'bg-gray-500'}`}
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${(marker.value / 100) * 10}%` }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.7 + i * 0.1, duration: 0.6 }}
-                          />
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="order-1 lg:order-2"
-          >
-            <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Analyse sanguine</p>
-            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
-              <span className="text-white">Blood</span>
-              <span className="italic text-[#FCDD00]"> Analysis</span>
-            </h2>
-            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
-              Upload ton bilan sanguin. Ranges optimaux de performance, pas les ranges "normaux" des labos.
-            </p>
-
-            <ul className="mb-10 space-y-4">
-              {["Upload PDF en 30 sec", "Ranges optimaux", "Protocoles personnalisés"].map((feature, index) => (
-                <motion.li
-                  key={index}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30">
-                    <Check className="h-3.5 w-3.5 text-[#FCDD00]" />
-                  </div>
-                  <span className="text-gray-300">{feature}</span>
-                </motion.li>
-              ))}
-            </ul>
-
-            <Link href="/offers/blood-analysis">
-              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
-                <span className="relative z-10 flex items-center gap-2">
-                  Blood Analysis — 99€
-                  <ArrowRight className="h-5 w-5" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-              </button>
-            </Link>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// BURNOUT ENGINE SECTION - Ultrahuman Style
-// ============================================================================
-function BurnoutEngineSection() {
-  const riskFactors = [
-    { label: "Stress chronique", level: 78 },
-    { label: "Fatigue", level: 65 },
-    { label: "Concentration", level: 42 },
-  ];
-
-  return (
-    <section className="relative py-32 bg-gray-950 overflow-hidden">
-      {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
-
-      <div className="relative mx-auto max-w-7xl px-4">
-        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Prévention</p>
-            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
-              <span className="text-white">Burnout</span>
-              <span className="italic text-[#FCDD00]"> Engine</span>
-            </h2>
-            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
-              Le burnout ne prévient pas. Détecte les signaux faibles avant qu'il ne soit trop tard.
-            </p>
-
-            <div className="mb-10 grid grid-cols-2 gap-3">
-              {["Fatigue chronique", "Concentration", "Irritabilité", "Troubles sommeil"].map((symptom, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 + index * 0.1 }}
-                  className="flex items-center gap-2 text-sm text-gray-400"
-                >
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#FCDD00]" />
-                  {symptom}
-                </motion.div>
-              ))}
-            </div>
-
-            <Link href="/offers/burnout-detection">
-              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
-                <span className="relative z-10 flex items-center gap-2">
-                  Détecter mon risque — 39€
-                  <ArrowRight className="h-5 w-5" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-              </button>
-            </Link>
-          </motion.div>
-
-          {/* Dashboard mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="flex justify-center"
-          >
-            <div className="relative w-full max-w-sm">
-              {/* Glow */}
-              <motion.div
-                className="absolute inset-0 bg-[#FCDD00]/10 rounded-full blur-[100px]"
-                animate={{ opacity: [0.3, 0.5, 0.3] }}
-                transition={{ duration: 5, repeat: Infinity }}
-              />
-
-              {/* Card */}
-              <div className="relative bg-gray-900/80 rounded-3xl border border-gray-800 p-8 backdrop-blur-sm">
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <Brain className="h-10 w-10 text-[#FCDD00] mx-auto mb-3" />
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Score Burnout</p>
-                  <motion.p
-                    className="text-6xl font-bold text-white mt-2"
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5, type: "spring" }}
-                  >
-                    32
-                  </motion.p>
-                  <p className="text-sm text-[#FCDD00] mt-1">Risque modéré</p>
-                </div>
-
-                {/* Risk bars */}
-                <div className="space-y-4">
-                  {riskFactors.map((factor, i) => (
-                    <motion.div
-                      key={factor.label}
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.6 + i * 0.1 }}
-                    >
-                      <div className="flex justify-between text-xs mb-2">
-                        <span className="text-gray-500">{factor.label}</span>
-                        <span className="text-white">{factor.level}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <motion.div
-                          className={`h-full rounded-full ${factor.level > 70 ? 'bg-[#FCDD00]' : factor.level > 50 ? 'bg-gray-400' : 'bg-gray-600'}`}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${factor.level}%` }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.8 + i * 0.1, duration: 0.6 }}
-                        />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// ANABOLIC BIOSCAN SECTION - Ultrahuman Style
-// ============================================================================
-function AnabolicBioscanSection() {
-  const sections = [
-    { name: "Hormones", score: 78 },
-    { name: "Métabolisme", score: 85 },
-    { name: "Sommeil", score: 62 },
-    { name: "Énergie", score: 91 },
-  ];
-
-  return (
-    <section className="relative py-32 bg-black overflow-hidden">
-      {/* Background glow */}
-      <motion.div
-        className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-[#FCDD00]/5 rounded-full blur-[150px]"
-        animate={{ opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 7, repeat: Infinity }}
-      />
-
-      <div className="relative mx-auto max-w-7xl px-4">
-        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
-          {/* Phone mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="order-2 lg:order-1 flex justify-center"
-          >
-            <div className="relative w-[280px]">
-              {/* Glow */}
-              <div className="absolute inset-0 bg-[#FCDD00]/15 rounded-full blur-[80px]" />
-
-              {/* Phone */}
-              <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-2 border border-gray-700/50">
-                <div className="bg-black rounded-[2rem] overflow-hidden p-4">
-                  {/* Header */}
-                  <div className="text-center mb-6">
-                    <Activity className="h-8 w-8 text-[#FCDD00] mx-auto mb-2" />
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Anabolic Bioscan</p>
-                    <p className="text-2xl font-bold text-white mt-1">16 sections</p>
-                  </div>
-
-                  {/* Sections */}
-                  <div className="space-y-3">
-                    {sections.map((section, i) => (
-                      <motion.div
-                        key={section.name}
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.5 + i * 0.1 }}
-                        className="bg-gray-900/80 rounded-xl p-3 border border-gray-800"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-400">{section.name}</span>
-                          <span className={`text-lg font-bold ${section.score > 80 ? 'text-[#FCDD00]' : section.score > 60 ? 'text-white' : 'text-gray-400'}`}>
-                            {section.score}
-                          </span>
-                        </div>
-                        <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
-                          <motion.div
-                            className={`h-full rounded-full ${section.score > 80 ? 'bg-[#FCDD00]' : section.score > 60 ? 'bg-gray-400' : 'bg-gray-600'}`}
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${section.score}%` }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.7 + i * 0.1, duration: 0.6 }}
-                          />
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="order-1 lg:order-2"
-          >
-            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-[#FCDD00]/30 bg-[#FCDD00]/10">
-              <span className="text-xs uppercase tracking-wider text-[#FCDD00]">Le plus populaire</span>
-            </div>
-            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
-              <span className="text-white">Anabolic</span>
-              <span className="italic text-[#FCDD00]"> Bioscan</span>
-            </h2>
-            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
-              16 sections. 6 analyses profondes. 5 protocoles personnalisés. Plan 30-60-90 jours.
-            </p>
-
-            <ul className="mb-10 space-y-4">
-              {["16 sections d'analyse", "Protocoles personnalisés", "Stack suppléments", "Plan 30-60-90 jours"].map((feature, index) => (
-                <motion.li
-                  key={index}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30">
-                    <Check className="h-3.5 w-3.5 text-[#FCDD00]" />
-                  </div>
-                  <span className="text-gray-300">{feature}</span>
-                </motion.li>
-              ))}
-            </ul>
-
-            <Link href="/offers/anabolic-bioscan">
-              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
-                <span className="relative z-10 flex items-center gap-2">
-                  Anabolic Bioscan — 59€
-                  <ArrowRight className="h-5 w-5" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-              </button>
-            </Link>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================================
-// DISCOVERY SCAN SECTION - Ultrahuman Style
-// ============================================================================
-function DiscoveryScanSection() {
-  return (
-    <section className="relative py-32 bg-gray-950 overflow-hidden">
-      {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
-
-      <div className="relative mx-auto max-w-7xl px-4">
-        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-gray-700 bg-gray-900/50">
-              <span className="text-xs uppercase tracking-wider text-gray-400">Gratuit</span>
-            </div>
-            <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
-              <span className="text-white">Discovery</span>
-              <span className="italic text-[#FCDD00]"> Scan</span>
-            </h2>
-            <p className="mb-8 text-lg text-gray-400 leading-relaxed">
-              Commence gratuitement. 4 sections. Rapport 5-7 pages. Pas de carte bancaire.
-            </p>
-
-            <ul className="mb-10 space-y-4">
-              {["Executive Summary", "Analyse énergie", "Analyse métabolisme", "Plan 14 jours"].map((feature, index) => (
-                <motion.li
-                  key={index}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 + index * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30">
-                    <Check className="h-3.5 w-3.5 text-[#FCDD00]" />
-                  </div>
-                  <span className="text-gray-300">{feature}</span>
-                </motion.li>
-              ))}
-            </ul>
-
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Link href="/offers/discovery-scan">
-                <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
-                  <span className="relative z-10 flex items-center gap-2">
-                    Commencer gratuitement
-                    <ArrowRight className="h-5 w-5" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                </button>
-              </Link>
-              <Link href="/report">
-                <button className="h-14 px-8 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Exemple rapport
-                </button>
-              </Link>
-            </div>
-          </motion.div>
-
-          {/* Dashboard mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="flex justify-center"
-          >
-            <div className="relative w-full max-w-md">
-              {/* Glow */}
-              <motion.div
-                className="absolute inset-0 bg-[#FCDD00]/10 rounded-full blur-[100px]"
-                animate={{ opacity: [0.2, 0.4, 0.2] }}
-                transition={{ duration: 6, repeat: Infinity }}
-              />
-
-              {/* Dashboard */}
-              <div className="relative bg-gray-900/80 rounded-3xl border border-gray-800 p-6 backdrop-blur-sm">
-                {/* Window controls */}
-                <div className="mb-6 flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-gray-700" />
-                  <div className="h-3 w-3 rounded-full bg-gray-700" />
-                  <div className="h-3 w-3 rounded-full bg-gray-700" />
-                </div>
-
-                {/* Content */}
-                <div className="space-y-4">
-                  <motion.div
-                    className="h-8 w-1/2 rounded-lg bg-gray-800"
-                    initial={{ width: 0 }}
-                    whileInView={{ width: "50%" }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {[72, 85].map((score, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.6 + i * 0.1 }}
-                        className="p-4 rounded-2xl bg-gray-800/50 border border-gray-700/50"
-                      >
-                        <div className="text-3xl font-bold text-white mb-1">{score}</div>
-                        <div className="text-xs text-gray-500">Score</div>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <motion.div
-                    className="h-32 rounded-2xl bg-gray-800/50 border border-gray-700/50 p-4"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.8 }}
-                  >
-                    <div className="h-full flex items-end gap-2">
-                      {[40, 65, 45, 80, 55, 70, 60].map((h, i) => (
-                        <motion.div
-                          key={i}
-                          className="flex-1 bg-[#FCDD00]/30 rounded-t"
-                          initial={{ height: 0 }}
-                          whileInView={{ height: `${h}%` }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 1 + i * 0.05, duration: 0.4 }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </section>
@@ -1830,13 +1141,7 @@ export default function Landing() {
         <SocialProofBanner />
         <WearablesSection />
         <MeasurableResultsSection />
-        <DiscoveryScanSection />
-        <AnabolicBioscanSection />
-        <ECGSection />
-        <BloodAnalysisSection />
-        <UltimateScanSection />
-        <BodyScanSection />
-        <BurnoutEngineSection />
+        <OffersSection />
         <TestimonialsSection />
         <FAQSection />
         <FinalCTASection />
