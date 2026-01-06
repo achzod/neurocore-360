@@ -13,6 +13,7 @@ interface Offer {
   price?: string;
   imageUrl: string;
   reverse?: boolean;
+  useCustomVisual?: boolean;
 }
 
 // ============================================================================
@@ -46,8 +47,9 @@ const OFFERS: Offer[] = [
     subtitle: "La Vérité Biologique",
     description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance : statut inflammatoire, hormonal, micronutritionnel et métabolique. La donnée biologique brute au service de votre santé.",
     features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
-    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/ring-buy/recovery/png/dynamicDesk.png",
-    reverse: false
+    imageUrl: "",
+    reverse: false,
+    useCustomVisual: true
   },
   {
     id: 'ultimate-scan',
@@ -93,6 +95,398 @@ function Button({ variant = 'primary', children, className = '', ...props }: But
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
       )}
     </button>
+  );
+}
+
+// ============================================================================
+// DNA HELIX COMPONENT (for Blood Analysis)
+// ============================================================================
+function DNAHelix() {
+  const numPairs = 12;
+  const pairs = Array.from({ length: numPairs }, (_, i) => i);
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-blue-950 via-black to-blue-900 flex items-center justify-center overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.15)_0%,_transparent_70%)]" />
+
+      {/* Floating particles */}
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-blue-400/60 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -20, 0],
+            opacity: [0.3, 0.8, 0.3],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+
+      {/* DNA Helix */}
+      <div className="relative h-[280px] w-[120px]">
+        <motion.div
+          className="absolute inset-0"
+          animate={{ rotateY: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          style={{ transformStyle: 'preserve-3d', perspective: 800 }}
+        >
+          {pairs.map((i) => {
+            const yPos = (i / numPairs) * 100;
+            const phase = (i / numPairs) * Math.PI * 2;
+
+            return (
+              <motion.div
+                key={i}
+                className="absolute w-full"
+                style={{ top: `${yPos}%` }}
+                animate={{
+                  rotateY: [phase * (180 / Math.PI), phase * (180 / Math.PI) + 360],
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              >
+                {/* Left strand node */}
+                <motion.div
+                  className="absolute left-0 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_15px_rgba(34,211,238,0.8)]"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                />
+                {/* Connecting bar */}
+                <div className="absolute left-4 right-4 top-1.5 h-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-blue-400 opacity-60 rounded-full" />
+                {/* Right strand node */}
+                <motion.div
+                  className="absolute right-0 w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.8)]"
+                  animate={{ scale: [1.2, 1, 1.2] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                />
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
+
+      {/* Labels */}
+      <div className="absolute bottom-4 left-4 text-xs font-mono text-blue-400/80">
+        <div>ANALYSE ADN</div>
+        <motion.div
+          className="text-cyan-400"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          50+ BIOMARQUEURS
+        </motion.div>
+      </div>
+
+      {/* Scan line */}
+      <motion.div
+        className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+        animate={{ top: ['0%', '100%', '0%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
+// ============================================================================
+// ECG SECTION (between Anabolic Bioscan and Blood Analysis)
+// ============================================================================
+function ECGSection() {
+  return (
+    <div className="py-16 relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-red-950/20 to-black" />
+
+      <div className="relative max-w-4xl mx-auto px-6">
+        {/* Header */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {/* Beating heart */}
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+            className="relative"
+          >
+            <svg className="w-12 h-12 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </motion.div>
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-white">ANALYSE CARDIAQUE</h3>
+            <motion.span
+              className="text-red-400 font-mono text-lg"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              72 BPM
+            </motion.span>
+          </div>
+        </div>
+
+        {/* ECG Line */}
+        <div className="relative h-24 bg-black/50 rounded-2xl border border-red-500/20 overflow-hidden">
+          {/* Grid background */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
+
+          {/* ECG SVG */}
+          <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
+            <motion.path
+              d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2"
+              strokeLinecap="round"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+            />
+            {/* Glow effect */}
+            <motion.path
+              d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="6"
+              strokeLinecap="round"
+              opacity="0.3"
+              filter="blur(4px)"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+            />
+          </svg>
+
+          {/* Scanning line */}
+          <motion.div
+            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-red-500 to-transparent"
+            animate={{ left: ['-5%', '105%'] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+
+        {/* Stats */}
+        <div className="flex justify-center gap-8 mt-6 text-sm font-mono">
+          <div className="text-center">
+            <div className="text-gray-500">VFC</div>
+            <motion.div
+              className="text-green-400"
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              68ms
+            </motion.div>
+          </div>
+          <div className="text-center">
+            <div className="text-gray-500">SPO2</div>
+            <div className="text-cyan-400">98%</div>
+          </div>
+          <div className="text-center">
+            <div className="text-gray-500">STRESS</div>
+            <div className="text-yellow-400">Faible</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// BODY SCAN SECTION (between Ultimate Scan and Burnout Detection)
+// ============================================================================
+function BodyScanSection() {
+  const organs = [
+    { id: 'brain', cx: 50, cy: 8, label: 'CERVEAU', color: '#60a5fa', status: '98%', side: 'right' },
+    { id: 'heart', cx: 44, cy: 28, label: 'CŒUR', color: '#f87171', status: '72 BPM', side: 'left' },
+    { id: 'lungs', cx: 56, cy: 26, label: 'POUMONS', color: '#4ade80', status: '16/min', side: 'right' },
+    { id: 'liver', cx: 42, cy: 38, label: 'FOIE', color: '#fbbf24', status: 'Optimal', side: 'left' },
+    { id: 'stomach', cx: 54, cy: 42, label: 'DIGESTIF', color: '#a78bfa', status: 'Actif', side: 'right' },
+    { id: 'spine', cx: 50, cy: 55, label: 'COLONNE', color: '#22d3ee', status: 'Alignée', side: 'left' },
+    { id: 'knee-l', cx: 44, cy: 75, label: 'GENOUX', color: '#f472b6', status: 'OK', side: 'left' },
+  ];
+
+  return (
+    <div className="py-20 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-cyan-950/20 to-black" />
+
+      {/* Grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      <div className="relative max-w-6xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
+            animate={{ boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.4)', '0 0 20px rgba(34,211,238,0.2)'] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-cyan-400 text-sm font-mono tracking-wider">SCAN CORPOREL EN COURS</span>
+          </motion.div>
+          <h3 className="text-3xl font-bold text-white">CARTOGRAPHIE BIOMÉTRIQUE</h3>
+        </div>
+
+        {/* Body scan visualization */}
+        <div className="relative flex items-center justify-center" style={{ height: '500px' }}>
+
+          {/* Left labels */}
+          <div className="absolute left-0 md:left-[10%] top-0 bottom-0 flex flex-col justify-around py-8">
+            {organs.filter(o => o.side === 'left').map((organ, idx) => (
+              <motion.div
+                key={organ.id}
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.2 }}
+              >
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
+                  <motion.div
+                    className="text-sm font-bold"
+                    style={{ color: organ.color }}
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
+                  >
+                    {organ.status}
+                  </motion.div>
+                </div>
+                <motion.div
+                  className="w-8 h-[1px]"
+                  style={{ backgroundColor: organ.color }}
+                  animate={{ scaleX: [0, 1] }}
+                  transition={{ duration: 0.5, delay: idx * 0.2 }}
+                />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Body SVG */}
+          <svg viewBox="0 0 100 100" className="h-full w-auto max-w-[250px]">
+            {/* Scanning gradient */}
+            <defs>
+              <linearGradient id="bodyScanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="transparent" />
+                <stop offset="45%" stopColor="transparent" />
+                <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.6" />
+                <stop offset="55%" stopColor="transparent" />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Body silhouette */}
+            <g filter="url(#glow)">
+              {/* Head */}
+              <ellipse cx="50" cy="8" rx="7" ry="8" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.8" />
+              {/* Neck */}
+              <rect x="47" y="15" width="6" height="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" rx="1" opacity="0.6" />
+              {/* Shoulders & Torso */}
+              <path d="M 30 22 Q 40 18 50 20 Q 60 18 70 22 L 68 24 Q 50 22 32 24 Z" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
+              <path d="M 32 24 L 34 50 Q 50 54 66 50 L 68 24" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
+              {/* Arms */}
+              <path d="M 30 22 Q 22 30 18 42 Q 15 52 14 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
+              <path d="M 70 22 Q 78 30 82 42 Q 85 52 86 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
+              {/* Pelvis */}
+              <ellipse cx="50" cy="54" rx="14" ry="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" opacity="0.6" />
+              {/* Legs */}
+              <path d="M 40 58 L 38 75 L 36 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+              <path d="M 60 58 L 62 75 L 64 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+              {/* Spine */}
+              <path d="M 50 20 L 50 54" fill="none" stroke="#22d3ee" strokeWidth="0.3" strokeDasharray="1.5,1.5" opacity="0.5" />
+              {/* Ribcage hints */}
+              <path d="M 38 28 Q 50 26 62 28" fill="none" stroke="#22d3ee" strokeWidth="0.3" opacity="0.4" />
+              <path d="M 36 34 Q 50 32 64 34" fill="none" stroke="#22d3ee" strokeWidth="0.3" opacity="0.4" />
+              <path d="M 35 40 Q 50 38 65 40" fill="none" stroke="#22d3ee" strokeWidth="0.3" opacity="0.4" />
+            </g>
+
+            {/* Scanning line */}
+            <motion.rect
+              x="0"
+              width="100"
+              height="8"
+              fill="url(#bodyScanGradient)"
+              initial={{ y: 0 }}
+              animate={{ y: [0, 92, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Organ points */}
+            {organs.map((organ, idx) => (
+              <g key={organ.id}>
+                {/* Outer pulse ring */}
+                <motion.circle
+                  cx={organ.cx}
+                  cy={organ.cy}
+                  r="3"
+                  fill="none"
+                  stroke={organ.color}
+                  strokeWidth="0.3"
+                  initial={{ r: 1.5, opacity: 1 }}
+                  animate={{ r: 5, opacity: 0 }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: idx * 0.2 }}
+                />
+                {/* Core dot */}
+                <motion.circle
+                  cx={organ.cx}
+                  cy={organ.cy}
+                  r="1.5"
+                  fill={organ.color}
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: idx * 0.15 }}
+                  style={{ filter: `drop-shadow(0 0 3px ${organ.color})` }}
+                />
+              </g>
+            ))}
+          </svg>
+
+          {/* Right labels */}
+          <div className="absolute right-0 md:right-[10%] top-0 bottom-0 flex flex-col justify-around py-8">
+            {organs.filter(o => o.side === 'right').map((organ, idx) => (
+              <motion.div
+                key={organ.id}
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.2 }}
+              >
+                <motion.div
+                  className="w-8 h-[1px]"
+                  style={{ backgroundColor: organ.color }}
+                  animate={{ scaleX: [0, 1] }}
+                  transition={{ duration: 0.5, delay: idx * 0.2 }}
+                />
+                <div className="text-left">
+                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
+                  <motion.div
+                    className="text-sm font-bold"
+                    style={{ color: organ.color }}
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
+                  >
+                    {organ.status}
+                  </motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -300,7 +694,7 @@ interface OfferCardProps {
 }
 
 function OfferCard({ offer, onSelect }: OfferCardProps) {
-  const { id, title, subtitle, description, features, imageUrl, reverse } = offer;
+  const { id, title, subtitle, description, features, imageUrl, reverse, useCustomVisual } = offer;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -356,14 +750,20 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
             </div>
 
              {/* Overlay Gradient for Noir effect */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 z-10" />
+            {!useCustomVisual && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 z-10" />
+            )}
 
-            {/* Main Image */}
-            <img
-              src={imageUrl}
-              alt={title}
-              className="w-full h-full object-cover transition-all duration-700 transform opacity-70 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-110 group-hover:rotate-1"
-            />
+            {/* Main Image or Custom Visual */}
+            {useCustomVisual ? (
+              <DNAHelix />
+            ) : (
+              <img
+                src={imageUrl}
+                alt={title}
+                className="w-full h-full object-cover transition-all duration-700 transform opacity-70 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-110 group-hover:rotate-1"
+              />
+            )}
           </div>
 
           {/* Decorative glowing orb behind */}
@@ -433,9 +833,26 @@ function OffersSection() {
         </div>
 
         <div className="flex flex-col">
-          {OFFERS.map((offer) => (
-            <OfferCard key={offer.id} offer={offer} onSelect={handleSelect} />
-          ))}
+          {/* Discovery Scan */}
+          <OfferCard offer={OFFERS[0]} onSelect={handleSelect} />
+
+          {/* Anabolic Bioscan */}
+          <OfferCard offer={OFFERS[1]} onSelect={handleSelect} />
+
+          {/* ECG Section - between Anabolic and Blood Analysis */}
+          <ECGSection />
+
+          {/* Blood Analysis (with DNA Helix visual) */}
+          <OfferCard offer={OFFERS[2]} onSelect={handleSelect} />
+
+          {/* Ultimate Scan */}
+          <OfferCard offer={OFFERS[3]} onSelect={handleSelect} />
+
+          {/* Body Scan Section - between Ultimate and Burnout */}
+          <BodyScanSection />
+
+          {/* Burnout Detection */}
+          <OfferCard offer={OFFERS[4]} onSelect={handleSelect} />
         </div>
       </div>
     </section>
