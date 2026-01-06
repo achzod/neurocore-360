@@ -55,7 +55,7 @@
   --chart-3: 0 72% 50%;
   --chart-4: 200 80% 50%;
   --chart-5: 280 60% 55%;
-  --font-sans: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Space Grotesk", "DM Sans", Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: "Times New Roman", Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;
