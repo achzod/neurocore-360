@@ -97,16 +97,25 @@ function Button({ variant = 'primary', children, className = '', ...props }: But
 }
 
 // ============================================================================
-// DNA HELIX ANIMATION COMPONENT
+// BLOOD ANALYSIS VISUAL COMPONENT (DNA + ECG + SKELETON)
 // ============================================================================
 function DNAHelix() {
-  const nucleotides = 12;
+  // Body scan points with labels
+  const bodyPoints = [
+    { id: 'brain', x: 50, y: 8, label: 'CERVEAU', color: '#60a5fa' },
+    { id: 'heart', x: 45, y: 28, label: 'CŒUR', color: '#f87171' },
+    { id: 'lungs', x: 55, y: 26, label: 'POUMONS', color: '#4ade80' },
+    { id: 'liver', x: 42, y: 38, label: 'FOIE', color: '#fbbf24' },
+    { id: 'stomach', x: 55, y: 42, label: 'DIGESTIF', color: '#a78bfa' },
+    { id: 'kidneys', x: 50, y: 48, label: 'REINS', color: '#f472b6' },
+    { id: 'joints', x: 30, y: 60, label: 'ARTICULATIONS', color: '#22d3ee' },
+  ];
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-black">
       {/* Background particles */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(15)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
@@ -129,89 +138,122 @@ function DNAHelix() {
 
       {/* Glowing orbs */}
       <motion.div
-        className="absolute w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-        }}
+        className="absolute w-48 h-48 bg-blue-500/20 rounded-full blur-[60px]"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 4, repeat: Infinity }}
       />
-      <motion.div
-        className="absolute w-48 h-48 bg-cyan-400/20 rounded-full blur-[60px] translate-x-20"
-        animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: [0.2, 0.4, 0.2],
-        }}
-        transition={{ duration: 5, repeat: Infinity }}
-      />
 
-      {/* DNA Double Helix */}
-      <div className="relative h-[80%] w-32 flex items-center justify-center">
-        {[...Array(nucleotides)].map((_, i) => {
-          const delay = i * 0.15;
-          const yPos = (i / nucleotides) * 100;
-
-          return (
-            <div key={i} className="absolute w-full" style={{ top: `${yPos}%` }}>
-              {/* Left strand nucleotide */}
-              <motion.div
-                className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 shadow-[0_0_15px_rgba(59,130,246,0.8)]"
-                animate={{
-                  x: ['-50px', '50px', '-50px'],
-                  scale: [1, 0.8, 1],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  delay,
-                  ease: 'easeInOut',
-                }}
-              />
-
-              {/* Right strand nucleotide */}
-              <motion.div
-                className="absolute right-0 w-4 h-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_15px_rgba(34,211,238,0.8)]"
-                animate={{
-                  x: ['50px', '-50px', '50px'],
-                  scale: [0.8, 1, 0.8],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  delay,
-                  ease: 'easeInOut',
-                }}
-              />
-
-              {/* Connecting bar */}
-              <motion.div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-blue-400 via-white/50 to-cyan-400"
-                animate={{
-                  width: ['20px', '80px', '20px'],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  delay,
-                  ease: 'easeInOut',
-                }}
-              />
-            </div>
-          );
-        })}
+      {/* SKELETON BODY OUTLINE */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <svg viewBox="0 0 100 100" className="w-[60%] h-[85%] opacity-30">
+          {/* Head */}
+          <ellipse cx="50" cy="10" rx="8" ry="9" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+          {/* Neck */}
+          <line x1="50" y1="19" x2="50" y2="22" stroke="#3b82f6" strokeWidth="0.5" />
+          {/* Torso */}
+          <path d="M 35 22 Q 50 20 65 22 L 62 50 Q 50 52 38 50 Z" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+          {/* Spine */}
+          <line x1="50" y1="22" x2="50" y2="55" stroke="#3b82f6" strokeWidth="0.3" strokeDasharray="2,1" />
+          {/* Arms */}
+          <path d="M 35 24 L 20 40 L 15 55" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+          <path d="M 65 24 L 80 40 L 85 55" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+          {/* Pelvis */}
+          <path d="M 38 50 Q 50 58 62 50" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+          {/* Legs */}
+          <path d="M 42 55 L 38 75 L 35 95" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+          <path d="M 58 55 L 62 75 L 65 95" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
+        </svg>
       </div>
 
-      {/* Data overlay text */}
-      <div className="absolute top-4 left-4 text-[10px] font-mono text-blue-400/60 space-y-1">
-        <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }}>
-          SÉQUENÇAGE ADN
+      {/* ANIMATED SCAN POINTS ON BODY */}
+      <div className="absolute inset-0">
+        {bodyPoints.map((point, idx) => (
+          <motion.div
+            key={point.id}
+            className="absolute flex items-center gap-1"
+            style={{ left: `${point.x}%`, top: `${point.y}%` }}
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: idx * 0.2, duration: 0.5 }}
+          >
+            {/* Pulsing dot */}
+            <motion.div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: point.color, boxShadow: `0 0 10px ${point.color}` }}
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: idx * 0.3 }}
+            />
+            {/* Label */}
+            <motion.span
+              className="text-[6px] font-mono font-bold tracking-wider whitespace-nowrap"
+              style={{ color: point.color }}
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: idx * 0.2 }}
+            >
+              {point.label}
+            </motion.span>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ECG HEARTBEAT LINE */}
+      <div className="absolute bottom-8 left-4 right-4">
+        <div className="flex items-center gap-2 mb-1">
+          {/* Beating heart icon */}
+          <motion.div
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          >
+            <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </motion.div>
+          <span className="text-[8px] font-mono text-red-400">72 BPM</span>
+        </div>
+
+        {/* ECG Line SVG */}
+        <svg viewBox="0 0 200 30" className="w-full h-8">
+          <motion.path
+            d="M 0 15 L 20 15 L 25 15 L 30 5 L 35 25 L 40 10 L 45 20 L 50 15 L 70 15 L 75 15 L 80 5 L 85 25 L 90 10 L 95 20 L 100 15 L 120 15 L 125 15 L 130 5 L 135 25 L 140 10 L 145 20 L 150 15 L 170 15 L 175 15 L 180 5 L 185 25 L 190 10 L 195 20 L 200 15"
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          />
+          {/* Glow effect */}
+          <motion.path
+            d="M 0 15 L 20 15 L 25 15 L 30 5 L 35 25 L 40 10 L 45 20 L 50 15 L 70 15 L 75 15 L 80 5 L 85 25 L 90 10 L 95 20 L 100 15 L 120 15 L 125 15 L 130 5 L 135 25 L 140 10 L 145 20 L 150 15 L 170 15 L 175 15 L 180 5 L 185 25 L 190 10 L 195 20 L 200 15"
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity="0.3"
+            filter="blur(3px)"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          />
+        </svg>
+      </div>
+
+      {/* Data overlay - top left */}
+      <div className="absolute top-3 left-3 text-[8px] font-mono space-y-0.5">
+        <motion.div
+          className="text-blue-400"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          SCAN BIOMÉTRIQUE
         </motion.div>
-        <div className="text-cyan-400/40">BIOMARQUEURS: 50+</div>
+        <div className="text-cyan-400/60">50+ BIOMARQUEURS</div>
       </div>
 
-      <div className="absolute bottom-4 right-4 text-[10px] font-mono text-blue-400/60 text-right space-y-1">
-        <div className="text-cyan-400/40">ANALYSE EN COURS</div>
+      {/* Data overlay - top right */}
+      <div className="absolute top-3 right-3 text-[8px] font-mono text-right space-y-0.5">
+        <div className="text-green-400">STATUS: ACTIF</div>
         <motion.div
           className="text-blue-300/60"
           animate={{ opacity: [0.3, 1, 0.3] }}
