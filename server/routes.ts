@@ -416,6 +416,58 @@ export async function registerRoutes(
     }
   });
 
+  // Helper: Parse supplements from TXT content
+  function parseSupplementsFromTxt(txt: string): { name: string; dosage: string; timing: string; reason: string; duration: string; evidence: string }[] {
+    const supplements: { name: string; dosage: string; timing: string; reason: string; duration: string; evidence: string }[] = [];
+
+    // Find STACK section
+    const stackMatch = txt.match(/STACK CIBLEE.*?(?=\n\n[A-Z]{3,}|\n={3,}|$)/s);
+    if (!stackMatch) return supplements;
+
+    const stackContent = stackMatch[0];
+
+    // Parse each numbered supplement
+    const suppRegex = /(\d+)\.\s+([^\n]+)\n(?:.*?Dosage\s*:\s*([^\n]+))?(?:.*?Timing\s*:\s*([^\n]+))?(?:.*?Duree\s*\/\s*cycle\s*:\s*([^\n]+))?(?:.*?Pourquoi\s*:\s*([^\n]+))?(?:.*?Evidence\s*:\s*([^\n]+))?/gs;
+
+    let match;
+    while ((match = suppRegex.exec(stackContent)) !== null) {
+      const [, , name, dosage, timing, duration, reason, evidence] = match;
+      if (name) {
+        supplements.push({
+          name: name.replace(/\([^)]+\)/g, '').trim(),
+          dosage: dosage?.trim() || '',
+          timing: timing?.trim() || '',
+          reason: reason?.trim() || '',
+          duration: duration?.trim() || '',
+          evidence: evidence?.trim() || ''
+        });
+      }
+    }
+
+    // Fallback: simple line parsing if regex fails
+    if (supplements.length === 0) {
+      const lines = stackContent.split('\n');
+      let currentSupp: any = null;
+
+      for (const line of lines) {
+        const numbered = line.match(/^(\d+)\.\s+(.+)/);
+        if (numbered) {
+          if (currentSupp) supplements.push(currentSupp);
+          currentSupp = { name: numbered[2].split('(')[0].trim(), dosage: '', timing: '', reason: '', duration: '', evidence: '' };
+        } else if (currentSupp) {
+          if (line.includes('Dosage')) currentSupp.dosage = line.split(':')[1]?.trim() || '';
+          if (line.includes('Timing')) currentSupp.timing = line.split(':')[1]?.trim() || '';
+          if (line.includes('Pourquoi')) currentSupp.reason = line.split(':')[1]?.trim() || '';
+          if (line.includes('Duree')) currentSupp.duration = line.split(':')[1]?.trim() || '';
+          if (line.includes('Evidence')) currentSupp.evidence = line.split(':')[1]?.trim() || '';
+        }
+      }
+      if (currentSupp) supplements.push(currentSupp);
+    }
+
+    return supplements;
+  }
+
   app.get("/api/audits/:id/narrative", async (req, res) => {
     try {
       const audit = await storage.getAudit(req.params.id);
@@ -423,13 +475,14 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouve" });
         return;
       }
-      
+
       if (audit.narrativeReport) {
         const report = audit.narrativeReport as any;
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
+          const supplementStack = parseSupplementsFromTxt(report.txt);
 
           // Helper pour calculer le level
           const getLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
@@ -471,7 +524,7 @@ export async function registerRoutes(
             sections: mappedSections,
             prioritySections: mappedSections.filter(s => s.score < 60).slice(0, 3).map(s => s.id),
             strengthSections: mappedSections.filter(s => s.score >= 70).slice(0, 3).map(s => s.id),
-            supplementStack: [],
+            supplementStack: supplementStack,
             lifestyleProtocol: "",
             weeklyPlan: {
               week1: "Mise en place des fondations: posture, respiration, activation neuromusculaire",

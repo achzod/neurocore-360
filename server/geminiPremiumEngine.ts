@@ -1497,12 +1497,14 @@ async function callGemini(prompt: string): Promise<string> {
         },
       });
 
-      const text = result.response.text() || "";
+      let text = result.response.text() || "";
       // IMPORTANT: une réponse vide produit un audit "tronqué" (header/CTA sans sections).
       // On force donc un retry si le modèle renvoie vide.
       if (!text.trim()) {
         throw new Error("Gemini returned an empty response");
       }
+      // Clean AI marks / markdown artifacts
+      text = cleanPremiumContent(text);
       return text;
     } catch (error: any) {
       console.log(`[Gemini] Erreur tentative ${attempt + 1}/${GEMINI_MAX_RETRIES}: ${error.message || error}`);

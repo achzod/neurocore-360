@@ -207,10 +207,14 @@ export default function BurnoutDetectionPage() {
       if (!response.ok) throw new Error("Analysis failed");
 
       const data = await response.json();
-      // Save to localStorage for the dashboard to retrieve
-      localStorage.setItem('burnoutResult', JSON.stringify(data));
-      // Redirect to the new Ultrahuman-style dashboard
-      setLocation('/burnout/latest');
+      // Redirect to the new Ultrahuman-style dashboard with the ID
+      if (data.id) {
+        setLocation(`/burnout/${data.id}`);
+      } else {
+        // Fallback to localStorage if no ID
+        localStorage.setItem('burnoutResult', JSON.stringify(data));
+        setLocation('/burnout/latest');
+      }
     } catch (error) {
       // Fallback: calculate locally if API fails
       const localResult = calculateBurnoutScore(responses);

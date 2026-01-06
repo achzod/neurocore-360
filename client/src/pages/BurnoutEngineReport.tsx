@@ -1042,10 +1042,48 @@ const BurnoutEngineReport: React.FC = () => {
             </div>
           </section>
 
+          {/* CTA Coaching */}
+          <section className="mb-16">
+            <div
+              className="rounded-2xl p-8 text-center"
+              style={{
+                background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
+                border: `1px solid ${currentTheme.colors.primary}30`
+              }}
+            >
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Heart className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
+                <span className="text-sm font-medium uppercase tracking-wider" style={{ color: currentTheme.colors.primary }}>
+                  Accompagnement Burnout
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold mb-4">Sortir du burnout avec un accompagnement</h2>
+              <p className="mb-6 max-w-xl mx-auto" style={{ color: currentTheme.colors.textMuted }}>
+                Le burnout ne se resout pas seul. Travaille avec moi pour mettre en place un protocole de recuperation adapte a ton niveau d'epuisement, avec un suivi personnalise jusqu'a ce que tu retrouves ton energie.
+              </p>
+              <a
+                href="https://calendly.com/achzodcoaching/discovery"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
+                style={{
+                  backgroundColor: currentTheme.colors.primary,
+                  color: currentTheme.type === 'dark' ? '#000' : '#FFF'
+                }}
+              >
+                <Clock className="w-5 h-5" />
+                Reserver un appel gratuit
+              </a>
+              <p className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                30 min - Sans engagement - Urgences prioritaires
+              </p>
+            </div>
+          </section>
+
           {/* Footer */}
           <footer className="text-center py-8 border-t" style={{ borderColor: currentTheme.colors.border }}>
             <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-              Analyse générée par NEUROCORE 360 - Burnout Engine
+              Analyse generee par NEUROCORE 360 - Burnout Engine
             </p>
           </footer>
         </div>

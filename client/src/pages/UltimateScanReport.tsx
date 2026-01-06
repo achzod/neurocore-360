@@ -60,17 +60,17 @@ const THEMES: Theme[] = [
   },
   {
     id: 'metabolic',
-    name: 'Chrome Steel',
+    name: 'Ice Blue',
     type: 'dark',
     colors: {
-      primary: '#C0C0C0',
-      background: '#050505',
-      surface: '#111111',
-      border: 'rgba(192, 192, 192, 0.15)',
-      text: '#FFFFFF',
-      textMuted: '#A1A1AA',
-      grid: 'rgba(192, 192, 192, 0.05)',
-      glow: 'rgba(192, 192, 192, 0.25)'
+      primary: '#38BDF8',
+      background: '#020617',
+      surface: '#0f172a',
+      border: 'rgba(56, 189, 248, 0.15)',
+      text: '#F1F5F9',
+      textMuted: '#94A3B8',
+      grid: 'rgba(56, 189, 248, 0.05)',
+      glow: 'rgba(56, 189, 248, 0.25)'
     }
   },
   {
@@ -757,6 +757,51 @@ const UltimateScanReport: React.FC = () => {
               )}
             </div>
           </section>
+
+          {/* CTA Coaching */}
+          <section className="mb-16">
+            <div
+              className="rounded-2xl p-8 text-center"
+              style={{
+                background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
+                border: `1px solid ${currentTheme.colors.primary}30`
+              }}
+            >
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Zap className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
+                <span className="text-sm font-medium uppercase tracking-wider" style={{ color: currentTheme.colors.primary }}>
+                  Accompagnement Premium
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold mb-4">Coaching 1:1 avec Achzod</h2>
+              <p className="mb-6 max-w-xl mx-auto" style={{ color: currentTheme.colors.textMuted }}>
+                Tu as maintenant ta feuille de route complete. Pour aller encore plus vite et eviter les erreurs, travaille directement avec moi. Suivi personnalise, ajustements en temps reel, resultats acceleres.
+              </p>
+              <a
+                href="https://calendly.com/achzodcoaching/discovery"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
+                style={{
+                  backgroundColor: currentTheme.colors.primary,
+                  color: currentTheme.type === 'dark' ? '#000' : '#FFF'
+                }}
+              >
+                <Calendar className="w-5 h-5" />
+                Reserver un appel gratuit
+              </a>
+              <p className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                30 min - Sans engagement
+              </p>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="py-12 text-center" style={{ borderTop: `1px solid ${currentTheme.colors.border}` }}>
+            <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+              Ultimate Scan - ApexLabs by Achzod
+            </p>
+          </footer>
         </div>
       </main>
 

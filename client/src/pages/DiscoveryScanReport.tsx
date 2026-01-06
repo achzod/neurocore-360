@@ -44,17 +44,17 @@ const THEMES: Theme[] = [
   },
   {
     id: 'metabolic',
-    name: 'Chrome Steel',
+    name: 'Ice Blue',
     type: 'dark',
     colors: {
-      primary: '#C0C0C0',
-      background: '#050505',
-      surface: '#111111',
-      border: 'rgba(192, 192, 192, 0.15)',
-      text: '#FFFFFF',
-      textMuted: '#A1A1AA',
-      grid: 'rgba(192, 192, 192, 0.05)',
-      glow: 'rgba(192, 192, 192, 0.25)'
+      primary: '#38BDF8',
+      background: '#020617',
+      surface: '#0f172a',
+      border: 'rgba(56, 189, 248, 0.15)',
+      text: '#F1F5F9',
+      textMuted: '#94A3B8',
+      grid: 'rgba(56, 189, 248, 0.05)',
+      glow: 'rgba(56, 189, 248, 0.25)'
     }
   },
   {
@@ -656,6 +656,36 @@ const DiscoveryScanReport: React.FC = () => {
                   </button>
                 </form>
               )}
+            </div>
+          </section>
+
+          {/* CTA Upgrade */}
+          <section className="mb-16">
+            <div
+              className="rounded-2xl p-8 text-center"
+              style={{
+                background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
+                border: `1px solid ${currentTheme.colors.primary}30`
+              }}
+            >
+              <h2 className="text-2xl font-bold mb-4">Passe au niveau superieur</h2>
+              <p className="mb-6 max-w-xl mx-auto" style={{ color: currentTheme.colors.textMuted }}>
+                Ce Discovery Scan t'a donne un apercu de ton potentiel. L'Anabolic Bioscan va 10x plus loin avec des protocoles precis, un stack supplements personnalise, et un plan d'action semaine par semaine.
+              </p>
+              <a
+                href="/offers/anabolic-bioscan"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
+                style={{
+                  backgroundColor: currentTheme.colors.primary,
+                  color: currentTheme.type === 'dark' ? '#000' : '#FFF'
+                }}
+              >
+                <Zap className="w-5 h-5" />
+                Debloquer l'Anabolic Bioscan
+              </a>
+              <p className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                Garantie satisfait ou rembourse 30 jours
+              </p>
             </div>
           </section>
 

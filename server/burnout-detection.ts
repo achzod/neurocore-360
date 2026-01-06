@@ -246,6 +246,9 @@ async function analyzeBurnout(responses: BurnoutResponse, email: string): Promis
   };
 }
 
+// In-memory store for burnout results (persists until server restart)
+const burnoutStore = new Map<string, BurnoutAnalysisResult & { email: string; createdAt: string }>();
+
 export function registerBurnoutRoutes(app: Express): void {
   /**
    * POST /api/burnout-detection/analyze
@@ -272,16 +275,114 @@ export function registerBurnoutRoutes(app: Express): void {
 
       const result = await analyzeBurnout(responses, email);
 
+      // Generate ID and store result
+      const id = `burnout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      burnoutStore.set(id, { ...result, email, createdAt: new Date().toISOString() });
+
       // Log for admin notification
-      console.log(`[Burnout] Result for ${email}: Phase=${result.phase}, Score=${result.score}%, Knowledge=${result.knowledgeInsights?.length || 0} articles`);
+      console.log(`[Burnout] Result for ${email}: ID=${id}, Phase=${result.phase}, Score=${result.score}%, Knowledge=${result.knowledgeInsights?.length || 0} articles`);
 
       res.json({
         success: true,
+        id,
         ...result,
       });
     } catch (error) {
       console.error("[Burnout] Analysis error:", error);
       res.status(500).json({ error: "Erreur lors de l'analyse" });
+    }
+  });
+
+  /**
+   * GET /api/burnout-detection/:id
+   * Get burnout analysis result by ID
+   */
+  app.get("/api/burnout-detection/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Check in-memory store
+      const result = burnoutStore.get(id);
+      if (result) {
+        res.json(result);
+        return;
+      }
+
+      // ID not found
+      res.status(404).json({ error: "Analyse non trouvée" });
+    } catch (error) {
+      console.error("[Burnout] Fetch error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  /**
+   * POST /api/burnout-detection/create-test
+   * Create a test burnout result for demo purposes
+   */
+  app.post("/api/burnout-detection/create-test", async (req, res) => {
+    try {
+      // Create test data - Phase Resistance (moderate burnout)
+      const testResult: BurnoutAnalysisResult = {
+        score: 55,
+        phase: "resistance",
+        phaseDescription: "Phase de résistance. Ton corps compense mais s'épuise progressivement. C'est le moment idéal pour agir.",
+        categories: [
+          { name: "Energie", score: 62, level: "attention" },
+          { name: "Sommeil", score: 71, level: "critique" },
+          { name: "Cognitif", score: 45, level: "attention" },
+          { name: "Emotionnel", score: 58, level: "attention" },
+          { name: "Physique", score: 38, level: "optimal" },
+          { name: "Social", score: 52, level: "attention" }
+        ],
+        recommendations: {
+          immediate: [
+            "Priorité absolue: améliorer la qualité du sommeil",
+            "Pas d'écrans 2h avant le coucher",
+            "Identifier et limiter les sources de stress émotionnel"
+          ],
+          shortTerm: [
+            "Arrêt total des stimulants artificiels (pré-workout, etc.)",
+            "Sieste de 20 minutes si possible entre 13h-15h",
+            "Réduire l'intensité des entraînements de 50%",
+            "Mettre en place une routine de récupération quotidienne"
+          ],
+          longTerm: [
+            "Réévaluer tes priorités de vie",
+            "Construire des habitudes de gestion du stress durables",
+            "Équilibrer vie pro et personnelle"
+          ]
+        },
+        protocols: PHASE_PROTOCOLS.resistance,
+        knowledgeInsights: [
+          {
+            title: "Cortisol et Phase de Résistance",
+            source: "huberman",
+            excerpt: "La phase de résistance du stress chronique est caractérisée par une élévation maintenue du cortisol. Le corps s'adapte mais épuise ses réserves de catécholamines..."
+          },
+          {
+            title: "Rhodiola pour la Fatigue Chronique",
+            source: "examine",
+            excerpt: "La Rhodiola rosea a démontré des effets significatifs sur la réduction de la fatigue mentale et physique dans les études cliniques, avec des dosages de 200-400mg..."
+          }
+        ]
+      };
+
+      // Generate ID and store
+      const id = `burnout-test-${Date.now()}`;
+      burnoutStore.set(id, { ...testResult, email: "test@example.com", createdAt: new Date().toISOString() });
+
+      console.log(`[Burnout] Test result created: ID=${id}`);
+
+      res.json({
+        success: true,
+        id,
+        url: `/burnout/${id}`,
+        ...testResult
+      });
+    } catch (error) {
+      console.error("[Burnout] Create test error:", error);
+      res.status(500).json({ error: "Erreur création test" });
     }
   });
 }
