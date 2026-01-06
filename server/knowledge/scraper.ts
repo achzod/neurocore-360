@@ -927,8 +927,8 @@ export async function scrapeMPMD(limit: number = 15): Promise<ScrapedArticle[]> 
 // 10. SENDPULSE NEWSLETTERS
 // ============================================
 
-export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<ScrapedArticle[]> {
-  console.log("[Scraper] Starting SendPulse newsletters...");
+export async function scrapeSendPulseNewsletters(limit: number = 50): Promise<ScrapedArticle[]> {
+  console.log("[Scraper] Starting SendPulse newsletters (via addressbooks)...");
   const articles: ScrapedArticle[] = [];
 
   console.log(`[Scraper] SendPulse credentials: CLIENT_ID=${SENDPULSE_CLIENT_ID ? "present" : "MISSING"}, SECRET=${SENDPULSE_SECRET ? "present" : "MISSING"}`);
@@ -952,8 +952,6 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
     });
 
     const tokenData = await tokenRes.json();
-    console.log(`[Scraper] Token response: ${JSON.stringify(tokenData).substring(0, 200)}`);
-
     if (!tokenData.access_token) {
       console.log("[Scraper] ✗ SendPulse: failed to get token - " + JSON.stringify(tokenData));
       return articles;
@@ -962,65 +960,94 @@ export async function scrapeSendPulseNewsletters(limit: number = 20): Promise<Sc
     const token = tokenData.access_token;
     console.log("[Scraper] ✓ SendPulse token obtained");
 
-    // Try multiple endpoints to find campaigns
-    const endpoints = [
-      "https://api.sendpulse.com/campaigns",
-      "https://api.sendpulse.com/emails",
-      "https://api.sendpulse.com/addressbooks"
-    ];
-
-    for (const endpoint of endpoints) {
-      console.log(`[Scraper] Trying endpoint: ${endpoint}`);
-      const res = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      console.log(`[Scraper] ${endpoint} response: ${JSON.stringify(data).substring(0, 500)}`);
-    }
-
-    // Get campaigns
-    const campaignsRes = await fetch("https://api.sendpulse.com/campaigns", {
+    // Step 1: Get all addressbooks (mailing lists)
+    console.log("[Scraper] Fetching addressbooks...");
+    const addressbooksRes = await fetch("https://api.sendpulse.com/addressbooks", {
       headers: { Authorization: `Bearer ${token}` }
     });
+    const addressbooks = await addressbooksRes.json();
 
-    const campaigns = await campaignsRes.json();
-    console.log(`[Scraper] Campaigns response type: ${typeof campaigns}, isArray: ${Array.isArray(campaigns)}`);
-    console.log(`[Scraper] Campaigns raw: ${JSON.stringify(campaigns).substring(0, 1000)}`);
-    console.log(`[Scraper] Found ${Array.isArray(campaigns) ? campaigns.length : 0} campaigns`);
+    if (!Array.isArray(addressbooks)) {
+      console.log("[Scraper] ✗ SendPulse: addressbooks not an array");
+      return articles;
+    }
 
-    if (Array.isArray(campaigns)) {
-      for (const camp of campaigns.slice(0, limit)) {
-        try {
-          const detailRes = await fetch(`https://api.sendpulse.com/campaigns/${camp.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const detail = await detailRes.json();
+    console.log(`[Scraper] Found ${addressbooks.length} addressbooks`);
 
-          const title = detail.message?.subject || camp.name || "Newsletter ACHZOD";
-          const content = cleanHtml(detail.message?.body?.html || detail.message?.body?.text || "");
+    // Step 2: For each addressbook, get its campaigns
+    const allCampaigns: { task_id: number; task_name: string; addressbook_id: number }[] = [];
 
-          if (content.length > 200) {
-            articles.push({
-              source: "newsletter",
-              title,
-              content: content.substring(0, 20000),
-              url: `sendpulse://campaign/${camp.id}`,
-              category: categorizeContent(title, content),
-              keywords: extractKeywords(title, content),
-              scrapedAt: new Date(camp.send_date || camp.created || Date.now())
-            });
-            console.log(`[Scraper] ✓ Newsletter: ${title.substring(0, 40)}...`);
+    for (const book of addressbooks) {
+      try {
+        const campaignsRes = await fetch(`https://api.sendpulse.com/addressbooks/${book.id}/campaigns`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const campaigns = await campaignsRes.json();
+
+        if (Array.isArray(campaigns)) {
+          for (const camp of campaigns) {
+            // Only include sent campaigns (task_status 3 = sent)
+            if (camp.task_status === 3) {
+              allCampaigns.push({
+                task_id: camp.task_id,
+                task_name: camp.task_name,
+                addressbook_id: book.id
+              });
+            }
           }
+        }
+        await new Promise(r => setTimeout(r, 200));
+      } catch (e) {
+        console.error(`[Scraper] Error fetching campaigns for addressbook ${book.id}:`, e);
+      }
+    }
 
-          await new Promise(r => setTimeout(r, 500));
-        } catch (e) {}
+    // Deduplicate campaigns by task_id
+    const uniqueCampaigns = [...new Map(allCampaigns.map(c => [c.task_id, c])).values()];
+    console.log(`[Scraper] Found ${uniqueCampaigns.length} unique sent campaigns`);
+
+    // Step 3: Get details for each campaign (up to limit)
+    let processed = 0;
+    for (const camp of uniqueCampaigns.slice(0, limit)) {
+      try {
+        const detailRes = await fetch(`https://api.sendpulse.com/campaigns/${camp.task_id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const detail = await detailRes.json();
+
+        if (detail.error_code) {
+          console.log(`[Scraper] Campaign ${camp.task_id} error: ${detail.message}`);
+          continue;
+        }
+
+        const title = detail.message?.subject || camp.task_name || "Newsletter ACHZOD";
+        const htmlBody = detail.message?.body || "";
+        const content = cleanHtml(htmlBody);
+
+        if (content.length > 200) {
+          articles.push({
+            source: "newsletter",
+            title,
+            content: content.substring(0, 30000),
+            url: `sendpulse://campaign/${camp.task_id}`,
+            category: categorizeContent(title, content),
+            keywords: extractKeywords(title, content),
+            scrapedAt: new Date(detail.send_date || Date.now())
+          });
+          processed++;
+          console.log(`[Scraper] ✓ Newsletter ${processed}/${limit}: ${title.substring(0, 50)}...`);
+        }
+
+        await new Promise(r => setTimeout(r, 300));
+      } catch (e) {
+        console.error(`[Scraper] Error fetching campaign ${camp.task_id}:`, e);
       }
     }
   } catch (error) {
     console.error("[Scraper] SendPulse failed:", error);
   }
 
-  console.log(`[Scraper] ✓ Newsletters: ${articles.length}`);
+  console.log(`[Scraper] ✓ Newsletters: ${articles.length} scraped`);
   return articles;
 }
 
