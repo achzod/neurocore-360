@@ -255,7 +255,7 @@ function OfferCard({ offer }: { offer: Offer }) {
       <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-24`}>
         {/* Image Side with HUD/Tech Overlay */}
         <div className="w-full lg:w-1/2 relative">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
+          <div className="relative aspect-[4/3] overflow-hidden rounded bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
             {/* Scan Line Animation */}
             <div className="absolute inset-0 z-30 pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity duration-700">
               <motion.div
@@ -562,7 +562,7 @@ function FiveOffersSection() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Link href={offer.href}>
-                  <div className={`group relative h-full cursor-pointer rounded-2xl border transition-all duration-300 hover:border-[#FCDD00]/50 ${isPopular ? 'border-[#FCDD00] bg-[#FCDD00]/5' : 'border-gray-800 bg-gray-900/50 hover:bg-gray-900'}`}>
+                  <div className={`group relative h-full cursor-pointer rounded-sm border transition-all duration-300 hover:border-[#FCDD00]/50 ${isPopular ? 'border-[#FCDD00] bg-[#FCDD00]/5' : 'border-gray-800 bg-gray-900/50 hover:bg-gray-900'}`}>
                     {isPopular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <span className="bg-[#FCDD00] text-black text-xs font-semibold px-3 py-1 rounded-full">Populaire</span>
@@ -660,7 +660,7 @@ function CertificationsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="relative rounded-2xl border border-gray-800 bg-gray-950/50 p-6 hover:border-gray-700 transition-all duration-300"
+              className="relative rounded-sm border border-gray-800 bg-gray-950/50 p-6 hover:border-gray-700 transition-all duration-300"
             >
               <div className="h-16 mb-6 flex items-center justify-center">
                 <img src={cert.logo} alt={cert.name} className="h-12 w-auto object-contain" />
@@ -827,9 +827,9 @@ function MeasurableResultsSection() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className="relative p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
+                <div className="relative p-8 rounded-sm border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
                   {/* Icon */}
-                  <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FCDD00]/10 border border-[#FCDD00]/20">
+                  <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20">
                     <Icon className="h-7 w-7 text-[#FCDD00]" />
                   </div>
 
@@ -903,7 +903,7 @@ function TestimonialsSection() {
               transition={{ delay: index * 0.15 }}
               className="group"
             >
-              <div className="h-full p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
+              <div className="h-full p-8 rounded-sm border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
                 {/* Rating */}
                 <div className="mb-6 flex gap-1">
                   {Array.from({ length: testimonial.rating }).map((_, i) => (
@@ -999,7 +999,7 @@ function FAQSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
-              className="rounded-2xl border border-gray-800 bg-gray-900/50 overflow-hidden"
+              className="rounded-sm border border-gray-800 bg-gray-900/50 overflow-hidden"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}

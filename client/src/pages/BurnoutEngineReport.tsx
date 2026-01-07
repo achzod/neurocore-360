@@ -498,7 +498,7 @@ const BurnoutEngineReport: React.FC = () => {
 
             {/* Score Overview */}
             <div
-              className="rounded-2xl p-8 mb-8"
+              className="rounded-sm p-8 mb-8"
               style={{
                 backgroundColor: currentTheme.colors.surface,
                 border: `1px solid ${currentTheme.colors.border}`
@@ -565,7 +565,7 @@ const BurnoutEngineReport: React.FC = () => {
                 return (
                   <div
                     key={cat.name}
-                    className="rounded-xl p-4"
+                    className="rounded p-4"
                     style={{
                       backgroundColor: currentTheme.colors.surface,
                       border: `1px solid ${currentTheme.colors.border}`
@@ -605,14 +605,14 @@ const BurnoutEngineReport: React.FC = () => {
             </h2>
 
             <div
-              className="rounded-2xl p-6 lg:p-8"
+              className="rounded-sm p-6 lg:p-8"
               style={{
                 backgroundColor: currentTheme.colors.surface,
                 border: `1px solid ${currentTheme.colors.border}`
               }}
             >
               <div
-                className="p-6 rounded-xl mb-6"
+                className="p-6 rounded mb-6"
                 style={{ backgroundColor: phaseConfig.bgColor }}
               >
                 <p className="text-lg leading-relaxed">
@@ -650,7 +650,7 @@ const BurnoutEngineReport: React.FC = () => {
                 return (
                   <div
                     key={cat.name}
-                    className="rounded-xl p-6"
+                    className="rounded p-6"
                     style={{
                       backgroundColor: currentTheme.colors.surface,
                       border: `1px solid ${currentTheme.colors.border}`
@@ -710,7 +710,7 @@ const BurnoutEngineReport: React.FC = () => {
               {/* Immediate */}
               {reportData.recommendations.immediate.length > 0 && (
                 <div
-                  className="rounded-xl p-6"
+                  className="rounded p-6"
                   style={{
                     backgroundColor: currentTheme.colors.surface,
                     border: `1px solid ${currentTheme.colors.border}`
@@ -736,7 +736,7 @@ const BurnoutEngineReport: React.FC = () => {
               {/* Short Term */}
               {reportData.recommendations.shortTerm.length > 0 && (
                 <div
-                  className="rounded-xl p-6"
+                  className="rounded p-6"
                   style={{
                     backgroundColor: currentTheme.colors.surface,
                     border: `1px solid ${currentTheme.colors.border}`
@@ -762,7 +762,7 @@ const BurnoutEngineReport: React.FC = () => {
               {/* Long Term */}
               {reportData.recommendations.longTerm.length > 0 && (
                 <div
-                  className="rounded-xl p-6"
+                  className="rounded p-6"
                   style={{
                     backgroundColor: currentTheme.colors.surface,
                     border: `1px solid ${currentTheme.colors.border}`
@@ -795,7 +795,7 @@ const BurnoutEngineReport: React.FC = () => {
             </h2>
 
             <div
-              className="rounded-xl overflow-hidden"
+              className="rounded overflow-hidden"
               style={{
                 backgroundColor: currentTheme.colors.surface,
                 border: `1px solid ${currentTheme.colors.border}`
@@ -837,7 +837,7 @@ const BurnoutEngineReport: React.FC = () => {
             </h2>
 
             <div
-              className="rounded-xl p-6"
+              className="rounded p-6"
               style={{
                 backgroundColor: currentTheme.colors.surface,
                 border: `1px solid ${currentTheme.colors.border}`
@@ -871,7 +871,7 @@ const BurnoutEngineReport: React.FC = () => {
             </h2>
 
             <div
-              className="rounded-xl p-6"
+              className="rounded p-6"
               style={{
                 backgroundColor: currentTheme.colors.surface,
                 border: `1px solid ${currentTheme.colors.border}`
@@ -904,7 +904,7 @@ const BurnoutEngineReport: React.FC = () => {
                 {reportData.knowledgeInsights.map((insight, idx) => (
                   <div
                     key={idx}
-                    className="rounded-xl p-6"
+                    className="rounded p-6"
                     style={{
                       backgroundColor: currentTheme.colors.surface,
                       border: `1px solid ${currentTheme.colors.border}`
@@ -941,7 +941,7 @@ const BurnoutEngineReport: React.FC = () => {
             </h2>
 
             <div
-              className="rounded-xl p-6"
+              className="rounded p-6"
               style={{
                 backgroundColor: currentTheme.colors.surface,
                 border: `1px solid ${currentTheme.colors.border}`
@@ -1045,7 +1045,7 @@ const BurnoutEngineReport: React.FC = () => {
           {/* CTA Coaching */}
           <section className="mb-16">
             <div
-              className="rounded-2xl p-8 text-center"
+              className="rounded-sm p-8 text-center"
               style={{
                 background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
                 border: `1px solid ${currentTheme.colors.primary}30`
@@ -1065,7 +1065,7 @@ const BurnoutEngineReport: React.FC = () => {
                 href="https://calendly.com/achzodcoaching/discovery"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded font-semibold text-lg transition-all hover:scale-105"
                 style={{
                   backgroundColor: currentTheme.colors.primary,
                   color: currentTheme.type === 'dark' ? '#000' : '#FFF'

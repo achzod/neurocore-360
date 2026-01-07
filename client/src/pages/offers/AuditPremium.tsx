@@ -35,15 +35,23 @@ export default function AuditPremium() {
   ];
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
           <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
@@ -54,9 +62,9 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-full px-4 py-2 mb-8"
+            className="inline-flex items-center gap-2 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-[#FCDD00] text-sm font-medium">Best-seller</span>
+            <span className="text-[#FCDD00] text-xs font-mono uppercase tracking-widest">[ BEST-SELLER ]</span>
           </motion.div>
 
           <motion.h1
@@ -151,7 +159,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.03 }}
-                className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#FCDD00]/20 hover:-translate-y-0.5 transition-all duration-300"
+                className="group relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#FCDD00]/20 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-[#FCDD00] group-hover:scale-125 transition-transform" />
@@ -199,7 +207,7 @@ export default function AuditPremium() {
                   className="group p-8 rounded-[24px] border border-white/10 hover:border-[#FCDD00]/30 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
                       <Check className="w-6 h-6 text-[#FCDD00]" />
                     </div>
                     <div>
@@ -222,7 +230,7 @@ export default function AuditPremium() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-white/5 p-10"
+              className="lg:col-span-2 relative overflow-hidden rounded-sm bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-white/5 p-10"
             >
               <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#FCDD00]/5 to-transparent" />
               <div className="relative z-10">
@@ -248,7 +256,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.02] border border-white/5 p-8"
+                className="relative overflow-hidden rounded-sm bg-white/[0.02] border border-white/5 p-8"
               >
                 <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
                 <div className="text-white/40">{item.label}</div>
@@ -276,7 +284,7 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
+            className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -358,7 +366,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={`rounded-[32px] p-8 ${
+                className={`rounded-sm p-8 ${
                   plan.current
                     ? "border-2 border-[#FCDD00] bg-[#FCDD00]/5"
                     : "border border-white/10 bg-white/[0.02]"

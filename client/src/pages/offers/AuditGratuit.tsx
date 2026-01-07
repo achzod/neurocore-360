@@ -21,29 +21,37 @@ export default function AuditGratuit() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO - Full Viewport */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Gradient */}
+        {/* Background with Grid */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
           style={{ opacity: heroOpacity, scale: heroScale }}
           className="relative z-10 max-w-5xl mx-auto px-6 text-center"
         >
-          {/* Eyebrow */}
+          {/* Eyebrow - Monospace */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-8"
+            className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-8"
           >
-            Analyse Gratuite
+            [ ANALYSE GRATUITE ]
           </motion.p>
 
           {/* Main Headline - TRUE Ultrahuman Style (9.6rem-12.5rem) */}
@@ -151,7 +159,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
+              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
                 <img
                   src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop"
                   alt="Health analysis"
@@ -176,7 +184,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8 }}
               className="relative order-2 lg:order-1"
             >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
+              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
                 <img
                   src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
                   alt="Data dashboard"
@@ -258,7 +266,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
+              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
                 <img
                   src="https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=800&h=600&fit=crop"
                   alt="Report analysis"
@@ -312,7 +320,7 @@ export default function AuditGratuit() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-6 rounded-2xl border border-white/5 hover:border-[#FCDD00]/20 bg-white/[0.01] hover:bg-white/[0.02] transition-all duration-300"
+                  className="group p-6 rounded-sm border border-white/5 hover:border-[#FCDD00]/20 bg-white/[0.01] hover:bg-white/[0.02] transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-2 h-2 rounded-full bg-[#FCDD00] mt-2 group-hover:scale-125 transition-transform" />
@@ -351,7 +359,7 @@ export default function AuditGratuit() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 hover:border-white/20 transition-all duration-300"
+              className="rounded-sm border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 hover:border-white/20 transition-all duration-300"
             >
               <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Discovery Scan</div>
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">Gratuit</div>
@@ -381,7 +389,7 @@ export default function AuditGratuit() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="rounded-[32px] border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#FCDD00]/50 transition-all duration-300 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
+              className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#FCDD00]/50 transition-all duration-300 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
             >
               <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Anabolic Bioscan</div>
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">59€</div>

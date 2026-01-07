@@ -23,7 +23,7 @@ interface RadarProps {
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#09090B] border border-white/10 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[120px] z-50">
+      <div className="bg-[#09090B] border border-white/10 p-4 rounded shadow-2xl backdrop-blur-md min-w-[120px] z-50">
         <p className="text-neutral-400 text-[10px] uppercase tracking-widest font-bold mb-1">{payload[0].payload.subject}</p>
         <div className="flex items-end gap-1">
           <span className="text-3xl font-bold text-white leading-none">{payload[0].value}</span>
