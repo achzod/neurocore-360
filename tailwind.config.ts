@@ -86,6 +86,8 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+        heading: ["Decimal", "Helvetica Neue", "sans-serif"],
+        display: ["Decimal", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
