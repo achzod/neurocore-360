@@ -428,9 +428,31 @@ function QuestionnaireContent() {
         setPrenomConfirmed(true);
       }
 
+      // Check URL params for Terra callback
+      const urlParams = new URLSearchParams(window.location.search);
+      const terraSuccess = urlParams.get("terra_success");
+      const terraError = urlParams.get("terra_error");
+
+      // Clean URL params after reading
+      if (terraSuccess || terraError) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, "", cleanUrl);
+      }
+
+      // Handle Terra error (SDK provider selected or connection failed)
+      if (terraError === "true") {
+        setWearablesSyncShown(true);
+        toast({
+          title: "Connexion non finalisee",
+          description: "Si tu as choisi Samsung Health ou Huawei, installe l'app Terra Avengers sur ton telephone pour synchroniser.",
+          variant: "destructive",
+          duration: 10000,
+        });
+      }
+
       // Check if returning from Terra widget
       const wasConnecting = sessionStorage.getItem("terraConnecting");
-      if (wasConnecting === "true") {
+      if (wasConnecting === "true" || terraSuccess === "true") {
         sessionStorage.removeItem("terraConnecting");
         setWearablesSyncShown(true);
 
@@ -455,6 +477,13 @@ function QuestionnaireContent() {
                 toast({
                   title: "Wearable synchronise !",
                   description: `${Object.keys(data.answers || {}).length} reponses pre-remplies automatiquement.`,
+                });
+              } else if (terraSuccess === "true") {
+                // User connected but no data yet - might be SDK provider
+                toast({
+                  title: "Connexion en cours...",
+                  description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
+                  duration: 8000,
                 });
               }
             })
@@ -978,6 +1007,13 @@ function QuestionnaireContent() {
                           <span>{b.text}</span>
                         </div>
                       ))}
+                    </div>
+
+                    {/* SDK Provider Note */}
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                      <p className="text-xs text-amber-200">
+                        <strong>Samsung Health / Apple Health :</strong> Ces apps nécessitent l'installation de <strong>Terra Avengers</strong> (gratuit) sur ton téléphone pour synchroniser les données.
+                      </p>
                     </div>
 
                     {/* Actions */}
