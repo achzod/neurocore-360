@@ -41,7 +41,7 @@ export default function ProPanel() {
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-cyan-500/5 rounded-full blur-[180px]" />
-          <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#0eff27]/5 rounded-full blur-[150px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
         </div>
 
         <motion.div
@@ -168,11 +168,11 @@ export default function ProPanel() {
               >
                 <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center ${
                   item.color === 'cyan' ? 'bg-cyan-500/10' :
-                  item.color === 'purple' ? 'bg-purple-500/10' : 'bg-[#0eff27]/10'
+                  item.color === 'purple' ? 'bg-purple-500/10' : 'bg-[#FCDD00]/10'
                 }`}>
                   <item.icon className={`w-8 h-8 ${
                     item.color === 'cyan' ? 'text-cyan-400' :
-                    item.color === 'purple' ? 'text-purple-400' : 'text-[#0eff27]'
+                    item.color === 'purple' ? 'text-purple-400' : 'text-[#FCDD00]'
                   }`} />
                 </div>
                 <h3 className="text-white text-2xl font-bold mb-3">{item.title}</h3>
@@ -282,7 +282,7 @@ export default function ProPanel() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
               Wearables Compatibles
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
@@ -301,7 +301,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="px-6 py-4 rounded-full border border-white/10 bg-white/[0.02] text-white/70 hover:border-[#0eff27]/30 hover:text-white transition-all"
+                className="px-6 py-4 rounded-full border border-white/10 bg-white/[0.02] text-white/70 hover:border-[#FCDD00]/30 hover:text-white transition-all"
               >
                 {device}
               </motion.div>
