@@ -125,7 +125,7 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className={`relative rounded-2xl ${
+              className={`relative rounded-sm ${
                 tier.popular
                   ? "bg-gradient-to-b from-primary/20 to-transparent border-2 border-primary/50 scale-105 z-10"
                   : "bg-white/5 border border-white/10"
@@ -151,7 +151,7 @@ export function Pricing() {
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${tier.gradient}`}
+                      className={`flex items-center justify-center w-10 h-10 rounded bg-gradient-to-br ${tier.gradient}`}
                     >
                       {tier.icon}
                     </div>
@@ -194,7 +194,7 @@ export function Pricing() {
               {/* CTA */}
               <Link href={tier.href}>
                 <button
-                  className={`w-full py-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
+                  className={`w-full py-4 rounded font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
                     tier.popular
                       ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
                       : tier.name === "Pro Panel 360"
@@ -217,7 +217,7 @@ export function Pricing() {
           viewport={{ once: true }}
           className="mt-12 text-center"
         >
-          <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20">
+          <div className="inline-flex items-center gap-3 px-6 py-4 rounded-sm bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20">
             <Sparkles className="w-5 h-5 text-primary shrink-0" />
             <p className="text-white/80 text-sm">
               <span className="font-semibold text-primary">Offre coaching :</span>{" "}
@@ -261,7 +261,7 @@ export function PricingCompact() {
       {tiers.map((tier) => (
         <Link key={tier.name} href={tier.href}>
           <div
-            className={`p-4 rounded-xl border transition-all cursor-pointer hover:scale-[1.02] ${
+            className={`p-4 rounded border transition-all cursor-pointer hover:scale-[1.02] ${
               tier.popular
                 ? "border-primary/50 bg-primary/10"
                 : "border-white/10 bg-white/5 hover:border-white/20"

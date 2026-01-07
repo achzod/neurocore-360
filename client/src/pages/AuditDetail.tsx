@@ -871,7 +871,7 @@ export default function AuditDetail() {
           {!isPremiumUser && (
             <Card className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-2 border-primary/20">
               <CardContent className="flex flex-col items-center gap-6 p-8 text-center sm:flex-row sm:text-left">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-sm bg-primary">
                   <Crown className="h-8 w-8 text-primary-foreground" />
                 </div>
                 <div className="flex-1">

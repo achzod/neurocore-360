@@ -357,7 +357,7 @@ function KeyMetricsSection({ scores }: { scores: Record<string, number> }) {
           >
             <Card>
               <CardContent className="flex items-center gap-4 p-4">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-${metric.color}/10`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded bg-${metric.color}/10`}>
                   <Icon className={`h-6 w-6 text-${metric.color}`} />
                 </div>
                 <div>
@@ -439,7 +439,7 @@ function AuditCard({ audit, index }: { audit: Audit; index: number }) {
       <Card className="group hover:border-primary/50">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-12 w-12 items-center justify-center rounded bg-primary/10 text-primary">
               <FileText className="h-6 w-6" />
             </div>
             <div>
@@ -509,7 +509,7 @@ function EmptyState() {
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+        <div className="flex h-16 w-16 items-center justify-center rounded-sm bg-muted">
           <FileText className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="mt-6 text-lg font-semibold">Aucun audit pour le moment</h3>
@@ -719,7 +719,7 @@ export default function Dashboard() {
               >
                 <Card className="overflow-hidden bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10">
                   <CardContent className="flex flex-col items-center gap-6 p-8 text-center sm:flex-row sm:text-left">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-sm bg-primary">
                       <Crown className="h-8 w-8 text-primary-foreground" />
                     </div>
                     <div className="flex-1">

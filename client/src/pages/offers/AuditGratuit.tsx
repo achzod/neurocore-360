@@ -21,29 +21,37 @@ export default function AuditGratuit() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO - Full Viewport */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Gradient */}
+        {/* Background with Grid */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0eff27]/5 rounded-full blur-[150px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
           style={{ opacity: heroOpacity, scale: heroScale }}
           className="relative z-10 max-w-5xl mx-auto px-6 text-center"
         >
-          {/* Eyebrow */}
+          {/* Eyebrow - Monospace */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-8"
+            className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-8"
           >
-            Analyse Gratuite
+            [ ANALYSE GRATUITE ]
           </motion.p>
 
           {/* Main Headline - TRUE Ultrahuman Style (9.6rem-12.5rem) */}
@@ -55,7 +63,7 @@ export default function AuditGratuit() {
           >
             Discover what's
             <br />
-            <span className="text-[#0eff27]">holding you back.</span>
+            <span className="text-[#FCDD00]">holding you back.</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -76,7 +84,7 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/questionnaire">
-              <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
+              <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 Commencer le scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -122,7 +130,7 @@ export default function AuditGratuit() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
                 Detection
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
@@ -136,7 +144,7 @@ export default function AuditGratuit() {
               <ul className="space-y-4">
                 {["15 domaines analyses en profondeur", "Patterns metaboliques identifies", "Desequilibres hormonaux reveles"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#0eff27]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
                   </li>
                 ))}
@@ -151,7 +159,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0eff27]/10 to-black/50 border border-white/5">
+              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
                 <img
                   src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop"
                   alt="Health analysis"
@@ -176,7 +184,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8 }}
               className="relative order-2 lg:order-1"
             >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0eff27]/10 to-black/50 border border-white/5">
+              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
                 <img
                   src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
                   alt="Data dashboard"
@@ -194,7 +202,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="order-1 lg:order-2"
             >
-              <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
                 Score
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
@@ -208,7 +216,7 @@ export default function AuditGratuit() {
               <ul className="space-y-4">
                 {["Visualisation claire de tes forces", "Points faibles identifies", "Priorites d'action revelees"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#0eff27]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
                   </li>
                 ))}
@@ -229,7 +237,7 @@ export default function AuditGratuit() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
                 Rapport
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
@@ -243,7 +251,7 @@ export default function AuditGratuit() {
               <ul className="space-y-4">
                 {["Executive summary clair", "Analyse par domaine", "Points d'attention prioritaires"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#0eff27]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
                   </li>
                 ))}
@@ -258,7 +266,7 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-[#0eff27]/10 to-black/50 border border-white/5">
+              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
                 <img
                   src="https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=800&h=600&fit=crop"
                   alt="Report analysis"
@@ -282,7 +290,7 @@ export default function AuditGratuit() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
               >
-                <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
                   Analyse Complete
                 </p>
                 <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
@@ -312,10 +320,10 @@ export default function AuditGratuit() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-6 rounded-2xl border border-white/5 hover:border-[#0eff27]/20 bg-white/[0.01] hover:bg-white/[0.02] transition-all duration-300"
+                  className="group p-6 rounded-sm border border-white/5 hover:border-[#FCDD00]/20 bg-white/[0.01] hover:bg-white/[0.02] transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-2 h-2 rounded-full bg-[#0eff27] mt-2 group-hover:scale-125 transition-transform" />
+                    <div className="w-2 h-2 rounded-full bg-[#FCDD00] mt-2 group-hover:scale-125 transition-transform" />
                     <div>
                       <h3 className="text-white text-lg font-semibold mb-1">{item.title}</h3>
                       <p className="text-white/40 text-sm">{item.desc}</p>
@@ -351,9 +359,9 @@ export default function AuditGratuit() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 hover:border-white/20 transition-all duration-300"
+              className="rounded-sm border border-white/10 bg-white/[0.03] backdrop-blur-xl p-8 hover:border-white/20 transition-all duration-300"
             >
-              <div className="text-[#0eff27] text-sm font-medium tracking-[0.15em] uppercase mb-4">Discovery Scan</div>
+              <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Discovery Scan</div>
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">Gratuit</div>
               <ul className="space-y-4">
                 {[
@@ -363,13 +371,13 @@ export default function AuditGratuit() {
                   "Rapport 5-7 pages",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
-                    <Check className="w-5 h-5 text-[#0eff27]" />
+                    <Check className="w-5 h-5 text-[#FCDD00]" />
                     {item}
                   </li>
                 ))}
               </ul>
               <Link href="/questionnaire">
-                <button className="w-full mt-8 bg-[#0eff27] text-black font-semibold py-4 rounded-full hover:bg-[#0eff27]/90 transition-all">
+                <button className="w-full mt-8 bg-[#FCDD00] text-black font-semibold py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all">
                   Commencer
                 </button>
               </Link>
@@ -381,9 +389,9 @@ export default function AuditGratuit() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="rounded-[32px] border border-[#0eff27]/30 bg-gradient-to-b from-[#0eff27]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#0eff27]/50 transition-all duration-300 shadow-[0_0_60px_rgba(14,255,39,0.1)]"
+              className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-8 hover:border-[#FCDD00]/50 transition-all duration-300 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
             >
-              <div className="text-[#0eff27] text-sm font-medium tracking-[0.15em] uppercase mb-4">Anabolic Bioscan</div>
+              <div className="text-[#FCDD00] text-sm font-medium tracking-[0.15em] uppercase mb-4">Anabolic Bioscan</div>
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">59€</div>
               <ul className="space-y-4">
                 {[
@@ -394,7 +402,7 @@ export default function AuditGratuit() {
                   "16 sections d'analyse",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
-                    <Check className="w-5 h-5 text-[#0eff27]" />
+                    <Check className="w-5 h-5 text-[#FCDD00]" />
                     {item}
                   </li>
                 ))}
@@ -420,13 +428,13 @@ export default function AuditGratuit() {
           <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
             Pret a decouvrir
             <br />
-            <span className="text-[#0eff27]">tes blocages ?</span>
+            <span className="text-[#FCDD00]">tes blocages ?</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             5 minutes. 180 questions. Un diagnostic qui peut tout changer.
           </p>
           <Link href="/questionnaire">
-            <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Discovery Scan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>

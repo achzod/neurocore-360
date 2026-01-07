@@ -425,7 +425,7 @@ export default function BurnoutDetectionPage() {
               {/* Section Header */}
               <Card className="mb-6 border-purple-500/20 bg-gradient-to-r from-purple-500/5 to-transparent">
                 <CardContent className="p-4 flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10">
+                  <div className="flex h-12 w-12 items-center justify-center rounded bg-purple-500/10">
                     <currentSection.icon className="h-6 w-6 text-purple-500" />
                   </div>
                   <div>
@@ -687,7 +687,7 @@ export default function BurnoutDetectionPage() {
                     {result.protocol.map((week, i) => (
                       <div
                         key={i}
-                        className="p-4 rounded-xl bg-muted/50 border"
+                        className="p-4 rounded bg-muted/50 border"
                       >
                         <div className="flex items-center gap-2 mb-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500 text-white text-sm font-bold">

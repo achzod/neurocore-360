@@ -234,7 +234,7 @@ function ECGSection() {
         </div>
 
         {/* ECG Line */}
-        <div className="relative h-24 bg-black/50 rounded-2xl border border-red-500/20 overflow-hidden">
+        <div className="relative h-24 bg-black/50 rounded-sm border border-red-500/20 overflow-hidden">
           {/* Grid background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
 
@@ -729,7 +729,7 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
 
         {/* Image Side with HUD/Tech Overlay */}
         <div className="w-full lg:w-1/2 relative">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
+          <div className="relative aspect-[4/3] overflow-hidden rounded bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
 
             {/* Scan Line Animation */}
             <div className="absolute inset-0 z-30 pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity duration-700">
@@ -948,7 +948,7 @@ function Waitlist() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto bg-black/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-16 text-center">
+        <div className="max-w-4xl mx-auto bg-black/50 backdrop-blur-xl border border-white/10 rounded-sm p-8 md:p-16 text-center">
           <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
             ACCÈS ANTICIPÉ
           </h2>
@@ -957,7 +957,7 @@ function Waitlist() {
           </p>
 
           {status === 'success' ? (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-8 animate-pulse">
+            <div className="bg-green-500/10 border border-green-500/20 rounded p-8 animate-pulse">
               <p className="text-green-400 text-xl font-medium">Inscription confirmée.</p>
               <p className="text-gray-400 mt-2">Nous vous contacterons très prochainement.</p>
               <button

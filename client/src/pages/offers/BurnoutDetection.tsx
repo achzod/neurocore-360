@@ -36,15 +36,23 @@ export default function BurnoutDetection() {
   ];
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/5 rounded-full blur-[150px]" />
           <div className="absolute top-1/3 right-1/3 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[120px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
@@ -55,10 +63,10 @@ export default function BurnoutDetection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-8"
+            className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-sm px-4 py-2 mb-8"
           >
             <AlertTriangle className="w-4 h-4 text-purple-400" />
-            <span className="text-purple-400 text-sm font-medium">Detection Precoce</span>
+            <span className="text-purple-400 text-xs font-mono uppercase tracking-widest">[ DETECTION PRECOCE ]</span>
           </motion.div>
 
           <motion.h1
@@ -147,7 +155,7 @@ export default function BurnoutDetection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="group rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-purple-500/30 hover:-translate-y-0.5 transition-all duration-300"
+                className="group rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-purple-500/30 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-purple-400 group-hover:scale-125 transition-transform" />
@@ -187,7 +195,7 @@ export default function BurnoutDetection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={`relative overflow-hidden rounded-[32px] border p-8 ${
+                className={`relative overflow-hidden rounded-sm border p-8 ${
                   phase.color === 'amber' ? 'border-amber-500/20 bg-amber-500/5' :
                   phase.color === 'orange' ? 'border-orange-500/20 bg-orange-500/5' :
                   'border-red-500/20 bg-red-500/5'
@@ -266,7 +274,7 @@ export default function BurnoutDetection() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="aspect-square rounded-[48px] bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 flex items-center justify-center">
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 flex items-center justify-center">
                 <div className="text-center">
                   <Zap className="w-16 h-16 text-purple-400/50 mx-auto mb-4" />
                   <div className="text-purple-400 text-6xl font-bold tracking-[-0.04em] mb-2">Score</div>
@@ -296,7 +304,7 @@ export default function BurnoutDetection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(168,85,247,0.1)]"
+            className="rounded-sm border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(168,85,247,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[

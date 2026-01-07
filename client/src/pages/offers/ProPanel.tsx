@@ -33,15 +33,23 @@ export default function ProPanel() {
   ];
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-cyan-500/5 rounded-full blur-[180px]" />
-          <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#0eff27]/5 rounded-full blur-[150px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-[#FCDD00]/5 rounded-full blur-[180px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
@@ -52,9 +60,9 @@ export default function ProPanel() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-2 mb-8"
+            className="inline-flex items-center gap-2 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-cyan-400 text-sm font-medium">Most Complete</span>
+            <span className="text-[#FCDD00] text-xs font-mono uppercase tracking-widest">[ MOST COMPLETE ]</span>
           </motion.div>
 
           <motion.h1
@@ -164,15 +172,15 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-10 hover:border-cyan-500/30 hover:-translate-y-1 transition-all duration-300 group"
+                className="relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-10 hover:border-cyan-500/30 hover:-translate-y-1 transition-all duration-300 group"
               >
-                <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center ${
+                <div className={`w-16 h-16 rounded-sm mb-6 flex items-center justify-center ${
                   item.color === 'cyan' ? 'bg-cyan-500/10' :
-                  item.color === 'purple' ? 'bg-purple-500/10' : 'bg-[#0eff27]/10'
+                  item.color === 'purple' ? 'bg-purple-500/10' : 'bg-[#FCDD00]/10'
                 }`}>
                   <item.icon className={`w-8 h-8 ${
                     item.color === 'cyan' ? 'text-cyan-400' :
-                    item.color === 'purple' ? 'text-purple-400' : 'text-[#0eff27]'
+                    item.color === 'purple' ? 'text-purple-400' : 'text-[#FCDD00]'
                   }`} />
                 </div>
                 <h3 className="text-white text-2xl font-bold mb-3">{item.title}</h3>
@@ -208,7 +216,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.02 }}
-                className="group rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-4 hover:bg-white/[0.06] hover:border-cyan-500/30 hover:-translate-y-0.5 transition-all duration-300"
+                className="group rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-4 hover:bg-white/[0.06] hover:border-cyan-500/30 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 group-hover:scale-125 transition-transform" />
@@ -263,7 +271,7 @@ export default function ProPanel() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="aspect-square rounded-[48px] bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 flex items-center justify-center">
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 flex items-center justify-center">
                 <div className="text-center">
                   <Camera className="w-20 h-20 text-purple-400/50 mx-auto mb-4" />
                   <p className="text-white/30 text-lg">4 photos analysees par IA</p>
@@ -282,7 +290,7 @@ export default function ProPanel() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
               Wearables Compatibles
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
@@ -301,7 +309,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="px-6 py-4 rounded-full border border-white/10 bg-white/[0.02] text-white/70 hover:border-[#0eff27]/30 hover:text-white transition-all"
+                className="px-6 py-4 rounded-full border border-white/10 bg-white/[0.02] text-white/70 hover:border-[#FCDD00]/30 hover:text-white transition-all"
               >
                 {device}
               </motion.div>
@@ -318,7 +326,7 @@ export default function ProPanel() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 lg:row-span-2 relative overflow-hidden rounded-[32px] bg-gradient-to-br from-cyan-500/10 to-transparent border border-white/5 p-10"
+              className="lg:col-span-2 lg:row-span-2 relative overflow-hidden rounded-sm bg-gradient-to-br from-cyan-500/10 to-transparent border border-white/5 p-10"
             >
               <div className="relative z-10">
                 <p className="text-cyan-400 text-sm font-medium tracking-[0.2em] uppercase mb-4">Rapport Complet</p>
@@ -343,7 +351,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 hover:border-cyan-500/20 hover:-translate-y-1 transition-all duration-300"
+                className="rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-8 hover:border-cyan-500/20 hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
                 <div className="text-white/40">{item.label}</div>
@@ -371,7 +379,7 @@ export default function ProPanel() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-cyan-500/30 bg-gradient-to-b from-cyan-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(34,211,238,0.1)]"
+            className="rounded-sm border border-cyan-500/30 bg-gradient-to-b from-cyan-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(34,211,238,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -455,7 +463,7 @@ export default function ProPanel() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={`rounded-[32px] p-8 ${
+                className={`rounded-sm p-8 ${
                   plan.current
                     ? "border-2 border-cyan-400 bg-cyan-500/5"
                     : "border border-white/10 bg-white/[0.02]"

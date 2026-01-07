@@ -35,15 +35,23 @@ export default function AuditPremium() {
   ];
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0eff27]/5 rounded-full blur-[150px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
           <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
@@ -54,9 +62,9 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-[#0eff27]/10 border border-[#0eff27]/20 rounded-full px-4 py-2 mb-8"
+            className="inline-flex items-center gap-2 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-[#0eff27] text-sm font-medium">Best-seller</span>
+            <span className="text-[#FCDD00] text-xs font-mono uppercase tracking-widest">[ BEST-SELLER ]</span>
           </motion.div>
 
           <motion.h1
@@ -67,7 +75,7 @@ export default function AuditPremium() {
           >
             Anabolic
             <br />
-            <span className="text-[#0eff27]">Bioscan.</span>
+            <span className="text-[#FCDD00]">Bioscan.</span>
           </motion.h1>
 
           <motion.p
@@ -97,7 +105,7 @@ export default function AuditPremium() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link href="/questionnaire?plan=premium">
-              <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
+              <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                 Commencer mon scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -135,7 +143,7 @@ export default function AuditPremium() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
               Analyse Complete
             </p>
             <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-6">
@@ -151,10 +159,10 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.03 }}
-                className="group relative overflow-hidden rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#0eff27]/20 hover:-translate-y-0.5 transition-all duration-300"
+                className="group relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#FCDD00]/20 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#0eff27] group-hover:scale-125 transition-transform" />
+                  <div className="w-2 h-2 rounded-full bg-[#FCDD00] group-hover:scale-125 transition-transform" />
                   <span className="text-white text-sm font-medium">{section}</span>
                 </div>
               </motion.div>
@@ -173,7 +181,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
               >
-                <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
                   Protocoles Inclus
                 </p>
                 <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
@@ -196,11 +204,11 @@ export default function AuditPremium() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-8 rounded-[24px] border border-white/10 hover:border-[#0eff27]/30 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300"
+                  className="group p-8 rounded-[24px] border border-white/10 hover:border-[#FCDD00]/30 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#0eff27]/10 border border-[#0eff27]/20 flex items-center justify-center">
-                      <Check className="w-6 h-6 text-[#0eff27]" />
+                    <div className="w-12 h-12 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
+                      <Check className="w-6 h-6 text-[#FCDD00]" />
                     </div>
                     <div>
                       <h3 className="text-white text-xl font-semibold mb-2">{protocol.name}</h3>
@@ -222,11 +230,11 @@ export default function AuditPremium() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#0eff27]/10 to-transparent border border-white/5 p-10"
+              className="lg:col-span-2 relative overflow-hidden rounded-sm bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-white/5 p-10"
             >
-              <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#0eff27]/5 to-transparent" />
+              <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#FCDD00]/5 to-transparent" />
               <div className="relative z-10">
-                <p className="text-[#0eff27] text-sm font-medium tracking-[0.2em] uppercase mb-4">Plan Personnalise</p>
+                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-4">Plan Personnalise</p>
                 <h3 className="text-white text-4xl font-bold tracking-[-0.02em] mb-4">
                   30-60-90 Jours
                 </h3>
@@ -248,7 +256,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.02] border border-white/5 p-8"
+                className="relative overflow-hidden rounded-sm bg-white/[0.02] border border-white/5 p-8"
               >
                 <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
                 <div className="text-white/40">{item.label}</div>
@@ -276,7 +284,7 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-[#0eff27]/30 bg-gradient-to-b from-[#0eff27]/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(14,255,39,0.1)]"
+            className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -292,7 +300,7 @@ export default function AuditPremium() {
                 "Support par email",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-[#0eff27] flex-shrink-0" />
+                  <Check className="w-5 h-5 text-[#FCDD00] flex-shrink-0" />
                   <span className="text-white/80">{item}</span>
                 </div>
               ))}
@@ -304,7 +312,7 @@ export default function AuditPremium() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/questionnaire?plan=premium">
-                <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
+                <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -358,14 +366,14 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className={`rounded-[32px] p-8 ${
+                className={`rounded-sm p-8 ${
                   plan.current
-                    ? "border-2 border-[#0eff27] bg-[#0eff27]/5"
+                    ? "border-2 border-[#FCDD00] bg-[#FCDD00]/5"
                     : "border border-white/10 bg-white/[0.02]"
                 }`}
               >
                 {plan.current && (
-                  <div className="text-[#0eff27] text-xs font-medium tracking-[0.15em] uppercase mb-4">
+                  <div className="text-[#FCDD00] text-xs font-medium tracking-[0.15em] uppercase mb-4">
                     Tu es ici
                   </div>
                 )}
@@ -374,7 +382,7 @@ export default function AuditPremium() {
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((f, j) => (
                     <li key={j} className="flex items-center gap-2 text-white/60 text-sm">
-                      <Check className="w-4 h-4 text-[#0eff27]" />
+                      <Check className="w-4 h-4 text-[#FCDD00]" />
                       {f}
                     </li>
                   ))}
@@ -383,7 +391,7 @@ export default function AuditPremium() {
                   <button
                     className={`w-full py-3 rounded-full font-semibold transition-all ${
                       plan.current
-                        ? "bg-[#0eff27] text-black hover:bg-[#0eff27]/90"
+                        ? "bg-[#FCDD00] text-black hover:bg-[#FCDD00]/90"
                         : "bg-white/10 text-white hover:bg-white/20"
                     }`}
                   >
@@ -407,13 +415,13 @@ export default function AuditPremium() {
           <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
             Pret a passer
             <br />
-            <span className="text-[#0eff27]">au niveau superieur ?</span>
+            <span className="text-[#FCDD00]">au niveau superieur ?</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             Diagnostic + protocoles + plan d'action. Tout ce qu'il te faut pour transformer ta sante.
           </p>
           <Link href="/questionnaire?plan=premium">
-            <button className="group inline-flex items-center gap-3 bg-[#0eff27] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#0eff27]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(14,255,39,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Anabolic Bioscan — 59€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
