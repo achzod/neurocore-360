@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, MessageCircle } from "lucide-react";
+import { ChevronDown, MessageCircle, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface FAQItem {
@@ -87,7 +86,7 @@ function FAQAccordion({ faq, index }: { faq: FAQItem; index: number }) {
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-primary"
+        className="flex w-full items-start justify-between gap-8 py-8 text-left transition-colors hover:text-[#FCDD00]"
       >
         <h3 className="text-xl font-semibold text-white lg:text-2xl">
           {faq.question}
@@ -97,7 +96,7 @@ function FAQAccordion({ faq, index }: { faq: FAQItem; index: number }) {
           transition={{ duration: 0.3 }}
           className="shrink-0 pt-1"
         >
-          <ChevronDown className="h-6 w-6 text-primary" />
+          <ChevronDown className="h-6 w-6 text-[#FCDD00]" />
         </motion.div>
       </button>
 
@@ -110,7 +109,7 @@ function FAQAccordion({ faq, index }: { faq: FAQItem; index: number }) {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <p className="pb-8 text-base leading-relaxed text-gray-400 lg:text-lg lg:leading-relaxed">
+            <p className="pb-8 text-base leading-relaxed text-white/60 lg:text-lg lg:leading-relaxed">
               {faq.answer}
             </p>
           </motion.div>
@@ -122,35 +121,46 @@ function FAQAccordion({ faq, index }: { faq: FAQItem; index: number }) {
 
 export default function FAQ() {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#050505]">
       <Header />
 
       <main>
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-20 lg:py-32">
-          <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+        <section className="relative overflow-hidden py-24 lg:py-32">
+          {/* Background with Grid */}
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
+            <div
+              className="absolute inset-0 opacity-[0.03]"
+              style={{
+                backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+                backgroundSize: '60px 60px'
+              }}
+            />
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
-                <span className="text-xs font-medium tracking-widest text-white/60 uppercase">
-                  FAQ
-                </span>
-              </div>
-              <h1 className="text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
+              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-8">
+                [ FAQ ]
+              </p>
+              <h1 className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-[-0.04em]">
                 Questions fréquentes
               </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-400">
-                Tout ce que tu dois savoir sur les 3 formules NEUROCORE 360° : Gratuit, Essential et Elite.
+              <p className="mx-auto mt-6 max-w-2xl text-lg text-white/50">
+                Tout ce que tu dois savoir sur les formules NEUROCORE 360.
               </p>
             </motion.div>
           </div>
         </section>
 
         {/* FAQ Section */}
-        <section className="relative pb-20 lg:pb-32">
+        <section className="relative pb-24 lg:pb-32">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="space-y-0">
               {faqs.map((faq, index) => (
@@ -161,7 +171,7 @@ export default function FAQ() {
         </section>
 
         {/* CTA Section */}
-        <section className="relative border-t border-white/10 py-20">
+        <section className="relative border-t border-white/5 py-24">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -169,30 +179,29 @@ export default function FAQ() {
               viewport={{ once: true }}
               className="space-y-6"
             >
-              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-emerald-400 flex items-center justify-center">
-                <MessageCircle className="h-8 w-8 text-black" />
+              <div className="mx-auto w-16 h-16 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
+                <MessageCircle className="h-8 w-8 text-[#FCDD00]" />
               </div>
+              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase">
+                [ COMMENCER ]
+              </p>
               <h2 className="text-2xl font-bold text-white sm:text-3xl">
                 Prêt à découvrir ton potentiel ?
               </h2>
-              <p className="text-lg text-gray-400">
+              <p className="text-lg text-white/50">
                 Commence gratuitement ou passe directement à une offre premium.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
                 <Link href="/offers/discovery-scan">
-                  <Button size="lg" variant="outline" className="gap-2">
+                  <button className="px-6 py-3 rounded-sm border border-white/10 text-white font-medium hover:border-[#FCDD00]/30 hover:text-[#FCDD00] transition-colors">
                     Discovery Scan (Gratuit)
-                  </Button>
+                  </button>
                 </Link>
                 <Link href="/offers/anabolic-bioscan">
-                  <Button size="lg" className="gap-2 bg-primary text-black hover:bg-primary/90">
+                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-sm bg-[#FCDD00] text-black font-semibold hover:bg-[#FCDD00]/90 transition-colors">
                     Anabolic Bioscan (59€)
-                  </Button>
-                </Link>
-                <Link href="/offers/ultimate-scan">
-                  <Button size="lg" className="gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:opacity-90">
-                    Ultimate Scan (79€)
-                  </Button>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </Link>
               </div>
             </motion.div>

@@ -2,6 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   CUSTOM FONTS - Decimal & Helvetica Neue
+   ======================================== */
+
+/* Decimal Pro - For Headlines */
+@font-face {
+  font-family: 'Decimal';
+  src: url('/fonts/Decimal-XBlack-Pro.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Decimal';
+  src: url('/fonts/Decimal-Ultra-Pro.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Decimal';
+  src: url('/fonts/Decimal-XLight-Pro.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Decimal';
+  src: url('/fonts/Decimal-Thin-Pro.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Helvetica Neue - For Body Text */
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/HELVETICA NEUE.TTF') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/HELVETICA NEUE LIGHT.TTF') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/HELVETICA NEUE BOLD.TTF') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/HELVETICA NEUE ULTRALIGHT.TTF') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/HELVETICA NEUE ITALIC.TTF') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/HELVETICA NEUE BOLD ITALIC.TTF') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* LIGHT MODE - Blanc + Gris Clair + Vert Vif */
 :root, .light {
   --button-outline: rgba(0,0,0, .10);
@@ -55,7 +141,7 @@
   --chart-3: 0 72% 50%;
   --chart-4: 200 80% 50%;
   --chart-5: 280 60% 55%;
-  --font-sans: "Space Grotesk", "DM Sans", Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Helvetica Neue", "Decimal", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: "Times New Roman", Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;

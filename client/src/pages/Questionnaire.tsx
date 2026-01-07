@@ -678,7 +678,7 @@ function QuestionnaireContent() {
           >
             <Card>
               <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-primary/10">
                   <User className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="text-2xl">Commençons ton audit</CardTitle>
@@ -938,7 +938,7 @@ function QuestionnaireContent() {
                     className="space-y-6"
                   >
                     <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto rounded-sm bg-primary/10 flex items-center justify-center">
                         <Watch className="w-8 h-8 text-primary" />
                       </div>
                       <div>
@@ -965,7 +965,7 @@ function QuestionnaireContent() {
                       ].map((w, i) => (
                         <div
                           key={i}
-                          className="flex flex-col items-center p-3 rounded-xl bg-muted/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
+                          className="flex flex-col items-center p-3 rounded bg-muted/50 border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
                         >
                           <w.Icon className="w-5 h-5 mb-1 text-muted-foreground" />
                           <span className="text-[10px] text-muted-foreground">{w.name}</span>
@@ -974,7 +974,7 @@ function QuestionnaireContent() {
                     </div>
 
                     {/* Data types */}
-                    <div className="bg-muted/30 rounded-xl p-4 border border-border/50">
+                    <div className="bg-muted/30 rounded p-4 border border-border/50">
                       <p className="text-xs font-medium text-muted-foreground mb-3 text-center">
                         DONNÉES AUTO-SYNCHRONISÉES
                       </p>

@@ -286,7 +286,7 @@ export default function BloodAnalysis() {
               <Card className="border-dashed border-2">
                 <CardContent className="p-8">
                   <div
-                    className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                    className={`relative border-2 border-dashed rounded p-12 text-center transition-colors ${
                       isDragging
                         ? "border-red-500 bg-red-500/5"
                         : file

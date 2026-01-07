@@ -32,15 +32,23 @@ export default function BloodAnalysisOffer() {
   ];
 
   return (
-    <div ref={containerRef} className="bg-black min-h-screen">
+    <div ref={containerRef} className="bg-[#050505] min-h-screen">
       <Header />
 
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-500/5 rounded-full blur-[150px]" />
           <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]" />
+          {/* Tech Grid Overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)`,
+              backgroundSize: '60px 60px'
+            }}
+          />
         </div>
 
         <motion.div
@@ -51,9 +59,9 @@ export default function BloodAnalysisOffer() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-full px-4 py-2 mb-8"
+            className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-red-400 text-sm font-medium">Analyse Sanguine</span>
+            <span className="text-red-400 text-xs font-mono uppercase tracking-widest">[ ANALYSE SANGUINE ]</span>
           </motion.div>
 
           <motion.h1
@@ -146,11 +154,11 @@ export default function BloodAnalysisOffer() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-[32px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-10 hover:border-red-500/20 hover:-translate-y-1 transition-all duration-300"
+                className="relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-10 hover:border-red-500/20 hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="text-red-500/20 text-8xl font-bold absolute top-4 right-4">{item.step}</div>
                 <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+                  <div className="w-14 h-14 rounded-sm bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
                     <item.icon className="w-7 h-7 text-red-400" />
                   </div>
                   <h3 className="text-white text-2xl font-bold mb-3">{item.title}</h3>
@@ -245,7 +253,7 @@ export default function BloodAnalysisOffer() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="aspect-square rounded-[48px] bg-gradient-to-br from-red-500/20 to-transparent border border-white/5 flex items-center justify-center">
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-red-500/20 to-transparent border border-white/5 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-red-400 text-8xl font-bold tracking-[-0.04em] mb-4">50+</div>
                   <p className="text-white/30 text-lg">Biomarqueurs analyses</p>
@@ -274,7 +282,7 @@ export default function BloodAnalysisOffer() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[32px] border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(239,68,68,0.1)]"
+            className="rounded-sm border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(239,68,68,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[

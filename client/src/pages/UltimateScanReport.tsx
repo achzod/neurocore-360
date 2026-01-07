@@ -438,7 +438,7 @@ const UltimateScanReport: React.FC = () => {
           {/* Dashboard */}
           <section id="dashboard" className="mb-16">
             <div className="grid lg:grid-cols-2 gap-8 mb-12">
-              <div className="flex flex-col items-center justify-center p-8 rounded-2xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+              <div className="flex flex-col items-center justify-center p-8 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                 <RadialProgress score={globalScore} max={100} subLabel="SCORE GLOBAL" size={200} strokeWidth={6} color={currentTheme.colors.primary} />
                 <div className="mt-4 text-center">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getScoreStatus(globalScore).color}`}>
@@ -447,14 +447,14 @@ const UltimateScanReport: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+              <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                 <h3 className="text-sm font-bold mb-4 uppercase tracking-wider text-[var(--color-text-muted)]">Radar Performance</h3>
                 <MetricsRadar data={metricsData} color={currentTheme.colors.primary} />
               </div>
             </div>
 
             {/* Executive Summary */}
-            <div className="p-6 rounded-2xl border mb-8" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+            <div className="p-6 rounded-sm border mb-8" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Target size={20} className="text-amber-400" />
                 Synthese Executive Elite
@@ -468,7 +468,7 @@ const UltimateScanReport: React.FC = () => {
 
             {/* Strengths & Weaknesses */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+              <div className="p-6 rounded-sm border border-amber-500/20 bg-amber-500/5">
                 <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-amber-400">
                   <TrendingUp size={16} /> Points Forts
                 </h4>
@@ -482,7 +482,7 @@ const UltimateScanReport: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/5">
+              <div className="p-6 rounded-sm border border-red-500/20 bg-red-500/5">
                 <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-red-400">
                   <TrendingDown size={16} /> Axes d'Optimisation
                 </h4>
@@ -497,7 +497,7 @@ const UltimateScanReport: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+            <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-sm font-bold mb-4 uppercase tracking-wider text-[var(--color-text-muted)]">Projection 90 Jours</h3>
               <ProjectionChart color={currentTheme.colors.primary} currentScore={globalScore / 10} />
             </div>
@@ -511,7 +511,7 @@ const UltimateScanReport: React.FC = () => {
             </div>
 
             {report.photoAnalysis ? (
-              <div className="p-6 rounded-2xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+              <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-sm text-[var(--color-text-muted)]">Score visuel</span>
                   <span className={`px-3 py-1 rounded-full text-xs font-bold ${getScoreStatus(report.photoAnalysis.score).color}`}>
@@ -526,26 +526,26 @@ const UltimateScanReport: React.FC = () => {
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-[var(--color-bg)]">
+                    <div className="p-4 rounded bg-[var(--color-bg)]">
                       <h4 className="text-sm font-bold text-amber-400 mb-2">Analyse Posturale</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.postureAnalysis}</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-[var(--color-bg)]">
+                    <div className="p-4 rounded bg-[var(--color-bg)]">
                       <h4 className="text-sm font-bold text-blue-400 mb-2">Analyse Musculaire</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.muscularAnalysis}</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-[var(--color-bg)]">
+                    <div className="p-4 rounded bg-[var(--color-bg)]">
                       <h4 className="text-sm font-bold text-purple-400 mb-2">Analyse Adiposite</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.fatAnalysis}</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-[var(--color-bg)]">
+                    <div className="p-4 rounded bg-[var(--color-bg)]">
                       <h4 className="text-sm font-bold text-emerald-400 mb-2">Recommandations</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.recommendations}</p>
                     </div>
                   </div>
 
                   {report.photoAnalysis.correctiveProtocol && (
-                    <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10">
+                    <div className="p-4 rounded border border-amber-500/30 bg-amber-500/10">
                       <h4 className="text-sm font-bold text-amber-400 mb-2">PROTOCOLE CORRECTIF</h4>
                       <p className="text-[var(--color-text)] leading-relaxed">{report.photoAnalysis.correctiveProtocol}</p>
                     </div>
@@ -553,7 +553,7 @@ const UltimateScanReport: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="p-6 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+              <div className="p-6 rounded-sm border border-amber-500/30 bg-amber-500/5">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="text-amber-400 shrink-0 mt-1" size={20} />
                   <div>
@@ -589,7 +589,7 @@ const UltimateScanReport: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-6 rounded-2xl border space-y-6" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+                <div className="p-6 rounded-sm border space-y-6" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                   {section.introduction && (
                     <div>
                       <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">ANALYSE</h4>
@@ -598,14 +598,14 @@ const UltimateScanReport: React.FC = () => {
                   )}
 
                   {section.whatIsWrong && (
-                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <div className="p-4 rounded bg-red-500/10 border border-red-500/20">
                       <h4 className="text-sm font-bold text-red-400 mb-2">CE QUI NE VA PAS</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.whatIsWrong}</p>
                     </div>
                   )}
 
                   {section.recommendations && (
-                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <div className="p-4 rounded bg-amber-500/10 border border-amber-500/20">
                       <h4 className="text-sm font-bold text-amber-400 mb-2">RECOMMANDATIONS</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.recommendations}</p>
                     </div>
@@ -619,7 +619,7 @@ const UltimateScanReport: React.FC = () => {
                   )}
 
                   {section.scienceDeepDive && (
-                    <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <div className="p-4 rounded bg-blue-500/10 border border-blue-500/20">
                       <h4 className="text-sm font-bold text-blue-400 mb-2">SCIENCE DEEP DIVE</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line text-sm">{section.scienceDeepDive}</p>
                     </div>
@@ -636,7 +636,7 @@ const UltimateScanReport: React.FC = () => {
               <h2 className="text-xl font-bold">Stack Supplements Elite</h2>
             </div>
 
-            <div className="p-6 rounded-2xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+            <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -682,7 +682,7 @@ const UltimateScanReport: React.FC = () => {
               ].map((phase, idx) => (
                 <div key={idx} className="flex gap-4">
                   <div className="w-1 rounded-full" style={{ backgroundColor: currentTheme.colors.primary }} />
-                  <div className="flex-1 p-4 rounded-xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+                  <div className="flex-1 p-4 rounded border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-bold">{phase.title}</h4>
                       <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-bg)] text-[var(--color-text-muted)]">{phase.subtitle}</span>
@@ -696,7 +696,7 @@ const UltimateScanReport: React.FC = () => {
 
           {/* Conclusion */}
           {report.conclusion && (
-            <section className="mb-12 p-6 rounded-2xl border-2" style={{ borderColor: currentTheme.colors.primary, backgroundColor: `${currentTheme.colors.primary}10` }}>
+            <section className="mb-12 p-6 rounded-sm border-2" style={{ borderColor: currentTheme.colors.primary, backgroundColor: `${currentTheme.colors.primary}10` }}>
               <h3 className="text-lg font-bold mb-4">Conclusion Elite</h3>
               <p className="text-[var(--color-text)] leading-relaxed">{report.conclusion}</p>
               <div className="mt-4 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
@@ -708,14 +708,14 @@ const UltimateScanReport: React.FC = () => {
 
           {/* Review */}
           <section id="review" className="mb-12 scroll-mt-24">
-            <div className="p-6 rounded-2xl border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+            <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Star size={20} style={{ color: currentTheme.colors.primary }} />
                 Ton Avis Elite
               </h3>
 
               {reviewSubmitted ? (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-center gap-3 p-4 rounded bg-amber-500/10 border border-amber-500/20">
                   <CheckCircle2 className="text-amber-400" size={24} />
                   <div>
                     <p className="font-bold text-amber-400">Merci pour ton avis Elite !</p>
@@ -761,7 +761,7 @@ const UltimateScanReport: React.FC = () => {
           {/* CTA Coaching */}
           <section className="mb-16">
             <div
-              className="rounded-2xl p-8 text-center"
+              className="rounded-sm p-8 text-center"
               style={{
                 background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
                 border: `1px solid ${currentTheme.colors.primary}30`
@@ -781,7 +781,7 @@ const UltimateScanReport: React.FC = () => {
                 href="https://calendly.com/achzodcoaching/discovery"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded font-semibold text-lg transition-all hover:scale-105"
                 style={{
                   backgroundColor: currentTheme.colors.primary,
                   color: currentTheme.type === 'dark' ? '#000' : '#FFF'

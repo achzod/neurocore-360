@@ -1055,7 +1055,7 @@ const SectionVisualization = ({ section, color }: { section: SectionContent; col
 
   return (
     <motion.div
-      className="rounded-2xl p-6 mb-8"
+      className="rounded-sm p-6 mb-8"
       style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -1128,7 +1128,7 @@ const HowToReadGuide = ({ color }: { color: string }) => {
 
   return (
     <motion.div
-      className="rounded-2xl p-6 mb-8"
+      className="rounded-sm p-6 mb-8"
       style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1193,7 +1193,7 @@ const CoachingCTA = ({ color }: { color: string }) => {
 
   return (
     <motion.div
-      className="rounded-2xl p-8 mb-8 relative overflow-hidden"
+      className="rounded-sm p-8 mb-8 relative overflow-hidden"
       style={{
         backgroundColor: 'var(--color-surface)',
         border: `2px solid ${color}40`,
@@ -1234,7 +1234,7 @@ const CoachingCTA = ({ color }: { color: string }) => {
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.name}
-              className={`p-5 rounded-xl relative ${plan.popular ? 'ring-2' : ''}`}
+              className={`p-5 rounded relative ${plan.popular ? 'ring-2' : ''}`}
               style={{
                 backgroundColor: 'var(--color-bg)',
                 ringColor: plan.popular ? color : 'transparent'
@@ -1306,7 +1306,7 @@ const ReviewRequest = ({ color }: { color: string }) => {
 
   return (
     <motion.div
-      className="rounded-2xl p-8 text-center"
+      className="rounded-sm p-8 text-center"
       style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -1723,7 +1723,7 @@ export function FullReport() {
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Main Score */}
               <motion.div
-                className="lg:col-span-1 lg:row-span-2 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden"
+                className="lg:col-span-1 lg:row-span-2 rounded-sm p-8 flex flex-col justify-between relative overflow-hidden"
                 style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1749,7 +1749,7 @@ export function FullReport() {
 
               {/* Radar */}
               <motion.div
-                className="lg:col-span-2 lg:row-span-2 rounded-2xl p-1 relative"
+                className="lg:col-span-2 lg:row-span-2 rounded-sm p-1 relative"
                 style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1773,7 +1773,7 @@ export function FullReport() {
               ].map((kpi, idx) => (
                 <motion.div
                   key={kpi.label}
-                  className="rounded-2xl p-6 flex flex-col justify-between cursor-pointer"
+                  className="rounded-sm p-6 flex flex-col justify-between cursor-pointer"
                   style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1805,7 +1805,7 @@ export function FullReport() {
 
               {/* Projection */}
               <motion.div
-                className="lg:col-span-4 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center"
+                className="lg:col-span-4 rounded-sm p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center"
                 style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

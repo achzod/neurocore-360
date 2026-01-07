@@ -163,7 +163,7 @@ function HeroSection() {
                     </div>
                     <div className="space-y-2">
                       {[{ label: "ENERGIE", score: 92 }, { label: "SOMMEIL", score: 78 }, { label: "STRESS", score: 45 }].map((m) => (
-                        <div key={m.label} className="bg-white/5 rounded-xl p-3">
+                        <div key={m.label} className="bg-white/5 rounded p-3">
                           <div className="flex justify-between text-xs mb-1">
                             <span className="text-gray-500">{m.label}</span>
                             <span className="text-white font-bold">{m.score}</span>
@@ -358,7 +358,7 @@ function AnabolicBioscanSection() {
 
           {/* Visual - Right: Hormone waves */}
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
-            <div className="aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-950 to-black border border-emerald-500/20">
+            <div className="aspect-square max-w-md mx-auto relative rounded-sm overflow-hidden bg-gradient-to-br from-emerald-950 to-black border border-emerald-500/20">
               {/* Animated waves */}
               <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 400">
                 {[0, 1, 2].map((i) => (
@@ -409,7 +409,7 @@ function UltimateScanSection() {
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Visual - Left: Body scan */}
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
-            <div className="aspect-[3/4] max-w-sm mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-b from-purple-950 to-black border border-purple-500/20">
+            <div className="aspect-[3/4] max-w-sm mx-auto relative rounded-sm overflow-hidden bg-gradient-to-b from-purple-950 to-black border border-purple-500/20">
               {/* Scan lines */}
               <motion.div
                 className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-400 to-transparent"
@@ -511,7 +511,7 @@ function BloodAnalysisSection() {
 
           {/* Visual - Right: ECG */}
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
-            <div className="aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-br from-red-950 to-black border border-red-500/20">
+            <div className="aspect-square max-w-md mx-auto relative rounded-sm overflow-hidden bg-gradient-to-br from-red-950 to-black border border-red-500/20">
               {/* Grid */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
 
@@ -572,7 +572,7 @@ function BurnoutEngineSection() {
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Visual - Left: Stress meter */}
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
-            <div className="aspect-square max-w-md mx-auto relative rounded-3xl overflow-hidden bg-gradient-to-br from-orange-950 to-black border border-orange-500/20">
+            <div className="aspect-square max-w-md mx-auto relative rounded-sm overflow-hidden bg-gradient-to-br from-orange-950 to-black border border-orange-500/20">
               {/* Grid */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(249,115,22,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(249,115,22,0.05)_1px,transparent_1px)] bg-[size:25px_25px]" />
 
@@ -662,7 +662,7 @@ function WearablesSection() {
         <p className="text-xs uppercase tracking-[0.3em] text-gray-600 mb-6">Synchronise tes donnees</p>
         <div className="flex flex-wrap justify-center gap-4">
           {wearables.map((w) => (
-            <div key={w} className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-gray-400 text-sm font-medium hover:border-white/20 hover:text-white transition-all">
+            <div key={w} className="px-4 py-2 rounded border border-white/10 bg-white/5 text-gray-400 text-sm font-medium hover:border-white/20 hover:text-white transition-all">
               {w}
             </div>
           ))}
@@ -708,7 +708,7 @@ function ReviewsSection() {
         </div>
         <div className="grid md:grid-cols-3 gap-4">
           {displayed.map((r) => (
-            <div key={r.name} className="p-4 rounded-xl border border-white/10 bg-white/5">
+            <div key={r.name} className="p-4 rounded border border-white/10 bg-white/5">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-[#FCDD00]/20 flex items-center justify-center text-[#FCDD00] text-sm font-bold">{r.name[0]}</div>
                 <span className="text-white text-sm font-medium">{r.name}</span>

@@ -409,7 +409,7 @@ const DiscoveryScanReport: React.FC = () => {
             {/* Dashboard Grid */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Main Score */}
-              <div className="lg:col-span-1 lg:row-span-2 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <div className="lg:col-span-1 lg:row-span-2 rounded-sm p-8 flex flex-col justify-between relative overflow-hidden group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                 <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
                   <Activity size={80} />
                 </div>
@@ -431,7 +431,7 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
 
               {/* Radar Chart */}
-              <div className="lg:col-span-2 lg:row-span-2 rounded-2xl p-1 relative group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <div className="lg:col-span-2 lg:row-span-2 rounded-sm p-1 relative group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                 <div className="absolute top-6 left-6 z-10">
                   <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Balance Systemique</h3>
                 </div>
@@ -441,7 +441,7 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
 
               {/* Worst Metric KPI */}
-              <div className="rounded-2xl p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                 <div className="flex justify-between items-start">
                   {React.createElement(METRIC_ICONS[worstMetric?.key] || Brain, { size: 20, style: { color: 'var(--color-text-muted)' } })}
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getScoreStatus(worstMetric?.value || 0).color}`}>
@@ -455,7 +455,7 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
 
               {/* Best Metric KPI */}
-              <div className="rounded-2xl p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                 <div className="flex justify-between items-start">
                   {React.createElement(METRIC_ICONS[bestMetric?.key] || Zap, { size: 20, style: { color: 'var(--color-text-muted)' } })}
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getScoreStatus(bestMetric?.value || 0).color}`}>
@@ -469,7 +469,7 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
 
               {/* Projection Chart */}
-              <div className="lg:col-span-4 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <div className="lg:col-span-4 rounded-sm p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                 <div className="w-full md:w-1/3">
                   <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--color-primary)' }}>
                     <Zap size={16} /> Potentiel
@@ -548,7 +548,7 @@ const DiscoveryScanReport: React.FC = () => {
               </div>
 
               {reviewSubmitted ? (
-                <div className="text-center p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <div className="text-center p-8 rounded-sm" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                   <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
                   <h4 className="text-xl font-bold mb-2">Merci pour ton avis !</h4>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -558,7 +558,7 @@ const DiscoveryScanReport: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmitReview} className="space-y-6 p-8 rounded-2xl" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <form onSubmit={handleSubmitReview} className="space-y-6 p-8 rounded-sm" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
                   {/* Star Rating */}
                   <div className="text-center">
                     <label className="text-sm font-medium block mb-3" style={{ color: 'var(--color-text-muted)' }}>
@@ -592,7 +592,7 @@ const DiscoveryScanReport: React.FC = () => {
                       onChange={(e) => setReviewEmail(e.target.value)}
                       placeholder="ton@email.com"
                       required
-                      className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all"
+                      className="w-full px-4 py-3 rounded text-sm focus:outline-none focus:ring-2 transition-all"
                       style={{
                         backgroundColor: 'var(--color-bg)',
                         border: `1px solid var(--color-border)`,
@@ -613,7 +613,7 @@ const DiscoveryScanReport: React.FC = () => {
                       rows={4}
                       required
                       minLength={10}
-                      className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+                      className="w-full px-4 py-3 rounded text-sm focus:outline-none focus:ring-2 transition-all resize-none"
                       style={{
                         backgroundColor: 'var(--color-bg)',
                         border: `1px solid var(--color-border)`,
@@ -636,7 +636,7 @@ const DiscoveryScanReport: React.FC = () => {
                   <button
                     type="submit"
                     disabled={reviewSubmitting || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail}
-                    className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-4 rounded font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: currentTheme.colors.primary,
                       color: currentTheme.type === 'dark' ? '#000' : '#fff'
@@ -662,7 +662,7 @@ const DiscoveryScanReport: React.FC = () => {
           {/* CTA Upgrade */}
           <section className="mb-16">
             <div
-              className="rounded-2xl p-8 text-center"
+              className="rounded-sm p-8 text-center"
               style={{
                 background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
                 border: `1px solid ${currentTheme.colors.primary}30`
@@ -674,7 +674,7 @@ const DiscoveryScanReport: React.FC = () => {
               </p>
               <a
                 href="/offers/anabolic-bioscan"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded font-semibold text-lg transition-all hover:scale-105"
                 style={{
                   backgroundColor: currentTheme.colors.primary,
                   color: currentTheme.type === 'dark' ? '#000' : '#FFF'
