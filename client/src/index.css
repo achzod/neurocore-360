@@ -24,18 +24,18 @@
   --sidebar-foreground: 220 10% 10%;
   --sidebar-border: 220 10% 88%;
   /* Vert vif comme accent */
-  --sidebar-primary: 142 76% 36%;
-  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary: 50 100% 49%;
+  --sidebar-primary-foreground: 0 0% 0%;
   --sidebar-accent: 220 10% 92%;
   --sidebar-accent-foreground: 220 10% 20%;
-  --sidebar-ring: 142 76% 36%;
+  --sidebar-ring: 50 100% 49%;
   /* Popover blanc */
   --popover: 0 0% 100%;
   --popover-foreground: 220 10% 10%;
   --popover-border: 220 10% 88%;
-  /* Primary = Vert vif */
-  --primary: 142 76% 36%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary = Jaune ApexLabs #FCDD00 */
+  --primary: 50 100% 49%;
+  --primary-foreground: 0 0% 0%;
   /* Secondary gris clair */
   --secondary: 220 10% 92%;
   --secondary-foreground: 220 10% 20%;
@@ -43,19 +43,19 @@
   --muted: 220 10% 92%;
   --muted-foreground: 220 5% 45%;
   /* Accent = même vert */
-  --accent: 142 76% 36%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 50 100% 49%;
+  --accent-foreground: 0 0% 0%;
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 100%;
   --input: 220 10% 88%;
-  --ring: 142 76% 36%;
+  --ring: 50 100% 49%;
   /* Charts */
-  --chart-1: 142 76% 36%;
+  --chart-1: 50 100% 49%;
   --chart-2: 45 93% 47%;
   --chart-3: 0 72% 50%;
   --chart-4: 200 80% 50%;
   --chart-5: 280 60% 55%;
-  --font-sans: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Space Grotesk", "DM Sans", Inter, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: "Times New Roman", Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;
@@ -121,18 +121,18 @@
   --sidebar-foreground: 0 0% 98%;
   --sidebar-border: 220 5% 15%;
   /* Vert vif comme accent principal */
-  --sidebar-primary: 142 76% 42%;
-  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary: 50 100% 49%;
+  --sidebar-primary-foreground: 0 0% 0%;
   --sidebar-accent: 220 5% 14%;
   --sidebar-accent-foreground: 0 0% 90%;
-  --sidebar-ring: 142 76% 42%;
+  --sidebar-ring: 50 100% 49%;
   /* Popover gris métal */
   --popover: 220 8% 10%;
   --popover-foreground: 0 0% 98%;
   --popover-border: 220 5% 18%;
-  /* Primary = Vert vif (comme Ultrahuman) */
-  --primary: 142 76% 42%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary = Jaune ApexLabs #FCDD00 */
+  --primary: 50 100% 49%;
+  --primary-foreground: 0 0% 0%;
   /* Secondary gris métal */
   --secondary: 220 5% 16%;
   --secondary-foreground: 0 0% 90%;
@@ -140,14 +140,14 @@
   --muted: 220 5% 14%;
   --muted-foreground: 220 5% 55%;
   /* Accent = même vert */
-  --accent: 142 76% 42%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 50 100% 49%;
+  --accent-foreground: 0 0% 0%;
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 100%;
   --input: 220 5% 20%;
-  --ring: 142 76% 42%;
+  --ring: 50 100% 49%;
   /* Charts avec le vert comme couleur principale */
-  --chart-1: 142 76% 42%;
+  --chart-1: 50 100% 49%;
   --chart-2: 45 93% 55%;
   --chart-3: 0 72% 50%;
   --chart-4: 200 80% 60%;

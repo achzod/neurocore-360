@@ -54,21 +54,41 @@ export function getCTAFin(tier: AuditTier, amountPaid: number = PRICING.PREMIUM)
     return `
 
 ====================================================================
-PROCHAINES ETAPES
+PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT
 ====================================================================
 
-Tu as maintenant un apercu de ton profil NEUROCORE 360. Pour passer a l'action avec un plan complet et detaille :
+Tu as entre les mains un apercu de ton profil NEUROCORE 360. Cette analyse gratuite t'a revele tes priorites. Maintenant, deux options :
 
--> DEBLOQUE L'ANALYSE PREMIUM
-   - Tous les details de chaque domaine
-   - Protocoles personnalises precis
-   - Stack de supplements complete
-   - Feuille de route actionnable
-   - Projections 30/60/90 jours
+OPTION 1 : PASSE A L'ACTION AVEC ANABOLIC BIOSCAN (59 EUR)
 
--> OU OPTE POUR UN COACHING PERSONNALISE
-   Si tu choisis un coaching apres ton analyse PREMIUM, le montant de l'analyse est deduit a 100% du prix du coaching.
+Ce que tu debloques :
++ Analyse complete de tes 8 domaines (pas juste un apercu)
++ 5 protocoles fermes : matin anti-cortisol, soir sommeil, digestion 14j, bureau, entrainement
++ Stack supplements personnalisee avec dosages exacts et marques recommandees
++ Plan semaine par semaine 30-60-90 jours
++ KPIs de suivi pour mesurer ta progression
 
+IMPORTANT : Si tu prends un coaching apres, les 59 EUR sont DEDUITS A 100% du prix.
+C'est un investissement, pas une depense.
+
+OPTION 2 : ULTIMATE SCAN (79 EUR) - SI TU AS DES PHOTOS
+
+Tout ce qu'inclut Anabolic Bioscan PLUS :
++ Analyse photo posturale complete (face/profil/dos)
++ Diagnostic biomecanique et mobilite
++ Estimation composition corporelle visuelle
++ Corrections posturales personnalisees
+
+OPTION 3 : COACHING PERSONNALISE DIRECTEMENT
+
+Tu veux qu'on travaille ensemble maintenant ? Je propose trois formules :
+- Essential Elite : suivi hebdomadaire, ajustements continus
+- Private Lab : coaching intensif, analyse avancee
+- Elite : accompagnement complet transformation
+
+CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
+
+Contacte-moi :
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
 
@@ -77,26 +97,55 @@ Rapport genere par ACHZOD - NEUROCORE 360
 `;
   }
 
+  // PREMIUM / ELITE - CTA vers COACHING
   return `
 
 ====================================================================
-PRET A TRANSFORMER CES INSIGHTS EN RESULTATS CONCRETS ?
+TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION
 ====================================================================
 
-Tu as maintenant entre les mains une analyse complete et personnalisee de ton profil metabolique.
+Cette analyse t'a donne une cartographie precise de ton profil. Tu sais exactement ce qui bloque et ce qu'il faut corriger. Mais je vais etre direct avec toi :
 
--> SI TU VEUX ALLER PLUS LOIN : COACHING PERSONNALISE
-   - Accompagnement sur-mesure base sur cette analyse
-   - Ajustements en temps reel selon tes retours
-   - Support continu pour maximiser tes resultats
-   
-   BONUS : Le montant que tu as paye pour cette analyse (${amountPaid}EUR) est DEDUIT A 100% du prix du coaching.
-   
-   CODE PROMO : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)
+L'INFORMATION SEULE NE CHANGE RIEN.
 
-Contacte-moi pour discuter de ton accompagnement :
+Ce qui change tout, c'est :
+1. L'execution disciplinee des protocoles
+2. Les ajustements en temps reel selon tes retours
+3. La responsabilite (quelqu'un qui te tient accountable)
+
+C'est exactement ce que je propose avec le COACHING PERSONNALISE.
+
+CE QUE TU OBTIENS AVEC UN COACHING :
+
++ Appels reguliers pour ajuster en temps reel
++ Acces direct par message (pas d'attente 48h)
++ Protocols adaptes selon tes contraintes reelles
++ Suivi de tes KPIs et corrections de trajectoire
++ Mon expertise complete sur TON cas (pas un plan generique)
+
+BONUS EXCLUSIF :
+Le montant que tu as paye pour cette analyse (${amountPaid} EUR) est DEDUIT A 100% du prix du coaching.
+Tu ne paies pas deux fois.
+
+MES FORMULES :
+
+ESSENTIAL ELITE
+Suivi hebdomadaire, ajustements continus, acces messagerie
+Ideal si tu veux un cadre structure et un coach qui te pousse
+
+PRIVATE LAB
+Coaching intensif, analyses avancees, protocoles sur-mesure
+Pour ceux qui veulent des resultats acceleres
+
+CODE PROMO : neurocore20 (-25% sur Essential Elite et Private Lab)
+
+PROCHAINE ETAPE :
+
+Reponds a cet email ou contacte-moi directement pour qu'on echange sur ta situation.
+On fait un call de 15min pour voir si on est un bon fit.
+Pas de pression, pas de bullshit.
+
 Email: ${CONTACT.email}
-   
 Site: ${CONTACT.website}
 
 ---

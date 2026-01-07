@@ -33,7 +33,263 @@ import preScriptLogo from "@assets/Pre-Script_1200x1200_1767172975495.webp";
 import nasmLogo from "@assets/nasm-logo_1767172987583.jpg";
 
 // ============================================================================
-// HERO SECTION - Ultrahuman Style
+// SHADER BACKGROUND COMPONENT - ApexLabs Style
+// ============================================================================
+function ShaderBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Base gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-950 to-black" />
+
+      {/* Animated gradient orbs */}
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-[800px] h-[800px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(252,221,0,0.08) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+        animate={{
+          x: [0, 100, 0],
+          y: [0, -50, 0],
+          scale: [1, 1.2, 1],
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(252,221,0,0.05) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+        animate={{
+          x: [0, -80, 0],
+          y: [0, 80, 0],
+          scale: [1.2, 1, 1.2],
+        }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* Grid overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(252,221,0,0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(252,221,0,0.3) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Noise texture */}
+      <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNhKSIgb3BhY2l0eT0iMC4xIi8+PC9zdmc+')]" />
+    </div>
+  );
+}
+
+// ============================================================================
+// DNA HELIX COMPONENT (for Blood Analysis)
+// ============================================================================
+function DNAHelix() {
+  const numPairs = 12;
+  const pairs = Array.from({ length: numPairs }, (_, i) => i);
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-blue-950 via-black to-blue-900 flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.15)_0%,_transparent_70%)]" />
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-blue-400/60 rounded-full"
+          style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%` }}
+          animate={{ y: [0, -20, 0], opacity: [0.3, 0.8, 0.3] }}
+          transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
+        />
+      ))}
+      <div className="relative h-[280px] w-[120px]">
+        <motion.div
+          className="absolute inset-0"
+          animate={{ rotateY: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          style={{ transformStyle: 'preserve-3d', perspective: 800 }}
+        >
+          {pairs.map((i) => {
+            const yPos = (i / numPairs) * 100;
+            const phase = (i / numPairs) * Math.PI * 2;
+            return (
+              <motion.div
+                key={i}
+                className="absolute w-full"
+                style={{ top: `${yPos}%` }}
+                animate={{ rotateY: [phase * (180 / Math.PI), phase * (180 / Math.PI) + 360] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              >
+                <motion.div
+                  className="absolute left-0 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_15px_rgba(34,211,238,0.8)]"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                />
+                <div className="absolute left-4 right-4 top-1.5 h-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-blue-400 opacity-60 rounded-full" />
+                <motion.div
+                  className="absolute right-0 w-4 h-4 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 shadow-[0_0_15px_rgba(147,51,234,0.8)]"
+                  animate={{ scale: [1.2, 1, 1.2] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                />
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
+      <div className="absolute bottom-4 left-4 text-xs font-mono text-blue-400/80">
+        <div>ANALYSE ADN</div>
+        <motion.div className="text-cyan-400" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}>
+          50+ BIOMARQUEURS
+        </motion.div>
+      </div>
+      <motion.div
+        className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+        animate={{ top: ['0%', '100%', '0%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
+// ============================================================================
+// ECG SECTION
+// ============================================================================
+function ECGSection() {
+  return (
+    <div className="py-16 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-red-950/20 to-black" />
+      <div className="relative max-w-4xl mx-auto px-6">
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.8, repeat: Infinity }} className="relative">
+            <svg className="w-12 h-12 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </motion.div>
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-white">ANALYSE CARDIAQUE</h3>
+            <motion.span className="text-red-400 font-mono text-lg" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity }}>72 BPM</motion.span>
+          </div>
+        </div>
+        <div className="relative h-24 bg-black/50 rounded-2xl border border-red-500/20 overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
+          <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
+            <motion.path
+              d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
+              fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+            />
+          </svg>
+          <motion.div
+            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-red-500 to-transparent"
+            animate={{ left: ['-5%', '105%'] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+        <div className="flex justify-center gap-8 mt-6 text-sm font-mono">
+          <div className="text-center"><div className="text-gray-500">VFC</div><motion.div className="text-[#FCDD00]" animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity }}>68ms</motion.div></div>
+          <div className="text-center"><div className="text-gray-500">SPO2</div><div className="text-[#FCDD00]">98%</div></div>
+          <div className="text-center"><div className="text-gray-500">STRESS</div><div className="text-[#FCDD00]">Faible</div></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// BODY SCAN SECTION
+// ============================================================================
+function BodyScanSection() {
+  const organs = [
+    { id: 'brain', cx: 50, cy: 8, label: 'CERVEAU', color: '#60a5fa', status: '98%', side: 'right' },
+    { id: 'heart', cx: 44, cy: 28, label: 'CŒUR', color: '#f87171', status: '72 BPM', side: 'left' },
+    { id: 'lungs', cx: 56, cy: 26, label: 'POUMONS', color: '#4ade80', status: '16/min', side: 'right' },
+    { id: 'liver', cx: 42, cy: 38, label: 'FOIE', color: '#fbbf24', status: 'Optimal', side: 'left' },
+    { id: 'stomach', cx: 54, cy: 42, label: 'DIGESTIF', color: '#a78bfa', status: 'Actif', side: 'right' },
+    { id: 'spine', cx: 50, cy: 55, label: 'COLONNE', color: '#22d3ee', status: 'Alignée', side: 'left' },
+  ];
+
+  return (
+    <div className="py-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-cyan-950/20 to-black" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="relative max-w-6xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
+            animate={{ boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.4)', '0 0 20px rgba(34,211,238,0.2)'] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-cyan-400 text-sm font-mono tracking-wider">SCAN CORPOREL EN COURS</span>
+          </motion.div>
+          <h3 className="text-3xl font-bold text-white">CARTOGRAPHIE BIOMÉTRIQUE</h3>
+        </div>
+        <div className="relative flex items-center justify-center" style={{ height: '400px' }}>
+          <div className="absolute left-0 md:left-[15%] top-0 bottom-0 flex flex-col justify-around py-8">
+            {organs.filter(o => o.side === 'left').map((organ, idx) => (
+              <motion.div key={organ.id} className="flex items-center gap-2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.2 }}>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
+                  <motion.div className="text-sm font-bold" style={{ color: organ.color }} animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}>{organ.status}</motion.div>
+                </div>
+                <motion.div className="w-8 h-[1px]" style={{ backgroundColor: organ.color }} animate={{ scaleX: [0, 1] }} transition={{ duration: 0.5, delay: idx * 0.2 }} />
+              </motion.div>
+            ))}
+          </div>
+          <svg viewBox="0 0 100 100" className="h-full w-auto max-w-[200px]">
+            <defs>
+              <linearGradient id="bodyScanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="transparent" />
+                <stop offset="45%" stopColor="transparent" />
+                <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.6" />
+                <stop offset="55%" stopColor="transparent" />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
+            </defs>
+            <g>
+              <ellipse cx="50" cy="8" rx="7" ry="8" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.8" />
+              <rect x="47" y="15" width="6" height="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" rx="1" opacity="0.6" />
+              <path d="M 30 22 Q 40 18 50 20 Q 60 18 70 22 L 68 24 Q 50 22 32 24 Z" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
+              <path d="M 32 24 L 34 50 Q 50 54 66 50 L 68 24" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
+              <path d="M 30 22 Q 22 30 18 42 Q 15 52 14 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
+              <path d="M 70 22 Q 78 30 82 42 Q 85 52 86 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
+              <ellipse cx="50" cy="54" rx="14" ry="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" opacity="0.6" />
+              <path d="M 40 58 L 38 75 L 36 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+              <path d="M 60 58 L 62 75 L 64 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+            </g>
+            <motion.rect x="0" width="100" height="8" fill="url(#bodyScanGradient)" initial={{ y: 0 }} animate={{ y: [0, 92, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+            {organs.map((organ, idx) => (
+              <g key={organ.id}>
+                <motion.circle cx={organ.cx} cy={organ.cy} r="3" fill="none" stroke={organ.color} strokeWidth="0.3" initial={{ r: 1.5, opacity: 1 }} animate={{ r: 5, opacity: 0 }} transition={{ duration: 1.5, repeat: Infinity, delay: idx * 0.2 }} />
+                <motion.circle cx={organ.cx} cy={organ.cy} r="1.5" fill={organ.color} animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1, repeat: Infinity, delay: idx * 0.15 }} style={{ filter: `drop-shadow(0 0 3px ${organ.color})` }} />
+              </g>
+            ))}
+          </svg>
+          <div className="absolute right-0 md:right-[15%] top-0 bottom-0 flex flex-col justify-around py-8">
+            {organs.filter(o => o.side === 'right').map((organ, idx) => (
+              <motion.div key={organ.id} className="flex items-center gap-2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.2 }}>
+                <motion.div className="w-8 h-[1px]" style={{ backgroundColor: organ.color }} animate={{ scaleX: [0, 1] }} transition={{ duration: 0.5, delay: idx * 0.2 }} />
+                <div className="text-left">
+                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
+                  <motion.div className="text-sm font-bold" style={{ color: organ.color }} animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}>{organ.status}</motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// HERO SECTION - ApexLabs Style
 // ============================================================================
 function HeroSection() {
   const scrollToOffers = () => {
@@ -45,17 +301,8 @@ function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
-      {/* Animated background */}
-      <div className="absolute inset-0">
-        <motion.div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[150px]"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
+      {/* Shader Background */}
+      <ShaderBackground />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 text-center">
         <motion.div
@@ -71,23 +318,25 @@ function HeroSection() {
             transition={{ delay: 0.2 }}
           >
             <motion.span
-              className="h-2 w-2 rounded-full bg-emerald-500"
+              className="h-2 w-2 rounded-full bg-[#FCDD00]"
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
             <span className="text-gray-400">par Achzod</span>
           </motion.div>
 
-          {/* Main headline - Large italic like Ultrahuman */}
+          {/* Main headline - ApexLabs Style */}
           <motion.h1
-            className="mb-8 text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95]"
+            className="mb-8 text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9]"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            <span className="text-white">L'analyse corporelle</span>
+            <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">L'ANALYSE</span>
             <br />
-            <span className="italic text-emerald-400">la plus complète.</span>
+            <span className="text-[#FCDD00] drop-shadow-[0_0_20px_rgba(252,221,0,0.4)]">CORPORELLE</span>
+            <br />
+            <span className="italic text-white font-light text-4xl sm:text-5xl md:text-6xl">la plus complète.</span>
           </motion.h1>
 
           {/* Tagline */}
@@ -100,29 +349,28 @@ function HeroSection() {
             Unlocking human potential
           </motion.p>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons - Liquid Glass Style */}
           <motion.div
             className="flex flex-col items-center justify-center gap-4 sm:flex-row"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
           >
-            <Button
-              size="lg"
-              className="h-14 gap-3 px-10 text-base font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]"
+            <button
               onClick={scrollToOffers}
+              className="group relative h-14 gap-3 px-10 text-base font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-500 overflow-hidden shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center"
             >
-              Unlock Your Potential
-              <ArrowRight className="h-5 w-5" />
-            </Button>
+              <span className="relative z-10 flex items-center gap-2">
+                Unlock Your Potential
+                <ArrowRight className="h-5 w-5" />
+              </span>
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+            </button>
             <Link href="/deduction-coaching">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-14 gap-2 px-10 text-base border-gray-700 text-white hover:bg-gray-900 hover:border-gray-600 rounded-full"
-              >
+              <button className="group h-14 gap-2 px-10 text-base font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
                 Montant 100% déduit
-              </Button>
+              </button>
             </Link>
           </motion.div>
         </motion.div>
@@ -167,7 +415,7 @@ function FiveOffersSection() {
       price: "59€",
       subtitle: "Diagnostic + Protocoles d'action",
       icon: Activity,
-      color: "emerald",
+      color: "[#FCDD00]",
       href: "/offers/anabolic-bioscan",
       features: [
         "16 sections d'analyse",
@@ -184,7 +432,7 @@ function FiveOffersSection() {
       price: "79€",
       subtitle: "Diagnostic + Protocoles + Analyse photo",
       icon: Zap,
-      color: "cyan",
+      color: "[#FCDD00]",
       href: "/offers/ultimate-scan",
       features: [
         "Tout l'Anabolic Bioscan",
@@ -238,7 +486,8 @@ function FiveOffersSection() {
           viewport={{ once: true }}
           className="mb-20 text-center"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">Choisis ton scan.</h2>
+          <span className="text-[#FCDD00] text-sm font-bold tracking-widest uppercase mb-4 block">Nos Protocoles</span>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-4">CHOISIS TON <span className="text-[#FCDD00]">SCAN</span></h2>
           <p className="text-lg text-gray-500">Du diagnostic à l'optimisation complète.</p>
         </motion.div>
 
@@ -255,30 +504,30 @@ function FiveOffersSection() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Link href={offer.href}>
-                  <div className={`group relative h-full cursor-pointer rounded-2xl border transition-all duration-300 hover:border-emerald-500/50 ${isPopular ? 'border-emerald-500 bg-emerald-500/5' : 'border-gray-800 bg-gray-900/50 hover:bg-gray-900'}`}>
+                  <div className={`group relative h-full cursor-pointer rounded-2xl border transition-all duration-300 hover:border-[#FCDD00]/50 ${isPopular ? 'border-[#FCDD00] bg-[#FCDD00]/5' : 'border-gray-800 bg-gray-900/50 hover:bg-gray-900'}`}>
                     {isPopular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="bg-emerald-500 text-black text-xs font-semibold px-3 py-1 rounded-full">Populaire</span>
+                        <span className="bg-[#FCDD00] text-black text-xs font-semibold px-3 py-1 rounded-full">Populaire</span>
                       </div>
                     )}
                     <div className="p-6">
                       <div className="mb-4">
-                        <Icon className={`h-6 w-6 ${isPopular ? 'text-emerald-400' : 'text-gray-500'}`} />
+                        <Icon className={`h-6 w-6 ${isPopular ? 'text-[#FCDD00]' : 'text-gray-500'}`} />
                       </div>
                       <h3 className="text-lg font-semibold text-white mb-1">{offer.name}</h3>
                       <p className="text-xs text-gray-500 mb-4">{offer.subtitle}</p>
-                      <div className={`text-3xl font-bold mb-6 ${isPopular ? 'text-emerald-400' : 'text-white'}`}>
+                      <div className={`text-3xl font-bold mb-6 ${isPopular ? 'text-[#FCDD00]' : 'text-white'}`}>
                         {offer.price}
                       </div>
                       <ul className="space-y-2">
                         {offer.features.slice(0, 4).map((feature, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
-                            <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                            <Check className="h-4 w-4 text-[#FCDD00] mt-0.5 shrink-0" />
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-6 flex items-center gap-1 text-sm text-gray-500 group-hover:text-emerald-400 transition-colors">
+                      <div className="mt-6 flex items-center gap-1 text-sm text-gray-500 group-hover:text-[#FCDD00] transition-colors">
                         <span>En savoir plus</span>
                         <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </div>
@@ -362,7 +611,7 @@ function CertificationsSection() {
               <p className="text-sm text-gray-500 text-center mb-6">{cert.fullName}</p>
               <div className="flex flex-wrap justify-center gap-2 mb-4">
                 {cert.certs.map((c) => (
-                  <span key={c} className="text-xs font-medium text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 rounded-full">
+                  <span key={c} className="text-xs font-medium text-[#FCDD00] border border-[#FCDD00]/30 bg-[#FCDD00]/10 px-3 py-1 rounded-full">
                     {c}
                   </span>
                 ))}
@@ -414,18 +663,17 @@ function SocialProofBanner() {
             </h3>
             <div className="mt-3 flex gap-1 justify-center sm:justify-start">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-5 w-5 fill-emerald-500 text-emerald-500" />
+                <Star key={i} className="h-5 w-5 fill-[#FCDD00] text-[#FCDD00]" />
               ))}
               <span className="ml-2 text-sm text-gray-500">4.9/5</span>
             </div>
           </div>
-          <Button
+          <button
             onClick={scrollToReviews}
-            size="lg"
-            className="h-12 px-8 bg-transparent border border-gray-700 text-white hover:bg-gray-900 hover:border-emerald-500/50 rounded-full transition-all duration-300"
+            className="h-12 px-8 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)]"
           >
             Voir les avis
-          </Button>
+          </button>
         </motion.div>
       </div>
     </section>
@@ -456,8 +704,8 @@ function WearablesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-500 mb-4">Intégrations</p>
-          <h2 className="mb-4 text-3xl sm:text-4xl font-bold text-white">Sync tes wearables</h2>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#FCDD00] mb-4">Intégrations</p>
+          <h2 className="mb-4 text-3xl sm:text-4xl md:text-5xl font-black text-white">Sync tes wearables</h2>
           <p className="mb-12 text-base text-gray-500">Connecte tes données pour une analyse plus précise</p>
 
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
@@ -505,8 +753,8 @@ function MeasurableResultsSection() {
           viewport={{ once: true }}
           className="mb-20 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Résultats</p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white">Des améliorations mesurables</h2>
+          <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Résultats</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white">Des améliorations mesurables</h2>
         </motion.div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -521,10 +769,10 @@ function MeasurableResultsSection() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className="relative p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-emerald-500/30 hover:bg-gray-900/50">
+                <div className="relative p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
                   {/* Icon */}
-                  <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                    <Icon className="h-7 w-7 text-emerald-500" />
+                  <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FCDD00]/10 border border-[#FCDD00]/20">
+                    <Icon className="h-7 w-7 text-[#FCDD00]" />
                   </div>
 
                   {/* Metric with animated counter effect */}
@@ -557,9 +805,9 @@ function UltimateScanSection() {
     <section className="relative min-h-screen overflow-hidden bg-black py-20 lg:py-0 lg:flex lg:items-center">
       {/* Animated background gradients */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-emerald-950/10 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-[#2a2000]/10 to-black" />
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[128px]"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FCDD00]/10 rounded-full blur-[128px]"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -567,7 +815,7 @@ function UltimateScanSection() {
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[128px]"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FCDD00]/10 rounded-full blur-[128px]"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.2, 0.4, 0.2],
@@ -587,7 +835,7 @@ function UltimateScanSection() {
             className="text-center lg:text-left order-2 lg:order-1"
           >
             <motion.h2
-              className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold italic text-emerald-400 leading-[0.9] tracking-tight mb-12"
+              className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold italic text-[#FCDD00] leading-[0.9] tracking-tight mb-12"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -616,15 +864,13 @@ function UltimateScanSection() {
               transition={{ duration: 0.6, delay: 0.6 }}
             >
               <Link href="/offers/ultimate-scan">
-                <Button
-                  size="lg"
-                  className="group relative h-16 px-10 text-lg font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]"
-                >
+                <button className="group relative h-16 px-10 text-lg font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
                   <span className="relative z-10 flex items-center gap-3">
                     Ultimate Scan — 79€
                     <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </span>
-                </Button>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                </button>
               </Link>
             </motion.div>
           </motion.div>
@@ -640,7 +886,7 @@ function UltimateScanSection() {
             {/* Outer glow */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
-                className="w-[400px] h-[400px] bg-emerald-500/20 rounded-full blur-[100px]"
+                className="w-[400px] h-[400px] bg-[#FCDD00]/20 rounded-full blur-[100px]"
                 animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.6, 0.4] }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
@@ -682,20 +928,20 @@ function UltimateScanSection() {
                         >
                           <span className="text-6xl font-bold text-white">87</span>
                           <motion.div
-                            className="absolute -right-2 -top-1 w-3 h-3 bg-emerald-400 rounded-full"
+                            className="absolute -right-2 -top-1 w-3 h-3 bg-[#FCDD00] rounded-full"
                             animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                           />
                         </motion.div>
-                        <p className="text-emerald-400 text-sm mt-1 font-medium">Score Global</p>
+                        <p className="text-[#FCDD00] text-sm mt-1 font-medium">Score Global</p>
                       </div>
 
                       {/* Metrics */}
                       <div className="space-y-3">
                         {[
-                          { label: "ANALYSE POSTURALE", score: 92, status: "Optimal", color: "emerald" },
+                          { label: "ANALYSE POSTURALE", score: 92, status: "Optimal", color: "[#FCDD00]" },
                           { label: "BIOMÉCANIQUE", score: 68, status: "À améliorer", color: "amber" },
-                          { label: "MÉTABOLISME", score: 91, status: "Excellent", color: "emerald" },
+                          { label: "MÉTABOLISME", score: 91, status: "Excellent", color: "[#FCDD00]" },
                         ].map((metric, i) => (
                           <motion.div
                             key={metric.label}
@@ -707,7 +953,7 @@ function UltimateScanSection() {
                           >
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-[9px] text-gray-500 tracking-[0.15em]">{metric.label}</span>
-                              <span className={`text-[10px] font-medium ${metric.color === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                              <span className={`text-[10px] font-medium ${metric.color === '[#FCDD00]' ? 'text-[#FCDD00]' : 'text-amber-400'}`}>
                                 {metric.status}
                               </span>
                             </div>
@@ -716,7 +962,7 @@ function UltimateScanSection() {
                               <div className="flex-1 mx-4">
                                 <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                                   <motion.div
-                                    className={`h-full rounded-full ${metric.color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                    className={`h-full rounded-full ${metric.color === '[#FCDD00]' ? 'bg-[#FCDD00]' : 'bg-amber-500'}`}
                                     initial={{ width: 0 }}
                                     whileInView={{ width: `${metric.score}%` }}
                                     viewport={{ once: true }}
@@ -739,8 +985,8 @@ function UltimateScanSection() {
                           { icon: "◈", label: "Profile", active: false },
                         ].map((item) => (
                           <div key={item.label} className="flex flex-col items-center gap-1">
-                            <span className={`text-lg ${item.active ? 'text-emerald-400' : 'text-gray-700'}`}>{item.icon}</span>
-                            <span className={`text-[8px] uppercase tracking-wider ${item.active ? 'text-emerald-400' : 'text-gray-700'}`}>{item.label}</span>
+                            <span className={`text-lg ${item.active ? 'text-[#FCDD00]' : 'text-gray-700'}`}>{item.icon}</span>
+                            <span className={`text-[8px] uppercase tracking-wider ${item.active ? 'text-[#FCDD00]' : 'text-gray-700'}`}>{item.label}</span>
                           </div>
                         ))}
                       </div>
@@ -793,8 +1039,8 @@ function TestimonialsSection() {
           viewport={{ once: true }}
           className="mb-20 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Témoignages</p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white">Ce qu'en disent mes clients</h2>
+          <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Témoignages</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white">Ce qu'en disent mes clients</h2>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -807,11 +1053,11 @@ function TestimonialsSection() {
               transition={{ delay: index * 0.15 }}
               className="group"
             >
-              <div className="h-full p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-emerald-500/30 hover:bg-gray-900/50">
+              <div className="h-full p-8 rounded-3xl border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
                 {/* Rating */}
                 <div className="mb-6 flex gap-1">
                   {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+                    <Star key={i} className="h-4 w-4 fill-[#FCDD00] text-[#FCDD00]" />
                   ))}
                 </div>
 
@@ -847,7 +1093,7 @@ function BloodAnalysisSection() {
     <section className="relative py-32 bg-black overflow-hidden">
       {/* Background glow */}
       <motion.div
-        className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[150px]"
+        className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-[#FCDD00]/5 rounded-full blur-[150px]"
         animate={{ opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 6, repeat: Infinity }}
       />
@@ -864,14 +1110,14 @@ function BloodAnalysisSection() {
           >
             <div className="relative w-[280px]">
               {/* Glow */}
-              <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-[80px]" />
+              <div className="absolute inset-0 bg-[#FCDD00]/20 rounded-full blur-[80px]" />
 
               {/* Phone */}
               <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-2 border border-gray-700/50">
                 <div className="bg-black rounded-[2rem] overflow-hidden p-4">
                   {/* Header */}
                   <div className="text-center mb-6">
-                    <Droplet className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <Droplet className="h-8 w-8 text-[#FCDD00] mx-auto mb-2" />
                     <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Blood Analysis</p>
                     <p className="text-2xl font-bold text-white mt-1">12 marqueurs</p>
                   </div>
@@ -889,7 +1135,7 @@ function BloodAnalysisSection() {
                       >
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-[9px] text-gray-500 tracking-wider">{marker.label}</span>
-                          <span className={`text-[9px] ${marker.status === 'optimal' ? 'text-emerald-400' : 'text-gray-400'}`}>
+                          <span className={`text-[9px] ${marker.status === 'optimal' ? 'text-[#FCDD00]' : 'text-gray-400'}`}>
                             {marker.status === 'optimal' ? 'OPTIMAL' : 'À SURVEILLER'}
                           </span>
                         </div>
@@ -899,7 +1145,7 @@ function BloodAnalysisSection() {
                         </div>
                         <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
                           <motion.div
-                            className={`h-full rounded-full ${marker.status === 'optimal' ? 'bg-emerald-500' : 'bg-gray-500'}`}
+                            className={`h-full rounded-full ${marker.status === 'optimal' ? 'bg-[#FCDD00]' : 'bg-gray-500'}`}
                             initial={{ width: 0 }}
                             whileInView={{ width: `${(marker.value / 100) * 10}%` }}
                             viewport={{ once: true }}
@@ -922,10 +1168,10 @@ function BloodAnalysisSection() {
             transition={{ duration: 0.8 }}
             className="order-1 lg:order-2"
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Analyse sanguine</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Analyse sanguine</p>
             <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
               <span className="text-white">Blood</span>
-              <span className="italic text-emerald-400"> Analysis</span>
+              <span className="italic text-[#FCDD00]"> Analysis</span>
             </h2>
             <p className="mb-8 text-lg text-gray-400 leading-relaxed">
               Upload ton bilan sanguin. Ranges optimaux de performance, pas les ranges "normaux" des labos.
@@ -941,8 +1187,8 @@ function BloodAnalysisSection() {
                   transition={{ delay: 0.3 + index * 0.1 }}
                   className="flex items-center gap-3"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30">
+                    <Check className="h-3.5 w-3.5 text-[#FCDD00]" />
                   </div>
                   <span className="text-gray-300">{feature}</span>
                 </motion.li>
@@ -950,13 +1196,13 @@ function BloodAnalysisSection() {
             </ul>
 
             <Link href="/offers/blood-analysis">
-              <Button
-                size="lg"
-                className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-              >
-                Blood Analysis — 99€
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Blood Analysis — 99€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
           </motion.div>
         </div>
@@ -989,10 +1235,10 @@ function BurnoutEngineSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">Prévention</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Prévention</p>
             <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
               <span className="text-white">Burnout</span>
-              <span className="italic text-emerald-400"> Engine</span>
+              <span className="italic text-[#FCDD00]"> Engine</span>
             </h2>
             <p className="mb-8 text-lg text-gray-400 leading-relaxed">
               Le burnout ne prévient pas. Détecte les signaux faibles avant qu'il ne soit trop tard.
@@ -1008,20 +1254,20 @@ function BurnoutEngineSection() {
                   transition={{ delay: 0.2 + index * 0.1 }}
                   className="flex items-center gap-2 text-sm text-gray-400"
                 >
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#FCDD00]" />
                   {symptom}
                 </motion.div>
               ))}
             </div>
 
             <Link href="/offers/burnout-detection">
-              <Button
-                size="lg"
-                className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-              >
-                Détecter mon risque — 39€
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Détecter mon risque — 39€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
           </motion.div>
 
@@ -1036,7 +1282,7 @@ function BurnoutEngineSection() {
             <div className="relative w-full max-w-sm">
               {/* Glow */}
               <motion.div
-                className="absolute inset-0 bg-emerald-500/10 rounded-full blur-[100px]"
+                className="absolute inset-0 bg-[#FCDD00]/10 rounded-full blur-[100px]"
                 animate={{ opacity: [0.3, 0.5, 0.3] }}
                 transition={{ duration: 5, repeat: Infinity }}
               />
@@ -1045,7 +1291,7 @@ function BurnoutEngineSection() {
               <div className="relative bg-gray-900/80 rounded-3xl border border-gray-800 p-8 backdrop-blur-sm">
                 {/* Header */}
                 <div className="text-center mb-8">
-                  <Brain className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+                  <Brain className="h-10 w-10 text-[#FCDD00] mx-auto mb-3" />
                   <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Score Burnout</p>
                   <motion.p
                     className="text-6xl font-bold text-white mt-2"
@@ -1056,7 +1302,7 @@ function BurnoutEngineSection() {
                   >
                     32
                   </motion.p>
-                  <p className="text-sm text-emerald-400 mt-1">Risque modéré</p>
+                  <p className="text-sm text-[#FCDD00] mt-1">Risque modéré</p>
                 </div>
 
                 {/* Risk bars */}
@@ -1075,7 +1321,7 @@ function BurnoutEngineSection() {
                       </div>
                       <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                         <motion.div
-                          className={`h-full rounded-full ${factor.level > 70 ? 'bg-emerald-500' : factor.level > 50 ? 'bg-gray-400' : 'bg-gray-600'}`}
+                          className={`h-full rounded-full ${factor.level > 70 ? 'bg-[#FCDD00]' : factor.level > 50 ? 'bg-gray-400' : 'bg-gray-600'}`}
                           initial={{ width: 0 }}
                           whileInView={{ width: `${factor.level}%` }}
                           viewport={{ once: true }}
@@ -1109,7 +1355,7 @@ function AnabolicBioscanSection() {
     <section className="relative py-32 bg-black overflow-hidden">
       {/* Background glow */}
       <motion.div
-        className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[150px]"
+        className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-[#FCDD00]/5 rounded-full blur-[150px]"
         animate={{ opacity: [0.2, 0.4, 0.2] }}
         transition={{ duration: 7, repeat: Infinity }}
       />
@@ -1126,14 +1372,14 @@ function AnabolicBioscanSection() {
           >
             <div className="relative w-[280px]">
               {/* Glow */}
-              <div className="absolute inset-0 bg-emerald-500/15 rounded-full blur-[80px]" />
+              <div className="absolute inset-0 bg-[#FCDD00]/15 rounded-full blur-[80px]" />
 
               {/* Phone */}
               <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-2 border border-gray-700/50">
                 <div className="bg-black rounded-[2rem] overflow-hidden p-4">
                   {/* Header */}
                   <div className="text-center mb-6">
-                    <Activity className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                    <Activity className="h-8 w-8 text-[#FCDD00] mx-auto mb-2" />
                     <p className="text-[10px] uppercase tracking-[0.2em] text-gray-600">Anabolic Bioscan</p>
                     <p className="text-2xl font-bold text-white mt-1">16 sections</p>
                   </div>
@@ -1151,13 +1397,13 @@ function AnabolicBioscanSection() {
                       >
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-400">{section.name}</span>
-                          <span className={`text-lg font-bold ${section.score > 80 ? 'text-emerald-400' : section.score > 60 ? 'text-white' : 'text-gray-400'}`}>
+                          <span className={`text-lg font-bold ${section.score > 80 ? 'text-[#FCDD00]' : section.score > 60 ? 'text-white' : 'text-gray-400'}`}>
                             {section.score}
                           </span>
                         </div>
                         <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
                           <motion.div
-                            className={`h-full rounded-full ${section.score > 80 ? 'bg-emerald-500' : section.score > 60 ? 'bg-gray-400' : 'bg-gray-600'}`}
+                            className={`h-full rounded-full ${section.score > 80 ? 'bg-[#FCDD00]' : section.score > 60 ? 'bg-gray-400' : 'bg-gray-600'}`}
                             initial={{ width: 0 }}
                             whileInView={{ width: `${section.score}%` }}
                             viewport={{ once: true }}
@@ -1180,12 +1426,12 @@ function AnabolicBioscanSection() {
             transition={{ duration: 0.8 }}
             className="order-1 lg:order-2"
           >
-            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
-              <span className="text-xs uppercase tracking-wider text-emerald-400">Le plus populaire</span>
+            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-[#FCDD00]/30 bg-[#FCDD00]/10">
+              <span className="text-xs uppercase tracking-wider text-[#FCDD00]">Le plus populaire</span>
             </div>
             <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
               <span className="text-white">Anabolic</span>
-              <span className="italic text-emerald-400"> Bioscan</span>
+              <span className="italic text-[#FCDD00]"> Bioscan</span>
             </h2>
             <p className="mb-8 text-lg text-gray-400 leading-relaxed">
               16 sections. 6 analyses profondes. 5 protocoles personnalisés. Plan 30-60-90 jours.
@@ -1201,8 +1447,8 @@ function AnabolicBioscanSection() {
                   transition={{ delay: 0.3 + index * 0.1 }}
                   className="flex items-center gap-3"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30">
+                    <Check className="h-3.5 w-3.5 text-[#FCDD00]" />
                   </div>
                   <span className="text-gray-300">{feature}</span>
                 </motion.li>
@@ -1210,13 +1456,13 @@ function AnabolicBioscanSection() {
             </ul>
 
             <Link href="/offers/anabolic-bioscan">
-              <Button
-                size="lg"
-                className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-              >
-                Anabolic Bioscan — 59€
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Anabolic Bioscan — 59€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
           </motion.div>
         </div>
@@ -1248,7 +1494,7 @@ function DiscoveryScanSection() {
             </div>
             <h2 className="mb-4 text-4xl sm:text-5xl font-bold">
               <span className="text-white">Discovery</span>
-              <span className="italic text-emerald-400"> Scan</span>
+              <span className="italic text-[#FCDD00]"> Scan</span>
             </h2>
             <p className="mb-8 text-lg text-gray-400 leading-relaxed">
               Commence gratuitement. 4 sections. Rapport 5-7 pages. Pas de carte bancaire.
@@ -1264,8 +1510,8 @@ function DiscoveryScanSection() {
                   transition={{ delay: 0.2 + index * 0.1 }}
                   className="flex items-center gap-3"
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30">
+                    <Check className="h-3.5 w-3.5 text-[#FCDD00]" />
                   </div>
                   <span className="text-gray-300">{feature}</span>
                 </motion.li>
@@ -1274,23 +1520,19 @@ function DiscoveryScanSection() {
 
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link href="/offers/discovery-scan">
-                <Button
-                  size="lg"
-                  className="h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-                >
-                  Commencer gratuitement
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
+                <button className="group relative h-14 px-8 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                  <span className="relative z-10 flex items-center gap-2">
+                    Commencer gratuitement
+                    <ArrowRight className="h-5 w-5" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                </button>
               </Link>
               <Link href="/report">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-14 px-8 border-gray-700 text-white hover:bg-gray-900 rounded-full"
-                >
-                  <FileText className="h-5 w-5 mr-2" />
+                <button className="h-14 px-8 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center gap-2">
+                  <FileText className="h-5 w-5" />
                   Exemple rapport
-                </Button>
+                </button>
               </Link>
             </div>
           </motion.div>
@@ -1306,7 +1548,7 @@ function DiscoveryScanSection() {
             <div className="relative w-full max-w-md">
               {/* Glow */}
               <motion.div
-                className="absolute inset-0 bg-emerald-500/10 rounded-full blur-[100px]"
+                className="absolute inset-0 bg-[#FCDD00]/10 rounded-full blur-[100px]"
                 animate={{ opacity: [0.2, 0.4, 0.2] }}
                 transition={{ duration: 6, repeat: Infinity }}
               />
@@ -1357,7 +1599,7 @@ function DiscoveryScanSection() {
                       {[40, 65, 45, 80, 55, 70, 60].map((h, i) => (
                         <motion.div
                           key={i}
-                          className="flex-1 bg-emerald-500/30 rounded-t"
+                          className="flex-1 bg-[#FCDD00]/30 rounded-t"
                           initial={{ height: 0 }}
                           whileInView={{ height: `${h}%` }}
                           viewport={{ once: true }}
@@ -1434,8 +1676,8 @@ function FAQSection() {
           viewport={{ once: true }}
           className="mb-16 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-500 mb-4">FAQ</p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white">Questions fréquentes</h2>
+          <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">FAQ</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white">Questions fréquentes</h2>
         </motion.div>
 
         <div className="space-y-3">
@@ -1455,7 +1697,7 @@ function FAQSection() {
                 <span className="font-medium text-white">{faq.question}</span>
                 <ChevronDown
                   className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
-                    openIndex === index ? "rotate-180 text-emerald-500" : ""
+                    openIndex === index ? "rotate-180 text-[#FCDD00]" : ""
                   }`}
                 />
               </button>
@@ -1484,13 +1726,10 @@ function FAQSection() {
           className="mt-10 text-center"
         >
           <Link href="/faq">
-            <Button
-              variant="outline"
-              className="gap-2 border-gray-700 text-white hover:bg-gray-900 rounded-full px-6"
-            >
+            <button className="gap-2 px-6 py-3 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
               Voir toutes les questions
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </button>
           </Link>
         </motion.div>
       </div>
@@ -1507,7 +1746,7 @@ function FinalCTASection() {
       {/* Animated gradient */}
       <div className="absolute inset-0">
         <motion.div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-500/10 rounded-full blur-[150px]"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#FCDD00]/10 rounded-full blur-[150px]"
           animate={{
             scale: [1, 1.1, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -1523,10 +1762,12 @@ function FinalCTASection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="mb-6 text-4xl sm:text-5xl md:text-6xl font-bold">
-            <span className="text-white">Prêt à optimiser</span>
+          <h2 className="mb-6 text-4xl sm:text-5xl md:text-6xl font-black">
+            <span className="text-white">PRÊT À</span>
             <br />
-            <span className="italic text-emerald-400">ta biologie ?</span>
+            <span className="text-[#FCDD00]">OPTIMISER</span>
+            <br />
+            <span className="italic text-white font-light text-3xl sm:text-4xl">ta biologie ?</span>
           </h2>
           <p className="mx-auto mb-12 max-w-xl text-lg text-gray-500">
             Rejoins 500+ utilisateurs qui ont transformé leur performance.
@@ -1534,22 +1775,18 @@ function FinalCTASection() {
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/offers/ultimate-scan">
-              <Button
-                size="lg"
-                className="h-16 gap-3 px-10 text-lg font-semibold bg-emerald-500 hover:bg-emerald-400 text-black rounded-full transition-all duration-300 hover:shadow-[0_0_50px_rgba(16,185,129,0.4)]"
-              >
-                Commencer — 79€
-                <ArrowRight className="h-5 w-5" />
-              </Button>
+              <button className="group relative h-16 gap-3 px-10 text-lg font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-500 overflow-hidden shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+                <span className="relative z-10 flex items-center gap-2">
+                  Commencer — 79€
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              </button>
             </Link>
             <Link href="/offers/discovery-scan">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-16 gap-2 px-10 text-lg border-gray-700 text-white hover:bg-gray-900 hover:border-gray-600 rounded-full"
-              >
+              <button className="h-16 gap-2 px-10 text-lg font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
                 Essayer gratuitement
-              </Button>
+              </button>
             </Link>
           </div>
 
@@ -1561,15 +1798,15 @@ function FinalCTASection() {
             className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600"
           >
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-emerald-500/50" />
+              <Shield className="h-4 w-4 text-[#FCDD00]/50" />
               <span>Paiement sécurisé</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-emerald-500/50" />
+              <Clock className="h-4 w-4 text-[#FCDD00]/50" />
               <span>Rapport 24-48h</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-emerald-500/50" />
+              <Users className="h-4 w-4 text-[#FCDD00]/50" />
               <span>500+ utilisateurs</span>
             </div>
           </motion.div>
@@ -1593,12 +1830,14 @@ export default function Landing() {
         <SocialProofBanner />
         <WearablesSection />
         <MeasurableResultsSection />
-        <UltimateScanSection />
-        <TestimonialsSection />
-        <BloodAnalysisSection />
-        <BurnoutEngineSection />
-        <AnabolicBioscanSection />
         <DiscoveryScanSection />
+        <AnabolicBioscanSection />
+        <ECGSection />
+        <BloodAnalysisSection />
+        <UltimateScanSection />
+        <BodyScanSection />
+        <BurnoutEngineSection />
+        <TestimonialsSection />
         <FAQSection />
         <FinalCTASection />
       </main>

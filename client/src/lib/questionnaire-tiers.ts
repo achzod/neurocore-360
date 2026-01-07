@@ -58,13 +58,14 @@ export const SECTIONS: Section[] = [
   { id: "lifestyle", title: "Lifestyle", subtitle: "Mode de vie", icon: "Heart", tier: "free", order: 9 },
   { id: "mindset", title: "Mindset & Objectifs", subtitle: "Motivation et engagement", icon: "Target", tier: "free", order: 10 },
 
-  // ANABOLIC BIOSCAN SECTIONS (+6)
-  { id: "hormones-homme", title: "Hormones Homme", subtitle: "Profil hormonal masculin", icon: "TrendingUp", tier: "essential", order: 11 },
-  { id: "hormones-femme", title: "Hormones Femme", subtitle: "Profil hormonal féminin", icon: "TrendingUp", tier: "essential", order: 12 },
-  { id: "axes-cliniques", title: "Axes Cliniques", subtitle: "Thyroïde, SII, diabète", icon: "Stethoscope", tier: "essential", order: 13 },
-  { id: "supplements", title: "Suppléments", subtitle: "Stack actuel", icon: "Pill", tier: "essential", order: 14 },
-  { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 15 },
-  { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 16 },
+  // ANABOLIC BIOSCAN SECTIONS (+7)
+  { id: "nutrition-detaillee", title: "Nutrition Détaillée", subtitle: "Ce que tu manges vraiment", icon: "UtensilsCrossed", tier: "essential", order: 11 },
+  { id: "hormones-homme", title: "Hormones Homme", subtitle: "Profil hormonal masculin", icon: "TrendingUp", tier: "essential", order: 12 },
+  { id: "hormones-femme", title: "Hormones Femme", subtitle: "Profil hormonal féminin", icon: "TrendingUp", tier: "essential", order: 13 },
+  { id: "axes-cliniques", title: "Axes Cliniques", subtitle: "Thyroïde, SII, diabète", icon: "Stethoscope", tier: "essential", order: 14 },
+  { id: "supplements", title: "Suppléments", subtitle: "Stack actuel", icon: "Pill", tier: "essential", order: 15 },
+  { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 16 },
+  { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 17 },
 
   // PRO PANEL 360 SECTIONS (+6)
   { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 17 },
@@ -172,6 +173,30 @@ export const QUESTIONS_FREE: Question[] = [
 // ============================================================================
 
 export const QUESTIONS_ESSENTIAL: Question[] = [
+  // NUTRITION DÉTAILLÉE (18 questions) - Pour détecter aliments inflammatoires, impact sur lipolyse, hormones, sommeil
+  { id: "petit-dej-heure", sectionId: "nutrition-detaillee", type: "select", label: "À quelle heure prends-tu ton petit-déjeuner ?", tier: "essential", options: [{ value: "pas-pdj", label: "Je ne prends pas de petit-déjeuner" }, { value: "6h-7h", label: "6h-7h" }, { value: "7h-8h", label: "7h-8h" }, { value: "8h-9h", label: "8h-9h" }, { value: "9h-10h", label: "9h-10h" }, { value: "apres-10h", label: "Après 10h" }] },
+  { id: "petit-dej-contenu", sectionId: "nutrition-detaillee", type: "textarea", label: "Décris ton petit-déjeuner typique (sois précis : aliments, quantités)", tier: "essential", placeholder: "Ex: 2 tranches de pain complet + beurre + confiture + café au lait..." },
+  { id: "petit-dej-type", sectionId: "nutrition-detaillee", type: "select", label: "Ton petit-déjeuner est plutôt...", tier: "essential", options: [{ value: "sucre", label: "Sucré (céréales, pain, viennoiseries, fruits)" }, { value: "sale", label: "Salé (œufs, protéines, légumes)" }, { value: "mixte", label: "Mixte" }, { value: "liquide", label: "Liquide seulement (café, smoothie)" }, { value: "rien", label: "Rien / jeûne" }] },
+
+  { id: "dejeuner-heure", sectionId: "nutrition-detaillee", type: "select", label: "À quelle heure déjeunes-tu ?", tier: "essential", options: [{ value: "11h-12h", label: "11h-12h" }, { value: "12h-13h", label: "12h-13h" }, { value: "13h-14h", label: "13h-14h" }, { value: "14h-15h", label: "14h-15h" }, { value: "variable", label: "Variable" }] },
+  { id: "dejeuner-contenu", sectionId: "nutrition-detaillee", type: "textarea", label: "Décris ton déjeuner typique (sois précis)", tier: "essential", placeholder: "Ex: Sandwich jambon-beurre + chips + soda OU poulet + riz + légumes..." },
+  { id: "dejeuner-lieu", sectionId: "nutrition-detaillee", type: "select", label: "Où déjeunes-tu généralement ?", tier: "essential", options: [{ value: "maison", label: "À la maison (préparé)" }, { value: "boulot-prep", label: "Au travail (meal prep)" }, { value: "cantine", label: "Cantine/restaurant d'entreprise" }, { value: "resto-rapide", label: "Fast-food/sandwich" }, { value: "resto", label: "Restaurant" }, { value: "variable", label: "Variable" }] },
+
+  { id: "diner-heure", sectionId: "nutrition-detaillee", type: "select", label: "À quelle heure dînes-tu ?", tier: "essential", options: [{ value: "18h-19h", label: "18h-19h" }, { value: "19h-20h", label: "19h-20h" }, { value: "20h-21h", label: "20h-21h" }, { value: "21h-22h", label: "21h-22h" }, { value: "apres-22h", label: "Après 22h" }] },
+  { id: "diner-contenu", sectionId: "nutrition-detaillee", type: "textarea", label: "Décris ton dîner typique (sois précis)", tier: "essential", placeholder: "Ex: Pâtes bolognaise + fromage + pain OU poisson + légumes vapeur..." },
+  { id: "diner-glucides", sectionId: "nutrition-detaillee", type: "select", label: "Ton dîner contient généralement des glucides ?", tier: "essential", options: [{ value: "beaucoup", label: "Beaucoup (pâtes, riz, pain, pommes de terre)" }, { value: "modere", label: "Modérément" }, { value: "peu", label: "Peu" }, { value: "zero", label: "Quasi zéro (low-carb le soir)" }] },
+  { id: "diner-coucher-delai", sectionId: "nutrition-detaillee", type: "select", label: "Combien de temps entre ton dîner et le coucher ?", tier: "essential", options: [{ value: "moins-1h", label: "Moins d'1h" }, { value: "1h-2h", label: "1-2h" }, { value: "2h-3h", label: "2-3h" }, { value: "plus-3h", label: "Plus de 3h" }] },
+
+  { id: "grignotage-frequence", sectionId: "nutrition-detaillee", type: "select", label: "Grignotes-tu entre les repas ?", tier: "essential", options: [{ value: "jamais", label: "Jamais" }, { value: "rarement", label: "Rarement" }, { value: "parfois", label: "Parfois" }, { value: "souvent", label: "Souvent (1x/jour)" }, { value: "tres-souvent", label: "Très souvent (plusieurs fois/jour)" }] },
+  { id: "grignotage-contenu", sectionId: "nutrition-detaillee", type: "textarea", label: "Quand tu grignotes, c'est quoi généralement ?", tier: "essential", placeholder: "Ex: barres chocolatées, fruits, noix, chips, gâteaux, fromage..." },
+  { id: "grignotage-moment", sectionId: "nutrition-detaillee", type: "checkbox", label: "À quels moments grignotes-tu le plus ?", tier: "essential", options: [{ value: "matin", label: "Milieu de matinée" }, { value: "aprem", label: "Après-midi (14h-17h)" }, { value: "pre-diner", label: "Avant le dîner (17h-20h)" }, { value: "soir", label: "Soirée/devant la TV" }, { value: "nuit", label: "Nuit" }, { value: "jamais", label: "Je ne grignote pas" }] },
+
+  { id: "cheatmeal-frequence", sectionId: "nutrition-detaillee", type: "select", label: "Fréquence des cheat meals / écarts ?", tier: "essential", options: [{ value: "jamais", label: "Jamais" }, { value: "1-mois", label: "1x/mois" }, { value: "2-3-mois", label: "2-3x/mois" }, { value: "1-semaine", label: "1x/semaine" }, { value: "2-3-semaine", label: "2-3x/semaine" }, { value: "quotidien", label: "Presque quotidien" }] },
+  { id: "cheatmeal-contenu", sectionId: "nutrition-detaillee", type: "textarea", label: "Décris tes cheat meals typiques (sois honnête)", tier: "essential", placeholder: "Ex: pizza + glace, burger + frites + soda, apéro + chips + alcool..." },
+
+  { id: "huiles-cuisson", sectionId: "nutrition-detaillee", type: "select", label: "Quelle huile utilises-tu pour cuisiner ?", tier: "essential", options: [{ value: "olive", label: "Huile d'olive" }, { value: "tournesol", label: "Huile de tournesol" }, { value: "colza", label: "Huile de colza" }, { value: "coco", label: "Huile de coco" }, { value: "beurre", label: "Beurre" }, { value: "margarine", label: "Margarine" }, { value: "variable", label: "Variable/je ne sais pas" }] },
+  { id: "aliments-inflammatoires", sectionId: "nutrition-detaillee", type: "checkbox", label: "Lesquels consommes-tu régulièrement (3x+/semaine) ?", tier: "essential", options: [{ value: "pain-blanc", label: "Pain blanc/baguette" }, { value: "pates-blanches", label: "Pâtes blanches" }, { value: "cereales-sucrees", label: "Céréales sucrées" }, { value: "viennoiseries", label: "Viennoiseries" }, { value: "charcuterie", label: "Charcuterie" }, { value: "friture", label: "Fritures" }, { value: "sodas", label: "Sodas/jus industriels" }, { value: "plats-prepares", label: "Plats préparés/surgelés" }, { value: "aucun", label: "Aucun de ces aliments" }] },
+
   // HORMONES HOMME (11 questions)
   { id: "trt", sectionId: "hormones-homme", type: "select", label: "TRT / Traitement hormonal ?", tier: "essential", showFor: "homme", options: [{ value: "non", label: "Non" }, { value: "oui-trt", label: "Oui - TRT" }, { value: "oui-autre", label: "Oui - autre" }] },
   { id: "erections-matinales", sectionId: "hormones-homme", type: "select", label: "Érections matinales ?", tier: "essential", showFor: "homme", options: [{ value: "quotidiennes", label: "Quotidiennes" }, { value: "plusieurs-semaine", label: "Plusieurs/semaine" }, { value: "rarement", label: "Rarement" }, { value: "jamais", label: "Jamais" }] },

@@ -1068,20 +1068,20 @@ export function generateEnhancedSupplementsHTML(input: {
 export function generateSupplementsSectionText(input: {
   responses: Record<string, unknown>;
   globalScore?: number;
+  firstName?: string;
 }): string {
   const responses = input.responses || {};
+  const firstName = input.firstName || "Client";
   const meds = [
     ...toStringArray(responses["medicaments"]),
     ...toStringArray(responses["medications"]),
   ];
 
-  // Heuristique simple : plus le score global est bas, plus on autorise d'items.
   const baseScore =
     typeof input.globalScore === "number" && Number.isFinite(input.globalScore)
       ? Math.max(30, Math.min(90, input.globalScore))
       : 55;
 
-  // On compose une stack robuste (fondations + cibles fréquentes).
   const domains = [
     "sleep",
     "cortisol_stress",
@@ -1095,54 +1095,178 @@ export function generateSupplementsSectionText(input: {
   const all = domains.flatMap((domain) => selectSupplementsForDomain(domain, baseScore, responses, meds));
   const picked = uniqueByName(all);
 
-  // Formattage lisible (sans tableaux / markdown).
   const lines: string[] = [];
-  lines.push("Base sur : tes reponses + tes priorites + tes contraintes + gates securite.");
+
+  // =============================================================================
+  // INTRO - COMMENT LIRE CETTE SECTION
+  // =============================================================================
+  lines.push(`${firstName}, cette section est differente des autres. Ici, je ne te donne pas des noms de produits a acheter comme un robot. Je vais t'expliquer POURQUOI chaque supplement, COMMENT il fonctionne dans ton corps, et surtout COMMENT choisir un produit de qualite parmi les centaines disponibles.`);
+  lines.push("");
+  lines.push("La supplementation intelligente repose sur trois piliers :");
+  lines.push("1. COMPRENDRE ce que tu prends et pourquoi");
+  lines.push("2. SAVOIR LIRE les etiquettes pour eviter les arnaques");
+  lines.push("3. INTRODUIRE progressivement pour identifier ce qui marche pour TOI");
   lines.push("");
 
-  lines.push("PRIORITE 0 - REGLES D'ACHAT (NON NEGOCIABLES) :");
-  lines.push(`+ ${IHERB_RULES.zero_proprietary_blends}`);
-  lines.push(`+ ${IHERB_RULES.correct_units.magnesium}`);
-  lines.push(`+ ${IHERB_RULES.quality_markers.omega3}`);
-  lines.push(`+ ${IHERB_RULES.standardization_required.ashwagandha}`);
-  lines.push(`+ ${IHERB_RULES.standardization_required.tongkat_ali}`);
+  // =============================================================================
+  // PROTOCOLE D'INTRODUCTION
+  // =============================================================================
+  lines.push("PROTOCOLE D'INTRODUCTION (NON NEGOCIABLE) :");
+  lines.push("");
+  lines.push("N'introduis JAMAIS tous les supplements en meme temps. Si tu as une reaction, tu ne sauras pas lequel est en cause.");
+  lines.push("");
+  lines.push("Semaine 1-2 : UN SEUL supplement (commence par magnesium ou vitamine D)");
+  lines.push("Jour 5-7 : Si tolere, ajoute le deuxieme");
+  lines.push("Jour 10-14 : Si tolere, ajoute le troisieme");
+  lines.push("Ainsi de suite...");
+  lines.push("");
+  lines.push("Tiens un journal simple : energie (1-10), sommeil (1-10), digestion (OK/moyen/mauvais)");
+  lines.push("A 6 semaines : elimine ce qui n'apporte rien de perceptible");
   lines.push("");
 
-  lines.push("SECURITE - GATES (SI MEDICAMENTS / RISQUES) :");
+  // =============================================================================
+  // SECURITE - MEDICAMENTS
+  // =============================================================================
   if (meds.length > 0) {
-    lines.push(`+ Medicaments declares : ${meds.join(", ")}`);
-    lines.push(`+ Interactions sensibles (exemples) : ${SAFETY_GATES.ssri_maoi_interactions.join(" | ")}`);
-  } else {
-    lines.push("+ Aucun medicament declare. Si c'est faux, stop: on adapte la stack avant de commencer.");
+    lines.push("ALERTE SECURITE - MEDICAMENTS DECLARES :");
+    lines.push(`Tes medicaments : ${meds.join(", ")}`);
+    lines.push("");
+    lines.push("J'ai filtre les supplements qui pourraient interagir avec tes traitements.");
+    lines.push("MAIS : consulte TOUJOURS ton medecin ou pharmacien avant d'ajouter un nouveau supplement.");
+    lines.push("Certaines interactions ne sont pas documentees ou dependent de ton dosage exact.");
+    lines.push("");
   }
+
+  // =============================================================================
+  // STACK PERSONNALISEE
+  // =============================================================================
+  lines.push("TA STACK PERSONNALISEE :");
   lines.push("");
 
-  lines.push("STACK CIBLEE (SELECTIONNEE DANS LA BIBLIOTHEQUE ACHZOD) :");
   if (picked.length === 0) {
-    lines.push("Je ne propose pas de stack avancee pour l'instant : ton profil ne l'exige pas OU les infos sont insuffisantes.");
-    lines.push("Concentre-toi sur les fondations (sommeil, proteines, hydratation, entrainement) 14 jours, puis on re-evalue.");
+    lines.push(`${firstName}, ton profil actuel ne necessite pas de stack avancee.`);
+    lines.push("");
+    lines.push("Concentre-toi sur les fondations pendant les 14 prochains jours :");
+    lines.push("- Sommeil de qualite : 7-8h, regulier, obscurite totale");
+    lines.push("- Apport proteique : 1.6-2g par kg de poids de corps");
+    lines.push("- Hydratation : 35ml par kg de poids de corps");
+    lines.push("- Entrainement regulier et progressif");
+    lines.push("");
+    lines.push("Une fois ces bases solides, on reevaluera ta stack.");
     return lines.join("\n");
   }
 
-  picked.slice(0, 10).forEach((supp, idx) => {
-    const f = formatSupplementForReport(supp);
+  picked.slice(0, 6).forEach((supp, idx) => {
+    const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
+    const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
+    const explanation = HUMAN_EXPLANATIONS[iherbKey];
+    const products = IHERB_PRODUCTS[iherbKey] || [];
+
+    lines.push("---");
     lines.push("");
-    lines.push(`${idx + 1}. ${f.name}`);
-    lines.push(`Dosage : ${f.dosage}`);
-    lines.push(`Timing : ${f.timing}`);
-    lines.push(`Duree / cycle : ${f.duration}`);
-    lines.push(`Pourquoi : ${f.why}`);
-    if (f.warnings) lines.push(`A surveiller : ${f.warnings}`);
-    lines.push(`Qualite label : ${f.brands.join(" | ")}`);
-    if (f.iherb_search) lines.push(`Recherche iHerb : ${f.iherb_search}`);
-    lines.push(`Evidence : ${f.evidence}`);
+    lines.push(`#${idx + 1} - ${supp.ingredient.toUpperCase()}`);
+    lines.push(`Forme recommandee : ${supp.form}`);
+    lines.push(`Grade evidence : ${supp.evidence_grade} (${supp.citations.join(", ")})`);
+    lines.push("");
+
+    // POURQUOI CE SUPPLEMENT (intro generale)
+    if (explanation?.intro) {
+      lines.push("POURQUOI CE SUPPLEMENT :");
+      lines.push(explanation.intro);
+      lines.push("");
+    }
+
+    // POURQUOI POUR TOI SPECIFIQUEMENT
+    if (explanation?.whyYou) {
+      lines.push(`POURQUOI POUR TOI, ${firstName.toUpperCase()} :`);
+      lines.push(explanation.whyYou);
+      lines.push("");
+    }
+
+    // COMMENT CA FONCTIONNE (mecanismes)
+    if (explanation?.howItWorks) {
+      lines.push("COMMENT CA FONCTIONNE DANS TON CORPS :");
+      lines.push(explanation.howItWorks);
+      lines.push("");
+    } else {
+      lines.push("MECANISME D'ACTION :");
+      lines.push(supp.mechanism);
+      lines.push("");
+    }
+
+    // PROTOCOLE DETAILLE
+    lines.push("TON PROTOCOLE :");
+    if (explanation?.protocol) {
+      lines.push(explanation.protocol);
+    }
+    lines.push(`- Dosage : ${supp.dose.daily_amount} ${supp.dose.units}`);
+    lines.push(`- Timing : ${supp.timing}`);
+    lines.push(`- Prise : ${supp.dose.split}`);
+    lines.push(`- Cycle : ${supp.cycle}`);
+    if (supp.dose.scaling_note) {
+      lines.push(`- Ajustement : ${supp.dose.scaling_note}`);
+    }
+    lines.push("");
+
+    // COMMENT LIRE L'ETIQUETTE ET CHOISIR
+    lines.push("COMMENT CHOISIR ET LIRE L'ETIQUETTE :");
+    if (explanation?.labelTips) {
+      lines.push(explanation.labelTips);
+    }
+    lines.push("Criteres qualite a verifier :");
+    supp.label_checks.forEach(check => {
+      lines.push(`  + ${check}`);
+    });
+    lines.push("");
+
+    // SYNERGIES ET PRECAUTIONS
+    if (supp.synergies.length > 0) {
+      lines.push(`SYNERGIES : ${supp.synergies.join(", ")}`);
+    }
+    if (supp.risks.length > 0 && supp.risks[0] !== "Aucun notable") {
+      lines.push(`PRECAUTIONS : ${supp.risks.join(" | ")}`);
+    }
+    lines.push("");
+
+    // PRODUITS RECOMMANDES
+    if (products.length > 0) {
+      lines.push("MES RECOMMANDATIONS PRODUITS :");
+      products.slice(0, 2).forEach((product, pIdx) => {
+        const label = pIdx === 0 ? "MON CHOIX" : "ALTERNATIVE";
+        lines.push(`[${label}] ${product.brand} - ${product.name}`);
+        lines.push(`  Dosage : ${product.dose} | ${product.count}`);
+        lines.push(`  Prix : ${product.priceRange}`);
+        lines.push(`  Pourquoi : ${product.whyThisOne}`);
+      });
+      lines.push("");
+    } else if (supp.iherb_search_query) {
+      lines.push(`RECHERCHE IHERB : "${supp.iherb_search_query}"`);
+      lines.push("");
+    }
   });
 
+  // =============================================================================
+  // CE QU'IL NE FAUT PAS FAIRE
+  // =============================================================================
+  lines.push("---");
   lines.push("");
   lines.push("CE QU'IL NE FAUT PAS FAIRE :");
-  lines.push("+ Empiler 10 produits d'un coup. Ajoute 1 supplement tous les 3-4 jours.");
-  lines.push("+ Acheter des blends opaques / sous-dosees.");
-  lines.push("+ Melanger des produits 'stimulants' si ton sommeil/stress est deja fragile.");
+  lines.push("");
+  lines.push("x EMPILER 10 produits d'un coup - Tu ne sauras jamais ce qui marche");
+  lines.push("x ACHETER des 'proprietary blends' - Les dosages caches = arnaques");
+  lines.push("x CONFONDRE mg du sel et mg elementaire - Tu risques de sous-doser");
+  lines.push("x PRENDRE des stimulants le soir - Meme si le label dit 'energy'");
+  lines.push("x FAIRE CONFIANCE aux vendeurs - Lis les etiquettes toi-meme");
+  lines.push("");
+
+  // =============================================================================
+  // BUDGET
+  // =============================================================================
+  lines.push("BUDGET ESTIME :");
+  const budgetLow = picked.length * 15;
+  const budgetHigh = picked.length * 35;
+  lines.push(`Stack de ${picked.length} supplements : ${budgetLow}-${budgetHigh} EUR/mois`);
+  lines.push("Astuce : achete en gros formats (90-180 gelules) pour reduire le cout par dose.");
 
   return lines.join("\n");
 }
