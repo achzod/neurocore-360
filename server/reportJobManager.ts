@@ -217,17 +217,21 @@ async function generateReportAsync(
       ].filter(Boolean) as string[];
     }
     
-    // P0 fail-fast : pas de génération premium sans 3 photos (face/profil/dos)
-    const needsPhotos = photos.length < 3;
+    // P0 fail-fast : pas de génération premium/elite sans 3 photos (face/profil/dos)
+    // GRATUIT n'a pas besoin de photos
+    const requiresPhotos = auditType !== "GRATUIT";
+    const needsPhotos = requiresPhotos && photos.length < 3;
+
     if (needsPhotos) {
-      console.error(`[ReportJobManager] Photos insuffisantes pour ${auditId} (${photos.length}/3). Rapport non généré.`);
+      console.error(`[ReportJobManager] Photos insuffisantes pour ${auditId} (${photos.length}/3, type=${auditType}). Rapport non généré.`);
       await storage.failReportJob(auditId, "NEED_PHOTOS");
       await storage.updateAudit(auditId, { reportDeliveryStatus: "NEED_PHOTOS" as any });
       activeGenerations.delete(auditId);
       return;
-    } else {
-      // Log guardrail
+    } else if (requiresPhotos) {
       console.log(`[ReportJobManager] Photos OK pour ${auditId} (count=${photos.length})`);
+    } else {
+      console.log(`[ReportJobManager] ${auditId} est GRATUIT - photos non requises`);
     }
 
     let photoAnalysis = null;
