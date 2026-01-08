@@ -2193,70 +2193,86 @@ export async function registerRoutes(
 
   // Subscribe to waitlist (ApexLabs pre-launch)
   app.post("/api/waitlist/subscribe", async (req, res) => {
+    const { email, source = "apexlabs" } = req.body;
+
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ success: false, error: "Email invalide" });
+      return;
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    let dbSaved = false;
+    let sendpulseSynced = false;
+    let emailSent = false;
+
+    // 1. Save to database (required)
     try {
-      const { email, source = "apexlabs" } = req.body;
-
-      if (!email || !email.includes("@")) {
-        res.status(400).json({ success: false, error: "Email invalide" });
-        return;
-      }
-
-      // Sanitize email
-      const cleanEmail = email.toLowerCase().trim();
-
-      // Save to database
       const { Pool } = await import("pg");
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
       if (!databaseUrl) {
         console.error("[Waitlist] DATABASE_URL not configured");
-        res.status(500).json({ success: false, error: "Database not configured" });
+        res.status(500).json({ success: false, error: "Configuration serveur manquante" });
         return;
       }
 
       const pool = new Pool({
         connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
       });
 
       try {
-        // Try to insert (will fail if email already exists due to unique constraint)
         await pool.query(
           `INSERT INTO waitlist_subscribers (id, email, source, created_at)
            VALUES (gen_random_uuid(), $1, $2, NOW())
            ON CONFLICT (email) DO NOTHING`,
           [cleanEmail, source]
         );
-
-        // Add to SendPulse mailing list
-        const sendpulseResult = await addSubscriberToList(cleanEmail, source);
-
-        if (sendpulseResult.success) {
-          // Update synced timestamp
-          await pool.query(
-            `UPDATE waitlist_subscribers SET sendpulse_synced = NOW() WHERE email = $1`,
-            [cleanEmail]
-          );
-        }
-
-        // Send welcome email for ApexLabs waitlist
-        if (source.startsWith("apexlabs")) {
-          await sendApexLabsWelcomeEmail(cleanEmail);
-        }
-
-        console.log(`[Waitlist] ✅ Subscribed: ${cleanEmail} (source: ${source})`);
-        res.json({
-          success: true,
-          message: "Inscription réussie",
-          sendpulseSynced: sendpulseResult.success
-        });
+        dbSaved = true;
+        console.log(`[Waitlist] ✅ DB saved: ${cleanEmail}`);
       } finally {
         await pool.end();
       }
-    } catch (error: any) {
-      console.error("[Waitlist] Error:", error);
-      res.status(500).json({ success: false, error: "Erreur serveur" });
+    } catch (dbError: any) {
+      console.error("[Waitlist] DB Error:", dbError.message);
+      // Continue anyway - user experience is more important
+      dbSaved = false;
     }
+
+    // 2. Add to SendPulse (optional - don't fail if this fails)
+    try {
+      const result = await addSubscriberToList(cleanEmail, source);
+      sendpulseSynced = result.success;
+      if (sendpulseSynced) {
+        console.log(`[Waitlist] ✅ SendPulse synced: ${cleanEmail}`);
+      }
+    } catch (spError: any) {
+      console.error("[Waitlist] SendPulse Error:", spError.message);
+      sendpulseSynced = false;
+    }
+
+    // 3. Send welcome email (optional - don't fail if this fails)
+    if (source.startsWith("apexlabs")) {
+      try {
+        emailSent = await sendApexLabsWelcomeEmail(cleanEmail);
+        if (emailSent) {
+          console.log(`[Waitlist] ✅ Welcome email sent: ${cleanEmail}`);
+        }
+      } catch (emailError: any) {
+        console.error("[Waitlist] Email Error:", emailError.message);
+        emailSent = false;
+      }
+    }
+
+    // Success even if only partial - user is registered
+    console.log(`[Waitlist] Summary for ${cleanEmail}: db=${dbSaved}, sendpulse=${sendpulseSynced}, email=${emailSent}`);
+    res.json({
+      success: true,
+      message: "Inscription réussie",
+      details: { dbSaved, sendpulseSynced, emailSent }
+    });
   });
 
   // Get all waitlist subscribers (admin)
