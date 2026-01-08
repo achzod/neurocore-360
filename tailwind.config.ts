@@ -81,13 +81,20 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
+        // APEXLABS Design System Colors
+        neuro: {
+          dark: "#050505",
+          accent: "#FCDD00",
+          signal: "#00FF41",
+          alert: "#FF3333",
+        },
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
+        sans: ["Inter", "var(--font-sans)", "system-ui", "sans-serif"],
         serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
-        heading: ["Decimal", "Helvetica Neue", "sans-serif"],
-        display: ["Decimal", "sans-serif"],
+        mono: ["JetBrains Mono", "var(--font-mono)", "monospace"],
+        heading: ["Inter", "Helvetica Neue", "sans-serif"],
+        display: ["Inter", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
