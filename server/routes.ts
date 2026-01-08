@@ -2408,6 +2408,57 @@ export async function registerRoutes(
     }
   });
 
+  // Database diagnostic endpoint
+  app.get("/api/admin/db-check", async (_req, res) => {
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.json({ success: false, error: "DATABASE_URL not configured", hasDbUrl: false });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        // Check if waitlist_subscribers table exists
+        const tableCheck = await pool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_name = 'waitlist_subscribers'
+          );
+        `);
+
+        const tableExists = tableCheck.rows[0].exists;
+
+        // If table exists, count rows
+        let rowCount = 0;
+        if (tableExists) {
+          const countResult = await pool.query("SELECT COUNT(*) FROM waitlist_subscribers");
+          rowCount = parseInt(countResult.rows[0].count, 10);
+        }
+
+        res.json({
+          success: true,
+          hasDbUrl: true,
+          tableExists,
+          rowCount,
+          dbProvider: databaseUrl.includes("neon.tech") ? "neon" : databaseUrl.includes("render.com") ? "render" : "other"
+        });
+      } finally {
+        await pool.end();
+      }
+    } catch (error: any) {
+      res.json({ success: false, error: error.message, hasDbUrl: true });
+    }
+  });
+
   // ==================== KNOWLEDGE BASE ROUTES ====================
   registerKnowledgeRoutes(app);
 
