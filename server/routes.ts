@@ -2288,22 +2288,123 @@ export async function registerRoutes(
 
       const pool = new Pool({
         connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
       });
 
       try {
         const result = await pool.query(
           `SELECT id, email, source, sendpulse_synced, created_at
            FROM waitlist_subscribers
-           ORDER BY created_at DESC`
+           ORDER BY created_at DESC
+           LIMIT 50`
         );
         res.json({ success: true, subscribers: result.rows, count: result.rows.length });
       } finally {
         await pool.end();
       }
     } catch (error: any) {
-      console.error("[Waitlist Admin] Error:", error);
-      res.status(500).json({ success: false, error: "Erreur serveur" });
+      console.error("[Waitlist Admin] Error:", error.message);
+      res.status(500).json({ success: false, error: error.message || "Erreur serveur" });
+    }
+  });
+
+  // Get SendPulse address books and subscribers count (admin diagnostic)
+  app.get("/api/admin/sendpulse/books", async (_req, res) => {
+    try {
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.json({ success: false, error: "SendPulse credentials not configured" });
+        return;
+      }
+
+      // Get access token
+      const authResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: SENDPULSE_USER_ID,
+          client_secret: SENDPULSE_SECRET,
+        }),
+      });
+
+      if (!authResponse.ok) {
+        res.json({ success: false, error: "SendPulse auth failed" });
+        return;
+      }
+
+      const authData = await authResponse.json() as { access_token: string };
+
+      // Get all address books
+      const booksResponse = await fetch("https://api.sendpulse.com/addressbooks", {
+        headers: { Authorization: `Bearer ${authData.access_token}` },
+      });
+
+      const books = await booksResponse.json() as Array<{ id: number; name: string; all_email_qty: number }>;
+
+      // Filter ApexLabs books
+      const apexBooks = books.filter((b) => b.name.includes("APEXLABS"));
+
+      res.json({
+        success: true,
+        books: apexBooks.map((b) => ({
+          id: b.id,
+          name: b.name,
+          subscriberCount: b.all_email_qty,
+        })),
+        totalBooks: books.length,
+      });
+    } catch (error: any) {
+      console.error("[SendPulse Admin] Error:", error.message);
+      res.json({ success: false, error: error.message || "Erreur SendPulse" });
+    }
+  });
+
+  // Get subscribers from a specific SendPulse address book
+  app.get("/api/admin/sendpulse/subscribers/:bookId", async (req, res) => {
+    try {
+      const { bookId } = req.params;
+      const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
+      const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+
+      if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
+        res.json({ success: false, error: "SendPulse credentials not configured" });
+        return;
+      }
+
+      // Get access token
+      const authResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: SENDPULSE_USER_ID,
+          client_secret: SENDPULSE_SECRET,
+        }),
+      });
+
+      const authData = await authResponse.json() as { access_token: string };
+
+      // Get subscribers from book
+      const subsResponse = await fetch(`https://api.sendpulse.com/addressbooks/${bookId}/emails`, {
+        headers: { Authorization: `Bearer ${authData.access_token}` },
+      });
+
+      const subscribers = await subsResponse.json() as Array<{ email: string; variables: any }>;
+
+      res.json({
+        success: true,
+        bookId,
+        subscribers: subscribers.slice(0, 50), // Limit to 50
+        count: subscribers.length,
+      });
+    } catch (error: any) {
+      console.error("[SendPulse Subscribers] Error:", error.message);
+      res.json({ success: false, error: error.message || "Erreur SendPulse" });
     }
   });
 
