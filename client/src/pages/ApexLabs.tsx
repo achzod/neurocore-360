@@ -300,191 +300,434 @@ function ECGSection() {
 }
 
 // ============================================================================
-// BODY SCAN SECTION (between Ultimate Scan and Burnout Detection)
+// BODY SCAN SECTION - HOLOGRAPHIC FUTURISTIC DESIGN
 // ============================================================================
 function BodyScanSection() {
-  const organs = [
-    { id: 'brain', cx: 50, cy: 8, label: 'CERVEAU', color: '#60a5fa', status: '98%', side: 'right' },
-    { id: 'heart', cx: 44, cy: 28, label: 'CŒUR', color: '#f87171', status: '72 BPM', side: 'left' },
-    { id: 'lungs', cx: 56, cy: 26, label: 'POUMONS', color: '#4ade80', status: '16/min', side: 'right' },
-    { id: 'liver', cx: 42, cy: 38, label: 'FOIE', color: '#fbbf24', status: 'Optimal', side: 'left' },
-    { id: 'stomach', cx: 54, cy: 42, label: 'DIGESTIF', color: '#a78bfa', status: 'Actif', side: 'right' },
-    { id: 'spine', cx: 50, cy: 55, label: 'COLONNE', color: '#22d3ee', status: 'Alignée', side: 'left' },
-    { id: 'knee-l', cx: 44, cy: 75, label: 'GENOUX', color: '#f472b6', status: 'OK', side: 'left' },
+  const bioMetrics = [
+    { id: 'neural', label: 'NEURAL SYNC', value: '98.7%', color: '#a855f7', icon: '◈' },
+    { id: 'cardiac', label: 'CARDIAC', value: '72 BPM', color: '#ef4444', icon: '♥' },
+    { id: 'metabolic', label: 'METABOLIC', value: 'OPTIMAL', color: '#22c55e', icon: '◉' },
+    { id: 'muscular', label: 'MUSCULAR', value: '94.2%', color: '#3b82f6', icon: '◆' },
   ];
 
+  const dataStreams = Array.from({ length: 12 }, (_, i) => i);
+
   return (
-    <div className="py-20 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-cyan-950/20 to-black" />
+    <div className="py-24 relative overflow-hidden">
+      {/* Deep space background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(15,23,42,1)_0%,_rgba(0,0,0,1)_100%)]" />
 
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      {/* Animated grid floor effect */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(252,221,0,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(252,221,0,0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            transform: 'perspective(500px) rotateX(60deg)',
+            transformOrigin: 'center top',
+          }}
+        />
+      </div>
 
-      <div className="relative max-w-6xl mx-auto px-6">
-        {/* Header */}
-        <div className="text-center mb-12">
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(30)].map((_, i) => (
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-4"
-            animate={{ boxShadow: ['0 0 20px rgba(34,211,238,0.2)', '0 0 40px rgba(34,211,238,0.4)', '0 0 20px rgba(34,211,238,0.2)'] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            key={i}
+            className="absolute w-1 h-1 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              backgroundColor: i % 3 === 0 ? '#FCDD00' : i % 3 === 1 ? '#22d3ee' : '#a855f7',
+            }}
+            animate={{
+              y: [0, -100, 0],
+              opacity: [0, 0.8, 0],
+              scale: [0, 1, 0],
+            }}
+            transition={{
+              duration: 4 + Math.random() * 4,
+              repeat: Infinity,
+              delay: Math.random() * 4,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <motion.div
+            className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-black/60 border border-[#FCDD00]/30 backdrop-blur-xl mb-6"
+            animate={{
+              boxShadow: [
+                '0 0 20px rgba(252,221,0,0.1), inset 0 0 20px rgba(252,221,0,0.05)',
+                '0 0 40px rgba(252,221,0,0.2), inset 0 0 30px rgba(252,221,0,0.1)',
+                '0 0 20px rgba(252,221,0,0.1), inset 0 0 20px rgba(252,221,0,0.05)'
+              ]
+            }}
+            transition={{ duration: 3, repeat: Infinity }}
           >
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-cyan-400 text-sm font-mono tracking-wider">SCAN CORPOREL EN COURS</span>
+            <motion.span
+              className="w-2 h-2 rounded-full bg-[#FCDD00]"
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+            <span className="text-[#FCDD00] text-xs font-bold tracking-[0.3em] uppercase">Analyse Biométrique Active</span>
+            <motion.span
+              className="w-2 h-2 rounded-full bg-[#FCDD00]"
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+            />
           </motion.div>
-          <h3 className="text-3xl font-bold text-white">CARTOGRAPHIE BIOMÉTRIQUE</h3>
+          <h3 className="text-4xl md:text-5xl font-black text-white tracking-tight font-display">
+            BODY <span className="text-[#FCDD00]">MAPPING</span>
+          </h3>
         </div>
 
-        {/* Body scan visualization */}
-        <div className="relative flex items-center justify-center" style={{ height: '500px' }}>
+        {/* Main visualization container */}
+        <div className="relative flex items-center justify-center" style={{ minHeight: '600px' }}>
 
-          {/* Left labels */}
-          <div className="absolute left-0 md:left-[10%] top-0 bottom-0 flex flex-col justify-around py-8">
-            {organs.filter(o => o.side === 'left').map((organ, idx) => (
+          {/* Left side data panels */}
+          <div className="absolute left-0 md:left-[5%] top-1/2 -translate-y-1/2 space-y-4 z-20">
+            {bioMetrics.slice(0, 2).map((metric, idx) => (
               <motion.div
-                key={organ.id}
-                className="flex items-center gap-2"
-                initial={{ opacity: 0, x: -20 }}
+                key={metric.id}
+                initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.2 }}
+                transition={{ delay: 0.5 + idx * 0.2, duration: 0.8 }}
+                className="relative"
               >
-                <div className="text-right">
-                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
-                  <motion.div
-                    className="text-sm font-bold"
-                    style={{ color: organ.color }}
-                    animate={{ opacity: [0.7, 1, 0.7] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
-                  >
-                    {organ.status}
-                  </motion.div>
-                </div>
+                {/* Connector line */}
                 <motion.div
-                  className="w-8 h-[1px]"
-                  style={{ backgroundColor: organ.color }}
-                  animate={{ scaleX: [0, 1] }}
-                  transition={{ duration: 0.5, delay: idx * 0.2 }}
+                  className="absolute right-0 top-1/2 w-16 md:w-24 h-[1px] origin-left"
+                  style={{ background: `linear-gradient(90deg, transparent, ${metric.color})` }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.8 + idx * 0.2, duration: 0.5 }}
                 />
+
+                <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg p-4 pr-20 md:pr-28 relative overflow-hidden group hover:border-white/30 transition-colors">
+                  {/* Glow effect */}
+                  <div
+                    className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity"
+                    style={{ background: `radial-gradient(circle at 0% 50%, ${metric.color}40, transparent 70%)` }}
+                  />
+
+                  <div className="relative flex items-center gap-3">
+                    <span className="text-2xl" style={{ color: metric.color }}>{metric.icon}</span>
+                    <div>
+                      <div className="text-[10px] text-gray-500 font-mono tracking-wider">{metric.label}</div>
+                      <motion.div
+                        className="text-lg font-bold font-mono"
+                        style={{ color: metric.color }}
+                        animate={{ opacity: [0.7, 1, 0.7] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        {metric.value}
+                      </motion.div>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
 
-          {/* Body SVG */}
-          <svg viewBox="0 0 100 100" className="h-full w-auto max-w-[250px]">
-            {/* Scanning gradient */}
-            <defs>
-              <linearGradient id="bodyScanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="transparent" />
-                <stop offset="45%" stopColor="transparent" />
-                <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.6" />
-                <stop offset="55%" stopColor="transparent" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
+          {/* Right side data panels */}
+          <div className="absolute right-0 md:right-[5%] top-1/2 -translate-y-1/2 space-y-4 z-20">
+            {bioMetrics.slice(2, 4).map((metric, idx) => (
+              <motion.div
+                key={metric.id}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + idx * 0.2, duration: 0.8 }}
+                className="relative"
+              >
+                {/* Connector line */}
+                <motion.div
+                  className="absolute left-0 top-1/2 w-16 md:w-24 h-[1px] origin-right"
+                  style={{ background: `linear-gradient(90deg, ${metric.color}, transparent)` }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.8 + idx * 0.2, duration: 0.5 }}
+                />
 
-            {/* Body silhouette */}
-            <g filter="url(#glow)">
-              {/* Head */}
-              <ellipse cx="50" cy="8" rx="7" ry="8" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.8" />
-              {/* Neck */}
-              <rect x="47" y="15" width="6" height="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" rx="1" opacity="0.6" />
-              {/* Shoulders & Torso */}
-              <path d="M 30 22 Q 40 18 50 20 Q 60 18 70 22 L 68 24 Q 50 22 32 24 Z" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
-              <path d="M 32 24 L 34 50 Q 50 54 66 50 L 68 24" fill="none" stroke="#22d3ee" strokeWidth="0.5" opacity="0.7" />
-              {/* Arms */}
-              <path d="M 30 22 Q 22 30 18 42 Q 15 52 14 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
-              <path d="M 70 22 Q 78 30 82 42 Q 85 52 86 60" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
-              {/* Pelvis */}
-              <ellipse cx="50" cy="54" rx="14" ry="5" fill="none" stroke="#22d3ee" strokeWidth="0.4" opacity="0.6" />
-              {/* Legs */}
-              <path d="M 40 58 L 38 75 L 36 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
-              <path d="M 60 58 L 62 75 L 64 92" fill="none" stroke="#22d3ee" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
-              {/* Spine */}
-              <path d="M 50 20 L 50 54" fill="none" stroke="#22d3ee" strokeWidth="0.3" strokeDasharray="1.5,1.5" opacity="0.5" />
-              {/* Ribcage hints */}
-              <path d="M 38 28 Q 50 26 62 28" fill="none" stroke="#22d3ee" strokeWidth="0.3" opacity="0.4" />
-              <path d="M 36 34 Q 50 32 64 34" fill="none" stroke="#22d3ee" strokeWidth="0.3" opacity="0.4" />
-              <path d="M 35 40 Q 50 38 65 40" fill="none" stroke="#22d3ee" strokeWidth="0.3" opacity="0.4" />
-            </g>
+                <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg p-4 pl-20 md:pl-28 relative overflow-hidden group hover:border-white/30 transition-colors">
+                  {/* Glow effect */}
+                  <div
+                    className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity"
+                    style={{ background: `radial-gradient(circle at 100% 50%, ${metric.color}40, transparent 70%)` }}
+                  />
 
-            {/* Scanning line */}
-            <motion.rect
-              x="0"
-              width="100"
-              height="8"
-              fill="url(#bodyScanGradient)"
-              initial={{ y: 0 }}
-              animate={{ y: [0, 92, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  <div className="relative flex items-center gap-3 justify-end">
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-500 font-mono tracking-wider">{metric.label}</div>
+                      <motion.div
+                        className="text-lg font-bold font-mono"
+                        style={{ color: metric.color }}
+                        animate={{ opacity: [0.7, 1, 0.7] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                      >
+                        {metric.value}
+                      </motion.div>
+                    </div>
+                    <span className="text-2xl" style={{ color: metric.color }}>{metric.icon}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Central hologram container */}
+          <div className="relative w-[300px] md:w-[400px] h-[500px] md:h-[600px]">
+
+            {/* Outer rotating ring */}
+            <motion.div
+              className="absolute inset-0 rounded-full border border-[#FCDD00]/20"
+              style={{
+                background: 'conic-gradient(from 0deg, transparent, rgba(252,221,0,0.1), transparent, rgba(252,221,0,0.1), transparent)',
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             />
 
-            {/* Organ points */}
-            {organs.map((organ, idx) => (
-              <g key={organ.id}>
-                {/* Outer pulse ring */}
-                <motion.circle
-                  cx={organ.cx}
-                  cy={organ.cy}
-                  r="3"
-                  fill="none"
-                  stroke={organ.color}
-                  strokeWidth="0.3"
-                  initial={{ r: 1.5, opacity: 1 }}
-                  animate={{ r: 5, opacity: 0 }}
-                  transition={{ duration: 1.5, repeat: Infinity, delay: idx * 0.2 }}
-                />
-                {/* Core dot */}
-                <motion.circle
-                  cx={organ.cx}
-                  cy={organ.cy}
-                  r="1.5"
-                  fill={organ.color}
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: idx * 0.15 }}
-                  style={{ filter: `drop-shadow(0 0 3px ${organ.color})` }}
-                />
-              </g>
-            ))}
-          </svg>
+            {/* Middle rotating ring - opposite direction */}
+            <motion.div
+              className="absolute inset-8 rounded-full border border-cyan-500/20"
+              style={{
+                background: 'conic-gradient(from 180deg, transparent, rgba(34,211,238,0.1), transparent, rgba(34,211,238,0.1), transparent)',
+              }}
+              animate={{ rotate: -360 }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            />
 
-          {/* Right labels */}
-          <div className="absolute right-0 md:right-[10%] top-0 bottom-0 flex flex-col justify-around py-8">
-            {organs.filter(o => o.side === 'right').map((organ, idx) => (
-              <motion.div
-                key={organ.id}
-                className="flex items-center gap-2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.2 }}
-              >
+            {/* Inner glow */}
+            <div className="absolute inset-16 rounded-full bg-gradient-to-b from-[#FCDD00]/5 via-transparent to-cyan-500/5 blur-xl" />
+
+            {/* Data streams around the body */}
+            <div className="absolute inset-0">
+              {dataStreams.map((_, i) => (
                 <motion.div
-                  className="w-8 h-[1px]"
-                  style={{ backgroundColor: organ.color }}
-                  animate={{ scaleX: [0, 1] }}
-                  transition={{ duration: 0.5, delay: idx * 0.2 }}
+                  key={i}
+                  className="absolute left-1/2 top-1/2 w-[1px] origin-bottom"
+                  style={{
+                    height: '45%',
+                    rotate: `${i * 30}deg`,
+                    background: `linear-gradient(to top, transparent, ${i % 2 === 0 ? '#FCDD00' : '#22d3ee'}40, transparent)`,
+                  }}
+                  animate={{
+                    opacity: [0.2, 0.6, 0.2],
+                    scaleY: [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    delay: i * 0.15,
+                    ease: "easeInOut",
+                  }}
                 />
-                <div className="text-left">
-                  <div className="text-xs text-gray-500 font-mono">{organ.label}</div>
-                  <motion.div
-                    className="text-sm font-bold"
-                    style={{ color: organ.color }}
-                    animate={{ opacity: [0.7, 1, 0.7] }}
-                    transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
-                  >
-                    {organ.status}
-                  </motion.div>
-                </div>
+              ))}
+            </div>
+
+            {/* Holographic body image */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                className="relative w-[200px] md:w-[280px] h-[400px] md:h-[500px]"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                {/* Body silhouette with gradient */}
+                <svg viewBox="0 0 200 400" className="w-full h-full" style={{ filter: 'drop-shadow(0 0 20px rgba(252,221,0,0.3))' }}>
+                  <defs>
+                    {/* Main body gradient */}
+                    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#FCDD00" stopOpacity="0.8" />
+                      <stop offset="30%" stopColor="#22d3ee" stopOpacity="0.6" />
+                      <stop offset="60%" stopColor="#a855f7" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="#FCDD00" stopOpacity="0.3" />
+                    </linearGradient>
+
+                    {/* Wireframe gradient */}
+                    <linearGradient id="wireGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#FCDD00" />
+                      <stop offset="50%" stopColor="#22d3ee" />
+                      <stop offset="100%" stopColor="#a855f7" />
+                    </linearGradient>
+
+                    {/* Glow filter */}
+                    <filter id="holoGlow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+
+                    {/* Scan line gradient */}
+                    <linearGradient id="scanLine" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="transparent" />
+                      <stop offset="45%" stopColor="transparent" />
+                      <stop offset="50%" stopColor="#FCDD00" stopOpacity="0.8" />
+                      <stop offset="55%" stopColor="transparent" />
+                      <stop offset="100%" stopColor="transparent" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Anatomical wireframe body */}
+                  <g filter="url(#holoGlow)" stroke="url(#wireGradient)" fill="none" strokeWidth="1.5">
+                    {/* Head - more detailed */}
+                    <ellipse cx="100" cy="35" rx="25" ry="30" opacity="0.9" />
+                    <ellipse cx="100" cy="35" rx="20" ry="25" opacity="0.5" strokeDasharray="4,4" />
+                    {/* Face features hint */}
+                    <line x1="90" y1="30" x2="90" y2="32" strokeWidth="2" opacity="0.6" />
+                    <line x1="110" y1="30" x2="110" y2="32" strokeWidth="2" opacity="0.6" />
+
+                    {/* Neck */}
+                    <path d="M 85 62 Q 85 75 88 80 L 112 80 Q 115 75 115 62" opacity="0.8" />
+
+                    {/* Shoulders & Upper torso */}
+                    <path d="M 88 80 Q 50 85 35 100 L 35 110" strokeWidth="2" opacity="0.9" />
+                    <path d="M 112 80 Q 150 85 165 100 L 165 110" strokeWidth="2" opacity="0.9" />
+
+                    {/* Chest/Ribcage */}
+                    <path d="M 55 100 Q 100 90 145 100" opacity="0.6" strokeDasharray="3,3" />
+                    <path d="M 52 115 Q 100 105 148 115" opacity="0.5" strokeDasharray="3,3" />
+                    <path d="M 50 130 Q 100 120 150 130" opacity="0.4" strokeDasharray="3,3" />
+
+                    {/* Torso outline */}
+                    <path d="M 55 100 L 50 180 Q 50 200 70 210" strokeWidth="2" opacity="0.8" />
+                    <path d="M 145 100 L 150 180 Q 150 200 130 210" strokeWidth="2" opacity="0.8" />
+
+                    {/* Pelvis */}
+                    <ellipse cx="100" cy="210" rx="35" ry="15" opacity="0.7" />
+
+                    {/* Spine */}
+                    <path d="M 100 65 L 100 210" strokeWidth="1" strokeDasharray="8,4" opacity="0.5" />
+
+                    {/* Arms */}
+                    <path d="M 35 110 Q 25 150 20 200 Q 18 230 25 260" strokeWidth="2" opacity="0.7" />
+                    <path d="M 165 110 Q 175 150 180 200 Q 182 230 175 260" strokeWidth="2" opacity="0.7" />
+                    {/* Hands hint */}
+                    <ellipse cx="25" cy="270" rx="8" ry="12" opacity="0.5" />
+                    <ellipse cx="175" cy="270" rx="8" ry="12" opacity="0.5" />
+
+                    {/* Legs */}
+                    <path d="M 70 210 Q 65 280 60 340 L 55 390" strokeWidth="2" opacity="0.8" />
+                    <path d="M 130 210 Q 135 280 140 340 L 145 390" strokeWidth="2" opacity="0.8" />
+                    {/* Feet hint */}
+                    <ellipse cx="55" cy="395" rx="12" ry="5" opacity="0.5" />
+                    <ellipse cx="145" cy="395" rx="12" ry="5" opacity="0.5" />
+
+                    {/* Muscle structure hints */}
+                    <path d="M 55 120 Q 45 140 50 160" opacity="0.3" strokeDasharray="2,4" />
+                    <path d="M 145 120 Q 155 140 150 160" opacity="0.3" strokeDasharray="2,4" />
+                  </g>
+
+                  {/* Organ highlights */}
+                  <g>
+                    {/* Brain */}
+                    <motion.circle
+                      cx="100" cy="35" r="12"
+                      fill="none" stroke="#a855f7" strokeWidth="2"
+                      animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.9, 1.1, 0.9] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+
+                    {/* Heart */}
+                    <motion.circle
+                      cx="90" cy="115" r="10"
+                      fill="none" stroke="#ef4444" strokeWidth="2"
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                    />
+
+                    {/* Core/Stomach */}
+                    <motion.circle
+                      cx="100" cy="160" r="15"
+                      fill="none" stroke="#22c55e" strokeWidth="1.5"
+                      animate={{ opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    />
+                  </g>
+
+                  {/* Scanning line */}
+                  <motion.rect
+                    x="0" width="200" height="30"
+                    fill="url(#scanLine)"
+                    initial={{ y: 0 }}
+                    animate={{ y: [0, 370, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  />
+
+                  {/* Hexagonal overlay pattern */}
+                  <g opacity="0.15">
+                    {[...Array(8)].map((_, row) => (
+                      [...Array(4)].map((_, col) => (
+                        <motion.polygon
+                          key={`hex-${row}-${col}`}
+                          points="15,0 30,8 30,24 15,32 0,24 0,8"
+                          fill="none"
+                          stroke="#FCDD00"
+                          strokeWidth="0.5"
+                          transform={`translate(${35 + col * 35 + (row % 2) * 17}, ${20 + row * 45})`}
+                          animate={{ opacity: [0.1, 0.4, 0.1] }}
+                          transition={{ duration: 3, repeat: Infinity, delay: (row + col) * 0.2 }}
+                        />
+                      ))
+                    ))}
+                  </g>
+                </svg>
+
+                {/* Glitch/flicker effect overlay */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-b from-[#FCDD00]/5 via-transparent to-cyan-500/5"
+                  animate={{ opacity: [0, 0.3, 0, 0.1, 0] }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
+                />
               </motion.div>
-            ))}
+            </div>
+
+            {/* Platform/base glow */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-4">
+              <motion.div
+                className="w-full h-full rounded-full bg-[#FCDD00]/30 blur-xl"
+                animate={{ opacity: [0.3, 0.6, 0.3], scaleX: [0.8, 1, 0.8] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+            </div>
           </div>
         </div>
+
+        {/* Bottom status bar */}
+        <motion.div
+          className="mt-12 flex justify-center gap-8 text-xs font-mono"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.5 }}
+        >
+          {[
+            { label: 'SCAN STATUS', value: 'ACTIVE', color: '#22c55e' },
+            { label: 'DATA POINTS', value: '2,847', color: '#FCDD00' },
+            { label: 'ACCURACY', value: '99.2%', color: '#22d3ee' },
+          ].map((item, i) => (
+            <div key={i} className="text-center">
+              <div className="text-gray-600 tracking-wider mb-1">{item.label}</div>
+              <motion.div
+                className="font-bold"
+                style={{ color: item.color }}
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+              >
+                {item.value}
+              </motion.div>
+            </div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );
