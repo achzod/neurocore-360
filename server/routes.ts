@@ -16,6 +16,7 @@ import {
   sendPromoCodeEmail,
   sendAdminReviewNotification,
   addSubscriberToList,
+  sendApexLabsWelcomeEmail,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -2236,6 +2237,11 @@ export async function registerRoutes(
             `UPDATE waitlist_subscribers SET sendpulse_synced = NOW() WHERE email = $1`,
             [cleanEmail]
           );
+        }
+
+        // Send welcome email for ApexLabs waitlist
+        if (source.startsWith("apexlabs")) {
+          await sendApexLabsWelcomeEmail(cleanEmail);
         }
 
         console.log(`[Waitlist] ✅ Subscribed: ${cleanEmail} (source: ${source})`);
