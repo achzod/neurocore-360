@@ -88,7 +88,7 @@ Les SARMs ne sont pas magiques. Ils ne remplaceront jamais une nutrition optimis
 
 ---
 
-**Tu veux optimiser tes hormones naturellement ?** Un [bilan hormonal complet](/offers/ultimate-scan) peut identifier tes déséquilibres sans substances exogènes.
+**Tu veux comprendre la science derrière les hormones et la performance ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -531,7 +531,7 @@ Les inconvénients :
 
 ---
 
-**Tu veux optimiser ta GH naturellement ?** Le sommeil est le premier levier. Un [audit sommeil/récupération](/offers/ultimate-scan) peut identifier tes blocages.
+**Tu veux maîtriser l'optimisation de ta GH et IGF-1 ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -717,7 +717,7 @@ Règle simple : si tu peux te procurer des SARMs, tu peux te procurer du Nolvade
 
 ---
 
-**Tu veux monitorer ta récupération hormonale ?** Un [bilan hormonal](/offers/ultimate-scan) post-PCT confirme que tout est revenu à la normale.
+**Tu veux comprendre la récupération hormonale en profondeur ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -1164,7 +1164,7 @@ Les clés :
 
 ---
 
-**Tu veux monitorer ta santé pendant et après un cycle ?** Un [bilan complet](/offers/ultimate-scan) surveille tous les marqueurs importants.
+**Tu veux tout savoir sur l'optimisation hormonale avancée ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -1944,7 +1944,7 @@ Si la définition et l'aspect visuel sont ta priorité (prépa compétition), S4
 
 ---
 
-**Tu veux améliorer ta définition musculaire naturellement ?** Un [bilan métabolique](/offers/ultimate-scan) peut identifier pourquoi tu ne perds pas cette dernière couche de gras.
+**Tu veux comprendre la science de la sèche et de la définition musculaire ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -2105,7 +2105,7 @@ Mais ma recommandation : il existe des options plus documentées et potentiellem
 
 ---
 
-**Tu veux maximiser ta croissance musculaire naturellement ?** Un [audit hormonal](/offers/ultimate-scan) peut identifier des blocages que tu peux corriger sans substances expérimentales.
+**Tu veux maximiser ta croissance musculaire avec la science ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -2242,7 +2242,7 @@ Si tu veux les bénéfices théoriques de SR9009, la voie injectable est la seul
 
 ---
 
-**Tu veux booster ton métabolisme naturellement ?** Un [audit métabolique complet](/offers/ultimate-scan) peut identifier pourquoi tu brûles moins de calories que tu ne devrais.
+**Tu veux booster ton métabolisme avec des méthodes avancées ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
 ];
