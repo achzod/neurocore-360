@@ -621,7 +621,7 @@ function Hero() {
           className="mb-8 cursor-default flex flex-col items-center"
         >
             {/* APEXLABS - White & Yellow */}
-            <h1 className="text-5xl md:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.9] mb-2">
+            <h1 className="text-5xl md:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.9] mb-2 font-display">
                 <span className="block text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-transform duration-700 hover:scale-[1.02]">
                     APEX<span className="text-[#FCDD00]">LABS</span>
                 </span>
@@ -802,7 +802,7 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
               {subtitle}
             </div>
 
-            <h3 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all duration-300">
+            <h3 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight font-display group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all duration-300">
               {title}
             </h3>
 
@@ -850,7 +850,7 @@ function OffersSection() {
     <section id="offers" className="bg-black py-24 relative">
       <div className="container mx-auto px-6">
         <div className="mb-20 text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">Mes Offres</h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white font-display">Mes Offres</h2>
           <p className="text-gray-400">
             Des solutions adaptées à chaque niveau d'exigence. Choisissez votre voie vers l'excellence cognitive.
           </p>
@@ -1005,7 +1005,7 @@ function Waitlist() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto bg-black/50 backdrop-blur-xl border border-white/10 rounded-sm p-8 md:p-16 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight">
+          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight font-display">
             ACCÈS ANTICIPÉ
           </h2>
           <p className="text-gray-400 text-lg mb-10 max-w-xl mx-auto">
