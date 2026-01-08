@@ -217,9 +217,9 @@ async function generateReportAsync(
       ].filter(Boolean) as string[];
     }
     
-    // P0 fail-fast : pas de génération premium/elite sans 3 photos (face/profil/dos)
-    // GRATUIT n'a pas besoin de photos
-    const requiresPhotos = auditType !== "GRATUIT";
+    // P0 fail-fast : seul ELITE (Ultimate Scan) nécessite 3 photos pour l'analyse visuelle/posturale
+    // GRATUIT et PREMIUM n'ont pas besoin de photos
+    const requiresPhotos = auditType === "ELITE";
     const needsPhotos = requiresPhotos && photos.length < 3;
 
     if (needsPhotos) {

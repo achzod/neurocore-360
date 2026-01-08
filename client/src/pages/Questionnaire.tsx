@@ -334,9 +334,20 @@ function QuestionnaireContent() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
 
+  // Lire le plan depuis l'URL (premium = Anabolic Bioscan, pro = Ultimate Scan)
+  const [selectedPlan] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("plan") || "premium"; // Default to premium (pas de photos)
+  });
+
+  // Filtrer les sections : analyse-posturale (photos) uniquement pour plan=pro (Ultimate Scan)
+  const filteredSections = selectedPlan === "pro"
+    ? QUESTIONNAIRE_SECTIONS
+    : QUESTIONNAIRE_SECTIONS.filter(s => s.id !== "analyse-posturale");
+
   // Bounds check pour éviter undefined
-  const safeIndex = Math.min(Math.max(0, currentSectionIndex), QUESTIONNAIRE_SECTIONS.length - 1);
-  const currentSection = QUESTIONNAIRE_SECTIONS[safeIndex];
+  const safeIndex = Math.min(Math.max(0, currentSectionIndex), filteredSections.length - 1);
+  const currentSection = filteredSections[safeIndex];
   const userSex = responses["sexe"] as string | undefined;
   const [sexConfirmed, setSexConfirmed] = useState(false);
   const [prenomConfirmed, setPrenomConfirmed] = useState(false);
@@ -347,7 +358,7 @@ function QuestionnaireContent() {
   const sectionQuestions = currentSection ? getQuestionsForSection(currentSection.id, userSex) : [];
   const IconComponent = currentSection ? (iconMap[currentSection.icon] || User) : User;
 
-  const totalProgress = Math.round(((currentSectionIndex + 1) / QUESTIONNAIRE_SECTIONS.length) * 100);
+  const totalProgress = Math.round(((currentSectionIndex + 1) / filteredSections.length) * 100);
 
   // Charger la progression depuis la DB
   const loadProgressFromDB = async (userEmail: string) => {
@@ -413,7 +424,7 @@ function QuestionnaireContent() {
       if (savedSection) {
         const sectionNum = Number(savedSection);
         // Valider que l'index est dans les limites
-        if (!isNaN(sectionNum) && sectionNum >= 0 && sectionNum < QUESTIONNAIRE_SECTIONS.length) {
+        if (!isNaN(sectionNum) && sectionNum >= 0 && sectionNum < filteredSections.length) {
           setCurrentSectionIndex(sectionNum);
         } else {
           // Index invalide, reset à 0
@@ -574,7 +585,7 @@ function QuestionnaireContent() {
 
   // Time estimate
   const getTimeEstimate = (): string => {
-    const remainingSections = QUESTIONNAIRE_SECTIONS.length - currentSectionIndex - 1;
+    const remainingSections = filteredSections.length - currentSectionIndex - 1;
     const minutesPerSection = 1.5; // Average
     const remainingMinutes = Math.ceil(remainingSections * minutesPerSection);
     if (remainingMinutes <= 1) return "Moins d'1 min";
@@ -605,9 +616,10 @@ function QuestionnaireContent() {
       return;
     }
 
-    // Vérifier que les 3 photos sont uploadées avant d'aller au checkout (dernière section = analyse-posturale)
-    const isLastSection = currentSectionIndex === QUESTIONNAIRE_SECTIONS.length - 1;
-    if (isLastSection) {
+    // Vérifier les photos UNIQUEMENT pour Ultimate Scan (plan=pro)
+    // La section analyse-posturale n'existe pas pour premium, donc on skip la validation
+    const isLastSection = currentSectionIndex === filteredSections.length - 1;
+    if (isLastSection && selectedPlan === "pro") {
       const missingPhotos = PHOTO_FIELDS.filter(field => !photoData[field]);
       if (missingPhotos.length > 0) {
         toast({
@@ -619,7 +631,7 @@ function QuestionnaireContent() {
       }
     }
 
-    if (currentSectionIndex < QUESTIONNAIRE_SECTIONS.length - 1) {
+    if (currentSectionIndex < filteredSections.length - 1) {
       setCurrentSectionIndex((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -728,7 +740,7 @@ function QuestionnaireContent() {
               </div>
               <div>
                 <p className="text-sm font-medium" data-testid="text-current-section">
-                  Section {currentSectionIndex + 1}/{QUESTIONNAIRE_SECTIONS.length}
+                  Section {currentSectionIndex + 1}/{filteredSections.length}
                 </p>
                 <p className="text-xs text-muted-foreground">{currentSection.title}</p>
               </div>
@@ -787,7 +799,7 @@ function QuestionnaireContent() {
 
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-8 flex flex-wrap gap-2">
-          {QUESTIONNAIRE_SECTIONS.map((section, index) => {
+          {filteredSections.map((section, index) => {
             const SectionIcon = iconMap[section.icon] || User;
             const isActive = index === currentSectionIndex;
             const isComplete = index < currentSectionIndex;
@@ -1145,7 +1157,7 @@ function QuestionnaireContent() {
           </Button>
 
           <Button onClick={handleNext} className="min-w-[120px]" data-testid="button-next">
-            {currentSectionIndex === QUESTIONNAIRE_SECTIONS.length - 1 ? (
+            {currentSectionIndex === filteredSections.length - 1 ? (
               <>
                 Terminer
                 <Check className="ml-2 h-4 w-4" />
