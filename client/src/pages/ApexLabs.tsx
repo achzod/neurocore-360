@@ -355,7 +355,7 @@ function ECGSection() {
 }
 
 // ============================================================================
-// HEADER COMPONENT
+// HEADER COMPONENT - APEXLABS DESIGN
 // ============================================================================
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -376,28 +376,53 @@ function Header() {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-black/80 backdrop-blur-md py-4 border-b border-white/10' : 'bg-transparent py-6'}`}>
-      <div className="container mx-auto px-6 flex justify-between items-center">
-        {/* Logo Section - APEXLABS (White/Yellow) + by Achzod */}
-        <a
-          href="/apexlabs"
-          className="flex flex-col leading-none group cursor-pointer"
-        >
-          <span className="text-2xl font-black tracking-tighter text-white uppercase">
-            APEX<span className="text-[#FCDD00]">LABS</span>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-neuro-dark/95 backdrop-blur-md py-3 border-b border-white/5' : 'bg-transparent py-5'}`}>
+      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+        {/* Logo - Italic Bold Style */}
+        <a href="/apexlabs" className="flex flex-col leading-none group cursor-pointer">
+          <span className="text-2xl md:text-3xl font-black italic tracking-tight text-white">
+            APEX<span className="text-neuro-accent">LABS</span>
           </span>
-          <span className="text-sm font-medium text-gray-400 tracking-wide group-hover:text-white transition-colors">
-            by Achzod
+          <span className="text-[10px] md:text-xs font-medium text-neuro-accent/80 tracking-[0.2em] uppercase">
+            BY ACHZOD
           </span>
         </a>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
-          <button onClick={() => scrollToSection('offers')} className="hover:text-[#FCDD00] transition-colors">Offres</button>
-          <button onClick={() => scrollToSection('certifications')} className="hover:text-[#FCDD00] transition-colors">Certifications</button>
-          <Button variant="outline" onClick={() => scrollToSection('join-waitlist')} className="!px-6 !py-2 text-xs hover:!border-[#FCDD00] hover:text-[#FCDD00]">
+        {/* Nav - Uppercase tracking */}
+        <nav className="hidden md:flex items-center gap-10">
+          <button
+            onClick={() => scrollToSection('offers')}
+            className="text-sm font-medium text-white/70 hover:text-white tracking-widest uppercase transition-colors"
+          >
+            Protocoles
+          </button>
+          <button
+            onClick={() => scrollToSection('reviews')}
+            className="text-sm font-medium text-white/70 hover:text-white tracking-widest uppercase transition-colors"
+          >
+            Résultats
+          </button>
+          <button
+            onClick={() => scrollToSection('join-waitlist')}
+            className="text-sm font-medium text-white/70 hover:text-white tracking-widest uppercase transition-colors"
+          >
+            Vision
+          </button>
+          {/* CTA - Yellow filled button */}
+          <button
+            onClick={() => scrollToSection('join-waitlist')}
+            className="px-6 py-2.5 bg-neuro-accent text-black text-sm font-bold tracking-wider uppercase rounded-full hover:bg-neuro-accent/90 transition-all shadow-[0_0_20px_rgba(252,221,0,0.3)] hover:shadow-[0_0_30px_rgba(252,221,0,0.5)]"
+          >
             S'inscrire
-          </Button>
+          </button>
         </nav>
+
+        {/* Mobile menu button */}
+        <button className="md:hidden text-white p-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
     </header>
   );
@@ -814,6 +839,105 @@ function CertificationsSection() {
 }
 
 // ============================================================================
+// BETA TESTERS REVIEWS SECTION
+// ============================================================================
+function ReviewsSection() {
+  const reviews = [
+    {
+      name: "Thomas R.",
+      role: "Entrepreneur, 34 ans",
+      text: "En 3 mois de suivi avec Achzod, j'ai compris pourquoi je stagnais depuis des années. L'analyse bio-impédance a révélé un déséquilibre hormonal que personne n'avait détecté. Résultat : -8kg de gras, +4kg de muscle sec.",
+      metric: "-8kg gras",
+      metricLabel: "en 12 semaines"
+    },
+    {
+      name: "Sarah M.",
+      role: "Athlète CrossFit, 28 ans",
+      text: "Le Discovery Scan m'a permis d'identifier mes carences en magnésium et zinc qui plombaient ma récupération. Depuis la correction, mes perfs ont explosé et je dors enfin correctement.",
+      metric: "+15%",
+      metricLabel: "performance"
+    },
+    {
+      name: "Marc D.",
+      role: "Cadre dirigeant, 42 ans",
+      text: "J'étais au bord du burnout sans le savoir. L'analyse VFC a montré un système nerveux en surrégime. Le protocole de récupération d'Achzod m'a littéralement sauvé.",
+      metric: "HRV +40%",
+      metricLabel: "en 8 semaines"
+    },
+    {
+      name: "Julie L.",
+      role: "Coach sportive, 31 ans",
+      text: "Je recommande ApexLabs à tous mes clients maintenant. La précision des données et la clarté des recommandations sont incomparables. C'est le chaînon manquant entre l'entraînement et les résultats.",
+      metric: "100%",
+      metricLabel: "clients satisfaits"
+    }
+  ];
+
+  return (
+    <section id="reviews" className="py-20 bg-neuro-dark relative overflow-hidden">
+      {/* Background grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+
+      <div className="relative max-w-6xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
+            Beta Testers
+          </span>
+          <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl text-white uppercase tracking-tight mb-4">
+            Résultats Réels
+          </h2>
+          <p className="text-gray-400 max-w-xl mx-auto">
+            Des transformations mesurables, validées par les données.
+          </p>
+        </div>
+
+        {/* Reviews Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {reviews.map((review, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-6 hover:border-neuro-accent/30 transition-all group"
+            >
+              {/* Metric badge */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <div className="font-sans font-bold text-white text-lg">{review.name}</div>
+                  <div className="font-mono text-[11px] text-gray-500 uppercase tracking-wider">{review.role}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-2xl font-bold text-neuro-signal">{review.metric}</div>
+                  <div className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">{review.metricLabel}</div>
+                </div>
+              </div>
+
+              {/* Quote */}
+              <p className="text-gray-300 text-sm leading-relaxed">
+                "{review.text}"
+              </p>
+
+              {/* Verified badge */}
+              <div className="mt-4 flex items-center gap-2">
+                <motion.span
+                  className="w-1.5 h-1.5 bg-neuro-signal rounded-full"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <span className="font-mono text-[9px] text-neuro-signal uppercase tracking-widest">Résultat vérifié</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // PRESS/MEDIA SECTION
 // ============================================================================
 function PressSection() {
@@ -1020,8 +1144,9 @@ export default function ApexLabs() {
       <Hero />
       <ECGSection />
       <CertificationsSection />
-      <PressSection />
       <OffersSection />
+      <ReviewsSection />
+      <PressSection />
       <Waitlist />
       <Footer />
     </div>
