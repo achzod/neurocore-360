@@ -866,13 +866,13 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
               </h2>
 
               <p style="color: ${APEX_COLORS.textMuted}; font-size: 16px; line-height: 1.8; margin: 0 0 30px; text-align: center;">
-                Tu fais maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> — la nouvelle génération d'optimisation humaine.
+                Vous faites maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> — la nouvelle génération d'optimisation humaine.
               </p>
 
               <!-- What's coming -->
               <div style="background: rgba(252,221,0,0.05); border: 1px solid rgba(252,221,0,0.2); border-radius: 12px; padding: 30px; margin: 30px 0;">
                 <h3 style="color: ${APEX_COLORS.primary}; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 20px;">
-                  CE QUI T'ATTEND
+                  CE QUI VOUS ATTEND
                 </h3>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -891,7 +891,7 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
               </div>
 
               <p style="color: ${APEX_COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 30px 0; text-align: center;">
-                Je te contacterai personnellement dès que les portes s'ouvriront.
+                Je vous contacterai personnellement dès que les portes s'ouvriront.
               </p>
 
               <p style="color: ${APEX_COLORS.text}; font-size: 16px; margin: 40px 0 0; text-align: center; font-weight: 500;">
@@ -925,7 +925,7 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
       body: JSON.stringify({
         email: {
           html: encodeBase64(htmlContent),
-          text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod",
+          text: "Bienvenue dans l'élite ApexLabs ! Vous faites partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je vous contacterai dès que les portes s'ouvriront. - Achzod",
           subject: "Bienvenue dans l'élite ApexLabs",
           from: {
             name: "Achzod | ApexLabs",
