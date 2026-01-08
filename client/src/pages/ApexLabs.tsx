@@ -899,21 +899,37 @@ function CertificationsSection() {
 // PRESS/MEDIA SECTION
 // ============================================================================
 function PressSection() {
-  const logos = ["BENZINGA", "StreetInsider", "MarketWatch", "REUTERS", "Yahoo Finance", "AP News"];
+  // Real press coverage from February 2025 distribution (321 placements, 200M+ reach)
+  const logos = [
+    "Yahoo Finance",
+    "MarketWatch",
+    "Business Insider",
+    "Bloomberg",
+    "REUTERS",
+    "Dow Jones",
+    "Financial Post",
+    "Apple News",
+    "Google News",
+    "Associated Press",
+    "BENZINGA",
+    "StreetInsider",
+    "The Globe and Mail",
+    "FOX 40"
+  ];
 
   return (
     <section className="py-8 bg-black overflow-hidden">
-      <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-6">Vu dans les médias</p>
+      <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-6">321 Placements médias • 200M+ de portée</p>
       <div className="relative">
         <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
         <motion.div
-          className="flex gap-16 items-center"
-          animate={{ x: [0, -800] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="flex gap-12 items-center"
+          animate={{ x: [0, -1600] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
         >
           {[...logos, ...logos, ...logos].map((logo, i) => (
-            <span key={i} className="text-gray-600 text-lg font-semibold whitespace-nowrap">{logo}</span>
+            <span key={i} className="text-gray-500 text-sm font-semibold whitespace-nowrap hover:text-white transition-colors">{logo}</span>
           ))}
         </motion.div>
       </div>
