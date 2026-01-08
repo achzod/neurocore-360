@@ -901,6 +901,7 @@ function CertificationsSection() {
 function PressSection() {
   // Only outlets with verified active links from Feb 2025 press release
   const pressLinks = [
+    { name: "Business Insider", url: "https://markets.businessinsider.com/news/stocks/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications-1034317450" },
     { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/achzodcoaching-launches-elite-athlete-coaching-193500608.html" },
     { name: "FinanzNachrichten", url: "https://www.finanznachrichten.de/nachrichten-2025-02/64477005-achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issa-nasm-and-10-certifications-296.htm" },
   ];
