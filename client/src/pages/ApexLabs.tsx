@@ -939,20 +939,37 @@ function PressSection() {
 // ============================================================================
 function Waitlist() {
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setStatus('loading');
+    setErrorMessage('');
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Registered:', email);
-      setStatus('success');
-      setEmail('');
-    }, 1500);
+    try {
+      const response = await fetch('/api/waitlist/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'apexlabs' }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus('success');
+        setEmail('');
+      } else {
+        setStatus('error');
+        setErrorMessage(data.error || 'Une erreur est survenue');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      setStatus('error');
+      setErrorMessage('Erreur de connexion. Réessayez.');
+    }
   };
 
   return (
@@ -970,7 +987,7 @@ function Waitlist() {
           </p>
 
           {status === 'success' ? (
-            <div className="bg-green-500/10 border border-green-500/20 rounded p-8 animate-pulse">
+            <div className="bg-green-500/10 border border-green-500/20 rounded p-8">
               <p className="text-green-400 text-xl font-medium">Inscription confirmée.</p>
               <p className="text-gray-400 mt-2">Nous vous contacterons très prochainement.</p>
               <button
@@ -981,19 +998,24 @@ function Waitlist() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
-              <input
-                type="email"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all"
-                required
-              />
-              <Button type="submit" disabled={status === 'loading'}>
-                {status === 'loading' ? 'Traitement...' : "S'inscrire"}
-              </Button>
-            </form>
+            <>
+              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
+                <input
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all"
+                  required
+                />
+                <Button type="submit" disabled={status === 'loading'}>
+                  {status === 'loading' ? 'Traitement...' : "S'inscrire"}
+                </Button>
+              </form>
+              {status === 'error' && (
+                <p className="mt-4 text-red-400 text-sm">{errorMessage}</p>
+              )}
+            </>
           )}
 
           <p className="mt-8 text-xs text-gray-600 uppercase tracking-widest">

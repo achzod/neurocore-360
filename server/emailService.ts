@@ -3,6 +3,9 @@ const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 const SENDER_EMAIL = "coaching@achzodcoaching.com";
 const SENDER_NAME = "NEUROCORE 360";
 
+// SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
+const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
+
 // NEUROCORE 360 Design System
 const COLORS = {
   primary: '#0efc6d',
@@ -813,5 +816,69 @@ export async function sendAdminReviewNotification(
   } catch (error) {
     console.error("[SendPulse] Error sending admin review notification:", error);
     return false;
+  }
+}
+
+// Add subscriber to SendPulse mailing list (address book)
+export async function addSubscriberToList(
+  email: string,
+  listName: string = "apexlabs"
+): Promise<{ success: boolean; bookId?: string; error?: string }> {
+  try {
+    const token = await getAccessToken();
+
+    // Get or create address book
+    let bookId = SENDPULSE_APEXLABS_BOOK_ID;
+
+    if (!bookId) {
+      // Try to find existing book or create new one
+      const booksResponse = await fetch("https://api.sendpulse.com/addressbooks", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const books = await booksResponse.json() as Array<{ id: number; name: string }>;
+      const existingBook = books.find((b: any) => b.name === `APEXLABS_WAITLIST_${listName.toUpperCase()}`);
+
+      if (existingBook) {
+        bookId = String(existingBook.id);
+      } else {
+        // Create new address book
+        const createResponse = await fetch("https://api.sendpulse.com/addressbooks", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bookName: `APEXLABS_WAITLIST_${listName.toUpperCase()}` }),
+        });
+        const created = await createResponse.json() as { id: number };
+        bookId = String(created.id);
+        console.log(`[SendPulse] Created new address book: ${bookId}`);
+      }
+    }
+
+    // Add email to address book
+    const addResponse = await fetch(`https://api.sendpulse.com/addressbooks/${bookId}/emails`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        emails: [{ email, variables: { source: listName, subscribed_at: new Date().toISOString() } }],
+      }),
+    });
+
+    const result = await addResponse.json() as { result: boolean };
+
+    if (result.result) {
+      console.log(`[SendPulse] ✅ Added ${email} to address book ${bookId}`);
+      return { success: true, bookId };
+    } else {
+      console.error(`[SendPulse] ❌ Failed to add ${email} to address book`);
+      return { success: false, error: "Failed to add to address book" };
+    }
+  } catch (error: any) {
+    console.error("[SendPulse] Error adding subscriber:", error);
+    return { success: false, error: error.message || "Unknown error" };
   }
 }
