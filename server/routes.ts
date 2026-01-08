@@ -2459,6 +2459,43 @@ export async function registerRoutes(
     }
   });
 
+  // Create waitlist table if it doesn't exist (one-time migration)
+  app.post("/api/admin/db-migrate", async (_req, res) => {
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.json({ success: false, error: "DATABASE_URL not configured" });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS waitlist_subscribers (
+            id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+            email VARCHAR(255) NOT NULL UNIQUE,
+            source VARCHAR(50) NOT NULL DEFAULT 'apexlabs',
+            sendpulse_synced TIMESTAMP,
+            created_at TIMESTAMP DEFAULT NOW() NOT NULL
+          );
+        `);
+        res.json({ success: true, message: "Table waitlist_subscribers created/verified" });
+      } finally {
+        await pool.end();
+      }
+    } catch (error: any) {
+      res.json({ success: false, error: error.message });
+    }
+  });
+
   // ==================== KNOWLEDGE BASE ROUTES ====================
   registerKnowledgeRoutes(app);
 
