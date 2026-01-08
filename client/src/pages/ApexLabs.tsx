@@ -578,80 +578,119 @@ function BodyScanSection() {
                     </linearGradient>
                   </defs>
 
-                  {/* Anatomical wireframe body */}
-                  <g filter="url(#holoGlow)" stroke="url(#wireGradient)" fill="none" strokeWidth="1.5">
-                    {/* Head - more detailed */}
-                    <ellipse cx="100" cy="35" rx="25" ry="30" opacity="0.9" />
-                    <ellipse cx="100" cy="35" rx="20" ry="25" opacity="0.5" strokeDasharray="4,4" />
-                    {/* Face features hint */}
-                    <line x1="90" y1="30" x2="90" y2="32" strokeWidth="2" opacity="0.6" />
-                    <line x1="110" y1="30" x2="110" y2="32" strokeWidth="2" opacity="0.6" />
+                  {/* Athletic wireframe body - lean & defined */}
+                  <g filter="url(#holoGlow)" stroke="url(#wireGradient)" fill="none" strokeWidth="1">
+                    {/* Head - skull shape */}
+                    <ellipse cx="100" cy="30" rx="18" ry="22" opacity="0.9" />
+                    <ellipse cx="100" cy="32" rx="14" ry="17" opacity="0.4" strokeDasharray="3,3" />
+                    {/* Eye sockets */}
+                    <circle cx="92" cy="28" r="4" opacity="0.5" />
+                    <circle cx="108" cy="28" r="4" opacity="0.5" />
+                    {/* Jaw line */}
+                    <path d="M 82 35 Q 85 48 100 52 Q 115 48 118 35" opacity="0.6" />
 
-                    {/* Neck */}
-                    <path d="M 85 62 Q 85 75 88 80 L 112 80 Q 115 75 115 62" opacity="0.8" />
+                    {/* Neck - slim */}
+                    <path d="M 92 52 L 90 68 L 110 68 L 108 52" opacity="0.7" />
+                    {/* Cervical spine */}
+                    <line x1="100" y1="52" x2="100" y2="68" strokeDasharray="2,2" opacity="0.4" />
 
-                    {/* Shoulders & Upper torso */}
-                    <path d="M 88 80 Q 50 85 35 100 L 35 110" strokeWidth="2" opacity="0.9" />
-                    <path d="M 112 80 Q 150 85 165 100 L 165 110" strokeWidth="2" opacity="0.9" />
+                    {/* Clavicles */}
+                    <path d="M 90 70 Q 70 68 50 78" strokeWidth="1.5" opacity="0.8" />
+                    <path d="M 110 70 Q 130 68 150 78" strokeWidth="1.5" opacity="0.8" />
 
-                    {/* Chest/Ribcage */}
-                    <path d="M 55 100 Q 100 90 145 100" opacity="0.6" strokeDasharray="3,3" />
-                    <path d="M 52 115 Q 100 105 148 115" opacity="0.5" strokeDasharray="3,3" />
-                    <path d="M 50 130 Q 100 120 150 130" opacity="0.4" strokeDasharray="3,3" />
+                    {/* Shoulders - athletic V-shape */}
+                    <path d="M 50 78 L 42 85 L 40 95" strokeWidth="1.5" opacity="0.9" />
+                    <path d="M 150 78 L 158 85 L 160 95" strokeWidth="1.5" opacity="0.9" />
 
-                    {/* Torso outline */}
-                    <path d="M 55 100 L 50 180 Q 50 200 70 210" strokeWidth="2" opacity="0.8" />
-                    <path d="M 145 100 L 150 180 Q 150 200 130 210" strokeWidth="2" opacity="0.8" />
+                    {/* Ribcage - defined */}
+                    <path d="M 70 75 Q 100 70 130 75" opacity="0.5" strokeDasharray="2,3" />
+                    <path d="M 65 88 Q 100 82 135 88" opacity="0.5" strokeDasharray="2,3" />
+                    <path d="M 62 100 Q 100 94 138 100" opacity="0.4" strokeDasharray="2,3" />
+                    <path d="M 60 112 Q 100 106 140 112" opacity="0.4" strokeDasharray="2,3" />
+                    <path d="M 62 124 Q 100 118 138 124" opacity="0.3" strokeDasharray="2,3" />
 
-                    {/* Pelvis */}
-                    <ellipse cx="100" cy="210" rx="35" ry="15" opacity="0.7" />
+                    {/* Torso outline - lean V-taper */}
+                    <path d="M 65 75 L 58 130 L 65 170" strokeWidth="1.5" opacity="0.8" />
+                    <path d="M 135 75 L 142 130 L 135 170" strokeWidth="1.5" opacity="0.8" />
 
-                    {/* Spine */}
-                    <path d="M 100 65 L 100 210" strokeWidth="1" strokeDasharray="8,4" opacity="0.5" />
+                    {/* Abs definition */}
+                    <line x1="100" y1="130" x2="100" y2="170" opacity="0.3" />
+                    <path d="M 75 138 Q 100 135 125 138" opacity="0.25" />
+                    <path d="M 73 150 Q 100 147 127 150" opacity="0.25" />
+                    <path d="M 72 162 Q 100 159 128 162" opacity="0.25" />
 
-                    {/* Arms */}
-                    <path d="M 35 110 Q 25 150 20 200 Q 18 230 25 260" strokeWidth="2" opacity="0.7" />
-                    <path d="M 165 110 Q 175 150 180 200 Q 182 230 175 260" strokeWidth="2" opacity="0.7" />
-                    {/* Hands hint */}
-                    <ellipse cx="25" cy="270" rx="8" ry="12" opacity="0.5" />
-                    <ellipse cx="175" cy="270" rx="8" ry="12" opacity="0.5" />
+                    {/* Spine - full length */}
+                    <path d="M 100 52 L 100 180" strokeWidth="0.8" strokeDasharray="4,3" opacity="0.4" />
 
-                    {/* Legs */}
-                    <path d="M 70 210 Q 65 280 60 340 L 55 390" strokeWidth="2" opacity="0.8" />
-                    <path d="M 130 210 Q 135 280 140 340 L 145 390" strokeWidth="2" opacity="0.8" />
-                    {/* Feet hint */}
-                    <ellipse cx="55" cy="395" rx="12" ry="5" opacity="0.5" />
-                    <ellipse cx="145" cy="395" rx="12" ry="5" opacity="0.5" />
+                    {/* Pelvis - narrow hips */}
+                    <ellipse cx="100" cy="180" rx="28" ry="12" opacity="0.6" />
+                    <path d="M 72 175 L 68 190" opacity="0.5" />
+                    <path d="M 128 175 L 132 190" opacity="0.5" />
 
-                    {/* Muscle structure hints */}
-                    <path d="M 55 120 Q 45 140 50 160" opacity="0.3" strokeDasharray="2,4" />
-                    <path d="M 145 120 Q 155 140 150 160" opacity="0.3" strokeDasharray="2,4" />
+                    {/* Arms - defined */}
+                    <path d="M 40 95 Q 35 120 32 145" strokeWidth="1.5" opacity="0.7" />
+                    <path d="M 32 145 Q 28 175 30 200" strokeWidth="1.2" opacity="0.6" />
+                    <path d="M 30 200 Q 28 220 32 240" strokeWidth="1" opacity="0.5" />
+
+                    <path d="M 160 95 Q 165 120 168 145" strokeWidth="1.5" opacity="0.7" />
+                    <path d="M 168 145 Q 172 175 170 200" strokeWidth="1.2" opacity="0.6" />
+                    <path d="M 170 200 Q 172 220 168 240" strokeWidth="1" opacity="0.5" />
+
+                    {/* Hands */}
+                    <ellipse cx="32" cy="248" rx="6" ry="10" opacity="0.4" />
+                    <ellipse cx="168" cy="248" rx="6" ry="10" opacity="0.4" />
+
+                    {/* Legs - athletic */}
+                    <path d="M 78 190 Q 72 240 68 290 Q 65 330 62 370" strokeWidth="1.5" opacity="0.8" />
+                    <path d="M 122 190 Q 128 240 132 290 Q 135 330 138 370" strokeWidth="1.5" opacity="0.8" />
+
+                    {/* Knee joints */}
+                    <circle cx="68" cy="290" r="5" opacity="0.4" />
+                    <circle cx="132" cy="290" r="5" opacity="0.4" />
+
+                    {/* Lower legs */}
+                    <path d="M 68 295 Q 64 330 60 370" strokeWidth="1.2" opacity="0.7" />
+                    <path d="M 132 295 Q 136 330 140 370" strokeWidth="1.2" opacity="0.7" />
+
+                    {/* Feet */}
+                    <path d="M 60 370 L 50 378 L 70 380 L 62 372" opacity="0.5" />
+                    <path d="M 140 370 L 150 378 L 130 380 L 138 372" opacity="0.5" />
                   </g>
 
-                  {/* Organ highlights */}
+                  {/* Organ/energy points */}
                   <g>
-                    {/* Brain */}
+                    {/* Brain - neural */}
                     <motion.circle
-                      cx="100" cy="35" r="12"
-                      fill="none" stroke="#a855f7" strokeWidth="2"
-                      animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.9, 1.1, 0.9] }}
+                      cx="100" cy="30" r="10"
+                      fill="none" stroke="#a855f7" strokeWidth="1.5"
+                      animate={{ opacity: [0.3, 0.8, 0.3], r: [9, 11, 9] }}
                       transition={{ duration: 2, repeat: Infinity }}
                     />
 
-                    {/* Heart */}
+                    {/* Heart - cardiac */}
                     <motion.circle
-                      cx="90" cy="115" r="10"
-                      fill="none" stroke="#ef4444" strokeWidth="2"
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                      cx="95" cy="95" r="8"
+                      fill="none" stroke="#ef4444" strokeWidth="1.5"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 0.8, repeat: Infinity }}
                     />
 
-                    {/* Core/Stomach */}
+                    {/* Core - metabolic */}
                     <motion.circle
-                      cx="100" cy="160" r="15"
-                      fill="none" stroke="#22c55e" strokeWidth="1.5"
-                      animate={{ opacity: [0.3, 0.6, 0.3] }}
+                      cx="100" cy="150" r="12"
+                      fill="none" stroke="#22c55e" strokeWidth="1"
+                      animate={{ opacity: [0.2, 0.5, 0.2] }}
                       transition={{ duration: 3, repeat: Infinity }}
+                    />
+
+                    {/* Power points on joints */}
+                    <motion.circle cx="50" cy="78" r="3" fill="#3b82f6" opacity="0.6"
+                      animate={{ opacity: [0.3, 0.8, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                    />
+                    <motion.circle cx="150" cy="78" r="3" fill="#3b82f6" opacity="0.6"
+                      animate={{ opacity: [0.3, 0.8, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
                     />
                   </g>
 
