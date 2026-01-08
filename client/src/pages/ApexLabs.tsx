@@ -899,23 +899,36 @@ function CertificationsSection() {
 // PRESS/MEDIA SECTION
 // ============================================================================
 function PressSection() {
-  const logos = ["BENZINGA", "StreetInsider", "MarketWatch", "REUTERS", "Yahoo Finance", "AP News"];
+  // Only outlets with verified active links from Feb 2025 press release
+  const pressLinks = [
+    { name: "Business Insider", url: "https://markets.businessinsider.com/news/stocks/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications-1034317450" },
+    { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/achzodcoaching-launches-elite-athlete-coaching-193500608.html" },
+    { name: "Benzinga", url: "https://www.benzinga.com/pressreleases/25/02/43506783/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications" },
+    { name: "StreetInsider", url: "https://www.streetinsider.com/Newsfile/Achzodcoaching+Launches+Elite+Athlete+Coaching+Programs%2C+Backed+by+ISSANASM+and+10%2B+Certifications/24301620.html" },
+    { name: "Financial Post", url: "https://financialpost.com/newsfile/239656-achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications" },
+    { name: "Newsfile", url: "https://www.newsfilecorp.com/release/239656" },
+    { name: "Spotify", url: "https://open.spotify.com/episode/3WsX3g2VTuQjTbJzkZKTE9" },
+    { name: "Apple Podcasts", url: "https://podcasts.apple.com/us/podcast/achzodcoaching-launches-elite-athlete-coaching-programs/id1773282513?i=1000689414642" },
+    { name: "Amazon Music", url: "https://music.amazon.com/podcasts/c8225522-cca6-4734-9d90-c3daf8076e09/episodes/4749c2a0-bd36-4631-95ac-2a599f272c4a/global-economic-press-achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issa-nasm-and-10-certifications%E2%80%9D" },
+  ];
 
   return (
-    <section className="py-8 bg-black overflow-hidden">
-      <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-6">Vu dans les médias</p>
-      <div className="relative">
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
-        <motion.div
-          className="flex gap-16 items-center"
-          animate={{ x: [0, -800] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        >
-          {[...logos, ...logos, ...logos].map((logo, i) => (
-            <span key={i} className="text-gray-600 text-lg font-semibold whitespace-nowrap">{logo}</span>
+    <section className="py-12 bg-black">
+      <div className="container mx-auto px-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">Couverture Presse</p>
+        <div className="flex flex-wrap justify-center gap-6">
+          {pressLinks.map((press, i) => (
+            <a
+              key={i}
+              href={press.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 border border-white/10 rounded-full text-gray-400 text-sm font-semibold hover:text-white hover:border-[#FCDD00]/50 hover:bg-white/5 transition-all duration-300"
+            >
+              {press.name} ↗
+            </a>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -926,20 +939,37 @@ function PressSection() {
 // ============================================================================
 function Waitlist() {
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setStatus('loading');
+    setErrorMessage('');
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Registered:', email);
-      setStatus('success');
-      setEmail('');
-    }, 1500);
+    try {
+      const response = await fetch('/api/waitlist/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'apexlabs' }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus('success');
+        setEmail('');
+      } else {
+        setStatus('error');
+        setErrorMessage(data.error || 'Une erreur est survenue');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      setStatus('error');
+      setErrorMessage('Erreur de connexion. Réessayez.');
+    }
   };
 
   return (
@@ -957,7 +987,7 @@ function Waitlist() {
           </p>
 
           {status === 'success' ? (
-            <div className="bg-green-500/10 border border-green-500/20 rounded p-8 animate-pulse">
+            <div className="bg-green-500/10 border border-green-500/20 rounded p-8">
               <p className="text-green-400 text-xl font-medium">Inscription confirmée.</p>
               <p className="text-gray-400 mt-2">Nous vous contacterons très prochainement.</p>
               <button
@@ -968,19 +998,24 @@ function Waitlist() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
-              <input
-                type="email"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all"
-                required
-              />
-              <Button type="submit" disabled={status === 'loading'}>
-                {status === 'loading' ? 'Traitement...' : "S'inscrire"}
-              </Button>
-            </form>
+            <>
+              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
+                <input
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all"
+                  required
+                />
+                <Button type="submit" disabled={status === 'loading'}>
+                  {status === 'loading' ? 'Traitement...' : "S'inscrire"}
+                </Button>
+              </form>
+              {status === 'error' && (
+                <p className="mt-4 text-red-400 text-sm">{errorMessage}</p>
+              )}
+            </>
           )}
 
           <p className="mt-8 text-xs text-gray-600 uppercase tracking-widest">

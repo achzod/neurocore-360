@@ -41,3 +41,12 @@ export const magicTokens = pgTable("magic_tokens", {
   email: varchar("email", { length: 255 }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
 });
+
+// Waitlist subscribers for ApexLabs pre-launch
+export const waitlistSubscribers = pgTable("waitlist_subscribers", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  source: varchar("source", { length: 50 }).notNull().default("apexlabs"), // apexlabs, neurocore, etc.
+  sendpulseSynced: timestamp("sendpulse_synced"), // null = not synced yet
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
