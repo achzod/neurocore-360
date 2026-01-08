@@ -15,7 +15,7 @@ export const PEPTIDES_ARTICLES: BlogArticle[] = [
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop",
     featured: true,
-    content: \`
+    content: `
 ## Introduction : Les peptides, c'est quoi exactement ?
 
 Les peptides sont des chaînes courtes d'acides aminés, généralement entre 2 et 50 acides aminés. Au-delà de 50, on parle de protéines. Ces molécules jouent des rôles cruciaux dans le corps humain : hormones, neurotransmetteurs, facteurs de croissance.
@@ -141,7 +141,7 @@ Cela dit, ce sont toujours des substances actives avec des risques. L'auto-expé
 ---
 
 **Tu veux maîtriser la science des peptides et de l'optimisation hormonale ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "202",
@@ -153,7 +153,7 @@ Cela dit, ce sont toujours des substances actives avec des risques. L'auto-expé
     date: "2026-01-08",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1559757175-7b21671910ae?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : BPC-157, le peptide miracle ?
 
 BPC-157 (Body Protection Compound-157) est un peptide de 15 acides aminés dérivé d'une protéine présente dans le suc gastrique humain. Il a gagné une réputation impressionnante pour ses propriétés de guérison.
@@ -288,7 +288,7 @@ Cela dit, l'effet placebo est puissant et les études humaines manquent.
 ---
 
 **Tu veux comprendre en profondeur les peptides de guérison ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "203",
@@ -300,7 +300,7 @@ Cela dit, l'effet placebo est puissant et les études humaines manquent.
     date: "2026-01-08",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : TB-500, le réparateur
 
 TB-500 est la version synthétique de Thymosin Beta-4, une protéine naturellement présente dans presque toutes les cellules humaines. Elle joue un rôle crucial dans la réparation tissulaire et la mobilité cellulaire.
@@ -430,7 +430,7 @@ Pour maximiser la récupération :
 ---
 
 **Tu veux tout savoir sur les peptides de récupération ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "204",
@@ -442,7 +442,7 @@ Pour maximiser la récupération :
     date: "2026-01-08",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Ipamorelin, le GHRP sélectif
 
 Ipamorelin est un peptide de 5 acides aminés qui stimule la libération d'hormone de croissance de manière très sélective. Contrairement aux autres GHRP, il n'augmente pas significativement le cortisol ou la prolactine.
@@ -576,7 +576,7 @@ Pour maximiser les résultats, combiner avec un GHRH (CJC-1295 ou Mod GRF).
 ---
 
 **Tu veux maîtriser l'optimisation de ta GH naturellement ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "205",
@@ -588,7 +588,7 @@ Pour maximiser les résultats, combiner avec un GHRH (CJC-1295 ou Mod GRF).
     date: "2026-01-08",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : CJC-1295, l'amplificateur de GH
 
 CJC-1295 est un analogue synthétique du GHRH (Growth Hormone Releasing Hormone). Il existe en deux versions : avec DAC (Drug Affinity Complex) et sans DAC (aussi appelé Mod GRF 1-29).
@@ -726,7 +726,7 @@ Cette approche mime et amplifie le pattern naturel de GH.
 ---
 
 **Tu veux comprendre en détail l'optimisation de la GH ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "206",
@@ -738,7 +738,7 @@ Cette approche mime et amplifie le pattern naturel de GH.
     date: "2026-01-08",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Les deux GHRP classiques
 
 GHRP-2 et GHRP-6 sont parmi les premiers peptides de libération de GH développés. Ils restent populaires malgré l'arrivée de peptides plus récents comme Ipamorelin.
@@ -875,7 +875,7 @@ Le meilleur peptide est celui qui correspond à tes objectifs et que tu tolères
 ---
 
 **Tu veux tout comprendre sur les peptides de GH ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "207",
@@ -887,7 +887,7 @@ Le meilleur peptide est celui qui correspond à tes objectifs et que tu tolères
     date: "2026-01-08",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : GHK-Cu, le peptide du cuivre
 
 GHK-Cu (glycyl-L-histidyl-L-lysine cuivre) est un tripeptide naturellement présent dans le sang humain. Sa concentration diminue avec l'âge, passant de 200ng/ml à 20 ans à 80ng/ml à 60 ans.
@@ -1022,7 +1022,7 @@ Pour l'anti-âge cutané, c'est probablement l'un des meilleurs investissements 
 ---
 
 **Tu veux approfondir la science des peptides anti-âge ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "208",
@@ -1034,7 +1034,7 @@ Pour l'anti-âge cutané, c'est probablement l'un des meilleurs investissements 
     date: "2026-01-08",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1579722820308-d74e571900a9?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : IGF-1 LR3, le facteur de croissance modifié
 
 IGF-1 LR3 (Long Arginine 3-IGF-1) est une version synthétique modifiée de l'IGF-1 naturel. Les modifications lui confèrent une demi-vie beaucoup plus longue et une biodisponibilité supérieure.
@@ -1184,7 +1184,7 @@ Pour la majorité, les peptides de GH offrent un meilleur rapport bénéfice/ris
 ---
 
 **Tu veux comprendre l'IGF-1 et son optimisation ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "209",
@@ -1196,7 +1196,7 @@ Pour la majorité, les peptides de GH offrent un meilleur rapport bénéfice/ris
     date: "2026-01-08",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Deux approches différentes
 
 Quand on veut augmenter ses niveaux d'hormone de croissance, deux options principales existent : les peptides qui stimulent la production naturelle, et l'HGH exogène (injection directe de GH synthétique).
@@ -1353,7 +1353,7 @@ L'HGH exogène reste pertinente pour des objectifs spécifiques, mais ne devrait
 ---
 
 **Tu veux tout savoir sur l'optimisation de la GH ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "210",
@@ -1365,7 +1365,7 @@ L'HGH exogène reste pertinente pour des objectifs spécifiques, mais ne devrait
     date: "2026-01-08",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Melanotan II, le peptide controversé
 
 Melanotan II (MT2) est un analogue synthétique de l'hormone alpha-MSH. Il est connu pour induire un bronzage sans exposition solaire significative, mais aussi pour ses effets secondaires et controverses.
@@ -1494,7 +1494,7 @@ Pour un bronzage, les risques ne valent probablement pas le bénéfice esthétiq
 ---
 
 **Tu veux comprendre la science des peptides ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "211",
@@ -1506,7 +1506,7 @@ Pour un bronzage, les risques ne valent probablement pas le bénéfice esthétiq
     date: "2026-01-08",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Hexarelin, la puissance maximale
 
 Hexarelin est un hexapeptide qui produit la libération de GH la plus forte parmi tous les GHRP. Mais cette puissance vient avec un prix : plus d'effets secondaires et une désensibilisation rapide.
@@ -1609,7 +1609,7 @@ Hexarelin est rarement le meilleur choix. Sa puissance est séduisante mais :
 ---
 
 **Tu veux maîtriser les peptides de GH ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "212",
@@ -1621,7 +1621,7 @@ Hexarelin est rarement le meilleur choix. Sa puissance est séduisante mais :
     date: "2026-01-08",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Sermorelin, le peptide prescrit
 
 Sermorelin est un analogue de GHRH composé des 29 premiers acides aminés du GHRH naturel (44 aa). C'est l'un des rares peptides disponibles sur prescription médicale pour le traitement du déficit en GH.
@@ -1743,7 +1743,7 @@ Pour des résultats plus marqués, les combos Ipamorelin + Mod GRF sont plus eff
 ---
 
 **Tu veux comprendre l'optimisation hormonale médicale ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "213",
@@ -1755,7 +1755,7 @@ Pour des résultats plus marqués, les combos Ipamorelin + Mod GRF sont plus eff
     date: "2026-01-08",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Epithalon et la promesse de longévité
 
 Epithalon (Epitalon, Epithalone) est un tétrapeptide (Ala-Glu-Asp-Gly) développé par le Pr. Vladimir Khavinson en Russie. Il prétend activer la télomérase, l'enzyme qui rallonge les télomères.
@@ -1874,7 +1874,7 @@ Des approches mieux documentées :
 ---
 
 **Tu veux comprendre la science anti-âge des peptides ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "214",
@@ -1886,7 +1886,7 @@ Des approches mieux documentées :
     date: "2026-01-08",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Pourquoi la reconstitution est cruciale
 
 Les peptides sont vendus sous forme lyophilisée (poudre sèche) pour des raisons de stabilité. La reconstitution correcte détermine si ton peptide sera efficace ou dégradé.
@@ -2019,7 +2019,7 @@ Prends ton temps pour la reconstitution. Un peptide mal reconstitué est un pept
 ---
 
 **Tu veux maîtriser l'utilisation des peptides ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
   {
     id: "215",
@@ -2031,7 +2031,7 @@ Prends ton temps pour la reconstitution. Un peptide mal reconstitué est un pept
     date: "2026-01-08",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
-    content: \`
+    content: `
 ## Introduction : Construire le stack optimal
 
 Combiner les bons peptides peut créer des synergies puissantes pour la prise de masse. Voici les meilleures combinaisons basées sur les mécanismes d'action et les retours d'expérience.
@@ -2194,6 +2194,6 @@ Simple, efficace, bien toléré, résultats réels.
 ---
 
 **Tu veux tout savoir sur les peptides pour la masse ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
-    \`,
+    `,
   },
 ];
