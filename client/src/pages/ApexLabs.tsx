@@ -200,9 +200,23 @@ function DNAHelix() {
 }
 
 // ============================================================================
-// ECG SECTION (between Anabolic Bioscan and Blood Analysis)
+// ECG SECTION (below Hero)
 // ============================================================================
 function ECGSection() {
+  const [bpm, setBpm] = useState(72);
+
+  // BPM fluctuation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBpm(prev => {
+        const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        const next = prev + change;
+        return next > 78 ? 76 : next < 68 ? 70 : next;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="py-16 relative overflow-hidden">
       {/* Background gradient */}
@@ -214,7 +228,7 @@ function ECGSection() {
           {/* Beating heart */}
           <motion.div
             animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 0.8, repeat: Infinity }}
+            transition={{ duration: 1, repeat: Infinity }}
             className="relative"
           >
             <svg className="w-12 h-12 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]" fill="currentColor" viewBox="0 0 24 24">
@@ -225,10 +239,12 @@ function ECGSection() {
             <h3 className="text-2xl font-bold text-white">ANALYSE CARDIAQUE</h3>
             <motion.span
               className="text-red-400 font-mono text-lg"
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              key={bpm}
+              initial={{ scale: 1.1 }}
+              animate={{ scale: 1, opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
             >
-              72 BPM
+              {bpm} BPM
             </motion.span>
           </div>
         </div>
@@ -248,7 +264,7 @@ function ECGSection() {
               strokeLinecap="round"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
             />
             {/* Glow effect */}
             <motion.path
@@ -261,7 +277,7 @@ function ECGSection() {
               filter="blur(4px)"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
             />
           </svg>
 
@@ -269,7 +285,7 @@ function ECGSection() {
           <motion.div
             className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-red-500 to-transparent"
             animate={{ left: ['-5%', '105%'] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
           />
         </div>
 
@@ -706,9 +722,6 @@ function OffersSection() {
           {/* Anabolic Bioscan */}
           <OfferCard offer={OFFERS[1]} onSelect={handleSelect} />
 
-          {/* ECG Section - between Anabolic and Blood Analysis */}
-          <ECGSection />
-
           {/* Blood Analysis (with DNA Helix visual) */}
           <OfferCard offer={OFFERS[2]} onSelect={handleSelect} />
 
@@ -966,6 +979,7 @@ export default function ApexLabs() {
       <style>{customStyles}</style>
       <Header />
       <Hero />
+      <ECGSection />
       <CertificationsSection />
       <PressSection />
       <OffersSection />
