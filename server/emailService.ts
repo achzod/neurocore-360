@@ -819,6 +819,132 @@ export async function sendAdminReviewNotification(
   }
 }
 
+// ApexLabs Welcome Email - sent when someone joins the waitlist
+export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+
+    // ApexLabs Design System - Black/Yellow
+    const APEX_COLORS = {
+      primary: '#FCDD00', // Yellow
+      background: '#000000',
+      surface: '#0a0a0a',
+      text: '#ffffff',
+      textMuted: '#9ca3af',
+    };
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: ${APEX_COLORS.background};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${APEX_COLORS.background}; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: ${APEX_COLORS.surface}; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${APEX_COLORS.primary} 0%, #d4b800 100%); padding: 50px 30px; text-align: center;">
+              <h1 style="color: ${APEX_COLORS.background}; margin: 0; font-size: 42px; font-weight: 900; letter-spacing: -2px;">
+                APEX<span style="font-weight: 400;">LABS</span>
+              </h1>
+              <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;">
+                by Achzod
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 50px 40px;">
+              <h2 style="color: ${APEX_COLORS.text}; margin: 0 0 20px; font-size: 28px; font-weight: 700; text-align: center;">
+                Bienvenue dans l'élite.
+              </h2>
+
+              <p style="color: ${APEX_COLORS.textMuted}; font-size: 16px; line-height: 1.8; margin: 0 0 30px; text-align: center;">
+                Tu fais maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> — la nouvelle génération d'optimisation humaine.
+              </p>
+
+              <!-- What's coming -->
+              <div style="background: rgba(252,221,0,0.05); border: 1px solid rgba(252,221,0,0.2); border-radius: 12px; padding: 30px; margin: 30px 0;">
+                <h3 style="color: ${APEX_COLORS.primary}; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 20px;">
+                  CE QUI T'ATTEND
+                </h3>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Discovery Scan — Cartographie 3D complète
+                  </td></tr>
+                  <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Anabolic Bioscan — Performance musculaire
+                  </td></tr>
+                  <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Blood Analysis — 50+ biomarqueurs
+                  </td></tr>
+                  <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px;">
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Ultimate Scan — L'omniscience corporelle
+                  </td></tr>
+                </table>
+              </div>
+
+              <p style="color: ${APEX_COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 30px 0; text-align: center;">
+                Je te contacterai personnellement dès que les portes s'ouvriront.
+              </p>
+
+              <p style="color: ${APEX_COLORS.text}; font-size: 16px; margin: 40px 0 0; text-align: center; font-weight: 500;">
+                Stay sharp,<br>
+                <span style="color: ${APEX_COLORS.primary}; font-weight: 700;">Achzod</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: ${APEX_COLORS.background}; padding: 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05);">
+              <p style="color: #525252; font-size: 11px; margin: 0; letter-spacing: 1px; text-transform: uppercase;">
+                ApexLabs by Achzod • Optimisation Humaine
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: {
+          html: encodeBase64(htmlContent),
+          text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod",
+          subject: "Bienvenue dans l'élite ApexLabs",
+          from: {
+            name: "Achzod | ApexLabs",
+            email: SENDER_EMAIL,
+          },
+          to: [{ email }],
+        },
+      }),
+    });
+
+    const result = await response.json() as { result: boolean };
+    console.log(`[SendPulse] ✅ ApexLabs welcome email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending ApexLabs welcome email:", error);
+    return false;
+  }
+}
+
 // Add subscriber to SendPulse mailing list (address book)
 export async function addSubscriberToList(
   email: string,
