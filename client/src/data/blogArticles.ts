@@ -21,6 +21,8 @@ export const BLOG_CATEGORIES = [
   { id: "musculation", label: "Musculation" },
   { id: "sarms", label: "SARMs & PEDs" },
   { id: "peptides", label: "Peptides" },
+  { id: "supplements", label: "Suppléments" },
+  { id: "hormones", label: "Hormones" },
   { id: "sommeil", label: "Sommeil" },
   { id: "stress", label: "Stress & HRV" },
   { id: "nutrition", label: "Nutrition" },

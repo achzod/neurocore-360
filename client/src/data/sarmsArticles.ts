@@ -157,7 +157,7 @@ L'Ostarine est le SARM le plus "entry-level". Gains modérés, suppression lég�
 
 ---
 
-**Optimise d'abord naturellement.** Un [audit hormonal](/offers/ultimate-scan) identifie tes blocages avant de considérer quoi que ce soit d'autre.
+**Tu veux maîtriser la science de l'optimisation hormonale ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -223,7 +223,7 @@ RAD-140 n'est pas pour les débutants. Sa puissance vient avec une suppression i
 
 ---
 
-**Fais un bilan hormonal d'abord.** Un [audit complet](/offers/ultimate-scan) révèle tes blocages naturels.
+**Tu veux comprendre la science des hormones anaboliques ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -296,7 +296,7 @@ LGD-4033 est un bon compromis entre Ostarine (trop léger pour certains) et RAD-
 
 ---
 
-**Maximise ton potentiel naturel d'abord.** Un [bilan hormonal](/offers/ultimate-scan) peut révéler des optimisations sans substances exogènes.
+**Tu veux maximiser tes gains avec la science ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -398,7 +398,7 @@ Si tu décides de l'utiliser :
 
 ---
 
-**L'endurance se construit aussi naturellement.** Un [bilan métabolique](/offers/ultimate-scan) peut identifier pourquoi ta capacité cardio stagne.
+**Tu veux optimiser ton endurance et ta performance ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -920,7 +920,7 @@ Les stéroïdes sont plus efficaces mais avec plus d'effets secondaires connus.
 
 ---
 
-**Avant de considérer quoi que ce soit, optimise tes hormones naturellement.** Un [audit hormonal complet](/offers/ultimate-scan) peut révéler des blocages que tu peux corriger sans substances exogènes.
+**Tu veux comprendre les effets secondaires et la science hormonale ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -1299,7 +1299,7 @@ La situation actuelle est précaire. Les SARMs bénéficient d'un vide juridique
 
 ---
 
-**L'optimisation hormonale naturelle, elle, est 100% légale.** Un [audit hormonal complet](/offers/ultimate-scan) peut identifier des leviers d'amélioration sans zone grise légale.
+**Tu veux tout savoir sur l'optimisation hormonale légale ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -1536,7 +1536,7 @@ Le meilleur stack pour la plupart des gens : **LGD-4033 + MK-677**
 
 ---
 
-**Avant de stacker quoi que ce soit, optimise tes fondamentaux.** Un [audit complet](/offers/ultimate-scan) peut révéler que tu as encore beaucoup de potentiel naturel à exploiter.
+**Tu veux maîtriser les stacks et protocoles avancés ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
@@ -1796,7 +1796,7 @@ Pour les avancés qui acceptent plus de suppression : **RAD-140 + Cardarine**
 
 ---
 
-**Avant de te lancer dans une sèche avec SARMs, assure-toi que tes fondamentaux sont solides.** Un [audit métabolique](/offers/ultimate-scan) peut révéler pourquoi tu ne perds pas de gras malgré tes efforts.
+**Tu veux maîtriser la sèche et la définition musculaire ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
     `,
   },
   {
