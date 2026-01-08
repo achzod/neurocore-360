@@ -516,7 +516,7 @@ function Header() {
       <div className="container mx-auto px-6 flex justify-between items-center">
         {/* Logo Section - APEXLABS (White/Yellow) + by Achzod */}
         <a
-          href="/"
+          href="/apexlabs"
           className="flex flex-col leading-none group cursor-pointer"
         >
           <span className="text-2xl font-black tracking-tighter text-white uppercase">
@@ -544,16 +544,32 @@ function Header() {
 // ============================================================================
 function Hero() {
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  const handleQuickJoin = (e: React.FormEvent) => {
+  const handleQuickJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if(!email) return;
     setStatus('loading');
-    setTimeout(() => {
-      setStatus('success');
-      setEmail('');
-    }, 1500);
+
+    try {
+      const response = await fetch('/api/waitlist/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'apexlabs-hero' }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus('success');
+        setEmail('');
+      } else {
+        setStatus('error');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      setStatus('error');
+    }
   };
 
   const scrollToOffers = () => {
@@ -644,6 +660,15 @@ function Hero() {
                 <div className="bg-green-500/20 backdrop-blur-xl border border-green-500/50 text-green-400 px-8 py-4 rounded-full text-sm font-bold tracking-wider animate-pulse">
                     INSCRIPTION VALIDÉE
                 </div>
+            ) : status === 'error' ? (
+                <div className="flex flex-col gap-2">
+                    <div className="bg-red-500/20 backdrop-blur-xl border border-red-500/50 text-red-400 px-8 py-4 rounded-full text-sm font-bold tracking-wider">
+                        ERREUR - RÉESSAYEZ
+                    </div>
+                    <button onClick={() => setStatus('idle')} className="text-xs text-gray-500 hover:text-white">
+                        Réessayer
+                    </button>
+                </div>
             ) : (
                 <form onSubmit={handleQuickJoin} className="relative flex p-1 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full transition-all duration-300 focus-within:border-[#FCDD00]/50 focus-within:shadow-[0_0_30px_rgba(252,221,0,0.1)]">
                     <input
@@ -652,8 +677,9 @@ function Hero() {
                         className="flex-1 bg-transparent border-none text-white px-6 focus:ring-0 placeholder-gray-500 outline-none text-sm"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        required
                     />
-                    <button type="submit" className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-[#FCDD00] hover:text-black transition-colors shadow-lg">
+                    <button type="submit" disabled={status === 'loading'} className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-[#FCDD00] hover:text-black transition-colors shadow-lg disabled:opacity-50">
                         {status === 'loading' ? '...' : 'Rejoindre'}
                     </button>
                 </form>
@@ -1041,9 +1067,8 @@ function Footer() {
           &copy; {new Date().getFullYear()} Tous droits réservés.
         </div>
         <div className="flex gap-6">
-          <a href="#" className="text-gray-500 hover:text-white transition-colors">Instagram</a>
-          <a href="#" className="text-gray-500 hover:text-white transition-colors">Twitter</a>
-          <a href="#" className="text-gray-500 hover:text-white transition-colors">LinkedIn</a>
+          <a href="https://instagram.com/achzodcoaching" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">Instagram</a>
+          <a href="https://twitter.com/achzodcoaching" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">Twitter</a>
         </div>
       </div>
     </footer>
