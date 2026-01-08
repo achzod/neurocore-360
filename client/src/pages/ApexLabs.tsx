@@ -447,13 +447,47 @@ function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
-          className="max-w-2xl text-lg md:text-xl text-gray-300 mb-10 leading-relaxed font-light tracking-wide"
+          className="max-w-2xl text-lg md:text-xl text-gray-300 mb-6 leading-relaxed font-light tracking-wide"
         >
           {TAGLINE} <br/>
           <span className="text-gray-500">
             La convergence de la biologie et de la technologie.
           </span>
         </motion.p>
+
+        {/* Coming Soon Badge */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="mb-10"
+        >
+          <motion.div
+            className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#FCDD00]/10 border border-[#FCDD00]/30 backdrop-blur-xl"
+            animate={{
+              boxShadow: [
+                '0 0 20px rgba(252,221,0,0.1)',
+                '0 0 40px rgba(252,221,0,0.3)',
+                '0 0 20px rgba(252,221,0,0.1)'
+              ]
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <motion.span
+              className="w-2 h-2 rounded-full bg-[#FCDD00]"
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className="text-[#FCDD00] text-sm font-bold tracking-widest uppercase">
+              Disponible très bientôt
+            </span>
+            <motion.span
+              className="w-2 h-2 rounded-full bg-[#FCDD00]"
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+            />
+          </motion.div>
+        </motion.div>
 
         {/* Early Access Input */}
         <motion.div
