@@ -200,66 +200,94 @@ function DNAHelix() {
 }
 
 // ============================================================================
-// ECG SECTION (below Hero)
+// ECG SECTION (below Hero) - APEXLABS DESIGN SYSTEM
 // ============================================================================
 function ECGSection() {
   const [bpm, setBpm] = useState(72);
+  const [hrv, setHrv] = useState(68);
 
-  // BPM fluctuation
+  // BPM & HRV fluctuation
   useEffect(() => {
     const interval = setInterval(() => {
       setBpm(prev => {
-        const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        const change = Math.floor(Math.random() * 5) - 2;
         const next = prev + change;
         return next > 78 ? 76 : next < 68 ? 70 : next;
+      });
+      setHrv(prev => {
+        const change = Math.floor(Math.random() * 7) - 3;
+        const next = prev + change;
+        return next > 85 ? 82 : next < 55 ? 58 : next;
       });
     }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="py-16 relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-red-950/20 to-black" />
+    <div className="py-8 sm:py-12 md:py-16 relative overflow-hidden bg-neuro-dark">
+      {/* Tech Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,65,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,65,0.03)_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:4rem_4rem]" />
 
-      <div className="relative max-w-4xl mx-auto px-6">
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-neuro-dark via-transparent to-neuro-dark" />
+
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          {/* Beating heart */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {/* Beating heart with signal glow */}
           <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
             className="relative"
           >
-            <svg className="w-12 h-12 text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]" fill="currentColor" viewBox="0 0 24 24">
+            <div className="absolute inset-0 bg-neuro-signal/30 blur-xl rounded-full" />
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-neuro-signal drop-shadow-[0_0_20px_rgba(0,255,65,0.8)]" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </motion.div>
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-white">ANALYSE CARDIAQUE</h3>
-            <motion.span
-              className="text-red-400 font-mono text-lg"
+          <div className="text-center sm:text-left">
+            {/* Tech label - JetBrains Mono */}
+            <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.2em] block mb-1">
+              System Status
+            </span>
+            {/* Title - Inter Black */}
+            <h3 className="font-sans font-black text-xl sm:text-2xl md:text-3xl text-white uppercase tracking-tighter">
+              ANALYSE CARDIAQUE
+            </h3>
+            {/* BPM Data - JetBrains Mono */}
+            <motion.div
+              className="font-mono text-lg sm:text-xl md:text-2xl text-neuro-signal tracking-tight flex items-center justify-center sm:justify-start gap-2"
               key={bpm}
-              initial={{ scale: 1.1 }}
-              animate={{ scale: 1, opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              initial={{ scale: 1.05 }}
+              animate={{ scale: 1 }}
             >
+              <motion.span
+                className="w-2 h-2 bg-neuro-signal rounded-full"
+                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
               {bpm} BPM
-            </motion.span>
+            </motion.div>
           </div>
         </div>
 
-        {/* ECG Line */}
-        <div className="relative h-24 bg-black/50 rounded-sm border border-red-500/20 overflow-hidden">
+        {/* ECG Line Container */}
+        <div className="relative h-20 sm:h-24 md:h-28 bg-black/60 backdrop-blur-sm rounded border border-neuro-signal/20 overflow-hidden">
           {/* Grid background */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,65,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,65,0.08)_1px,transparent_1px)] bg-[size:20px_20px]" />
 
-          {/* ECG SVG */}
+          {/* HUD corners */}
+          <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-neuro-signal/50 rounded-tl" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-neuro-signal/50 rounded-tr" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-neuro-signal/50 rounded-bl" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-neuro-signal/50 rounded-br" />
+
+          {/* ECG SVG - Signal Green */}
           <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
             <motion.path
               d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
               fill="none"
-              stroke="#ef4444"
+              stroke="#00FF41"
               strokeWidth="2"
               strokeLinecap="round"
               initial={{ pathLength: 0, opacity: 0 }}
@@ -270,11 +298,11 @@ function ECGSection() {
             <motion.path
               d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
               fill="none"
-              stroke="#ef4444"
-              strokeWidth="6"
+              stroke="#00FF41"
+              strokeWidth="8"
               strokeLinecap="round"
-              opacity="0.3"
-              filter="blur(4px)"
+              opacity="0.2"
+              filter="blur(6px)"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
               transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
@@ -283,31 +311,42 @@ function ECGSection() {
 
           {/* Scanning line */}
           <motion.div
-            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-red-500 to-transparent"
+            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-neuro-signal to-transparent"
             animate={{ left: ['-5%', '105%'] }}
             transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
           />
+
+          {/* Live indicator */}
+          <div className="absolute top-2 right-8 flex items-center gap-1.5">
+            <motion.span
+              className="w-1.5 h-1.5 bg-neuro-signal rounded-full"
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+            <span className="font-mono text-[9px] text-neuro-signal uppercase tracking-widest">Live</span>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="flex justify-center gap-8 mt-6 text-sm font-mono">
-          <div className="text-center">
-            <div className="text-gray-500">VFC</div>
+        {/* Stats - JetBrains Mono */}
+        <div className="flex justify-center gap-4 sm:gap-8 md:gap-12 mt-4 sm:mt-6">
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-neutral-800">
+            <div className="font-mono text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mb-1">HRV</div>
             <motion.div
-              className="text-green-400"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              className="font-mono text-base sm:text-lg md:text-xl text-neuro-signal tracking-tight"
+              key={hrv}
+              initial={{ scale: 1.05 }}
+              animate={{ scale: 1 }}
             >
-              68ms
+              {hrv}ms
             </motion.div>
           </div>
-          <div className="text-center">
-            <div className="text-gray-500">SPO2</div>
-            <div className="text-cyan-400">98%</div>
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-neutral-800">
+            <div className="font-mono text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mb-1">SPO2</div>
+            <div className="font-mono text-base sm:text-lg md:text-xl text-cyan-400 tracking-tight">98%</div>
           </div>
-          <div className="text-center">
-            <div className="text-gray-500">STRESS</div>
-            <div className="text-yellow-400">Faible</div>
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-neutral-800">
+            <div className="font-mono text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest mb-1">Stress</div>
+            <div className="font-mono text-base sm:text-lg md:text-xl text-neuro-accent tracking-tight">Low</div>
           </div>
         </div>
       </div>
