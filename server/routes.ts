@@ -15,6 +15,7 @@ import {
   sendPremiumJ14Email,
   sendPromoCodeEmail,
   sendAdminReviewNotification,
+  addSubscriberToList,
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
@@ -2184,6 +2185,103 @@ export async function registerRoutes(
         success: false,
         error: error.message || "Erreur récupération Discovery Scan"
       });
+    }
+  });
+
+  // ==================== WAITLIST/SUBSCRIBE ROUTES ====================
+
+  // Subscribe to waitlist (ApexLabs pre-launch)
+  app.post("/api/waitlist/subscribe", async (req, res) => {
+    try {
+      const { email, source = "apexlabs" } = req.body;
+
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ success: false, error: "Email invalide" });
+        return;
+      }
+
+      // Sanitize email
+      const cleanEmail = email.toLowerCase().trim();
+
+      // Save to database
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        console.error("[Waitlist] DATABASE_URL not configured");
+        res.status(500).json({ success: false, error: "Database not configured" });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
+      });
+
+      try {
+        // Try to insert (will fail if email already exists due to unique constraint)
+        await pool.query(
+          `INSERT INTO waitlist_subscribers (id, email, source, created_at)
+           VALUES (gen_random_uuid(), $1, $2, NOW())
+           ON CONFLICT (email) DO NOTHING`,
+          [cleanEmail, source]
+        );
+
+        // Add to SendPulse mailing list
+        const sendpulseResult = await addSubscriberToList(cleanEmail, source);
+
+        if (sendpulseResult.success) {
+          // Update synced timestamp
+          await pool.query(
+            `UPDATE waitlist_subscribers SET sendpulse_synced = NOW() WHERE email = $1`,
+            [cleanEmail]
+          );
+        }
+
+        console.log(`[Waitlist] ✅ Subscribed: ${cleanEmail} (source: ${source})`);
+        res.json({
+          success: true,
+          message: "Inscription réussie",
+          sendpulseSynced: sendpulseResult.success
+        });
+      } finally {
+        await pool.end();
+      }
+    } catch (error: any) {
+      console.error("[Waitlist] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // Get all waitlist subscribers (admin)
+  app.get("/api/admin/waitlist", async (req, res) => {
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.status(500).json({ success: false, error: "Database not configured" });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
+      });
+
+      try {
+        const result = await pool.query(
+          `SELECT id, email, source, sendpulse_synced, created_at
+           FROM waitlist_subscribers
+           ORDER BY created_at DESC`
+        );
+        res.json({ success: true, subscribers: result.rows, count: result.rows.length });
+      } finally {
+        await pool.end();
+      }
+    } catch (error: any) {
+      console.error("[Waitlist Admin] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
 
