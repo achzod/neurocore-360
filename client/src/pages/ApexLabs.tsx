@@ -300,17 +300,102 @@ function ECGSection() {
 }
 
 // ============================================================================
-// BODY SCAN SECTION - HOLOGRAPHIC FUTURISTIC DESIGN
+// BODY SCAN SECTION - LIVE BIOMETRICS ECG
 // ============================================================================
 function BodyScanSection() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [bpm, setBpm] = useState(83);
+
+  // BPM Fluctuation Logic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBpm(prev => {
+        const change = Math.random() > 0.5 ? 1 : -1;
+        const next = prev + change;
+        return next > 86 ? 85 : next < 80 ? 81 : next;
+      });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ECG Canvas Animation Logic
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    let x = 0;
+    let y = rect.height / 2;
+    const speed = 2.5;
+
+    const drawWave = () => {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#FCDD00';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#FCDD00';
+
+        const prevX = x;
+        const prevY = y;
+
+        x += speed;
+
+        if (x > rect.width) {
+            x = 0;
+            ctx.moveTo(x, rect.height/2);
+        }
+
+        const cycle = x % 240;
+        const baseline = rect.height / 2;
+        const amplitude = rect.height / 2.5;
+
+        if (cycle > 20 && cycle < 40) {
+             y = baseline - (Math.sin((cycle - 20) * Math.PI / 20) * 8);
+        }
+        else if (cycle > 50 && cycle < 55) {
+             y = baseline + 5;
+        }
+        else if (cycle >= 55 && cycle < 65) {
+             y = baseline - amplitude;
+        }
+        else if (cycle >= 65 && cycle < 70) {
+             y = baseline + 15;
+        }
+        else if (cycle > 90 && cycle < 130) {
+             y = baseline - (Math.sin((cycle - 90) * Math.PI / 40) * 12);
+        }
+        else {
+             y = baseline + (Math.random() * 2 - 1);
+        }
+
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        requestAnimationFrame(drawWave);
+    };
+
+    const animId = requestAnimationFrame(drawWave);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
   const bioMetrics = [
     { id: 'neural', label: 'NEURAL SYNC', value: '98.7%', color: '#a855f7', icon: '◈' },
-    { id: 'cardiac', label: 'CARDIAC', value: '72 BPM', color: '#ef4444', icon: '♥' },
     { id: 'metabolic', label: 'METABOLIC', value: 'OPTIMAL', color: '#22c55e', icon: '◉' },
     { id: 'muscular', label: 'MUSCULAR', value: '94.2%', color: '#3b82f6', icon: '◆' },
   ];
-
-  const dataStreams = Array.from({ length: 12 }, (_, i) => i);
 
   return (
     <div className="py-24 relative overflow-hidden">
@@ -335,7 +420,7 @@ function BodyScanSection() {
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(30)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 rounded-full"
@@ -359,7 +444,7 @@ function BodyScanSection() {
         ))}
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
           <motion.div
@@ -378,7 +463,7 @@ function BodyScanSection() {
               animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
-            <span className="text-[#FCDD00] text-xs font-bold tracking-[0.3em] uppercase">Analyse Biométrique Active</span>
+            <span className="text-[#FCDD00] text-xs font-bold tracking-[0.3em] uppercase">Live Biometrics</span>
             <motion.span
               className="w-2 h-2 rounded-full bg-[#FCDD00]"
               animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
@@ -390,364 +475,142 @@ function BodyScanSection() {
           </h3>
         </div>
 
-        {/* Main visualization container */}
-        <div className="relative flex items-center justify-center" style={{ minHeight: '600px' }}>
+        {/* Main content */}
+        <div className="flex flex-col items-center gap-12">
 
-          {/* Left side data panels */}
-          <div className="absolute left-0 md:left-[5%] top-1/2 -translate-y-1/2 space-y-4 z-20">
-            {bioMetrics.slice(0, 2).map((metric, idx) => (
-              <motion.div
-                key={metric.id}
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + idx * 0.2, duration: 0.8 }}
-                className="relative"
-              >
-                {/* Connector line */}
-                <motion.div
-                  className="absolute right-0 top-1/2 w-16 md:w-24 h-[1px] origin-left"
-                  style={{ background: `linear-gradient(90deg, transparent, ${metric.color})` }}
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.8 + idx * 0.2, duration: 0.5 }}
-                />
+          {/* BPM + ECG Section */}
+          <div className="flex flex-col md:flex-row items-center gap-8">
 
-                <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg p-4 pr-20 md:pr-28 relative overflow-hidden group hover:border-white/30 transition-colors">
-                  {/* Glow effect */}
-                  <div
-                    className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity"
-                    style={{ background: `radial-gradient(circle at 0% 50%, ${metric.color}40, transparent 70%)` }}
-                  />
-
-                  <div className="relative flex items-center gap-3">
-                    <span className="text-2xl" style={{ color: metric.color }}>{metric.icon}</span>
-                    <div>
-                      <div className="text-[10px] text-gray-500 font-mono tracking-wider">{metric.label}</div>
-                      <motion.div
-                        className="text-lg font-bold font-mono"
-                        style={{ color: metric.color }}
-                        animate={{ opacity: [0.7, 1, 0.7] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        {metric.value}
-                      </motion.div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Right side data panels */}
-          <div className="absolute right-0 md:right-[5%] top-1/2 -translate-y-1/2 space-y-4 z-20">
-            {bioMetrics.slice(2, 4).map((metric, idx) => (
-              <motion.div
-                key={metric.id}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + idx * 0.2, duration: 0.8 }}
-                className="relative"
-              >
-                {/* Connector line */}
-                <motion.div
-                  className="absolute left-0 top-1/2 w-16 md:w-24 h-[1px] origin-right"
-                  style={{ background: `linear-gradient(90deg, ${metric.color}, transparent)` }}
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.8 + idx * 0.2, duration: 0.5 }}
-                />
-
-                <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg p-4 pl-20 md:pl-28 relative overflow-hidden group hover:border-white/30 transition-colors">
-                  {/* Glow effect */}
-                  <div
-                    className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity"
-                    style={{ background: `radial-gradient(circle at 100% 50%, ${metric.color}40, transparent 70%)` }}
-                  />
-
-                  <div className="relative flex items-center gap-3 justify-end">
-                    <div className="text-right">
-                      <div className="text-[10px] text-gray-500 font-mono tracking-wider">{metric.label}</div>
-                      <motion.div
-                        className="text-lg font-bold font-mono"
-                        style={{ color: metric.color }}
-                        animate={{ opacity: [0.7, 1, 0.7] }}
-                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                      >
-                        {metric.value}
-                      </motion.div>
-                    </div>
-                    <span className="text-2xl" style={{ color: metric.color }}>{metric.icon}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Central hologram container */}
-          <div className="relative w-[300px] md:w-[400px] h-[500px] md:h-[600px]">
-
-            {/* Outer rotating ring */}
+            {/* BPM Display */}
             <motion.div
-              className="absolute inset-0 rounded-full border border-[#FCDD00]/20"
-              style={{
-                background: 'conic-gradient(from 0deg, transparent, rgba(252,221,0,0.1), transparent, rgba(252,221,0,0.1), transparent)',
-              }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            />
-
-            {/* Middle rotating ring - opposite direction */}
-            <motion.div
-              className="absolute inset-8 rounded-full border border-cyan-500/20"
-              style={{
-                background: 'conic-gradient(from 180deg, transparent, rgba(34,211,238,0.1), transparent, rgba(34,211,238,0.1), transparent)',
-              }}
-              animate={{ rotate: -360 }}
-              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            />
-
-            {/* Inner glow */}
-            <div className="absolute inset-16 rounded-full bg-gradient-to-b from-[#FCDD00]/5 via-transparent to-cyan-500/5 blur-xl" />
-
-            {/* Data streams around the body */}
-            <div className="absolute inset-0">
-              {dataStreams.map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 w-[1px] origin-bottom"
+              className="text-center md:text-right"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] mb-2">Cardiac Rate</div>
+              <div className="flex items-baseline justify-center md:justify-end gap-3">
+                <motion.span
+                  className="text-7xl md:text-8xl font-black text-[#FCDD00] font-display"
                   style={{
-                    height: '45%',
-                    rotate: `${i * 30}deg`,
-                    background: `linear-gradient(to top, transparent, ${i % 2 === 0 ? '#FCDD00' : '#22d3ee'}40, transparent)`,
+                    textShadow: '0 0 30px rgba(252,221,0,0.5), 0 0 60px rgba(252,221,0,0.3)',
                   }}
-                  animate={{
-                    opacity: [0.2, 0.6, 0.2],
-                    scaleY: [0.8, 1, 0.8],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    delay: i * 0.15,
-                    ease: "easeInOut",
-                  }}
-                />
-              ))}
-            </div>
+                  key={bpm}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {bpm}
+                </motion.span>
+                <span className="text-2xl text-neutral-600 font-bold">BPM</span>
+              </div>
+            </motion.div>
 
-            {/* Holographic body image */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                className="relative w-[200px] md:w-[280px] h-[400px] md:h-[500px]"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                {/* Body silhouette with gradient */}
-                <svg viewBox="0 0 200 400" className="w-full h-full" style={{ filter: 'drop-shadow(0 0 20px rgba(252,221,0,0.3))' }}>
-                  <defs>
-                    {/* Main body gradient */}
-                    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#FCDD00" stopOpacity="0.8" />
-                      <stop offset="30%" stopColor="#22d3ee" stopOpacity="0.6" />
-                      <stop offset="60%" stopColor="#a855f7" stopOpacity="0.5" />
-                      <stop offset="100%" stopColor="#FCDD00" stopOpacity="0.3" />
-                    </linearGradient>
-
-                    {/* Wireframe gradient */}
-                    <linearGradient id="wireGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#FCDD00" />
-                      <stop offset="50%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#a855f7" />
-                    </linearGradient>
-
-                    {/* Glow filter */}
-                    <filter id="holoGlow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-
-                    {/* Scan line gradient */}
-                    <linearGradient id="scanLine" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="transparent" />
-                      <stop offset="45%" stopColor="transparent" />
-                      <stop offset="50%" stopColor="#FCDD00" stopOpacity="0.8" />
-                      <stop offset="55%" stopColor="transparent" />
-                      <stop offset="100%" stopColor="transparent" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Athletic wireframe body - lean & defined */}
-                  <g filter="url(#holoGlow)" stroke="url(#wireGradient)" fill="none" strokeWidth="1">
-                    {/* Head - skull shape */}
-                    <ellipse cx="100" cy="30" rx="18" ry="22" opacity="0.9" />
-                    <ellipse cx="100" cy="32" rx="14" ry="17" opacity="0.4" strokeDasharray="3,3" />
-                    {/* Eye sockets */}
-                    <circle cx="92" cy="28" r="4" opacity="0.5" />
-                    <circle cx="108" cy="28" r="4" opacity="0.5" />
-                    {/* Jaw line */}
-                    <path d="M 82 35 Q 85 48 100 52 Q 115 48 118 35" opacity="0.6" />
-
-                    {/* Neck - slim */}
-                    <path d="M 92 52 L 90 68 L 110 68 L 108 52" opacity="0.7" />
-                    {/* Cervical spine */}
-                    <line x1="100" y1="52" x2="100" y2="68" strokeDasharray="2,2" opacity="0.4" />
-
-                    {/* Clavicles */}
-                    <path d="M 90 70 Q 70 68 50 78" strokeWidth="1.5" opacity="0.8" />
-                    <path d="M 110 70 Q 130 68 150 78" strokeWidth="1.5" opacity="0.8" />
-
-                    {/* Shoulders - athletic V-shape */}
-                    <path d="M 50 78 L 42 85 L 40 95" strokeWidth="1.5" opacity="0.9" />
-                    <path d="M 150 78 L 158 85 L 160 95" strokeWidth="1.5" opacity="0.9" />
-
-                    {/* Ribcage - defined */}
-                    <path d="M 70 75 Q 100 70 130 75" opacity="0.5" strokeDasharray="2,3" />
-                    <path d="M 65 88 Q 100 82 135 88" opacity="0.5" strokeDasharray="2,3" />
-                    <path d="M 62 100 Q 100 94 138 100" opacity="0.4" strokeDasharray="2,3" />
-                    <path d="M 60 112 Q 100 106 140 112" opacity="0.4" strokeDasharray="2,3" />
-                    <path d="M 62 124 Q 100 118 138 124" opacity="0.3" strokeDasharray="2,3" />
-
-                    {/* Torso outline - lean V-taper */}
-                    <path d="M 65 75 L 58 130 L 65 170" strokeWidth="1.5" opacity="0.8" />
-                    <path d="M 135 75 L 142 130 L 135 170" strokeWidth="1.5" opacity="0.8" />
-
-                    {/* Abs definition */}
-                    <line x1="100" y1="130" x2="100" y2="170" opacity="0.3" />
-                    <path d="M 75 138 Q 100 135 125 138" opacity="0.25" />
-                    <path d="M 73 150 Q 100 147 127 150" opacity="0.25" />
-                    <path d="M 72 162 Q 100 159 128 162" opacity="0.25" />
-
-                    {/* Spine - full length */}
-                    <path d="M 100 52 L 100 180" strokeWidth="0.8" strokeDasharray="4,3" opacity="0.4" />
-
-                    {/* Pelvis - narrow hips */}
-                    <ellipse cx="100" cy="180" rx="28" ry="12" opacity="0.6" />
-                    <path d="M 72 175 L 68 190" opacity="0.5" />
-                    <path d="M 128 175 L 132 190" opacity="0.5" />
-
-                    {/* Arms - defined */}
-                    <path d="M 40 95 Q 35 120 32 145" strokeWidth="1.5" opacity="0.7" />
-                    <path d="M 32 145 Q 28 175 30 200" strokeWidth="1.2" opacity="0.6" />
-                    <path d="M 30 200 Q 28 220 32 240" strokeWidth="1" opacity="0.5" />
-
-                    <path d="M 160 95 Q 165 120 168 145" strokeWidth="1.5" opacity="0.7" />
-                    <path d="M 168 145 Q 172 175 170 200" strokeWidth="1.2" opacity="0.6" />
-                    <path d="M 170 200 Q 172 220 168 240" strokeWidth="1" opacity="0.5" />
-
-                    {/* Hands */}
-                    <ellipse cx="32" cy="248" rx="6" ry="10" opacity="0.4" />
-                    <ellipse cx="168" cy="248" rx="6" ry="10" opacity="0.4" />
-
-                    {/* Legs - athletic */}
-                    <path d="M 78 190 Q 72 240 68 290 Q 65 330 62 370" strokeWidth="1.5" opacity="0.8" />
-                    <path d="M 122 190 Q 128 240 132 290 Q 135 330 138 370" strokeWidth="1.5" opacity="0.8" />
-
-                    {/* Knee joints */}
-                    <circle cx="68" cy="290" r="5" opacity="0.4" />
-                    <circle cx="132" cy="290" r="5" opacity="0.4" />
-
-                    {/* Lower legs */}
-                    <path d="M 68 295 Q 64 330 60 370" strokeWidth="1.2" opacity="0.7" />
-                    <path d="M 132 295 Q 136 330 140 370" strokeWidth="1.2" opacity="0.7" />
-
-                    {/* Feet */}
-                    <path d="M 60 370 L 50 378 L 70 380 L 62 372" opacity="0.5" />
-                    <path d="M 140 370 L 150 378 L 130 380 L 138 372" opacity="0.5" />
-                  </g>
-
-                  {/* Organ/energy points */}
-                  <g>
-                    {/* Brain - neural */}
-                    <motion.circle
-                      cx="100" cy="30" r="10"
-                      fill="none" stroke="#a855f7" strokeWidth="1.5"
-                      animate={{ opacity: [0.3, 0.8, 0.3], r: [9, 11, 9] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-
-                    {/* Heart - cardiac */}
-                    <motion.circle
-                      cx="95" cy="95" r="8"
-                      fill="none" stroke="#ef4444" strokeWidth="1.5"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 0.8, repeat: Infinity }}
-                    />
-
-                    {/* Core - metabolic */}
-                    <motion.circle
-                      cx="100" cy="150" r="12"
-                      fill="none" stroke="#22c55e" strokeWidth="1"
-                      animate={{ opacity: [0.2, 0.5, 0.2] }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                    />
-
-                    {/* Power points on joints */}
-                    <motion.circle cx="50" cy="78" r="3" fill="#3b82f6" opacity="0.6"
-                      animate={{ opacity: [0.3, 0.8, 0.3] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                    />
-                    <motion.circle cx="150" cy="78" r="3" fill="#3b82f6" opacity="0.6"
-                      animate={{ opacity: [0.3, 0.8, 0.3] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
-                    />
-                  </g>
-
-                  {/* Scanning line */}
-                  <motion.rect
-                    x="0" width="200" height="30"
-                    fill="url(#scanLine)"
-                    initial={{ y: 0 }}
-                    animate={{ y: [0, 370, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                  />
-
-                  {/* Hexagonal overlay pattern */}
-                  <g opacity="0.15">
-                    {[...Array(8)].map((_, row) => (
-                      [...Array(4)].map((_, col) => (
-                        <motion.polygon
-                          key={`hex-${row}-${col}`}
-                          points="15,0 30,8 30,24 15,32 0,24 0,8"
-                          fill="none"
-                          stroke="#FCDD00"
-                          strokeWidth="0.5"
-                          transform={`translate(${35 + col * 35 + (row % 2) * 17}, ${20 + row * 45})`}
-                          animate={{ opacity: [0.1, 0.4, 0.1] }}
-                          transition={{ duration: 3, repeat: Infinity, delay: (row + col) * 0.2 }}
-                        />
-                      ))
-                    ))}
-                  </g>
-                </svg>
-
-                {/* Glitch/flicker effect overlay */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-b from-[#FCDD00]/5 via-transparent to-cyan-500/5"
-                  animate={{ opacity: [0, 0.3, 0, 0.1, 0] }}
-                  transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
-                />
-              </motion.div>
-            </div>
-
-            {/* Platform/base glow */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-4">
-              <motion.div
-                className="w-full h-full rounded-full bg-[#FCDD00]/30 blur-xl"
-                animate={{ opacity: [0.3, 0.6, 0.3], scaleX: [0.8, 1, 0.8] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-            </div>
+            {/* ECG Monitor */}
+            <motion.div
+              className="relative w-80 md:w-[400px] h-32 md:h-40 bg-black border border-[#FCDD00]/30 rounded-lg overflow-hidden"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              style={{
+                boxShadow: '0 0 30px rgba(252,221,0,0.15), inset 0 0 50px rgba(0,0,0,0.8)',
+              }}
+            >
+              {/* Grid Background */}
+              <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(252,221,0,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.08)_1px,transparent_1px)] bg-[size:20px_20px]" />
+              {/* Vignette */}
+              <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,transparent_30%,black_100%)] opacity-70" />
+              {/* ECG Canvas */}
+              <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-20" />
+              {/* Corner markers */}
+              <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#FCDD00]/50" />
+              <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#FCDD00]/50" />
+              <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#FCDD00]/50" />
+              <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#FCDD00]/50" />
+              {/* Label */}
+              <div className="absolute top-3 right-3 text-[10px] text-[#FCDD00]/60 font-mono tracking-wider z-30">ECG LIVE</div>
+            </motion.div>
           </div>
+
+          {/* Status Indicators */}
+          <motion.div
+            className="flex flex-wrap justify-center gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
+            {/* Cortisol Alert */}
+            <div className="bg-red-500/10 border border-red-500/30 px-6 py-3 rounded-lg flex items-center gap-3 backdrop-blur-sm">
+              <motion.div
+                className="w-2 h-2 rounded-full bg-red-500"
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+              />
+              <span className="text-red-400 text-xs font-bold tracking-widest">CORTISOL: HIGH</span>
+            </div>
+
+            {/* HRV Status */}
+            <div className="bg-[#FCDD00]/10 border border-[#FCDD00]/30 px-6 py-3 rounded-lg flex items-center gap-3 backdrop-blur-sm">
+              <motion.div
+                className="w-2 h-2 rounded-full bg-[#FCDD00]"
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              <span className="text-[#FCDD00] text-xs font-bold tracking-widest">HRV: 42ms</span>
+            </div>
+
+            {/* VO2 Max */}
+            <div className="bg-cyan-500/10 border border-cyan-500/30 px-6 py-3 rounded-lg flex items-center gap-3 backdrop-blur-sm">
+              <motion.div
+                className="w-2 h-2 rounded-full bg-cyan-400"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <span className="text-cyan-400 text-xs font-bold tracking-widest">VO2 MAX: 52</span>
+            </div>
+          </motion.div>
+
+          {/* Bio Metrics Cards */}
+          <motion.div
+            className="flex flex-wrap justify-center gap-6 mt-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+          >
+            {bioMetrics.map((metric, idx) => (
+              <motion.div
+                key={metric.id}
+                className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-6 min-w-[160px] relative overflow-hidden group hover:border-white/30 transition-all duration-300"
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <div
+                  className="absolute inset-0 opacity-10 group-hover:opacity-25 transition-opacity"
+                  style={{ background: `radial-gradient(circle at 50% 0%, ${metric.color}, transparent 70%)` }}
+                />
+                <div className="relative text-center">
+                  <span className="text-3xl mb-2 block" style={{ color: metric.color }}>{metric.icon}</span>
+                  <div className="text-[10px] text-gray-500 font-mono tracking-wider mb-1">{metric.label}</div>
+                  <motion.div
+                    className="text-xl font-bold font-mono"
+                    style={{ color: metric.color }}
+                    animate={{ opacity: [0.7, 1, 0.7] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
+                  >
+                    {metric.value}
+                  </motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
         </div>
 
         {/* Bottom status bar */}
         <motion.div
-          className="mt-12 flex justify-center gap-8 text-xs font-mono"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5 }}
+          className="mt-16 flex justify-center gap-8 text-xs font-mono"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
         >
           {[
             { label: 'SCAN STATUS', value: 'ACTIVE', color: '#22c55e' },
