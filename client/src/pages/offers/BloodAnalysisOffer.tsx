@@ -61,14 +61,14 @@ export default function BloodAnalysisOffer() {
             transition={{ duration: 0.6 }}
             className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-red-400 text-xs font-mono uppercase tracking-widest">[ ANALYSE SANGUINE ]</span>
+            <span className="text-red-400 text-[10px] font-mono uppercase tracking-[0.2em]">[ ANALYSE SANGUINE ]</span>
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-white text-[3rem] sm:text-[4.8rem] md:text-[7.2rem] lg:text-[9.6rem] xl:text-[12rem] font-bold leading-[0.9] tracking-[-0.04em] mb-8"
+            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter uppercase mb-8"
           >
             Blood
             <br />
@@ -79,7 +79,7 @@ export default function BloodAnalysisOffer() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
+            className="text-neutral-400 font-light text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Upload ton bilan sanguin. J'analyse 50+ biomarqueurs
             et te donne des protocoles d'optimisation personnalises.
@@ -101,7 +101,7 @@ export default function BloodAnalysisOffer() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/blood-analysis">
-              <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+              <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
                 Analyser mon bilan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -134,10 +134,10 @@ export default function BloodAnalysisOffer() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-red-400 text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
               Comment ca marche
             </p>
-            <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em]">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase">
               3 etapes. C'est tout.
             </h2>
           </motion.div>
@@ -154,7 +154,7 @@ export default function BloodAnalysisOffer() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-10 hover:border-red-500/20 hover:-translate-y-1 transition-all duration-300"
+                className="relative overflow-hidden rounded-sm bg-black border border-neutral-800 p-10 hover:border-red-500/20 transition-all duration-300"
               >
                 <div className="text-red-500/20 text-8xl font-bold absolute top-4 right-4">{item.step}</div>
                 <div className="relative z-10">
@@ -162,7 +162,7 @@ export default function BloodAnalysisOffer() {
                     <item.icon className="w-7 h-7 text-red-400" />
                   </div>
                   <h3 className="text-white text-2xl font-bold mb-3">{item.title}</h3>
-                  <p className="text-white/50">{item.desc}</p>
+                  <p className="text-neutral-400 font-light">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -171,7 +171,7 @@ export default function BloodAnalysisOffer() {
       </section>
 
       {/* BIOMARKERS GRID */}
-      <section className="py-32 px-6 border-t border-white/5">
+      <section className="py-32 px-6 border-t border-neutral-800">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -179,13 +179,13 @@ export default function BloodAnalysisOffer() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-red-400 text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
               50+ Biomarqueurs
             </p>
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
               Analyse complete de ton sang.
             </h2>
-            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            <p className="text-neutral-400 font-light text-lg max-w-2xl mx-auto">
               8 categories. 50+ marqueurs analyses. Chaque valeur interpretee
               et mise en contexte avec ton profil.
             </p>
@@ -199,10 +199,10 @@ export default function BloodAnalysisOffer() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="group rounded-[24px] bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-red-500/30 hover:-translate-y-1 transition-all duration-300"
+                className="group rounded-sm bg-black border border-neutral-800 p-6 hover:border-red-500/30 transition-all duration-300"
               >
                 <div className="text-white text-3xl font-bold tracking-[-0.04em] mb-2">{item.count}</div>
-                <div className="text-white/70 font-medium">{item.category}</div>
+                <div className="text-neutral-400 font-light font-medium">{item.category}</div>
               </motion.div>
             ))}
           </div>
@@ -218,15 +218,15 @@ export default function BloodAnalysisOffer() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              <p className="text-red-400 text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
                 Ton Rapport
               </p>
-              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+              <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
                 Pas juste des chiffres.
                 <br />
                 <span className="text-red-400">Des reponses.</span>
               </h2>
-              <p className="text-white/50 text-lg leading-relaxed mb-8">
+              <p className="text-neutral-400 font-light text-lg leading-relaxed mb-8">
                 Chaque biomarqueur est analyse, interprete et compare
                 aux valeurs optimales (pas juste "normales").
                 Tu recois des protocoles concrets pour corriger les desequilibres.
@@ -239,7 +239,7 @@ export default function BloodAnalysisOffer() {
                   "Protocoles de correction",
                   "Supplements recommandes",
                 ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
+                  <li key={i} className="flex items-center gap-3 text-neutral-400 font-light">
                     <Check className="w-5 h-5 text-red-400" />
                     {item}
                   </li>
@@ -253,10 +253,10 @@ export default function BloodAnalysisOffer() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="aspect-square rounded-sm bg-gradient-to-br from-red-500/20 to-transparent border border-white/5 flex items-center justify-center">
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-red-500/20 to-transparent border border-neutral-800 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-red-400 text-8xl font-bold tracking-[-0.04em] mb-4">50+</div>
-                  <p className="text-white/30 text-lg">Biomarqueurs analyses</p>
+                  <p className="text-neutral-500 font-light text-lg">Biomarqueurs analyses</p>
                 </div>
               </div>
             </motion.div>
@@ -265,7 +265,7 @@ export default function BloodAnalysisOffer() {
       </section>
 
       {/* PRICING */}
-      <section className="py-32 px-6 border-t border-white/5">
+      <section className="py-32 px-6 border-t border-neutral-800">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -273,7 +273,7 @@ export default function BloodAnalysisOffer() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase">
               Tout ce qui est inclus.
             </h2>
           </motion.div>
@@ -282,7 +282,7 @@ export default function BloodAnalysisOffer() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-sm border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(239,68,68,0.1)]"
+            className="rounded-sm border border-red-500/30 bg-gradient-to-b from-red-500/10 to-transparent p-10 shadow-[0_0_60px_rgba(239,68,68,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -299,7 +299,7 @@ export default function BloodAnalysisOffer() {
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-red-400 flex-shrink-0" />
-                  <span className="text-white/80">{item}</span>
+                  <span className="text-neutral-400 font-light">{item}</span>
                 </div>
               ))}
             </div>
@@ -310,7 +310,7 @@ export default function BloodAnalysisOffer() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/blood-analysis">
-                <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+                <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
                   Analyser mon bilan
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -328,17 +328,17 @@ export default function BloodAnalysisOffer() {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto text-center"
         >
-          <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
+          <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight uppercase mb-8">
             Ton sang,
             <br />
             <span className="text-red-400">decode.</span>
           </h2>
-          <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
+          <p className="text-neutral-400 font-light text-lg mb-12 max-w-xl mx-auto">
             Upload ton bilan. Je fais le reste.
             50+ biomarqueurs analyses. Protocoles personnalises.
           </p>
           <Link href="/blood-analysis">
-            <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
               Lancer mon Blood Analysis — 99€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
