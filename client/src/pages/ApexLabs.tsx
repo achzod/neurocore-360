@@ -27,7 +27,7 @@ const OFFERS: Offer[] = [
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
     subtitle: "L'Analyse Initiale",
-    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D. Obtenez une vision claire de votre masse musculaire, masse grasse viscérale et de votre hydratation cellulaire.",
+    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de ta composition corporelle par bio-impédancemétrie médicale et scan 3D. Obtiens une vision claire de ta masse musculaire, masse grasse viscérale et de ton hydratation cellulaire.",
     features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
     price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
@@ -37,9 +37,9 @@ const OFFERS: Offer[] = [
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
     subtitle: "Performance Musculaire",
-    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire, de la qualité des tissus et du profil hormonal anabolique. Identifiez vos leviers de croissance et optimisez votre récupération neuro-musculaire.",
+    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire, de la qualité des tissus et du profil hormonal anabolique. Identifie tes leviers de croissance et optimise ta récupération neuro-musculaire.",
     features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
-    price: "Gratuit",
+    price: "197€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
   },
@@ -47,9 +47,9 @@ const OFFERS: Offer[] = [
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
     subtitle: "La Vérité Biologique",
-    description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance : statut inflammatoire, hormonal, micronutritionnel et métabolique. La donnée biologique brute au service de votre santé.",
+    description: "Plonge au cœur de ta biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance : statut inflammatoire, hormonal, micronutritionnel et métabolique. La donnée biologique brute au service de ta santé.",
     features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
-    price: "Gratuit",
+    price: "297€",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true
@@ -58,9 +58,9 @@ const OFFERS: Offer[] = [
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
     subtitle: "L'Omniscience Corporelle",
-    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
+    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de ta physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
     features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
-    price: "Gratuit",
+    price: "497€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
@@ -68,9 +68,9 @@ const OFFERS: Offer[] = [
     id: 'burnout-detection',
     title: "BURNOUT DETECTION",
     subtitle: "Préservation du Système Nerveux",
-    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détectez les signes physiologiques de l'épuisement et la fatigue centrale avant qu'ils ne deviennent cliniques. Protégez votre actif le plus précieux : votre mental.",
+    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détecte les signes physiologiques de l'épuisement et la fatigue centrale avant qu'ils ne deviennent cliniques. Protège ton actif le plus précieux : ton mental.",
     features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
-    price: "Gratuit",
+    price: "247€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
   }
@@ -600,7 +600,7 @@ function Hero() {
                     <div className="text-[#FCDD00] text-xl font-black uppercase tracking-wider mb-2">
                         CANDIDATURE ENVOYÉE
                     </div>
-                    <p className="text-gray-400 text-sm">Nous vous contacterons très prochainement.</p>
+                    <p className="text-gray-400 text-sm">On te contactera très prochainement.</p>
                     <button onClick={() => setStatus('idle')} className="mt-4 text-xs text-gray-500 hover:text-white underline">
                         Nouvelle candidature
                     </button>
@@ -623,7 +623,7 @@ function Hero() {
                         </label>
                         <input
                             type="text"
-                            placeholder="Votre nom complet"
+                            placeholder="Ton nom complet"
                             className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 placeholder-gray-600 text-sm"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -638,7 +638,7 @@ function Hero() {
                         </label>
                         <input
                             type="email"
-                            placeholder="votre@email.com"
+                            placeholder="ton@email.com"
                             className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 placeholder-gray-600 text-sm"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -841,7 +841,7 @@ function OffersSection() {
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FCDD00] mb-4">AVAILABLE PROTOCOLS</p>
           <h2 className="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight uppercase">Protocoles Disponibles</h2>
           <p className="text-gray-400">
-            Des solutions adaptées à chaque niveau d'exigence. Choisissez votre voie vers l'excellence cognitive.
+            Des solutions adaptées à chaque niveau d'exigence. Choisis ta voie vers l'excellence.
           </p>
         </div>
 
