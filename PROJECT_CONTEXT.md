@@ -89,12 +89,10 @@ Règles absolues :
 - Paiement : Stripe (optionnel)
 - Wearables : Terra API (optionnel, plan Elite)
 - Domaine : achzodcoaching.com (Squarespace DNS)
-- IDE : Cursor avec Claude (accès tokens/API pour edit, push, deploy)
 
 ### Workflow Git :
 - Branches : claude/xxx pour dev, merge sur main via PR
 - Deploy : Auto-deploy Render sur push main
-- Tokens : GitHub token pour PR/merge via API
 
 ### Flux waitlist (pre-launch) :
 1. User remplit formulaire (email, name, objective)
