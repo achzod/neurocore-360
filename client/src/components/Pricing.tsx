@@ -241,10 +241,6 @@ export function Pricing() {
             </div>
             <div className="flex items-center gap-2">
               <Check className="w-4 h-4 text-primary" />
-              <span>Satisfait ou remboursé 14j</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-primary" />
               <span>Rapport sous 48h</span>
             </div>
           </div>

@@ -98,7 +98,7 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.7 }}
             className="text-white/40 text-sm mt-8"
           >
-            500+ scans completes
+            Scans complétés avec succès
           </motion.p>
         </motion.div>
 

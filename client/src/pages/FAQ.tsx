@@ -49,19 +49,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois. Burnout Engine = 39€ une fois."
-  },
-  {
-    question: "Le montant est-il déductible de mon coaching ?",
-    answer: "Oui ! Si tu décides de prendre un coaching avec moi par la suite, le montant de ton rapport est intégralement déduit du prix du coaching. Par exemple, si tu prends l'Ultimate Scan à 79€ puis un coaching, les 79€ sont déduits. C'est ma façon de récompenser ceux qui veulent aller plus loin dans leur transformation."
-  },
-  {
-    question: "Que se passe-t-il si je ne suis pas satisfait ?",
-    answer: "Garantie satisfait ou remboursé 14 jours sur toutes les offres payantes. Si le rapport ne t'apporte pas de valeur, tu m'envoies un email et je te rembourse intégralement. Pas de questions, pas de justification. Je préfère avoir des clients satisfaits que de garder quelqu'un qui n'est pas content. Mon taux de satisfaction est supérieur à 97%."
-  },
-  {
-    question: "Puis-je upgrader mon offre après ?",
-    answer: "Oui ! Tu peux commencer par le Discovery Scan gratuit pour découvrir le système, puis passer à l'Anabolic Bioscan ou l'Ultimate Scan quand tu veux. Ton questionnaire est sauvegardé, tu ne refais que les questions supplémentaires du nouveau plan. Et si tu as déjà payé une offre, la différence est déduite si tu upgrades."
+    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 49€ une fois. Pro Panel 360 = 99€ une fois. Blood Analysis = 99€ une fois. Burnout Engine = 39€ une fois."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",
