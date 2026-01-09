@@ -80,16 +80,16 @@ export function Header() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-[#000000] border-[#333333]">
-                  <DropdownMenuItem className="text-neutral-500 text-xs font-mono">
+                  <DropdownMenuItem className="text-[#9CA3AF] text-xs font-mono">
                     {userEmail}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-neutral-800" />
+                  <DropdownMenuSeparator className="bg-[#333333]" />
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard" className="cursor-pointer text-white hover:text-[#FCDD00]" data-testid="menu-dashboard">
                       Mes audits
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-neutral-800" />
+                  <DropdownMenuSeparator className="bg-[#333333]" />
                   <DropdownMenuItem
                     onClick={handleLogout}
                     className="text-red-500 cursor-pointer"
