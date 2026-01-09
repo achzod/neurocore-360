@@ -1006,21 +1006,28 @@ export async function addSubscriberToList(
       }
     }
 
-    // Add email to address book
+    // Add email to address book - simplified format
     console.log(`[SendPulse] Adding email to book ${bookId}...`);
+    const emailPayload = { emails: [{ email }] };
+    console.log(`[SendPulse] Payload:`, JSON.stringify(emailPayload));
+
     const addResponse = await fetch(`https://api.sendpulse.com/addressbooks/${bookId}/emails`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        emails: [{ email, variables: { source: listName, subscribed_at: new Date().toISOString() } }],
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const responseText = await addResponse.text();
-    console.log(`[SendPulse] Add email response (${addResponse.status}):`, responseText);
+    console.log(`[SendPulse] Add email response (status ${addResponse.status}):`, responseText);
+
+    // Check HTTP status first
+    if (!addResponse.ok) {
+      console.error(`[SendPulse] ❌ HTTP error ${addResponse.status}: ${responseText}`);
+      return { success: false, error: `HTTP ${addResponse.status}: ${responseText}` };
+    }
 
     let result: { result?: boolean };
     try {
@@ -1034,7 +1041,7 @@ export async function addSubscriberToList(
       console.log(`[SendPulse] ✅ Successfully added ${email} to address book ${bookId}`);
       return { success: true, bookId };
     } else {
-      console.error(`[SendPulse] ❌ Failed to add ${email}: ${responseText}`);
+      console.error(`[SendPulse] ❌ API returned false for ${email}: ${responseText}`);
       return { success: false, error: responseText };
     }
   } catch (error: any) {
