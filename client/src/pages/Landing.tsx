@@ -176,7 +176,7 @@ const LANDING_OFFERS: Offer[] = [
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
     subtitle: "L'Analyse Initiale",
-    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D.",
+    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de ta composition corporelle par bio-impédancemétrie médicale et scan 3D.",
     features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false,
@@ -198,7 +198,7 @@ const LANDING_OFFERS: Offer[] = [
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
     subtitle: "La Vérité Biologique",
-    description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance.",
+    description: "Plonge au cœur de ta biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance.",
     features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
     imageUrl: "",
     reverse: false,
@@ -210,7 +210,7 @@ const LANDING_OFFERS: Offer[] = [
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
     subtitle: "L'Omniscience Corporelle",
-    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie.",
+    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de ta physiologie.",
     features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true,
@@ -334,7 +334,7 @@ function OffersSection() {
         <div className="mb-20 text-center max-w-3xl mx-auto">
           <span className="text-[#FCDD00] text-sm font-bold tracking-widest uppercase mb-4 block">Nos Protocoles</span>
           <h2 className="text-3xl md:text-5xl font-black mb-6 text-white">NOS <span className="text-[#FCDD00]">OFFRES</span></h2>
-          <p className="text-gray-400">Des solutions adaptées à chaque niveau d'exigence. Choisissez votre voie vers l'excellence.</p>
+          <p className="text-gray-400">Des solutions adaptées à chaque niveau d'exigence. Choisis ta voie vers l'excellence.</p>
         </div>
         <div className="flex flex-col">
           {LANDING_OFFERS.map((offer) => (
@@ -347,100 +347,144 @@ function OffersSection() {
 }
 
 // ============================================================================
-// HERO SECTION - ApexLabs Style
+// HERO SECTION - ApexLabs Design System
 // ============================================================================
 function HeroSection() {
-  const scrollToOffers = () => {
-    const element = document.getElementById("offers");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [objective, setObjective] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [spotsLeft] = useState(7);
+
+  const objectives = [
+    "Perte de masse grasse",
+    "Prise de muscle",
+    "Performance sportive",
+    "Optimisation santé",
+    "Détection burnout",
+    "Bilan complet"
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !name || !objective) return;
+    setStatus('loading');
+    try {
+      const response = await fetch('/api/waitlist/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, objective, source: 'landing-hero' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStatus('success');
+        setEmail(''); setName(''); setObjective('');
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
     }
   };
 
+  const scrollToOffers = () => {
+    document.getElementById("offers")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
-      {/* Shader Background */}
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050505]">
       <ShaderBackground />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          {/* Badge */}
-          <motion.div
-            className="mb-8 inline-flex items-center gap-2 rounded-full border border-gray-800 bg-gray-900/50 px-5 py-2.5 text-sm backdrop-blur-sm"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.span
-              className="h-2 w-2 rounded-full bg-[#FCDD00]"
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
-            <span className="text-gray-400">par Achzod</span>
-          </motion.div>
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-20">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left - Content */}
+          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
+            {/* Badge */}
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-black px-4 py-2">
+              <span className="w-2 h-2 rounded-full bg-[#FCDD00] animate-pulse"></span>
+              <span className="font-mono text-[10px] text-neutral-500 uppercase tracking-widest">by Achzod</span>
+            </div>
 
-          {/* Main headline - ApexLabs Style */}
-          <motion.h1
-            className="mb-8 text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-          >
-            <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">L'ANALYSE</span>
-            <br />
-            <span className="text-[#FCDD00] drop-shadow-[0_0_20px_rgba(252,221,0,0.4)]">CORPORELLE</span>
-            <br />
-            <span className="italic text-white font-light text-4xl sm:text-5xl md:text-6xl">la plus complète.</span>
-          </motion.h1>
+            {/* Title with Stroke Effect */}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] mb-4">
+              <span className="text-white">L'ANALYSE</span>
+            </h1>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.3)', color: 'transparent' }}>
+              CORPORELLE
+            </h1>
+            <p className="text-xl text-neutral-500 font-light mb-8">la plus complète.</p>
 
-          {/* Tagline */}
-          <motion.p
-            className="mx-auto mb-12 max-w-xl text-xl text-gray-500"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            Unlocking human potential
-          </motion.p>
+            {/* Stats */}
+            <div className="flex gap-8 mb-8">
+              <div>
+                <div className="font-mono text-2xl font-black text-[#FCDD00]">500+</div>
+                <div className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Clients</div>
+              </div>
+              <div>
+                <div className="font-mono text-2xl font-black text-[#00FF41]">98%</div>
+                <div className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Satisfaction</div>
+              </div>
+              <div>
+                <div className="font-mono text-2xl font-black text-white">11</div>
+                <div className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Certifications</div>
+              </div>
+            </div>
 
-          {/* CTA Buttons - Liquid Glass Style */}
-          <motion.div
-            className="flex flex-col items-center justify-center gap-4 sm:flex-row"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
-          >
-            <button
-              onClick={scrollToOffers}
-              className="group relative h-14 gap-3 px-10 text-base font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-500 overflow-hidden shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                Unlock Your Potential
-                <ArrowRight className="h-5 w-5" />
-              </span>
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+            <button onClick={scrollToOffers} className="flex items-center gap-2 text-neutral-500 hover:text-[#FCDD00] transition-colors">
+              <span className="font-mono text-xs uppercase tracking-widest">Découvrir les scans</span>
+              <ChevronDown className="w-4 h-4" />
             </button>
-            <Link href="/deduction-coaching">
-              <button className="group h-14 gap-2 px-10 text-base font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
-                Montant 100% déduit
-              </button>
-            </Link>
           </motion.div>
-        </motion.div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <ChevronDown className="h-6 w-6 text-gray-600" />
-        </motion.div>
+          {/* Right - Terminal Form */}
+          <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
+            {status === 'success' ? (
+              <div className="bg-black border border-neutral-800 p-8">
+                <div className="font-mono text-[10px] text-[#00FF41] uppercase tracking-[0.2em] mb-2">SYSTEM_RESPONSE</div>
+                <div className="text-white text-xl font-black uppercase tracking-tight mb-2">DEMANDE ENVOYÉE</div>
+                <p className="text-neutral-400 text-sm font-light">On te contactera très prochainement.</p>
+                <button onClick={() => setStatus('idle')} className="mt-4 font-mono text-[10px] text-neutral-600 hover:text-[#FCDD00] uppercase tracking-widest">[NOUVELLE_DEMANDE]</button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="bg-black border border-neutral-800 p-6 md:p-8 space-y-6">
+                {/* Terminal Header */}
+                <div className="flex items-center gap-2 pb-4 border-b border-neutral-800">
+                  <span className="w-2 h-2 rounded-full bg-[#FF3333]"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#FCDD00]"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#00FF41]"></span>
+                  <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest ml-2">NEUROCORE_TERMINAL</span>
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-3">Identité_</label>
+                  <input type="text" placeholder="TON NOM COMPLET" className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] placeholder-neutral-700 font-mono text-xs uppercase tracking-wider transition-colors" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-3">Contact_</label>
+                  <input type="email" placeholder="TON@EMAIL.COM" className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] placeholder-neutral-700 font-mono text-xs uppercase tracking-wider transition-colors" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+
+                <div>
+                  <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-3">Objectif_Primaire_</label>
+                  <select className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] font-mono text-xs uppercase tracking-wider appearance-none cursor-pointer transition-colors" value={objective} onChange={(e) => setObjective(e.target.value)} required>
+                    <option value="" className="bg-black text-neutral-600">SÉLECTIONNE UN OBJECTIF</option>
+                    {objectives.map((obj) => (<option key={obj} value={obj} className="bg-black text-white">{obj.toUpperCase()}</option>))}
+                  </select>
+                </div>
+
+                <button type="submit" disabled={status === 'loading'} className="w-full bg-white text-black py-4 rounded-sm font-bold text-sm uppercase tracking-widest hover:bg-[#FCDD00] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-8">
+                  {status === 'loading' ? 'PROCESSING...' : 'COMMENCER'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <div className="text-center pt-2 border-t border-neutral-800 mt-4">
+                  <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">Places_Restantes: <span className="text-[#00FF41]">{spotsLeft}/50</span></span>
+                </div>
+              </form>
+            )}
+          </motion.div>
+        </div>
       </div>
     </section>
   );
