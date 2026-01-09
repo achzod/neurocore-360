@@ -954,38 +954,60 @@ export async function addSubscriberToList(
   listName: string = "apexlabs"
 ): Promise<{ success: boolean; bookId?: string; error?: string }> {
   try {
+    console.log(`[SendPulse] 📤 Adding ${email} to list: ${listName}`);
     const token = await getAccessToken();
 
     // Get or create address book
     let bookId = SENDPULSE_APEXLABS_BOOK_ID;
+    console.log(`[SendPulse] ENV bookId: ${bookId || "(not set)"}`);
 
     if (!bookId) {
       // Try to find existing book or create new one
+      console.log("[SendPulse] Fetching address books...");
       const booksResponse = await fetch("https://api.sendpulse.com/addressbooks", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!booksResponse.ok) {
+        console.error(`[SendPulse] ❌ Failed to fetch address books: ${booksResponse.status}`);
+        return { success: false, error: `API error: ${booksResponse.status}` };
+      }
+
       const books = await booksResponse.json() as Array<{ id: number; name: string }>;
-      const existingBook = books.find((b: any) => b.name === `APEXLABS_WAITLIST_${listName.toUpperCase()}`);
+      console.log(`[SendPulse] Found ${books.length} address books:`, books.map(b => b.name));
+
+      const targetBookName = `APEXLABS_WAITLIST`;
+      const existingBook = books.find((b: any) => b.name === targetBookName);
 
       if (existingBook) {
         bookId = String(existingBook.id);
+        console.log(`[SendPulse] Using existing book: ${targetBookName} (ID: ${bookId})`);
       } else {
         // Create new address book
+        console.log(`[SendPulse] Creating new address book: ${targetBookName}`);
         const createResponse = await fetch("https://api.sendpulse.com/addressbooks", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ bookName: `APEXLABS_WAITLIST_${listName.toUpperCase()}` }),
+          body: JSON.stringify({ bookName: targetBookName }),
         });
+
+        if (!createResponse.ok) {
+          const errorText = await createResponse.text();
+          console.error(`[SendPulse] ❌ Failed to create book: ${createResponse.status} - ${errorText}`);
+          return { success: false, error: `Failed to create book: ${createResponse.status}` };
+        }
+
         const created = await createResponse.json() as { id: number };
         bookId = String(created.id);
-        console.log(`[SendPulse] Created new address book: ${bookId}`);
+        console.log(`[SendPulse] ✅ Created new address book: ${targetBookName} (ID: ${bookId})`);
       }
     }
 
     // Add email to address book
+    console.log(`[SendPulse] Adding email to book ${bookId}...`);
     const addResponse = await fetch(`https://api.sendpulse.com/addressbooks/${bookId}/emails`, {
       method: "POST",
       headers: {
@@ -997,17 +1019,26 @@ export async function addSubscriberToList(
       }),
     });
 
-    const result = await addResponse.json() as { result: boolean };
+    const responseText = await addResponse.text();
+    console.log(`[SendPulse] Add email response (${addResponse.status}):`, responseText);
 
-    if (result.result) {
-      console.log(`[SendPulse] ✅ Added ${email} to address book ${bookId}`);
+    let result: { result?: boolean };
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      console.error(`[SendPulse] ❌ Invalid JSON response: ${responseText}`);
+      return { success: false, error: "Invalid API response" };
+    }
+
+    if (result.result === true) {
+      console.log(`[SendPulse] ✅ Successfully added ${email} to address book ${bookId}`);
       return { success: true, bookId };
     } else {
-      console.error(`[SendPulse] ❌ Failed to add ${email} to address book`);
-      return { success: false, error: "Failed to add to address book" };
+      console.error(`[SendPulse] ❌ Failed to add ${email}: ${responseText}`);
+      return { success: false, error: responseText };
     }
   } catch (error: any) {
-    console.error("[SendPulse] Error adding subscriber:", error);
+    console.error("[SendPulse] ❌ Error adding subscriber:", error);
     return { success: false, error: error.message || "Unknown error" };
   }
 }
