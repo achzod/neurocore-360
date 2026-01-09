@@ -73,7 +73,7 @@ export function FixedReviewsWidget() {
                   <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">500+ avis</p>
+              <p className="text-xs text-muted-foreground">Avis vérifiés</p>
             </div>
           </motion.button>
         )}
@@ -97,7 +97,7 @@ export function FixedReviewsWidget() {
                   ))}
                 </div>
                 <span className="text-sm font-medium">4.9/5</span>
-                <span className="text-xs text-muted-foreground">(500+ avis)</span>
+                <span className="text-xs text-muted-foreground">(avis vérifiés)</span>
               </div>
               <button
                 onClick={() => setIsOpen(false)}

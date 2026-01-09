@@ -721,9 +721,8 @@ function SocialProofBanner() {
         >
           <div className="text-center sm:text-left">
             <h3 className="text-3xl sm:text-4xl font-bold">
-              <span className="text-gray-500">Rejoins </span>
-              <span className="text-white">500+</span>
-              <span className="text-gray-500"> membres</span>
+              <span className="text-gray-500">Rejoins la </span>
+              <span className="text-white">communauté</span>
             </h3>
             <div className="mt-3 flex gap-1 justify-center sm:justify-start">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -973,14 +972,6 @@ function FAQSection() {
       answer: "Tu uploades simplement le PDF de ton bilan sanguin (celui de ton labo). Je l'analyse avec des ranges optimaux de performance - pas les ranges 'normaux' des labos qui sont souvent trop larges. Tu obtiens une interprétation détaillée de chaque marqueur avec des protocoles ciblés pour corriger les déséquilibres identifiés.",
     },
     {
-      question: "Le montant est-il déductible de mon coaching ?",
-      answer: "Oui ! Si tu prends un coaching avec moi par la suite, le montant de ton rapport est intégralement déduit. Par exemple, si tu prends l'Ultimate Scan à 79€ puis un coaching, les 79€ sont déduits du prix du coaching. C'est ma façon de récompenser ceux qui veulent aller plus loin.",
-    },
-    {
-      question: "Puis-je obtenir un remboursement ?",
-      answer: "Oui, tu as 14 jours pour demander un remboursement si le rapport ne te convient pas. Pas de questions, pas de justification à fournir. Je préfère avoir des clients satisfaits que de garder quelqu'un qui n'est pas content. Envoie-moi simplement un email.",
-    },
-    {
       question: "Je peux synchroniser mes wearables ?",
       answer: "Oui ! Tu peux connecter Oura, Garmin, Fitbit, Apple Health, Google Fit, Samsung Health, Withings et Ultrahuman. Les données de tes wearables enrichissent l'analyse et permettent un suivi dans le temps. WHOOP arrive bientôt. Plus tu connectes de sources, plus l'analyse est précise.",
     },
@@ -1085,7 +1076,7 @@ function FinalCTASection() {
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">OPTIMISATION</h2>
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-8" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>HUMAINE</h2>
           <p className="mx-auto mb-12 max-w-xl text-lg text-gray-400 font-light">
-            Rejoins 500+ utilisateurs qui ont transformé leur performance.
+            Rejoins ceux qui ont transformé leur performance.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -1121,7 +1112,7 @@ function FinalCTASection() {
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[#FCDD00]/50" />
-              <span>500+ utilisateurs</span>
+              <span>Communauté active</span>
             </div>
           </motion.div>
         </motion.div>
