@@ -112,7 +112,7 @@ export function Header() {
               </Link>
             )}
 
-            <Link href="/offers/ultimate-scan">
+            <Link href="/offers/discovery-scan">
               <button className="px-4 py-2 text-sm font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(252,221,0,0.4)]" data-testid="button-start-audit">
                 Commencer
               </button>
