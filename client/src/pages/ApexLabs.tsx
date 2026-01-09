@@ -1417,7 +1417,7 @@ const customStyles = `
 // ============================================================================
 // MAIN APP
 // ============================================================================
-export default function Le protocole() {
+export default function ApexLabs() {
   return (
     <div className="min-h-screen bg-black">
       <style>{customStyles}</style>
