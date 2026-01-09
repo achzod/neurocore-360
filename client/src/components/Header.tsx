@@ -1,8 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import { ThemeToggle } from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,65 +36,63 @@ export function Header() {
   const isDashboard = location.startsWith("/dashboard");
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-900 bg-black">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Logo - APEXLABS Design System */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex flex-col">
-              <span className="text-xl font-black tracking-tighter leading-none" data-testid="text-brand-name">
+            <div className="flex flex-col leading-none">
+              <span className="text-xl font-black tracking-tighter text-white" data-testid="text-brand-name">
                 APEX<span className="text-[#FCDD00]">LABS</span>
               </span>
-              <span className="text-[10px] text-muted-foreground tracking-wide">by Achzod</span>
+              <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">by Achzod</span>
             </div>
           </Link>
 
-          {/* Desktop Navigation - Products */}
-          <nav className="hidden items-center gap-1 lg:flex">
+          {/* Desktop Navigation - Inter Bold, uppercase, gray */}
+          <nav className="hidden items-center gap-6 lg:flex">
             {PRODUCTS.map((product) => (
               <Link
                 key={product.name}
                 href={product.href}
-                className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-xs font-bold uppercase text-[#A3A3A3] transition-colors hover:text-white"
               >
                 {product.name}
               </Link>
             ))}
             <Link
               href="/blog"
-              className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-xs font-bold uppercase text-[#A3A3A3] transition-colors hover:text-white"
             >
               Blog
             </Link>
           </nav>
 
           {/* Right side actions */}
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-
+          <div className="flex items-center gap-3">
             {userEmail ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 px-2 sm:px-3" data-testid="button-user-menu">
+                  <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors" data-testid="button-user-menu">
                     <User className="h-4 w-4" />
                     <span className="hidden max-w-32 truncate sm:inline">{userEmail}</span>
                     <ChevronDown className="h-3 w-3 hidden sm:block" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem className="text-muted-foreground text-xs">
+                <DropdownMenuContent align="end" className="w-56 bg-black border-neutral-800">
+                  <DropdownMenuItem className="text-neutral-500 text-xs font-mono">
                     {userEmail}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-neutral-800" />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard" className="cursor-pointer" data-testid="menu-dashboard">
+                    <Link href="/dashboard" className="cursor-pointer text-white hover:text-[#FCDD00]" data-testid="menu-dashboard">
                       Mes audits
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-neutral-800" />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="text-destructive cursor-pointer"
+                    className="text-red-500 cursor-pointer"
                     data-testid="button-logout"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -106,40 +102,38 @@ export function Header() {
               </DropdownMenu>
             ) : (
               <Link href="/auth/login" className="hidden sm:block">
-                <Button variant="ghost" size="sm" data-testid="button-login">
+                <button className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors" data-testid="button-login">
                   Connexion
-                </Button>
+                </button>
               </Link>
             )}
 
-            <Link href="/offers/ultimate-scan">
-              <button className="px-4 py-2 text-sm font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(252,221,0,0.4)]" data-testid="button-start-audit">
+            <Link href="/offers/discovery-scan">
+              <button className="px-5 py-2.5 text-xs font-black uppercase tracking-wide bg-[#FCDD00] text-black rounded-sm transition-all duration-300 hover:bg-[#FCDD00]/90" data-testid="button-start-audit">
                 Commencer
               </button>
             </Link>
 
             {/* Mobile menu toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
+            <button
+              className="lg:hidden p-2 text-[#A3A3A3] hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="border-t border-border py-4 lg:hidden">
-            <div className="flex flex-col gap-2">
+          <nav className="border-t border-neutral-800 py-4 lg:hidden bg-black">
+            <div className="flex flex-col gap-1">
               {PRODUCTS.map((product) => (
                 <Link
                   key={product.name}
                   href={product.href}
-                  className="px-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {product.name}
@@ -147,17 +141,17 @@ export function Header() {
               ))}
               <Link
                 href="/blog"
-                className="px-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Blog
               </Link>
-              <div className="my-2 border-t border-border" />
+              <div className="my-2 border-t border-neutral-800" />
               {userEmail ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="px-2 py-2 text-sm font-medium text-muted-foreground"
+                    className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Mes audits
@@ -167,7 +161,7 @@ export function Header() {
                       handleLogout();
                       setMobileMenuOpen(false);
                     }}
-                    className="px-2 py-2 text-sm font-medium text-destructive text-left"
+                    className="px-2 py-2 text-xs font-bold uppercase text-red-500 text-left"
                     data-testid="button-mobile-logout"
                   >
                     Déconnexion
@@ -176,7 +170,7 @@ export function Header() {
               ) : (
                 <Link
                   href="/auth/login"
-                  className="px-2 py-2 text-sm font-medium text-muted-foreground"
+                  className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Connexion

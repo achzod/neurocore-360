@@ -51,7 +51,7 @@ export default function DeductionCoaching() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#050505]">
+    <div className="min-h-screen bg-background">
       <Header />
       <main>
         {/* Hero Section */}
@@ -67,12 +67,12 @@ export default function DeductionCoaching() {
                 <Gift className="h-3 w-3" />
                 Offre exclusive
               </Badge>
-              <h1 className="mb-6 text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter uppercase">
-                Montant <span className="text-[#FCDD00]">100% déduit</span>
+              <h1 className="mb-6 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
+                Montant <span className="text-primary">100% déduit</span>
                 <br />
                 de ton coaching
               </h1>
-              <p className="mx-auto mb-8 max-w-2xl text-lg font-light text-neutral-400">
+              <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
                 Peu importe l'analyse que tu choisis, le montant sera intégralement déduit si tu décides de prendre un coaching avec moi.
               </p>
 
@@ -88,8 +88,8 @@ export default function DeductionCoaching() {
         <section className="py-16 bg-muted/30">
           <div className="mx-auto max-w-5xl px-4">
             <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold tracking-tight uppercase">Comment ça marche ?</h2>
-              <p className="font-light text-neutral-400">Un processus simple en 3 étapes</p>
+              <h2 className="mb-4 text-3xl font-bold">Comment ça marche ?</h2>
+              <p className="text-muted-foreground">Un processus simple en 3 étapes</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -143,9 +143,9 @@ export default function DeductionCoaching() {
         <section className="py-16">
           <div className="mx-auto max-w-5xl px-4">
             <div className="mb-12 text-center">
-              <Calculator className="h-10 w-10 text-[#FCDD00] mx-auto mb-4" />
-              <h2 className="mb-4 text-3xl font-bold tracking-tight uppercase">Exemples concrets</h2>
-              <p className="font-light text-neutral-400">Voici ce que ça donne en pratique</p>
+              <Calculator className="h-10 w-10 text-primary mx-auto mb-4" />
+              <h2 className="mb-4 text-3xl font-bold">Exemples concrets</h2>
+              <p className="text-muted-foreground">Voici ce que ça donne en pratique</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -194,8 +194,8 @@ export default function DeductionCoaching() {
         <section className="py-16 bg-muted/30">
           <div className="mx-auto max-w-4xl px-4">
             <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold tracking-tight uppercase">Formules éligibles</h2>
-              <p className="font-light text-neutral-400">La déduction s'applique sur ces formules</p>
+              <h2 className="mb-4 text-3xl font-bold">Formules éligibles</h2>
+              <p className="text-muted-foreground">La déduction s'applique sur ces formules</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -243,28 +243,28 @@ export default function DeductionCoaching() {
         {/* CTA Section */}
         <section className="py-24 bg-gradient-to-t from-primary/10 via-primary/5 to-background">
           <div className="mx-auto max-w-3xl px-4 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight uppercase">
+            <h2 className="mb-4 text-3xl font-bold">
               Prêt à commencer ?
             </h2>
-            <p className="mb-8 text-lg font-light text-neutral-400">
+            <p className="mb-8 text-lg text-muted-foreground">
               Fais ton analyse maintenant et récupère 100% de ton investissement sur ton futur coaching.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/#offers">
-                <button className="px-8 py-4 rounded-sm bg-white text-black hover:bg-[#FCDD00] transition-colors inline-flex items-center gap-2">
+                <Button size="lg" className="gap-2">
                   Voir les analyses
                   <ArrowRight className="h-4 w-4" />
-                </button>
+                </Button>
               </Link>
               <a
                 href="https://www.achzodcoaching.com"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <button className="px-8 py-4 rounded-sm bg-black border border-neutral-800 text-white hover:border-[#FCDD00]/30 transition-colors inline-flex items-center gap-2">
+                <Button variant="outline" size="lg" className="gap-2">
                   Découvrir le coaching
                   <ExternalLink className="h-4 w-4" />
-                </button>
+                </Button>
               </a>
             </div>
           </div>

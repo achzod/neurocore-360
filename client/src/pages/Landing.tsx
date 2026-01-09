@@ -302,19 +302,25 @@ function OfferCard({ offer }: { offer: Offer }) {
               {description}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Features - Chevron + JetBrains Mono */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
             {features.map((feature, idx) => (
-              <div key={idx} className="flex items-center gap-3 text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 hover:border-[#FCDD00]/30 hover:bg-white/10 transition-all duration-300 hover:translate-x-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
-                <span className="text-sm font-medium tracking-wide">{feature}</span>
+              <div key={idx} className="flex items-center gap-3 py-2">
+                <span className="text-[#FCDD00] font-mono font-bold">&gt;</span>
+                <span className="font-mono text-xs uppercase tracking-wide text-neutral-300">{feature}</span>
               </div>
             ))}
           </div>
-          <div className="pt-6">
+          {/* Price + CTA */}
+          <div className="pt-6 flex flex-col sm:flex-row items-start gap-4">
+            <div className="inline-block bg-black border border-neutral-800 px-6 py-4">
+              <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-600 mb-1">Investissement</div>
+              <div className="text-2xl md:text-3xl font-black text-white tracking-tight">{price}</div>
+            </div>
             <Link href={href}>
-              <button className="group/btn relative px-8 py-3 font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full overflow-hidden transition-all duration-500 shadow-[0_0_30px_rgba(252,221,0,0.3)] hover:shadow-[0_0_50px_rgba(252,221,0,0.5)] hover:scale-[1.02]">
-                <span className="relative z-10">{price === "Gratuit" ? "Commencer gratuitement" : `Sélectionner — ${price}`}</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-700" />
+              <button className="px-6 py-4 bg-black border border-white/30 text-white font-mono text-xs uppercase tracking-widest hover:border-[#FCDD00] hover:text-[#FCDD00] transition-colors flex items-center gap-2">
+                En savoir plus
+                <span>&gt;</span>
               </button>
             </Link>
           </div>
@@ -332,9 +338,10 @@ function OffersSection() {
     <section id="detailed-offers" className="bg-black py-24 relative">
       <div className="container mx-auto px-6">
         <div className="mb-20 text-center max-w-3xl mx-auto">
-          <span className="text-[#FCDD00] text-sm font-bold tracking-widest uppercase mb-4 block">Nos Protocoles</span>
-          <h2 className="text-3xl md:text-5xl font-black mb-6 text-white">NOS <span className="text-[#FCDD00]">OFFRES</span></h2>
-          <p className="text-gray-400">Des solutions adaptées à chaque niveau d'exigence. Choisissez votre voie vers l'excellence.</p>
+          <span className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-4 block">Nos Protocoles</span>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">NOS</h2>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>OFFRES</h2>
+          <p className="text-gray-400 font-light">Des solutions adaptées à chaque niveau d'exigence. Choisis ta voie vers l'excellence.</p>
         </div>
         <div className="flex flex-col">
           {LANDING_OFFERS.map((offer) => (
@@ -407,7 +414,7 @@ function HeroSection() {
             Unlocking human potential
           </motion.p>
 
-          {/* CTA Buttons - Liquid Glass Style */}
+          {/* CTA Buttons - APEXLABS Design System */}
           <motion.div
             className="flex flex-col items-center justify-center gap-4 sm:flex-row"
             initial={{ opacity: 0, y: 20 }}
@@ -416,17 +423,15 @@ function HeroSection() {
           >
             <button
               onClick={scrollToOffers}
-              className="group relative h-14 gap-3 px-10 text-base font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-500 overflow-hidden shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center"
+              className="group relative h-14 gap-3 px-10 text-xs font-black uppercase tracking-wide bg-[#FCDD00] text-black rounded-sm transition-all duration-500 overflow-hidden shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:bg-[#FCDD00]/90 flex items-center justify-center"
             >
               <span className="relative z-10 flex items-center gap-2">
-                Unlock Your Potential
+                Commencer
                 <ArrowRight className="h-5 w-5" />
               </span>
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
             </button>
             <Link href="/deduction-coaching">
-              <button className="group h-14 gap-2 px-10 text-base font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
+              <button className="group h-14 gap-2 px-10 text-xs font-bold uppercase tracking-wide border border-white/30 text-white rounded-sm transition-all duration-300 hover:border-[#FCDD00] hover:text-[#FCDD00] flex items-center justify-center">
                 Montant 100% déduit
               </button>
             </Link>
@@ -544,9 +549,10 @@ function FiveOffersSection() {
           viewport={{ once: true }}
           className="mb-20 text-center"
         >
-          <span className="text-[#FCDD00] text-sm font-bold tracking-widest uppercase mb-4 block">Nos Protocoles</span>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-4">CHOISIS TON <span className="text-[#FCDD00]">SCAN</span></h2>
-          <p className="text-lg text-gray-500">Du diagnostic à l'optimisation complète.</p>
+          <span className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-4 block">Nos Protocoles</span>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">CHOISIS</h2>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>TON SCAN</h2>
+          <p className="text-gray-400 font-light">Du diagnostic à l'optimisation complète.</p>
         </motion.div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -728,7 +734,7 @@ function SocialProofBanner() {
           </div>
           <button
             onClick={scrollToReviews}
-            className="h-12 px-8 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)]"
+            className="h-12 px-8 text-xs font-bold uppercase tracking-wide border border-white/30 text-white rounded-sm transition-all duration-300 hover:border-[#FCDD00] hover:text-[#FCDD00]"
           >
             Voir les avis
           </button>
@@ -811,8 +817,9 @@ function MeasurableResultsSection() {
           viewport={{ once: true }}
           className="mb-20 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Résultats</p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white">Des améliorations mesurables</h2>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Résultats</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">AMÉLIORATIONS</h2>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>MESURABLES</h2>
         </motion.div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -889,8 +896,9 @@ function TestimonialsSection() {
           viewport={{ once: true }}
           className="mb-20 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Témoignages</p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white">Ce qu'en disent mes clients</h2>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Témoignages</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">RÉSULTATS</h2>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>VALIDÉS</h2>
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -987,8 +995,9 @@ function FAQSection() {
           viewport={{ once: true }}
           className="mb-16 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-[#FCDD00] mb-4">FAQ</p>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white">Questions fréquentes</h2>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-4">FAQ</p>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">QUESTIONS</h2>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>FRÉQUENTES</h2>
         </motion.div>
 
         <div className="space-y-3">
@@ -1037,9 +1046,9 @@ function FAQSection() {
           className="mt-10 text-center"
         >
           <Link href="/faq">
-            <button className="gap-2 px-6 py-3 font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
+            <button className="gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wide border border-white/30 text-white rounded-sm transition-all duration-300 hover:border-[#FCDD00] hover:text-[#FCDD00] flex items-center justify-center">
               Voir toutes les questions
-              <ChevronRight className="h-4 w-4 ml-2" />
+              <span className="ml-2">&gt;</span>
             </button>
           </Link>
         </motion.div>
@@ -1073,30 +1082,24 @@ function FinalCTASection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="mb-6 text-4xl sm:text-5xl md:text-6xl font-black">
-            <span className="text-white">PRÊT À</span>
-            <br />
-            <span className="text-[#FCDD00]">OPTIMISER</span>
-            <br />
-            <span className="italic text-white font-light text-3xl sm:text-4xl">ta biologie ?</span>
-          </h2>
-          <p className="mx-auto mb-12 max-w-xl text-lg text-gray-500">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">OPTIMISATION</h2>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-8" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>HUMAINE</h2>
+          <p className="mx-auto mb-12 max-w-xl text-lg text-gray-400 font-light">
             Rejoins 500+ utilisateurs qui ont transformé leur performance.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/offers/ultimate-scan">
-              <button className="group relative h-16 gap-3 px-10 text-lg font-bold uppercase tracking-wider bg-[#FCDD00] text-black rounded-full transition-all duration-500 overflow-hidden shadow-[0_0_40px_rgba(252,221,0,0.3)] hover:shadow-[0_0_60px_rgba(252,221,0,0.5)] hover:scale-[1.02] flex items-center justify-center">
+            <Link href="/offers/discovery-scan">
+              <button className="group relative h-14 gap-3 px-10 text-xs font-black uppercase tracking-wide bg-[#FCDD00] text-black rounded-sm transition-all duration-300 hover:bg-[#FCDD00]/90 flex items-center justify-center">
                 <span className="relative z-10 flex items-center gap-2">
-                  Commencer — 79€
+                  Commencer
                   <ArrowRight className="h-5 w-5" />
                 </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
               </button>
             </Link>
-            <Link href="/offers/discovery-scan">
-              <button className="h-16 gap-2 px-10 text-lg font-medium border-2 border-white/20 text-white rounded-full transition-all duration-300 backdrop-blur-sm hover:border-[#FCDD00] hover:text-[#FCDD00] hover:shadow-[0_0_30px_rgba(252,221,0,0.2)] flex items-center justify-center">
-                Essayer gratuitement
+            <Link href="/offers/ultimate-scan">
+              <button className="h-14 gap-2 px-10 text-xs font-bold uppercase tracking-wide border border-white/30 text-white rounded-sm transition-all duration-300 hover:border-[#FCDD00] hover:text-[#FCDD00] flex items-center justify-center">
+                Ultimate Scan — 79€
               </button>
             </Link>
           </div>

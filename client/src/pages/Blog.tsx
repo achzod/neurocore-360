@@ -52,13 +52,13 @@ export default function Blog() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-8">
+              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-8">
                 [ BLOG ]
               </p>
-              <h1 className="mb-6 text-white text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter uppercase">
+              <h1 className="mb-6 text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-[-0.04em]">
                 APEX LABS Blog
               </h1>
-              <p className="mx-auto max-w-2xl text-lg font-light text-neutral-400">
+              <p className="mx-auto max-w-2xl text-lg text-white/50">
                 Articles, guides et insights sur l'optimisation de votre santé,
                 sommeil, nutrition et performance.
               </p>
@@ -68,12 +68,12 @@ export default function Blog() {
 
         {/* Featured Articles */}
         {featuredArticles.length > 0 && (
-          <section className="py-16 border-t border-neutral-800">
+          <section className="py-16 border-t border-white/5">
             <div className="mx-auto max-w-7xl px-4">
-              <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-4">
+              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
                 [ À LA UNE ]
               </p>
-              <h2 className="mb-10 text-3xl font-bold tracking-tight uppercase text-white">Articles à la une</h2>
+              <h2 className="mb-10 text-2xl font-bold text-white">Articles à la une</h2>
               <div className="grid gap-6 md:grid-cols-3">
                 {featuredArticles.map((article, index) => (
                   <motion.div
@@ -83,7 +83,7 @@ export default function Blog() {
                     transition={{ delay: index * 0.1 }}
                   >
                     <Link href={`/blog/${article.slug}`}>
-                      <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-black border border-neutral-800 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
+                      <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
                         <div className="aspect-video overflow-hidden">
                           <img
                             src={article.image}
@@ -98,7 +98,7 @@ export default function Blog() {
                           <h3 className="mb-2 text-lg font-bold text-white line-clamp-2 group-hover:text-[#FCDD00] transition-colors">
                             {article.title}
                           </h3>
-                          <p className="mb-4 text-sm font-light text-neutral-400 line-clamp-2">
+                          <p className="mb-4 text-sm text-white/50 line-clamp-2">
                             {article.excerpt}
                           </p>
                           <div className="flex items-center gap-4 text-xs text-white/40">
@@ -126,7 +126,7 @@ export default function Blog() {
         )}
 
         {/* Category Filter & Search */}
-        <section className="py-8 border-y border-neutral-800 bg-black">
+        <section className="py-8 border-y border-white/5 bg-white/[0.01]">
           <div className="mx-auto max-w-7xl px-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               {/* Search */}
@@ -137,7 +137,7 @@ export default function Blog() {
                   placeholder="Rechercher un article..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2 bg-black border border-neutral-800 rounded-sm text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FCDD00]/50"
+                  className="w-full pl-9 pr-9 py-2 bg-white/[0.03] border border-white/10 rounded-sm text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FCDD00]/50"
                 />
                 {searchQuery && (
                   <button
@@ -156,8 +156,8 @@ export default function Blog() {
                     onClick={() => setActiveCategory(category.id)}
                     className={`px-4 py-2 text-sm font-medium rounded-sm transition-all ${
                       activeCategory === category.id
-                        ? "bg-white text-black hover:bg-[#FCDD00]"
-                        : "bg-black text-white/70 border border-neutral-800 hover:border-[#FCDD00]/30 hover:text-white"
+                        ? "bg-[#FCDD00] text-black"
+                        : "bg-white/[0.03] text-white/70 border border-white/10 hover:border-[#FCDD00]/30 hover:text-white"
                     }`}
                   >
                     {category.label}
@@ -171,7 +171,7 @@ export default function Blog() {
         {/* All Articles */}
         <section className="py-16">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-10 text-3xl font-bold tracking-tight uppercase text-white">
+            <h2 className="mb-10 text-2xl font-bold text-white">
               {activeCategory === "all"
                 ? "Tous les articles"
                 : BLOG_CATEGORIES.find((c) => c.id === activeCategory)?.label}
@@ -187,7 +187,7 @@ export default function Blog() {
                   transition={{ delay: (index % 6) * 0.05 }}
                 >
                   <Link href={`/blog/${article.slug}`}>
-                    <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-black border border-neutral-800 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
+                    <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
                       <div className="aspect-video overflow-hidden">
                         <img
                           src={article.image}
@@ -202,7 +202,7 @@ export default function Blog() {
                         <h3 className="mb-2 text-lg font-bold text-white line-clamp-2 group-hover:text-[#FCDD00] transition-colors">
                           {article.title}
                         </h3>
-                        <p className="mb-4 text-sm font-light text-neutral-400 line-clamp-2">
+                        <p className="mb-4 text-sm text-white/50 line-clamp-2">
                           {article.excerpt}
                         </p>
                         <div className="flex items-center justify-between">
@@ -225,7 +225,7 @@ export default function Blog() {
 
             {filteredArticles.length === 0 && (
               <div className="text-center py-12">
-                <p className="font-light text-neutral-400">
+                <p className="text-white/50">
                   Aucun article dans cette catégorie pour le moment.
                 </p>
               </div>
@@ -234,24 +234,24 @@ export default function Blog() {
         </section>
 
         {/* Newsletter CTA */}
-        <section className="py-24 border-t border-neutral-800">
+        <section className="py-24 border-t border-white/5">
           <div className="mx-auto max-w-2xl px-4 text-center">
-            <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-6">
+            <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-6">
               [ NEWSLETTER ]
             </p>
-            <h2 className="mb-4 text-3xl font-bold tracking-tight uppercase text-white">
+            <h2 className="mb-4 text-3xl font-bold text-white">
               Restez informé
             </h2>
-            <p className="mb-8 font-light text-neutral-400">
+            <p className="mb-8 text-white/50">
               Recevez nos derniers articles et conseils d'optimisation directement dans votre boîte mail.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="votre@email.com"
-                className="flex-1 px-4 py-3 bg-black border border-neutral-800 rounded-sm text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FCDD00]/50"
+                className="flex-1 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-sm text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#FCDD00]/50"
               />
-              <button className="px-6 py-3 bg-white text-black font-semibold rounded-sm hover:bg-[#FCDD00] transition-colors">
+              <button className="px-6 py-3 bg-[#FCDD00] text-black font-semibold rounded-sm hover:bg-[#FCDD00]/90 transition-colors">
                 S'abonner
               </button>
             </div>
