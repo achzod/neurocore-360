@@ -81,11 +81,13 @@ Règles absolues :
 ## 5) ARCHITECTURE TECHNIQUE
 
 ### Stack :
-- Frontend : React + TypeScript + Vite + TailwindCSS + Framer Motion
-- Backend : Express.js + TypeScript
-- DB : PostgreSQL (Neon/Render)
+- Frontend : React 18 + TypeScript + Vite + TailwindCSS + Framer Motion + Radix UI
+- Backend : Express.js + TypeScript (tsx)
+- DB : PostgreSQL (Neon/Render) + Drizzle ORM
 - Hébergement : Render.com
 - Email : SendPulse API (SMTP + Address Books)
+- Paiement : Stripe (optionnel)
+- Wearables : Terra API (optionnel, plan Elite)
 - Domaine : achzodcoaching.com (Squarespace DNS)
 
 ### Flux waitlist (pre-launch) :
@@ -105,32 +107,49 @@ Règles absolues :
 - Address Books : /addressbooks + /addressbooks/{id}/emails
 - Liste waitlist : APEXLABS_WAITLIST
 
-### OpenAI (pour audits - pas pour pre-launch) :
-- Modèle principal : gpt-4o
-- Modèle fallback : gpt-4o-mini
+### Google Gemini (pour audits) :
+- Modèle principal : gemini-2.0-flash-exp
 - Usage : Génération de rapports d'audit
 
-### Google (fallback audits) :
-- Modèle : gemini-1.5-pro
+### OpenAI (fallback audits) :
+- Modèle principal : gpt-4o
+- Modèle fallback : gpt-4o-mini
+
+### Anthropic Claude (fallback audits) :
+- Modèle : claude-3-opus / claude-3-sonnet
 
 ### Politique :
 - Pre-launch n'utilise PAS d'IA pour le contenu
-- Les audits utilisent OpenAI en priorité, Gemini en fallback
+- Les audits utilisent Gemini en priorité, OpenAI/Claude en fallback
 
 ---
 
 ## 7) VARIABLES D'ENV (Render)
 
-### Requises :
+### Requises (pre-launch) :
 - DATABASE_URL= (PostgreSQL connection string)
 - SENDPULSE_USER_ID=
 - SENDPULSE_SECRET=
 - ADMIN_SECRET= (pour /api/admin/waitlist)
+- SESSION_SECRET=
 
-### Optionnelles (audits) :
+### Requises (audits) :
+- GEMINI_API_KEY=
+- GEMINI_MODEL=gemini-2.0-flash-exp
+
+### Optionnelles (fallback IA) :
 - OPENAI_API_KEY=
 - ANTHROPIC_API_KEY=
-- GOOGLE_API_KEY=
+
+### Optionnelles (paiement) :
+- STRIPE_SECRET_KEY=
+- STRIPE_PUBLISHABLE_KEY=
+- STRIPE_WEBHOOK_SECRET=
+
+### Optionnelles (wearables Elite) :
+- TERRA_DEV_ID=
+- TERRA_API_KEY=
+- TERRA_WEBHOOK_SECRET=
 
 ### Règles :
 - Jamais de clés en dur dans le code
@@ -141,18 +160,35 @@ Règles absolues :
 
 ## 8) STRUCTURE DES FICHIERS
 
-### Fichiers clés :
-- `/client/src/pages/ApexLabs.tsx` - Landing page pre-launch
-- `/server/routes.ts` - Tous les endpoints API
-- `/server/emailService.ts` - Templates email + SendPulse API
-- `/server/index.ts` - Entry point serveur
+### Pages principales (client/src/pages/) :
+- `ApexLabs.tsx` - Landing page pre-launch (98KB)
+- `Dashboard.tsx` - Dashboard utilisateur
+- `DiscoveryScanReport.tsx` - Rapport Discovery Scan
+- `AnabolicScanReport.tsx` - Rapport Anabolic Bioscan
+- `BurnoutEngineReport.tsx` - Rapport Burnout Engine
+- `BloodAnalysis.tsx` - Page Blood Analysis
+- `AdminDashboard.tsx` - Dashboard admin
+- `AdminReviews.tsx` - Gestion avis admin
+- `Blog.tsx` / `BlogArticle.tsx` - Blog
+- `FAQ.tsx` - FAQ
+- `CGV.tsx` - Conditions générales
+
+### Serveur (server/) :
+- `index.ts` - Entry point serveur
+- `routes.ts` - Tous les endpoints API (2400+ lignes)
+- `emailService.ts` - Templates email + SendPulse API
+- `analysisEngine.ts` - Moteur d'analyse IA (112KB)
+- `discovery-scan.ts` - Logique Discovery Scan
+- `burnout-detection.ts` - Logique Burnout Engine
+- `anthropicEngine.ts` - Intégration Claude
+- `expertProtocols.ts` - Protocoles experts
 
 ### Endpoints waitlist :
 - POST /api/waitlist/subscribe - Inscription waitlist
 - GET /api/waitlist/spots - Places restantes
 - GET /api/admin/waitlist?key=XXX - Liste subscribers (protégé)
 
-### Table DB :
+### Table DB waitlist :
 ```sql
 waitlist_subscribers (
   id UUID PRIMARY KEY,
