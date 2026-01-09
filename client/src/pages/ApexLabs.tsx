@@ -360,7 +360,7 @@ function ECGSection() {
 }
 
 // ============================================================================
-// HEADER COMPONENT - APEXLABS DESIGN
+// HEADER COMPONENT - EXACT DESIGN SPECS
 // ============================================================================
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -381,52 +381,37 @@ function Header() {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-neuro-dark/95 backdrop-blur-md py-3 border-b border-white/5' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        {/* Logo - Italic Bold Style */}
-        <a href="/apexlabs" className="flex flex-col leading-none group cursor-pointer">
-          <span className="text-2xl md:text-3xl font-black italic tracking-tight text-white">
-            APEX<span className="text-neuro-accent">LABS</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-neutral-900">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        {/* Logo - Inter Black, tracking-tighter */}
+        <a href="/apexlabs" className="flex flex-col leading-none">
+          <span className="text-xl font-black tracking-tighter text-white">
+            APEX<span className="text-[#FCDD00]">LABS</span>
           </span>
-          <span className="text-[10px] md:text-xs font-medium text-neuro-accent/80 tracking-[0.2em] uppercase">
+          <span className="font-mono text-[10px] text-[#525252] tracking-widest uppercase">
             BY ACHZOD
           </span>
         </a>
 
-        {/* Nav - Uppercase tracking */}
-        <nav className="hidden md:flex items-center gap-10">
-          <button
-            onClick={() => scrollToSection('offers')}
-            className="text-sm font-medium text-white/70 hover:text-white tracking-widest uppercase transition-colors"
-          >
+        {/* Nav - Inter Bold, uppercase, gray */}
+        <nav className="hidden md:flex items-center gap-8">
+          <button onClick={() => scrollToSection('offers')} className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors">
             Protocoles
           </button>
-          <button
-            onClick={() => scrollToSection('reviews')}
-            className="text-sm font-medium text-white/70 hover:text-white tracking-widest uppercase transition-colors"
-          >
+          <button onClick={() => scrollToSection('reviews')} className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors">
             Résultats
           </button>
-          <button
-            onClick={() => scrollToSection('join-waitlist')}
-            className="text-sm font-medium text-white/70 hover:text-white tracking-widest uppercase transition-colors"
-          >
+          <button onClick={() => scrollToSection('join-waitlist')} className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors">
             Vision
-          </button>
-          {/* CTA - Yellow filled button */}
-          <button
-            onClick={() => scrollToSection('join-waitlist')}
-            className="px-6 py-2.5 bg-neuro-accent text-black text-sm font-bold tracking-wider uppercase rounded-full hover:bg-neuro-accent/90 transition-all shadow-[0_0_20px_rgba(252,221,0,0.3)] hover:shadow-[0_0_30px_rgba(252,221,0,0.5)]"
-          >
-            S'inscrire
           </button>
         </nav>
 
-        {/* Mobile menu button */}
-        <button className="md:hidden text-white p-2">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+        {/* CTA Button - Yellow bg, black text, Inter Black, rounded-sm */}
+        <button
+          onClick={() => scrollToSection('offers')}
+          className="px-5 py-2.5 bg-[#FCDD00] text-black text-xs font-black uppercase tracking-wide rounded-sm hover:bg-[#FCDD00]/90 transition-colors"
+        >
+          S'inscrire
         </button>
       </div>
     </header>
@@ -818,26 +803,26 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
             {title}
           </h3>
 
-          {/* Description - Inter Light */}
-          <p className="text-neutral-400 text-base leading-relaxed font-light">
+          {/* Description - Inter Light with border-l */}
+          <p className="text-neutral-400 text-base leading-relaxed font-light border-l-2 border-neutral-700 pl-4">
             {description}
           </p>
 
-          {/* Features Grid */}
+          {/* Features Grid - Chevron + JetBrains Mono Uppercase */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
             {features.map((feature, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 text-neutral-300 py-2"
+                className="flex items-center gap-3 py-2"
               >
-                <div className="w-1 h-1 bg-[#FCDD00]" />
-                <span className="text-sm font-medium">{feature}</span>
+                <span className="text-[#FCDD00] font-mono font-bold">&gt;</span>
+                <span className="font-mono text-xs uppercase tracking-wide text-neutral-300">{feature}</span>
               </div>
             ))}
           </div>
 
           {/* Price Block - Design System Style */}
-          <div className="pt-6">
+          <div className="pt-6 flex flex-col sm:flex-row items-start gap-4">
             <div className="inline-block bg-black border border-neutral-800 px-6 py-4">
               <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-600 mb-1">
                 Investissement
@@ -846,6 +831,14 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
                 {price}
               </div>
             </div>
+            {/* CTA Button - Outline Style */}
+            <a
+              href={`/offers/${offer.id}`}
+              className="px-6 py-4 bg-black border border-white/30 text-white font-mono text-xs uppercase tracking-widest hover:border-[#FCDD00] hover:text-[#FCDD00] transition-colors flex items-center gap-2"
+            >
+              En savoir plus
+              <span>&gt;</span>
+            </a>
           </div>
         </div>
       </div>
@@ -1104,13 +1097,16 @@ function ReviewsSection() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
 
       <div className="relative max-w-6xl mx-auto px-6">
-        {/* Header */}
+        {/* Header with Stroke Text Effect */}
         <div className="text-center mb-16">
           <span className="font-mono text-[10px] sm:text-xs text-neuro-accent uppercase tracking-[0.3em] block mb-3">
             Beta Testers • {BETA_REVIEWS.length}+ avis
           </span>
-          <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl text-white uppercase tracking-tight mb-4">
-            Résultats Réels
+          <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
+            RÉSULTATS
+          </h2>
+          <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>
+            VALIDÉS
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
             Des transformations mesurables, validées par les données. Ils ont testé les anciens audits, ils valident ApexLabs.
@@ -1246,9 +1242,12 @@ function VisionSection() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FCDD00] mb-6">Notre Vision</p>
-          <h2 className="text-4xl md:text-6xl font-black mb-8 text-white tracking-tight uppercase">
-            L'AVENIR DE L'OPTIMISATION HUMAINE
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#FCDD00] mb-6">Notre Vision</p>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black mb-2 text-white tracking-tighter uppercase">
+            OPTIMISATION
+          </h2>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black mb-8 tracking-tighter uppercase" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>
+            HUMAINE
           </h2>
           <p className="text-gray-400 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
             ApexLabs représente la convergence de la biologie de pointe et de l'intelligence artificielle.
