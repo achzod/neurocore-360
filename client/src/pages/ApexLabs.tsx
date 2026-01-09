@@ -39,7 +39,7 @@ const OFFERS: Offer[] = [
     subtitle: "Performance Musculaire",
     description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire, de la qualité des tissus et du profil hormonal anabolique. Identifie tes leviers de croissance et optimise ta récupération neuro-musculaire.",
     features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
-    price: "197€",
+    price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
   },
@@ -49,7 +49,7 @@ const OFFERS: Offer[] = [
     subtitle: "La Vérité Biologique",
     description: "Plonge au cœur de ta biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance : statut inflammatoire, hormonal, micronutritionnel et métabolique. La donnée biologique brute au service de ta santé.",
     features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
-    price: "297€",
+    price: "99€",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true
@@ -60,7 +60,7 @@ const OFFERS: Offer[] = [
     subtitle: "L'Omniscience Corporelle",
     description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de ta physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
     features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
-    price: "497€",
+    price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
@@ -70,7 +70,7 @@ const OFFERS: Offer[] = [
     subtitle: "Préservation du Système Nerveux",
     description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détecte les signes physiologiques de l'épuisement et la fatigue centrale avant qu'ils ne deviennent cliniques. Protège ton actif le plus précieux : ton mental.",
     features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
-    price: "247€",
+    price: "39€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
   }
