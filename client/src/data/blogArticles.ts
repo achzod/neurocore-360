@@ -1,6 +1,7 @@
 // Blog articles data - ACHZOD original content
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
+import YAMAMOTO_ARTICLES from "./yamamotoArticles.json";
 
 export interface BlogArticle {
   id: string;
@@ -34,6 +35,11 @@ export const BLOG_CATEGORIES = [
 ] as const;
 
 export const BLOG_ARTICLES: BlogArticle[] = [
+  // ============================================================================
+  // YAMAMOTO NUTRITION - Articles traduits par ACHZOD
+  // ============================================================================
+  ...(YAMAMOTO_ARTICLES as BlogArticle[]),
+
   // ============================================================================
   // STRESS & HRV
   // ============================================================================
