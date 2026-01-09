@@ -101,7 +101,7 @@ export default function BloodAnalysisOffer() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/blood-analysis">
-              <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+              <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-sm hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
                 Analyser mon bilan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -310,7 +310,7 @@ export default function BloodAnalysisOffer() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/blood-analysis">
-                <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+                <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-sm hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
                   Analyser mon bilan
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -338,7 +338,7 @@ export default function BloodAnalysisOffer() {
             50+ biomarqueurs analyses. Protocoles personnalises.
           </p>
           <Link href="/blood-analysis">
-            <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-sm hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
               Lancer mon Blood Analysis — 99€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>

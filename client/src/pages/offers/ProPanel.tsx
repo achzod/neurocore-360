@@ -102,7 +102,7 @@ export default function ProPanel() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/questionnaire?plan=pro">
-              <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(34,211,238,0.3)]">
+              <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                 Commencer mon Ultimate Scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -409,7 +409,7 @@ export default function ProPanel() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/questionnaire?plan=pro">
-                <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(34,211,238,0.3)]">
+                <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -486,9 +486,9 @@ export default function ProPanel() {
                 </ul>
                 <Link href={plan.href}>
                   <button
-                    className={`w-full py-3 rounded-full font-semibold transition-all ${
+                    className={`w-full py-3 rounded-sm font-semibold transition-all ${
                       plan.current
-                        ? "bg-cyan-400 text-black hover:bg-cyan-300"
+                        ? "bg-[#FCDD00] text-black hover:bg-[#FCDD00]/90"
                         : "bg-white/10 text-white hover:bg-white/20"
                     }`}
                   >
@@ -519,7 +519,7 @@ export default function ProPanel() {
             Le maximum de donnees pour le maximum de resultats.
           </p>
           <Link href="/questionnaire?plan=pro">
-            <button className="group inline-flex items-center gap-3 bg-cyan-400 text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-cyan-300 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(34,211,238,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Ultimate Scan — 79€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
