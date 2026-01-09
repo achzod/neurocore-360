@@ -979,6 +979,7 @@ function CertificationsSection() {
 // ============================================================================
 const BETA_REVIEWS = [
   { name: "Thomas R.", role: "Entrepreneur, 34 ans", rating: 5, text: "J'ai fait l'audit gratuit en septembre 2025. Le rapport m'a ouvert les yeux sur pourquoi je stagnais depuis des mois. En 3 semaines j'ai vu la différence.", metric: "-8kg", metricLabel: "masse grasse" },
+  { name: "Julien R.", role: "Développeur, 32 ans", rating: 5, text: "L'audit métabolique gratuit a détecté des problèmes de posture : lordose lombaire, épaules en avant, cou en extension. Plus des asymétries musculaires. Je suis allé voir un kiné qui a tout confirmé. 3 mois de rééducation et je n'ai plus de douleurs.", metric: "0", metricLabel: "douleurs dos" },
   { name: "Sarah M.", role: "Athlète CrossFit, 28 ans", rating: 5, text: "Testé en octobre 2025. Enfin des recommandations qui prennent en compte mon niveau d'entraînement. Pas du générique. Mes perfs ont décollé.", metric: "+15%", metricLabel: "performance" },
   { name: "Marc D.", role: "Cadre dirigeant, 42 ans", rating: 5, text: "Audit de septembre 2025. L'analyse HRV m'a révélé que j'étais en pré-burnout sans le savoir. Le protocole m'a remis sur pied.", metric: "HRV +40%", metricLabel: "récupération" },
   { name: "Julie L.", role: "Coach sportive, 31 ans", rating: 5, text: "Depuis l'audit d'octobre 2025, je recommande à tous mes clients. Le niveau de détail sur la nutrition est incomparable.", metric: "100%", metricLabel: "clients satisfaits" },
