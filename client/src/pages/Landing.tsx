@@ -39,7 +39,7 @@ function ShaderBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {/* Base gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-950 to-black" />
+      <div className="absolute inset-0 bg-gradient-to-br from-black via-[#050505] to-black" />
 
       {/* Animated gradient orbs */}
       <motion.div
@@ -255,7 +255,7 @@ function OfferCard({ offer }: { offer: Offer }) {
       <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-24`}>
         {/* Image Side with HUD/Tech Overlay */}
         <div className="w-full lg:w-1/2 relative">
-          <div className="relative aspect-[4/3] overflow-hidden rounded bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
+          <div className="relative aspect-[4/3] overflow-hidden rounded bg-[#1a1a1a] border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
             {/* Scan Line Animation */}
             <div className="absolute inset-0 z-30 pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity duration-700">
               <motion.div
@@ -270,7 +270,7 @@ function OfferCard({ offer }: { offer: Offer }) {
             <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-white/30 z-20 rounded-bl-lg group-hover:border-white/80 transition-colors" />
             <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-white/30 z-20 rounded-br-lg group-hover:border-white/80 transition-colors" />
             {/* Floating Label */}
-            <div className="absolute top-8 left-8 z-20 backdrop-blur-md px-3 py-1 border rounded text-[10px] tracking-widest uppercase font-bold shadow-lg bg-black/60 border-[#FCDD00]/30 text-[#FCDD00]">
+            <div className="absolute top-8 left-8 z-20 backdrop-blur-md px-3 py-1 border rounded text-[10px] tracking-widest uppercase font-bold shadow-lg bg-[#000000]/60 border-[#FCDD00]/30 text-[#FCDD00]">
               SYSTEM ONLINE
             </div>
             {/* Overlay Gradient */}
@@ -298,7 +298,7 @@ function OfferCard({ offer }: { offer: Offer }) {
             <h3 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
               {title}
             </h3>
-            <p className="text-gray-400 text-lg leading-relaxed border-l border-white/10 pl-6 group-hover:border-white/40 transition-colors duration-500">
+            <p className="text-[#9CA3AF] text-lg leading-relaxed border-l border-white/10 pl-6 group-hover:border-white/40 transition-colors duration-500">
               {description}
             </p>
           </div>
@@ -307,18 +307,18 @@ function OfferCard({ offer }: { offer: Offer }) {
             {features.map((feature, idx) => (
               <div key={idx} className="flex items-center gap-3 py-2">
                 <span className="text-[#FCDD00] font-mono font-bold">&gt;</span>
-                <span className="font-mono text-xs uppercase tracking-wide text-neutral-300">{feature}</span>
+                <span className="font-mono text-xs uppercase tracking-wide text-[#D1D5DB]">{feature}</span>
               </div>
             ))}
           </div>
           {/* Price + CTA */}
           <div className="pt-6 flex flex-col sm:flex-row items-start gap-4">
-            <div className="inline-block bg-black border border-neutral-800 px-6 py-4">
-              <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-600 mb-1">Investissement</div>
+            <div className="inline-block bg-[#000000] border border-[#333333] px-6 py-4">
+              <div className="font-mono text-[9px] uppercase tracking-widest text-[#6B7280] mb-1">Investissement</div>
               <div className="text-2xl md:text-3xl font-black text-white tracking-tight">{price}</div>
             </div>
             <Link href={href}>
-              <button className="px-6 py-4 bg-black border border-white/30 text-white font-mono text-xs uppercase tracking-widest hover:border-[#FCDD00] hover:text-[#FCDD00] transition-colors flex items-center gap-2">
+              <button className="px-6 py-4 bg-[#000000] border border-white/30 text-white font-mono text-xs uppercase tracking-widest hover:border-[#FCDD00] hover:text-[#FCDD00] transition-colors flex items-center gap-2">
                 En savoir plus
                 <span>&gt;</span>
               </button>
@@ -335,13 +335,13 @@ function OfferCard({ offer }: { offer: Offer }) {
 // ============================================================================
 function OffersSection() {
   return (
-    <section id="detailed-offers" className="bg-black py-24 relative">
+    <section id="detailed-offers" className="bg-[#000000] py-24 relative">
       <div className="container mx-auto px-6">
         <div className="mb-20 text-center max-w-3xl mx-auto">
           <span className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-4 block">Nos Protocoles</span>
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">NOS</h2>
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>OFFRES</h2>
-          <p className="text-gray-400 font-light">Des solutions adaptées à chaque niveau d'exigence. Choisis ta voie vers l'excellence.</p>
+          <p className="text-[#9CA3AF] font-light">Des solutions adaptées à chaque niveau d'exigence. Choisis ta voie vers l'excellence.</p>
         </div>
         <div className="flex flex-col">
           {LANDING_OFFERS.map((offer) => (
@@ -365,7 +365,7 @@ function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#000000]">
       {/* Shader Background */}
       <ShaderBackground />
 
@@ -377,7 +377,7 @@ function HeroSection() {
         >
           {/* Badge */}
           <motion.div
-            className="mb-8 inline-flex items-center gap-2 rounded-full border border-gray-800 bg-gray-900/50 px-5 py-2.5 text-sm backdrop-blur-sm"
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#333333] bg-white/[0.03] px-5 py-2.5 text-sm backdrop-blur-sm"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -387,7 +387,7 @@ function HeroSection() {
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-gray-400">par Achzod</span>
+            <span className="text-[#9CA3AF]">par Achzod</span>
           </motion.div>
 
           {/* Main headline - ApexLabs Style */}
@@ -406,7 +406,7 @@ function HeroSection() {
 
           {/* Tagline */}
           <motion.p
-            className="mx-auto mb-12 max-w-xl text-xl text-gray-500"
+            className="mx-auto mb-12 max-w-xl text-xl text-[#9CA3AF]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
@@ -444,7 +444,7 @@ function HeroSection() {
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <ChevronDown className="h-6 w-6 text-gray-600" />
+          <ChevronDown className="h-6 w-6 text-[#6B7280]" />
         </motion.div>
       </div>
     </section>
@@ -541,7 +541,7 @@ function FiveOffersSection() {
   ];
 
   return (
-    <section id="offers" className="py-32 bg-black">
+    <section id="offers" className="py-32 bg-[#000000]">
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -552,7 +552,7 @@ function FiveOffersSection() {
           <span className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-4 block">Nos Protocoles</span>
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">CHOISIS</h2>
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>TON SCAN</h2>
-          <p className="text-gray-400 font-light">Du diagnostic à l'optimisation complète.</p>
+          <p className="text-[#9CA3AF] font-light">Du diagnostic à l'optimisation complète.</p>
         </motion.div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -568,7 +568,7 @@ function FiveOffersSection() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Link href={offer.href}>
-                  <div className={`group relative h-full cursor-pointer rounded-sm border transition-all duration-300 hover:border-[#FCDD00]/50 ${isPopular ? 'border-[#FCDD00] bg-[#FCDD00]/5' : 'border-gray-800 bg-gray-900/50 hover:bg-gray-900'}`}>
+                  <div className={`group relative h-full cursor-pointer rounded-sm border transition-all duration-300 hover:border-[#FCDD00]/50 ${isPopular ? 'border-[#FCDD00] bg-[#FCDD00]/5' : 'border-[#333333] bg-white/[0.03] hover:bg-white/[0.05]'}`}>
                     {isPopular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <span className="bg-[#FCDD00] text-black text-xs font-semibold px-3 py-1 rounded-full">Populaire</span>
@@ -576,22 +576,22 @@ function FiveOffersSection() {
                     )}
                     <div className="p-6">
                       <div className="mb-4">
-                        <Icon className={`h-6 w-6 ${isPopular ? 'text-[#FCDD00]' : 'text-gray-500'}`} />
+                        <Icon className={`h-6 w-6 ${isPopular ? 'text-[#FCDD00]' : 'text-[#9CA3AF]'}`} />
                       </div>
                       <h3 className="text-lg font-semibold text-white mb-1">{offer.name}</h3>
-                      <p className="text-xs text-gray-500 mb-4">{offer.subtitle}</p>
+                      <p className="text-xs text-[#9CA3AF] mb-4">{offer.subtitle}</p>
                       <div className={`text-3xl font-bold mb-6 ${isPopular ? 'text-[#FCDD00]' : 'text-white'}`}>
                         {offer.price}
                       </div>
                       <ul className="space-y-2">
                         {offer.features.slice(0, 4).map((feature, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                          <li key={i} className="flex items-start gap-2 text-sm text-[#9CA3AF]">
                             <Check className="h-4 w-4 text-[#FCDD00] mt-0.5 shrink-0" />
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-6 flex items-center gap-1 text-sm text-gray-500 group-hover:text-[#FCDD00] transition-colors">
+                      <div className="mt-6 flex items-center gap-1 text-sm text-[#9CA3AF] group-hover:text-[#FCDD00] transition-colors">
                         <span>En savoir plus</span>
                         <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </div>
@@ -645,7 +645,7 @@ function CertificationsSection() {
   const mediaLogos = ["Yahoo Finance", "FOX 40", "BENZINGA", "StreetInsider", "MarketWatch"];
 
   return (
-    <section className="bg-black py-20">
+    <section className="bg-[#000000] py-20">
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -653,7 +653,7 @@ function CertificationsSection() {
           viewport={{ once: true }}
           className="mb-16 text-center"
         >
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-gray-500">
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-[#9CA3AF]">
             11 Certifications Internationales
           </p>
         </motion.div>
@@ -666,13 +666,13 @@ function CertificationsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="relative rounded-sm border border-gray-800 bg-gray-950/50 p-6 hover:border-gray-700 transition-all duration-300"
+              className="relative rounded-sm border border-[#333333] bg-[#050505]/50 p-6 hover:border-gray-700 transition-all duration-300"
             >
               <div className="h-16 mb-6 flex items-center justify-center">
                 <img src={cert.logo} alt={cert.name} className="h-12 w-auto object-contain" />
               </div>
               <h3 className="text-xl font-bold text-white text-center mb-2">{cert.name}</h3>
-              <p className="text-sm text-gray-500 text-center mb-6">{cert.fullName}</p>
+              <p className="text-sm text-[#9CA3AF] text-center mb-6">{cert.fullName}</p>
               <div className="flex flex-wrap justify-center gap-2 mb-4">
                 {cert.certs.map((c) => (
                   <span key={c} className="text-xs font-medium text-[#FCDD00] border border-[#FCDD00]/30 bg-[#FCDD00]/10 px-3 py-1 rounded-full">
@@ -680,16 +680,16 @@ function CertificationsSection() {
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-gray-600 text-center">{cert.country}</p>
+              <p className="text-xs text-[#6B7280] text-center">{cert.country}</p>
             </motion.div>
           ))}
         </div>
 
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-gray-600 mb-8">Vu dans les médias</p>
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-[#6B7280] mb-8">Vu dans les médias</p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             {mediaLogos.map((media) => (
-              <span key={media} className="text-sm text-gray-500 hover:text-gray-400 transition-colors">{media}</span>
+              <span key={media} className="text-sm text-[#9CA3AF] hover:text-[#9CA3AF] transition-colors">{media}</span>
             ))}
           </div>
         </motion.div>
@@ -711,7 +711,7 @@ function SocialProofBanner() {
   };
 
   return (
-    <section className="py-16 bg-black border-y border-gray-900">
+    <section className="py-16 bg-[#000000] border-y border-[#333333]">
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -721,14 +721,14 @@ function SocialProofBanner() {
         >
           <div className="text-center sm:text-left">
             <h3 className="text-3xl sm:text-4xl font-bold">
-              <span className="text-gray-500">Rejoins la </span>
+              <span className="text-[#9CA3AF]">Rejoins la </span>
               <span className="text-white">communauté</span>
             </h3>
             <div className="mt-3 flex gap-1 justify-center sm:justify-start">
               {[1, 2, 3, 4, 5].map((i) => (
                 <Star key={i} className="h-5 w-5 fill-[#FCDD00] text-[#FCDD00]" />
               ))}
-              <span className="ml-2 text-sm text-gray-500">4.9/5</span>
+              <span className="ml-2 text-sm text-[#9CA3AF]">4.9/5</span>
             </div>
           </div>
           <button
@@ -760,7 +760,7 @@ function WearablesSection() {
   ];
 
   return (
-    <section className="py-20 bg-black">
+    <section className="py-20 bg-[#000000]">
       <div className="mx-auto max-w-5xl px-4 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -769,7 +769,7 @@ function WearablesSection() {
         >
           <p className="text-xs uppercase tracking-[0.3em] text-[#FCDD00] mb-4">Intégrations</p>
           <h2 className="mb-4 text-3xl sm:text-4xl md:text-5xl font-black text-white">Sync tes wearables</h2>
-          <p className="mb-12 text-base text-gray-500">Connecte tes données pour une analyse plus précise</p>
+          <p className="mb-12 text-base text-[#9CA3AF]">Connecte tes données pour une analyse plus précise</p>
 
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             {wearables.map((brand, index) => (
@@ -781,9 +781,9 @@ function WearablesSection() {
                 transition={{ delay: index * 0.05 }}
                 className={`relative flex flex-col items-center ${!brand.available ? "opacity-40" : "hover:opacity-80"} transition-opacity duration-300`}
               >
-                {brand.comingSoon && <span className="absolute -top-3 text-[9px] text-gray-500">Bientôt</span>}
+                {brand.comingSoon && <span className="absolute -top-3 text-[9px] text-[#9CA3AF]">Bientôt</span>}
                 <img src={brand.logo} alt={brand.name} className="h-8 w-8 object-contain mb-2 rounded grayscale hover:grayscale-0 transition-all duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                <span className="text-xs text-gray-500">{brand.name}</span>
+                <span className="text-xs text-[#9CA3AF]">{brand.name}</span>
               </motion.div>
             ))}
           </div>
@@ -805,7 +805,7 @@ function MeasurableResultsSection() {
   ];
 
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-[#000000] overflow-hidden">
       {/* Subtle gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-black to-black" />
 
@@ -833,7 +833,7 @@ function MeasurableResultsSection() {
                 transition={{ delay: index * 0.1 }}
                 className="group relative"
               >
-                <div className="relative p-8 rounded-sm border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
+                <div className="relative p-8 rounded-sm border border-[#333333] bg-white/[0.02] transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-white/[0.03]">
                   {/* Icon */}
                   <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20">
                     <Icon className="h-7 w-7 text-[#FCDD00]" />
@@ -850,7 +850,7 @@ function MeasurableResultsSection() {
                     {result.metric}
                   </motion.div>
 
-                  <div className="text-gray-500 text-sm uppercase tracking-wider">{result.label}</div>
+                  <div className="text-[#9CA3AF] text-sm uppercase tracking-wider">{result.label}</div>
                 </div>
               </motion.div>
             );
@@ -887,7 +887,7 @@ function TestimonialsSection() {
   ];
 
   return (
-    <section id="reviews" className="py-32 bg-black">
+    <section id="reviews" className="py-32 bg-[#000000]">
       <div className="mx-auto max-w-7xl px-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -910,7 +910,7 @@ function TestimonialsSection() {
               transition={{ delay: index * 0.15 }}
               className="group"
             >
-              <div className="h-full p-8 rounded-sm border border-gray-800 bg-gray-900/30 transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-gray-900/50">
+              <div className="h-full p-8 rounded-sm border border-[#333333] bg-white/[0.02] transition-all duration-300 hover:border-[#FCDD00]/30 hover:bg-white/[0.03]">
                 {/* Rating */}
                 <div className="mb-6 flex gap-1">
                   {Array.from({ length: testimonial.rating }).map((_, i) => (
@@ -919,13 +919,13 @@ function TestimonialsSection() {
                 </div>
 
                 {/* Quote */}
-                <Quote className="mb-4 h-6 w-6 text-gray-700" />
-                <p className="mb-8 text-gray-300 leading-relaxed">{testimonial.content}</p>
+                <Quote className="mb-4 h-6 w-6 text-[#4B5563]" />
+                <p className="mb-8 text-[#D1D5DB] leading-relaxed">{testimonial.content}</p>
 
                 {/* Author */}
-                <div className="pt-6 border-t border-gray-800">
+                <div className="pt-6 border-t border-[#333333]">
                   <div className="font-semibold text-white">{testimonial.name}</div>
-                  <div className="text-sm text-gray-500">{testimonial.role}</div>
+                  <div className="text-sm text-[#9CA3AF]">{testimonial.role}</div>
                 </div>
               </div>
             </motion.div>
@@ -978,7 +978,7 @@ function FAQSection() {
   ];
 
   return (
-    <section className="py-32 bg-gray-950">
+    <section className="py-32 bg-[#050505]">
       <div className="mx-auto max-w-3xl px-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -999,15 +999,15 @@ function FAQSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
-              className="rounded-sm border border-gray-800 bg-gray-900/50 overflow-hidden"
+              className="rounded-sm border border-[#333333] bg-white/[0.03] overflow-hidden"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="flex w-full items-center justify-between p-5 text-left hover:bg-gray-900/80 transition-colors"
+                className="flex w-full items-center justify-between p-5 text-left hover:bg-white/[0.05]/80 transition-colors"
               >
                 <span className="font-medium text-white">{faq.question}</span>
                 <ChevronDown
-                  className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                  className={`h-5 w-5 text-[#9CA3AF] transition-transform duration-200 ${
                     openIndex === index ? "rotate-180 text-[#FCDD00]" : ""
                   }`}
                 />
@@ -1020,7 +1020,7 @@ function FAQSection() {
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="border-t border-gray-800 px-5 py-5 text-gray-400">
+                    <div className="border-t border-[#333333] px-5 py-5 text-[#9CA3AF]">
                       {faq.answer}
                     </div>
                   </motion.div>
@@ -1053,7 +1053,7 @@ function FAQSection() {
 // ============================================================================
 function FinalCTASection() {
   return (
-    <section className="relative py-32 bg-black overflow-hidden">
+    <section className="relative py-32 bg-[#000000] overflow-hidden">
       {/* Animated gradient */}
       <div className="absolute inset-0">
         <motion.div
@@ -1075,7 +1075,7 @@ function FinalCTASection() {
         >
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">OPTIMISATION</h2>
           <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-8" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>HUMAINE</h2>
-          <p className="mx-auto mb-12 max-w-xl text-lg text-gray-400 font-light">
+          <p className="mx-auto mb-12 max-w-xl text-lg text-[#9CA3AF] font-light">
             Rejoins ceux qui ont transformé leur performance.
           </p>
 
@@ -1100,7 +1100,7 @@ function FinalCTASection() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
-            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-600"
+            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-[#6B7280]"
           >
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-[#FCDD00]/50" />
@@ -1126,7 +1126,7 @@ function FinalCTASection() {
 // ============================================================================
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#000000]">
       <Header />
       <main>
         <HeroSection />

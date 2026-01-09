@@ -36,7 +36,7 @@ export function Header() {
   const isDashboard = location.startsWith("/dashboard");
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-900 bg-black">
+    <header className="sticky top-0 z-50 w-full border-b border-[#333333] bg-[#000000]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo - APEXLABS Design System */}
@@ -55,14 +55,14 @@ export function Header() {
               <Link
                 key={product.name}
                 href={product.href}
-                className="text-xs font-bold uppercase text-[#A3A3A3] transition-colors hover:text-white"
+                className="text-xs font-bold uppercase text-[#9CA3AF] transition-colors hover:text-white"
               >
                 {product.name}
               </Link>
             ))}
             <Link
               href="/blog"
-              className="text-xs font-bold uppercase text-[#A3A3A3] transition-colors hover:text-white"
+              className="text-xs font-bold uppercase text-[#9CA3AF] transition-colors hover:text-white"
             >
               Blog
             </Link>
@@ -73,13 +73,13 @@ export function Header() {
             {userEmail ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors" data-testid="button-user-menu">
+                  <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase text-[#9CA3AF] hover:text-white transition-colors" data-testid="button-user-menu">
                     <User className="h-4 w-4" />
                     <span className="hidden max-w-32 truncate sm:inline">{userEmail}</span>
                     <ChevronDown className="h-3 w-3 hidden sm:block" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-black border-neutral-800">
+                <DropdownMenuContent align="end" className="w-56 bg-[#000000] border-[#333333]">
                   <DropdownMenuItem className="text-neutral-500 text-xs font-mono">
                     {userEmail}
                   </DropdownMenuItem>
@@ -102,7 +102,7 @@ export function Header() {
               </DropdownMenu>
             ) : (
               <Link href="/auth/login" className="hidden sm:block">
-                <button className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors" data-testid="button-login">
+                <button className="text-xs font-bold uppercase text-[#9CA3AF] hover:text-white transition-colors" data-testid="button-login">
                   Connexion
                 </button>
               </Link>
@@ -116,7 +116,7 @@ export function Header() {
 
             {/* Mobile menu toggle */}
             <button
-              className="lg:hidden p-2 text-[#A3A3A3] hover:text-white transition-colors"
+              className="lg:hidden p-2 text-[#9CA3AF] hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -127,13 +127,13 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="border-t border-neutral-800 py-4 lg:hidden bg-black">
+          <nav className="border-t border-[#333333] py-4 lg:hidden bg-[#000000]">
             <div className="flex flex-col gap-1">
               {PRODUCTS.map((product) => (
                 <Link
                   key={product.name}
                   href={product.href}
-                  className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
+                  className="px-2 py-2 text-xs font-bold uppercase text-[#9CA3AF] hover:text-white transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {product.name}
@@ -141,17 +141,17 @@ export function Header() {
               ))}
               <Link
                 href="/blog"
-                className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
+                className="px-2 py-2 text-xs font-bold uppercase text-[#9CA3AF] hover:text-white transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Blog
               </Link>
-              <div className="my-2 border-t border-neutral-800" />
+              <div className="my-2 border-t border-[#333333]" />
               {userEmail ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
+                    className="px-2 py-2 text-xs font-bold uppercase text-[#9CA3AF] hover:text-white transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Mes audits
@@ -170,7 +170,7 @@ export function Header() {
               ) : (
                 <Link
                   href="/auth/login"
-                  className="px-2 py-2 text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors"
+                  className="px-2 py-2 text-xs font-bold uppercase text-[#9CA3AF] hover:text-white transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Connexion
