@@ -666,7 +666,7 @@ function CertificationsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="relative rounded-sm border border-[#333333] bg-[#050505]/50 p-6 hover:border-gray-700 transition-all duration-300"
+              className="relative rounded-sm border border-[#333333] bg-[#050505]/50 p-6 hover:border-[#4B5563] transition-all duration-300"
             >
               <div className="h-16 mb-6 flex items-center justify-center">
                 <img src={cert.logo} alt={cert.name} className="h-12 w-auto object-contain" />
@@ -807,7 +807,7 @@ function MeasurableResultsSection() {
   return (
     <section className="relative py-32 bg-[#000000] overflow-hidden">
       {/* Subtle gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-black to-black" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#000000] to-[#000000]" />
 
       <div className="relative mx-auto max-w-7xl px-4">
         <motion.div
