@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Burnout Detection Questionnaire Page
+ * APEXLABS - Burnout Detection Questionnaire Page
  * Neuro-endocrine questionnaire with 50 questions
  */
 

@@ -676,7 +676,7 @@ export default function AuditDetail() {
                       {report.auditType === "GRATUIT" && <Star className="mr-1 h-3 w-3" />}
                       Bilan {report.auditType}
                     </Badge>
-                    <h1 className="text-3xl font-bold tracking-tight">NEUROCORE 360</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">APEXLABS</h1>
                     <p className="text-slate-300 mt-1">Audit 360 Complet</p>
                   </div>
                 </div>

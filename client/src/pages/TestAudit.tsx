@@ -121,7 +121,7 @@ export default function TestAudit() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <TestTube className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="mt-4 text-2xl">Mode Test NEUROCORE</CardTitle>
+            <CardTitle className="mt-4 text-2xl">Mode Test APEXLABS</CardTitle>
             <p className="text-muted-foreground">
               Genere un audit avec des reponses pre-remplies pour tester l'analyse personnalisee
             </p>

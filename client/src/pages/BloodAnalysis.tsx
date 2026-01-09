@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Blood Analysis Page
+ * APEXLABS - Blood Analysis Page
  * PDF Upload + AI-powered expert analysis with optimal ranges
  */
 

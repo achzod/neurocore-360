@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Scan Anabolique — Julien</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+  <style>
+    /* Achzod Styleguide Colors */
+    :root {
+      --rich-black: #101010;
+      --aquamarine: #8DFFE0;
+      --purple: #9990EA;
+      --white: #FFFFFF;
+      --grey-light: rgba(255, 255, 255, 0.7);
+      --grey-muted: rgba(255, 255, 255, 0.4);
+    }
+
+    /* Eurostile fallback with Audiowide (similar geometric sans) */
+    @font-face {
+      font-family: 'Eurostile';
+      src: local('Arial Black'), local('Impact');
+      font-weight: 700;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--rich-black);
+      color: var(--white);
+      line-height: 1.7;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Logo */
+    .brand-logo {
+      display: block;
+      margin: 0 auto 32px;
+      width: 140px;
+      height: 140px;
+      opacity: 0.95;
+      transition: opacity 0.3s ease;
+    }
+
+    .brand-logo:hover {
+      opacity: 1;
+    }
+
+    /* Header */
+    .page-header {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 32px 60px;
+      text-align: center;
+    }
+
+    .page-header h1 {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--aquamarine), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .page-header p {
+      color: var(--grey-light);
+      font-size: 16px;
+      max-width: 700px;
+      margin: 0 auto 20px;
+      line-height: 1.6;
+    }
+
+    .meta-info {
+      font-size: 13px;
+      color: var(--grey-muted);
+      letter-spacing: 0.5px;
+    }
+
+    /* Score Dashboard */
+    .score-dashboard {
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      .score-dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Circular Score */
+    .score-circle-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .score-circle {
+      position: relative;
+      width: 240px;
+      height: 240px;
+    }
+
+    .circle-svg {
+      transform: rotate(-90deg);
+    }
+
+    .circle-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 12;
+    }
+
+    .circle-progress {
+      fill: none;
+      stroke: url(#gradient);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 628;
+      stroke-dashoffset: 94.20000000000005;
+      transition: stroke-dashoffset 1.5s ease;
+    }
+
+    .score-inner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .score-number {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--aquamarine), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .score-suffix {
+      font-size: 28px;
+      color: var(--grey-muted);
+      margin-left: 4px;
+    }
+
+    .score-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--grey-muted);
+      margin-top: 8px;
+    }
+
+    /* Profile Info */
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .profile-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 28px;
+      border-radius: 50px;
+      background: linear-gradient(135deg, var(--aquamarine), var(--purple));
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--rich-black);
+      box-shadow: 0 8px 24px rgba(141, 255, 224, 0.25);
+      align-self: flex-start;
+    }
+
+    /* Subscores Grid */
+    .subscores-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .subscore-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .subscore-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--aquamarine);
+      transform: translateY(-4px);
+    }
+
+    .subscore-value {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--aquamarine);
+      margin-bottom: 8px;
+    }
+
+    .subscore-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--grey-muted);
+      line-height: 1.4;
+    }
+
+    /* Main Content */
+    main {
+      max-width: 1200px;
+      margin: 0 auto 80px;
+      padding: 0 32px;
+    }
+
+    /* Audit Sections */
+    .audit-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 24px;
+      padding: 48px 40px;
+      margin-bottom: 32px;
+      transition: border-color 0.3s ease;
+    }
+
+    .audit-section:hover {
+      border-color: rgba(141, 255, 224, 0.2);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      line-height: 1.3;
+      color: var(--white);
+      flex: 1;
+    }
+
+    .section-title-text {
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .section-score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, rgba(141, 255, 224, 0.15), rgba(153, 144, 234, 0.15));
+      border: 1px solid rgba(141, 255, 224, 0.3);
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--aquamarine);
+      margin-top: 4px;
+    }
+
+    .section-score-value {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 20px;
+      background: linear-gradient(135deg, var(--aquamarine), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-number {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--grey-muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 8px 16px;
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+
+    .section-content {
+      color: var(--grey-light);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .section-content p {
+      margin-bottom: 20px;
+    }
+
+    .section-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-content ul,
+    .section-content ol {
+      margin: 20px 0 20px 28px;
+      padding-left: 12px;
+    }
+
+    .section-content li {
+      margin-bottom: 12px;
+      color: var(--grey-light);
+    }
+
+    .section-content ul:last-child,
+    .section-content ol:last-child {
+      margin-bottom: 0;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      max-width: 800px;
+      margin: 60px auto 80px;
+      padding: 48px 32px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(141, 255, 224, 0.08), rgba(153, 144, 234, 0.08));
+      border: 1px solid rgba(141, 255, 224, 0.2);
+      border-radius: 24px;
+    }
+
+    .cta-heading {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--aquamarine), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-text {
+      color: var(--grey-light);
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 18px 48px;
+      background: linear-gradient(135deg, var(--aquamarine), var(--purple));
+      color: var(--rich-black);
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-decoration: none;
+      border-radius: 50px;
+      box-shadow: 0 8px 32px rgba(141, 255, 224, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(141, 255, 224, 0.4);
+    }
+
+    .cta-button:active {
+      transform: translateY(0);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 48px 32px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--grey-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    footer strong {
+      font-family: 'Audiowide', 'Eurostile', sans-serif;
+      color: var(--aquamarine);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <img src="https://cdn.prod.website-files.com/5fd0a9c4883524725ec72282/5fd26bf8a848a19741305727_monogram-white.svg" alt="Achzod Logo" class="brand-logo">
+    <h1>Scan Anabolique</h1>
+    <p>Analyse physiologique compl&egrave;te et strat&eacute;gie d'optimisation m&eacute;tabolique pour Julien.</p>
+    <div class="meta-info">R&eacute;alis&eacute; le 08/01/2026 &bull; Par Achzod</div>
+  </header>
+
+  <div class="score-dashboard">
+    <div class="score-circle-wrapper">
+      <div class="score-circle">
+        <svg class="circle-svg" width="240" height="240" viewBox="0 0 240 240">
+          <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:var(--aquamarine);stop-opacity:1" />
+              <stop offset="100%" style="stop-color:var(--purple);stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <circle class="circle-bg" cx="120" cy="120" r="100" />
+          <circle class="circle-progress" cx="120" cy="120" r="100" />
+        </svg>
+        <div class="score-inner">
+          <div class="score-number">8.5<span class="score-suffix">/10</span></div>
+          <div class="score-label">Score Global</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-info">
+      <div class="profile-badge">PROFIL EXPLOSIF</div>
+      <div class="subscores-grid">
+        <div class="subscore-card">
+          <div class="subscore-value">7.9/10</div>
+          <div class="subscore-label">Sommeil</div>
+        </div>
+        <div class="subscore-card">
+          <div class="subscore-value">10/10</div>
+          <div class="subscore-label">S. Nerveux</div>
+        </div>
+        <div class="subscore-card">
+          <div class="subscore-value">7.0/10</div>
+          <div class="subscore-label">Axe Hormonal</div>
+        </div>
+        <div class="subscore-card">
+          <div class="subscore-value">10/10</div>
+          <div class="subscore-label">Digestion</div>
+        </div>
+        <div class="subscore-card">
+          <div class="subscore-value">7.9/10</div>
+          <div class="subscore-label">Entra&icirc;nement</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    
+    <section class="audit-section" id="section-01">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">LECTURE GLOBALE</span>
+          <span class="section-score-badge">
+            <span>Score global</span>
+            <span class="section-score-value">8.5/10</span>
+          </span>
+        </h2>
+        <span class="section-number">#01</span>
+      </div>
+      <div class="section-content">
+        <p>Vue d'ensemble</p>
+<p>Julien, 28 ans, 1m78 pour 67 kg. Tu te situes dans la catégorie des ectomorphes métaboliques avec un système nerveux de type explosif-réactif. Ton profil révèle un organisme fonctionnel sur les marqueurs de base mais bloqué sur l'anabolisme musculaire malgré un environnement hormonal et digestif favorable. Ta densité corporelle actuelle suggère un ratio masse maigre/masse grasse déséquilibré avec une incapacité à recruter les fibres musculaires de type IIx sur tes chaînes postérieures et tes ceintures scapulaires. Ton système nerveux central est exceptionnellement régulé mais ton système neuromusculaire ne traduit pas cette efficacité en hypertrophie ciblée.</p>
+<p>Blocages prioritaires identifiés</p>
+<p>Ton principal verrou se situe au niveau de la sensibilité insulinique localisée et du recrutement neuromoteur spécifique. Tu déclares explicitement que ta perte de poids se concentre sur les jambes et que tes points faibles sont jambes, épaules et trapèzes supérieurs. Cela révèle une redistribution préférentielle du stockage énergétique vers le haut du corps et une incapacité des unités motrices distales à capter le glucose post-prandial et à déclencher la synthèse protéique locale. Ton entraînement en fin de journée coïncide avec une fenêtre hormonale sous-optimale pour la stimulation maximale des fibres à haut seuil d'activation. La stagnation que tu décris depuis plus de deux ans d'entraînement sérieux indique un plafonnement du stimulus mécanique et métabolique sur ces zones spécifiques.</p>
+<p>Axes d'optimisation</p>
+<p>On va travailler sur trois leviers neurophysiologiques précis. Premier levier : la redistribution de la sensibilité à l'insuline via un timing glucidique chirurgical autour des séances et une manipulation de la fréquence d'entraînement des zones récalcitrantes. Deuxième levier : l'optimisation du recrutement des unités motrices à haut seuil par des protocoles de potentialisation post-activation spécifiques aux chaînes musculaires déficitaires. Troisième levier : le repositionnement chronobiologique de tes séances pour synchroniser ton pic naturel de testostérone et de cortisol avec la fenêtre d'entraînement maximale. L'objectif est de débloquer l'hypertrophie locale sur les quadriceps, deltoïdes postérieurs et trapèzes supérieurs en réveillant les voies mTOR et en augmentant la capillarisation de ces zones.</p>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-02">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">SOMMEIL ET RÉCUPÉRATION</span>
+          <span class="section-score-badge">
+            <span>Score sommeil</span>
+            <span class="section-score-value">7.9/10</span>
+          </span>
+        </h2>
+        <span class="section-number">#02</span>
+      </div>
+      <div class="section-content">
+        <p>Ce que tes réponses révèlent</p>
+<p>Tu dors 7 heures par nuit avec un réveil nocturne unique et un niveau d'énergie au réveil à 7/10. Tu te détends facilement le soir ce qui indique un switch parasympathique fonctionnel. Ces données révèlent un sommeil quantitativement limite mais qualitativement correct avec une architecture préservée. Ton réveil nocturne unique suggère soit une transition de cycle ultradirien incomplète soit une légère élévation du cortisol en milieu de nuit. L'énergie au réveil à 7/10 indique que tes phases de sommeil profond N3 sont probablement raccourcies ou fragmentées ce qui impacte directement ta sécrétion nocturne de GH.</p>
+<p>Mécanismes en jeu</p>
+<p>Le sommeil fonctionne en cycles de 90 minutes alternant sommeil léger N1-N2, sommeil profond N3 et sommeil paradoxal REM. La phase N3 concentrée en première partie de nuit active massivement la sécrétion pulsatile de l'hormone de croissance par l'hypophyse via la libération de GHRH hypothalamique. C'est pendant cette fenêtre de 2 à 3 heures que ton corps effectue 70% de ses réparations tissulaires et de sa synthèse protéique musculaire. Ton réveil nocturne interrompt ce processus et crée une élévation transitoire du cortisol qui antagonise directement l'action anabolique de la GH sur les tissus périphériques. Avec 7 heures de sommeil tu obtiens environ 4 cycles complets alors que ton âge et ton objectif d'hypertrophie nécessitent 5 cycles soit 7h30 minimum pour maximiser la fenêtre anabolique nocturne.</p>
+<p>Actions prioritaires</p>
+<ul class="action-list">
+<li>Extension de la durée totale à 7h30-8h : couche-toi 30 minutes plus tôt en fixant une heure de coucher stricte à 22h30 si réveil à 6h30. Cette demi-heure supplémentaire ajoute un cycle complet et augmente de 40% ton exposition cumulée au sommeil profond N3 qui est concentré proportionnellement plus dans les premiers cycles. L'impact direct est une augmentation de 15 à 20% de la sécrétion nocturne de GH mesurable sur la fenêtre 23h-3h du matin.</li>
+</ul>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-03">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">STRESS ET SYSTÈME NERVEUX</span>
+          <span class="section-score-badge">
+            <span>Score stress & système nerveux</span>
+            <span class="section-score-value">10.0/10</span>
+          </span>
+        </h2>
+        <span class="section-number">#03</span>
+      </div>
+      <div class="section-content">
+        <p>Ce que tes réponses révèlent</p>
+<p>Tu déclares un niveau de stress faible, aucune tension physique au niveau nuque-trapèzes-mâchoire et une détente facile le soir. Ce profil est exceptionnel et révèle un tonus vagal élevé avec une dominance parasympathique fonctionnelle. Ton système nerveux autonome bascule efficacement du mode sympathique diurne au mode parasympathique nocturne sans résistance. L'absence de tensions musculaires chroniques indique que ton axe hypothalamo-hypophyso-surrénalien HPA n'est pas en hyperactivation et que ta production de catécholamines reste dans les normes physiologiques. C'est un atout métabolique majeur pour la récupération et l'anabolisme.</p>
+<p>Mécanismes en jeu</p>
+<p>Le nerf vague est le chef d'orchestre de ta récupération et contrôle 75% des signaux parasympathiques de ton corps. Un tonus vagal élevé se traduit par une variabilité de fréquence cardiaque HRV élevée, une digestion optimale, une inflammation systémique basse et une récupération post-effort accélérée. Ton score parfait de 10/10 indique que ton hypothalamus ne sur-sécrète pas de CRH, que ton hypophyse ne libère pas d'ACTH en excès et que tes surrénales produisent du cortisol selon un rythme circadien préservé avec un pic matinal suivi d'une descente progressive. Cette régulation permet une sensibilité optimale des récepteurs à la testostérone et à l'insuline dans les tissus périphériques. Ton absence de bruxisme et de tensions cervicales confirme que ton système nerveux central ne maintient pas d'hypertonicité des motoneurones alpha pendant le repos.</p>
+<p>Actions prioritaires</p>
+<ul class="action-list">
+<li>Maintien du tonus vagal par stimulation active : intègre 10 minutes de cohérence cardiaque quotidienne à 6 respirations par minute soit 5 secondes inspiration et 5 secondes expiration. Ce pattern active directement les barorécepteurs aortiques et carotidiens qui stimulent le noyau du tractus solitaire dans le tronc cérébral et amplifient le signal vagal efférent. Pratique ce protocole à 7h puis à 16h pour maintenir une HRV élevée tout au long de la journée.</li>
+</ul>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-04">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">PROFIL HORMONAL ET MÉTABOLIQUE</span>
+          <span class="section-score-badge">
+            <span>Score hormonal & métabolique</span>
+            <span class="section-score-value">7.0/10</span>
+          </span>
+        </h2>
+        <span class="section-number">#04</span>
+      </div>
+      <div class="section-content">
+        <p>Ce que tes réponses révèlent</p>
+<p>Tu rapportes une libido normale avec quelques variations légères d'humeur mais surtout une stagnation claire sur la prise de muscle malgré plus de deux ans d'entraînement sérieux. Ton objectif explicite est de prendre du muscle sec sur les jambes, épaules et trapèzes supérieurs avec une perte préférentielle aux jambes quand tu perds du poids. Ce pattern révèle une dysrégulation localisée de la sensibilité aux androgènes et à l'insuline sur ces zones spécifiques. Ta composition corporelle à 67 kg pour 1m78 indique un déficit de masse maigre de 6 à 8 kg par rapport à ton potentiel génétique à cet âge. L'absence de symptômes systémiques suggère que ton axe gonadotrope fonctionne correctement au niveau central mais que la traduction périphérique est inefficace.</p>
+<p>Mécanismes en jeu</p>
+<p>La testostérone circulante se lie aux récepteurs aux androgènes présents dans les fibres musculaires pour activer les voies de synthèse protéique via mTOR et inhiber la myostatine. La densité de ces récepteurs varie selon les groupes musculaires et l'historique d'entraînement. Tes jambes et épaules présentent probablement une densité réduite de récepteurs fonctionnels ou une expression diminuée de l'enzyme 5-alpha-réductase qui convertit la testostérone en dihydrotestostérone DHT, la forme la plus androgénique. Parallèlement l'insuline post-prandiale doit activer les transporteurs GLUT4 dans ces muscles pour permettre l'entrée du glucose et déclencher la cascade anabolique. Ton corps redistribue préférentiellement les nutriments vers les zones à haute sensibilité insulinique probablement le haut du torse et néglige les zones résistantes. Le ratio cortisol/testostérone global est probablement correct vu ton faible stress mais le timing de ces hormones autour de tes séances n'est pas optimal.</p>
+<p>Actions prioritaires</p>
+<ul class="action-list">
+<li>Optimisation du timing d'entraînement pour synchronisation hormonale : décale au moins une séance par semaine en matinée entre 8h et 10h quand ton pic naturel de testostérone est maximal soit 30% plus élevé qu'en fin de journée. Cette fenêtre hormonale active davantage les récepteurs aux androgènes pendant et après l'effort. Programme cette séance sur tes points faibles jambes ou épaules pour maximiser la stimulation anabolique locale quand le contexte hormonal est le plus favorable.</li>
+</ul>
+<ul class="action-list">
+<li>Manipulation de la fréquence d'entraînement pour sensibilisation des récepteurs : passe à une fréquence de 2 fois par semaine sur jambes et épaules au lieu d'une répartition classique. L'augmentation de la fréquence d'exposition aux stimuli mécaniques sur 72 heures augmente l'expression des récepteurs aux androgènes de 20 à 30% dans ces tissus. Utilise une séance lourde en début de semaine avec charges supérieures à 85% du 1RM pour recrutement maximal des fibres IIx puis une séance métabolique à 65-70% avec temps sous tension élevé pour stimulation de l'angiogenèse.</li>
+</ul>
+<ul class="action-list">
+<li>Fenêtre glucidique ciblée pour répartition de l'insuline : concentre 60% de tes glucides quotidiens dans les 4 heures post-entraînement des séances dédiées aux points faibles. Vise 1,2 g de glucides par kg de poids de corps soit environ 80 g répartis en deux prises post-workout immédiat puis repas à H+2. Cette surcharge glucidique transitoire force l'expression des transporteurs GLUT4 dans les muscles sollicités et améliore progressivement leur sensibilité à l'insuline. Couple ces glucides avec 40 g de protéines rapides pour maximiser la réponse anabolique via la co-stimulation insuline-acides aminés sur mTOR.</li>
+</ul>
+<ul class="action-list">
+<li>Soutien micronutritionnel pour optimisation androgénique : intègre 30 mg de zinc bisglycinate et 400 UI de vitamine D3 quotidiennement si tu n'es pas déjà supplémenté. Le zinc est cofacteur de l'aromatase et de la 5-alpha-réductase et une carence même légère réduit la conversion périphérique de la testostérone en formes actives. La vitamine D fonctionne comme un stéroïde qui module l'expression des gènes androgènes et améliore la contractilité musculaire. Ces deux micronutriments potentialisent la réponse locale aux signaux anaboliques.</li>
+</ul>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-05">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">DIGESTION ET NUTRITION</span>
+          <span class="section-score-badge">
+            <span>Score digestion & nutrition</span>
+            <span class="section-score-value">10.0/10</span>
+          </span>
+        </h2>
+        <span class="section-number">#05</span>
+      </div>
+      <div class="section-content">
+        <p>Ce que tes réponses révèlent</p>
+<p>Tu déclares un appétit bon et régulier, une digestion fluide sans inconfort, un transit régulier et aucune envie sucrée en fin de journée. Ce profil digestif est exceptionnel et reflète un microbiote équilibré, une sécrétion enzymatique pancréatique optimale et une intégrité de la barrière intestinale. L'absence de fringales sucrées indique une glycémie stable sans pics ni crashs ce qui traduit une sensibilité à l'insuline pancréatique fonctionnelle. Ton absence de ballonnements ou d'inconfort post-prandial confirme que ton système nerveux entérique fonctionne en synergie avec ton système nerveux autonome. C'est un atout métabolique majeur car 70% de ton système immunitaire réside dans ton intestin et un dysfonctionnement digestif crée une inflammation systémique qui bloque l'anabolisme.</p>
+<p>Mécanismes en jeu</p>
+<p>La digestion est contrôlée par le système nerveux entérique qui contient 500 millions de neurones et communique bidirectionnellement avec ton cerveau via le nerf vague. Ton microbiote intestinal composé de 100 000 milliards de bactéries fermente les fibres en acides gras à chaîne courte comme le butyrate qui nourrit les colonocytes et régule l'inflammation. Une barrière intestinale intègre empêche le passage de lipopolysaccharides bactériens LPS dans la circulation qui activeraient ton système immunitaire et augmenteraient les cytokines pro-inflammatoires comme le TNF-alpha et l'IL-6. Ces cytokines inhibent directement les voies de signalisation de l'insuline et de mTOR dans les muscles ce qui bloque la synthèse protéique. Ton score parfait indique que cette cascade inflammatoire n'est pas active chez toi. Ta régulation de la ghréline hormone de la faim et de la leptine hormone de satiété est fonctionnelle car ton hypothalamus reçoit des signaux clairs sans interférence inflammatoire.</p>
+<p>Actions prioritaires</p>
+<ul class="action-list">
+<li>Maintien de l'écosystème intestinal par diversité alimentaire : consomme au moins 30 variétés végétales différentes par semaine incluant légumes, fruits, légumineuses, oléagineux et céréales complètes. Cette diversité nourrit les différentes souches bactériennes de ton microbiote et maintient une production stable d'acides gras à chaîne courte. Privilégie les sources de fibres fermentescibles comme les patates douces, les flocons d'avoine et les artichauts qui stimulent spécifiquement les bactéries productrices de butyrate.</li>
+</ul>
+<ul class="action-list">
+<li>Protection de la barrière intestinale par timing des anti-nutriments : évite la combinaison de glucides à index glycémique élevé avec des sources de lectines ou phytates non trempées dans le même repas. Trempe systématiquement tes légumineuses 12 heures et tes oléagineux 8 heures avant consommation pour neutraliser les inhibiteurs enzymatiques qui peuvent irriter la muqueuse intestinale. Cette stratégie préventive maintient l'intégrité des jonctions serrées entre les entérocytes et prévient toute augmentation de la perméabilité intestinale.</li>
+</ul>
+<ul class="action-list">
+<li>Optimisation de l'assimilation protéique par environnement gastrique : prends 1 g de bétaïne HCl avec tes repas riches en protéines si tu ressens une sensation de lourdeur après les viandes rouges. Un pH gastrique optimal entre 1,5 et 3 active la pepsine qui découpe les protéines en peptides assimilables. Un pH trop élevé réduit cette découpe et laisse passer des fragments protéiques plus gros qui sollicitent excessivement le pancréas. Même avec ta digestion parfaite cette optimisation améliore l'extraction des acides aminés de 10 à 15%.</li>
+</ul>
+<ul class="action-list">
+<li>Stratégie d'hydratation pour motilité intestinale : consomme 40 ml d'eau par kg de poids soit 2,7 litres répartis régulièrement hors des repas. L'eau favorise le péristaltisme intestinal et la formation d'un bol fécal optimal. Bois 500 ml au réveil pour réactiver le réflexe gastro-colique matinal puis 300 ml entre chaque repas. Limite les apports pendant les repas à 200 ml maximum pour ne pas diluer les sucs digestifs et préserver l'efficacité enzymatique.</li>
+</ul>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-06">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">ENTRAÎNEMENT ET CHRONOBIOLOGIE</span>
+          <span class="section-score-badge">
+            <span>Score entraînement & chronobiologie</span>
+            <span class="section-score-value">7.9/10</span>
+          </span>
+        </h2>
+        <span class="section-number">#06</span>
+      </div>
+      <div class="section-content">
+        <p>Ce que tes réponses révèlent</p>
+<p>Tu t'entraînes 3 à 4 fois par semaine en musculation en fin de journée entre 18h et 20h depuis plus de deux ans. Cette fréquence est correcte pour un objectif d'hypertrophie mais ton horaire d'entraînement ne coïncide pas avec ta fenêtre hormonale optimale. Tu stagnes clairement malgré cette régularité ce qui révèle un problème de stimulus d'entraînement inadéquat ou de récupération insuffisante entre les séances. Ton expérience de plus de deux ans signifie que tu as épuisé les gains neuraux initiaux et que tu es dans une phase où seule une manipulation fine des variables d'entraînement permettra de progresser. Le fait que tes points faibles soient précisément localisés sur jambes, épaules et trapèzes supérieurs indique un déficit de volume ou d'intensité spécifique sur ces zones.</p>
+<p>Mécanismes en jeu</p>
+<p>La chronobiologie de la performance physique suit ton rythme circadien avec un pic de force maximale et de température corporelle entre 16h et 18h puis une fenêtre de puissance explosive entre 18h et 20h. Ton entraînement en fin de journée capture partiellement ce pic mais se heurte à une descente progressive du cortisol et de la testostérone qui ont leur maximum respectivement à 8h et entre 8h et 10h du matin. L'hypertrophie musculaire nécessite trois stimuli : tension mécanique élevée sur les fibres, stress métabolique avec accumulation de lactate et de phosphates, et dommages musculaires contrôlés. Ton corps s'adapte spécifiquement au stimulus reçu selon le principe SAID. Si tu entraînes tes jambes une fois par semaine avec un volume insuffisant, l'expression des récepteurs aux androgènes et à l'IGF-1 reste basse dans ces tissus. La sensibilité à l'insuline musculaire augmente pendant 48 heures post-exercice puis redescend, ce qui signifie qu'une fréquence de 2 fois par semaine optimise la fenêtre anabolique cumulée.</p>
+<p>Optimisations proposées</p>
+<ul class="action-list">
+<li>Réorganisation de la fréquence pour points faibles : passe tes jambes et épaules à 2 séances hebdomadaires espacées de 72 heures. Programme jambes lundi et jeudi, épaules mardi et vendredi. La première séance sera orientée force avec 4 à 6 répétitions à 85-90% du 1RM pour recrutement maximal des unités motrices à haut seuil et activation des voies de signalisation mécaniques mTOR. La seconde séance sera métabolique avec 10 à 15 répétitions à 65-70% et temps de repos courts de 60 secondes pour accumulation de lactate et stress métabolique. Cette alternance stimule à la fois l'hypertrophie myofibrillaire et sarcoplasmique.</li>
+</ul>
+<ul class="action-list">
+<li>Intégration d'une séance matinale hebdomadaire : place ta séance de points faibles prioritaires le samedi ou dimanche matin entre 9h et 10h30 à jeun ou après un petit-déjeuner léger glucidique pris 90 minutes avant. Ton pic de testostérone matinal est 30% supérieur à celui de fin de journée et ton système nerveux est frais sans fatigue accumulée. Cette fenêtre hormonale maximise le recrutement neural et la réponse anabolique post-effort. Prends 10 g d'acides aminés essentiels avant la séance pour limiter le catabolisme sans bloquer la lipolyse matinale.</li>
+</ul>
+<ul class="action-list">
+<li>Protocole de potentialisation post-activation pour jambes : débute chaque séance jambes par 3 séries de 3 répétitions de squat à 90% du 1RM avec 3 minutes de repos suivies immédiatement de ton exercice principal à 80%. La contraction maximale préalable active les ponts actine-myosine et augmente la phosphorylation des chaînes légères de myosine ce qui améliore la production de force de 5 à 12% pendant 8 à 10 minutes. Cette technique booste le recrutement des fibres IIx qui ont le plus fort potentiel d'hypertrophie sur les quadriceps et ischio-jambiers.</li>
+</ul>
+<ul class="action-list">
+<li>Timing nutritionnel périentraînement optimisé : prends 40 g de glucides rapides avec 25 g de whey isolate 30 minutes avant ta séance pour saturer le glycogène musculaire et activer mTOR. Pendant la séance consomme 30 g de glucides type maltodextrine diluée pour maintenir la glycémie stable et réduire le cortisol induit par l'effort. Immédiatement après consomme 50 g de glucides avec 40 g de protéines pour maximiser la resynthèse du glycogène et activer la voie PI3K-Akt-mTOR. Cette stratégie triple la fenêtre anabolique post-effort comparée à un entraînement à jeun ou sans nutrition périentraînement.</li>
+</ul>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-07">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">SYNTHÈSE NETTE</span>
+          
+        </h2>
+        <span class="section-number">#07</span>
+      </div>
+      <div class="section-content">
+        <p>Le domino principal</p>
+<p>La cause racine de ta stagnation musculaire réside dans un désalignement entre la fréquence de stimulation de tes points faibles et leur capacité de récupération couplé à un timing d'entraînement sous-optimal sur le plan chronobiologique. Tes jambes, épaules et trapèzes supérieurs ne reçoivent pas un signal anabolique assez fréquent ni assez intense pour forcer l'adaptation hypertrophique. Ton corps a atteint un plateau d'équilibre où le stimulus actuel maintient la masse musculaire existante sans déclencher de nouvelle croissance. Ce blocage est amplifié par une redistribution métabolique qui privilégie naturellement les zones à haute densité de récepteurs et néglige les zones résistantes.</p>
+<p>Le cercle vicieux</p>
+<p>Le cercle commence par un entraînement insuffisamment fréquent sur les points faibles ce qui maintient une faible expression des récepteurs aux androgènes et à l'IGF-1 dans ces muscles. Cette faible densité de récepteurs réduit la capture du glucose post-prandial et la sensibilité à l'insuline locale ce qui oriente les nutriments vers d'autres zones. L'absence d'hypertrophie démotive subtilement et réduit l'intensité mentale pendant les séances concernées ce qui diminue encore le recrutement des unités motrices à haut seuil. Le manque de progression crée une adaptation neurale stagnante où ton système nerveux central n'augmente plus sa capacité à recruter simultanément un grand nombre de fibres. Ce recrutement sous-optimal limite la tension mécanique qui est le stimulus principal de l'hypertrophie et le cercle se referme.</p>
+<p>L'axe HPA préservé</p>
+<p>Ton axe hypothalamo-hypophyso-surrénalien fonctionne remarquablement bien ce qui est une fondation solide. Ton hypothalamus libère un rythme circadien normal de CRH qui stimule ton hypophyse pour sécréter de l'ACTH selon un pattern pulsatile correct. Tes surrénales répondent en produisant du cortisol avec un pic matinal suivi d'une descente progressive sans élévations anarchiques nocturnes. Cette régulation préservée maintient une sensibilité optimale des récepteurs glucocorticoïdes et prévient l'état catabolique chronique qui détruit le muscle. Ton faible niveau de stress et ton excellent tonus vagal témoignent d'un axe HPA qui n'est pas sollicité en permanence et qui conserve sa réactivité pour les véritables stresseurs comme l'entraînement intense.</p>
+<p>Conséquences en cascade</p>
+<p>Les conséquences de ce désalignement se manifestent par une incapacité à dépasser 67 kg malgré un apport nutritionnel probablement correct et une récupération générale fonctionnelle. Ton ratio cortisol/testostérone global reste favorable mais au niveau tissulaire local la traduction du signal hormonal en synthèse protéique est bloquée. Tes jambes perdent préférentiellement du poids car elles ont la plus faible capacité à capter et stocker le glycogène et les acides aminés ce qui les rend métaboliquement invisibles lors d'un déficit calorique. Tes épaules et trapèzes supérieurs stagnent car la fréquence d'entraînement ne compense pas leur difficulté intrinsèque à recruter les fibres à haut seuil. L'ensemble crée un physique déséquilibré où le potentiel génétique n'est pas exprimé sur ces zones clés pour l'esthétique masculine.</p>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-08">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">NOTE FINALE ET SENS DU SCORE</span>
+          
+        </h2>
+        <span class="section-number">#08</span>
+      </div>
+      <div class="section-content">
+        <p>Ce que ton score de 8.5/10 signifie vraiment</p>
+<p>Ton score de 8.5 sur 10 te positionne dans le top 15% des profils analysés et reflète un organisme fonctionnel sur tous les marqueurs de santé fondamentaux. Tu n'as aucune pathologie métabolique, aucun dysfonctionnement hormonal majeur, aucun trouble digestif et un système nerveux exceptionnellement bien régulé. Ce score n'est absolument pas un signal d'alarme mais plutôt l'identification de marges d'optimisation spécifiques pour atteindre ton objectif physique précis. Les 1,5 points manquants résident entièrement dans le désalignement entre ton protocole d'entraînement actuel et les exigences neurophysiologiques de l'hypertrophie ciblée. Ton corps fonctionne comme une machine de haute performance qui reçoit un carburant de qualité et un entretien correct mais dont le réglage fin n'est pas calibré pour la performance maximale sur certains groupes musculaires.</p>
+<p>Ton potentiel à 90 jours</p>
+<p>En appliquant les recommandations de fréquence d'entraînement, de timing chronobiologique et de manipulation glucidique ciblée, tu peux raisonnablement gagner 3 à 4 kg de masse maigre sur les 90 prochains jours avec une répartition préférentielle sur tes points faibles. Cela représente une prise nette de 300 à 400 g de muscle par semaine ce qui est le rythme maximal physiologique pour un pratiquant expérimenté hors première année d'entraînement. Ton poids total pourrait atteindre 70 à 71 kg avec une amélioration visible du volume des quadriceps, des deltoïdes postérieurs et des trapèzes supérieurs. Ton ratio force/poids augmentera de 10 à 15% sur les mouvements polyarticulaires des jambes comme le squat et le soulevé de terre. Cette transformation repose sur l'augmentation de l'expression des récepteurs aux androgènes dans les zones ciblées et l'amélioration de leur sensibilité à l'insuline ce qui créera un nouveau point d'équilibre métabolique supérieur.</p>
+      </div>
+    </section>
+
+    <section class="audit-section" id="section-09">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-title-text">CE QUE JE FAIS EN COACHING ACHZOD</span>
+          
+        </h2>
+        <span class="section-number">#09</span>
+      </div>
+      <div class="section-content">
+        <p>L'approche Achzod</p>
+<p>Le coaching Achzod repose sur une méthodologie de bio-individualisation où chaque variable physiologique est mesurée, analysée et optimisée selon ton profil neurohormonal unique. Je ne propose jamais de plan générique mais une architecture d'entraînement et de nutrition construite sur tes réponses spécifiques au stress, ton chronotype, ta sensibilité insulinique individuelle et tes ratios hormonaux. L'approche intègre la neurophysiologie du recrutement moteur, la chronobiologie des sécrétions hormonales et la biochimie de la signalisation cellulaire pour créer un environnement métabolique qui force l'adaptation dans la direction souhaitée. Chaque recommandation est reliée à un mécanisme d'action précis et chaque ajustement est mesuré par des marqueurs objectifs de progression.</p>
+<p>Ce qu'on ferait ensemble pour TON profil</p>
+<p>Pour ton cas spécifique on travaillerait sur trois axes simultanés. Premier axe : restructuration complète de ta programmation d'entraînement avec passage à une fréquence double sur jambes et épaules incluant des protocoles de potentialisation post-activation et de variation de l'intensité relative entre les séances. Deuxième axe : manipulation précise du timing glucidique avec une concentration de 70% des glucides quotidiens dans les fenêtres de 4 heures post-entraînement des points faibles pour forcer la redistribution de la sensibilité insulinique. Troisième axe : intégration d'une séance matinale hebdomadaire synchronisée avec ton pic de testostérone naturel pour maximiser le recrutement neural et l'activation des voies androgènes locales. On suivrait l'évolution par mesures anthropométriques hebdomadaires sur les quadriceps, deltoïdes et trapèzes et ajustements bi-mensuels selon la réponse adaptative mesurée.</p>
+<p>Prochaine étape</p>
+<p>Si tu veux débloquer définitivement ta progression et construire le physique équilibré et massif que tu vises, le coaching Achzod t'offre un accompagnement chirurgical sur 90 jours avec protocoles personnalisés, ajustements en temps réel et accès direct à mon expertise pour toutes tes questions. Tu recevras un plan d'entraînement semaine par semaine avec les pourcentages exacts de charge, les temps de repos précis et les techniques d'intensification adaptées à chaque phase. La nutrition sera calibrée au gramme près avec des fenêtres de timing spécifiques et des ajustements selon ta réponse métabolique mesurée chaque semaine. Clique sur le lien de réservation pour réserver ton appel stratégique de 30 minutes où on analysera ensemble ton profil complet et je te présenterai exactement comment on va construire ces 4 kg de muscle sur tes points faibles dans les 12 prochaines semaines.</p>
+      </div>
+    </section>
+
+    
+    <div class="cta-section">
+      <h2 class="cta-heading">Passe &agrave; l'action personnalis&eacute;e</h2>
+      <p class="cta-text">Tu as maintenant les cl&eacute;s de ton fonctionnement. Pour une transformation chirurgicale et des r&eacute;sultats garantis, d&eacute;couvre mes formules d'accompagnement 1-on-1.</p>
+      
+      <div style="margin: 24px 0; padding: 20px; border: 2px dashed var(--aquamarine); border-radius: 12px; background: rgba(141, 255, 224, 0.05);">
+        <p style="font-family: 'Audiowide', sans-serif; font-size: 20px; color: var(--aquamarine); margin-bottom: 8px;">OFFRE EXCLUSIVE : -20%</p>
+        <p style="color: var(--grey-light); margin-bottom: 12px;">Sur les offres <strong>Essential</strong>, <strong>Elite</strong> et <strong>Private Lab</strong></p>
+        <p style="font-size: 24px; font-weight: 700;">CODE : <span style="background: var(--aquamarine); color: var(--rich-black); padding: 4px 12px; border-radius: 4px;">ANALYSE20</span></p>
+      </div>
+
+      <a href="https://www.achzodcoaching.com/formules-coaching" class="cta-button">D&eacute;couvrir les Formules</a>
+    </div>
+  </main>
+
+  <footer>
+    <p><strong>ACHZOD COACHING</strong> &copy; 2026 &bull; Strat&eacute;gies de Performance &bull; achzodcoaching.com</p>
+  </footer>
+</body>
+</html>

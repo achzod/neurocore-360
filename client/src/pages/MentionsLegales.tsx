@@ -46,7 +46,7 @@ export default function MentionsLegales() {
           <p className="text-white/60 leading-relaxed">
             Conformement aux dispositions des Articles 6-III et 19 de la Loi n°2004-575 du 21 juin 2004
             pour la Confiance dans l'economie numerique, dite L.C.E.N., il est porte a la connaissance
-            des utilisateurs et visiteurs du site NEUROCORE 360 les presentes mentions legales.
+            des utilisateurs et visiteurs du site APEXLABS les presentes mentions legales.
           </p>
 
           <div className="rounded-sm border border-[#FCDD00]/30 bg-[#FCDD00]/5 p-6 md:p-8">
@@ -61,7 +61,7 @@ export default function MentionsLegales() {
           </div>
 
           <p className="text-white/60 leading-relaxed">
-            L'acces et l'utilisation du site NEUROCORE 360 (ci-apres "le Site") sont soumis aux presentes
+            L'acces et l'utilisation du site APEXLABS (ci-apres "le Site") sont soumis aux presentes
             "Mentions legales" detaillees ci-apres ainsi qu'aux lois et/ou reglements applicables.
           </p>
 
@@ -142,7 +142,7 @@ export default function MentionsLegales() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 5 - Clause de Non-Responsabilite</h2>
             <p className="text-white/60 leading-relaxed">
-              L'audit NEUROCORE 360 est un outil d'evaluation et d'orientation. Les informations et
+              L'audit APEXLABS est un outil d'evaluation et d'orientation. Les informations et
               recommandations fournies sont a titre informatif et educatif uniquement. Elles ne constituent
               en aucun cas un avis medical, une prescription ou un diagnostic.
             </p>

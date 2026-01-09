@@ -957,7 +957,7 @@ function FAQSection() {
     },
     {
       question: "Qui es-tu exactement, Achzod ?",
-      answer: "Je suis coach certifié avec 11 certifications internationales (NASM, ISSA, Precision Nutrition, Pre-Script...). J'ai accompagné des centaines de clients en coaching individuel pendant des années. NEUROCORE 360 est l'aboutissement de toute cette expérience : je voulais rendre accessible à tous l'analyse approfondie que je faisais en one-to-one. Chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique.",
+      answer: "Je suis coach certifié avec 11 certifications internationales (NASM, ISSA, Precision Nutrition, Pre-Script...). J'ai accompagné des centaines de clients en coaching individuel pendant des années. APEXLABS est l'aboutissement de toute cette expérience : je voulais rendre accessible à tous l'analyse approfondie que je faisais en one-to-one. Chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique.",
     },
     {
       question: "Mes données sont-elles sécurisées ?",

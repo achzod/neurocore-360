@@ -45,7 +45,7 @@ export default function CheckEmail() {
                 <h4 className="mb-2 font-medium">Que faire maintenant ?</h4>
                 <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
                   <li>Ouvre ta boîte mail</li>
-                  <li>Cherche un email de NEUROCORE 360°</li>
+                  <li>Cherche un email de APEXLABS°</li>
                   <li>Clique sur le lien pour accéder à ton dashboard</li>
                 </ol>
               </div>

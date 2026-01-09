@@ -1,0 +1,1123 @@
+═══════════════════════════════════════════════════════════════════════════════════
+                         NEUROCORE 360° - AUDIT MÉTABOLIQUE COMPLET
+                              RAPPORT D'ANALYSE PERSONNALISÉ
+═══════════════════════════════════════════════════════════════════════════════════
+
+PROFIL CLIENT
+───────────────────────────────────────────────────────────────────────────────────
+Nom: Julien R.
+Âge: 29 ans
+Profession: Développeur Full-Stack (startup fintech)
+Date d'analyse: 2 Janvier 2026
+Durée questionnaire: 32 minutes
+Score global: 58/100
+
+COACH ASSIGNÉ: Achkan Zennadi - NEUROCORE 360°
+Certifications: ISSA CPT/CES/Nutrition/Bodybuilding | NASM CES/PES/FNS/WLS | PN1 | Pre-Script
+
+═══════════════════════════════════════════════════════════════════════════════════
+SYNTHÈSE EXÉCUTIVE
+═══════════════════════════════════════════════════════════════════════════════════
+
+Julien, ton profil révèle un cas classique de "tech burnout métabolique":
+
+• Système nerveux en mode SYMPATHIQUE permanent (HRV estimé 28ms)
+• Déficit dopamine sévère (4 cafés/jour pour compenser)
+• Architecture sommeil détruite (5h/nuit, latence 60+ min)
+• Début résistance insuline (gras abdominal + fringales sucrées 16h)
+
+Ce n'est pas "le stress du boulot". C'est un dérèglement neuro-endocrinien avec cascade
+hormonale: cortisol élevé → testostérone basse → dopamine épuisée → sommeil pourri
+→ encore plus de cortisol.
+
+Si tu continues comme ça 12 mois de plus: burnout clinique, dépression, prise de poids
+rapide (skinny-fat), potentiellement pré-diabète.
+
+Protocole 90j pour inverser: Reset neurologique → Reconstruction → Performance.
+
+═══════════════════════════════════════════════════════════════════════════════════
+MODULE 1: PROFIL ANTHROPOMÉTRIQUE & MÉTABOLIQUE
+═══════════════════════════════════════════════════════════════════════════════════
+
+DONNÉES BRUTES
+───────────────────────────────────────────────────────────────────────────────────
+Poids: 72kg
+Taille: 178cm
+Tour de taille: 84cm
+Tour de hanches: 92cm
+IMC: 22.7 (normal mais on s'en fout de l'IMC)
+
+ANALYSE EXPERT - ON NE PARLE PAS D'IMC
+───────────────────────────────────────────────────────────────────────────────────
+
+FFMI (Fat-Free Mass Index): 17.9
+└─ Interprétation: Masse musculaire FAIBLE pour un homme de 29 ans
+└─ Tu es dans la zone "skinny" (poids normal mais sous-musclé)
+└─ Estimation masse grasse: 18-20% (objectif < 12% pour santé optimale)
+
+Ratio Taille/Hanche: 0.91
+└─ ⚠️  ALERTE PRÉCOCE: > 0.90 = début accumulation gras viscéral
+└─ Pas critique mais tendance androïde (gras abdominal)
+└─ Si tu continues ta trajectory actuelle: 0.95+ dans 2 ans
+
+RÉPARTITION GRAISSEUSE (Analyse questionnaire + photos)
+───────────────────────────────────────────────────────────────────────────────────
+• Gras abdominal présent (poignées d'amour début visible)
+  └─ Indicateur: Résistance à l'insuline débutante
+  └─ Cause: Cortisol élevé (stress chronique) + sédentarité (assis 10h/jour)
+
+• Gras gynoïde faible (hanches/cuisses)
+  └─ Pas de dominance œstrogénique flagrante
+
+• Absence définition musculaire
+  └─ Problème: Manque stimulation anabolique (0 musculation)
+  └─ Conséquence: Métabolisme basal faible = stockage facile
+
+FLEXIBILITÉ MÉTABOLIQUE: ABSENTE
+───────────────────────────────────────────────────────────────────────────────────
+
+Indicateurs analysés:
+✗ Crash énergétique brutal sans nourriture 3-4h
+✗ Fringales sucrées systématiques 16h (vending machine snacks)
+✗ Impossible de sauter petit-déjeuner sans nausée/irritabilité
+✗ Réveil nocturne 3h-4h (hypoglycémie)
+
+DIAGNOSTIC: Dépendance glucose pure (glycolyse), bêta-oxydation inexistante
+
+Traduction: Ton corps ne sait QUE brûler du sucre. Il ne peut pas taper dans tes réserves
+de gras. Dès que glucose baisse → panique métabolique → cortisol → fringale.
+
+But: Retrouver la capacité de passer sucre ↔ gras sans crash (métabolisme flexible).
+
+═══════════════════════════════════════════════════════════════════════════════════
+MODULE 2: ANALYSE NEURO-ENDOCRINIENNE
+═══════════════════════════════════════════════════════════════════════════════════
+
+PROFIL HORMONAL (Analyse croisée 47 questions + symptômes)
+───────────────────────────────────────────────────────────────────────────────────
+
+1. CORTISOL/DHEA - RATIO EFFONDRÉ
+───────────────────────────────────────────────────────────────────────────────────
+
+Pattern identifié: FATIGUE SURRÉNALIENNE Phase 2
+
+Symptômes rapportés (12/15):
+✓ Difficulté réveil même après 7-8h (snooze 3-4x)
+✓ Besoin café immédiat au réveil (incapable de démarrer sans)
+✓ Coup de barre 15h-16h systématique (yeux qui ferment en réunion)
+✓ Second wind 22h-23h (regain énergie alors que tu devrais dormir)
+✓ Envies salé intense (chips, pizza, fast-food)
+✓ Hypersensibilité au stress (petits trucs te mettent hors de toi)
+✓ Libido variable/basse (2-3x/mois vs 10-12x avant)
+✓ Difficulté récupération (courbatures 4-5 jours)
+✓ Système immunitaire faible (rhume 4x/an)
+✓ Baisse motivation projets perso (procrastination massive)
+✓ Tension musculaire chronique (trapèzes, mâchoire)
+✓ Sommeil non-réparateur (fatigué même après 8h)
+
+INTERPRÉTATION CLINIQUE:
+
+Phase 1 (Alarme):     Cortisol ↑↑ toute la journée → Hyperactif mais tendu
+Phase 2 (Résistance): Cortisol bas matin, élevé soir → ← TU ES LÀ
+Phase 3 (Épuisement): Cortisol effondré 24/7 → Burnout total
+
+Tu es en Phase 2 = ton système commence à lâcher. Ton corps produit moins de cortisol
+le matin (d'où réveil difficile) mais le compense en le gardant élevé le soir (d'où
+insomnie + second wind nocturne).
+
+Conséquence:
+  • DHEA s'effondre (hormone anabolique, anti-âge)
+  • Testostérone chute (utilise même précurseurs que cortisol)
+  • Progestérone baisse (anxiété monte)
+  • Système immunitaire affaibli (cortisol chronique = immunosuppression)
+
+2. TESTOSTÉRONE - SHBG PROBABLEMENT ÉLEVÉE
+───────────────────────────────────────────────────────────────────────────────────
+
+Symptômes compatibles (8/12):
+✓ Libido basse (2-3x/mois, "pas vraiment envie")
+✓ Difficulté prendre muscle (jamais fait muscu mais même bras fins depuis ado)
+✓ Récupération lente exercice
+✓ Motivation/drive basse (projets perso à l'abandon)
+✓ Fatigue après-midi
+✓ Graisse abdominale malgré poids normal
+✓ Pilosité faciale/corps faible pour l'âge
+✓ Sommeil peu profond
+
+ANALYSE:
+
+Testostérone TOTALE: Probablement normale (200-300 ng/dL = bas normal pour 29 ans)
+Mais SHBG élevée → Testostérone LIBRE basse (la seule qui compte biologiquement)
+
+Causes SHBG élevée dans ton cas:
+  • Manque graisses saturées alimentaire (< 15g/jour)
+  • Déficit calorique chronique (tu sautes repas souvent)
+  • 0 entraînement force (pas de signal anabolique)
+  • Stress chronique cortisol (compétition précurseurs hormonaux)
+  • Manque sommeil profond (testostérone sécrétée pendant Deep Sleep)
+
+Métaphore: Imagine ton argent bloqué sur un compte que tu ne peux pas utiliser.
+C'est pareil. Ta testostérone existe mais elle est "menottée" par la SHBG.
+
+3. THYROÏDE - FONCTIONNEMENT RALENTI PROBABLE
+───────────────────────────────────────────────────────────────────────────────────
+
+Symptômes suggestifs (6/10):
+✓ Mains/pieds froids chroniques (même en été)
+✓ Température corporelle basse matin (35.8-36.2°C)
+✓ Difficulté perdre gras (même en restriction calorique)
+✓ Fatigue matinale persistante
+✓ Constipation 2-3x/semaine
+✓ Cheveux/ongles cassants
+
+HYPOTHÈSE: T3 libre potentiellement basse (thyroïde ralentie)
+
+Causes fréquentes jeunes techs:
+  • Stress chronique (cortisol inhibe conversion T4 → T3)
+  • Déficit calorique répété (corps ralentit métabolisme)
+  • Manque iode/sélénium/zinc (cofacteurs thyroïde)
+  • Exposition perturbateurs endocriniens (plastiques, BPA)
+
+Test sanguin recommandé:
+  • TSH (> 2.5 = déjà suspect même si "normal labo")
+  • T4 libre
+  • T3 libre (le plus important)
+  • Anticorps TPO (exclure Hashimoto)
+
+PROFIL NEUROTRANSMETTEURS (Test Braverman adapté)
+───────────────────────────────────────────────────────────────────────────────────
+
+Analyse 38 questions comportementales → Profil dominant:
+
+1. DOPAMINE: 11/40 (CRITIQUE - DÉFICIT SÉVÈRE)
+───────────────────────────────────────────────────────────────────────────────────
+
+Le "Starter" - Motivation, Drive, Plaisir
+
+Symptômes (14/18):
+✓ Difficulté se motiver matin (snooze alarm)
+✓ Procrastination extrême (deadlines dernière minute)
+✓ Manque plaisir activités (anhedonie légère)
+✓ Besoin stimulants constants (4 cafés + energy drinks)
+✓ Difficulté finir projets commencés
+✓ Libido basse
+✓ Recherche nouveauté constante (scroll social media 3h/jour)
+✓ Difficulté concentration tâches ennuyeuses
+✓ Besoin récompenses immédiates (jeux vidéo, snacks)
+✓ Fatigue mentale rapide
+✓ Manque enthousiasme général
+✓ Sentiment "vide" fréquent
+✓ Dépendance caféine (maux de tête sans)
+✓ Impulsivité achats/décisions
+
+INTERPRÉTATION:
+
+Tu es en déficit dopamine sévère. La dopamine c'est ton "essence" mentale. Sans elle:
+pas de motivation, pas de drive, pas de plaisir, pas d'excitation pour la vie.
+
+Pourquoi tu manques de dopamine?
+  1. Déficit Tyrosine (acide aminé précurseur)
+     └─ Tu manges 30-40g protéines/jour (besoin: 120g+)
+     └─ Petit-déj sucré (céréales, pain) = 0 Tyrosine
+
+  2. Surcharge mentale sans récupération
+     └─ 60h/semaine code + meetings
+     └─ Dopamine se vide plus vite qu'elle se recharge
+
+  3. Manque cofacteurs (Fer, B6, Magnésium)
+
+  4. Boucle compensation caféine
+     └─ Café boost dopamine temporaire
+     └─ Crash après → encore plus bas qu'avant
+     └─ Besoin plus de café → cercle vicieux
+
+Ce qu'on va faire:
+  • Tyrosine 1g matin à jeun (boost direct précurseur)
+  • Protéines 40g petit-déj (viande, œufs)
+  • Mucuna Pruriens 300mg (L-DOPA naturel)
+  • Arrêt progressif caféine excessive (4 cafés → 1-2 max)
+
+2. ACÉTYLCHOLINE: 19/40 (MOYEN-BAS)
+───────────────────────────────────────────────────────────────────────────────────
+
+Le "Processeur" - Mémoire, Focus, Vitesse traitement
+
+Symptômes (7/12):
+✓ Oublis fréquents (où j'ai mis mes clés, RDV)
+✓ Difficulté retenir noms/prénoms nouveaux
+✓ Brouillard mental après-midi
+✓ Lecture lente (besoin relire phrases)
+✓ Difficulté multitasking
+✓ Bouche sèche fréquente
+✓ Vision floue fin journée (yeux fatigués)
+
+Solution:
+  • Alpha-GPC 300mg (précurseur choline)
+  • Œufs entiers quotidien (jaune = choline)
+  • Huperzine A 50mcg (inhibe dégradation acétylcholine)
+
+3. GABA: 16/40 (BAS)
+───────────────────────────────────────────────────────────────────────────────────
+
+Le "Frein" - Calme, Relaxation, Anti-anxiété
+
+Symptômes (9/14):
+✓ Anxiété chronique basse (background permanent)
+✓ Tension musculaire (mâchoire, trapèzes, nuque)
+✓ Difficulté "décrocher" mentalement
+✓ Ruminations pensées (boucle mentale soir)
+✓ Sommeil agité (bouge beaucoup)
+✓ Hypervigilance (sursaute facilement)
+✓ Difficile de relaxer "vraiment"
+✓ Besoin alcool pour décompresser (2-3 bières soir)
+✓ Intestins sensibles stress (diarrhée avant events)
+
+Traduction: Ton "frein" neurologique est cassé. Tu es en mode GO permanent sans pouvoir
+ralentir. Système nerveux sympathique dominant.
+
+Solution:
+  • Magnésium Bisglycinate 400mg soir (agoniste GABA)
+  • Taurine 2g soir
+  • L-Théanine 200mg (de thé vert, effet calmant)
+  • Respiration cohérence cardiaque 3x/jour
+
+4. SÉROTONINE: 24/40 (MOYEN)
+───────────────────────────────────────────────────────────────────────────────────
+
+Le "Stabilisateur" - Humeur, Sommeil, Satiété
+
+Pas de déficit majeur mais:
+  • Fringales sucrées 16h (tentative compenser sérotonine basse)
+  • Irritabilité fin journée
+  • Difficulté sommeil (sérotonine précurseur mélatonine)
+
+GÉNÉTIQUE CAFÉINE (CYP1A2) - ANALYSE COMPORTEMENTALE
+───────────────────────────────────────────────────────────────────────────────────
+
+Consommation rapportée:
+  • 4 expressos/jour (08h, 11h, 14h, 17h)
+  • 1-2 energy drinks (Red Bull 16h si coup de barre)
+
+Réactions:
+✓ Nervosité/jitters avec > 2 cafés rapprochés
+✓ Palpitations cardiaques occasionnelles
+✓ Difficulté endormissement même si dernier café 17h
+✓ Sommeil léger, réveils fréquents
+✓ Anxiété amplifiée les jours gros conso
+
+VERDICT: Métaboliseur LENT (génotype A/A ou A/C)
+
+Demi-vie caféine chez toi: 10-12 heures
+
+Calcul:
+  • Café 17h = 100mg caféine
+  • 3h du matin (10h après) = 50mg encore actif
+  • 9h du matin = 25mg encore actif
+  └─ C'est comme si tu buvais un café avant de dormir
+
+Conséquence:
+  • Destruction Deep Sleep (celui qui répare)
+  • REM fragmenté (gestion émotionnelle perturbée)
+  • Cortisol reste élevé nuit (stress)
+  • HRV effondré (récup impossible)
+
+PROTOCOLE CAFÉ:
+  • STOP caféine après 10h (hard rule)
+  • Max 2 expressos/jour (matin uniquement)
+  • Remplacer PM par: Thé vert (L-théanine calme), Cordyceps, ou Yerba Maté
+
+═══════════════════════════════════════════════════════════════════════════════════
+MODULE 3: ARCHITECTURE DU SOMMEIL
+═══════════════════════════════════════════════════════════════════════════════════
+
+ANALYSE QUALITATIVE (21 questions sommeil)
+───────────────────────────────────────────────────────────────────────────────────
+
+Durée moyenne: 5h15 par nuit (semaine), 7h30 (weekend)
+Latence endormissement: 60-90 minutes (scroll phone au lit)
+Réveils nocturnes: 3-4x par nuit (principalement 3h-4h)
+Qualité réveil: "Explosé, envie de mourir, snooze 30 min"
+
+DETTE DE SOMMEIL CUMULÉE
+───────────────────────────────────────────────────────────────────────────────────
+
+Besoin physiologique: 7.5-8h/nuit à 29 ans
+Réel: 5h15/nuit (semaine) + 7h30 (weekend)
+Moyenne pondérée: (5.25×5 + 7.5×2) / 7 = 5.89h/nuit
+
+DÉFICIT: 1.86h × 365 jours = 679 heures de dette annuelle
+
+Après 2 ans ce rythme: 1358 heures de dette = 56 JOURS non dormis
+
+Conséquences mesurables dette sommeil:
+  • Sensibilité insuline: -40% (d'où fringales sucrées)
+  • Testostérone: -25% (d'où libido basse)
+  • Cortisol: +60% baseline (stress permanent)
+  • Ghrelin (hormone faim): +28% (d'où fringales)
+  • Leptine (hormone satiété): -18% (jamais rassasié)
+  • Performance cognitive: -30% (IQ effectif baisse)
+  • Temps réaction: +15% (conduite dangereuse)
+
+HRV (HEART RATE VARIABILITY) - ESTIMATION
+───────────────────────────────────────────────────────────────────────────────────
+
+Basé sur profil sommeil + stress + lifestyle:
+
+HRV estimé (RMSSD): 26-32ms
+
+Échelle référence (hommes 25-35 ans):
+  • > 65ms = Excellent (athlète bien récupéré)
+  • 50-65ms = Bon (système nerveux équilibré)
+  • 35-50ms = Moyen (stress modéré)
+  • 20-35ms = Faible (système nerveux saturé) ← TOI
+  • < 20ms = Critique (risque burnout imminent)
+
+INTERPRÉTATION:
+
+HRV mesure balance Sympathique (stress) vs Parasympathique (récup).
+
+Ton HRV 26-32ms = système parasympathique quasiment MORT. Tu es en mode "fight or flight"
+24/7. Ton corps pense qu'il est poursuivi par un lion en permanence.
+
+Pourquoi c'est grave:
+  • Récupération impossible (même 10h sommeil serait pas réparateur)
+  • Inflammation chronique (CRP élevée)
+  • Risque cardiovasculaire augmenté
+  • Performance mentale effondrée
+  • Gains musculaires bloqués (anabolisme impossible)
+
+INTERDICTION FORMELLE avec HRV < 35:
+  ❌ HIIT / CrossFit / Sprints
+  ❌ Séances > 45 min
+  ❌ Training à jeun
+  ❌ Déficit calorique
+
+Si tu forces → Overtraining → Crash total (arrêt maladie 2-3 semaines)
+
+ANALYSE ARCHITECTURE SOMMEIL (Estimation qualitative)
+───────────────────────────────────────────────────────────────────────────────────
+
+Sommeil normal se compose de cycles 90 min avec phases:
+
+1. N1 (Transition): 5%
+2. N2 (Sommeil léger): 45-50%
+3. N3 (Deep Sleep/SWS): 20-25% ← CRITIQUE pour récup physique
+4. REM (Rêves): 20-25% ← CRITIQUE pour récup mentale
+
+TON PROFIL ESTIMÉ (basé symptômes):
+
+N1: 10% (trop, difficulté t'endormir)
+N2: 55% (ok)
+N3 (Deep Sleep): < 10% (CATASTROPHIQUE, besoin 20-25%)
+REM: 15% (bas, besoin 20-25%)
+
+DEEP SLEEP < 10% explique:
+  ✗ Réveil "explosé" même après 7-8h
+  ✗ Aucune récup musculaire (courbatures 5 jours)
+  ✗ Système immunitaire faible (rhumes fréquents)
+  ✗ Peau terne, cernes permanents
+  ✗ GH (hormone croissance) pas sécrétée → pas de réparation
+
+C'est pendant le Deep Sleep que:
+  • GH est sécrétée (pulse 70% production quotidienne)
+  • Système glymphatique nettoie le cerveau (détox β-amyloïde)
+  • Mémoires sont consolidées (long-term storage)
+  • Muscle se répare (synthèse protéique max)
+  • Immunité se reconstruit (lymphocytes T)
+
+REM 15% (vs 20-25% besoin) explique:
+  ✗ Irritabilité chronique
+  ✗ Difficulté gérer émotions
+  ✗ Créativité/problem-solving diminué
+  ✗ Dépression subclinique
+
+RÉVEILS NOCTURNES 3h-4h: HYPOGLYCÉMIE
+───────────────────────────────────────────────────────────────────────────────────
+
+Pattern type:
+  • Dîner 19h30 (léger, peur de grossir)
+  • Réveil systématique 3h-4h (5-6h après dîner)
+  • Sensation: cœur qui bat, alerte, impossible rendormir 30-60 min
+
+MÉCANISME PHYSIOLOGIQUE:
+
+1. Dîner léger (< 400 kcal, peu glucides)
+2. 3h du mat: Réserves glycogène hépatique VIDES
+3. Glycémie chute dangereusement
+4. Cortisol surge d'urgence (gluconéogenèse: fabrique glucose des protéines)
+5. Adrénaline monte aussi (alerte survie)
+6. Tu te réveilles en mode "DANGER"
+
+Solution simple:
+  └─ 80-100g glucides complexes au dîner (riz, patate douce)
+  └─ Glucides soir ne font PAS grossir (mythe)
+  └─ Au contraire: Tryptophane → Sérotonine → Mélatonine (aide sommeil)
+
+═══════════════════════════════════════════════════════════════════════════════════
+MODULE 4: DIGESTION & MICROBIOTE
+═══════════════════════════════════════════════════════════════════════════════════
+
+SYMPTÔMES DIGESTIFS (18 questions analyse)
+───────────────────────────────────────────────────────────────────────────────────
+
+✓ Ballonnements quotidiens (pire soir, ventre gonflé)
+✓ Flatulences excessives (malodorant)
+✓ Selles irrégulières (1 jour constipé, lendemain diarrhée)
+✓ Reflux gastrique 2-3x/semaine
+✓ Nausée matinale sans café (estomac vide)
+✓ Coup de barre post-déjeuner systématique (yeux ferment)
+✓ Sensation lourdeur estomac (digestion lente)
+✓ Intolérances récentes (gluten → ballonnements, lactose → diarrhée)
+✓ Acné/eczéma corrélés à certains aliments
+✓ Envies sucrées incontrôlables 16h
+
+DIAGNOSTIC: DYSBIOSE + HYPOCHLORHYDRIE + LEAKY GUT probable
+
+1. DYSBIOSE INTESTINALE (Déséquilibre microbiote)
+───────────────────────────────────────────────────────────────────────────────────
+
+Ton alimentation (analyse 7 jours food journal):
+  • Fibres: 12g/jour (besoin: 30-40g)
+  • Aliments fermentés: 0
+  • Légumes: 150g/jour (besoin: 500g+)
+  • Fast-food: 4-5x/semaine (kebab, burger, pizza)
+  • Boissons sucrées: 2-3 sodas/jour
+  • Alcool: 6-8 bières/semaine
+
+Conséquence:
+  └─ Ratio Firmicutes/Bacteroidetes déséquilibré
+  └─ Espèces pathogènes dominent (E. coli, Candida)
+  └─ Production excessive gaz (CH4, H2S) → ballonnements
+  └─ LPS (endotoxines) passent barrière → inflammation systémique
+
+Test recommandé: Analyse microbiome (GI-MAP ou equivalent)
+
+2. HYPOCHLORHYDRIE (Manque acidité gastrique)
+───────────────────────────────────────────────────────────────────────────────────
+
+Paradoxe: Tu as REFLUX mais problème est MANQUE d'acidité (pas trop)
+
+Symptômes compatibles:
+  • Reflux après repas (surtout protéines)
+  • Sensation "pierre" dans estomac
+  • Ballonnements excessifs
+  • Ongles cassants (malabsorption minéraux)
+  • Cheveux ternes (malabsorption protéines)
+  • Fatigue après repas riche en protéines
+
+Mécanisme:
+  1. Estomac pas assez acide (HCl faible)
+  2. Protéines pas bien décomposées
+  3. Nourriture stagne, fermente
+  4. Gaz montent → pression sphincter œsophagien
+  5. Reflux (mais c'est symptôme, pas cause)
+
+Test simple (FAIRE SOUS SUPERVISION):
+  • Bétaïne HCL 650mg début repas protéiné
+  • Si digestion améliore = hypochlorhydrie confirmée
+  • Si brûlure intense = acidité normale (rare)
+
+3. LEAKY GUT (Hyperperméabilité intestinale)
+───────────────────────────────────────────────────────────────────────────────────
+
+Indicateurs multiples:
+  • Intolérances alimentaires nouvelles (gluten, lactose jamais posé problème avant)
+  • Acné corrélé aliments (pizza → boutons 48h après)
+  • Fatigue chronique inexpliquée
+  • Inflammation systémique (articulations raides matin)
+  • Allergies saisonnières pires qu'avant
+  • Brouillard mental post-meal
+
+ZONULINE (marqueur perméabilité): Test sanguin recommandé
+  • < 30 ng/mL = normal
+  • 30-50 = perméabilité modérée
+  • > 50 = leaky gut confirmé (probablement ton cas)
+
+Causes:
+  • Stress chronique (cortisol détruit tight junctions)
+  • Alimentation pro-inflammatoire (gluten, additifs, gras trans)
+  • Manque fibres (atrophie muqueuse)
+  • Alcool (toxique direct pour intestin)
+  • AINS fréquents si tu prends (Ibuprofène etc)
+
+Conséquence:
+  └─ Macromolécules alimentaires passent dans sang
+  └─ Système immunitaire les attaque (inflammation)
+  └─ Cercle vicieux: inflammation → plus perméabilité
+
+═══════════════════════════════════════════════════════════════════════════════════
+MODULE 5: ENTRAÎNEMENT & COMPORTEMENT
+═══════════════════════════════════════════════════════════════════════════════════
+
+PROFIL ACTIVITÉ PHYSIQUE
+───────────────────────────────────────────────────────────────────────────────────
+
+Fréquence: 0-1x/semaine (marche occasionnelle)
+Type: Aucun entraînement structuré
+Historique: Sport lycée (il y a 11 ans), rien depuis
+Sédentarité: 10-12h assis/jour (bureau + canapé)
+Mobilité: Nulle (ne peux pas toucher orteils)
+Steps quotidiens: 2000-3000 (besoin minimum 7000)
+
+CONSÉQUENCE MÉTABOLIQUE:
+
+Sarcopénie précoce:
+  • Perte 1% masse musculaire/an après 25 ans si inactif
+  • 4 ans inactivité = -4% muscle = métabolisme basal -8%
+  • Plus facile stocker gras, plus dur brûler calories
+
+Sensibilité insuline effondrée:
+  • Muscle = principal site stockage glucose (glycogène musculaire)
+  • Pas de muscle = glucose reste dans sang = insuline monte = stockage gras
+
+Posture détruite:
+  • Cyphose thoracique (dos rond)
+  • Tête projetée avant (text neck)
+  • Épaules enroulées (pecs contractés)
+  • Hanches tight (hip flexors raccourcis)
+  → Douleurs cervicales, lombaires chroniques
+
+COMPORTEMENT ALIMENTAIRE (23 questions)
+───────────────────────────────────────────────────────────────────────────────────
+
+Profile type: EMOTIONAL EATER + LIMBIC FRICTION élevée
+
+Patterns identifiés:
+
+1. STRESS EATING
+  • Fringales 16h = fatigue décisionnelle (willpower épuisée)
+  • Snacks sucrés après meetings difficiles
+  • Bière(s) soir pour "décompresser"
+  • Weekend: Binge eating compensatoire (pizza, fast-food)
+
+2. LIMBIC FRICTION (Effort mental surmonter inertie)
+  • "Je sais ce que je devrais manger mais je prends le chemin facile"
+  • Vending machine < 2 min vs préparer repas sain
+  • Livraison Uber Eats plutôt que cuisiner
+  • Snooze alarm plutôt que sport matin
+
+C'est PAS un manque de volonté. C'est un problème NEUROCHIMIQUE.
+
+Lobe préfrontal (self-control) = limité en énergie quotidienne
+Après 6h coding + meetings = réserves VIDES = impulsions gagnent
+
+Solution: Pas "plus de volonté". C'est:
+  1. Augmenter dopamine baseline (Tyrosine, protéines)
+  2. Réduire friction (meal prep dimanche, snacks sains au bureau)
+  3. Supprimer tentation (virer malbouffe de chez toi)
+
+RELATION DOPAMINE/SÉROTONINE & FOOD
+───────────────────────────────────────────────────────────────────────────────────
+
+Fringales sucrées 16h = tentative auto-médication
+
+Mécanisme:
+  1. 16h: Dopamine + Sérotonine au plus bas
+  2. Cerveau cherche boost rapide
+  3. Sucre → pic insuline → Tryptophane traverse barrière hémato-encéphalique
+  4. Tryptophane → Sérotonine → soulagement temporaire 20 min
+  5. Crash après → encore pire qu'avant
+  6. Cercle vicieux
+
+Solution:
+  └─ Collation 16h AVANT fringale (anticipation)
+  └─ 30g protéines + 15g graisses (Tyrosine + satiété)
+  └─ Exemples: Poulet + avocat, Shake protéine + amandes
+
+═══════════════════════════════════════════════════════════════════════════════════
+PROTOCOLE NEUROCORE 90 JOURS - REPROGRAMMATION COMPLÈTE
+═══════════════════════════════════════════════════════════════════════════════════
+
+Julien, on ne fait pas un "régime". On reprogramme ton métabolisme.
+
+3 Phases: RESET (30j) → BUILD (30j) → OPTIMIZE (30j)
+
+───────────────────────────────────────────────────────────────────────────────────
+PHASE 1 (JOURS 1-30): RESET NEUROLOGIQUE
+───────────────────────────────────────────────────────────────────────────────────
+
+Objectif: Sortir mode sympathique, remonter HRV, restaurer sommeil
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 1. ENTRAÎNEMENT - FORCE BASIQUE 3X/SEMAINE                                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+Lundi/Mercredi/Vendredi: Full Body Strength (45 min)
+
+  A1. Squat (Goblet ou Back): 4 séries × 8 reps
+      └─ Tempo: 3-0-1 (3 sec descente, 0 pause, 1 sec montée)
+      └─ Repos: 90 secondes
+
+  A2. Push (Pompes ou Bench Press): 4 × 8
+      └─ Tempo: 3-0-1
+      └─ Repos: 90 sec
+
+  B1. Hinge (Deadlift ou RDL): 3 × 8
+      └─ Focus technique, pas ego lifting
+
+  B2. Pull (Rowing ou Pull-ups assistées): 3 × 8-10
+
+  C. Core: Planche 3 × 30-45 sec
+
+Règles:
+  ✓ Échauffement 10 min obligatoire
+  ✓ Technique > Poids (filme-toi)
+  ✓ Si fatigue excessive, arrêt immédiat
+  ✗ Pas de cardio intensif (HRV trop bas)
+  ✗ Pas d'échec musculaire (stress neuro)
+
+Mardi/Jeudi/Samedi: Marche Zone 2 (30-40 min)
+  • FC: 100-120 bpm (capacité parler normalement)
+  • But: Améliorer capacité mitochondriale sans stress cortisol
+  • Bonus si dehors (lumière naturelle)
+
+Dimanche: REPOS total (Netflix, lecture, potes)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 2. NUTRITION - CHRONO-OPTIMISÉE                                                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+Calories: 2400 kcal/jour (légèrement surplus pour récup)
+Macros: 160g Protéines / 220g Glucides / 80g Graisses
+Fenêtre alimentaire: 07h00-20h00 (pas jeûne intermittent Phase 1, trop stressant)
+
+STRUCTURE QUOTIDIENNE:
+
+07h00 - RÉVEIL
+  • Exposition lumière 10 min (dehors si possible)
+  • Verre eau + sel (réhydratation)
+
+07h30 - PETIT-DÉJEUNER (JAMAIS sauter)
+  • 40g Protéines (steak, œufs, saumon, poulet)
+  • 15g Graisses (avocat, huile olive, noix)
+  • 40g Glucides (flocons avoine, patate douce, fruit)
+  • 0 sucre ajouté, 0 jus
+
+  Supplément: Tyrosine 1g (à jeun 15 min avant manger)
+
+  Exemples:
+    Option 1: 4 œufs entiers + 100g saumon fumé + 60g avoine + myrtilles
+    Option 2: 150g steak + 1 patate douce + poignée amandes
+    Option 3: Omelette 4 œufs + fromage + toast complet + avocat
+
+08h00-10h00 - FENÊTRE PRODUCTIVE (dopamine peak)
+  • Tâches difficiles (deep work code)
+  • 1 café max (arrêt 10h définitif)
+
+12h30 - DÉJEUNER
+  • 40g Protéines
+  • Légumes verts volonté
+  • 60g Glucides
+  • 20g Graisses
+
+  Supplément: Bétaïne HCL 650mg (avec première bouchée)
+
+  Exemples:
+    Option 1: 180g poulet + 80g riz basmati + brocoli/carottes + huile olive
+    Option 2: 200g saumon + 100g quinoa + salade verte + avocat
+    Option 3: Burrito bowl (viande + riz + haricots + légumes)
+
+13h00 - MARCHE 10 min (sensibilité insuline +25%)
+
+16h00 - COLLATION ANTI-FRINGALE (AVANT d'avoir faim)
+  • 30g Protéines
+  • 10g Graisses
+  • 20g Glucides
+
+  Exemples:
+    Option 1: Shake whey + banane + beurre amande
+    Option 2: 150g fromage blanc 0% + myrtilles + noix
+    Option 3: 120g thon + crackers complets + avocat
+
+19h00 - DÎNER (glucides soir = sommeil)
+  • 35g Protéines
+  • Légumes fibres
+  • 80g Glucides complexes (IMPORTANT pour sommeil)
+  • 15g Graisses
+
+  Exemples:
+    Option 1: 150g poulet + 120g riz + brocoli + huile coco
+    Option 2: 180g saumon + 150g patate douce + asperges
+    Option 3: 160g bœuf + 100g quinoa + légumes rôtis
+
+20h00 - STOP eating (digestion avant sommeil)
+
+ALIMENTS INTERDITS Phase 1 (30 jours):
+  ❌ Fast-food / Friture
+  ❌ Sodas / Jus de fruits (même "100% naturel")
+  ❌ Bonbons / Gâteaux / Céréales sucrées
+  ❌ Alcool (détruit Deep Sleep + 400 kcal vides)
+  ❌ Gluten (si suspicion Leaky Gut)
+  ❌ Produits laitiers (inflammation, teste 30j sans)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 3. SUPPLÉMENTS - STACK PHASE RESET                                             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+MATIN (07h15, à jeun 15 min avant manger):
+  • L-Tyrosine: 1000mg (précurseur dopamine)
+  • L-Glutamine: 5g (répare intestin)
+  • Vitamine D3: 5000 UI + K2 MK-7 200mcg
+  • Oméga-3: EPA 2g + DHA 1g (marque pure, TOTOX < 10)
+  • Probiotiques: 50 milliards CFU (mix Lactobacillus + Bifidobacterium)
+
+MIDI (avec déjeuner):
+  • Bétaïne HCL: 650mg (teste acidité, augmente à 1300mg si pas brûlure)
+  • Enzymes digestives: Full spectrum (Protéase/Lipase/Amylase)
+  • Zinc Picolinate: 30mg
+  • B-Complex: High potency (B6 essentiel dopamine)
+
+APRÈS-MIDI (16h avec collation):
+  • Alpha-GPC: 300mg (acétylcholine, focus)
+  • L-Théanine: 200mg (calme sans sédation)
+
+SOIR (22h00, 1h avant coucher):
+  • Magnésium Bisglycinate: 400mg (PAS Oxyde/Marin, biodispo 4%)
+  • Glycine: 3g (refroidissement corporel, Deep Sleep)
+  • Inositol: 2g (calme ruminations mentales)
+  • Ashwagandha KSM-66: 600mg (baisse cortisol 27% études)
+  • Apigénine: 50mg (camomille, agoniste GABA)
+  • Taurine: 2g (GABA, anti-anxiété)
+
+COLLAGÈNE (optionnel mais recommandé):
+  • Matin à jeun: 10g Collagène Type I + III (Leaky Gut, peau, articulations)
+
+Coût mensuel: ~200€
+Source: Bulk Powders, MyProtein, ou marques premium (Thorne, Pure Encapsulations)
+
+POURQUOI CES FORMES SPÉCIFIQUES?
+  • Bisglycinate vs Oxyde: 80% absorption vs 4%
+  • Picolinate vs Gluconate: Meilleure biodisponibilité
+  • KSM-66 vs Ashwa standard: Études cliniques, breveté
+  • K2 MK-7 vs MK-4: Demi-vie plus longue (72h vs 8h)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 4. SOMMEIL - PROTOCOLE ARCHITECTURE                                            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+OBJECTIF: 7h30 minimum + améliorer Deep Sleep 10% → 20%
+
+19h00: Dernier repas (glucides inclus)
+
+20h30: DÉBUT ROUTINE WIND-DOWN
+  • Écrans: Mode nuit activé (si vraiment besoin)
+  • Lumière: Ampoules rouges ou blue-blocker glasses
+  • Activités: Lecture papier, étirements légers, podcast calme
+
+21h30: THERMORÉGULATION
+  • Douche chaude 15 min (température corporelle monte)
+  • Sortie douche → corps refroidit rapidement (trigger sommeil)
+  • Alternative: Bain chaud 20 min
+
+22h00: STACK SUPPLÉMENTS SOMMEIL
+  • Magnésium + Glycine + Inositol + Ashwagandha + Apigénine + Taurine
+
+22h15: CHAMBRE SETUP
+  • Température: 17-18°C (critique)
+  • Obscurité: Blackout complet (ruban adhésif sur LEDs)
+  • Bruit: Bouchons oreilles OU bruit blanc
+  • Phone: Mode avion, dans tiroir (PAS sur table de nuit)
+  • Réveil: Sans lumière LED ou tourné vers mur
+
+22h30: AU LIT
+  • Respiration 4-7-8 (Dr Andrew Weil):
+      1. Expire complètement (bouche)
+      2. Inspire 4 sec (nez, bouche fermée)
+      3. Hold 7 sec
+      4. Expire 8 sec (bouche, bruit "whoosh")
+      5. Répète 4 cycles
+  • Active parasympathique, baisse cortisol, endormissement facilité
+
+23h00: ENDORMI (latence cible < 20 min)
+
+06h30-07h00: RÉVEIL NATUREL (7h30 sommeil)
+  • Pas d'alarm si possible (weekend teste)
+  • Sinon: Sunrise alarm clock (lumière progressive)
+
+INTERDICTIONS STRICTES:
+  ❌ Écrans 30 min avant coucher (lumière bleue détruit mélatonine)
+  ❌ Caféine après 10h (demi-vie 10h chez toi)
+  ❌ Alcool (détruit REM et Deep Sleep)
+  ❌ Sport intense après 18h (cortisol élevé)
+  ❌ Repas lourd après 19h
+  ❌ Travail/emails après 20h30 (activation mentale)
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 5. BIOHACKS LIFESTYLE                                                           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+MATIN (Réveil circadien):
+  ☀️ Exposition lumière naturelle: 10-15 min dehors sans lunettes soleil
+     └─ Inhibe mélatonine résiduelle
+     └─ Boost cortisol matin (timing correct)
+     └─ Set horloge circadienne SCN (suprachiasmatic nucleus)
+     └─ Si pas possible: Lampe luminothérapie 10000 lux
+
+JOURNÉE (Gestion stress):
+  🫁 Cohérence cardiaque: 3x/jour × 5 min (matin, midi, soir)
+     └─ Ratio 5-5 (5 sec inspire nez, 5 sec expire bouche)
+     └─ App: Respirelax, Cardiac Coherence
+     └─ Remonte HRV +15 points en 3 semaines (études)
+
+  🚶 Marche post-meal: 10 min après chaque repas principal
+     └─ Améliore sensibilité insuline +25%
+     └─ Réduit pic glycémique post-prandial
+     └─ Bonus: Lumière naturelle si possible
+
+SOIR (Activation parasympathique):
+  🌍 Grounding (Earthing): 15-20 min pieds nus (herbe, terre, sable)
+     └─ Réduit viscosité sanguine (étude 2006)
+     └─ Anti-inflammatoire (électrons terre neutralisent radicaux libres)
+     └─ Améliore HRV
+     └─ Si pas possible: Tapis grounding chambre
+
+  🧘 Étirements/Mobilité: 10-15 min (yin yoga, foam rolling)
+     └─ Relâche tension musculaire chronique
+     └─ Active parasympathique
+
+ÉLIMINATION TOXINES:
+  🚰 Eau: 3L/jour minimum
+     └─ Déshydratation chronique = fatigue, brouillard mental
+     └─ Ajoute: Sel (électrolytes), citron (pH), gingembre (anti-inflammatoire)
+
+  🧖 Sauna (si accès): 2-3x/semaine, 20 min, 80-90°C
+     └─ Detox métaux lourds (sueur)
+     └─ Améliore sensibilité insuline
+     └─ Choc thermique → adaptation métabolique
+     └─ Mimétique exercice (HSP - heat shock proteins)
+
+───────────────────────────────────────────────────────────────────────────────────
+PHASE 2 (JOURS 31-60): BUILD - COMPOSITION CORPORELLE
+───────────────────────────────────────────────────────────────────────────────────
+
+Objectif: Perte gras viscéral + gain masse musculaire
+
+ENTRAÎNEMENT:
+  • 4x Force (split Upper/Lower, plus volume)
+  • 2x Zone 2 (maintien capacité aérobie)
+  • 1x HIIT léger (si HRV > 55ms)
+
+NUTRITION:
+  • Calories: 2200 kcal (-200 vs Phase 1)
+  • Macros: 170g Prot / 180g Carbs / 85g Fat
+  • Introduire Carb Cycling (glucides élevés jours training, bas jours repos)
+
+SUPPLÉMENTS (Ajouter à Phase 1):
+  • Créatine Monohydrate: 5g/jour post-training
+  • Berbérine: 500mg × 3/jour avant repas (mimétique insuline)
+  • Tongkat Ali: 200mg matin (libère testostérone de SHBG)
+
+───────────────────────────────────────────────────────────────────────────────────
+PHASE 3 (JOURS 61-90): OPTIMIZE - PERFORMANCE MAXIMALE
+───────────────────────────────────────────────────────────────────────────────────
+
+Objectif: Maintenance gains + optimisation finale
+
+ENTRAÎNEMENT:
+  • 3x Force (périodisation force max 5-3-1)
+  • 2x Conditionnement (EMOM, Complexes, Tabata)
+  • 1x Zone 2 recovery
+
+NUTRITION:
+  • Calories: 2400 kcal (maintenance)
+  • Réintroduction stratégique aliments (1 repas libre/semaine)
+  • Affiner timing selon énergie/performance
+
+TESTS VALIDATION (Jour 90):
+  • DEXA Scan (composition corporelle)
+  • Bilan sanguin:
+      - Testostérone totale + libre
+      - SHBG
+      - Cortisol 8h AM
+      - Insuline à jeun + HOMA-IR
+      - HbA1c
+      - Panel lipidique complet
+      - CRP haute sensibilité
+      - TSH, T3 libre, T4 libre
+      - Vitamine D (25-OH)
+
+═══════════════════════════════════════════════════════════════════════════════════
+TRACKING & MÉTRIQUES (Mesures objectives)
+═══════════════════════════════════════════════════════════════════════════════════
+
+QUOTIDIEN:
+  ☑ HRV matin (app Elite HRV, Whoop, ou Oura Ring)
+  ☑ Poids à jeun (même balance, même heure)
+  ☑ Qualité sommeil (1-10 subjectif)
+  ☑ Niveau énergie journée (1-10)
+  ☑ Libido/motivation (1-10)
+  ☑ Humeur (1-10)
+
+HEBDOMADAIRE:
+  ☑ Photos (même lumière, même angle, même heure)
+  ☑ Circonférences: Tour taille, tour hanches, tour bras
+  ☑ Performance gym: Poids soulevés mouvements principaux
+  ☑ Moyenne HRV semaine (tendance)
+
+MENSUEL:
+  ☑ Analyse composition corporelle (balance impédancemètre ou DEXA)
+  ☑ Glycémie à jeun (glucomètre pharmacie, cible < 90 mg/dL)
+  ☑ Tension artérielle (< 120/80 mmHg)
+  ☑ Photos progrès (avant/après côte à côte)
+
+FINAL (Jour 90):
+  ☑ DEXA Scan professionnel
+  ☑ Bilan sanguin complet
+  ☑ Photos finales + mesures
+  ☑ Test performance (force, endurance)
+  ☑ Questionnaire bien-être subjectif
+
+═══════════════════════════════════════════════════════════════════════════════════
+PRÉDICTIONS RÉSULTATS (Basé sur profil + adhérence)
+═══════════════════════════════════════════════════════════════════════════════════
+
+APRÈS 15 JOURS:
+  • Sommeil: Latence endormissement 60 min → 20-25 min
+  • HRV: 28ms → 45-50ms (+60%)
+  • Énergie: Disparition coup de barre 15h
+  • Fringales: 70% réduction envies sucrées
+  • Poids: -2kg (eau + glycogène, normal)
+
+APRÈS 30 JOURS:
+  • Poids: -4 à -5kg
+  • Tour taille: -3cm
+  • HRV: 55-60ms stable
+  • Sommeil: Deep Sleep 10% → 18%, latence < 15 min
+  • Libido: Amélioration notable (+40%)
+  • Performance gym: +20% poids soulevés (adaptation neuro)
+  • Digestion: 80% réduction ballonnements
+  • Peau: Teint plus clair, cernes réduites
+
+APRÈS 60 JOURS:
+  • Poids: -7 à -9kg total
+  • Masse grasse: 18-20% → 13-15%
+  • Masse musculaire: +2 à +3kg (recomposition)
+  • Tour taille: -6cm (gras viscéral fondu)
+  • HRV: 65-70ms
+  • Force: +35-40% mouvements principaux
+  • Testostérone libre: +30-35% estimé (SHBG baissée)
+  • Cognition: Brouillard mental disparu, focus x2
+
+APRÈS 90 JOURS:
+  • Poids: -9 à -11kg
+  • Masse grasse: < 12%
+  • FFMI: 19.5 (vs 17.9 départ)
+  • Ratio taille/hanche: < 0.85 (risque cardio normalisé)
+  • HRV: 70-75ms (système nerveux équilibré)
+  • Sommeil: 7h30 stable, Deep Sleep 22-25%
+  • Testostérone libre: +40-45%
+  • HbA1c: < 5.2% (sensibilité insuline restaurée)
+  • Performance: +50% force, endurance améliorée
+  • Bien-être subjectif: 8-9/10 (vs 4/10 départ)
+
+═══════════════════════════════════════════════════════════════════════════════════
+CONCLUSION: LE VRAI PROBLÈME
+═══════════════════════════════════════════════════════════════════════════════════
+
+Julien,
+
+Tu as 29 ans et tu te sens comme un mec de 45 ans fatigué.
+
+Le problème n'est pas "le stress du boulot" ou "la génétique" ou "l'âge".
+
+C'est un dérèglement métabolique systémique que tu as créé avec:
+  • 2 ans de sommeil < 6h/nuit (dette 680h)
+  • Alimentation catastrophique (fast-food, sucre, 0 protéines)
+  • 0 activité physique (sédentarité 12h/jour)
+  • 4 cafés/jour jusqu'à 17h (destruction Deep Sleep)
+  • Stress chronique sans récup (60h/semaine)
+
+Résultat:
+  └─ HRV 28ms (système nerveux grillé)
+  └─ Dopamine épuisée (motivation morte)
+  └─ Testostérone libre basse (libido 0)
+  └─ Deep Sleep < 10% (aucune récup)
+  └─ Dysbiose + Leaky Gut (inflammation systémique)
+  └─ Début résistance insuline (skinny-fat)
+
+Dans 3 ans si tu continues:
+  • Burnout clinique (arrêt maladie 6 mois)
+  • Dépression (SSRI prescription)
+  • Syndrome métabolique (HbA1c > 5.7%)
+  • Obésité (facilement +15kg gras)
+
+MAIS.
+
+Si tu suis ce protocole 90 jours:
+
+Semaine 2:
+  • Tu vas dormir pour la première fois depuis des années
+  • Réveil sans alarm, énergie immédiate
+  • Fringales disparues
+
+Semaine 4:
+  • HRV remonte (récup enfin possible)
+  • Libido revient
+  • Motivation projets perso regain
+  • Cognition x2 (code plus vite, moins d'erreurs)
+
+Semaine 8:
+  • Tes collègues: "Mec, t'as fait quoi? Tu as une gueule de winner"
+  • Muscles visibles (bras, épaules)
+  • Ventre plat (fini poignées amour)
+  • Énergie stable 7h-23h
+
+Semaine 12:
+  • -10kg, mais surtout:
+      - DEXA: -8kg gras, +3kg muscle
+      - Bilan sanguin: TOUT AU VERT
+      - HRV 72ms (athlète niveau)
+      - Testostérone libre +45%
+      - Performance gym: x2 poids soulevés
+  • Tu as 23 ans biologiquement, pas 29
+
+CE N'EST PAS UN RÉGIME.
+C'EST UNE REPROGRAMMATION NEUROMÉTABOLIQUE.
+
+Tu ne "perds du poids". Tu répares ton système nerveux.
+Tu ne "manges mieux". Tu restaures ta production dopamine.
+Tu ne "dors plus". Tu reconstruis ton architecture sommeil.
+
+Le prix:
+  • 200€/mois suppléments
+  • 7h30 sommeil NON-NÉGOCIABLE
+  • 3-4h training/semaine
+  • 0 fast-food 90 jours
+  • 0 alcool 30 jours (puis modération)
+
+Le ROI:
+  • Santé mentale restaurée (dopamine revenue)
+  • Performance cognitive x2 (10x developer)
+  • Physique transformé (confiance x10)
+  • Énergie d'un gamin de 18 ans
+  • 20 ans de vie en bonne santé gagnés
+
+Tu es prêt à hacker ta biologie?
+
+Ou tu veux attendre le burnout à 32 ans?
+
+───────────────────────────────────────────────────────────────────────────────────
+
+Achkan Zennadi
+NEUROCORE 360° - Expert Métabolisme & Performance Neurologique
+
+11 Certifications Internationales:
+  • ISSA: CPT, CES, Nutrition, Bodybuilding, Transformation Specialist
+  • NASM: CPT, CES, PES, FNS, WLS
+  • Precision Nutrition: PN1 Certified Coach
+  • Pre-Script: Level 1+2 Movement Specialist
+
+Support Client Inclus (90 jours):
+  • Check-in hebdomadaire par email (progrès, ajustements)
+  • Réponses questions sous 48h max
+  • Accès groupe privé Discord (communauté + coaching groupe)
+  • 1 appel Zoom mi-protocole (Jour 45, bilan + ajustements)
+
+Contact: coaching@neurocore360.com
+Instagram: @neurocore360
+Site: www.neurocore360.com
+
+═══════════════════════════════════════════════════════════════════════════════════
+                    FIN DU RAPPORT - VERSION TXT BRUTE
+              [Prochaine étape: Conversion HTML + Design visuel]
+═══════════════════════════════════════════════════════════════════════════════════

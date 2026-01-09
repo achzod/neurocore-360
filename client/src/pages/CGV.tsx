@@ -47,7 +47,7 @@ export default function CGV() {
             <h2 className="mb-4 text-xl font-bold text-white">Article 1 - Champ d'application</h2>
             <p className="text-white/60 leading-relaxed">
               Les presentes Conditions Generales de Vente s'appliquent a toutes commandes passees sur
-              le site NEUROCORE 360, service propose par AchzodCoaching.
+              le site APEXLABS, service propose par AchzodCoaching.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
               Est considere comme "client" toute personne physique ou morale realisant aupres de ce
@@ -63,7 +63,7 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 2 - Description des Services</h2>
             <p className="text-white/60 leading-relaxed">
-              NEUROCORE 360 propose un audit complet couvrant Hormones, Metabolisme, Biohacking,
+              APEXLABS propose un audit complet couvrant Hormones, Metabolisme, Biohacking,
               Biomecanique et Neurotransmetteurs. 180 questions reparties en 15 domaines. Les services proposes sont :
             </p>
             <div className="mt-6 space-y-4">
@@ -220,7 +220,7 @@ export default function CGV() {
             <h2 className="mb-4 text-xl font-bold text-white">Article 9 - Propriete Intellectuelle</h2>
             <p className="text-white/60 leading-relaxed">
               L'ensemble des textes, illustrations, algorithmes, rapports et contenus fournis par
-              NEUROCORE 360 sont proteges par le droit d'auteur. Toute reproduction, diffusion ou
+              APEXLABS sont proteges par le droit d'auteur. Toute reproduction, diffusion ou
               utilisation commerciale est interdite sans autorisation prealable ecrite.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
@@ -231,7 +231,7 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 10 - Responsabilite</h2>
             <p className="text-white/60 leading-relaxed">
-              L'audit NEUROCORE 360 fournit des recommandations basees sur les reponses du client.
+              L'audit APEXLABS fournit des recommandations basees sur les reponses du client.
               Ces recommandations sont a titre informatif et ne remplacent pas un avis medical professionnel.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">

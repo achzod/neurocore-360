@@ -1,0 +1,428 @@
+═══════════════════════════════════════════════════════════════════════
+                    NEUROCORE 360° - AUDIT MÉTABOLIQUE COMPLET
+                           RAPPORT CLINIQUE PERSONNALISÉ
+═══════════════════════════════════════════════════════════════════════
+
+CLIENT: Thomas M., 34 ans, Entrepreneur Tech
+DATE: 2 Janvier 2026
+COACH: Achkan Zennadi, NEUROCORE 360°
+
+───────────────────────────────────────────────────────────────────────
+MODULE 1: ANALYSE STRUCTURELLE & MÉTABOLIQUE (Le Châssis)
+───────────────────────────────────────────────────────────────────────
+
+📊 DONNÉES ANTHROPOMÉTRIQUES
+
+Poids: 82kg | Taille: 178cm | Tour de taille: 92cm | Tour de hanches: 98cm
+
+⚠️ ANALYSE CRITIQUE:
+
+On ne va pas parler d'IMC (c'est un outil obsolète). Regardons ce qui compte:
+
+• FFMI (Fat-Free Mass Index): 18.2
+  └─ Interprétation: Masse musculaire faible pour ton gabarit. Tu es dans la
+     zone "skinny-fat" (gras viscéral élevé malgré poids normal).
+
+• Ratio Taille/Hanche: 0.94
+  └─ ALERTE: > 0.90 = risque cardiovasculaire élevé
+  └─ Profil androïde (gras abdominal/viscéral) = résistance à l'insuline probable
+
+🔬 CE QUE ÇA SIGNIFIE VRAIMENT:
+
+Ton corps stocke du gras viscéral autour des organes (foie, pancréas). Ce n'est
+pas juste esthétique. Le gras viscéral produit des cytokines inflammatoires qui:
+  1. Bloquent les récepteurs d'insuline (résistance)
+  2. Augmentent le cortisol (stress chronique)
+  3. Baissent la testostérone libre (fatigue + libido basse)
+
+───────────────────────────────────────────────────────────────────────
+MODULE 2: NEURO-ENDOCRINOLOGIE (Le Moteur Chimique)
+───────────────────────────────────────────────────────────────────────
+
+🧪 PROFIL HORMONAL (Analyse croisée questionnaire + symptômes)
+
+• Testostérone Totale: Probablement normale (tu n'as pas de symptômes flagrants)
+• MAIS: SHBG (Sex Hormone Binding Globulin) probablement ÉLEVÉE
+  └─ Pourquoi? Tu manges < 2000 kcal/jour depuis 6 mois (restriction chronique)
+  └─ Résultat: Testostérone "menottée" = testostérone libre BASSE
+  └─ Symptômes: Libido faible, récup lente, difficulté à prendre du muscle
+
+• Ratio Cortisol/DHEA: DÉSÉQUILIBRÉ
+  └─ Indicateurs: Réveil fatigué, fringales sucrées 15h, sommeil non-réparateur
+  └─ Le cortisol domine = mode "survie catabolique"
+  └─ Ton corps brûle du muscle, stocke du gras, et détruit ta motivation
+
+🧠 PROFIL NEUROTRANSMETTEURS (Test Braverman adapté)
+
+Tu as répondu "Oui" à:
+  • Difficulté à démarrer le matin même après 8h de sommeil
+  • Procrastination sur tâches importantes
+  • Libido basse / manque d'excitation pour les projets
+  • Brouillard mental en fin d'après-midi
+
+DIAGNOSTIC: Déficit DOPAMINE + ACÉTYLCHOLINE
+
+1. DOPAMINE (Le Starter)
+   └─ C'est ton problème #1. Tu manques de "drive", de motivation brute.
+   └─ Cause probable: Déficit en Tyrosine (acide aminé précurseur)
+   └─ Aggravé par: Manque de protéines au petit-déjeuner (tu manges sucré)
+
+2. ACÉTYLCHOLINE (Le Processeur)
+   └─ Brouillard mental = manque de précurseurs (Choline)
+   └─ Tu oublies des détails, vitesse de réaction lente
+
+☕ GÉNÉTIQUE CAFÉINE (CYP1A2)
+
+Tu as répondu "Oui" à:
+  • Nervosité/anxiété après 1 café
+  • Difficulté à t'endormir même si café avant 14h
+  • Palpitations cardiaques avec 2 expressos
+
+DIAGNOSTIC: Métaboliseur LENT (génotype A/A probable)
+
+Traduction: La caféine reste 10-12h dans ton sang (vs 4-6h pour métaboliseurs rapides).
+Ton dernier café à 14h détruit ton sommeil profond à 23h sans que tu t'en rendes compte.
+
+───────────────────────────────────────────────────────────────────────
+MODULE 3: ARCHITECTURE DU SOMMEIL (La Réparation)
+───────────────────────────────────────────────────────────────────────
+
+⏱️ ANALYSE SOMMEIL
+
+• Latence d'endormissement: < 3 minutes
+  └─ ⚠️ PROBLÈME: Tu t'endors instantanément = DETTE DE SOMMEIL MASSIVE
+  └─ Normal = 5-20 min. Si < 5 min, ton système nerveux est épuisé.
+
+• Réveils nocturnes: 3-4x par nuit (vers 2h-3h)
+  └─ Cause probable: Pic de cortisol nocturne (hypoglycémie)
+  └─ Ton foie vide son glycogène → cortisol monte → tu te réveilles
+
+• Sensation au réveil: "Fatigué comme si je n'avais pas dormi"
+  └─ Deep Sleep (SWS) insuffisant
+  └─ C'est pendant le Deep Sleep que:
+      - GH (Hormone de croissance) est sécrétée (réparation musculaire)
+      - Système Glymphatique nettoie le cerveau (détox métabolites)
+
+📊 ESTIMATION HRV (Variabilité Cardiaque)
+
+Basé sur tes symptômes: HRV probablement < 35ms (RMSSD)
+
+Interprétation:
+  • < 30ms = Système sympathique (Fight/Flight) saturé
+  • Ton système nerveux est en mode ALERTE permanente
+  • Conséquence: Récupération impossible, fatigue centrale
+
+INTERDICTION FORMELLE:
+  └─ Pas de HIIT, pas de CrossFit, pas de séances "all-out"
+  └─ Ton SNC (système nerveux central) est grillé. Si tu forces, tu vas crasher.
+
+───────────────────────────────────────────────────────────────────────
+MODULE 4: GASTRO-ENTÉROLOGIE FONCTIONNELLE (L'Absorption)
+───────────────────────────────────────────────────────────────────────
+
+🔥 PROFIL DIGESTIF
+
+Symptômes rapportés:
+  • Ballonnements après repas (surtout légumineuses/pain)
+  • Reflux gastrique occasionnel
+  • Flatulences excessives
+  • Fatigue post-prandiale (coup de barre après déjeuner)
+
+DIAGNOSTIC: HYPOCHLORHYDRIE (manque d'acidité gastrique) + DYSBIOSE
+
+⚠️ ATTENTION: Contre-intuitif!
+
+Tu penses avoir "trop d'acidité" (reflux) mais c'est l'inverse. Tu as un MANQUE
+d'acide chlorhydrique (HCl) dans l'estomac.
+
+Pourquoi ça cause des reflux?
+  1. Estomac pas assez acide → protéines mal digérées
+  2. Nourriture stagne → fermentation bactérienne
+  3. Gaz remontent → pression sur sphincter œsophagien → reflux
+
+Conséquence grave:
+  └─ Malabsorption des protéines, fer, B12, zinc
+  └─ Cercle vicieux: manque de nutriments → moins de HCl → pire absorption
+
+🦠 BARRIÈRE INTESTINALE (Leaky Gut probable)
+
+Indicateurs:
+  • Intolérances alimentaires récentes (gluten, lactose)
+  • Réactions cutanées (acné/eczéma) après certains repas
+  • Fatigue chronique + inflammation systémique
+
+Test suggéré: Zonuline sérique (marqueur perméabilité intestinale)
+
+───────────────────────────────────────────────────────────────────────
+MODULE 5: PERFORMANCE & PROGRAMMATION (L'Ingénierie)
+───────────────────────────────────────────────────────────────────────
+
+🏋️ ANALYSE TRAINING
+
+Routine actuelle:
+  • 5x/semaine CrossFit (HIIT + Olympic Lifts)
+  • 0 jours repos complet
+  • Volume: +40% augmentation les 2 derniers mois
+
+ERREUR FATALE: Ratio Aigu/Chronique (ACWR) = 1.6
+
+Interprétation:
+  • ACWR > 1.5 = risque blessure exponentiel
+  • Tu augmentes le volume trop vite
+  • Ton système nerveux ne suit pas (d'où HRV effondré)
+
+FATIGUE CENTRALE vs PÉRIPHÉRIQUE:
+
+Tu confonds:
+  • Fatigue périphérique (muscles qui brûlent) → OK, c'est normal
+  • Fatigue centrale (SNC grillé) → DANGER, arrêt immédiat requis
+
+Symptômes fatigue centrale:
+  ✓ Perte de motivation
+  ✓ Sommeil non-réparateur malgré 8h
+  ✓ Progression bloquée/régression
+  ✓ Libido basse
+  ✓ Irritabilité
+
+VERDICT: Tu es en OVERTRAINING (surentraînement systémique)
+
+───────────────────────────────────────────────────────────────────────
+PROTOCOLE D'ACTION CLINIQUE - 90 JOURS
+───────────────────────────────────────────────────────────────────────
+
+🎯 PHASE 1 (Semaines 1-4): RESET NEUROLOGIQUE
+
+OBJECTIF: Sortir du mode "Fight/Flight", remonter le HRV
+
+1. TRAINING - INTERDICTIONS FORMELLES
+
+   ❌ ARRÊT IMMÉDIAT:
+      • CrossFit / HIIT
+      • Séances > 45 minutes
+      • Tout ce qui élève ta FC > 85% FCmax
+
+   ✅ NOUVEAU PROTOCOLE:
+      • 3x/semaine FORCE pure (5x5, repos 3-5 min entre séries)
+      • 2x/semaine ZONE 2 (vélo/marche, FC 120-135 bpm, 30-45 min)
+      • 2 jours repos COMPLET
+
+   Pourquoi?
+   └─ Force pure = neuro-focus sans épuiser glycogène
+   └─ Zone 2 = améliore capacité mitochondriale sans stress SNC
+
+2. NUTRITION - RESET HORMONAL
+
+   MATIN (6h-8h):
+      • 40g Protéines (viande rouge, œufs, poisson)
+      • 20g Graisses (avocat, noix, beurre grass-fed)
+      • 0g Glucides (sauf légumes verts)
+      • + 1g Tyrosine (supplément) à jeun
+      └─ But: Boost dopamine + acétylcholine sans crash insuline
+
+   DÉJEUNER (12h-14h):
+      • 35g Protéines
+      • Légumes fibres + graisses
+      • 50g Glucides complexes (patate douce, riz basmati)
+
+   COLLATION PRÉ-TRAINING (si entraînement):
+      • 25g Cluster Dextrin (dextrine cyclique ramifiée)
+      • 5g BCAA
+      └─ But: Vidange gastrique rapide, énergie sans crash
+
+   DÎNER (19h-20h):
+      • 30g Protéines
+      • 100g Glucides complexes (riz, quinoa)
+      • Légumes
+      └─ But: Tryptophane → Sérotonine → Mélatonine (sommeil)
+
+   TOTAL: 2200 kcal/jour (sortir du déficit chronique)
+
+3. STACK SUPPLÉMENTS - PHASE RESET
+
+   MATIN (à jeun):
+      • Tyrosine 1g (précurseur dopamine)
+      • Alpha-GPC 300mg (précurseur acétylcholine)
+      • Vitamine D3 5000 UI + K2 MK-7 200mcg
+      • Oméga-3 (EPA 2g, DHA 1g) - vérifier TOTOX < 10
+
+   MIDI:
+      • Bétaïne HCL 650mg (AVEC repas, tester acidité)
+      • Enzymes digestives (protéase + lipase)
+
+   SOIR (1h avant coucher):
+      • Magnésium Bisglycinate 400mg (pas Marin, biodispo 4%)
+      • Glycine 3g (refroidissement corporel)
+      • Inositol 2g (calme pensées)
+      • Apigénine 50mg (de la camomille, agoniste GABA)
+
+   Pourquoi ces formes précises?
+   └─ Bisglycinate = absorption 80% (vs Oxyde 4%)
+   └─ Glycine = baisse température centrale (trigger sommeil)
+   └─ Inositol = réduit ruminations mentales
+
+4. PROTOCOLE SOMMEIL - ARCHITECTURE PROFONDE
+
+   20h00: Dernier repas (glucides inclus)
+   21h00: Lumière rouge uniquement (blue-blocker glasses)
+   21h30: Douche chaude 15 min (effet rebond froid)
+   22h00: Chambre 18°C, blackout total, stack sommeil
+   22h30: Au lit, respiration 4-7-8 (3 cycles)
+
+   INTERDICTIONS:
+   ❌ Écrans après 21h
+   ❌ Caféine après 10h (métaboliseur lent)
+   ❌ Alcool (détruit Deep Sleep)
+   ❌ Sport après 18h (élève cortisol)
+
+5. BIOHACKS LIFESTYLE
+
+   • GROUNDING (mise à la terre): 20 min/jour pieds nus sur terre/herbe
+     └─ Réduit viscosité sanguine, anti-inflammatoire
+
+   • LUMIÈRE ROUGE (PBM): 10 min matin + soir si possible
+     └─ Améliore fonction mitochondriale, production ATP
+
+   • RESPIRATION COHÉRENCE CARDIAQUE: 3x/jour, 5 min
+     └─ Ratio 5-5 (5 sec inspire, 5 sec expire)
+     └─ Remonte HRV de 10-15 points en 2 semaines
+
+───────────────────────────────────────────────────────────────────────
+
+🎯 PHASE 2 (Semaines 5-8): RECONSTRUCTION
+
+OBJECTIF: Améliorer composition corporelle, remonter testostérone libre
+
+1. TRAINING - HYPERTROPHIE MÉTABOLIQUE
+
+   4x/semaine:
+      • Lundi: Upper Push (Bench, Dips, Épaules) 4x8-12
+      • Mercredi: Lower (Squat, RDL, Split Squat) 4x8-12
+      • Vendredi: Upper Pull (Pull-ups, Rows, Biceps) 4x8-12
+      • Samedi: Accessoires + Core 3x12-15
+
+   Tempo: 3-1-1 (3 sec excentrique, 1 sec pause, 1 sec concentrique)
+   └─ But: Time Under Tension pour hypertrophie sans détruire SNC
+
+   + 2x/semaine Zone 2 (maintenir capacité aérobie)
+
+2. NUTRITION - SURPLUS CONTRÔLÉ
+
+   Calories: 2500 kcal/jour (+300 vs Phase 1)
+   Macros: 180g Prot / 80g Fat / 250g Carbs
+
+   TIMING PÉRI-WORKOUT:
+      • 60 min avant: 30g Cluster Dextrin + 5g BCAA
+      • Pendant (si > 60 min): 15g Dextrin/30 min
+      • Post (30 min après): 40g Whey Isolate + 60g Dextrin + Créatine 5g
+
+3. STACK SUPPLÉMENTS - PHASE ANABOLIQUE
+
+   Ajouter à Phase 1:
+      • Créatine Monohydrate 5g/jour (post-training)
+      • Zinc Picolinate 30mg soir (boost testostérone libre)
+      • Ashwagandha KSM-66 600mg soir (baisse cortisol 28%)
+      • Tongkat Ali 200mg matin (libère testostérone de SHBG)
+
+───────────────────────────────────────────────────────────────────────
+
+🎯 PHASE 3 (Semaines 9-12): PERFORMANCE MAXIMALE
+
+OBJECTIF: Réintroduire intensité, optimiser puissance
+
+1. TRAINING - FORCE + CONDITIONNEMENT
+
+   3x/semaine Force (5-3-1 protocol)
+   2x/semaine Conditionnement métabolique
+      • EMOM (Every Minute On the Minute) 10-15 min
+      • Tabata modifié (20 sec work / 40 sec rest)
+      • Density training (max reps en 10 min, charge modérée)
+
+   À ce stade, ton HRV devrait être > 60ms → tu peux pusher
+
+2. TESTS DE VALIDATION
+
+   • FORCE: Max Squat, Bench, Deadlift (+15-20% attendu)
+   • COMPO CORPO: DEXA scan (perte 3-4kg gras viscéral, gain 2-3kg muscle)
+   • HRV: > 60ms (vs < 35 début)
+   • SOMMEIL: Latence 10-15 min, 0-1 réveil, sensation réparateur
+   • LIBIDO: Retour à la normale (testostérone libre remontée)
+
+───────────────────────────────────────────────────────────────────────
+MÉTRIQUES DE SUIVI (Mesures objectives)
+───────────────────────────────────────────────────────────────────────
+
+HEBDOMADAIRE:
+  • HRV matin (app Oura/Whoop/Elite HRV)
+  • Poids + tour de taille
+  • Qualité sommeil subjective (1-10)
+  • Énergie/motivation subjective (1-10)
+
+MENSUEL:
+  • Photos (face/dos/profil, lumière constante)
+  • Force (1RM estimé sur mouvements principaux)
+  • Glycémie à jeun (si accès glucomètre)
+
+FIN PROTOCOLE (12 semaines):
+  • DEXA scan (composition corporelle)
+  • Bilan sanguin complet:
+      - Testostérone totale + libre
+      - SHBG
+      - Cortisol AM
+      - TSH, T3, T4
+      - Panel lipidique complet
+      - HbA1c (hémoglobine glyquée)
+      - CRP haute sensibilité (inflammation)
+
+───────────────────────────────────────────────────────────────────────
+CONCLUSION: TON PROBLÈME N'EST PAS TON ENTRAÎNEMENT
+───────────────────────────────────────────────────────────────────────
+
+Thomas,
+
+Tu t'entraînes comme un warrior. Mais ton corps n'est pas un moteur qu'on peut
+pousser à fond sans maintenance. C'est un système biologique complexe.
+
+Ton problème #1: FATIGUE CENTRALE (SNC grillé)
+  └─ HRV effondré, cortisol élevé, testostérone libre basse, sommeil détruit
+
+Ton problème #2: RÉSISTANCE À L'INSULINE (gras viscéral)
+  └─ Ratio taille/hanche > 0.90, inflammation systémique
+
+Ton problème #3: DÉFICIT DOPAMINE + HYPOCHLORHYDRIE
+  └─ Motivation basse, digestion pourrie, malabsorption nutriments
+
+La bonne nouvelle?
+
+Tout ça se fixe. En 12 semaines, si tu suis le protocole à la lettre, tu vas:
+  • Remonter ton HRV de 35 → 65ms
+  • Perdre 3-4kg de gras viscéral (tour de taille -6cm)
+  • Gagner 2-3kg de muscle de qualité
+  • Retrouver ton drive, ta libido, ton sommeil
+  • Exploser tes perfs en salle (+20% sur tes maxs)
+
+Mais il faut que tu comprennes une chose:
+
+CE N'EST PAS UN RÉGIME. C'EST UNE REPROGRAMMATION MÉTABOLIQUE.
+
+Tu ne "perds du poids". Tu optimises ta flexibilité métabolique (passage
+glycolyse → bêta-oxydation sans crash). Tu ne "manges mieux". Tu chronosynchronises
+tes nutriments avec tes rythmes circadiens. Tu ne "te reposes plus". Tu répares
+ton architecture de sommeil (Deep Sleep + REM).
+
+Bienvenue dans le vrai biohacking.
+
+───────────────────────────────────────────────────────────────────────
+
+Achkan Zennadi
+NEUROCORE 360° - Expert Métabolisme & Performance
+ISSA CPT, CES, Nutrition Coach
+Pre-Script Movement Specialist
+
+Questions? Besoin de précisions sur un protocole?
+→ coaching@neurocore360.com
+→ Suivi hebdomadaire inclus dans ton audit
+
+═══════════════════════════════════════════════════════════════════════
+                    FIN DU RAPPORT - VERSION TXT BRUTE
+       (Conversion HTML + Design visuel: prochaine étape)
+═══════════════════════════════════════════════════════════════════════

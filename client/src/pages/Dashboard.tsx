@@ -443,7 +443,7 @@ function AuditCard({ audit, index }: { audit: Audit; index: number }) {
               <FileText className="h-6 w-6" />
             </div>
             <div>
-              <CardTitle className="text-lg">Audit NEUROCORE 360</CardTitle>
+              <CardTitle className="text-lg">Audit APEXLABS</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 {new Date(audit.createdAt).toLocaleDateString("fr-FR", {
                   day: "numeric",
@@ -514,7 +514,7 @@ function EmptyState() {
         </div>
         <h3 className="mt-6 text-lg font-semibold">Aucun audit pour le moment</h3>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-          Commence ton premier audit NEUROCORE 360 pour decouvrir ton profil metabolique complet.
+          Commence ton premier audit APEXLABS pour decouvrir ton profil metabolique complet.
         </p>
         <Link href="/audit-complet/questionnaire">
           <Button className="mt-6" data-testid="button-start-first-audit">

@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Anabolic Bioscan Report (Premium Tier)
+ * APEXLABS - Anabolic Bioscan Report (Premium Tier)
  * Style Ultrahuman - Dashboard Premium avec sections detaillees
  */
 

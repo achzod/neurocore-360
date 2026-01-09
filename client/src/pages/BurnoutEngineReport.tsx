@@ -1083,7 +1083,7 @@ const BurnoutEngineReport: React.FC = () => {
           {/* Footer */}
           <footer className="text-center py-8 border-t" style={{ borderColor: currentTheme.colors.border }}>
             <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-              Analyse generee par NEUROCORE 360 - Burnout Engine
+              Analyse generee par APEXLABS - Burnout Engine
             </p>
           </footer>
         </div>

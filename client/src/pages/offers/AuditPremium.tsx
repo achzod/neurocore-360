@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Anabolic Bioscan
+ * APEXLABS - Anabolic Bioscan
  * TRUE Ultrahuman Design - 59€
  */
 

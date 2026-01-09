@@ -12,8 +12,8 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: "Qu'est-ce que NEUROCORE 360 exactement ?",
-    answer: "NEUROCORE 360 est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€ ou Burnout Engine 39€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
+    question: "Qu'est-ce que APEXLABS exactement ?",
+    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€ ou Burnout Engine 39€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
   },
   {
     question: "Quelle est la différence entre les différentes offres ?",
@@ -37,7 +37,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Qui es-tu exactement, Achzod ?",
-    answer: "Je suis coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel pendant des années. NEUROCORE 360 est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique."
+    answer: "Je suis coach certifié avec 11 certifications internationales : NASM (CPT, CES, PES, FNS, WFS), ISSA (CPT, Nutritionist, Bodybuilding Specialist), Precision Nutrition (Level 1, Sleep & Recovery) et Pre-Script (Movement Assessment, Corrective Exercise). J'ai accompagné des centaines de clients en coaching individuel pendant des années. APEXLABS est l'aboutissement de toute cette expérience : chaque protocole, chaque recommandation vient de mon expérience terrain, pas d'un template générique."
   },
   {
     question: "Est-ce adapté aux débutants ?",
@@ -141,7 +141,7 @@ export default function FAQ() {
                 Questions fréquentes
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg text-white/50">
-                Tout ce que tu dois savoir sur les formules NEUROCORE 360.
+                Tout ce que tu dois savoir sur les formules APEXLABS.
               </p>
             </motion.div>
           </div>

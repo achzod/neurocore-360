@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Ultimate Scan Report (Elite Tier)
+ * APEXLABS - Ultimate Scan Report (Elite Tier)
  * Style Ultrahuman - Dashboard Elite avec analyse photo et biomecanique
  */
 

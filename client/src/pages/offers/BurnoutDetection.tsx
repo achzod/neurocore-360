@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Burnout Detection
+ * APEXLABS - Burnout Detection
  * TRUE Ultrahuman Design - 39€
  */
 

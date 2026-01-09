@@ -577,8 +577,8 @@ export default function AdminDashboard() {
                             size="sm"
                             onClick={() => {
                               setSelectedAuditId(q.id);
-                              setCtaSubject("Ton audit NEUROCORE 360 t'attend + Code -20% !");
-                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire NEUROCORE 360 mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                               setShowCtaModal(true);
                             }}
                           >
@@ -652,7 +652,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">PREMIUM J+7</h3>
-                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching NEUROCORE20 (-20%)</p>
+                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching APEXLABS20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 7).length}
@@ -719,7 +719,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">PREMIUM J+14 (Dernière chance)</h3>
-                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - NEUROCORE20</p>
+                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - APEXLABS20</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 14).length}
@@ -1068,8 +1068,8 @@ export default function AdminDashboard() {
                               className="flex-1"
                               onClick={() => {
                                 setSelectedAuditId(q.id);
-                                setCtaSubject("Ton audit NEUROCORE 360 t'attend + Code -20% !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire NEUROCORE 360 mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >

@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Ultimate Scan
+ * APEXLABS - Ultimate Scan
  * TRUE Ultrahuman Design - 79€
  */
 

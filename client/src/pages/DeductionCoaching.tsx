@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Deduction Coaching Page
+ * APEXLABS - Deduction Coaching Page
  * Explains that 100% of the analysis cost is deducted from coaching
  */
 
