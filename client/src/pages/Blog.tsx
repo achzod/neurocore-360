@@ -9,6 +9,7 @@ import {
   BLOG_CATEGORIES,
   getFeaturedArticles,
   getArticlesByCategory,
+  getArticleCountByCategory,
 } from "@/data/blogArticles";
 
 export default function Blog() {
@@ -66,8 +67,60 @@ export default function Blog() {
           </div>
         </section>
 
+        {/* Categories Section - MAIN */}
+        <section className="py-16 border-t border-white/5">
+          <div className="mx-auto max-w-7xl px-4">
+            <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
+              [ CATÉGORIES ]
+            </p>
+            <h2 className="mb-8 text-2xl font-bold text-white">Explorer par thème</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {BLOG_CATEGORIES.filter(c => c.id !== "all").map((category, index) => {
+                const count = getArticleCountByCategory(category.id);
+                if (count === 0) return null;
+                return (
+                  <motion.button
+                    key={category.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    onClick={() => {
+                      setActiveCategory(category.id);
+                      document.getElementById('articles-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`group p-4 rounded-sm text-left transition-all duration-300 hover:-translate-y-1 ${
+                      activeCategory === category.id
+                        ? "bg-[#FCDD00] text-black"
+                        : "bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/50"
+                    }`}
+                  >
+                    <span className={`text-sm font-semibold block mb-1 ${
+                      activeCategory === category.id ? "text-black" : "text-white group-hover:text-[#FCDD00]"
+                    }`}>
+                      {category.label}
+                    </span>
+                    <span className={`text-xs ${
+                      activeCategory === category.id ? "text-black/70" : "text-white/40"
+                    }`}>
+                      {count} article{count > 1 ? 's' : ''}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+            {activeCategory !== "all" && (
+              <button
+                onClick={() => setActiveCategory("all")}
+                className="mt-4 text-sm text-[#FCDD00] hover:underline"
+              >
+                ← Voir tous les articles
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* Featured Articles */}
-        {featuredArticles.length > 0 && (
+        {featuredArticles.length > 0 && activeCategory === "all" && (
           <section className="py-16 border-t border-white/5">
             <div className="mx-auto max-w-7xl px-4">
               <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
@@ -125,12 +178,11 @@ export default function Blog() {
           </section>
         )}
 
-        {/* Category Filter & Search */}
-        <section className="py-8 border-y border-white/5 bg-white/[0.01]">
+        {/* Search Bar */}
+        <section id="articles-section" className="py-8 border-y border-white/5 bg-white/[0.01]">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              {/* Search */}
-              <div className="relative w-full sm:w-64">
+            <div className="flex items-center gap-4">
+              <div className="relative w-full max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                 <input
                   type="text"
@@ -148,22 +200,11 @@ export default function Blog() {
                   </button>
                 )}
               </div>
-              {/* Categories */}
-              <div className="flex flex-wrap items-center gap-2">
-                {BLOG_CATEGORIES.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => setActiveCategory(category.id)}
-                    className={`px-4 py-2 text-sm font-medium rounded-sm transition-all ${
-                      activeCategory === category.id
-                        ? "bg-[#FCDD00] text-black"
-                        : "bg-white/[0.03] text-white/70 border border-white/10 hover:border-[#FCDD00]/30 hover:text-white"
-                    }`}
-                  >
-                    {category.label}
-                  </button>
-                ))}
-              </div>
+              {activeCategory !== "all" && (
+                <span className="text-sm text-white/50">
+                  Filtre: <span className="text-[#FCDD00]">{BLOG_CATEGORIES.find(c => c.id === activeCategory)?.label}</span>
+                </span>
+              )}
             </div>
           </div>
         </section>

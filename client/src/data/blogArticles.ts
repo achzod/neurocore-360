@@ -29504,3 +29504,8 @@ export function getFeaturedArticles(): BlogArticle[] {
 export function getAllArticles(): BlogArticle[] {
   return ALL_ARTICLES;
 }
+
+export function getArticleCountByCategory(categoryId: string): number {
+  if (categoryId === "all") return ALL_ARTICLES.length;
+  return ALL_ARTICLES.filter((article) => article.category === categoryId).length;
+}
