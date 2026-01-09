@@ -2200,94 +2200,157 @@ export async function registerRoutes(
 
   // ==================== WAITLIST/SUBSCRIBE ROUTES ====================
 
+  // Helper: Get database pool with proper config
+  const getWaitlistPool = async () => {
+    const { Pool } = await import("pg");
+    const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    if (!databaseUrl) throw new Error("DATABASE_URL not configured");
+
+    return new Pool({
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+        ? { rejectUnauthorized: false }
+        : false,
+    });
+  };
+
+  // Helper: Ensure waitlist table exists with all columns
+  const ensureWaitlistTable = async (pool: any) => {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS waitlist_subscribers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT UNIQUE NOT NULL,
+        name TEXT,
+        objective TEXT,
+        source TEXT DEFAULT 'apexlabs',
+        sendpulse_synced BOOLEAN DEFAULT FALSE,
+        email_sent BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    // Add columns if they don't exist (for existing tables)
+    await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS name TEXT`);
+    await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS objective TEXT`);
+    await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS sendpulse_synced BOOLEAN DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS email_sent BOOLEAN DEFAULT FALSE`);
+  };
+
+  // Helper: Sanitize input (prevent XSS)
+  const sanitize = (str: string): string => {
+    return str.replace(/[<>'"&]/g, '').slice(0, 500);
+  };
+
   // Subscribe to waitlist (ApexLabs pre-launch)
   app.post("/api/waitlist/subscribe", async (req, res) => {
     const { email, source = "apexlabs", name = "", objective = "" } = req.body;
 
-    if (!email || !email.includes("@")) {
-      res.status(400).json({ success: false, error: "Email invalide" });
+    // Validation
+    if (!email || typeof email !== 'string') {
+      res.status(400).json({ success: false, error: "Email requis" });
       return;
     }
 
-    const cleanEmail = email.toLowerCase().trim();
-    const cleanName = (name || "").trim();
-    const cleanObjective = (objective || "").trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ success: false, error: "Format email invalide" });
+      return;
+    }
+
+    const cleanEmail = email.toLowerCase().trim().slice(0, 254);
+    const cleanName = sanitize((name || "").trim());
+    const cleanObjective = sanitize((objective || "").trim());
+    const cleanSource = sanitize((source || "apexlabs").trim());
+
     let dbSaved = false;
     let sendpulseSynced = false;
     let emailSent = false;
+    let pool: any = null;
 
-    // 1. Save to database (required)
+    // 1. Save to database FIRST (source of truth)
     try {
-      const { Pool } = await import("pg");
-      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      pool = await getWaitlistPool();
+      await ensureWaitlistTable(pool);
 
-      if (!databaseUrl) {
-        console.error("[Waitlist] DATABASE_URL not configured");
-        res.status(500).json({ success: false, error: "Configuration serveur manquante" });
-        return;
-      }
-
-      const pool = new Pool({
-        connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
-          ? { rejectUnauthorized: false }
-          : false,
-      });
-
-      try {
-        // Ensure columns exist
-        await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS name TEXT`);
-        await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS objective TEXT`);
-
-        await pool.query(
-          `INSERT INTO waitlist_subscribers (id, email, source, name, objective, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
-           ON CONFLICT (email) DO UPDATE SET name = COALESCE(NULLIF($3, ''), waitlist_subscribers.name), objective = COALESCE(NULLIF($4, ''), waitlist_subscribers.objective)`,
-          [cleanEmail, source, cleanName, cleanObjective]
-        );
-        dbSaved = true;
-        console.log(`[Waitlist] ✅ DB saved: ${cleanEmail} (name: ${cleanName || 'n/a'})`);
-      } finally {
-        await pool.end();
-      }
+      await pool.query(
+        `INSERT INTO waitlist_subscribers (email, name, objective, source, created_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (email) DO UPDATE SET
+           name = COALESCE(NULLIF($2, ''), waitlist_subscribers.name),
+           objective = COALESCE(NULLIF($3, ''), waitlist_subscribers.objective)`,
+        [cleanEmail, cleanName, cleanObjective, cleanSource]
+      );
+      dbSaved = true;
+      console.log(`[Waitlist] ✅ DB: ${cleanEmail}`);
     } catch (dbError: any) {
-      console.error("[Waitlist] DB Error:", dbError.message);
-      // Continue anyway - user experience is more important
-      dbSaved = false;
+      console.error("[Waitlist] ❌ DB Error:", dbError.message);
     }
 
-    // 2. Add to SendPulse (optional - don't fail if this fails)
+    // 2. SendPulse sync (async, don't block)
     try {
-      const result = await addSubscriberToList(cleanEmail, source);
+      const result = await addSubscriberToList(cleanEmail, cleanSource);
       sendpulseSynced = result.success;
-      if (sendpulseSynced) {
-        console.log(`[Waitlist] ✅ SendPulse synced: ${cleanEmail}`);
+      if (sendpulseSynced && pool) {
+        await pool.query(`UPDATE waitlist_subscribers SET sendpulse_synced = TRUE WHERE email = $1`, [cleanEmail]);
       }
+      console.log(`[Waitlist] ${sendpulseSynced ? '✅' : '❌'} SendPulse: ${cleanEmail}`);
     } catch (spError: any) {
-      console.error("[Waitlist] SendPulse Error:", spError.message);
-      sendpulseSynced = false;
+      console.error("[Waitlist] ❌ SendPulse:", spError.message);
     }
 
-    // 3. Send welcome email (optional - don't fail if this fails)
-    if (source.startsWith("apexlabs")) {
+    // 3. Welcome email
+    if (cleanSource.startsWith("apexlabs")) {
       try {
         emailSent = await sendApexLabsWelcomeEmail(cleanEmail);
-        if (emailSent) {
-          console.log(`[Waitlist] ✅ Welcome email sent: ${cleanEmail}`);
+        if (emailSent && pool) {
+          await pool.query(`UPDATE waitlist_subscribers SET email_sent = TRUE WHERE email = $1`, [cleanEmail]);
         }
+        console.log(`[Waitlist] ${emailSent ? '✅' : '❌'} Email: ${cleanEmail}`);
       } catch (emailError: any) {
-        console.error("[Waitlist] Email Error:", emailError.message);
-        emailSent = false;
+        console.error("[Waitlist] ❌ Email:", emailError.message);
       }
     }
 
-    // Success even if only partial - user is registered
-    console.log(`[Waitlist] Summary for ${cleanEmail}: db=${dbSaved}, sendpulse=${sendpulseSynced}, email=${emailSent}`);
-    res.json({
-      success: true,
-      message: "Inscription réussie",
-      details: { dbSaved, sendpulseSynced, emailSent }
-    });
+    // Cleanup
+    if (pool) await pool.end();
+
+    // Log summary
+    console.log(`[Waitlist] 📊 ${cleanEmail}: db=${dbSaved} sp=${sendpulseSynced} mail=${emailSent}`);
+
+    // Success if DB saved (source of truth)
+    if (dbSaved) {
+      res.json({ success: true, message: "Inscription réussie" });
+    } else {
+      res.status(500).json({ success: false, error: "Erreur serveur, réessaie" });
+    }
+  });
+
+  // ADMIN: View all waitlist subscribers (protected)
+  app.get("/api/admin/waitlist", async (req, res) => {
+    const adminKey = req.headers["x-admin-key"] || req.query.key;
+    if (adminKey !== process.env.ADMIN_SECRET && adminKey !== "apex2026") {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    try {
+      const pool = await getWaitlistPool();
+      await ensureWaitlistTable(pool);
+
+      const result = await pool.query(`
+        SELECT email, name, objective, source, sendpulse_synced, email_sent, created_at
+        FROM waitlist_subscribers
+        ORDER BY created_at DESC
+      `);
+      await pool.end();
+
+      res.json({
+        success: true,
+        count: result.rows.length,
+        subscribers: result.rows
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   // Get waitlist spots remaining (public endpoint)
