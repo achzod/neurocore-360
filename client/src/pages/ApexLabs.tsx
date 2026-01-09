@@ -588,7 +588,7 @@ function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* Registration Form */}
+        {/* Terminal Form - Design System */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -596,35 +596,49 @@ function Hero() {
           className="w-full max-w-lg mb-12"
         >
             {status === 'success' ? (
-                <div className="bg-black/60 backdrop-blur-xl border border-[#FCDD00]/30 p-8 rounded">
-                    <div className="text-[#FCDD00] text-xl font-black uppercase tracking-wider mb-2">
+                <div className="bg-black border border-neutral-800 p-8">
+                    <div className="font-mono text-[10px] text-[#00FF41] uppercase tracking-[0.2em] mb-2">
+                        SYSTEM_RESPONSE
+                    </div>
+                    <div className="text-white text-xl font-black uppercase tracking-tight mb-2">
                         CANDIDATURE ENVOYÉE
                     </div>
-                    <p className="text-gray-400 text-sm">On te contactera très prochainement.</p>
-                    <button onClick={() => setStatus('idle')} className="mt-4 text-xs text-gray-500 hover:text-white underline">
-                        Nouvelle candidature
+                    <p className="text-neutral-400 text-sm font-light">On te contactera très prochainement.</p>
+                    <button onClick={() => setStatus('idle')} className="mt-4 font-mono text-[10px] text-neutral-600 hover:text-[#FCDD00] uppercase tracking-widest">
+                        [NOUVELLE_CANDIDATURE]
                     </button>
                 </div>
             ) : status === 'error' ? (
-                <div className="bg-black/60 backdrop-blur-xl border border-red-500/30 p-8 rounded">
-                    <div className="text-red-400 text-xl font-black uppercase tracking-wider mb-2">
-                        ERREUR
+                <div className="bg-black border border-[#FF3333]/30 p-8">
+                    <div className="font-mono text-[10px] text-[#FF3333] uppercase tracking-[0.2em] mb-2">
+                        ERROR_STATE
                     </div>
-                    <button onClick={() => setStatus('idle')} className="text-xs text-gray-500 hover:text-white underline">
-                        Réessayer
+                    <div className="text-white text-xl font-black uppercase tracking-tight mb-2">
+                        ERREUR SYSTÈME
+                    </div>
+                    <button onClick={() => setStatus('idle')} className="font-mono text-[10px] text-neutral-600 hover:text-white uppercase tracking-widest">
+                        [RÉESSAYER]
                     </button>
                 </div>
             ) : (
-                <form onSubmit={handleQuickJoin} className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded space-y-4">
+                <form onSubmit={handleQuickJoin} className="bg-black border border-neutral-800 p-6 md:p-8 space-y-6">
+                    {/* Terminal Header */}
+                    <div className="flex items-center gap-2 pb-4 border-b border-neutral-800">
+                        <span className="w-2 h-2 rounded-full bg-[#FF3333]"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#FCDD00]"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#00FF41]"></span>
+                        <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest ml-2">APEXLABS_TERMINAL</span>
+                    </div>
+
                     {/* Name Field */}
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
-                            Identité (nom)
+                        <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-3">
+                            Identité_
                         </label>
                         <input
                             type="text"
-                            placeholder="Ton nom complet"
-                            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 placeholder-gray-600 text-sm"
+                            placeholder="TON NOM COMPLET"
+                            className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] placeholder-neutral-700 font-mono text-xs uppercase tracking-wider transition-colors"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
@@ -633,13 +647,13 @@ function Hero() {
 
                     {/* Email Field */}
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
-                            Contact (email)
+                        <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-3">
+                            Contact_
                         </label>
                         <input
                             type="email"
-                            placeholder="ton@email.com"
-                            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 placeholder-gray-600 text-sm"
+                            placeholder="TON@EMAIL.COM"
+                            className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] placeholder-neutral-700 font-mono text-xs uppercase tracking-wider transition-colors"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -648,36 +662,36 @@ function Hero() {
 
                     {/* Objective Dropdown */}
                     <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
-                            Objectif primaire
+                        <label className="block font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-3">
+                            Objectif_Primaire_
                         </label>
                         <select
-                            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 text-sm appearance-none cursor-pointer"
+                            className="w-full bg-neutral-900/50 border-0 border-b border-neutral-800 text-white px-0 py-3 focus:outline-none focus:border-[#FCDD00] font-mono text-xs uppercase tracking-wider appearance-none cursor-pointer transition-colors"
                             value={objective}
                             onChange={(e) => setObjective(e.target.value)}
                             required
                         >
-                            <option value="" className="bg-black text-gray-500">Sélectionnez un objectif</option>
+                            <option value="" className="bg-black text-neutral-600">SÉLECTIONNE UN OBJECTIF</option>
                             {objectives.map((obj) => (
-                                <option key={obj} value={obj} className="bg-black text-white">{obj}</option>
+                                <option key={obj} value={obj} className="bg-black text-white">{obj.toUpperCase()}</option>
                             ))}
                         </select>
                     </div>
 
-                    {/* Submit Button */}
+                    {/* Submit Button - Terminal Style */}
                     <button
                         type="submit"
                         disabled={status === 'loading'}
-                        className="w-full bg-[#FCDD00] text-black py-4 rounded font-black text-sm uppercase tracking-widest hover:bg-[#FCDD00]/90 transition-all shadow-[0_0_20px_rgba(252,221,0,0.3)] hover:shadow-[0_0_30px_rgba(252,221,0,0.5)] disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full bg-white text-black py-4 rounded-sm font-bold text-sm uppercase tracking-widest hover:bg-[#FCDD00] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-8"
                     >
-                        {status === 'loading' ? 'Traitement...' : 'Réserver mon accès'}
+                        {status === 'loading' ? 'PROCESSING...' : 'CANDIDATER'}
                         <span className="text-lg">→</span>
                     </button>
 
                     {/* Spots Counter */}
-                    <div className="text-center pt-2">
-                        <span className="text-xs text-gray-500">
-                            Places restantes pour la session actuelle: <span className="text-[#FCDD00] font-bold">{spotsLeft}/50</span>
+                    <div className="text-center pt-2 border-t border-neutral-800 mt-4">
+                        <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">
+                            Places_Restantes: <span className="text-[#00FF41]">{spotsLeft}/50</span>
                         </span>
                     </div>
                 </form>
@@ -708,12 +722,13 @@ function Hero() {
 }
 
 // ============================================================================
-// OFFER CARD COMPONENT
+// OFFER CARD COMPONENT - Design System
 // ============================================================================
-function OfferCard({ offer }: { offer: Offer }) {
+function OfferCard({ offer, index }: { offer: Offer; index: number }) {
   const { title, subtitle, description, features, price, imageUrl, reverse, useCustomVisual } = offer;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const numberStr = String(index + 1).padStart(2, '0');
 
   // Intersection Observer for Scroll Reveal
   useEffect(() => {
@@ -742,33 +757,39 @@ function OfferCard({ offer }: { offer: Offer }) {
   return (
     <div
       ref={cardRef}
-      className={`py-24 border-b border-white/5 last:border-0 group transition-all duration-1000 ease-out ${revealClass}`}
+      className={`py-16 md:py-24 border-b border-neutral-800 last:border-0 group transition-all duration-1000 ease-out ${revealClass} relative`}
     >
-      <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-24`}>
+      {/* Watermark Number - Design System */}
+      <div className="absolute top-8 left-0 font-mono text-[120px] md:text-[180px] font-black text-neutral-900 leading-none select-none pointer-events-none -z-10">
+        {numberStr}
+      </div>
+
+      <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-start gap-12 lg:gap-16`}>
 
         {/* Image Side with HUD/Tech Overlay */}
         <div className="w-full lg:w-1/2 relative">
-          <div className="relative aspect-[4/3] overflow-hidden rounded bg-neutral-900 border border-[#FCDD00]/20 group-hover:border-[#FCDD00]/50 shadow-[0_0_50px_rgba(252,221,0,0.15)] group-hover:shadow-[0_0_80px_rgba(252,221,0,0.25)] transition-all duration-500">
+          <div className="relative aspect-[4/3] overflow-hidden bg-neutral-900 border border-neutral-800 group-hover:border-[#FCDD00]/30 transition-all duration-500">
 
             {/* Scan Line Animation */}
-            <div className="absolute inset-0 z-30 pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity duration-700">
-              <div className="absolute top-0 left-0 w-full h-[10%] bg-gradient-to-b from-transparent via-[#FCDD00]/20 to-transparent" style={{ animation: 'scan 3s infinite linear' }} />
+            <div className="absolute inset-0 z-30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00FF41]" style={{ animation: 'scan 3s infinite linear' }} />
             </div>
 
-            {/* HUD Elements Overlay */}
-            <div className="absolute top-4 left-4 w-8 h-8 border-l-2 border-t-2 border-white/30 z-20 rounded-tl-lg group-hover:border-white/80 transition-colors" />
-            <div className="absolute top-4 right-4 w-8 h-8 border-r-2 border-t-2 border-white/30 z-20 rounded-tr-lg group-hover:border-white/80 transition-colors" />
-            <div className="absolute bottom-4 left-4 w-8 h-8 border-l-2 border-b-2 border-white/30 z-20 rounded-bl-lg group-hover:border-white/80 transition-colors" />
-            <div className="absolute bottom-4 right-4 w-8 h-8 border-r-2 border-b-2 border-white/30 z-20 rounded-br-lg group-hover:border-white/80 transition-colors" />
+            {/* HUD Corners */}
+            <div className="absolute top-3 left-3 w-6 h-6 border-l border-t border-neutral-700 group-hover:border-[#FCDD00] transition-colors" />
+            <div className="absolute top-3 right-3 w-6 h-6 border-r border-t border-neutral-700 group-hover:border-[#FCDD00] transition-colors" />
+            <div className="absolute bottom-3 left-3 w-6 h-6 border-l border-b border-neutral-700 group-hover:border-[#FCDD00] transition-colors" />
+            <div className="absolute bottom-3 right-3 w-6 h-6 border-r border-b border-neutral-700 group-hover:border-[#FCDD00] transition-colors" />
 
-            {/* Floating Label */}
-            <div className="absolute top-8 left-8 z-20 backdrop-blur-md px-3 py-1 border rounded text-[10px] tracking-widest uppercase font-bold shadow-lg bg-black/60 border-[#FCDD00]/30 text-[#FCDD00]">
-               SYSTEM ONLINE
+            {/* System Label */}
+            <div className="absolute top-6 left-6 z-20 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00FF41] animate-pulse"></span>
+              <span className="font-mono text-[9px] text-[#00FF41] uppercase tracking-widest">ONLINE</span>
             </div>
 
-             {/* Overlay Gradient for Noir effect */}
+            {/* Overlay Gradient */}
             {!useCustomVisual && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 z-10" />
             )}
 
             {/* Main Image or Custom Visual */}
@@ -778,50 +799,52 @@ function OfferCard({ offer }: { offer: Offer }) {
               <img
                 src={imageUrl}
                 alt={title}
-                className="w-full h-full object-cover transition-all duration-700 transform opacity-70 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-110 group-hover:rotate-1"
+                className="w-full h-full object-cover transition-all duration-700 opacity-60 group-hover:opacity-100 grayscale group-hover:grayscale-0 group-hover:scale-105"
               />
             )}
           </div>
-
-          {/* Decorative glowing orb behind */}
-          <div className="absolute -inset-4 bg-[#FCDD00]/20 blur-[60px] rounded-full -z-10 opacity-20 group-hover:opacity-50 transition-opacity duration-700 animate-pulse" />
         </div>
 
         {/* Content Side */}
-        <div className="w-full lg:w-1/2 space-y-8">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-3 text-[#FCDD00]">
-              <span className="w-2 h-2 rounded-full animate-pulse bg-[#FCDD00] shadow-[0_0_10px_#FCDD00]"></span>
-              {subtitle}
-            </div>
-
-            <h3 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight font-display group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all duration-300">
-              {title}
-            </h3>
-
-            <p className="text-gray-400 text-lg leading-relaxed border-l border-white/10 pl-6 group-hover:border-white/40 transition-colors duration-500">
-              {description}
-            </p>
+        <div className="w-full lg:w-1/2 space-y-6">
+          {/* Label - JetBrains Mono */}
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FCDD00] animate-pulse"></span>
+            {subtitle}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Title - Inter Black */}
+          <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter">
+            {title}
+          </h3>
+
+          {/* Description - Inter Light */}
+          <p className="text-neutral-400 text-base leading-relaxed font-light">
+            {description}
+          </p>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
             {features.map((feature, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 text-gray-300 bg-white/5 p-3 rounded-lg border border-white/5 hover:border-[#FCDD00]/30 hover:bg-white/10 transition-all duration-300 hover:translate-x-1"
-                style={{ transitionDelay: `${idx * 100}ms` }}
+                className="flex items-center gap-3 text-neutral-300 py-2"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
-                <span className="text-sm font-medium tracking-wide">{feature}</span>
+                <div className="w-1 h-1 bg-[#FCDD00]" />
+                <span className="text-sm font-medium">{feature}</span>
               </div>
             ))}
           </div>
 
-          {/* Price Display */}
+          {/* Price Block - Design System Style */}
           <div className="pt-6">
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded">
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#FCDD00]">Investissement</span>
-              <span className="text-xl font-black text-white tracking-tight">{price}</span>
+            <div className="inline-block bg-black border border-neutral-800 px-6 py-4">
+              <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-600 mb-1">
+                Investissement
+              </div>
+              <div className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                {price}
+              </div>
             </div>
           </div>
         </div>
@@ -831,23 +854,33 @@ function OfferCard({ offer }: { offer: Offer }) {
 }
 
 // ============================================================================
-// OFFERS SECTION
+// OFFERS SECTION - Design System
 // ============================================================================
 function OffersSection() {
   return (
-    <section id="offers" className="bg-black py-24 relative">
-      <div className="container mx-auto px-6">
-        <div className="mb-20 text-center max-w-3xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FCDD00] mb-4">AVAILABLE PROTOCOLS</p>
-          <h2 className="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight uppercase">Protocoles Disponibles</h2>
-          <p className="text-gray-400">
+    <section id="offers" className="bg-[#050505] py-24 relative">
+      {/* Tech Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+
+      <div className="container mx-auto px-6 relative">
+        <div className="mb-16 max-w-3xl">
+          {/* Label - JetBrains Mono */}
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00] mb-4">Available_Protocols</p>
+          {/* Title with Stroke Effect */}
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter mb-2">
+            PROTOCOLES
+          </h2>
+          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>
+            DISPONIBLES
+          </h2>
+          <p className="text-neutral-400 font-light max-w-xl">
             Des solutions adaptées à chaque niveau d'exigence. Choisis ta voie vers l'excellence.
           </p>
         </div>
 
         <div className="flex flex-col">
-          {OFFERS.map((offer) => (
-            <OfferCard key={offer.id} offer={offer} />
+          {OFFERS.map((offer, index) => (
+            <OfferCard key={offer.id} offer={offer} index={index} />
           ))}
         </div>
       </div>
