@@ -29,6 +29,7 @@ const OFFERS: Offer[] = [
     subtitle: "L'Analyse Initiale",
     description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D. Obtenez une vision claire de votre masse musculaire, masse grasse viscérale et de votre hydratation cellulaire.",
     features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
+    price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false
   },
@@ -38,6 +39,7 @@ const OFFERS: Offer[] = [
     subtitle: "Performance Musculaire",
     description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire, de la qualité des tissus et du profil hormonal anabolique. Identifiez vos leviers de croissance et optimisez votre récupération neuro-musculaire.",
     features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
+    price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
   },
@@ -47,6 +49,7 @@ const OFFERS: Offer[] = [
     subtitle: "La Vérité Biologique",
     description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance : statut inflammatoire, hormonal, micronutritionnel et métabolique. La donnée biologique brute au service de votre santé.",
     features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
+    price: "Gratuit",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true
@@ -57,6 +60,7 @@ const OFFERS: Offer[] = [
     subtitle: "L'Omniscience Corporelle",
     description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
     features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
+    price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
@@ -66,6 +70,7 @@ const OFFERS: Offer[] = [
     subtitle: "Préservation du Système Nerveux",
     description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détectez les signes physiologiques de l'épuisement et la fatigue centrale avant qu'ils ne deviennent cliniques. Protégez votre actif le plus précieux : votre mental.",
     features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
+    price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
   }
@@ -432,19 +437,31 @@ function Header() {
 // HERO COMPONENT
 // ============================================================================
 function Hero() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [objective, setObjective] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [spotsLeft] = useState(3);
+
+  const objectives = [
+    "Perte de masse grasse",
+    "Prise de muscle",
+    "Performance sportive",
+    "Optimisation santé",
+    "Détection burnout",
+    "Bilan complet"
+  ];
 
   const handleQuickJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!email) return;
+    if(!email || !name || !objective) return;
     setStatus('loading');
 
     try {
       const response = await fetch('/api/waitlist/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source: 'apexlabs-hero' }),
+        body: JSON.stringify({ email, name, objective, source: 'apexlabs-hero' }),
       });
 
       const data = await response.json();
@@ -452,6 +469,8 @@ function Hero() {
       if (data.success) {
         setStatus('success');
         setEmail('');
+        setName('');
+        setObjective('');
       } else {
         setStatus('error');
       }
@@ -569,42 +588,98 @@ function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* Early Access Input */}
+        {/* Registration Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.6 }}
-          className="w-full max-w-md mb-12 relative group"
+          className="w-full max-w-lg mb-12"
         >
-            {/* Glowing border effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#FCDD00] via-white/20 to-[#FCDD00] opacity-30 blur-lg rounded-full group-hover:opacity-60 transition-opacity duration-1000"></div>
-
             {status === 'success' ? (
-                <div className="bg-green-500/20 backdrop-blur-xl border border-green-500/50 text-green-400 px-8 py-4 rounded-full text-sm font-bold tracking-wider animate-pulse">
-                    INSCRIPTION VALIDÉE
+                <div className="bg-black/60 backdrop-blur-xl border border-[#FCDD00]/30 p-8 rounded">
+                    <div className="text-[#FCDD00] text-xl font-black uppercase tracking-wider mb-2">
+                        CANDIDATURE ENVOYÉE
+                    </div>
+                    <p className="text-gray-400 text-sm">Nous vous contacterons très prochainement.</p>
+                    <button onClick={() => setStatus('idle')} className="mt-4 text-xs text-gray-500 hover:text-white underline">
+                        Nouvelle candidature
+                    </button>
                 </div>
             ) : status === 'error' ? (
-                <div className="flex flex-col gap-2">
-                    <div className="bg-red-500/20 backdrop-blur-xl border border-red-500/50 text-red-400 px-8 py-4 rounded-full text-sm font-bold tracking-wider">
-                        ERREUR - RÉESSAYEZ
+                <div className="bg-black/60 backdrop-blur-xl border border-red-500/30 p-8 rounded">
+                    <div className="text-red-400 text-xl font-black uppercase tracking-wider mb-2">
+                        ERREUR
                     </div>
-                    <button onClick={() => setStatus('idle')} className="text-xs text-gray-500 hover:text-white">
+                    <button onClick={() => setStatus('idle')} className="text-xs text-gray-500 hover:text-white underline">
                         Réessayer
                     </button>
                 </div>
             ) : (
-                <form onSubmit={handleQuickJoin} className="relative flex p-1 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full transition-all duration-300 focus-within:border-[#FCDD00]/50 focus-within:shadow-[0_0_30px_rgba(252,221,0,0.1)]">
-                    <input
-                        type="email"
-                        placeholder="Entrez votre email..."
-                        className="flex-1 bg-transparent border-none text-white px-6 focus:ring-0 placeholder-gray-500 outline-none text-sm"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                    <button type="submit" disabled={status === 'loading'} className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-[#FCDD00] hover:text-black transition-colors shadow-lg disabled:opacity-50">
-                        {status === 'loading' ? '...' : 'Rejoindre'}
+                <form onSubmit={handleQuickJoin} className="bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded space-y-4">
+                    {/* Name Field */}
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
+                            Identité (nom)
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Votre nom complet"
+                            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 placeholder-gray-600 text-sm"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    {/* Email Field */}
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
+                            Contact (email)
+                        </label>
+                        <input
+                            type="email"
+                            placeholder="votre@email.com"
+                            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 placeholder-gray-600 text-sm"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    {/* Objective Dropdown */}
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#FCDD00] mb-2">
+                            Objectif primaire
+                        </label>
+                        <select
+                            className="w-full bg-white/5 border border-white/10 text-white px-4 py-3 rounded focus:outline-none focus:border-[#FCDD00]/50 text-sm appearance-none cursor-pointer"
+                            value={objective}
+                            onChange={(e) => setObjective(e.target.value)}
+                            required
+                        >
+                            <option value="" className="bg-black text-gray-500">Sélectionnez un objectif</option>
+                            {objectives.map((obj) => (
+                                <option key={obj} value={obj} className="bg-black text-white">{obj}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={status === 'loading'}
+                        className="w-full bg-[#FCDD00] text-black py-4 rounded font-black text-sm uppercase tracking-widest hover:bg-[#FCDD00]/90 transition-all shadow-[0_0_20px_rgba(252,221,0,0.3)] hover:shadow-[0_0_30px_rgba(252,221,0,0.5)] disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {status === 'loading' ? 'Traitement...' : 'Réserver mon accès'}
+                        <span className="text-lg">→</span>
                     </button>
+
+                    {/* Spots Counter */}
+                    <div className="text-center pt-2">
+                        <span className="text-xs text-gray-500">
+                            Places restantes pour la session actuelle: <span className="text-[#FCDD00] font-bold">{spotsLeft}/50</span>
+                        </span>
+                    </div>
                 </form>
             )}
         </motion.div>
@@ -635,13 +710,8 @@ function Hero() {
 // ============================================================================
 // OFFER CARD COMPONENT
 // ============================================================================
-interface OfferCardProps {
-  offer: Offer;
-  onSelect: () => void;
-}
-
-function OfferCard({ offer, onSelect }: OfferCardProps) {
-  const { id, title, subtitle, description, features, imageUrl, reverse, useCustomVisual } = offer;
+function OfferCard({ offer }: { offer: Offer }) {
+  const { title, subtitle, description, features, price, imageUrl, reverse, useCustomVisual } = offer;
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -747,10 +817,12 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
             ))}
           </div>
 
+          {/* Price Display */}
           <div className="pt-6">
-            <Button variant="secondary" onClick={onSelect} className="w-full sm:w-auto !border-white/20 hover:!border-[#FCDD00]/50 hover:shadow-[0_0_30px_rgba(252,221,0,0.3)]">
-              Sélectionner le protocole
-            </Button>
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded">
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#FCDD00]">Investissement</span>
+              <span className="text-xl font-black text-white tracking-tight">{price}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -762,38 +834,21 @@ function OfferCard({ offer, onSelect }: OfferCardProps) {
 // OFFERS SECTION
 // ============================================================================
 function OffersSection() {
-  const handleSelect = () => {
-    const element = document.getElementById('join-waitlist');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <section id="offers" className="bg-black py-24 relative">
       <div className="container mx-auto px-6">
         <div className="mb-20 text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white font-display">Mes Offres</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FCDD00] mb-4">AVAILABLE PROTOCOLS</p>
+          <h2 className="text-3xl md:text-5xl font-black mb-6 text-white tracking-tight uppercase">Protocoles Disponibles</h2>
           <p className="text-gray-400">
             Des solutions adaptées à chaque niveau d'exigence. Choisissez votre voie vers l'excellence cognitive.
           </p>
         </div>
 
         <div className="flex flex-col">
-          {/* Discovery Scan */}
-          <OfferCard offer={OFFERS[0]} onSelect={handleSelect} />
-
-          {/* Anabolic Bioscan */}
-          <OfferCard offer={OFFERS[1]} onSelect={handleSelect} />
-
-          {/* Blood Analysis (with DNA Helix visual) */}
-          <OfferCard offer={OFFERS[2]} onSelect={handleSelect} />
-
-          {/* Ultimate Scan */}
-          <OfferCard offer={OFFERS[3]} onSelect={handleSelect} />
-
-          {/* Burnout Detection */}
-          <OfferCard offer={OFFERS[4]} onSelect={handleSelect} />
+          {OFFERS.map((offer) => (
+            <OfferCard key={offer.id} offer={offer} />
+          ))}
         </div>
       </div>
     </section>
@@ -1124,7 +1179,7 @@ function PressSection() {
   return (
     <section className="py-12 bg-black">
       <div className="container mx-auto px-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">Couverture Presse</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-600 text-center mb-8">Recommandé par les médias</p>
         <div className="flex flex-wrap justify-center gap-6">
           {pressLinks.map((press, i) => (
             <a
@@ -1144,41 +1199,11 @@ function PressSection() {
 }
 
 // ============================================================================
-// WAITLIST SECTION
+// VISION SECTION (replaces Waitlist)
 // ============================================================================
-function Waitlist() {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setStatus('loading');
-    setErrorMessage('');
-
-    try {
-      const response = await fetch('/api/waitlist/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, source: 'apexlabs' }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setStatus('success');
-        setEmail('');
-      } else {
-        setStatus('error');
-        setErrorMessage(data.error || 'Une erreur est survenue');
-      }
-    } catch (error) {
-      console.error('Subscription error:', error);
-      setStatus('error');
-      setErrorMessage('Erreur de connexion. Réessayez.');
-    }
+function VisionSection() {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -1187,49 +1212,37 @@ function Waitlist() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto bg-black/50 backdrop-blur-xl border border-white/10 rounded-sm p-8 md:p-16 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white tracking-tight font-display">
-            ACCÈS ANTICIPÉ
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FCDD00] mb-6">Notre Vision</p>
+          <h2 className="text-4xl md:text-6xl font-black mb-8 text-white tracking-tight uppercase">
+            L'AVENIR DE L'OPTIMISATION HUMAINE
           </h2>
-          <p className="text-gray-400 text-lg mb-10 max-w-xl mx-auto">
-            Rejoignez la liste d'attente exclusive pour Neurocore 360. Les places pour la phase bêta sont limitées.
+          <p className="text-gray-400 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
+            ApexLabs représente la convergence de la biologie de pointe et de l'intelligence artificielle.
+            Nous transformons les données en actions, les résultats en excellence.
           </p>
 
-          {status === 'success' ? (
-            <div className="bg-green-500/10 border border-green-500/20 rounded p-8">
-              <p className="text-green-400 text-xl font-medium">Inscription confirmée.</p>
-              <p className="text-gray-400 mt-2">Nous vous contacterons très prochainement.</p>
-              <button
-                onClick={() => setStatus('idle')}
-                className="mt-6 text-sm text-gray-500 hover:text-white underline"
-              >
-                Inscrire un autre email
-              </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-black/50 border border-white/10 p-6 rounded">
+              <div className="text-3xl font-black text-[#FCDD00] mb-2">50+</div>
+              <div className="text-xs uppercase tracking-widest text-gray-500">Biomarqueurs analysés</div>
             </div>
-          ) : (
-            <>
-              <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto">
-                <input
-                  type="email"
-                  placeholder="votre@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all"
-                  required
-                />
-                <Button type="submit" disabled={status === 'loading'}>
-                  {status === 'loading' ? 'Traitement...' : "S'inscrire"}
-                </Button>
-              </form>
-              {status === 'error' && (
-                <p className="mt-4 text-red-400 text-sm">{errorMessage}</p>
-              )}
-            </>
-          )}
+            <div className="bg-black/50 border border-white/10 p-6 rounded">
+              <div className="text-3xl font-black text-[#FCDD00] mb-2">98%</div>
+              <div className="text-xs uppercase tracking-widest text-gray-500">Précision des données</div>
+            </div>
+            <div className="bg-black/50 border border-white/10 p-6 rounded">
+              <div className="text-3xl font-black text-[#FCDD00] mb-2">24/7</div>
+              <div className="text-xs uppercase tracking-widest text-gray-500">Suivi en temps réel</div>
+            </div>
+          </div>
 
-          <p className="mt-8 text-xs text-gray-600 uppercase tracking-widest">
-            Sécurité des données garantie • Désabonnement à tout moment
-          </p>
+          <button
+            onClick={scrollToTop}
+            className="px-8 py-4 bg-[#FCDD00] text-black font-black text-sm uppercase tracking-widest rounded hover:bg-[#FCDD00]/90 transition-all shadow-[0_0_20px_rgba(252,221,0,0.3)] hover:shadow-[0_0_30px_rgba(252,221,0,0.5)]"
+          >
+            Candidater maintenant →
+          </button>
         </div>
       </div>
     </section>
@@ -1314,7 +1327,7 @@ export default function ApexLabs() {
       <OffersSection />
       <ReviewsSection />
       <PressSection />
-      <Waitlist />
+      <VisionSection />
       <Footer />
     </div>
   );
