@@ -58,7 +58,7 @@ const OFFERS: Offer[] = [
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
     subtitle: "L'Omniscience Corporelle",
-    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de ta physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
+    description: "L'agrégation de toutes mes technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de ta physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
     features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
     price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
@@ -426,7 +426,19 @@ function Hero() {
   const [email, setEmail] = useState('');
   const [objective, setObjective] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [spotsLeft] = useState(3);
+  const [spotsLeft, setSpotsLeft] = useState(199);
+
+  // Fetch real spots count from API on mount
+  useEffect(() => {
+    fetch('/api/waitlist/spots')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && typeof data.spotsLeft === 'number') {
+          setSpotsLeft(data.spotsLeft);
+        }
+      })
+      .catch(() => {/* Keep default 199 on error */});
+  }, []);
 
   const objectives = [
     "Perte de masse grasse",
@@ -453,6 +465,7 @@ function Hero() {
 
       if (data.success) {
         setStatus('success');
+        setSpotsLeft(prev => Math.max(0, prev - 1));
         setEmail('');
         setName('');
         setObjective('');
@@ -588,7 +601,7 @@ function Hero() {
                     <div className="text-white text-xl font-black uppercase tracking-tight mb-2">
                         CANDIDATURE ENVOYÉE
                     </div>
-                    <p className="text-neutral-400 text-sm font-light">On te contactera très prochainement.</p>
+                    <p className="text-neutral-400 text-sm font-light">Je te contacterai très prochainement.</p>
                     <button onClick={() => setStatus('idle')} className="mt-4 font-mono text-[10px] text-neutral-600 hover:text-[#FCDD00] uppercase tracking-widest">
                         [NOUVELLE_CANDIDATURE]
                     </button>
@@ -676,7 +689,7 @@ function Hero() {
                     {/* Spots Counter */}
                     <div className="text-center pt-2 border-t border-neutral-800 mt-4">
                         <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">
-                            Places_Restantes: <span className="text-[#00FF41]">{spotsLeft}/50</span>
+                            Places_Restantes: <span className="text-[#00FF41]">{spotsLeft}</span>
                         </span>
                     </div>
                 </form>
@@ -1242,7 +1255,7 @@ function VisionSection() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#FCDD00] mb-6">Notre Vision</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#FCDD00] mb-6">Ma Vision</p>
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-black mb-2 text-white tracking-tighter uppercase">
             OPTIMISATION
           </h2>
@@ -1251,7 +1264,7 @@ function VisionSection() {
           </h2>
           <p className="text-gray-400 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
             ApexLabs représente la convergence de la biologie de pointe et de l'intelligence artificielle.
-            Nous transformons les données en actions, les résultats en excellence.
+            Je transforme les données en actions, les résultats en excellence.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -1294,9 +1307,17 @@ function Footer() {
         <div className="text-gray-600 text-sm">
           &copy; {new Date().getFullYear()} Tous droits réservés.
         </div>
-        <div className="flex gap-6">
-          <a href="https://instagram.com/achzodcoaching" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">Instagram</a>
-          <a href="https://twitter.com/achzodcoaching" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">Twitter</a>
+        <div className="flex gap-6 items-center">
+          <a href="https://instagram.com/achzod" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#FCDD00] transition-colors" aria-label="Instagram">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </a>
+          <a href="https://youtube.com/@achzod" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#FCDD00] transition-colors" aria-label="YouTube">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </a>
         </div>
       </div>
     </footer>

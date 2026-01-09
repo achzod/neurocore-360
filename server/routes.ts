@@ -2275,6 +2275,40 @@ export async function registerRoutes(
     });
   });
 
+  // Get waitlist spots remaining (public endpoint)
+  app.get("/api/waitlist/spots", async (_req, res) => {
+    const TOTAL_SPOTS = 199;
+    try {
+      const { Pool } = await import("pg");
+      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+      if (!databaseUrl) {
+        res.json({ success: true, spotsLeft: TOTAL_SPOTS, total: TOTAL_SPOTS });
+        return;
+      }
+
+      const pool = new Pool({
+        connectionString: databaseUrl,
+        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
+          ? { rejectUnauthorized: false }
+          : false,
+      });
+
+      try {
+        const result = await pool.query("SELECT COUNT(*) FROM waitlist_subscribers");
+        const subscriberCount = parseInt(result.rows[0].count, 10);
+        const spotsLeft = Math.max(0, TOTAL_SPOTS - subscriberCount);
+        res.json({ success: true, spotsLeft, total: TOTAL_SPOTS, subscribers: subscriberCount });
+      } catch (dbError) {
+        res.json({ success: true, spotsLeft: TOTAL_SPOTS, total: TOTAL_SPOTS });
+      } finally {
+        await pool.end();
+      }
+    } catch (error) {
+      res.json({ success: true, spotsLeft: TOTAL_SPOTS, total: TOTAL_SPOTS });
+    }
+  });
+
   // Get all waitlist subscribers (admin)
   app.get("/api/admin/waitlist", async (req, res) => {
     try {
