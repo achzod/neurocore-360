@@ -73,7 +73,7 @@ export default function ProPanel() {
           >
             Ultimate
             <br />
-            <span className="text-cyan-400">Scan.</span>
+            <span className="text-[#FCDD00]">Scan.</span>
           </motion.h1>
 
           <motion.p
