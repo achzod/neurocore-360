@@ -2335,7 +2335,8 @@ export async function registerRoutes(
   // ADMIN: View all waitlist subscribers (protected)
   app.get("/api/admin/waitlist", async (req, res) => {
     const adminKey = req.headers["x-admin-key"] || req.query.key;
-    if (adminKey !== process.env.ADMIN_SECRET && adminKey !== "apex2026") {
+    const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+    if (!validKey || adminKey !== validKey) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
@@ -2395,40 +2396,6 @@ export async function registerRoutes(
     }
   });
 
-  // Get all waitlist subscribers (admin)
-  app.get("/api/admin/waitlist", async (req, res) => {
-    try {
-      const { Pool } = await import("pg");
-      const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-      if (!databaseUrl) {
-        res.status(500).json({ success: false, error: "Database not configured" });
-        return;
-      }
-
-      const pool = new Pool({
-        connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") || databaseUrl.includes("neon.tech")
-          ? { rejectUnauthorized: false }
-          : false,
-      });
-
-      try {
-        const result = await pool.query(
-          `SELECT id, email, source, sendpulse_synced, created_at
-           FROM waitlist_subscribers
-           ORDER BY created_at DESC
-           LIMIT 50`
-        );
-        res.json({ success: true, subscribers: result.rows, count: result.rows.length });
-      } finally {
-        await pool.end();
-      }
-    } catch (error: any) {
-      console.error("[Waitlist Admin] Error:", error.message);
-      res.status(500).json({ success: false, error: error.message || "Erreur serveur" });
-    }
-  });
 
   // Get SendPulse address books and subscribers count (admin diagnostic)
   app.get("/api/admin/sendpulse/books", async (_req, res) => {
