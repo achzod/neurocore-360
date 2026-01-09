@@ -84,7 +84,7 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/questionnaire">
-              <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
+              <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 Commencer le scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -377,7 +377,7 @@ export default function AuditGratuit() {
                 ))}
               </ul>
               <Link href="/questionnaire">
-                <button className="w-full mt-8 bg-[#FCDD00] text-black font-semibold py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all">
+                <button className="w-full mt-8 bg-[#FCDD00] text-black font-semibold py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all">
                   Commencer
                 </button>
               </Link>
@@ -408,7 +408,7 @@ export default function AuditGratuit() {
                 ))}
               </ul>
               <Link href="/offers/anabolic-bioscan">
-                <button className="w-full mt-8 bg-white/10 text-white font-semibold py-4 rounded-full border border-white/10 hover:bg-white/20 transition-all">
+                <button className="w-full mt-8 bg-white/10 text-white font-semibold py-4 rounded-sm border border-white/10 hover:bg-white/20 transition-all">
                   En savoir plus
                 </button>
               </Link>
@@ -434,7 +434,7 @@ export default function AuditGratuit() {
             5 minutes. 180 questions. Un diagnostic qui peut tout changer.
           </p>
           <Link href="/questionnaire">
-            <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Discovery Scan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
