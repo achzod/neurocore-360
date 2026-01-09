@@ -633,17 +633,17 @@ const PROMO_EMAIL_CONFIG: Record<string, {
     gradient: "linear-gradient(135deg, #0efc6d 0%, #059669 100%)",
   },
   ANABOLIC_BIOSCAN: {
-    title: "59€ déduits du coaching",
+    title: "49€ déduits du coaching",
     subtitle: "Merci pour ton avis sur l'Anabolic Bioscan",
-    description: "Le montant de ton Anabolic Bioscan (59€) est intégralement déduit si tu passes au coaching Achzod.",
-    discount: "-59€ sur le coaching",
+    description: "Le montant de ton Anabolic Bioscan (49€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-49€ sur le coaching",
     gradient: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
   },
-  ULTIMATE_SCAN: {
-    title: "79€ déduits du coaching",
-    subtitle: "Merci pour ton avis sur l'Ultimate Scan",
-    description: "Le montant de ton Ultimate Scan (79€) est intégralement déduit si tu passes au coaching Achzod.",
-    discount: "-79€ sur le coaching",
+  PRO_PANEL_360: {
+    title: "99€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur le Pro Panel 360",
+    description: "Le montant de ton Pro Panel 360 (99€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-99€ sur le coaching",
     gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
   },
   BLOOD_ANALYSIS: {
@@ -866,32 +866,35 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
               </h2>
 
               <p style="color: ${APEX_COLORS.textMuted}; font-size: 16px; line-height: 1.8; margin: 0 0 30px; text-align: center;">
-                Vous faites maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> — la nouvelle génération d'optimisation humaine.
+                Tu fais maintenant partie des premiers à avoir accès à <strong style="color: ${APEX_COLORS.text};">ApexLabs</strong> — la nouvelle génération d'optimisation humaine.
               </p>
 
               <!-- What's coming -->
               <div style="background: rgba(252,221,0,0.05); border: 1px solid rgba(252,221,0,0.2); border-radius: 12px; padding: 30px; margin: 30px 0;">
                 <h3 style="color: ${APEX_COLORS.primary}; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 20px;">
-                  CE QUI VOUS ATTEND
+                  CE QUI T'ATTEND
                 </h3>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Discovery Scan — Cartographie 3D complète
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Discovery Scan — Diagnostic gratuit 5 piliers
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Anabolic Bioscan — Performance musculaire
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Anabolic Bioscan — Audit métabolique complet
+                  </td></tr>
+                  <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Pro Panel 360 — L'analyse ultime + photos
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Blood Analysis — 50+ biomarqueurs
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px;">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Ultimate Scan — L'omniscience corporelle
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Burnout Engine — Détection précoce burnout
                   </td></tr>
                 </table>
               </div>
 
               <p style="color: ${APEX_COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 30px 0; text-align: center;">
-                Je vous contacterai personnellement dès que les portes s'ouvriront.
+                Je te contacterai personnellement dès que les portes s'ouvriront.
               </p>
 
               <p style="color: ${APEX_COLORS.text}; font-size: 16px; margin: 40px 0 0; text-align: center; font-weight: 500;">
@@ -925,7 +928,7 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
       body: JSON.stringify({
         email: {
           html: encodeBase64(htmlContent),
-          text: "Bienvenue dans l'élite ApexLabs ! Vous faites partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je vous contacterai dès que les portes s'ouvriront. - Achzod",
+          text: "Bienvenue dans l'élite ApexLabs ! Tu fais partie des premiers à avoir accès à la nouvelle génération d'optimisation humaine. Je te contacterai dès que les portes s'ouvriront. - Achzod",
           subject: "Bienvenue dans l'élite ApexLabs",
           from: {
             name: "Achzod | ApexLabs",
