@@ -26,9 +26,9 @@ const OFFERS: Offer[] = [
   {
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
-    subtitle: "L'Analyse Initiale",
-    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de ta composition corporelle par bio-impédancemétrie médicale et scan 3D. Obtiens une vision claire de ta masse musculaire, masse grasse viscérale et de ton hydratation cellulaire.",
-    features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
+    subtitle: "L'Audit de Tes Blocages",
+    description: "Avant de te donner un plan, je dois comprendre pourquoi tu stagnes. 50 questions pour analyser en profondeur tes 8 systèmes fondamentaux : sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle et mindset. Je détecte les dysfonctionnements invisibles qui sabotent tes efforts — même quand tu fais « tout bien ». Tu reçois un rapport détaillé avec ton score par domaine et l'explication précise de ce qui bloque ta progression.",
+    features: ["Analyse de 8 systèmes physiologiques", "Détection des blocages invisibles", "Score personnalisé par domaine", "Rapport d'audit détaillé"],
     price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false
@@ -36,9 +36,9 @@ const OFFERS: Offer[] = [
   {
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
-    subtitle: "Performance Musculaire",
-    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire, de la qualité des tissus et du profil hormonal anabolique. Identifie tes leviers de croissance et optimise ta récupération neuro-musculaire.",
-    features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
+    subtitle: "L'Analyse Approfondie",
+    description: "On passe au niveau supérieur. 150 questions pour décortiquer en détail ta nutrition réelle (pas ce que tu crois manger, ce que tu manges vraiment), ton profil hormonal, tes axes cliniques (thyroïde, intestin, glycémie), tes suppléments et tes marqueurs biologiques. J'analyse chaque réponse pour construire un diagnostic complet de ta physiologie. Tu reçois un rapport de 18 sections avec des recommandations précises et actionnables.",
+    features: ["Nutrition décortiquée en détail", "Profil hormonal homme/femme", "Axes cliniques (thyroïde, SII, diabète)", "Rapport expert 18 sections"],
     price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
@@ -46,9 +46,9 @@ const OFFERS: Offer[] = [
   {
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
-    subtitle: "La Vérité Biologique",
-    description: "Plonge au cœur de ta biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance : statut inflammatoire, hormonal, micronutritionnel et métabolique. La donnée biologique brute au service de ta santé.",
-    features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
+    subtitle: "La Vérité de Ton Sang",
+    description: "Tu as fait un bilan sanguin ? Envoie-le moi. J'analyse plus de 50 biomarqueurs clés que ton médecin ne regarde pas sous l'angle performance : inflammations silencieuses, carences réelles, déséquilibres hormonaux, fonction hépatique et rénale. Je te dis exactement ce que ton sang révèle sur ta capacité à brûler du gras, construire du muscle et performer. La donnée brute, interprétée par quelqu'un qui comprend la performance.",
+    features: ["Analyse de 50+ biomarqueurs", "Interprétation orientée performance", "Détection des carences cachées", "Recommandations personnalisées"],
     price: "99€",
     imageUrl: "",
     reverse: false,
@@ -57,9 +57,9 @@ const OFFERS: Offer[] = [
   {
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
-    subtitle: "L'Omniscience Corporelle",
-    description: "L'agrégation de toutes mes technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de ta physiologie pour une stratégie d'optimisation sans compromis. Le gold standard pour les bio-hackers et athlètes d'élite.",
-    features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
+    subtitle: "L'Analyse Complète",
+    description: "Le protocole complet. 210 questions + analyse de ta posture en photo. Je combine tout : nutrition, hormones, sommeil, stress, training, biomarqueurs, douleurs, mobilité et psychologie. J'analyse tes 3 photos (face, profil, dos) pour détecter les déséquilibres posturaux et asymétries qui limitent ta performance. Tu reçois le rapport le plus complet que je propose — 25 sections de diagnostic avec un plan d'action précis.",
+    features: ["210 questions + analyse photo", "Diagnostic postural personnalisé", "Rapport complet 25 sections", "Plan d'action sur-mesure"],
     price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
@@ -67,9 +67,9 @@ const OFFERS: Offer[] = [
   {
     id: 'burnout-detection',
     title: "BURNOUT DETECTION",
-    subtitle: "Préservation du Système Nerveux",
-    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détecte les signes physiologiques de l'épuisement et la fatigue centrale avant qu'ils ne deviennent cliniques. Protège ton actif le plus précieux : ton mental.",
-    features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
+    subtitle: "L'État de Ton Système Nerveux",
+    description: "Le burnout ne prévient pas. Mais les signes sont là bien avant l'effondrement. Ce questionnaire cible spécifiquement ta charge nerveuse, ta qualité de sommeil, ton niveau de stress chronique et ta capacité de récupération. Je détecte si tu es en surrégime avant que ton corps ne lâche. Parce que tu peux t'entraîner dur et bien manger — si ton système nerveux est grillé, tu ne progresseras pas.",
+    features: ["Évaluation de la charge nerveuse", "Analyse de la récupération", "Détection du surentraînement", "Stratégies de préservation"],
     price: "39€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
@@ -1263,7 +1263,7 @@ function VisionSection() {
             HUMAINE
           </h2>
           <p className="text-gray-400 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
-            ApexLabs représente la convergence de la biologie de pointe et de l'intelligence artificielle.
+            ApexLabs représente ma méthode : analyser en profondeur ta physiologie pour identifier exactement ce qui bloque ta progression.
             Je transforme les données en actions, les résultats en excellence.
           </p>
 
