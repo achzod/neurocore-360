@@ -513,7 +513,7 @@ function Hero() {
             <span key={i} className="text-[#FCDD00] text-xs">★</span>
           ))}
         </motion.div>
-        <span className="text-white font-bold text-lg">141</span>
+        <span className="text-white font-bold text-lg">{BETA_REVIEWS.length}</span>
         <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
         <motion.div
           className="w-4 h-4 mt-1"
@@ -883,14 +883,14 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
                 {price}
               </div>
             </div>
-            {/* CTA Button - Outline Style */}
-            <a
-              href={`/offers/${offer.id}`}
-              className="px-6 py-4 bg-black border border-white/30 text-white font-mono text-xs uppercase tracking-widest hover:border-[#FCDD00] hover:text-[#FCDD00] transition-colors flex items-center gap-2"
+            {/* CTA Button - Scroll to waitlist */}
+            <button
+              onClick={() => document.getElementById('join-waitlist')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
             >
-              En savoir plus
+              Réserver ma place
               <span>&gt;</span>
-            </a>
+            </button>
           </div>
         </div>
       </div>
