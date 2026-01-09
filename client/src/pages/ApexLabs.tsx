@@ -26,9 +26,9 @@ const OFFERS: Offer[] = [
   {
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
-    subtitle: "Ton Premier Diagnostic Gratuit",
-    description: "50 questions ciblées sur 5 piliers essentiels. Tu reçois un dashboard interactif avec ton radar de performance, ton score global sur 100, et tes 3 blocages prioritaires. 15-20 min pour un aperçu complet de ton état de santé.",
-    features: ["Dashboard interactif temps réel", "Radar de performance 5 piliers", "Score global sur 100", "Top 3 blocages identifiés"],
+    subtitle: "L'Analyse Initiale",
+    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D.",
+    features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
     price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false
@@ -36,40 +36,40 @@ const OFFERS: Offer[] = [
   {
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
-    subtitle: "L'Audit Métabolique Complet",
-    description: "150 questions qui décortiquent ta nutrition, ton profil hormonal, tes axes cliniques (thyroïde, intestin, glycémie) et tes suppléments. Tu reçois un rapport PDF d'environ 25 pages avec protocoles matin/soir, stack suppléments personnalisé et plan d'action 90 jours.",
-    features: ["Rapport PDF 25 pages", "Protocoles matin et soir", "Stack suppléments personnalisé", "Plan d'action 90 jours"],
-    price: "49€",
+    subtitle: "Performance Musculaire",
+    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire et du profil hormonal anabolique.",
+    features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
+    price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
   },
   {
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
-    subtitle: "L'Analyse de Ton Bilan Sanguin",
-    description: "Envoie-moi ton bilan sanguin. J'analyse chaque marqueur avec mes ranges optimaux de performance, pas les ranges des labos qui sont trop larges. Thyroïde, hormones, métabolisme, inflammation, vitamines, foie, reins. Rapport de 10-15 pages avec protocoles correctifs.",
-    features: ["Analyse de 50+ biomarqueurs", "Ranges optimaux de performance", "Détection syndromes cachés", "Protocoles correctifs ciblés"],
+    subtitle: "La Vérité Biologique",
+    description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance.",
+    features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
     price: "99€",
     imageUrl: "",
     reverse: false,
     useCustomVisual: true
   },
   {
-    id: 'pro-panel-360',
-    title: "PRO PANEL 360",
-    subtitle: "L'Analyse Ultime",
-    description: "210 questions + sync de tes wearables (Oura, Apple Watch, Garmin) + analyse de tes 3 photos (posture, composition corporelle). Je révise personnellement ton rapport. Environ 45 pages avec 25+ sections incluant HRV, cardio, psychologie, biomécanique, nutrition timing, et un dashboard temps réel.",
-    features: ["Rapport 45 pages, 25+ sections", "Analyse photo posture et composition", "Sync wearables temps réel", "Support prioritaire 24h"],
-    price: "149€",
+    id: 'ultimate-scan',
+    title: "ULTIMATE SCAN",
+    subtitle: "L'Omniscience Corporelle",
+    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie.",
+    features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
+    price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
   {
-    id: 'burnout-engine',
-    title: "BURNOUT ENGINE",
-    subtitle: "Détection Précoce Burnout",
-    description: "80 questions sur ta charge nerveuse, sommeil, symptômes physiques et psychologiques. Tu reçois un score de risque (0-100), ta phase de burnout (1 à 5), et un protocole de récupération de 4 semaines si tu es en zone rouge.",
-    features: ["Score de risque burnout 0-100", "Phase de burnout identifiée (1-5)", "Protocole récupération 4 semaines", "Stack adaptogènes personnalisé"],
+    id: 'burnout-detection',
+    title: "BURNOUT DETECTION",
+    subtitle: "Préservation du Système Nerveux",
+    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détectez les signes physiologiques de l'épuisement.",
+    features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
     price: "39€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
@@ -510,9 +510,12 @@ function Hero() {
           transition={{ duration: 2, repeat: Infinity }}
         >
           {[1,2,3,4,5].map((i) => (
-            <span key={i} className="text-[#FCDD00] text-xs">★</span>
+            <svg key={i} className="w-3 h-3 text-[#FCDD00]" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
           ))}
         </motion.div>
+        <span className="text-[#FCDD00] font-bold text-sm">4.9/5</span>
         <span className="text-white font-bold text-lg">{BETA_REVIEWS.length}</span>
         <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
         <motion.div
