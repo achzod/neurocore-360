@@ -43,7 +43,16 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
+  // Redirect root to /apexlabs for prelaunch subdomain
+  app.use((req, res, next) => {
+    const host = req.get('host') || '';
+    if (host.includes('apexlabsprelaunch') && req.path === '/') {
+      return res.redirect(301, '/apexlabs');
+    }
+    next();
+  });
+
   // Helper function to get base URL
   function getBaseUrl(): string {
     if (process.env.RENDER_EXTERNAL_URL) {
