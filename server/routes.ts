@@ -2202,7 +2202,7 @@ export async function registerRoutes(
 
   // Subscribe to waitlist (ApexLabs pre-launch)
   app.post("/api/waitlist/subscribe", async (req, res) => {
-    const { email, source = "apexlabs" } = req.body;
+    const { email, source = "apexlabs", name = "", objective = "" } = req.body;
 
     if (!email || !email.includes("@")) {
       res.status(400).json({ success: false, error: "Email invalide" });
@@ -2210,6 +2210,8 @@ export async function registerRoutes(
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const cleanName = (name || "").trim();
+    const cleanObjective = (objective || "").trim();
     let dbSaved = false;
     let sendpulseSynced = false;
     let emailSent = false;
@@ -2233,14 +2235,18 @@ export async function registerRoutes(
       });
 
       try {
+        // Ensure columns exist
+        await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS name TEXT`);
+        await pool.query(`ALTER TABLE waitlist_subscribers ADD COLUMN IF NOT EXISTS objective TEXT`);
+
         await pool.query(
-          `INSERT INTO waitlist_subscribers (id, email, source, created_at)
-           VALUES (gen_random_uuid(), $1, $2, NOW())
-           ON CONFLICT (email) DO NOTHING`,
-          [cleanEmail, source]
+          `INSERT INTO waitlist_subscribers (id, email, source, name, objective, created_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())
+           ON CONFLICT (email) DO UPDATE SET name = COALESCE(NULLIF($3, ''), waitlist_subscribers.name), objective = COALESCE(NULLIF($4, ''), waitlist_subscribers.objective)`,
+          [cleanEmail, source, cleanName, cleanObjective]
         );
         dbSaved = true;
-        console.log(`[Waitlist] ✅ DB saved: ${cleanEmail}`);
+        console.log(`[Waitlist] ✅ DB saved: ${cleanEmail} (name: ${cleanName || 'n/a'})`);
       } finally {
         await pool.end();
       }
