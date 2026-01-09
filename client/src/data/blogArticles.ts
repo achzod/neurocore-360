@@ -1,6 +1,7 @@
 // Blog articles data - ACHZOD original content
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
+import { ULTRAHUMAN_ARTICLES } from "./ultrahumanArticles";
 import YAMAMOTO_ARTICLES from "./yamamotoArticles.json";
 
 export interface BlogArticle {
@@ -39,6 +40,11 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   // YAMAMOTO NUTRITION - Articles traduits par ACHZOD
   // ============================================================================
   ...(YAMAMOTO_ARTICLES as BlogArticle[]),
+
+  // ============================================================================
+  // ULTRAHUMAN - Articles traduits par ACHZOD (Sommeil, HRV, Métabolisme, etc.)
+  // ============================================================================
+  ...ULTRAHUMAN_ARTICLES,
 
   // ============================================================================
   // STRESS & HRV
