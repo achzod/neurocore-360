@@ -485,8 +485,47 @@ function Hero() {
     }
   };
 
+  const scrollToReviews = () => {
+    const element = document.getElementById('reviews');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      {/* Floating Reviews Badge - Side */}
+      <motion.button
+        onClick={scrollToReviews}
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1, duration: 0.6 }}
+        className="fixed left-4 top-1/3 z-50 hidden md:flex flex-col items-center gap-2 px-3 py-4 bg-black/80 border border-[#FCDD00]/30 backdrop-blur-xl rounded-sm cursor-pointer hover:border-[#FCDD00] hover:bg-black/90 transition-all duration-300 group"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <motion.div
+          className="flex gap-0.5"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          {[1,2,3,4,5].map((i) => (
+            <span key={i} className="text-[#FCDD00] text-xs">★</span>
+          ))}
+        </motion.div>
+        <span className="text-white font-bold text-lg">141</span>
+        <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
+        <motion.div
+          className="w-4 h-4 mt-1"
+          animate={{ y: [0, 3, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-[#FCDD00] opacity-60 group-hover:opacity-100 transition-opacity">
+            <path d="M12 5v14m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </motion.div>
+      </motion.button>
+
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
         <video
