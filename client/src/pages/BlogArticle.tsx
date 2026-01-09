@@ -31,12 +31,12 @@ export default function BlogArticlePage() {
         <Header />
         <main className="py-24">
           <div className="mx-auto max-w-2xl px-4 text-center">
-            <h1 className="mb-4 text-3xl font-bold text-white">Article non trouvé</h1>
-            <p className="mb-8 text-white/50">
+            <h1 className="mb-4 text-5xl font-black tracking-tighter uppercase text-white">Article non trouvé</h1>
+            <p className="mb-8 font-light text-neutral-400">
               L'article que vous cherchez n'existe pas ou a été déplacé.
             </p>
             <Link href="/blog">
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-[#FCDD00] text-black font-semibold rounded-sm hover:bg-[#FCDD00]/90 transition-colors">
+              <button className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-sm hover:bg-[#FCDD00] transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Retour au blog
               </button>
@@ -87,7 +87,7 @@ export default function BlogArticlePage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-sm bg-[#0F0F0F] p-6 md:p-10 border border-white/10"
+              className="rounded-sm bg-black p-6 md:p-10 border border-neutral-800"
             >
               {/* Back Link */}
               <Link
@@ -123,12 +123,12 @@ export default function BlogArticlePage() {
               </h1>
 
               {/* Excerpt */}
-              <p className="mb-8 text-lg text-white/60 leading-relaxed">
+              <p className="mb-8 text-lg font-light text-neutral-400 leading-relaxed">
                 {article.excerpt}
               </p>
 
               {/* Author */}
-              <div className="mb-8 flex items-center gap-3 pb-8 border-b border-white/10">
+              <div className="mb-8 flex items-center gap-3 pb-8 border-b border-neutral-800">
                 <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20">
                   <User className="h-5 w-5 text-[#FCDD00]" />
                 </div>
@@ -145,7 +145,7 @@ export default function BlogArticlePage() {
                 <ReactMarkdown
                   components={{
                     h2: ({ children }) => (
-                      <h2 className="text-2xl font-bold mt-10 mb-4 text-white">
+                      <h2 className="text-3xl font-bold tracking-tight uppercase mt-10 mb-4 text-white">
                         {children}
                       </h2>
                     ),
@@ -155,22 +155,22 @@ export default function BlogArticlePage() {
                       </h3>
                     ),
                     p: ({ children }) => (
-                      <p className="mb-4 text-white/60 leading-relaxed">
+                      <p className="mb-4 font-light text-neutral-400 leading-relaxed">
                         {children}
                       </p>
                     ),
                     ul: ({ children }) => (
-                      <ul className="mb-4 space-y-2 list-disc list-inside text-white/60">
+                      <ul className="mb-4 space-y-2 list-disc list-inside font-light text-neutral-400">
                         {children}
                       </ul>
                     ),
                     ol: ({ children }) => (
-                      <ol className="mb-4 space-y-2 list-decimal list-inside text-white/60">
+                      <ol className="mb-4 space-y-2 list-decimal list-inside font-light text-neutral-400">
                         {children}
                       </ol>
                     ),
                     li: ({ children }) => (
-                      <li className="text-white/60">{children}</li>
+                      <li className="font-light text-neutral-400">{children}</li>
                     ),
                     strong: ({ children }) => (
                       <strong className="font-bold text-white">
@@ -189,7 +189,7 @@ export default function BlogArticlePage() {
               </div>
 
               {/* Share */}
-              <div className="mt-10 pt-8 border-t border-white/10">
+              <div className="mt-10 pt-8 border-t border-neutral-800">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-white">Partager cet article</span>
                   <div className="flex gap-2">
@@ -200,7 +200,7 @@ export default function BlogArticlePage() {
                           "_blank"
                         )
                       }
-                      className="p-2 rounded-sm bg-white/[0.03] border border-white/10 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
+                      className="p-2 rounded-sm bg-black border border-neutral-800 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
                     >
                       <Twitter className="h-4 w-4" />
                     </button>
@@ -211,7 +211,7 @@ export default function BlogArticlePage() {
                           "_blank"
                         )
                       }
-                      className="p-2 rounded-sm bg-white/[0.03] border border-white/10 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
+                      className="p-2 rounded-sm bg-black border border-neutral-800 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
                     >
                       <Linkedin className="h-4 w-4" />
                     </button>
@@ -219,7 +219,7 @@ export default function BlogArticlePage() {
                       onClick={() => {
                         navigator.clipboard.writeText(shareUrl);
                       }}
-                      className="p-2 rounded-sm bg-white/[0.03] border border-white/10 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
+                      className="p-2 rounded-sm bg-black border border-neutral-800 text-white/70 hover:text-[#FCDD00] hover:border-[#FCDD00]/30 transition-colors"
                     >
                       <Share2 className="h-4 w-4" />
                     </button>
@@ -232,19 +232,19 @@ export default function BlogArticlePage() {
 
         {/* Related Articles */}
         {relatedArticles.length > 0 && (
-          <section className="py-24 border-t border-white/5 mt-16">
+          <section className="py-24 border-t border-neutral-800 mt-16">
             <div className="mx-auto max-w-7xl px-4">
-              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
+              <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-4">
                 [ ARTICLES SIMILAIRES ]
               </p>
-              <h2 className="mb-10 text-2xl font-bold text-white">Articles similaires</h2>
+              <h2 className="mb-10 text-3xl font-bold tracking-tight uppercase text-white">Articles similaires</h2>
               <div className="grid gap-6 md:grid-cols-3">
                 {relatedArticles.map((relatedArticle) => (
                   <Link
                     key={relatedArticle.id}
                     href={`/blog/${relatedArticle.slug}`}
                   >
-                    <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
+                    <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-black border border-neutral-800 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
                       <div className="aspect-video overflow-hidden">
                         <img
                           src={relatedArticle.image}
@@ -270,19 +270,19 @@ export default function BlogArticlePage() {
         )}
 
         {/* CTA */}
-        <section className="py-24 border-t border-white/5">
+        <section className="py-24 border-t border-neutral-800">
           <div className="mx-auto max-w-2xl px-4 text-center">
-            <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-6">
+            <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-6">
               [ COMMENCER ]
             </p>
-            <h2 className="mb-4 text-3xl font-bold text-white">
+            <h2 className="mb-4 text-3xl font-bold tracking-tight uppercase text-white">
               Prêt à optimiser votre santé ?
             </h2>
-            <p className="mb-8 text-white/50">
+            <p className="mb-8 font-light text-neutral-400">
               Découvrez votre profil métabolique avec notre analyse complète.
             </p>
             <Link href="/offers/ultimate-scan">
-              <button className="inline-flex items-center gap-2 px-8 py-4 bg-[#FCDD00] text-black font-semibold rounded-sm hover:bg-[#FCDD00]/90 transition-colors">
+              <button className="inline-flex items-center gap-2 px-8 py-4 bg-white text-black font-semibold rounded-sm hover:bg-[#FCDD00] transition-colors">
                 Commencer l'analyse
                 <ArrowRight className="h-4 w-4" />
               </button>

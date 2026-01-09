@@ -66,14 +66,14 @@ export default function BurnoutDetection() {
             className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-sm px-4 py-2 mb-8"
           >
             <AlertTriangle className="w-4 h-4 text-purple-400" />
-            <span className="text-purple-400 text-xs font-mono uppercase tracking-widest">[ DETECTION PRECOCE ]</span>
+            <span className="text-purple-400 text-[10px] font-mono uppercase tracking-[0.2em]">[ DETECTION PRECOCE ]</span>
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-white text-[3rem] sm:text-[4.8rem] md:text-[7.2rem] lg:text-[9.6rem] xl:text-[12rem] font-bold leading-[0.9] tracking-[-0.04em] mb-8"
+            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter uppercase mb-8"
           >
             Burnout
             <br />
@@ -84,7 +84,7 @@ export default function BurnoutDetection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
+            className="text-neutral-400 font-light text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Le burnout ne previent pas. Detecte les signaux faibles avant qu'il ne soit trop tard.
             Score de risque + protocole de recuperation 4 semaines.
@@ -106,7 +106,7 @@ export default function BurnoutDetection() {
             transition={{ duration: 0.6, delay: 0.5 }}
           >
             <Link href="/burnout-detection">
-              <button className="group inline-flex items-center gap-3 bg-purple-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-purple-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(168,85,247,0.3)]">
+              <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
                 Evaluer mon risque
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -139,10 +139,10 @@ export default function BurnoutDetection() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <p className="text-purple-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-purple-400 text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
               Signaux d'alerte
             </p>
-            <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-6">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
               Tu te reconnais ?
             </h2>
           </motion.div>
@@ -155,11 +155,11 @@ export default function BurnoutDetection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="group rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-purple-500/30 hover:-translate-y-0.5 transition-all duration-300"
+                className="group rounded-sm bg-black border border-neutral-800 p-6 hover:border-purple-500/30 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-purple-400 group-hover:scale-125 transition-transform" />
-                  <span className="text-white/70">{symptom}</span>
+                  <span className="text-neutral-400 font-light">{symptom}</span>
                 </div>
               </motion.div>
             ))}
@@ -168,7 +168,7 @@ export default function BurnoutDetection() {
       </section>
 
       {/* 3 PHASES */}
-      <section className="py-32 px-6 border-t border-white/5">
+      <section className="py-32 px-6 border-t border-neutral-800">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -176,13 +176,13 @@ export default function BurnoutDetection() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <p className="text-purple-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-purple-400 text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
               Les 3 Phases
             </p>
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
               Ou en es-tu ?
             </h2>
-            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            <p className="text-neutral-400 font-light text-lg max-w-2xl mx-auto">
               Le burnout evolue en 3 phases. Plus tu detectes tot, plus la recuperation est rapide.
             </p>
           </motion.div>
@@ -215,14 +215,14 @@ export default function BurnoutDetection() {
                 }`}>
                   {phase.phase}
                 </h3>
-                <p className="text-white/50 mb-4">{phase.desc}</p>
+                <p className="text-neutral-400 font-light mb-4">{phase.desc}</p>
                 <div className="flex items-center gap-2">
                   <Battery className={`w-4 h-4 ${
                     phase.color === 'amber' ? 'text-amber-400' :
                     phase.color === 'orange' ? 'text-orange-400' :
                     'text-red-400'
                   }`} />
-                  <span className="text-white/40 text-sm">Recuperation: {phase.recovery}</span>
+                  <span className="text-neutral-500 font-light text-sm">Recuperation: {phase.recovery}</span>
                 </div>
               </motion.div>
             ))}
@@ -239,15 +239,15 @@ export default function BurnoutDetection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <p className="text-purple-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
+              <p className="text-purple-400 text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
                 Ton Analyse
               </p>
-              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+              <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
                 Score de risque.
                 <br />
                 <span className="text-purple-400">Protocole 4 semaines.</span>
               </h2>
-              <p className="text-white/50 text-lg leading-relaxed mb-8">
+              <p className="text-neutral-400 font-light text-lg leading-relaxed mb-8">
                 J'evalue ton niveau de stress et de fatigue a travers 80+ questions ciblees.
                 Tu recois un score de risque burnout et un protocole de recuperation adapte.
               </p>
@@ -260,7 +260,7 @@ export default function BurnoutDetection() {
                   "Alertes personnalisees",
                   "Suivi evolution",
                 ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-white/70">
+                  <li key={i} className="flex items-center gap-3 text-neutral-400 font-light">
                     <Check className="w-5 h-5 text-purple-400" />
                     {item}
                   </li>
@@ -274,11 +274,11 @@ export default function BurnoutDetection() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="aspect-square rounded-sm bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 flex items-center justify-center">
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-purple-500/20 to-transparent border border-neutral-800 flex items-center justify-center">
                 <div className="text-center">
                   <Zap className="w-16 h-16 text-purple-400/50 mx-auto mb-4" />
                   <div className="text-purple-400 text-6xl font-bold tracking-[-0.04em] mb-2">Score</div>
-                  <p className="text-white/30 text-lg">Risque Burnout</p>
+                  <p className="text-neutral-500 font-light text-lg">Risque Burnout</p>
                 </div>
               </div>
             </motion.div>
@@ -287,7 +287,7 @@ export default function BurnoutDetection() {
       </section>
 
       {/* PRICING */}
-      <section className="py-32 px-6 border-t border-white/5">
+      <section className="py-32 px-6 border-t border-neutral-800">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -295,7 +295,7 @@ export default function BurnoutDetection() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase">
               Tout ce qui est inclus.
             </h2>
           </motion.div>
@@ -304,7 +304,7 @@ export default function BurnoutDetection() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-sm border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(168,85,247,0.1)]"
+            className="rounded-sm border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-transparent p-10 shadow-[0_0_60px_rgba(168,85,247,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -321,7 +321,7 @@ export default function BurnoutDetection() {
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-purple-400 flex-shrink-0" />
-                  <span className="text-white/80">{item}</span>
+                  <span className="text-neutral-400 font-light">{item}</span>
                 </div>
               ))}
             </div>
@@ -332,7 +332,7 @@ export default function BurnoutDetection() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/burnout-detection">
-                <button className="group inline-flex items-center gap-3 bg-purple-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-purple-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(168,85,247,0.3)]">
+                <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
                   Evaluer mon risque
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -350,17 +350,17 @@ export default function BurnoutDetection() {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto text-center"
         >
-          <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
+          <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight uppercase mb-8">
             Ne laisse pas
             <br />
             <span className="text-purple-400">le burnout gagner.</span>
           </h2>
-          <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
+          <p className="text-neutral-400 font-light text-lg mb-12 max-w-xl mx-auto">
             Detecte les signaux faibles. Agis avant qu'il ne soit trop tard.
             Score de risque + protocole de recuperation.
           </p>
           <Link href="/burnout-detection">
-            <button className="group inline-flex items-center gap-3 bg-purple-500 text-white font-semibold text-base px-8 py-4 rounded-full hover:bg-purple-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(168,85,247,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
               Lancer mon Burnout Engine — 39€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>

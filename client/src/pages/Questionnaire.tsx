@@ -680,7 +680,7 @@ function QuestionnaireContent() {
 
   if (!emailSubmitted) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#050505]">
         <Header />
         <div className="mx-auto max-w-xl px-4 py-20">
           <motion.div
@@ -728,10 +728,10 @@ function QuestionnaireContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#050505]">
       <Header />
 
-      <div className="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <div className="sticky top-16 z-40 border-b border-neutral-800 bg-[#050505]/95 backdrop-blur">
         <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -755,9 +755,7 @@ function QuestionnaireContent() {
                 <Progress value={totalProgress} className="w-32" />
               </div>
               <Badge variant="secondary">{totalProgress}%</Badge>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => {
                   saveProgressMutation.mutate();
                   toast({
@@ -767,19 +765,19 @@ function QuestionnaireContent() {
                 }}
                 disabled={saveProgressMutation.isPending}
                 data-testid="button-save-progress"
+                className="px-4 py-2 text-sm rounded-sm bg-white text-black hover:bg-[#FCDD00] transition-colors disabled:opacity-50"
               >
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 h-4 w-4 inline" />
                 {saveProgressMutation.isPending ? "..." : "Sauvegarder"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
+              </button>
+              <button
                 onClick={handleRestart}
                 data-testid="button-restart"
+                className="px-4 py-2 text-sm rounded-sm bg-black border border-neutral-800 text-white hover:border-[#FCDD00]/30 transition-colors"
               >
-                <X className="mr-2 h-4 w-4" />
+                <X className="mr-2 h-4 w-4 inline" />
                 Recommencer
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -897,14 +895,14 @@ function QuestionnaireContent() {
                       />
                     </div>
                     {userSex && userSex !== "" && (
-                      <Button 
+                      <button
                         onClick={() => setSexConfirmed(true)}
-                        className="w-full"
+                        className="w-full px-6 py-3 rounded-sm bg-white text-black hover:bg-[#FCDD00] transition-colors"
                         data-testid="button-confirm-sex"
                       >
                         Continuer
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
+                        <ChevronRight className="ml-2 h-4 w-4 inline" />
+                      </button>
                     )}
                   </motion.div>
                 ) : currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed ? (
@@ -930,14 +928,14 @@ function QuestionnaireContent() {
                       />
                     </div>
                     {String(responses["prenom"] ?? "").trim().length > 0 && (
-                      <Button
+                      <button
                         onClick={() => setPrenomConfirmed(true)}
-                        className="w-full"
+                        className="w-full px-6 py-3 rounded-sm bg-white text-black hover:bg-[#FCDD00] transition-colors"
                         data-testid="button-confirm-prenom"
                       >
                         Continuer
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
+                        <ChevronRight className="ml-2 h-4 w-4 inline" />
+                      </button>
                     )}
                   </motion.div>
                 ) : currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
@@ -1145,30 +1143,29 @@ function QuestionnaireContent() {
         </AnimatePresence>
 
         <div className="mt-8 flex items-center justify-between gap-4">
-          <Button
-            variant="outline"
+          <button
             onClick={handlePrevious}
             disabled={currentSectionIndex === 0 && !sexConfirmed && !prenomConfirmed}
-            className="min-w-[120px]"
+            className="min-w-[120px] px-6 py-3 rounded-sm bg-black border border-neutral-800 text-white hover:border-[#FCDD00]/30 transition-colors disabled:opacity-50"
             data-testid="button-previous"
           >
-            <ChevronLeft className="mr-2 h-4 w-4" />
+            <ChevronLeft className="mr-2 h-4 w-4 inline" />
             Précédent
-          </Button>
+          </button>
 
-          <Button onClick={handleNext} className="min-w-[120px]" data-testid="button-next">
+          <button onClick={handleNext} className="min-w-[120px] px-6 py-3 rounded-sm bg-white text-black hover:bg-[#FCDD00] transition-colors" data-testid="button-next">
             {currentSectionIndex === filteredSections.length - 1 ? (
               <>
                 Terminer
-                <Check className="ml-2 h-4 w-4" />
+                <Check className="ml-2 h-4 w-4 inline" />
               </>
             ) : (
               <>
                 Suivant
-                <ChevronRight className="ml-2 h-4 w-4" />
+                <ChevronRight className="ml-2 h-4 w-4 inline" />
               </>
             )}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

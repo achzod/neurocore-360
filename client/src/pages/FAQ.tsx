@@ -82,7 +82,7 @@ function FAQAccordion({ faq, index }: { faq: FAQItem; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.05 }}
-      className="border-b border-white/10"
+      className="border-b border-neutral-800"
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -109,7 +109,7 @@ function FAQAccordion({ faq, index }: { faq: FAQItem; index: number }) {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <p className="pb-8 text-base leading-relaxed text-white/60 lg:text-lg lg:leading-relaxed">
+            <p className="pb-8 text-base leading-relaxed font-light text-neutral-400 lg:text-lg lg:leading-relaxed">
               {faq.answer}
             </p>
           </motion.div>
@@ -146,13 +146,13 @@ export default function FAQ() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-8">
+              <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-8">
                 [ FAQ ]
               </p>
-              <h1 className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-[-0.04em]">
+              <h1 className="text-white text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter uppercase">
                 Questions fréquentes
               </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg text-white/50">
+              <p className="mx-auto mt-6 max-w-2xl text-lg font-light text-neutral-400">
                 Tout ce que tu dois savoir sur les formules NEUROCORE 360.
               </p>
             </motion.div>
@@ -171,7 +171,7 @@ export default function FAQ() {
         </section>
 
         {/* CTA Section */}
-        <section className="relative border-t border-white/5 py-24">
+        <section className="relative border-t border-neutral-800 py-24">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -182,23 +182,23 @@ export default function FAQ() {
               <div className="mx-auto w-16 h-16 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
                 <MessageCircle className="h-8 w-8 text-[#FCDD00]" />
               </div>
-              <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase">
+              <p className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em]">
                 [ COMMENCER ]
               </p>
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">
+              <h2 className="text-3xl font-bold tracking-tight uppercase text-white">
                 Prêt à découvrir ton potentiel ?
               </h2>
-              <p className="text-lg text-white/50">
+              <p className="text-lg font-light text-neutral-400">
                 Commence gratuitement ou passe directement à une offre premium.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
                 <Link href="/offers/discovery-scan">
-                  <button className="px-6 py-3 rounded-sm border border-white/10 text-white font-medium hover:border-[#FCDD00]/30 hover:text-[#FCDD00] transition-colors">
+                  <button className="px-6 py-3 rounded-sm border border-neutral-800 text-white font-medium hover:border-[#FCDD00]/30 hover:text-[#FCDD00] transition-colors">
                     Discovery Scan (Gratuit)
                   </button>
                 </Link>
                 <Link href="/offers/anabolic-bioscan">
-                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-sm bg-[#FCDD00] text-black font-semibold hover:bg-[#FCDD00]/90 transition-colors">
+                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-sm bg-white text-black font-semibold hover:bg-[#FCDD00] transition-colors">
                     Anabolic Bioscan (59€)
                     <ArrowRight className="h-4 w-4" />
                   </button>

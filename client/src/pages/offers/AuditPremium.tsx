@@ -64,14 +64,14 @@ export default function AuditPremium() {
             transition={{ duration: 0.6 }}
             className="inline-flex items-center gap-2 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm px-4 py-2 mb-8"
           >
-            <span className="text-[#FCDD00] text-xs font-mono uppercase tracking-widest">[ BEST-SELLER ]</span>
+            <span className="text-[#FCDD00] text-[10px] font-mono uppercase tracking-[0.2em]">[ BEST-SELLER ]</span>
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-white text-[3rem] sm:text-[4.8rem] md:text-[7.2rem] lg:text-[9.6rem] xl:text-[12rem] font-bold leading-[0.9] tracking-[-0.04em] mb-8"
+            className="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter uppercase mb-8"
           >
             Anabolic
             <br />
@@ -82,7 +82,7 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
+            className="text-neutral-400 font-light text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Le diagnostic complet + les protocoles d'action.
             16 sections d'analyse. Plan 30-60-90 jours.
@@ -105,7 +105,7 @@ export default function AuditPremium() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link href="/questionnaire?plan=premium">
-              <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
+              <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
                 Commencer mon scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -143,10 +143,10 @@ export default function AuditPremium() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+            <p className="text-[#FCDD00] text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
               Analyse Complete
             </p>
-            <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-6">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
               16 sections. Zero angle mort.
             </h2>
           </motion.div>
@@ -159,7 +159,7 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.03 }}
-                className="group relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#FCDD00]/20 hover:-translate-y-0.5 transition-all duration-300"
+                className="group relative overflow-hidden rounded-sm bg-black border border-neutral-800 p-6 hover:border-[#FCDD00]/20 transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-[#FCDD00] group-hover:scale-125 transition-transform" />
@@ -172,7 +172,7 @@ export default function AuditPremium() {
       </section>
 
       {/* PROTOCOLS */}
-      <section className="py-32 px-6 border-t border-white/5">
+      <section className="py-32 px-6 border-t border-neutral-800">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-start">
             <div className="lg:sticky lg:top-32">
@@ -181,15 +181,15 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
               >
-                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                <p className="text-[#FCDD00] text-[10px] font-mono tracking-[0.2em] uppercase mb-6">
                   Protocoles Inclus
                 </p>
-                <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+                <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
                   Pas juste un diagnostic.
                   <br />
-                  <span className="text-white/50">Un plan d'action.</span>
+                  <span className="text-neutral-400 font-light">Un plan d'action.</span>
                 </h2>
-                <p className="text-white/50 text-lg leading-relaxed">
+                <p className="text-neutral-400 font-light text-lg leading-relaxed">
                   Chaque protocole est personnalise selon tes resultats.
                   Pas de conseils generiques. Des actions concretes.
                 </p>
@@ -204,7 +204,7 @@ export default function AuditPremium() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-8 rounded-[24px] border border-white/10 hover:border-[#FCDD00]/30 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300"
+                  className="group p-8 rounded-sm border border-neutral-800 hover:border-[#FCDD00]/30 bg-black transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
@@ -212,7 +212,7 @@ export default function AuditPremium() {
                     </div>
                     <div>
                       <h3 className="text-white text-xl font-semibold mb-2">{protocol.name}</h3>
-                      <p className="text-white/40">{protocol.desc}</p>
+                      <p className="text-neutral-400 font-light">{protocol.desc}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -230,15 +230,15 @@ export default function AuditPremium() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 relative overflow-hidden rounded-sm bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-white/5 p-10"
+              className="lg:col-span-2 relative overflow-hidden rounded-sm bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-neutral-800 p-10"
             >
               <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#FCDD00]/5 to-transparent" />
               <div className="relative z-10">
-                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-4">Plan Personnalise</p>
+                <p className="text-[#FCDD00] text-[10px] font-mono tracking-[0.2em] uppercase mb-4">Plan Personnalise</p>
                 <h3 className="text-white text-4xl font-bold tracking-[-0.02em] mb-4">
                   30-60-90 Jours
                 </h3>
-                <p className="text-white/50 text-lg leading-relaxed max-w-md">
+                <p className="text-neutral-400 font-light text-lg leading-relaxed max-w-md">
                   Un roadmap clair avec des objectifs mesurables.
                   Semaine par semaine, tu sais exactement quoi faire.
                 </p>
@@ -256,10 +256,10 @@ export default function AuditPremium() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-sm bg-white/[0.02] border border-white/5 p-8"
+                className="relative overflow-hidden rounded-sm bg-black border border-neutral-800 p-8"
               >
                 <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
-                <div className="text-white/40">{item.label}</div>
+                <div className="text-neutral-400 font-light">{item.label}</div>
               </motion.div>
             ))}
           </div>
@@ -267,7 +267,7 @@ export default function AuditPremium() {
       </section>
 
       {/* WHAT'S INCLUDED */}
-      <section className="py-32 px-6 border-t border-white/5">
+      <section className="py-32 px-6 border-t border-neutral-800">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -275,7 +275,7 @@ export default function AuditPremium() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase mb-6">
               Tout ce qui est inclus.
             </h2>
           </motion.div>
@@ -284,7 +284,7 @@ export default function AuditPremium() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent backdrop-blur-xl p-10 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
+            className="rounded-sm border border-[#FCDD00]/30 bg-gradient-to-b from-[#FCDD00]/10 to-transparent p-10 shadow-[0_0_60px_rgba(252,221,0,0.1)]"
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
@@ -301,7 +301,7 @@ export default function AuditPremium() {
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-[#FCDD00] flex-shrink-0" />
-                  <span className="text-white/80">{item}</span>
+                  <span className="text-neutral-400 font-light">{item}</span>
                 </div>
               ))}
             </div>
@@ -312,7 +312,7 @@ export default function AuditPremium() {
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
               <Link href="/questionnaire?plan=premium">
-                <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
+                <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -331,7 +331,7 @@ export default function AuditPremium() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
+            <h2 className="text-white text-3xl font-bold tracking-tight uppercase">
               Compare les offres.
             </h2>
           </motion.div>
@@ -369,11 +369,11 @@ export default function AuditPremium() {
                 className={`rounded-sm p-8 ${
                   plan.current
                     ? "border-2 border-[#FCDD00] bg-[#FCDD00]/5"
-                    : "border border-white/10 bg-white/[0.02]"
+                    : "border border-neutral-800 bg-black"
                 }`}
               >
                 {plan.current && (
-                  <div className="text-[#FCDD00] text-xs font-medium tracking-[0.15em] uppercase mb-4">
+                  <div className="text-[#FCDD00] text-[10px] font-mono tracking-[0.2em] uppercase mb-4">
                     Tu es ici
                   </div>
                 )}
@@ -381,7 +381,7 @@ export default function AuditPremium() {
                 <div className="text-white text-3xl font-bold tracking-[-0.04em] mb-6">{plan.price}</div>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-white/60 text-sm">
+                    <li key={j} className="flex items-center gap-2 text-neutral-400 font-light text-sm">
                       <Check className="w-4 h-4 text-[#FCDD00]" />
                       {f}
                     </li>
@@ -389,10 +389,10 @@ export default function AuditPremium() {
                 </ul>
                 <Link href={plan.href}>
                   <button
-                    className={`w-full py-3 rounded-full font-semibold transition-all ${
+                    className={`w-full py-3 rounded-sm font-semibold transition-all ${
                       plan.current
-                        ? "bg-[#FCDD00] text-black hover:bg-[#FCDD00]/90"
-                        : "bg-white/10 text-white hover:bg-white/20"
+                        ? "bg-white text-black hover:bg-[#FCDD00]"
+                        : "bg-white text-black hover:bg-[#FCDD00]"
                     }`}
                   >
                     {plan.current ? "Choisir" : "Voir"}
@@ -412,16 +412,16 @@ export default function AuditPremium() {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto text-center"
         >
-          <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-8">
+          <h2 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight uppercase mb-8">
             Pret a passer
             <br />
             <span className="text-[#FCDD00]">au niveau superieur ?</span>
           </h2>
-          <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
+          <p className="text-neutral-400 font-light text-lg mb-12 max-w-xl mx-auto">
             Diagnostic + protocoles + plan d'action. Tout ce qu'il te faut pour transformer ta sante.
           </p>
           <Link href="/questionnaire?plan=premium">
-            <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-full hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
+            <button className="group inline-flex items-center gap-3 bg-white text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00] transition-all duration-300">
               Lancer mon Anabolic Bioscan — 59€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
