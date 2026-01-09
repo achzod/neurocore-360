@@ -2267,16 +2267,24 @@ export async function registerRoutes(
     let pool: any = null;
 
     // 1. Save to database FIRST (source of truth)
+    let isReturningUser = false;
     try {
       pool = await getWaitlistPool();
       await ensureWaitlistTable(pool);
 
+      // Check if already registered
+      const existing = await pool.query(`SELECT email FROM waitlist_subscribers WHERE email = $1`, [cleanEmail]);
+      if (existing.rows.length > 0) {
+        isReturningUser = true;
+        console.log(`[Waitlist] 👋 Returning user: ${cleanEmail}`);
+        await pool.end();
+        res.json({ success: true, message: "Tu es déjà inscrit ! On te contactera bientôt.", returning: true });
+        return;
+      }
+
       await pool.query(
         `INSERT INTO waitlist_subscribers (email, name, objective, source, created_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         ON CONFLICT (email) DO UPDATE SET
-           name = COALESCE(NULLIF($2, ''), waitlist_subscribers.name),
-           objective = COALESCE(NULLIF($3, ''), waitlist_subscribers.objective)`,
+         VALUES ($1, $2, $3, $4, NOW())`,
         [cleanEmail, cleanName, cleanObjective, cleanSource]
       );
       dbSaved = true;
