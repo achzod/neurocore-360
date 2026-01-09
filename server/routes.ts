@@ -93,7 +93,18 @@ export async function registerRoutes(
       .trim()
       .slice(0, maxLen);
   }
-  
+
+  // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY
+  function requireAdminAuth(req: any, res: any): boolean {
+    const adminKey = req.headers["x-admin-key"] || req.query.key || req.body?.adminKey;
+    const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+    if (!validKey || adminKey !== validKey) {
+      res.status(401).json({ error: "Unauthorized - admin key required" });
+      return false;
+    }
+    return true;
+  }
+
   app.post("/api/questionnaire/save-progress", async (req, res) => {
     try {
       const data = saveProgressSchema.parse(req.body);
@@ -123,6 +134,7 @@ export async function registerRoutes(
 
   // Admin: Get all incomplete questionnaires
   app.get("/api/admin/incomplete-questionnaires", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const incomplete = await storage.getAllIncompleteProgress();
       res.json({ success: true, questionnaires: incomplete });
@@ -1284,8 +1296,8 @@ export async function registerRoutes(
   // ==================== ADMIN ENDPOINTS ====================
 
   app.get("/api/admin/audits", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
-      // TODO: Ajouter authentification admin
       const allAudits = await storage.getAllAudits();
       res.json({ success: true, audits: allAudits });
     } catch (error) {
@@ -1296,6 +1308,7 @@ export async function registerRoutes(
 
   // Admin: Update audit status
   app.patch("/api/admin/audit/:auditId/status", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { auditId } = req.params;
       const { status } = req.body;
@@ -1322,6 +1335,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/send-cta", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { auditId, subject, message } = req.body;
       
@@ -1427,6 +1441,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/reviews/pending", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const reviews = await reviewStorage.getPendingReviews();
       res.json({ success: true, reviews });
@@ -1437,6 +1452,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/reviews/:reviewId/approve", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { reviewId } = req.params;
       const { reviewedBy, adminNotes } = req.body;
@@ -1479,6 +1495,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/reviews/:reviewId/reject", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { reviewId } = req.params;
       const { reviewedBy, adminNotes } = req.body;
@@ -1496,6 +1513,7 @@ export async function registerRoutes(
 
   // Get all reviews for admin dashboard
   app.get("/api/admin/reviews", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { status } = req.query;
       let reviews;
@@ -1567,6 +1585,7 @@ export async function registerRoutes(
 
   // Endpoint admin pour initialiser la base de données
   app.post("/api/admin/init-db", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { Pool } = await import('pg');
       
@@ -1783,6 +1802,7 @@ export async function registerRoutes(
 
   // Get all promo codes (Admin)
   app.get("/api/admin/promo-codes", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const codes = await storage.getAllPromoCodes();
       res.json({ success: true, codes });
@@ -1794,6 +1814,7 @@ export async function registerRoutes(
 
   // Create promo code (Admin)
   app.post("/api/admin/promo-codes", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { code, discountPercent, description, validFor, maxUses, isActive, expiresAt } = req.body;
 
@@ -1825,6 +1846,7 @@ export async function registerRoutes(
 
   // Update promo code (Admin)
   app.put("/api/admin/promo-codes/:id", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { id } = req.params;
       const data = req.body;
@@ -1957,6 +1979,7 @@ export async function registerRoutes(
 
   // Create test data for relances (TEMPORARY - DELETE AFTER TESTING)
   app.post("/api/admin/create-test-relances", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const results: string[] = [];
 
@@ -2051,6 +2074,7 @@ export async function registerRoutes(
 
   // Manual trigger for testing specific email sequence
   app.post("/api/admin/send-sequence-email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { auditId, emailType } = req.body;
 
@@ -2398,7 +2422,8 @@ export async function registerRoutes(
 
 
   // Get SendPulse address books and subscribers count (admin diagnostic)
-  app.get("/api/admin/sendpulse/books", async (_req, res) => {
+  app.get("/api/admin/sendpulse/books", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
       const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
@@ -2453,6 +2478,7 @@ export async function registerRoutes(
 
   // Get subscribers from a specific SendPulse address book
   app.get("/api/admin/sendpulse/subscribers/:bookId", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { bookId } = req.params;
       const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
@@ -2496,7 +2522,8 @@ export async function registerRoutes(
   });
 
   // Database diagnostic endpoint
-  app.get("/api/admin/db-check", async (_req, res) => {
+  app.get("/api/admin/db-check", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { Pool } = await import("pg");
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -2547,7 +2574,8 @@ export async function registerRoutes(
   });
 
   // Create waitlist table if it doesn't exist (one-time migration)
-  app.post("/api/admin/db-migrate", async (_req, res) => {
+  app.post("/api/admin/db-migrate", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const { Pool } = await import("pg");
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
