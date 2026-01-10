@@ -58,9 +58,9 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
-// TYPES
+// TYPES (exported for use in other components)
 // ============================================================================
-interface Theme {
+export interface Theme {
   id: string;
   name: string;
   type: 'dark' | 'light';
@@ -76,7 +76,7 @@ interface Theme {
   };
 }
 
-interface Metric {
+export interface Metric {
   label: string;
   value: number;
   max: number;
@@ -84,7 +84,7 @@ interface Metric {
   key: string;
 }
 
-interface SectionContent {
+export interface SectionContent {
   id: string;
   title: string;
   subtitle?: string;
@@ -94,6 +94,15 @@ interface SectionContent {
   scoreLabel?: string;
   metrics?: { label: string; value: number; status: 'critical' | 'warning' | 'good' }[];
   chartType?: 'gauge' | 'bars' | 'timeline' | 'comparison' | 'stack';
+}
+
+export interface ReportData {
+  clientName: string;
+  clientAge?: number;
+  date: string;
+  globalScore: number;
+  metrics: Metric[];
+  sections: SectionContent[];
 }
 
 // ============================================================================
@@ -163,9 +172,9 @@ const THEMES: Theme[] = [
 ];
 
 // ============================================================================
-// DATA
+// DEFAULT DATA (fallback for demo)
 // ============================================================================
-const REPORT_DATA = {
+const DEFAULT_REPORT_DATA: ReportData = {
   clientName: 'Julien R.',
   clientAge: 29,
   date: '2 Janvier 2026',
@@ -1507,9 +1516,14 @@ const Sidebar = ({
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
-export function FullReport() {
-  const [activeSection, setActiveSection] = useState<string>(REPORT_DATA.sections[0].id);
-  const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
+interface FullReportProps {
+  reportData?: ReportData;
+  initialTheme?: 'neurocore' | 'ultrahuman' | 'metabolic' | 'titanium';
+}
+
+export function FullReport({ reportData = DEFAULT_REPORT_DATA, initialTheme = 'neurocore' }: FullReportProps = {}) {
+  const [activeSection, setActiveSection] = useState<string>(reportData.sections[0]?.id || '');
+  const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES.find(t => t.id === initialTheme) || THEMES[0]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -1535,12 +1549,12 @@ export function FullReport() {
       const progress = totalHeight > 0 ? (totalScroll / totalHeight) * 100 : 0;
       setScrollProgress(progress);
 
-      const headings = REPORT_DATA.sections.map((s) => document.getElementById(s.id));
+      const headings = reportData.sections.map((s) => document.getElementById(s.id));
       const scrollPos = container.scrollTop + 300;
       for (let i = headings.length - 1; i >= 0; i--) {
         const heading = headings[i];
         if (heading && heading.offsetTop <= scrollPos) {
-          setActiveSection(REPORT_DATA.sections[i].id);
+          setActiveSection(reportData.sections[i].id);
           break;
         }
       }
@@ -1560,11 +1574,11 @@ export function FullReport() {
   };
 
   const navigateChapter = (direction: 'next' | 'prev') => {
-    const currentIndex = REPORT_DATA.sections.findIndex((s) => s.id === activeSection);
+    const currentIndex = reportData.sections.findIndex((s) => s.id === activeSection);
     let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     if (nextIndex < 0) nextIndex = 0;
-    if (nextIndex >= REPORT_DATA.sections.length) nextIndex = REPORT_DATA.sections.length - 1;
-    scrollToSection(REPORT_DATA.sections[nextIndex].id);
+    if (nextIndex >= reportData.sections.length) nextIndex = reportData.sections.length - 1;
+    scrollToSection(reportData.sections[nextIndex].id);
   };
 
   return (
@@ -1609,16 +1623,16 @@ export function FullReport() {
             <span className="text-xs font-mono font-bold tracking-widest uppercase">Neurocore 360</span>
           </div>
           <h1 className="text-xl font-bold tracking-tight">
-            Audit: {REPORT_DATA.clientName}
+            Audit: {reportData.clientName}
           </h1>
           <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-mono">
-            {REPORT_DATA.sections.length} SECTIONS • PREMIUM
+            {reportData.sections.length} SECTIONS • PREMIUM
           </div>
         </div>
 
         <div className="flex-1 overflow-hidden flex flex-col">
           <Sidebar
-            sections={REPORT_DATA.sections}
+            sections={reportData.sections}
             activeSection={activeSection}
             onNavigate={scrollToSection}
             themes={THEMES}
@@ -1674,7 +1688,7 @@ export function FullReport() {
           className="lg:hidden sticky top-0 z-40 backdrop-blur-md px-4 py-4 flex items-center justify-between"
           style={{ backgroundColor: 'var(--color-bg)', borderBottom: `1px solid var(--color-border)` }}
         >
-          <span className="font-bold text-sm tracking-widest uppercase">Audit {REPORT_DATA.clientName}</span>
+          <span className="font-bold text-sm tracking-widest uppercase">Audit {reportData.clientName}</span>
           <button onClick={() => setMobileMenuOpen(true)}>
             <Menu size={20} />
           </button>
@@ -1707,11 +1721,11 @@ export function FullReport() {
                   </span>
                 </motion.div>
                 <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
-                  {REPORT_DATA.clientName.split(' ')[0]}, <br />
+                  {reportData.clientName.split(' ')[0]}, <br />
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton audit.</span>
                 </h1>
                 <p className="text-lg text-[var(--color-text-muted)] leading-relaxed max-w-lg">
-                  Score global: {Math.round(REPORT_DATA.globalScore * 10)}/100. Systeme nerveux critique. On va debloquer ca.
+                  Score global: {Math.round(reportData.globalScore * 10)}/100. Systeme nerveux critique. On va debloquer ca.
                 </p>
               </div>
             </motion.header>
@@ -1734,7 +1748,7 @@ export function FullReport() {
                   Performance Globale
                 </h3>
                 <div className="flex items-center justify-center py-8">
-                  <RadialProgress score={REPORT_DATA.globalScore} max={10} size={180} color={currentTheme.colors.primary} />
+                  <RadialProgress score={reportData.globalScore} max={10} size={180} color={currentTheme.colors.primary} />
                 </div>
                 <div className="flex items-center justify-center">
                   <motion.span
@@ -1762,7 +1776,7 @@ export function FullReport() {
                   </h3>
                 </div>
                 <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
-                  <MetricsRadar data={REPORT_DATA.metrics} color={currentTheme.colors.primary} />
+                  <MetricsRadar data={reportData.metrics} color={currentTheme.colors.primary} />
                 </div>
               </motion.div>
 
@@ -1837,7 +1851,7 @@ export function FullReport() {
           <div className="space-y-0 relative">
             <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
 
-            {REPORT_DATA.sections.map((section, idx) => (
+            {reportData.sections.map((section, idx) => (
               <motion.section
                 key={section.id}
                 id={section.id}
