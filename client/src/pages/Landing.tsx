@@ -642,7 +642,18 @@ function CertificationsSection() {
     },
   ];
 
-  const mediaLogos = ["Yahoo Finance", "FOX 40", "BENZINGA", "StreetInsider", "MarketWatch"];
+  // Press/Media links with verified URLs
+  const pressLinks = [
+    { name: "Business Insider", url: "https://markets.businessinsider.com/news/stocks/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications-1034317450" },
+    { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/achzodcoaching-launches-elite-athlete-coaching-193500608.html" },
+    { name: "Benzinga", url: "https://www.benzinga.com/pressreleases/25/02/43506783/achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications" },
+    { name: "StreetInsider", url: "https://www.streetinsider.com/Newsfile/Achzodcoaching+Launches+Elite+Athlete+Coaching+Programs%2C+Backed+by+ISSANASM+and+10%2B+Certifications/24301620.html" },
+    { name: "Financial Post", url: "https://financialpost.com/newsfile/239656-achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issanasm-and-10-certifications" },
+    { name: "Newsfile", url: "https://www.newsfilecorp.com/release/239656" },
+    { name: "Spotify", url: "https://open.spotify.com/episode/3WsX3g2VTuQjTbJzkZKTE9" },
+    { name: "Apple Podcasts", url: "https://podcasts.apple.com/us/podcast/achzodcoaching-launches-elite-athlete-coaching-programs/id1773282513?i=1000689414642" },
+    { name: "Amazon Music", url: "https://music.amazon.com/podcasts/c8225522-cca6-4734-9d90-c3daf8076e09/episodes/4749c2a0-bd36-4631-95ac-2a599f272c4a/global-economic-press-achzodcoaching-launches-elite-athlete-coaching-programs-backed-by-issa-nasm-and-10-certifications%E2%80%9D" },
+  ];
 
   return (
     <section className="bg-[#000000] py-20">
@@ -686,10 +697,22 @@ function CertificationsSection() {
         </div>
 
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-[#6B7280] mb-8">Vu dans les médias</p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-            {mediaLogos.map((media) => (
-              <span key={media} className="text-sm text-[#9CA3AF] hover:text-[#9CA3AF] transition-colors">{media}</span>
+          <p className="text-xs font-medium uppercase tracking-[0.3em] text-[#6B7280] mb-8">Recommandé par les médias</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            {pressLinks.map((press, i) => (
+              <motion.a
+                key={i}
+                href={press.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="px-5 py-2.5 border border-[#333333] rounded-full text-[#9CA3AF] text-sm font-semibold hover:text-white hover:border-[#FCDD00]/50 hover:bg-white/5 transition-all duration-300"
+              >
+                {press.name} ↗
+              </motion.a>
             ))}
           </div>
         </motion.div>
