@@ -1,6 +1,7 @@
 // Blog articles data - ACHZOD original content
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
+import { ultrahuman_ARTICLES } from "./ultrahumanArticles";
 
 export interface BlogArticle {  id: string;
   slug: string;
