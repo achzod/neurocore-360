@@ -27,8 +27,8 @@ const OFFERS: Offer[] = [
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
     subtitle: "L'Analyse Initiale",
-    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D.",
-    features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
+    description: "~50 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle. J'identifie tes blocages metaboliques et hormonaux.",
+    features: ["10 domaines analyses", "Score global sur 100", "Identification des blocages", "Rapport 5-7 pages"],
     price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false
@@ -36,9 +36,9 @@ const OFFERS: Offer[] = [
   {
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
-    subtitle: "Performance Musculaire",
-    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire et du profil hormonal anabolique.",
-    features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
+    subtitle: "Analyse Approfondie",
+    description: "~150 questions sur 17 sections: nutrition detaillee, profil hormonal, axes cliniques (thyroide, diabete, SII), supplements, biomarqueurs, composition corporelle.",
+    features: ["17 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack supplements personnalise"],
     price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
@@ -46,9 +46,9 @@ const OFFERS: Offer[] = [
   {
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
-    subtitle: "La Vérité Biologique",
-    description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance.",
-    features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
+    subtitle: "La Verite Biologique",
+    description: "Upload ton bilan sanguin. J'analyse 39 biomarqueurs sur 6 panels avec des ranges OPTIMAUX (pas juste 'normaux'). Detection des patterns et protocoles personnalises.",
+    features: ["39 biomarqueurs analyses", "6 panels complets", "Ranges optimaux", "Protocoles personnalises"],
     price: "99€",
     imageUrl: "",
     reverse: false,
@@ -57,9 +57,9 @@ const OFFERS: Offer[] = [
   {
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
-    subtitle: "L'Omniscience Corporelle",
-    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie.",
-    features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
+    subtitle: "L'Analyse Complete",
+    description: "~210 questions sur 22 sections + analyse photo posturale + integration wearables. Nutrition timing, cardio & performance (Zone 2, HRV), blessures & mobilite, psychologie.",
+    features: ["22 sections d'analyse", "Analyse photo posturale", "Integration wearables", "Protocole 30-60-90 jours"],
     price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
@@ -67,9 +67,9 @@ const OFFERS: Offer[] = [
   {
     id: 'burnout-detection',
     title: "BURNOUT DETECTION",
-    subtitle: "Préservation du Système Nerveux",
-    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détectez les signes physiologiques de l'épuisement.",
-    features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
+    subtitle: "Detection Precoce",
+    description: "Questionnaire specialise pour detecter les signes precoces du burnout. Score de risque + analyse systeme nerveux + protocole de recuperation 4 semaines.",
+    features: ["Score de risque burnout", "Analyse systeme nerveux", "Qualite du sommeil", "Protocole recuperation 4 semaines"],
     price: "39€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
