@@ -98,11 +98,11 @@ async function getKnowledgeContextForSection(section: string): Promise<string> {
   if (keywords.length === 0) return '';
 
   try {
-    // TOUTES LES SOURCES de la bibliotheque - y compris achzod, newsletter, manual
+    // TOUTES LES SOURCES de la bibliotheque
     const allSources = [
-      'huberman', 'peter_attia', 'examine', 'applied_metabolics', 'chris_masterjohn',
-      'renaissance_periodization', 'sbs', 'mpmd', 'marek_health',
-      'achzod', 'newsletter', 'manual'  // Sources ACHZOD coaching
+      'huberman', 'sbs', 'applied_metabolics', 'examine', 'peter_attia',
+      'marek_health', 'chris_masterjohn', 'renaissance_periodization', 'mpmd',
+      'newsletter', 'achzod', 'manual'
     ];
 
     // Recherche avec plus de keywords et plus d'articles

@@ -6,6 +6,24 @@
 import { searchArticles, ScrapedArticle } from "./storage";
 
 /**
+ * SOURCES AUTORISÉES pour tous les produits - TOUTE LA BIBLIOTHÈQUE
+ */
+export const ALLOWED_SOURCES = [
+  'huberman',
+  'sbs',
+  'applied_metabolics',
+  'examine',
+  'peter_attia',
+  'marek_health',
+  'chris_masterjohn',
+  'renaissance_periodization',
+  'mpmd',
+  'newsletter',
+  'achzod',
+  'manual'
+] as const;
+
+/**
  * Patterns de recherche par symptôme/problématique
  */
 export const SEARCH_PATTERNS: Record<string, string[]> = {
@@ -141,7 +159,7 @@ export async function searchKnowledgeForProfile(
     return { keywords: [], articles: [], context: "" };
   }
 
-  const articles = await searchArticles(keywords, limit);
+  const articles = await searchArticles(keywords, limit, ALLOWED_SOURCES as any);
 
   // Build context string for AI prompt
   const context = articles
@@ -192,7 +210,7 @@ export async function searchForSection(
   };
 
   const keywords = sectionKeywords[sectionType] || ["santé", "optimisation"];
-  return searchArticles(keywords, limit);
+  return searchArticles(keywords, limit, ALLOWED_SOURCES as any);
 }
 
 /**
