@@ -38,6 +38,13 @@ import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBurnoutRoutes } from "./burnout-detection";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
+import {
+  scrapeArticleFromUrl,
+  translateArticleToFrench,
+  estimateReadTimeFromWords,
+  buildExcerpt,
+  slugify,
+} from "./blogImport";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -705,6 +712,88 @@ export async function registerRoutes(
     } catch (error) {
       console.error("[Admin] Error processing pending reports:", error);
       res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // ==================== BLOG IMPORT / TRANSLATION ====================
+
+  /**
+   * POST /api/admin/blog/translate-url
+   * Admin-only: prend une URL d'article, le scrape, puis renvoie une version FR rebrandée ACHZOD.
+   * Usage prévu : générer facilement un bloc `BlogArticle` à coller dans client/src/data/*.ts
+   *
+   * Body:
+   * - url: string (obligatoire)
+   * - cta?: string (optionnel, bloc markdown à injecter en bas)
+   * - category?: string (optionnel, ex: "sommeil", "sarms", "peptides")
+   * - slug?: string (optionnel, sinon auto-slug depuis le titre FR)
+   * - image?: string (optionnel, URL d'image)
+   * - featured?: boolean
+   */
+  app.post("/api/admin/blog/translate-url", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { url, cta, category, slug, image, featured } = req.body || {};
+
+      if (!url || typeof url !== "string") {
+        res.status(400).json({ success: false, error: "Paramètre 'url' requis" });
+        return;
+      }
+
+      const scraped = await scrapeArticleFromUrl(url);
+      const translated = await translateArticleToFrench({
+        scraped,
+        cta: typeof cta === "string" && cta.trim().length > 0 ? cta : undefined,
+      });
+
+      const readTime = estimateReadTimeFromWords(scraped.wordCount);
+      const excerpt = buildExcerpt(translated.contentFr);
+      const finalSlug =
+        typeof slug === "string" && slug.trim().length > 0
+          ? slug
+          : slugify(translated.titleFr || scraped.title);
+
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+
+      // Shape prêt à être copié dans BlogArticle (client)
+      const articleForTs = {
+        id: "REPLACE_WITH_ID",
+        slug: finalSlug,
+        title: translated.titleFr,
+        excerpt,
+        category: typeof category === "string" && category.trim().length > 0 ? category : "musculation",
+        author: "ACHZOD",
+        date: dateStr,
+        readTime,
+        image:
+          typeof image === "string" && image.trim().length > 0
+            ? image
+            : "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200",
+        featured: Boolean(featured),
+        content: translated.contentFr,
+      };
+
+      res.json({
+        success: true,
+        scraped: {
+          url: scraped.url,
+          domain: scraped.domain,
+          title: scraped.title,
+          wordCount: scraped.wordCount,
+        },
+        translated: {
+          titleFr: translated.titleFr,
+          wordCountFr: translated.contentFr.split(/\s+/).filter(Boolean).length,
+        },
+        articleForTs,
+      });
+    } catch (error: any) {
+      console.error("[Admin Blog Translate] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: error?.message || "Erreur serveur",
+      });
     }
   });
 
