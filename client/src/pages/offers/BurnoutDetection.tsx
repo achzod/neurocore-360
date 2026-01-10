@@ -86,8 +86,8 @@ export default function BurnoutDetection() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            Le burnout ne previent pas. Detecte les signaux faibles avant qu'il ne soit trop tard.
-            Score de risque + protocole de recuperation 4 semaines.
+            Questionnaire specialise pour detecter les signes precoces du burnout.
+            Score de risque + analyse systeme nerveux + protocole de recuperation 4 semaines.
           </motion.p>
 
           <motion.div

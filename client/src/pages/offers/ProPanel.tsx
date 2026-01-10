@@ -21,11 +21,12 @@ export default function ProPanel() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const sections = [
-    "Energie & Vitalite", "Sommeil", "Hormones", "Metabolisme",
-    "Stress", "Digestion", "Performance", "Neurotransmetteurs",
-    "Thyroide", "Insuline", "Cortisol", "Testosterone",
-    "Recuperation", "Inflammation", "Immunite", "Longevite",
-    "Analyse Posturale", "Biomecanique"
+    "Profil de Base", "Sante & Historique", "Sommeil", "Stress & Nerveux",
+    "Energie", "Digestion", "Entrainement", "Nutrition Base",
+    "Lifestyle", "Mindset", "Nutrition Detaillee", "Hormones",
+    "Axes Cliniques", "Supplements", "Biomarqueurs", "Composition Corporelle",
+    "Nutrition Timing", "Cardio & Performance", "HRV & Cardiaque",
+    "Blessures & Douleurs", "Psychologie & Mental", "Analyse Photo"
   ];
 
   const wearables = [
@@ -82,8 +83,8 @@ export default function ProPanel() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            L'analyse la plus complete. Questionnaire + photos + wearables.
-            18 sections. 40-50 pages de rapport.
+            ~210 questions sur 22 sections + analyse photo posturale + integration wearables.
+            Nutrition timing, cardio & performance (Zone 2, HRV), blessures & mobilite, psychologie.
           </motion.p>
 
           <motion.div
@@ -150,7 +151,7 @@ export default function ProPanel() {
               {
                 icon: Activity,
                 title: "Questionnaire",
-                desc: "180 questions couvrant 18 domaines de ta sante",
+                desc: "206 questions couvrant 22 domaines de ta sante",
                 color: "cyan"
               },
               {
@@ -201,7 +202,7 @@ export default function ProPanel() {
             className="text-center mb-16"
           >
             <p className="text-cyan-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
-              18 Sections
+              22 Sections
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
               L'analyse la plus complete du marche.
@@ -238,24 +239,25 @@ export default function ProPanel() {
               viewport={{ once: true }}
             >
               <p className="text-purple-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                Analyse Photo IA
+                Analyse Morphologique IA
               </p>
               <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-                Ta posture,
+                Ton corps,
                 <br />
-                <span className="text-purple-400">decodee.</span>
+                <span className="text-purple-400">cartographie.</span>
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                Envoie 4 photos (face, dos, profil gauche, profil droit).
-                J'analyse ta posture, les desequilibres, les compensations
-                et les zones de tension.
+                Envoie 3 photos : face, dos, profil. L'IA analyse ta morphologie,
+                ta posture et ta biomecanique pour detecter les desequilibres
+                invisibles qui limitent ta progression et causent des douleurs.
               </p>
               <ul className="space-y-4">
                 {[
-                  "Detection des desequilibres posturaux",
-                  "Analyse des compensations musculaires",
-                  "Identification des zones de tension",
-                  "Recommandations correctives personnalisees"
+                  "Analyse morphologique complete (symetrie, proportions)",
+                  "Detection des desequilibres posturaux (epaules, bassin, colonne)",
+                  "Evaluation biomecanique (mobilite, compensations)",
+                  "Identification des zones de tension et points faibles",
+                  "Protocoles correctifs personnalises (exercices, etirements)"
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <Check className="w-5 h-5 text-purple-400" />
@@ -271,10 +273,22 @@ export default function ProPanel() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="aspect-square rounded-sm bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 flex items-center justify-center">
-                <div className="text-center">
-                  <Camera className="w-20 h-20 text-purple-400/50 mx-auto mb-4" />
-                  <p className="text-white/30 text-lg">4 photos analysees par IA</p>
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-purple-500/20 to-transparent border border-white/5 p-8">
+                <div className="grid grid-cols-3 gap-4 h-full">
+                  {["FACE", "DOS", "PROFIL"].map((view, i) => (
+                    <motion.div
+                      key={i}
+                      className="flex flex-col items-center justify-center bg-purple-500/10 border border-purple-500/20 rounded-sm"
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                    >
+                      <Camera className="w-8 h-8 text-purple-400/60 mb-2" />
+                      <span className="text-purple-400/80 text-xs font-mono">{view}</span>
+                    </motion.div>
+                  ))}
+                </div>
+                <div className="absolute bottom-4 left-4 right-4 text-center">
+                  <p className="text-white/40 text-sm">Analyse IA en temps reel</p>
                 </div>
               </div>
             </motion.div>
@@ -284,36 +298,65 @@ export default function ProPanel() {
 
       {/* WEARABLES */}
       <section className="py-32 px-6 border-t border-white/5">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-              Wearables Compatibles
-            </p>
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-              Sync tes donnees.
-            </h2>
-            <p className="text-white/50 text-lg mb-12">
-              Connecte tes appareils pour une analyse encore plus precise.
-            </p>
-          </motion.div>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Integration Wearables
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+                Tes donnees,
+                <br />
+                <span className="text-[#FCDD00]">amplifiees.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Connecte ta montre ou ton tracker. Je croise tes donnees de sommeil,
+                HRV, frequence cardiaque et activite avec ton questionnaire pour
+                detecter des patterns invisibles et affiner mes recommandations.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Analyse HRV et detection du surmenage",
+                  "Correlation sommeil / energie / performance",
+                  "Detection precoce des signes de surentrainement",
+                  "Optimisation des fenetres d'entrainement",
+                  "Recommandations de recuperation personnalisees"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <Check className="w-5 h-5 text-[#FCDD00]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {wearables.map((device, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="px-6 py-4 rounded-full border border-white/10 bg-white/[0.02] text-white/70 hover:border-[#FCDD00]/30 hover:text-white transition-all"
-              >
-                {device}
-              </motion.div>
-            ))}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="aspect-square rounded-sm bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-white/5 p-8 flex flex-col items-center justify-center">
+                <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+                  {wearables.map((device, i) => (
+                    <motion.div
+                      key={i}
+                      className="px-4 py-2 rounded-full border border-[#FCDD00]/20 bg-[#FCDD00]/5 text-[#FCDD00]/80 text-sm"
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.2 }}
+                    >
+                      {device}
+                    </motion.div>
+                  ))}
+                </div>
+                <Activity className="w-16 h-16 text-[#FCDD00]/40 mb-4" />
+                <p className="text-white/40 text-sm text-center">Donnees synchronisees automatiquement</p>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -340,8 +383,8 @@ export default function ProPanel() {
             </motion.div>
 
             {[
-              { number: "18", label: "Sections d'analyse" },
-              { number: "4", label: "Protocoles inclus" },
+              { number: "22", label: "Sections d'analyse" },
+              { number: "206", label: "Questions" },
               { number: "24h", label: "Delai livraison" },
               { number: "90j", label: "Plan d'action" },
             ].map((item, i) => (
@@ -383,7 +426,7 @@ export default function ProPanel() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Analyse complete 18 sections",
+                "Analyse complete 22 sections",
                 "Analyse photo posturale",
                 "Integration wearables",
                 "Score global sur 100",
@@ -438,21 +481,21 @@ export default function ProPanel() {
               {
                 name: "Anabolic Bioscan",
                 price: "59€",
-                features: ["16 sections", "4 protocoles", "20+ pages"],
+                features: ["17 sections", "156 questions", "4 protocoles", "20+ pages"],
                 href: "/offers/anabolic-bioscan",
                 current: false,
               },
               {
                 name: "Ultimate Scan",
                 price: "79€",
-                features: ["18 sections", "Analyse photo IA", "40-50 pages", "Wearables sync"],
+                features: ["22 sections", "206 questions", "Analyse photo IA", "40-50 pages"],
                 href: "/questionnaire?plan=pro",
                 current: true,
               },
               {
                 name: "Blood Analysis",
                 price: "99€",
-                features: ["Bilan sanguin", "50+ biomarqueurs", "Radars visuels"],
+                features: ["Bilan sanguin", "39 biomarqueurs", "6 panels", "Radars visuels"],
                 href: "/offers/blood-analysis",
                 current: false,
               },
@@ -515,7 +558,7 @@ export default function ProPanel() {
             <span className="text-cyan-400">la plus complete.</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            Questionnaire + photos + wearables. 18 sections. 40-50 pages.
+            Questionnaire + photos + wearables. 22 sections. 206 questions.
             Le maximum de donnees pour le maximum de resultats.
           </p>
           <Link href="/questionnaire?plan=pro">

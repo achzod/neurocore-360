@@ -96,4 +96,3 @@ CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
 
 -- Note: Si certaines tables existent déjà, certaines erreurs peuvent apparaître.
 -- C'est normal, le script utilise CREATE TABLE IF NOT EXISTS pour éviter les doublons.
-

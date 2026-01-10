@@ -21,14 +21,12 @@ export default function BloodAnalysisOffer() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const biomarkers = [
-    { category: "Metabolisme", count: 12, color: "red" },
-    { category: "Hormones", count: 8, color: "purple" },
-    { category: "Inflammation", count: 6, color: "orange" },
-    { category: "Thyroide", count: 5, color: "blue" },
-    { category: "Vitamines", count: 8, color: "green" },
-    { category: "Mineraux", count: 7, color: "cyan" },
-    { category: "Lipides", count: 6, color: "yellow" },
-    { category: "Foie & Reins", count: 8, color: "pink" },
+    { category: "Panel Hormonal", count: 10, color: "purple" },
+    { category: "Panel Thyroidien", count: 5, color: "blue" },
+    { category: "Panel Metabolique", count: 9, color: "red" },
+    { category: "Panel Inflammatoire", count: 5, color: "orange" },
+    { category: "Vitamines & Mineraux", count: 5, color: "green" },
+    { category: "Hepatique & Renal", count: 5, color: "cyan" },
   ];
 
   return (
@@ -81,8 +79,8 @@ export default function BloodAnalysisOffer() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            Upload ton bilan sanguin. J'analyse 50+ biomarqueurs
-            et te donne des protocoles d'optimisation personnalises.
+            Upload ton bilan sanguin. J'analyse 39 biomarqueurs sur 6 panels avec des ranges OPTIMAUX
+            (pas juste "normaux"). Detection des patterns et protocoles personnalises.
           </motion.p>
 
           <motion.div
@@ -145,7 +143,7 @@ export default function BloodAnalysisOffer() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               { step: "01", title: "Upload", desc: "Telecharge ton bilan sanguin en PDF", icon: Upload },
-              { step: "02", title: "Analyse", desc: "J'analyse 50+ biomarqueurs", icon: Beaker },
+              { step: "02", title: "Analyse", desc: "J'analyse 39 biomarqueurs", icon: Beaker },
               { step: "03", title: "Protocoles", desc: "Recois des recommandations personnalisees", icon: Check },
             ].map((item, i) => (
               <motion.div
@@ -180,18 +178,18 @@ export default function BloodAnalysisOffer() {
             className="text-center mb-16"
           >
             <p className="text-red-400 text-sm font-medium tracking-[0.2em] uppercase mb-6">
-              50+ Biomarqueurs
+              39 Biomarqueurs
             </p>
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
               Analyse complete de ton sang.
             </h2>
             <p className="text-white/50 text-lg max-w-2xl mx-auto">
-              8 categories. 50+ marqueurs analyses. Chaque valeur interpretee
+              6 panels. 39 marqueurs analyses. Chaque valeur interpretee
               et mise en contexte avec ton profil.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {biomarkers.map((item, i) => (
               <motion.div
                 key={i}
@@ -255,7 +253,7 @@ export default function BloodAnalysisOffer() {
             >
               <div className="aspect-square rounded-sm bg-gradient-to-br from-red-500/20 to-transparent border border-white/5 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-red-400 text-8xl font-bold tracking-[-0.04em] mb-4">50+</div>
+                  <div className="text-red-400 text-8xl font-bold tracking-[-0.04em] mb-4">39</div>
                   <p className="text-white/30 text-lg">Biomarqueurs analyses</p>
                 </div>
               </div>
@@ -286,8 +284,8 @@ export default function BloodAnalysisOffer() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Analyse 50+ biomarqueurs",
-                "8 categories de marqueurs",
+                "Analyse 39 biomarqueurs",
+                "6 panels d'analyse",
                 "Radars visuels interactifs",
                 "Detection patterns a risque",
                 "Interpretation personnalisee",
@@ -335,7 +333,7 @@ export default function BloodAnalysisOffer() {
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             Upload ton bilan. Je fais le reste.
-            50+ biomarqueurs analyses. Protocoles personnalises.
+            39 biomarqueurs analyses. Protocoles personnalises.
           </p>
           <Link href="/blood-analysis">
             <button className="group inline-flex items-center gap-3 bg-red-500 text-white font-semibold text-base px-8 py-4 rounded-sm hover:bg-red-400 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(239,68,68,0.3)]">

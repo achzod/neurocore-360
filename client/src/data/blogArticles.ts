@@ -2,6 +2,7 @@
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
 import { ULTRAHUMAN_ARTICLES } from "./ultrahumanArticles";
+import { MUSCLEPHD_ARTICLES } from "./musclephdArticles";
 import YAMAMOTO_ARTICLES from "./yamamotoArticles.json";
 
 export interface BlogArticle {
@@ -30876,8 +30877,8 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
   },
 ];
 
-// Combine all articles (base + SARMS + PEPTIDES)
-const ALL_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES, ...SARMS_ARTICLES, ...PEPTIDES_ARTICLES];
+// Combine all articles (base + SARMS + PEPTIDES + MUSCLEPHD)
+const ALL_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES, ...SARMS_ARTICLES, ...PEPTIDES_ARTICLES, ...MUSCLEPHD_ARTICLES];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
   return ALL_ARTICLES.find((article) => article.slug === slug);

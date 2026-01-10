@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Anabolic Bioscan
- * TRUE Ultrahuman Design - 59€
+ * Premium Design with React Animations - 59€
  */
 
 import { useRef } from "react";
@@ -8,7 +8,201 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Zap, Moon, Pill, Calendar, Watch, TrendingUp } from "lucide-react";
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Protocol Cards Animation
+// ============================================================================
+function ProtocolVisual() {
+  const protocols = [
+    { icon: Zap, label: "CORTISOL", color: "#FCDD00" },
+    { icon: Moon, label: "SOMMEIL", color: "#8B5CF6" },
+    { icon: Pill, label: "DIGESTION", color: "#10B981" },
+    { icon: TrendingUp, label: "STACK", color: "#3B82F6" },
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
+
+      <div className="grid grid-cols-2 gap-4 p-6">
+        {protocols.map((item, i) => (
+          <motion.div
+            key={i}
+            className="flex flex-col items-center justify-center p-4 bg-black/40 border border-white/10 rounded-sm"
+            animate={{
+              scale: [1, 1.05, 1],
+              borderColor: [`rgba(255,255,255,0.1)`, `${item.color}40`, `rgba(255,255,255,0.1)`]
+            }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+          >
+            <item.icon className="w-8 h-8 mb-2" style={{ color: item.color }} />
+            <span className="text-xs font-mono text-white/60">{item.label}</span>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="absolute bottom-4 left-4 text-xs font-mono text-[#FCDD00]/80">
+        <div>4 PROTOCOLES</div>
+        <motion.div
+          className="text-white/60"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          PERSONNALISES
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Timeline 30-60-90
+// ============================================================================
+function TimelineVisual() {
+  const phases = [
+    { day: "J30", label: "Reset", progress: 33 },
+    { day: "J60", label: "Build", progress: 66 },
+    { day: "J90", label: "Peak", progress: 100 },
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
+
+      <div className="w-full px-8">
+        {/* Timeline bar */}
+        <div className="relative h-2 bg-white/10 rounded-full mb-8">
+          <motion.div
+            className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#FCDD00] to-[#FCDD00]/60 rounded-full"
+            animate={{ width: ["0%", "100%", "0%"] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+
+        {/* Phase markers */}
+        <div className="flex justify-between">
+          {phases.map((phase, i) => (
+            <motion.div
+              key={i}
+              className="text-center"
+              animate={{ opacity: [0.5, 1, 0.5], y: [0, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+            >
+              <div className="text-2xl font-bold text-[#FCDD00]">{phase.day}</div>
+              <div className="text-xs text-white/50">{phase.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="absolute top-4 right-4 text-xs font-mono text-right">
+        <motion.div
+          className="text-[#FCDD00]"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          ROADMAP
+        </motion.div>
+        <div className="text-white/40">Semaine par semaine</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Wearables Sync
+// ============================================================================
+function WearablesVisual() {
+  const devices = ["OURA", "WHOOP", "GARMIN", "APPLE", "FITBIT"];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
+
+      {/* Central watch icon */}
+      <motion.div
+        className="absolute"
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 3, repeat: Infinity }}
+      >
+        <Watch className="w-16 h-16 text-[#FCDD00]/40" />
+      </motion.div>
+
+      {/* Orbiting device names */}
+      {devices.map((device, i) => {
+        const angle = (i / devices.length) * Math.PI * 2;
+        const radius = 80;
+        return (
+          <motion.div
+            key={i}
+            className="absolute px-3 py-1 bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded text-xs font-mono text-[#FCDD00]/80"
+            animate={{
+              x: [Math.cos(angle) * radius, Math.cos(angle + Math.PI * 2) * radius],
+              y: [Math.sin(angle) * radius, Math.sin(angle + Math.PI * 2) * radius],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{ duration: 10, repeat: Infinity, ease: "linear", delay: i * 0.2 }}
+          >
+            {device}
+          </motion.div>
+        );
+      })}
+
+      {/* Pulse rings */}
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute w-24 h-24 rounded-full border border-[#FCDD00]/20"
+          animate={{ scale: [1, 2, 2.5], opacity: [0.4, 0.1, 0] }}
+          transition={{ duration: 3, repeat: Infinity, delay: i * 1 }}
+        />
+      ))}
+
+      <div className="absolute bottom-4 left-4 text-xs font-mono text-[#FCDD00]/80">
+        <div>SYNC DATA</div>
+        <motion.div
+          className="text-white/60"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          HRV + SOMMEIL + ACTIVITE
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Sections Grid
+// ============================================================================
+function SectionsGridVisual() {
+  const sections = [
+    "PROFIL", "SANTE", "SOMMEIL", "STRESS",
+    "ENERGIE", "DIGESTION", "TRAINING", "NUTRITION",
+    "LIFESTYLE", "MINDSET", "HORMONES", "BIOMARQUEURS"
+  ];
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 overflow-hidden rounded-sm border border-white/5 p-4">
+      <div className="grid grid-cols-4 gap-2 h-full">
+        {sections.map((section, i) => (
+          <motion.div
+            key={i}
+            className="flex items-center justify-center bg-black/40 border border-white/10 rounded text-[8px] font-mono text-white/50"
+            animate={{
+              borderColor: [`rgba(255,255,255,0.1)`, `rgba(252,221,0,0.4)`, `rgba(255,255,255,0.1)`],
+              color: [`rgba(255,255,255,0.5)`, `rgba(252,221,0,0.8)`, `rgba(255,255,255,0.5)`],
+            }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+          >
+            {section}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function AuditPremium() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,17 +215,10 @@ export default function AuditPremium() {
   const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
   const protocols = [
-    { name: "Protocole Matin Anti-Cortisol", desc: "Routine optimisee pour reduire le cortisol et maximiser l'energie" },
-    { name: "Protocole Soir Sommeil", desc: "Sequence de relaxation pour un sommeil profond et reparateur" },
-    { name: "Protocole Digestion 14 Jours", desc: "Reset digestif complet pour optimiser l'absorption" },
-    { name: "Stack Supplements", desc: "Selection personnalisee basee sur tes desequilibres" },
-  ];
-
-  const sections = [
-    "Energie & Vitalite", "Sommeil", "Hormones", "Metabolisme",
-    "Stress", "Digestion", "Performance", "Neurotransmetteurs",
-    "Thyroide", "Insuline", "Cortisol", "Testosterone",
-    "Recuperation", "Inflammation", "Immunite", "Longevite"
+    { name: "Protocole Matin Anti-Cortisol", desc: "Ta routine du matin pour reduire le cortisol et maximiser ton energie", icon: Zap },
+    { name: "Protocole Soir Sommeil", desc: "Ta sequence de relaxation pour un sommeil profond et reparateur", icon: Moon },
+    { name: "Protocole Digestion 14 Jours", desc: "Ton reset digestif complet pour optimiser l'absorption", icon: Pill },
+    { name: "Stack Supplements", desc: "Ta selection personnalisee basee sur tes desequilibres", icon: TrendingUp },
   ];
 
   return (
@@ -43,8 +230,6 @@ export default function AuditPremium() {
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#050505] to-[#050505]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FCDD00]/5 rounded-full blur-[150px]" />
-          <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]" />
-          {/* Tech Grid Overlay */}
           <div
             className="absolute inset-0 opacity-[0.03]"
             style={{
@@ -84,8 +269,8 @@ export default function AuditPremium() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            Le diagnostic complet + les protocoles d'action.
-            16 sections d'analyse. Plan 30-60-90 jours.
+            ~150 questions sur 17 sections: nutrition detaillee, profil hormonal,
+            axes cliniques (thyroide, diabete, SII), supplements, biomarqueurs, composition corporelle.
           </motion.p>
 
           <motion.div
@@ -110,11 +295,6 @@ export default function AuditPremium() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </Link>
-            <Link href="/offers/ultimate-scan">
-              <button className="text-white/60 hover:text-white transition-colors">
-                Voir Ultimate Scan
-              </button>
-            </Link>
           </motion.div>
         </motion.div>
 
@@ -134,134 +314,158 @@ export default function AuditPremium() {
         </motion.div>
       </section>
 
-      {/* 16 SECTIONS GRID */}
+      {/* PROTOCOLS SECTION */}
       <section className="py-32 px-6">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-              Analyse Complete
-            </p>
-            <h2 className="text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[-0.04em] mb-6">
-              16 sections. Zero angle mort.
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {sections.map((section, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.03 }}
-                className="group relative overflow-hidden rounded-sm bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 hover:bg-white/[0.06] hover:border-[#FCDD00]/20 hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#FCDD00] group-hover:scale-125 transition-transform" />
-                  <span className="text-white text-sm font-medium">{section}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PROTOCOLS */}
-      <section className="py-32 px-6 border-t border-white/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            <div className="lg:sticky lg:top-32">
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-              >
-                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
-                  Protocoles Inclus
-                </p>
-                <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-                  Pas juste un diagnostic.
-                  <br />
-                  <span className="text-white/50">Un plan d'action.</span>
-                </h2>
-                <p className="text-white/50 text-lg leading-relaxed">
-                  Chaque protocole est personnalise selon tes resultats.
-                  Pas de conseils generiques. Des actions concretes.
-                </p>
-              </motion.div>
-            </div>
-
-            <div className="space-y-6">
-              {protocols.map((protocol, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group p-8 rounded-[24px] border border-white/10 hover:border-[#FCDD00]/30 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center">
-                      <Check className="w-6 h-6 text-[#FCDD00]" />
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                4 Protocoles Inclus
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Pas juste un diagnostic.
+                <br />
+                <span className="text-[#FCDD00]">Un plan d'action.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Je te donne les protocoles exacts a suivre. Pas de conseils generiques.
+                Des actions concretes basees sur TES resultats.
+              </p>
+              <div className="space-y-4">
+                {protocols.map((protocol, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-start gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-sm"
+                  >
+                    <div className="w-10 h-10 rounded-sm bg-[#FCDD00]/10 border border-[#FCDD00]/20 flex items-center justify-center flex-shrink-0">
+                      <protocol.icon className="w-5 h-5 text-[#FCDD00]" />
                     </div>
                     <div>
-                      <h3 className="text-white text-xl font-semibold mb-2">{protocol.name}</h3>
-                      <p className="text-white/40">{protocol.desc}</p>
+                      <h3 className="text-white font-semibold mb-1">{protocol.name}</h3>
+                      <p className="text-white/40 text-sm">{protocol.desc}</p>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* BENTO FEATURES */}
-      <section className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="lg:col-span-2 relative overflow-hidden rounded-sm bg-gradient-to-br from-[#FCDD00]/10 to-transparent border border-white/5 p-10"
-            >
-              <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#FCDD00]/5 to-transparent" />
-              <div className="relative z-10">
-                <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-4">Plan Personnalise</p>
-                <h3 className="text-white text-4xl font-bold tracking-[-0.02em] mb-4">
-                  30-60-90 Jours
-                </h3>
-                <p className="text-white/50 text-lg leading-relaxed max-w-md">
-                  Un roadmap clair avec des objectifs mesurables.
-                  Semaine par semaine, tu sais exactement quoi faire.
-                </p>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
 
-            {[
-              { number: "20+", label: "Pages de rapport" },
-              { number: "4", label: "Protocoles inclus" },
-              { number: "24h", label: "Delai de livraison" },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative overflow-hidden rounded-sm bg-white/[0.02] border border-white/5 p-8"
-              >
-                <div className="text-white text-4xl font-bold tracking-[-0.04em] mb-2">{item.number}</div>
-                <div className="text-white/40">{item.label}</div>
-              </motion.div>
-            ))}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="aspect-square">
+                <ProtocolVisual />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* TIMELINE 30-60-90 */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-2 lg:order-1"
+            >
+              <div className="aspect-[4/3]">
+                <TimelineVisual />
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-1 lg:order-2"
+            >
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Plan 30-60-90 Jours
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Un roadmap clair.
+                <br />
+                <span className="text-[#FCDD00]">Zero confusion.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Je te dis exactement quoi faire, semaine par semaine.
+                Chaque phase a ses objectifs. Tu sais ou tu en es.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "J1-30 : Reset - Eliminer les blocages prioritaires",
+                  "J31-60 : Build - Construire les nouvelles habitudes",
+                  "J61-90 : Peak - Optimiser et consolider les gains",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* WEARABLES */}
+      <section className="py-32 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-[#FCDD00] text-sm font-medium tracking-[0.2em] uppercase mb-6">
+                Integration Wearables
+              </p>
+              <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6 leading-tight">
+                Sync ta montre.
+                <br />
+                <span className="text-[#FCDD00]">J'affine le diagnostic.</span>
+              </h2>
+              <p className="text-white/50 text-lg leading-relaxed mb-8">
+                Connecte ton wearable. Je croise tes donnees de sommeil, HRV et activite
+                avec tes reponses pour des recommandations ultra-precises.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Analyse HRV pour evaluer ton stress reel",
+                  "Detection des troubles du sommeil caches",
+                  "Correlation activite / fatigue / performance",
+                  "Recommandations adaptees a tes donnees",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white/70">
+                    <Check className="w-5 h-5 text-[#FCDD00]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="aspect-square">
+                <WearablesVisual />
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -275,7 +479,7 @@ export default function AuditPremium() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
+            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
               Tout ce qui est inclus.
             </h2>
           </motion.div>
@@ -288,8 +492,9 @@ export default function AuditPremium() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Analyse complete 16 sections",
-                "Score global sur 100",
+                "Analyse complete 17 sections",
+                "156 questions personnalisees",
+                "Integration wearables",
                 "Protocole Matin Anti-Cortisol",
                 "Protocole Soir Sommeil",
                 "Protocole Digestion 14 Jours",
@@ -297,7 +502,6 @@ export default function AuditPremium() {
                 "Plan 30-60-90 jours",
                 "Rapport 20+ pages PDF",
                 "Livraison sous 24-48h",
-                "Support par email",
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-[#FCDD00] flex-shrink-0" />
@@ -319,88 +523,6 @@ export default function AuditPremium() {
               </Link>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* COMPARISON */}
-      <section className="py-32 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em]">
-              Compare les offres.
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              {
-                name: "Discovery Scan",
-                price: "Gratuit",
-                features: ["15 domaines", "Score global", "5-7 pages"],
-                href: "/offers/discovery-scan",
-                current: false,
-              },
-              {
-                name: "Anabolic Bioscan",
-                price: "59€",
-                features: ["16 sections", "4 protocoles", "20+ pages", "Plan 30-60-90j"],
-                href: "/questionnaire?plan=premium",
-                current: true,
-              },
-              {
-                name: "Ultimate Scan",
-                price: "79€",
-                features: ["18 sections", "Analyse photo", "40-50 pages", "Biomecanique"],
-                href: "/offers/ultimate-scan",
-                current: false,
-              },
-            ].map((plan, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className={`rounded-sm p-8 ${
-                  plan.current
-                    ? "border-2 border-[#FCDD00] bg-[#FCDD00]/5"
-                    : "border border-white/10 bg-white/[0.02]"
-                }`}
-              >
-                {plan.current && (
-                  <div className="text-[#FCDD00] text-xs font-medium tracking-[0.15em] uppercase mb-4">
-                    Tu es ici
-                  </div>
-                )}
-                <h3 className="text-white text-xl font-bold mb-2">{plan.name}</h3>
-                <div className="text-white text-3xl font-bold tracking-[-0.04em] mb-6">{plan.price}</div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-white/60 text-sm">
-                      <Check className="w-4 h-4 text-[#FCDD00]" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={plan.href}>
-                  <button
-                    className={`w-full py-3 rounded-sm font-semibold transition-all ${
-                      plan.current
-                        ? "bg-[#FCDD00] text-black hover:bg-[#FCDD00]/90"
-                        : "bg-white/10 text-white hover:bg-white/20"
-                    }`}
-                  >
-                    {plan.current ? "Choisir" : "Voir"}
-                  </button>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 

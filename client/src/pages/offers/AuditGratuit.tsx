@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Discovery Scan
- * TRUE Ultrahuman Design - Scraped & Replicated
+ * TRUE Ultrahuman Design - 56 questions, 10 domaines
  */
 
 import { useRef } from "react";
@@ -8,7 +8,246 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "wouter";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Brain, Activity, Gauge, FileText } from "lucide-react";
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Brain Scan (Detection)
+// ============================================================================
+function BrainScanVisual() {
+  const nodes = Array.from({ length: 8 }, (_, i) => ({
+    id: i,
+    angle: (i / 8) * Math.PI * 2,
+    radius: 35,
+  }));
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
+
+      {/* Grid overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(252,221,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(252,221,0,0.5) 1px, transparent 1px)`,
+          backgroundSize: '20px 20px'
+        }}
+      />
+
+      {/* Central Brain Icon */}
+      <motion.div
+        className="absolute z-10"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <div className="w-20 h-20 rounded-full bg-[#FCDD00]/20 border border-[#FCDD00]/30 flex items-center justify-center">
+          <Brain className="w-10 h-10 text-[#FCDD00]" />
+        </div>
+      </motion.div>
+
+      {/* Orbiting Nodes */}
+      {nodes.map((node, i) => (
+        <motion.div
+          key={node.id}
+          className="absolute w-3 h-3 rounded-full bg-[#FCDD00]"
+          style={{
+            left: '50%',
+            top: '50%',
+          }}
+          animate={{
+            x: [
+              Math.cos(node.angle) * node.radius,
+              Math.cos(node.angle + Math.PI * 2) * node.radius,
+            ],
+            y: [
+              Math.sin(node.angle) * node.radius,
+              Math.sin(node.angle + Math.PI * 2) * node.radius,
+            ],
+            opacity: [0.4, 1, 0.4],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "linear",
+            delay: i * 0.2,
+          }}
+        />
+      ))}
+
+      {/* Pulse Rings */}
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute w-32 h-32 rounded-full border border-[#FCDD00]/30"
+          animate={{
+            scale: [1, 2, 2.5],
+            opacity: [0.5, 0.2, 0],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            delay: i * 1,
+            ease: "easeOut",
+          }}
+        />
+      ))}
+
+      {/* Corner Data */}
+      <div className="absolute bottom-4 left-4 text-xs font-mono text-[#FCDD00]/80">
+        <div>SCAN EN COURS</div>
+        <motion.div
+          className="text-white/60"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          10 DOMAINES
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Score Gauge
+// ============================================================================
+function ScoreGaugeVisual() {
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
+
+      {/* Gauge SVG */}
+      <svg viewBox="0 0 100 60" className="w-48 h-28">
+        {/* Background arc */}
+        <path
+          d="M 10 50 A 40 40 0 0 1 90 50"
+          fill="none"
+          stroke="rgba(252,221,0,0.1)"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+        {/* Animated fill arc */}
+        <motion.path
+          d="M 10 50 A 40 40 0 0 1 90 50"
+          fill="none"
+          stroke="#FCDD00"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray="126"
+          initial={{ strokeDashoffset: 126 }}
+          animate={{ strokeDashoffset: [126, 40, 126] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Center score */}
+        <motion.text
+          x="50"
+          y="48"
+          textAnchor="middle"
+          className="fill-white font-bold"
+          style={{ fontSize: '16px' }}
+          animate={{ opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <tspan className="fill-[#FCDD00]">78</tspan>
+          <tspan className="fill-white/50" style={{ fontSize: '8px' }}>/100</tspan>
+        </motion.text>
+      </svg>
+
+      {/* Data Points */}
+      <div className="absolute bottom-4 right-4 text-xs font-mono text-right">
+        <motion.div
+          className="text-[#FCDD00]"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          SCORE GLOBAL
+        </motion.div>
+        <div className="text-white/40">Mis a jour en temps reel</div>
+      </div>
+
+      {/* Floating indicators */}
+      {[
+        { label: "Energie", value: 82, x: 15, y: 20 },
+        { label: "Sommeil", value: 65, x: 75, y: 25 },
+        { label: "Stress", value: 71, x: 20, y: 75 },
+      ].map((item, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-xs font-mono"
+          style={{ left: `${item.x}%`, top: `${item.y}%` }}
+          animate={{ opacity: [0.3, 0.8, 0.3], y: [0, -3, 0] }}
+          transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+        >
+          <span className="text-white/40">{item.label}</span>
+          <span className="text-[#FCDD00] ml-1">{item.value}</span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// ANIMATED VISUALIZATION - Report Document
+// ============================================================================
+function ReportDocVisual() {
+  const lines = Array.from({ length: 8 }, (_, i) => i);
+
+  return (
+    <div className="relative w-full h-full bg-gradient-to-br from-[#FCDD00]/10 via-black to-[#FCDD00]/5 flex items-center justify-center overflow-hidden rounded-sm border border-white/5">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(252,221,0,0.1)_0%,_transparent_70%)]" />
+
+      {/* Document Shape */}
+      <motion.div
+        className="relative w-32 h-44 bg-black/50 border border-white/10 rounded-sm overflow-hidden"
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        {/* Header */}
+        <div className="h-8 bg-[#FCDD00]/20 border-b border-white/10 flex items-center px-3">
+          <FileText className="w-4 h-4 text-[#FCDD00]" />
+          <div className="ml-2 w-12 h-2 bg-[#FCDD00]/40 rounded" />
+        </div>
+
+        {/* Content lines */}
+        <div className="p-3 space-y-2">
+          {lines.map((i) => (
+            <motion.div
+              key={i}
+              className="h-1.5 bg-white/10 rounded"
+              style={{ width: `${60 + Math.random() * 40}%` }}
+              animate={{ opacity: [0.3, 0.7, 0.3], scaleX: [0.95, 1, 0.95] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+            />
+          ))}
+        </div>
+
+        {/* Chart placeholder */}
+        <div className="absolute bottom-3 left-3 right-3 h-8 border border-white/10 rounded overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-[#FCDD00]/30 to-[#FCDD00]/10"
+            animate={{ scaleX: [0.3, 1, 0.3] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            style={{ transformOrigin: 'left' }}
+          />
+        </div>
+      </motion.div>
+
+      {/* Floating badges */}
+      {["5-7 pages", "PDF"].map((label, i) => (
+        <motion.div
+          key={i}
+          className="absolute px-2 py-1 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded text-xs font-mono text-[#FCDD00]"
+          style={{
+            right: i === 0 ? '10%' : '15%',
+            top: i === 0 ? '20%' : '70%',
+          }}
+          animate={{ opacity: [0.5, 1, 0.5], scale: [0.95, 1, 0.95] }}
+          transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+        >
+          {label}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export default function AuditGratuit() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,8 +312,8 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
           >
-            180 questions. 15 domaines. Un diagnostic complet de tes blocages
-            metaboliques, hormonaux et comportementaux.
+            ~50 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion,
+            entrainement, nutrition, lifestyle. J'identifie tes blocages metaboliques et hormonaux.
           </motion.p>
 
           {/* CTA Button - Ultrahuman Green */}
@@ -137,12 +376,12 @@ export default function AuditGratuit() {
                 Identifie ce qui te bloque vraiment.
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                180 questions ciblees analysent chaque aspect de ta sante : sommeil,
-                hormones, digestion, stress, metabolisme, biomecanique. Je detecte
+                56 questions ciblees analysent chaque aspect de ta sante : sommeil,
+                hormones, digestion, stress, metabolisme, lifestyle. Je detecte
                 les desequilibres caches que tu ne soupconnes meme pas.
               </p>
               <ul className="space-y-4">
-                {["15 domaines analyses en profondeur", "Patterns metaboliques identifies", "Desequilibres hormonaux reveles"].map((item, i) => (
+                {["10 domaines analyses en profondeur", "Patterns metaboliques identifies", "Desequilibres hormonaux reveles"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#FCDD00]" />
                     {item}
@@ -151,7 +390,7 @@ export default function AuditGratuit() {
               </ul>
             </motion.div>
 
-            {/* Image */}
+            {/* Animated Visual */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -159,13 +398,8 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
-                <img
-                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop"
-                  alt="Health analysis"
-                  className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="aspect-[4/3]">
+                <BrainScanVisual />
               </div>
             </motion.div>
           </div>
@@ -176,7 +410,7 @@ export default function AuditGratuit() {
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-            {/* Image - Left on desktop */}
+            {/* Animated Visual - Left on desktop */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -184,13 +418,8 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8 }}
               className="relative order-2 lg:order-1"
             >
-              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
-                <img
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
-                  alt="Data dashboard"
-                  className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="aspect-[4/3]">
+                <ScoreGaugeVisual />
               </div>
             </motion.div>
 
@@ -258,7 +487,7 @@ export default function AuditGratuit() {
               </ul>
             </motion.div>
 
-            {/* Image */}
+            {/* Animated Visual */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -266,13 +495,8 @@ export default function AuditGratuit() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="aspect-[4/3] rounded-sm overflow-hidden bg-gradient-to-br from-[#FCDD00]/10 to-black/50 border border-white/5">
-                <img
-                  src="https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=800&h=600&fit=crop"
-                  alt="Report analysis"
-                  className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="aspect-[4/3]">
+                <ReportDocVisual />
               </div>
             </motion.div>
           </div>
@@ -365,7 +589,7 @@ export default function AuditGratuit() {
               <div className="text-white text-5xl font-bold tracking-[-0.04em] mb-6">Gratuit</div>
               <ul className="space-y-4">
                 {[
-                  "Diagnostic complet 15 domaines",
+                  "Diagnostic complet 10 domaines",
                   "Score global sur 100",
                   "Identification des blocages",
                   "Rapport 5-7 pages",
@@ -399,7 +623,7 @@ export default function AuditGratuit() {
                   "Protocoles d'action personnalises",
                   "Stack supplements optimise",
                   "Plan 30-60-90 jours",
-                  "16 sections d'analyse",
+                  "17 sections d'analyse",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <Check className="w-5 h-5 text-[#FCDD00]" />
@@ -431,7 +655,7 @@ export default function AuditGratuit() {
             <span className="text-[#FCDD00]">tes blocages ?</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            5 minutes. 180 questions. Un diagnostic qui peut tout changer.
+            5 minutes. 56 questions. Un diagnostic qui peut tout changer.
           </p>
           <Link href="/questionnaire">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
