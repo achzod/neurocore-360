@@ -310,10 +310,11 @@ const AnabolicScanReport: React.FC = () => {
     return {
       label,
       value: Math.round(s.score / 10),
-    max: 10,
-    description: s.title,
-    key: s.id
-  })) || [];
+      max: 10,
+      description: s.title,
+      key: s.id
+    };
+  }) || [];
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
