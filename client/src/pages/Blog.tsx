@@ -15,8 +15,18 @@ import {
 export default function Blog() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"recent" | "popular">("popular");
+
   const featuredArticles = getFeaturedArticles();
-  const categoryArticles = getArticlesByCategory(activeCategory);
+  let categoryArticles = getArticlesByCategory(activeCategory);
+
+  // Sorting
+  categoryArticles = [...categoryArticles].sort((a, b) => {
+    if (sortBy === "popular") {
+      return ((b as any).priority || 0) - ((a as any).priority || 0);
+    }
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
   // Filter by search query
   const filteredArticles = searchQuery.trim()
@@ -73,7 +83,23 @@ export default function Blog() {
             <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
               [ CATÉGORIES ]
             </p>
-            <h2 className="mb-8 text-2xl font-bold text-white">Explorer par thème</h2>
+            <h2 className="mb-8 text-2xl font-bold text-white flex items-center justify-between">
+              Explorer par thème
+              <div className="flex bg-white/5 p-1 rounded-sm border border-white/10 text-xs">
+                <button 
+                  onClick={() => setSortBy("popular")}
+                  className={`px-3 py-1.5 rounded-sm transition-all ${sortBy === "popular" ? "bg-[#FCDD00] text-black font-bold" : "text-white/50 hover:text-white"}`}
+                >
+                  Populaires
+                </button>
+                <button 
+                  onClick={() => setSortBy("recent")}
+                  className={`px-3 py-1.5 rounded-sm transition-all ${sortBy === "recent" ? "bg-[#FCDD00] text-black font-bold" : "text-white/50 hover:text-white"}`}
+                >
+                  Récents
+                </button>
+              </div>
+            </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {BLOG_CATEGORIES.filter(c => c.id !== "all").map((category, index) => {
                 const count = getArticleCountByCategory(category.id);

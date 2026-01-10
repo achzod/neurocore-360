@@ -5,6 +5,7 @@ import { BlogArticle } from "./blogArticles";
 
 export const ACHZOD_ARTICLES: BlogArticle[] = [
   {  id: "mph-1",
+    priority: 11,
     slug: "strategies-stimulant-le-metabolisme",
     title: "Stratégies stimulant le métabolisme",
     excerpt: "Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de ...",
@@ -107,6 +108,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-2",
+    priority: 30,
     slug: "mesaventures-de-musculation",
     title: "Mésaventures de musculation",
     excerpt: "Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de ...",
@@ -214,6 +216,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-3",
+    priority: 56,
     slug: "erreurs-courantes-liees-aux-supplements",
     title: "Erreurs courantes liées aux suppléments",
     excerpt: "Pour ceux d’entre vous qui ne sont pas au courant, je me suis récemment associé au Conseil de bien-être de Vitamin Shoppe pour aider à fournir à leurs lecteurs des recommandations de formation et de ...",
@@ -311,6 +314,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-4",
+    priority: 37,
     slug: "quest-ce-qui-cause-la-croissance",
     title: "Qu’est-ce qui cause la croissance ?",
     excerpt: ", nous allons couvrir un article récent de Wackerhage et al. (2018) intitulé « Stimuli et capteurs qui déclenchent une hypertrophie des muscles squelettiques après un exercice de rési...",
@@ -454,6 +458,7 @@ Ceci est un résumé de nos connaissances scientifiques actuelles sur ce qui fai
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-5",
+    priority: 24,
     slug: "la-connexion-esprit-muscle",
     title: "La connexion esprit-muscle",
     excerpt: "La connexion esprit-muscle est devenue un élément important de la musculation et de nombreux entraîneurs ne jurent que par son efficacité. L’idée est que vous utilisez une « concentration interne » da...",
@@ -529,6 +534,7 @@ En fin de compte, vos objectifs n’ont pas nécessairement d’importance, car 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-6",
+    priority: 44,
     slug: "les-squats-sont-ils-mauvais-pour-vos-genoux",
     title: "Les squats sont-ils mauvais pour vos genoux ?",
     excerpt: "Le squat. Le seul exercice sur lequel les entraîneurs de force et les programmes de renforcement des fesses d’Instagram s’accordent le plus. C’est aussi l’un des exercices les plus controversés : cha...",
@@ -594,6 +600,7 @@ Si les squats vous inquiètent toujours, cherchez un bon entraîneur ou un entra
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-7",
+    priority: 10,
     slug: "entrainement-des-types-de-fibres-musculaires",
     title: "Entraînement des types de fibres musculaires",
     excerpt: "Au fil des années, de nombreuses personnes ont discuté de la possibilité d’isoler différents types de fibres musculaires avec des stratégies d’entraînement spécifiques – c’est-à-dire des répétitions ...",
@@ -743,6 +750,7 @@ Ces résultats expliquent pourquoi il est important d’inclure à la fois des j
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-8",
+    priority: 42,
     slug: "temps-sous-tension",
     title: "Temps sous tension",
     excerpt: "Le temps sous tension est un terme très à la mode dans la communauté du bodybuilding. Tout ce qui concerne les gains doit traiter du temps sous tension (TUT) et presque tous les gourous vous diront q...",
@@ -838,6 +846,7 @@ Si vous souhaitez une discussion encore plus approfondie sur ce sujet, consultez
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-9",
+    priority: 46,
     slug: "biomecanique-et-croissance",
     title: "Biomécanique et croissance",
     excerpt: "Aujourd’hui, nous allons discuter d’une poignée de propriétés biomécaniques musculaires très populaires qui sont enseignées dans presque tous les cours de sciences de l’exercice, mais jamais appliqué...",
@@ -958,6 +967,7 @@ Nous n’avons pas besoin de résumer l’intégralité de l’article ici, mais
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-10",
+    priority: 19,
     slug: "frequence-des-repas",
     title: "Fréquence des repas",
     excerpt: "Passez du temps à discuter d’idées de régime avec d’autres membres de la communauté du fitness et le sujet de la fréquence des repas finira par se poser. Les mecs avec des T-shirts coupés qui dévoile...",
@@ -1065,6 +1075,7 @@ Dans l’ensemble, la fréquence des repas a peu d’effet sur la composition co
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-11",
+    priority: 32,
     slug: "potentiel-genetique",
     title: "Potentiel génétique",
     excerpt: "L’idée d’un « potentiel génétique » ou d’une « limite génétique » est l’un des sujets les plus polarisants en matière de musculation, en particulier dans le domaine sans drogue. La théorie est que ch...",
@@ -1179,6 +1190,7 @@ Alors oui, je vois des gens cesser de faire des progrès après 5 à 6 ans de ca
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-12",
+    priority: 11,
     slug: "surcharge-progressive",
     title: "Surcharge progressive",
     excerpt: "Comme dirait David Letterman : « Mon prochain invité n’a pas besoin d’être présenté. » Presque tout le monde a une compréhension générale de la surcharge progressive et de la nécessité d’un programme...",
@@ -1326,6 +1338,7 @@ En fin de compte, il existe plusieurs façons de planifier une surcharge progres
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-13",
+    priority: 51,
     slug: "formation-a-la-maison",
     title: "Formation à la maison",
     excerpt: "Nous n’abordons généralement pas beaucoup l’entraînement au poids corporel sur ce site Web car, franchement, ce n’est pas le mode d’entraînement optimal pour gagner énormément de taille et de force. ...",
@@ -1443,6 +1456,7 @@ Si vous ne choisissez pas de tout mettre en œuvre et de vous procurer un ensemb
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-14",
+    priority: 56,
     slug: "periodisation-en-musculation",
     title: "Périodisation en musculation",
     excerpt: "La « périodisation » est un terme souvent utilisé de manière vague, sans contexte ni objectif. D’après mon expérience dans le domaine de la force et du conditionnement physique, la plupart des entraî...",
@@ -1557,6 +1571,7 @@ Gardez les yeux ouverts car nous rédigerons probablement et (espérons-le) publ
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-15",
+    priority: 24,
     slug: "entrainement-pendant-la-maladie",
     title: "Entraînement pendant la maladie",
     excerpt: "Au moment d’écrire ces lignes, la saison du rhume et de la grippe bat son plein et vous ne l’auriez pas deviné, j’ai attrapé un rhume. Cela m’a fait réfléchir à faire des recherches supplémentaires s...",
@@ -1657,6 +1672,7 @@ Les maladies graves nécessitent de prendre quelques jours de congé, car il est
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-16",
+    priority: 31,
     slug: "apport-en-proteines-et-bodybuilders",
     title: "Apport en protéines et bodybuilders",
     excerpt: "Nous avons récemment posé une question sur Instagram demandant si les gens pensaient que la recommandation actuelle de manger 1,6 g/kg de poids corporel de protéines par jour était suffisante pour ma...",
@@ -1794,6 +1810,7 @@ En fin de compte, 1,6 g/kg de protéines convient aux personnes normales. Mais e
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-17",
+    priority: 27,
     slug: "science-musculaire-pour-les-reducteurs",
     title: "Science musculaire pour les réducteurs",
     excerpt: "Le sujet de discussion  n’aura pas beaucoup d’applications en salle de sport. Il s’agit plus ou moins d’un « hé, c’est une chose qui arrive » plutôt que d’un « voici un peu de science...",
@@ -1886,6 +1903,7 @@ Donc, cela ne représente pas vraiment un scénario « comment faire » dans leq
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-18",
+    priority: 45,
     slug: "hormese",
     title: "Hormèse",
     excerpt: "À travers plusieurs articles sur ce site, nous discutons de l’importance d’un programme d’entraînement optimal – essentiellement un plan d’entraînement solide tenant compte à la fois d’un régime alim...",
@@ -2076,6 +2094,7 @@ L'exercice et l'hormèse sont encore un sujet relativement nouveau, alors restez
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-19",
+    priority: 49,
     slug: "un-secret-de-motivation",
     title: "Un secret de motivation : La science derrière une discipline durable",
     excerpt: "La motivation semble être l'un de ces mots à la mode dans la communauté du fitness et dans le monde en général. Nous sommes bombardés de messages de motivation sur les réseaux sociaux, d'affiches ring...",
@@ -2185,6 +2204,7 @@ Mais l'amour pour ceux qui comptent dans votre vie ? Cette motivation ne s'étei
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-20",
+    priority: 18,
     slug: "sommeil-et-musculation",
     title: "Sommeil et musculation",
     excerpt: "Si vous lisez n’importe quel article de formation sur ce site Web, vous verrez les mots « dormir » ou « se reposer » répétés plusieurs fois. Nous insistons constamment sur l’importance du sommeil pou...",
@@ -2325,6 +2345,7 @@ Au moment de la publication, le numéro de référence 15 (Gunning, 2001) n'éta
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-21",
+    priority: 25,
     slug: "proteines-vegetales-ou-animales",
     title: "Protéines végétales ou animales",
     excerpt: "Étant donné que la comparaison entre les régimes alimentaires à base de plantes et ceux qui incluent des animaux peut rapidement devenir incontrôlable, cela vaut la peine de prendre une seconde pour ...",
@@ -2519,6 +2540,7 @@ Nous comprenons qu’il s’agit d’un long examen de cet article, mais il est 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-22",
+    priority: 54,
     slug: "calendrier-des-nutriments",
     title: "Calendrier des nutriments",
     excerpt: "Il y a plusieurs facteurs à prendre en compte lors de la conception d’un régime visant à maximiser la croissance ou la perte de graisse ou quels que soient vos objectifs personnels. Le timing des nut...",
@@ -2654,6 +2676,7 @@ Pour les haltérophiles qui cherchent simplement à augmenter leur force ou leur
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-23",
+    priority: 42,
     slug: "la-salle-daudience-des-gains",
     title: "La salle d'audience des gains",
     excerpt: "Dans le système de justice pénale, les infractions liées à la musculation sont considérées comme particulièrement odieuses. À Tampa, en Floride, les détectives dévoués qui enquêtent sur ces crimes od...",
@@ -2811,6 +2834,7 @@ Si vous êtes convoqué au tribunal des gains, comment plaiderez-vous ? Et dans
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-24",
+    priority: 15,
     slug: "alcool-et-gains",
     title: "Alcool et gains",
     excerpt: "Nous avons reçu la question de l'alcool à plusieurs reprises sur les réseaux sociaux, il semble donc certainement utile de prendre une minute et d'approfondir les effets que l'alcool peut avoir sur l...",
@@ -2924,6 +2948,7 @@ Dans l’ensemble, personne n’est ici pour prêcher sur la méchanceté de l�
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-25",
+    priority: 50,
     slug: "variation-dexercice",
     title: "Variation d'exercice",
     excerpt: "Nous avons évoqué à plusieurs reprises le concept de variations d’exercices sur les réseaux sociaux et nous obtenons toujours un résultat intéressant. Les réponses sont généralement partagées, la moi...",
@@ -3180,6 +3205,7 @@ En fin de compte, ajouter de la variation à votre programme peut empêcher les 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-26",
+    priority: 21,
     slug: "le-pouvoir-de-la-musculation",
     title: "Le pouvoir de la musculation",
     excerpt: "Avant de commencer, je dois rendre hommage à Dave Tate et à son histoire, « L'éducation d'un haltérophile » (partie 1 ici ; partie 2 ici). Ce qui suit est inspiré des paroles de Dave et de sa capacité...",
@@ -3299,6 +3325,7 @@ C'est le pouvoir du bodybuilding.
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-27",
+    priority: 24,
     slug: "calories-et-bilan-energetique",
     title: "Calories et bilan énergétique",
     excerpt: "Il est  temps de discuter de la question séculaire : toutes les calories sont-elles égales ? Et la question sœur, est-ce que « les calories entrantes par rapport aux calories dépensées » sont to...",
@@ -3494,6 +3521,7 @@ Nous savons que cet article contient probablement des passages ambigus – princ
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-28",
+    priority: 57,
     slug: "cyclisme-des-glucides",
     title: "Cyclisme des glucides",
     excerpt: ", nous allons offrir un aperçu général du cycle des glucides, car il y a une tonne de variables en jeu et nous n’avons tout simplement pas le temps d’approfondir chaque composant. La ...",
@@ -3653,6 +3681,7 @@ Nous savons depuis au moins 1887 que la nutrition peut fortement influencer à l
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-29",
+    priority: 59,
     slug: "un-bref-guide-de-la-coupe",
     title: "Un « bref » guide de la coupe",
     excerpt: "Ah oui, le printemps est dans l'air et tous les bodybuilders du nord de la Floride et de SoCal envisagent leur coupe estivale annuelle pour afficher leur meilleur physique sur la plage. Tout leur hiv...",
@@ -3806,6 +3835,7 @@ Si vous souhaitez lire l’un de ces sujets plus en détail, consultez les analy
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-30",
+    priority: 53,
     slug: "memoire-musculaire",
     title: "Mémoire musculaire",
     excerpt: "Le concept de mémoire musculaire semble avoir une large portée tant chez les scientifiques que chez les amateurs de gym. La façon la plus précise de décrire la mémoire musculaire est la récupération ...",
@@ -3913,6 +3943,7 @@ Ainsi, après une discussion longue et complexe, il semble y avoir de bonnes rai
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-31",
+    priority: 10,
     slug: "genetique-et-athletes-delite",
     title: "Génétique et athlètes d'élite",
     excerpt: "Nous connaissons tous un gars dans le gymnase – celui qui se vante de la façon dont il faisait du développé couché sur 500 livres et courait un sprint de 40 mètres en 4,3 secondes. Le directeur de la...",
@@ -4056,6 +4087,7 @@ En fin de compte, il y a plusieurs facteurs qui font des athlètes d’élite ce
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-32",
+    priority: 27,
     slug: "entrainement-a-jeun",
     title: "Entraînement à jeun",
     excerpt: "Demandez à n’importe quel bodybuilder quelle est sa stratégie de perte de graisse et beaucoup d’entre eux vous diront qu’ils préfèrent le cardio à jeun dès le matin. En plus de cette stratégie de per...",
@@ -4141,6 +4173,7 @@ Alors si vous préférez vous entraîner à jeun, quelle est la meilleure façon
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-33",
+    priority: 54,
     slug: "fatigue-du-snc",
     title: "Fatigue du SNC",
     excerpt: "Si vous avez passé ne serait-ce qu'un minimum de temps à la salle de sport au cours des dernières années, je suis certain que vous avez entendu quelqu'un se plaindre que son système nerveux central (...",
@@ -4348,6 +4381,7 @@ Si vous souhaitez une discussion plus approfondie, consultez ces articles du Dr 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-34",
+    priority: 44,
     slug: "analgesiques-et-gains",
     title: "Analgésiques et gains",
     excerpt: "Une question courante que l’on nous pose sur les réseaux sociaux est la suivante : « Est-ce que [x médicament] ruinera mes gains si je le prends après une séance d’entraînement ? De nombreux haltérop...",
@@ -4498,6 +4532,7 @@ Puisque ni le Dr Wilson ni moi-même ne sommes médecins, nous n’allons pas pa
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-35",
+    priority: 36,
     slug: "science-musculaire-une-histoire",
     title: "Science musculaire : une histoire",
     excerpt: "Aujourd’hui, nous allons aborder des sujets incroyablement complexes qui pourraient répondre à une tonne de questions que vous ne saviez pas avoir sur la science du muscle. À la fin de cela, vous com...",
@@ -4648,6 +4683,7 @@ Remarque : La plupart des anciennes références utilisées  ne sont plus dispo
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-36",
+    priority: 50,
     slug: "hypertrophie-vs-hyperplasie",
     title: "Hypertrophie vs hyperplasie",
     excerpt: "Nous savons que les muscles se développent selon un processus appelé « hypertrophie ». Mais il y a aussi ce processus fantaisiste appelé « hyperplasie », qui est entouré d’une tornade de controverses...",
@@ -4783,6 +4819,7 @@ Nous ne savons toujours pas si l’hyperplasie est isolée ou non pour les bodyb
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-37",
+    priority: 33,
     slug: "squats-vs-poussees-de-hanche",
     title: "Squats vs poussées de hanche",
     excerpt: ", nous allons couvrir une étude qui vient tout juste de sortir de presse : « Programmes d’entraînement en résistance au squat du dos contre la poussée de la hanche chez les femmes bie...",
@@ -4893,6 +4930,7 @@ L'équipe à l'origine du livre blanc a demandé le retrait ieurs articles de Ba
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-38",
+    priority: 32,
     slug: "les-souleves-de-terre-sont-ils-dangereux",
     title: "Les soulevés de terre sont-ils dangereux ?",
     excerpt: "Les soulevés de terre sont un exercice assez courant dans les programmes de musculation et de musculation et de conditionnement physique. Bon sang, ils représentent 1/3 des événements de dynamophilie...",
@@ -5001,6 +5039,7 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-39",
+    priority: 49,
     slug: "nids-de-poule",
     title: "Nids-de-poule",
     excerpt: "Non, non, sortez votre esprit du caniveau. Le titre de celui-ci fait référence aux imperfections de la route. Si vous recherchez des informations sur une certaine plante psychédélique ou une multitud...",
@@ -5060,6 +5099,7 @@ Département des nombres. (2017). Revenu du ménage à Muncie, IN. Extrait de :
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-40",
+    priority: 55,
     slug: "la-regle-des-3",
     title: "La règle des 3 %",
     excerpt: "L’intensité de l’entraînement est un terme un peu abusif. Demandez à 10 bodybuilders comment ils définissent l’intensité et je parierais que 7 à 8 d’entre eux la décriraient comme l’effort qu’ils dép...",
@@ -5153,6 +5193,7 @@ Dans une grande partie de mes propres entraînements et prescriptions d’entra�
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-41",
+    priority: 32,
     slug: "tout-sur-la-creatine",
     title: "Tout sur la créatine",
     excerpt: "Nous recevons une tonne de questions sur les suppléments, il vaut donc la peine de consacrer un article entier à l’un des ingrédients les plus populaires : la créatine. Il a été démontré à plusieurs ...",
@@ -5316,6 +5357,7 @@ Espérons que cet article réponde à toutes vos questions brûlantes sur la sup
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-42",
+    priority: 41,
     slug: "tout-sur-la-cafeine",
     title: "Tout sur la caféine",
     excerpt: "La caféine est de loin la drogue la plus consommée dans le monde, des boissons comme le café, les sodas, les boissons énergisantes et l'espresso étant monnaie courante dans nos dépanneurs et nos cuis...",
@@ -5431,6 +5473,7 @@ Dans l’ensemble, la caféine est l’un des compléments les plus efficaces po
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-43",
+    priority: 10,
     slug: "lats-dans-le-developpe-couche",
     title: "Lats dans le développé couché",
     excerpt: "Nous entendons souvent la communauté des haltérophiles et d’autres amateurs de gym parler de l’importance des dorsaux dans le développé couché. À première vue, cela semble un peu rétrospectif. Les do...",
@@ -5566,6 +5609,7 @@ Les dorsaux échouent tous les trois pour le développé couché.
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-44",
+    priority: 48,
     slug: "frequence-de-formation",
     title: "Fréquence de formation",
     excerpt: "La fréquence des formations est une variable importante à prendre en compte lors de la conception d’un programme de formation. Cela fait essentiellement référence à la fréquence à laquelle vous entra...",
@@ -5875,6 +5919,7 @@ Puisque nous disposons de suffisamment de données, nous inclurons un graphique 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-45",
+    priority: 13,
     slug: "differences-entre-les-sexes-dans-la-formation",
     title: "Différences entre les sexes dans la formation",
     excerpt: "Presque chaque fois que nous publions une étude sur les réseaux sociaux, nous recevons des questions sur la population concernée, son sexe, son niveau de formation, etc. La première chose qu'il convi...",
@@ -6033,6 +6078,7 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-46",
+    priority: 50,
     slug: "methodes-dintensification",
     title: "Méthodes d'intensification",
     excerpt: "Les méthodes d’intensification impliquent toute stratégie d’entraînement conçue pour pousser un muscle au-delà de l’échec. Cela inclut les ensembles de dépôts, les ensembles de repos-pause, les ensem...",
@@ -6149,6 +6195,7 @@ Les méthodes d’intensification peuvent être un excellent moyen de pousser vo
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-47",
+    priority: 34,
     slug: "sentrainer-jusqua-lechec",
     title: "S'entraîner jusqu'à l'échec",
     excerpt: "Nous allons diviser cet article en deux parties car les sujets qu'il contient sont très liés. La première partie couvrira la formation jusqu’à l’échec et si elle est importante ou non pour réaliser d...",
@@ -6302,6 +6349,7 @@ Nous résumerons l’intégralité de l’article avec la meilleure citation en 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-48",
+    priority: 28,
     slug: "des-souleves-de-terre-le-jour-de-larriere",
     title: "Des soulevés de terre le jour de l'arrière ?",
     excerpt: "Nous sommes à un point intéressant dans les communautés de bodybuilding et de dynamophilie. Il semble y avoir de nombreuses controverses quant à savoir si le soulevé de terre est ou non un exercice p...",
@@ -6472,6 +6520,7 @@ Alors, pouvez-vous faire des soulevés de terre le jour de l'arrière ? Bien sû
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-49",
+    priority: 40,
     slug: "dechargements",
     title: "Déchargements",
     excerpt: "Chaque fois que vous écoutez un expert parler de programmes de formation à long terme, il évoque presque toujours la notion de décharges. Que sont les déchargements ? Pourquoi en avons-nous besoin ? ...",
@@ -6596,6 +6645,7 @@ Est-ce que tout le monde devra éventuellement se décharger ? Probablement pas.
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-50",
+    priority: 59,
     slug: "ischio-jambiers-dans-le-squat",
     title: "Ischio-jambiers dans le squat",
     excerpt: "Au cours des 20 dernières années,  de nombreuses études rapporter une activation minime des ischio-jambiers lors du squat (2,3,5,13,14,15,17,18,19,20). Cependant, nous continuons de voir...",
@@ -6727,6 +6777,7 @@ Il est donc important de concevoir votre formation autour de ces connaissances. 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-51",
+    priority: 44,
     slug: "entrainement-thoracique-101",
     title: "Entraînement thoracique 101",
     excerpt: "Soyons réalistes, les hommes ont tendance à entraîner davantage leur poitrine et leurs bras que toute autre partie du corps. Même avec cet enthousiasme ambitieux, il est important de garder à l’espri...",
@@ -6867,6 +6918,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-52",
+    priority: 58,
     slug: "quantification-de-la-tension-mecanique",
     title: "Quantification de la tension mécanique",
     excerpt: "Les chercheurs et les bodybuilders recherchent depuis longtemps les meilleurs moyens de favoriser la croissance musculaire. Les 20 dernières années ont été marquées par un changement de paradigme, pa...",
@@ -7091,6 +7143,7 @@ Nous utilisons généralement simplement un système de numérotation pour nos c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-53",
+    priority: 26,
     slug: "hydratation",
     title: "Hydratation",
     excerpt: "L’un des éléments majeurs de la planification nutritionnelle pour l’optimisation des performances et du physique est un sujet que les gens n’abordent pas assez : l’hydratation. S'hydrater n'est ni se...",
@@ -7164,6 +7217,7 @@ Si vous vous entraînez le matin, buvez de l'eau avant de vous coucher le soir. 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-54",
+    priority: 44,
     slug: "la-boite-a-lunch",
     title: "La boîte à lunch : Une leçon de responsabilité personnelle",
     excerpt: "Avant d'aller plus loin, je dois créditer l'esprit original de cette réflexion car je n'ai pas inventé ce concept. Ce qui suit est un message puissant inspiré de Clint Darden, dynamophile d'élite, con...",
@@ -7278,6 +7332,7 @@ Vous êtes le chef cuisinier de votre existence. Si le menu ne vous plaît pas, 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-55",
+    priority: 56,
     slug: "sadapter-a-la-resistance",
     title: "S'adapter à la résistance",
     excerpt: "Nous savons tous que les bracelets et les chaînes sont les accessoires de gym les plus cool et les plus hardcore, mais sont-ils réellement efficaces ? Que font-ils concrètement ? Vérifions-le....",
@@ -7384,6 +7439,7 @@ Remarque : Au moment de la publication, les articles originaux des numéros cit�
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-56",
+    priority: 12,
     slug: "le-livre-de-regles-du-partenaire-de-formation",
     title: "Le livre de règles du partenaire de formation",
     excerpt: "Lorsqu’il s’agit d’être un bon partenaire d’entraînement, certaines personnes ne comprennent tout simplement pas. La règle d’or consistant à traiter les autres comme vous souhaitez être traité s’appl...",
@@ -7504,6 +7560,7 @@ J'espère que vous faites déjà toutes les choses de cette liste, et sinon, ess
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-57",
+    priority: 31,
     slug: "ce-que-je-ferais-differemment",
     title: "Ce que je ferais différemment",
     excerpt: "Le vénérable magazine automobile Car and Driver avait l'habitude de publier une section à la fin de chaque numéro intitulée «Ce que je ferais différemment». Dans ce segment, des personnalités publiqu...",
@@ -7604,6 +7661,7 @@ Nous espérons que cet article offrira un aperçu unique de la formation à long
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-58",
+    priority: 19,
     slug: "quelques-physique-du-bodybuilding",
     title: "[Quelques] Physique du bodybuilding",
     excerpt: ", nous allons aborder quelques notions de physique simplifiées qui pourraient vous aider à améliorer votre compréhension de quelques composants du levage. À savoir, nous allons aborde...",
@@ -7696,6 +7754,7 @@ Comme toujours, la connaissance, c'est le pouvoir !
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-59",
+    priority: 38,
     slug: "soyez-excite",
     title: "Soyez excité",
     excerpt: "Peu importe combien de temps vous avez passé dans le jeu de fer, vous avez probablement vécu un moment où vous deviez vraiment vous motiver pour quelque chose. Qu'il s'agisse d'une tentative de 1RM, ...",
@@ -7793,6 +7852,7 @@ The Eternal – Bury Tomorrow (métal)
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-60",
+    priority: 50,
     slug: "recomposition-corporelle",
     title: "Recomposition corporelle",
     excerpt: "Au moment de la rédaction de cet article, nous sommes à quelques semaines du printemps et de nombreux frères et brodettes de gym se préparent à se débarrasser de leur volume hivernal pour afficher le...",
@@ -7924,6 +7984,7 @@ Dans l’ensemble, la recomposition corporelle est certainement une possibilité
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-61",
+    priority: 22,
     slug: "ecrire-votre-propre-programme-partie-2",
     title: "Écrire votre propre programme, partie 2",
     excerpt: "Bienvenue dans la deuxième partie de notre série sur l'écriture de votre propre programme. Si vous n'avez pas encore lu la première partie, lisez-la ici avant d'aller plus loin. Tout comme la série H...",
@@ -8022,6 +8083,7 @@ Bien que chaque section individuelle ici puisse probablement utiliser à elle se
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-62",
+    priority: 13,
     slug: "ecrire-votre-propre-programme-partie-1",
     title: "Écrire votre propre programme, partie 1",
     excerpt: "Bienvenue dans notre série sur l'écriture de votre propre programme ! Ceci est le premier volet de ce qui devrait être (au moins) 3-4 articles différents. Nous allons diviser chaque section pour rédu...",
@@ -8099,6 +8161,7 @@ Réfléchissez de manière critique à votre programme de formation actuel, que 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-63",
+    priority: 39,
     slug: "micronutriments",
     title: "Micronutriments",
     excerpt: "Demandez à n’importe quelle personne compétente dans l’industrie du fitness quel est le complément alimentaire le plus important et elle vous indiquera probablement une multivitamine comme réponse. L...",
@@ -8260,6 +8323,7 @@ Au moment de la publication, la référence n° 17 n'était plus disponible sous
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-64",
+    priority: 24,
     slug: "musculation-vs-dynamophilie",
     title: "Musculation vs dynamophilie",
     excerpt: "Modérons rapidement les attentes : nous ne livrons pas une pièce aussi théâtrale que le suggère le titre Godzilla-esque. Les principaux objectifs de cet article sont plutôt de A) définir clairement l...",
@@ -8473,6 +8537,7 @@ C’est une autre pièce que nous mettrons probablement à jour au fil du temps.
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-65",
+    priority: 38,
     slug: "ecrire-votre-propre-programme-partie-3",
     title: "Écrire votre propre programme, partie 3",
     excerpt: "Bienvenue dans la troisième partie de notre série Écrire votre propre programme. Si vous n'avez pas parcouru les parties 1 (ici) et 2 (ici), faites-le avant d'aller plus loin dans celle-ci. Cette sér...",
@@ -8572,6 +8637,7 @@ Merci d'avoir lu jusqu'ici la série et nous aurons un autre épisode sous peu !
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-66",
+    priority: 54,
     slug: "differences-entre-les-sexes-dans-la-formation",
     title: "Différences entre les sexes dans la formation",
     excerpt: "Presque chaque fois que nous publions une étude sur les réseaux sociaux, nous recevons des questions sur la population concernée, son sexe, son niveau de formation, etc. La première chose qu'il convi...",
@@ -8727,6 +8793,7 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-67",
+    priority: 26,
     slug: "excentriques-et-croissance",
     title: "Excentriques et croissance",
     excerpt: "Un refrain populaire dans la communauté du fitness est que les contractions excentriques sont plus importantes pour la croissance musculaire que les contractions concentriques. Nous entendons souvent...",
@@ -8834,6 +8901,7 @@ En fin de compte, les parties excentriques et concentriques d’un ascenseur son
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-68",
+    priority: 36,
     slug: "entrainement-des-mollets-101",
     title: "Entraînement des mollets 101",
     excerpt: "Les mollets sont probablement le groupe musculaire le plus difficile à développer pour la plupart des bodybuilders. Cela a rejeté de nombreuses tendances sur les réseaux sociaux, telles que #teamnoca...",
@@ -9028,6 +9096,7 @@ Mec, nous avons presque parcouru tout l’article sans un jeu de mots sur la vac
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-69",
+    priority: 34,
     slug: "la-taille-la-force",
     title: "La taille = la force ?",
     excerpt: "Bienvenue dans ce qui devrait être un article amusant et passionnant pour nous tous. C’est une question courante qui nous vient tous à l’esprit : un muscle plus gros est-il un muscle plus fort ? Si q...",
@@ -9234,6 +9303,7 @@ Comme pour toute théorie scientifique, nous continuons à façonner celle-ci et
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-70",
+    priority: 23,
     slug: "inconvenient-nutritionnel",
     title: "Inconvénient nutritionnel",
     excerpt: "Pour la plupart des bodybuilders, aller régulièrement à la salle de sport est la partie la plus facile du mode de vie de renforcement musculaire. D’un autre côté, de nombreuses personnes ont du mal à...",
@@ -9344,6 +9414,7 @@ En fin de compte, tout plan de régime sera difficile à suivre. Aucun objectif 
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-71",
+    priority: 45,
     slug: "amplitude-de-mouvement-et-croissance",
     title: "Amplitude de mouvement et croissance",
     excerpt: "Nous entendons souvent dire que l’utilisation d’une gamme complète de mouvements (ROM) dans un exercice donné est nécessaire à la croissance. Dans cet esprit, les quarter squatters se moquent du rack...",
@@ -9559,6 +9630,7 @@ Pour l’instant, amusez-vous à lire – nous avons certainement aimé collecte
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-72",
+    priority: 39,
     slug: "quest-ce-que-la-broscience",
     title: "Qu’est-ce que la Broscience ?",
     excerpt: "Broscience est l’un de ces termes qui sont utilisés de manière assez vague par les frères et les scientifiques. C’est aussi une de ces phrases assez difficiles à décrire – mais on le sait quand on le...",
@@ -9636,6 +9708,7 @@ Intéressé à devenir un frère basé sur des preuves ? Eh bien, nous avons ex
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-73",
+    priority: 16,
     slug: "bcaa-pomper-ou-vider",
     title: "BCAA : pomper ou vider ?",
     excerpt: "Pour une raison inconnue de notre équipe de ACHZOD, les acides aminés à chaîne ramifiée (BCAA) sont vraiment devenus un sujet de débat brûlant dans la communauté du fitness. Presque chaque foi...",
@@ -9851,6 +9924,7 @@ Les deux côtés de l’argument BCAA sont présentés , mais le véritable poin
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-74",
+    priority: 46,
     slug: "sentrainer-avec-des-masques",
     title: "S'entraîner avec des masques",
     excerpt: "*Révisé de manière indépendante par une infirmière clinicienne (RN, BSN) pour connaître les terminologies précises. Les masques ne sont pas des muscles.*...",
@@ -9948,6 +10022,7 @@ En fin de compte, les masques n’amélioreront probablement aucun aspect de vot
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-75",
+    priority: 17,
     slug: "mode-bete",
     title: "Mode Bête",
     excerpt: "Êtes-vous déjà passé en mode bête à la salle de sport ? Je sais que oui. Je sais que presque tous les frères qui ont déjà enfilé un débardeur sont définitivement passés en mode bête. Que signifie le ...",
@@ -10096,6 +10171,7 @@ Soyez simplement heureux que nous soyons l’animal le plus intelligent de la pl
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-76",
+    priority: 18,
     slug: "nutrition-post-entrainement",
     title: "Nutrition post-entraînement",
     excerpt: "Ah, oui. Le repas classique après l'entraînement. La proverbiale tarte refroidissant sur le rebord de la fenêtre anabolisante. Les constituants de ce repas peuvent avoir un impact considérable sur vo...",
@@ -10221,6 +10297,7 @@ En fin de compte, la nutrition après l’entraînement est l’une des meilleur
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-77",
+    priority: 58,
     slug: "une-histoire-de-trois-bodybuilders",
     title: "Une histoire de trois bodybuilders",
     excerpt: "C'est l'histoire de 3 bodybuilders – les traductions de leurs noms de naissance ont été perdues dans les sables du temps, nous nous en tiendrons donc aux surnoms de leurs équipes respectives de ballo...",
@@ -10335,6 +10412,7 @@ Heureusement, c’est exactement à cela que sert ACHZOD. Vous apportez la déte
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-78",
+    priority: 34,
     slug: "etirement-et-performance",
     title: "Étirement et performance",
     excerpt: "Presque tous ceux qui commencent un programme d’exercice ont des curiosités concernant la flexibilité ou la mobilité et la meilleure façon d’améliorer ces aspects de la condition physique. Les étirem...",
@@ -10430,6 +10508,7 @@ Donc, si l’un de vos objectifs d’entraînement est d’améliorer la flexibi
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-79",
+    priority: 32,
     slug: "temps-sous-tension",
     title: "Temps sous tension",
     excerpt: "Le temps sous tension est un terme très à la mode dans la communauté du bodybuilding. Tout ce qui concerne les gains doit traiter du temps sous tension (TUT) et presque tous les gourous vous diront q...",
@@ -10525,6 +10604,7 @@ Si vous souhaitez une discussion encore plus approfondie sur le sujet, consultez
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-80",
+    priority: 32,
     slug: "ischio-jambiers-et-force-de-squat",
     title: "Ischio-jambiers et force de squat",
     excerpt: "Il est désormais bien établi que le groupe musculaire des ischio-jambiers est très peu impliqué dans l’exercice de squat lorsqu’on considère l’activation musculaire – plusieurs études ont montré une ...",
@@ -10626,6 +10706,7 @@ Le domaine de la résistance et du conditionnement est un domaine intéressant d
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "mph-81",
+    priority: 28,
     slug: "ecrire-votre-propre-programme-partie-4",
     title: "Écrire votre propre programme, partie 4",
     excerpt: "Bienvenue dans le dernier volet de la série Écrire votre propre programme ! Si vous n'avez pas parcouru les autres pièces de cette série, consultez-les ici, ici et ici afin que nous soyons tous sur l...",

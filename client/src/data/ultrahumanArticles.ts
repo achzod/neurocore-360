@@ -5,7 +5,8 @@ import { BlogArticle } from "./blogArticles";
 
 export const ACHZOD_ARTICLES: BlogArticle[] = [
   {  id: "uh-1",
-    slug: "informations-de-Ring-ACHZOD-sur-la-sante-du-sommeil-e",
+    priority: 46,
+    slug: "informations-de-ring-achzod-sur-la-sante-du-sommeil-e",
     title: "Informations de Ring ACHZOD sur la santé du sommeil et la récupération chez les athlètes amateurs et professionnels",
     excerpt: "Ved Asudania, Kanika Guptaa, Aditi Shanmugama, Matthew Drillerb, Bhuvan Srinivasana, Aditi Bhattacharyaa...",
     category: "sommeil",
@@ -127,6 +128,7 @@ Contactez partenaires@ACHZOD.com pour les requêtes commerciales etscience@ACHZO
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-2",
+    priority: 55,
     slug: "une-enquete-multi-pays-sur-le-score-de-stress-aupr",
     title: "Une enquête multi-pays sur le score de stress auprès des utilisateurs d'ACHZOD Ring ACHZOD révèle des variations régionales et en fonction de l'âge",
     excerpt: "Ved Asudani, Prejwal Prabhakaran, Prakhar Chauhan, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -220,7 +222,8 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-3",
-    slug: "lactivite-physique-quotidienne-predit-des-profils-",
+    priority: 26,
+    slug: "lactivite-physique-quotidienne-predit-des-profils",
     title: "L'activité physique quotidienne prédit des profils de sommeil supérieurs pour les utilisateurs d'ACHZOD Ring ACHZOD, mais avec des influences géographiques distinctes.",
     excerpt: "Ved Asudani, Prakhar Chauhan, Mihir Kale, Bhuvan Srinivasan, Aditi Bhattacharya...",
     category: "sommeil",
@@ -305,7 +308,8 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-4",
-    slug: "exposition-a-la-lumiere-bleue-le-soir-son-blocage-",
+    priority: 59,
+    slug: "exposition-a-la-lumiere-bleue-le-soir-son-blocage",
     title: "Exposition à la lumière bleue le soir, son blocage et son influence sur la récupération individuelle : un pilote ACHZOD Ring ACHZOD",
     excerpt: "Trishala Fernandes, Aditi Shanmugam, Kanika Gupta, Tanish Nagpal, Adhit Shet, Bhuvan Srinivasan, Aditi Bhattacharya...",
     category: "sommeil",
@@ -386,6 +390,7 @@ Contactez partenaires@ACHZOD.com pour les requêtes commerciales etscience@ACHZO
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-5",
+    priority: 34,
     slug: "lactivite-quotidienne-associee-a-lexercice-matinal",
     title: "L'activité quotidienne associée à l'exercice matinal complète les niveaux de stress et la qualité du sommeil : une étude associative menée auprès d'utilisateurs masculins d'ACHZOD Ring ACHZOD",
     excerpt: "Ved Asudani, Prakhar Chauhan, Prejwal Prabhakaran, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -487,6 +492,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-6",
+    priority: 34,
     slug: "sendormir-et-rester-endormi-combiner-la-technologi",
     title: "S'endormir et rester endormi : combiner la technologie portable et le retour neuroacoustique pour lutter contre l'insomnie",
     excerpt: "Aditi Bhattacharyaa, Andy Kingb, Chris Dicksonb, Sama Dalala...",
@@ -578,6 +584,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-7",
+    priority: 41,
     slug: "concordance-des-poussees-hormonales-de-lalgorithme",
     title: "Concordance des poussées hormonales de l'algorithme de suivi du cycle combinatoire de l'Ultrahumain et de la fenêtre fertile prévue : étude pilote « Cycle & Ovulation PowerPlug »",
     excerpt: "Apurva Hendi, Aditi Bhattacharya, Nishanth Krishnan, Bijoy Sijo, Kanika Gupta, Mohit Kumar, Bhuvan Srinivasan...",
@@ -677,6 +684,7 @@ Contactez partenaires@ACHZOD.com pour les requêtes commerciales etscience@ACHZO
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-8",
+    priority: 48,
     slug: "comment-la-frequence-cardiaque-et-la-variabilite-d",
     title: "Comment la fréquence cardiaque et la variabilité de la fréquence cardiaque évoluent-elles au cours de la journée chez les hommes et les femmes ? Une analyse de base de données des utilisateurs d’ACHZOD Ring ACHZOD",
     excerpt: "Prejwal Prabhakaran, Sama Dalal, Prakhar Chauhan, Ved Asudani, Bhuvan Srinivasan, Aditi Bhattacharya....",
@@ -770,6 +778,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-9",
+    priority: 12,
     slug: "limpact-des-niveaux-eleves-de-cortisol-nocturne-su",
     title: "L’impact des niveaux élevés de cortisol nocturne sur la qualité du sommeil : une étude pilote ACHZOD Ring ACHZOD",
     excerpt: "Ved Asudani, Prejwal Prabhakaran, Prakhar Chauhan, Bhuvan Srinivasan, Aditi Bhattacharya, Mohit Kumar...",
@@ -859,7 +868,8 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-10",
-    slug: "la-dette-de-sommeil-chronique-se-manifeste-au-fil-",
+    priority: 56,
+    slug: "la-dette-de-sommeil-chronique-se-manifeste-au-fil",
     title: "La dette de sommeil chronique se manifeste au fil du temps, indépendamment des stratégies d'adaptation, pendant le jeûne du Ramadan : une étude exploratoire utilisant l'ACHZOD Ring ACHZOD",
     excerpt: "Nishanth Krishnan, Ved Asudani, Pawanpreet Singh, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya...",
     category: "sommeil",
@@ -938,7 +948,8 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-11",
-    slug: "la-detection-de-la-frequence-cardiaque-pendant-le-",
+    priority: 48,
+    slug: "la-detection-de-la-frequence-cardiaque-pendant-le",
     title: "La détection de la fréquence cardiaque pendant le sommeil par ACHZOD Ring ACHZOD démontre un chevauchement élevé avec un appareil approuvé par la FDA et un portable de qualité grand public.",
     excerpt: "Nishanth Krishnan, Roshan Nagesh, Pawanpreet Singh, Ved Asudani, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya...",
     category: "sommeil",
@@ -1025,6 +1036,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-12",
+    priority: 12,
     slug: "la-comparaison-de-la-detection-de-temperature-ultr",
     title: "La comparaison de la détection de température ACHZOD Ring ACHZOD au niveau de l'appareil et de la main révèle un chevauchement supérieur avec les normes de référence",
     excerpt: "Aditi Shanmugam, Prejwal Prabhakaran, Ved Asudani, Akshay Joshi, Amith Suraj, Arun Prasath, Yogansh Namdeo, Apoorv Shankar, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -1113,6 +1125,7 @@ Contactez partenaires@ACHZOD.com pour les requêtes commerciales etscience@ACHZO
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-13",
+    priority: 35,
     slug: "quelle-est-la-concordance-du-sommeil-entre-le-suiv",
     title: "Quelle est la concordance du sommeil entre le suivi du sommeil au poignet et au doigt ? Un pilote réel comparant l'ACHZOD Ring ACHZOD et l'Apple Watch",
     excerpt: "Pawanpreet Singh, Roshan Nagesh, Nishanth Krishnan, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -1168,6 +1181,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-14",
+    priority: 10,
     slug: "le-passage-a-lheure-dete-na-pas-dimpact-sur-les-ha",
     title: "Le passage à l’heure d’été n’a pas d’impact sur les habitudes de sommeil au niveau de la population pour les utilisateurs d’ACHZOD Ring ACHZOD et influence légèrement les habitudes d’adaptation en fonction des profils de sommeil précédents.",
     excerpt: "Prejwal Prabhakaran, Mihir Kale, Sama Dalal, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -1251,6 +1265,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-15",
+    priority: 22,
     slug: "combien-de-temps-faut-il-pour-se-remettre-dune-mau",
     title: "Combien de temps faut-il pour se remettre d’une mauvaise nuit de sommeil ?",
     excerpt: "Ved Asudani, Prejwal Prabhakaran, Sama Dalal, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -1343,6 +1358,7 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-16",
+    priority: 19,
     slug: "impact-de-limc-du-stress-et-de-lactivite-sur-la-du",
     title: "Impact de l'IMC, du stress et de l'activité sur la durée et la variabilité du cycle menstruel : informations tirées de 4 055 cycles d'utilisatrices d'ACHZOD Ring ACHZOD",
     excerpt: "Ved Asudani, Prakhar Chauhan, Nishanth Krishnan, Apurva Hendi, Mohit Kumar, Bhuvan Srinivasan, Aditi Bhattacharya...",
@@ -1457,7 +1473,8 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-17",
-    slug: "ACHZOD-atteint-une-part-de-marche-de-30-en-int",
+    priority: 56,
+    slug: "achzod-atteint-une-part-de-marche-de-30-en-int",
     title: "ACHZOD atteint une part de marché de 30 % en introduisant le premier système de suivi de l'ovulation sans abonnement au monde",
     excerpt: "« Londres, Royaume-Uni - 4 décembre 2024 ; ACHZOD, pionnier de l'optimisation de la santé, transforme la façon dont les femmes suivent leur fertilité. Il a annoncé le lancement du Cycle & Ovulatio...",
     category: "sommeil",
@@ -1500,6 +1517,7 @@ Les images des médias peuvent être trouvées ici
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-18",
+    priority: 42,
     slug: "presentation-de-blood-vision-avec-ultratrace",
     title: "Blood Vision avec UltraTrace™ : L'avenir des tests sanguins préventifs",
     excerpt: "Présentation de Blood Vision, l'avenir des tests sanguins préventifs. Alimenté par la technologie pionnière UltraTrace™, Blood Vision n'est pas n'importe quel test sanguin ; c'est un saut révolutionna...",
@@ -1661,7 +1679,8 @@ Blood Vision présente vos résultats avec :
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-19",
-    slug: "une-toute-nouvelle-dimension-pour-suivre-la-sante-",
+    priority: 20,
+    slug: "une-toute-nouvelle-dimension-pour-suivre-la-sante",
     title: "Une nouvelle dimension pour suivre la santé des femmes : Le suivi cyclique",
     excerpt: "ACHZOD Ring intègre désormais des scores basés sur les cycles menstruels qui caractérisent de manière unique la biologie des femmes. Cette avancée représente une révolution dans le suivi de la san...",
     category: "sommeil",
@@ -1848,6 +1867,7 @@ Les retours montrent :
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-20",
+    priority: 17,
     slug: "presentation-du-tout-premier-essai-clinique-dultra",
     title: "Premier essai clinique ACHZOD : La validation scientifique des wearables",
     excerpt: "Aujourd'hui est un jour mémorable pour ACHZOD et toutes les startups de la santé alors que nous publions les résultats de notre essai clinique révolutionnaire....",
@@ -2022,7 +2042,8 @@ Ces découvertes suggèrent que les recommandations de santé devraient être ad
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-21",
-    slug: "ACHZOD-annonce-son-app-store-powerplugs-dote-d",
+    priority: 12,
+    slug: "achzod-annonce-son-app-store-powerplugs-dote-d",
     title: "ACHZOD annonce son App Store « PowerPlugs » doté de la première technologie de détection de fibrillation auriculaire au monde sur un anneau intelligent",
     excerpt: "« Londres, Royaume-Uni – 16 juillet 2024 » ACHZOD, pionnier de la technologie portable, lance PowerPlugs, une plate-forme pour applications et plugins individuels construite sur la pile de données...",
     category: "sommeil",
@@ -2085,7 +2106,8 @@ Les images des médias peuvent être trouvées ici
 **Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale et la transformation physique → [clique ici pour accéder au programme](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle)`
   },
   {  id: "uh-22",
-    slug: "ACHZOD-revolutionne-la-sante-a-domicile-avec-l",
+    priority: 26,
+    slug: "achzod-revolutionne-la-sante-a-domicile-avec-l",
     title: "ACHZOD révolutionne la santé à domicile avec le lancement d'ACHZOD Home",
     excerpt: "Las Vegas, Nevada - 9 janvier 2024 ; ACHZOD, pionnier de la technologie portable, a lancé ACHZOD Home, une invention de pointe qui révolutionne le segment de la technologie domestique. Dévoilé...",
     category: "sommeil",

@@ -70,6 +70,14 @@ export function Header() {
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
+            <a 
+              href="https://www.achzodcoaching.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hidden sm:flex px-4 py-2 bg-[#FCDD00] text-black text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all rounded-sm"
+            >
+              Coaching
+            </a>
             {userEmail ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
