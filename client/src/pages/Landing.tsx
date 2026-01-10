@@ -156,6 +156,293 @@ function DNAHelix() {
 }
 
 // ============================================================================
+// ECG SECTION (Animated Heart Rate Monitor)
+// ============================================================================
+function ECGSection() {
+  const [bpm, setBpm] = useState(72);
+  const [hrv, setHrv] = useState(68);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBpm(prev => {
+        const change = Math.floor(Math.random() * 5) - 2;
+        const next = prev + change;
+        return next > 78 ? 76 : next < 68 ? 70 : next;
+      });
+      setHrv(prev => {
+        const change = Math.floor(Math.random() * 7) - 3;
+        const next = prev + change;
+        return next > 85 ? 82 : next < 55 ? 58 : next;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="py-8 sm:py-12 md:py-16 relative overflow-hidden bg-[#000000]">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.03)_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:4rem_4rem]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#000000] via-transparent to-[#000000]" />
+
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <motion.div
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-[#FCDD00]/30 blur-xl rounded-full" />
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-[#FCDD00] drop-shadow-[0_0_20px_rgba(252,221,0,0.8)]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </motion.div>
+          <div className="text-center sm:text-left">
+            <span className="font-mono text-[10px] sm:text-xs text-[#FCDD00] uppercase tracking-[0.2em] block mb-1">
+              System Status
+            </span>
+            <h3 className="font-sans font-black text-xl sm:text-2xl md:text-3xl text-white uppercase tracking-tighter">
+              ANALYSE CARDIAQUE
+            </h3>
+            <motion.div
+              className="font-mono text-lg sm:text-xl md:text-2xl text-[#FCDD00] tracking-tight flex items-center justify-center sm:justify-start gap-2"
+              key={bpm}
+              initial={{ scale: 1.05 }}
+              animate={{ scale: 1 }}
+            >
+              <motion.span
+                className="w-2 h-2 bg-[#FCDD00] rounded-full"
+                animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              {bpm} BPM
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="relative h-20 sm:h-24 md:h-28 bg-black/60 backdrop-blur-sm rounded border border-[#FCDD00]/20 overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.08)_1px,transparent_1px)] bg-[size:20px_20px]" />
+          <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#FCDD00]/50 rounded-tl" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#FCDD00]/50 rounded-tr" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#FCDD00]/50 rounded-bl" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#FCDD00]/50 rounded-br" />
+
+          <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
+            <motion.path
+              d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
+              fill="none"
+              stroke="#FCDD00"
+              strokeWidth="2"
+              strokeLinecap="round"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.path
+              d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
+              fill="none"
+              stroke="#FCDD00"
+              strokeWidth="8"
+              strokeLinecap="round"
+              opacity="0.2"
+              filter="blur(6px)"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+            />
+          </svg>
+
+          <motion.div
+            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#FCDD00] to-transparent"
+            animate={{ left: ['-5%', '105%'] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+          />
+
+          <div className="absolute top-2 right-8 flex items-center gap-1.5">
+            <motion.span
+              className="w-1.5 h-1.5 bg-[#FCDD00] rounded-full"
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
+            <span className="font-mono text-[9px] text-[#FCDD00] uppercase tracking-widest">Live</span>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-4 sm:gap-8 md:gap-12 mt-4 sm:mt-6">
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-[#333333]">
+            <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-widest mb-1">HRV</div>
+            <motion.div
+              className="font-mono text-lg sm:text-xl text-[#FCDD00] font-bold"
+              key={hrv}
+              initial={{ scale: 1.1 }}
+              animate={{ scale: 1 }}
+            >
+              {hrv}ms
+            </motion.div>
+          </div>
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-[#333333]">
+            <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-widest mb-1">STATUS</div>
+            <div className="font-mono text-lg sm:text-xl text-green-400 font-bold flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              OPTIMAL
+            </div>
+          </div>
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-[#333333]">
+            <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-widest mb-1">RECOVERY</div>
+            <div className="font-mono text-lg sm:text-xl text-white font-bold">94%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// BETA TESTERS REVIEWS DATA (50+ reviews for Landing)
+// ============================================================================
+const BETA_REVIEWS = [
+  { name: "Thomas R.", role: "Entrepreneur, 34 ans", rating: 5, text: "J'ai fait l'audit gratuit en septembre 2025. Le rapport m'a ouvert les yeux sur pourquoi je stagnais depuis des mois. En 3 semaines j'ai vu la différence.", metric: "-8kg", metricLabel: "masse grasse" },
+  { name: "Julien R.", role: "Développeur, 32 ans", rating: 5, text: "L'audit métabolique gratuit a détecté des problèmes de posture : lordose lombaire, épaules en avant, cou en extension. Plus des asymétries musculaires. Je suis allé voir un kiné qui a tout confirmé.", metric: "0", metricLabel: "douleurs dos" },
+  { name: "Sarah M.", role: "Athlète CrossFit, 28 ans", rating: 5, text: "Testé en octobre 2025. Enfin des recommandations qui prennent en compte mon niveau d'entraînement. Pas du générique. Mes perfs ont décollé.", metric: "+15%", metricLabel: "performance" },
+  { name: "Marc D.", role: "Cadre dirigeant, 42 ans", rating: 5, text: "Audit de septembre 2025. L'analyse HRV m'a révélé que j'étais en pré-burnout sans le savoir. Le protocole m'a remis sur pied.", metric: "HRV +40%", metricLabel: "récupération" },
+  { name: "Julie L.", role: "Coach sportive, 31 ans", rating: 5, text: "Depuis l'audit d'octobre 2025, je recommande à tous mes clients. Le niveau de détail sur la nutrition est incomparable.", metric: "100%", metricLabel: "clients satisfaits" },
+  { name: "Antoine B.", role: "Développeur, 29 ans", rating: 5, text: "Audit de septembre 2025. Mes problèmes de sommeil duraient depuis 2 ans. Le plan d'action m'a fait gagner 2h de sommeil profond par nuit.", metric: "+2h", metricLabel: "sommeil profond" },
+  { name: "Léa P.", role: "Médecin, 35 ans", rating: 4, text: "J'étais sceptique quand j'ai fait l'audit en octobre 2025. La rigueur scientifique m'a surprise. Je le recommande maintenant à mes patients.", metric: "98%", metricLabel: "précision données" },
+  { name: "Maxime G.", role: "Rugbyman pro, 26 ans", rating: 5, text: "Depuis l'audit de septembre 2025, ma récup post-match a changé du tout au tout. Mes coachs sont impressionnés.", metric: "-40%", metricLabel: "temps récup" },
+  { name: "Céline R.", role: "CEO startup, 38 ans", rating: 5, text: "L'audit d'octobre 2025 m'a montré que j'avais besoin d'un suivi complet. Stress, hormones, nutrition - tout est couvert maintenant.", metric: "+30%", metricLabel: "énergie" },
+  { name: "Hugo M.", role: "Personal trainer, 32 ans", rating: 5, text: "J'ai testé en septembre 2025. Les rapports sont actionnables immédiatement. Mes clients VIP ne jurent plus que par ça.", metric: "50+", metricLabel: "clients convertis" },
+  { name: "Emma D.", role: "Triathlète amateur, 30 ans", rating: 5, text: "Après l'audit d'octobre 2025, j'ai battu mon PR sur Ironman de 25 minutes. Le timing des nutriments, tout était carré.", metric: "-25min", metricLabel: "temps Ironman" },
+  { name: "Pierre L.", role: "Avocat, 45 ans", rating: 5, text: "L'audit de septembre 2025 a détecté mon pré-diabète alors que mon médecin n'avait rien vu. Life saver.", metric: "HbA1c 5.2%", metricLabel: "normalisé" },
+  { name: "Sophie V.", role: "Influenceuse fitness, 27 ans", rating: 5, text: "Depuis l'audit d'octobre 2025, ma communauté me demande mes secrets. Je les envoie direct ici.", metric: "200k+", metricLabel: "vues story" },
+  { name: "Laurent K.", role: "Chirurgien, 50 ans", rating: 5, text: "J'ai fait l'audit en septembre 2025. Après 25 ans de gardes, mon sommeil était détruit. Le protocole m'a redonné des nuits complètes.", metric: "7h30", metricLabel: "sommeil/nuit" },
+  { name: "Camille B.", role: "Danseuse pro, 24 ans", rating: 5, text: "L'audit d'octobre 2025 a révélé mes carences en fer. La supplémentation optimisée a tout changé. Plus de fatigue en répétition.", metric: "Ferritine 80", metricLabel: "optimisée" },
+  { name: "Nicolas T.", role: "Trader, 33 ans", rating: 5, text: "Depuis septembre 2025, mon cortisol est géré. Le protocole anti-stress est devenu ma routine. Bonus : mes perfs de trading ont suivi.", metric: "+45%", metricLabel: "perfs trading" },
+  { name: "Audrey M.", role: "Nageuse olympique, 23 ans", rating: 5, text: "Depuis l'audit d'octobre 2025, j'ai optimisé ma composition corporelle au gramme près. L'edge qu'il me fallait pour le podium.", metric: "Or", metricLabel: "championnats" },
+  { name: "Romain C.", role: "Entrepreneur tech, 31 ans", rating: 5, text: "Depuis septembre 2025, zéro jour de maladie. Mon système immunitaire n'a jamais été aussi solide malgré le stress des levées.", metric: "0", metricLabel: "jours malades" },
+];
+
+// ============================================================================
+// BETA TESTERS REVIEWS SECTION WITH PAGINATION
+// ============================================================================
+function BetaReviewsSection() {
+  const [currentPage, setCurrentPage] = useState(0);
+  const reviewsPerPage = 3;
+  const totalPages = Math.ceil(BETA_REVIEWS.length / reviewsPerPage);
+
+  const currentReviews = BETA_REVIEWS.slice(
+    currentPage * reviewsPerPage,
+    (currentPage + 1) * reviewsPerPage
+  );
+
+  const nextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  return (
+    <section id="beta-reviews" className="py-20 bg-[#000000] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+
+      <div className="relative max-w-6xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <span className="font-mono text-[10px] sm:text-xs text-[#FCDD00] uppercase tracking-[0.3em] block mb-3">
+            Beta Testers • {BETA_REVIEWS.length}+ avis • 4.9/5 ★
+          </span>
+          <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white uppercase tracking-tighter mb-2">
+            RÉSULTATS
+          </h2>
+          <h2 className="font-sans font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl uppercase tracking-tighter mb-6" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.2)', color: 'transparent' }}>
+            VALIDÉS
+          </h2>
+          <p className="text-[#9CA3AF] max-w-xl mx-auto">
+            Des transformations mesurables, validées par les données.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[400px]">
+          {currentReviews.map((review, idx) => (
+            <motion.div
+              key={`${currentPage}-${idx}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-6 hover:border-[#FCDD00]/30 transition-all group flex flex-col"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <div className="font-sans font-bold text-white text-lg">{review.name}</div>
+                  <div className="font-mono text-[11px] text-[#6B7280] uppercase tracking-wider">{review.role}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-xl font-bold text-[#FCDD00]">{review.metric}</div>
+                  <div className="font-mono text-[9px] text-[#6B7280] uppercase tracking-widest">{review.metricLabel}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-[#4B5563]'}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+
+              <p className="text-[#D1D5DB] text-sm leading-relaxed flex-1">
+                "{review.text}"
+              </p>
+
+              <div className="mt-4 flex items-center gap-2">
+                <motion.span
+                  className="w-1.5 h-1.5 bg-[#FCDD00] rounded-full"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <span className="font-mono text-[9px] text-[#FCDD00] uppercase tracking-widest">Résultat vérifié</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-center gap-6 mt-10">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 0}
+            className={`font-mono text-xs uppercase tracking-widest px-4 py-2 rounded border transition-all ${
+              currentPage === 0
+                ? 'border-white/10 text-[#4B5563] cursor-not-allowed'
+                : 'border-white/20 text-white hover:border-[#FCDD00] hover:text-[#FCDD00]'
+            }`}
+          >
+            ← Précédent
+          </button>
+
+          <div className="font-mono text-xs text-[#6B7280]">
+            <span className="text-white">{currentPage + 1}</span> / {totalPages}
+          </div>
+
+          <button
+            onClick={nextPage}
+            disabled={currentPage >= totalPages - 1}
+            className={`font-mono text-xs uppercase tracking-widest px-4 py-2 rounded border transition-all ${
+              currentPage >= totalPages - 1
+                ? 'border-white/10 text-[#4B5563] cursor-not-allowed'
+                : 'border-white/20 text-white hover:border-[#FCDD00] hover:text-[#FCDD00]'
+            }`}
+          >
+            Suivant →
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // OFFERS DATA (ApexLabs Style)
 // ============================================================================
 interface Offer {
@@ -176,8 +463,8 @@ const LANDING_OFFERS: Offer[] = [
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
     subtitle: "L'Analyse Initiale",
-    description: "Le point d'entrée essentiel vers l'optimisation. Une cartographie complète de votre composition corporelle par bio-impédancemétrie médicale et scan 3D.",
-    features: ["Composition Corporelle 3D", "Analyse Métabolique de Base", "Rapport Digital Immédiat", "Bilan d'Hydratation"],
+    description: "Tu stagnes, t'es crevé, tu sais pas pourquoi. Ce scan gratuit analyse 10 domaines clés de ta santé en ~50 questions: sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle et mindset. Tu repars avec un score global sur 100, la liste de tes blocages métaboliques et hormonaux, et un rapport de 5-7 pages.",
+    features: ["10 domaines analysés", "Score global sur 100", "Identification des blocages", "Rapport 5-7 pages"],
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false,
     price: "Gratuit",
@@ -186,9 +473,9 @@ const LANDING_OFFERS: Offer[] = [
   {
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
-    subtitle: "Performance Musculaire",
-    description: "Conçu pour l'hypertrophie et la performance athlétique. Analyse précise de la densité musculaire et du profil hormonal anabolique.",
-    features: ["Densité Musculaire", "Asymétries & Posture", "Potentiel de Récupération", "Optimisation de la Force"],
+    subtitle: "Analyse Approfondie",
+    description: "L'analyse complète pour ceux qui veulent des réponses. 150 questions sur 17 sections: profil hormonal détaillé, axes cliniques, nutrition avancée, suppléments et composition corporelle. Protocole Matin Anti-Cortisol, protocole Soir Sommeil, reset digestif 14 jours, stack suppléments personnalisé.",
+    features: ["17 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true,
     price: "59€",
@@ -198,8 +485,8 @@ const LANDING_OFFERS: Offer[] = [
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
     subtitle: "La Vérité Biologique",
-    description: "Plongez au cœur de votre biochimie. Une analyse sanguine exhaustive ciblant plus de 50 biomarqueurs clés de performance.",
-    features: ["Panel Hormonal Complet", "Marqueurs Inflammatoires", "Carences Micronutritionnelles", "Fonction Hépatique & Rénale"],
+    description: "Ton médecin te dit que tout est 'normal' mais tu te sens toujours comme de la merde? Normal ≠ Optimal. Upload ton bilan sanguin et j'analyse 39 biomarqueurs sur 6 panels avec des ranges OPTIMAUX. Je détecte les patterns invisibles et je te donne des protocoles de correction ciblés.",
+    features: ["39 biomarqueurs analysés", "6 panels complets", "Ranges optimaux", "Protocoles personnalisés"],
     imageUrl: "",
     reverse: false,
     useCustomVisual: true,
@@ -209,9 +496,9 @@ const LANDING_OFFERS: Offer[] = [
   {
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
-    subtitle: "L'Omniscience Corporelle",
-    description: "L'agrégation de toutes nos technologies. Discovery + Anabolic + Blood + Analyse génétique. Une vue à 360° de votre physiologie.",
-    features: ["Intégration Totale des Données", "Plan d'Action Sur-Mesure", "Analyse Génétique Croisée", "Suivi Prioritaire"],
+    subtitle: "L'Analyse Complète",
+    description: "Le scan le plus complet du marché. 210 questions sur 22 sections + analyse photo posturale + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
+    features: ["22 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true,
     price: "79€",
@@ -220,9 +507,9 @@ const LANDING_OFFERS: Offer[] = [
   {
     id: 'burnout-detection',
     title: "BURNOUT DETECTION",
-    subtitle: "Préservation du Système Nerveux",
-    description: "Mesure objective de la charge allostatique et de la variabilité cardiaque (VFC). Détectez les signes physiologiques de l'épuisement.",
-    features: ["Analyse Système Nerveux (VFC)", "Mesure du Cortisol", "Qualité du Sommeil", "Stratégies de Résilience"],
+    subtitle: "Détection Précoce",
+    description: "Épuisé. Irritable. Déconnecté. Si tu te reconnais, ce scan est pour toi. Questionnaire spécialisé de 80+ questions pour détecter les signes précoces du burnout AVANT qu'il soit trop tard. Score de risque, identification de ta phase actuelle, et protocole de récupération sur 4 semaines.",
+    features: ["Score de risque burnout", "Analyse système nerveux", "Qualité du sommeil", "Protocole récupération 4 semaines"],
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false,
     price: "39€",
@@ -1154,12 +1441,14 @@ export default function Landing() {
       <Header />
       <main>
         <HeroSection />
+        <ECGSection />
         <FiveOffersSection />
         <CertificationsSection />
         <SocialProofBanner />
         <WearablesSection />
         <MeasurableResultsSection />
         <OffersSection />
+        <BetaReviewsSection />
         <TestimonialsSection />
         <FAQSection />
         <FinalCTASection />
