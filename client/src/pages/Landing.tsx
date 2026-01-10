@@ -1110,7 +1110,7 @@ const customStyles = `
 // ============================================================================
 // MAIN APP
 // ============================================================================
-export default function ApexLabs() {
+export default function Landing() {
   return (
     <div className="min-h-screen bg-black">
       <style>{customStyles}</style>
