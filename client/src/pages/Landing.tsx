@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { FixedReviewsWidget } from "@/components/FixedReviewsWidget";
 import {
   Star,
   ArrowRight,
@@ -433,6 +432,7 @@ const BETA_REVIEWS = [
   { name: "Norbert A.", role: "Charpentier de marine, 46 ans", rating: 5, text: "Construire des bateaux en bois est exigeant. L'audit de septembre 2025 avait montré mes problèmes articulaires. Le protocole les surveille.", metric: "Mobilité", metricLabel: "complète" },
   { name: "Odile B.", role: "Parfumeuse, 40 ans", rating: 5, text: "Le nez doit rester affûté. L'audit d'octobre 2025 avait révélé des carences affectant mon odorat. Le protocole les a corrigées.", metric: "Odorat", metricLabel: "parfait" },
   { name: "Pierrick C.", role: "Sabotier, 53 ans", rating: 5, text: "Un métier ancestral physique. L'audit de septembre 2025 avait montré mon usure articulaire. Le protocole la ralentit.", metric: "Articulations", metricLabel: "préservées" },
+  { name: "Quitterie D.", role: "Enlumineuse", rating: 5, text: "Les détails microscopiques des manuscrits. L'audit d'octobre 2025 avait révélé ma fatigue nerveuse. Le protocole l'optimise.", metric: "Précision", metricLabel: "absolue" },
   { name: "Roland E.", role: "Vannier, 48 ans", rating: 5, text: "Tresser l'osier demande dextérité. L'audit de septembre 2025 avait montré mes tensions dans les mains. Le protocole les surveille.", metric: "Mains", metricLabel: "saines" },
   { name: "Séverine F.", role: "Taxidermiste, 42 ans", rating: 5, text: "Un métier d'art méconnu. L'audit d'octobre 2025 avait révélé mon exposition aux produits chimiques. Le protocole surveille ma santé.", metric: "Bilan", metricLabel: "clean" },
   { name: "Théophile G.", role: "Doreur sur bois, 39 ans", rating: 5, text: "L'application de feuilles d'or demande patience. L'audit de septembre 2025 avait montré mes tremblements. Le protocole les a éliminés.", metric: "0", metricLabel: "tremblements" },
@@ -1619,7 +1619,6 @@ export default function Landing() {
         <FinalCTASection />
       </main>
       <Footer />
-      <FixedReviewsWidget />
     </div>
   );
 }
