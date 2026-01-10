@@ -2,13 +2,25 @@
  * NEUROCORE 360 - Burnout Detection Engine
  * Server-side analysis for burnout questionnaire
  * Structure identique à Discovery Scan
+ * Engine: Claude Opus 4.5
  */
 
 import type { Express } from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 import { searchArticles } from "./knowledge/storage";
+import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// Initialize Anthropic client
+let anthropicClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({
+      apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY,
+    });
+  }
+  return anthropicClient;
+}
 
 interface BurnoutResponse {
   [questionId: string]: string; // "0" to "4" scale
@@ -208,7 +220,7 @@ async function getBurnoutKnowledge(phase: string, categories: string[]): Promise
   }
 }
 
-// Generate section content with Gemini
+// Generate section content with Claude Opus 4.5
 async function generateBurnoutSection(
   sectionType: string,
   data: {
@@ -221,7 +233,7 @@ async function generateBurnoutSection(
     clientName: string;
   }
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const client = getAnthropicClient();
 
   const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
   const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
@@ -357,12 +369,21 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
   };
 
   try {
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompts[sectionType] || prompts.intro }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
+    const response = await client.messages.create({
+      model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL, // claude-opus-4-5-20251101
+      max_tokens: 3000,
+      temperature: 0.7,
+      messages: [{ role: "user", content: prompts[sectionType] || prompts.intro }],
     });
 
-    let content = result.response.text() || "";
+    let content = "";
+    if (response.content && response.content.length > 0) {
+      const firstBlock = response.content[0];
+      if (firstBlock.type === "text") {
+        content = firstBlock.text;
+      }
+    }
+
     // Clean markdown artifacts
     content = content
       .replace(/\*\*/g, "<strong>").replace(/\*\*/g, "</strong>")
@@ -375,7 +396,7 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
 
     return content;
   } catch (error) {
-    console.error(`[Burnout] Gemini error for ${sectionType}:`, error);
+    console.error(`[Burnout] Claude error for ${sectionType}:`, error);
     return `<p>Analyse en cours de génération...</p>`;
   }
 }
