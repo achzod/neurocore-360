@@ -74,17 +74,17 @@ export default function CGV() {
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
-                <h4 className="font-semibold text-white">Audit Premium (79€ - Paiement unique)</h4>
+                <h4 className="font-semibold text-white">Audit Premium (59€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
                   Rapport complet de 20+ pages avec recommandations personnalisees, plan d'action 30 jours,
                   et analyse detaillee de chaque domaine.
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
-                <h4 className="font-semibold text-white">Audit Elite (129€/an)</h4>
+                <h4 className="font-semibold text-white">Audit Elite (79€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Tous les avantages Premium + 4 audits par an pour suivre ta progression +
-                  suivi de l'evolution dans le temps.
+                  Tous les avantages Premium + analyse photo posturale complete + integration wearables +
+                  protocoles avances 30-60-90 jours.
                 </p>
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 3 - Deduction sur les Coachings</h2>
             <p className="text-white/60 leading-relaxed">
-              Le montant paye pour les audits Premium (79€) et Elite (129€) est deductible de l'achat
+              Le montant paye pour les audits Premium (59€) et Elite (79€) est deductible de l'achat
               d'un coaching AchzodCoaching, sous les conditions suivantes :
             </p>
             <ul className="mt-4 space-y-2 text-white/60">

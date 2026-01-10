@@ -11,7 +11,7 @@ export const CONTACT = {
 
 export const PRICING = {
   FREE: 0,
-  PREMIUM: 79
+  PREMIUM: 59
 };
 
 export function getCTADebut(tier: AuditTier, amountPaid: number = PRICING.PREMIUM): string {

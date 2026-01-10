@@ -10,7 +10,7 @@ async function createProducts() {
   const premiumExists = existingProducts.data.find(p => p.name === 'Audit Premium');
   const eliteExists = existingProducts.data.find(p => p.name === 'Audit Elite');
 
-  // Create Premium product (one-time payment €79)
+  // Create Premium product (one-time payment €59)
   if (!premiumExists) {
     const premiumProduct = await stripe.products.create({
       name: 'Audit Premium',
@@ -23,7 +23,7 @@ async function createProducts() {
 
     const premiumPrice = await stripe.prices.create({
       product: premiumProduct.id,
-      unit_amount: 7900, // €79.00
+      unit_amount: 5900, // €59.00
       currency: 'eur',
     });
 
@@ -33,24 +33,21 @@ async function createProducts() {
     console.log('Premium product already exists:', premiumExists.id);
   }
 
-  // Create Elite product (subscription €129/year)
+  // Create Elite product (one-time payment €79)
   if (!eliteExists) {
     const eliteProduct = await stripe.products.create({
       name: 'Audit Elite',
-      description: 'Abonnement annuel avec 4 audits métaboliques par an, suivi de progression, rapports comparatifs, et accès prioritaire aux nouvelles fonctionnalités.',
+      description: 'Ultimate Scan avec analyse photo posturale complète, intégration wearables et protocoles avancés 30-60-90 jours.',
       metadata: {
         type: 'ELITE',
-        category: 'subscription',
+        category: 'audit',
       }
     });
 
     const elitePrice = await stripe.prices.create({
       product: eliteProduct.id,
-      unit_amount: 12900, // €129.00
+      unit_amount: 7900, // €79.00
       currency: 'eur',
-      recurring: {
-        interval: 'year',
-      },
     });
 
     console.log('Created Elite product:', eliteProduct.id);
