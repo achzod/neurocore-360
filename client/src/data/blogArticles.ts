@@ -341,7 +341,7 @@ Le nerf vague est le bras exécutif principal de votre système nerveux parasymp
 - Libération d'acétylcholine (neurotransmetteur calmant)
 - Activation de la voie anti-inflammatoire cholinergique
 
-En résumé : quand votre nerf vague fonctionne bien, votre corps bascule naturellement en mode récupération, construction, et réparation.
+: quand votre nerf vague fonctionne bien, votre corps bascule naturellement en mode récupération, construction, et réparation.
 
 ## Le lien crucial entre le nerf vague et la HRV
 
@@ -3472,7 +3472,7 @@ Porter un CGM pendant 2-4 semaines vous apprend plus sur votre métabolisme que 
 
 ## Objectifs optimaux : vers quoi viser
 
-Pour résumer, voici vos cibles pour une santé métabolique optimale :
+voici vos cibles pour une santé métabolique optimale :
 
 **Glycémie à jeun :** 70-85 mg/dL
 **Pic postprandial maximum :** 110-120 mg/dL
@@ -3870,7 +3870,7 @@ Cela signifie que si vous buvez un café en mangeant un croissant ou un bol de c
 
 ### Les variations individuelles : pourquoi nous ne réagissons pas tous de la même façon
 
-Il est important de noter que la réponse à la caféine varie considérablement d'une personne à l'autre. Cette variabilité est en partie génétique. Des gènes comme CYP1A2 déterminent la rapidité avec laquelle vous métabolisez la caféine, tandis que d'autres gènes influencent la sensibilité de vos récepteurs à l'adrénaline et au cortisol.
+la réponse à la caféine varie considérablement d'une personne à l'autre. Cette variabilité est en partie génétique. Des gènes comme CYP1A2 déterminent la rapidité avec laquelle vous métabolisez la caféine, tandis que d'autres gènes influencent la sensibilité de vos récepteurs à l'adrénaline et au cortisol.
 
 Certaines personnes sont des métaboliseurs rapides de la caféine et éliminent rapidement la substance de leur système, tandis que d'autres sont des métaboliseurs lents qui ressentent les effets beaucoup plus longtemps. Si vous êtes un métaboliseur lent, vous êtes plus susceptible de voir votre glycémie augmenter après avoir consommé de la caféine, et cet effet durera plus longtemps.
 
@@ -16731,7 +16731,7 @@ Cependant, ces cas restent exceptionnels et impliquent des niveaux de stimulatio
 
 ### Les différences entre espèces
 
-Il est important de noter que l'hyperplasie est beaucoup plus courante chez certains animaux. Les oiseaux et certains poissons peuvent régulièrement créer de nouvelles fibres musculaires en réponse à l'entraînement. Cependant, ces mécanismes ne se traduisent pas nécessairement par les humains, car notre biologie musculaire diffère considérablement.
+l'hyperplasie est beaucoup plus courante chez certains animaux. Les oiseaux et certains poissons peuvent régulièrement créer de nouvelles fibres musculaires en réponse à l'entraînement. Cependant, ces mécanismes ne se traduisent pas nécessairement par les humains, car notre biologie musculaire diffère considérablement.
 
 ### Les interventions futures potentielles
 
@@ -24554,7 +24554,7 @@ Les besoins nutritionnels des femmes évoluent tout au long de la vie, influenc�
 
 Cependant, la supplémentation ne remplace jamais les fondamentaux : une alimentation équilibrée riche en nutriments, un sommeil réparateur, une gestion efficace du stress et une activité physique régulière. Pour une approche véritablement personnalisée, un bilan sanguin complet incluant les marqueurs hormonaux est indispensable.
 
-Chaque femme est unique, et sa supplémentation devrait l'être aussi. Écoutez votre corps, observez ses réponses, et n'hésitez pas à consulter un professionnel de santé pour optimiser votre protocole.
+Chaque femme est unique, et sa supplémentation devrait l'être aussi. Écoutez votre corps, observez ses réponses, et Tu peux consulter un professionnel de santé pour optimiser votre protocole.
 
 ---
 
@@ -26679,7 +26679,7 @@ La comprehension du role du zinc et de ses multiples fonctions permet d'optimise
 
 ### Le zinc comme cofacteur enzymatique
 
-Le zinc est un composant essentiel de plus de 300 enzymes differentes, servant de cofacteur catalytique ou structural. Ces enzymes sont impliquees dans pratiquement tous les aspects du metabolisme : synthese de l'ADN et de l'ARN, production d'energie, metabolisme des macronutriments, defense antioxydante et regulation hormonale.
+Le zinc est un composant essentiel de 300 enzymes differentes, servant de cofacteur catalytique ou structural. Ces enzymes sont impliquees dans pratiquement tous les aspects du metabolisme : synthese de l'ADN et de l'ARN, production d'energie, metabolisme des macronutriments, defense antioxydante et regulation hormonale.
 
 ### Le zinc et la structure des proteines
 
@@ -27548,7 +27548,7 @@ Très rares :
 ### Fortement recommandée pour
 
 - Problèmes de sommeil (difficulté à s'endormir, sommeil non réparateur)
-- Personnes de plus de 40 ans (soutien du collagène et glutathion)
+- Personnes de 40 ans (soutien du collagène et glutathion)
 - Athlètes (récupération, tendons, articulations)
 - Alimentation pauvre en bouillon d'os/gélatine
 
@@ -30270,7 +30270,7 @@ L'ALA a des propriétés chélatrices, mais pour une détoxification des métaux
 
 L'acide alpha-lipoique occupe une place unique dans l'arsenal des supplements de sante metabolique et antioxydante. Sa double solubilite - une rarete absolue dans le monde des molecules biologiques - lui confere une capacite d'action inegalee, penetrant chaque compartiment cellulaire ou le stress oxydatif peut sevir.
 
-Mais l'ALA n'est pas simplement un antioxydant parmi d'autres. Sa capacite a regenerer la vitamine C, la vitamine E, le glutathion et la CoQ10 en fait un veritable "maitre orchestrateur" du reseau de defense antioxydante. Plutot que d'ajouter simplement un soldat de plus a l'armee, l'ALA multiplie l'efficacite de tous les autres combattants deja presents.
+Mais l'ALA n'est pas simplement un antioxydant parmi d'autres. Sa capacite a regenerer la vitamine C, la vitamine E, le glutathion et la CoQ10 en fait un veritable "maitre orchestrateur" du reseau de defense antioxydante. Plutot que d'ajouter simplement un soldat a l'armee, l'ALA multiplie l'efficacite de tous les autres combattants deja presents.
 
 Pour les personnes luttant contre les dysfonctionnements glycemiques, l'ALA offre une approche complementaire scientifiquement validee. Les etudes cliniques sur la neuropathie diabetique - notamment les etudes SYDNEY et ALADIN - ont etabli des preuves solides de son efficacite, conduisant a son approbation medicale en Allemagne pour cette indication.
 
