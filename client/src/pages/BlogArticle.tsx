@@ -269,24 +269,45 @@ export default function BlogArticlePage() {
           </section>
         )}
 
-        {/* CTA */}
-        <section className="py-24 border-t border-white/5">
-          <div className="mx-auto max-w-2xl px-4 text-center">
-            <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-6">
-              [ COMMENCER ]
-            </p>
-            <h2 className="mb-4 text-3xl font-bold text-white">
-              Prêt à optimiser votre santé ?
-            </h2>
-            <p className="mb-8 text-white/50">
-              Découvrez votre profil métabolique avec notre analyse complète.
-            </p>
-            <Link href="/offers/ultimate-scan">
-              <button className="inline-flex items-center gap-2 px-8 py-4 bg-[#FCDD00] text-black font-semibold rounded-sm hover:bg-[#FCDD00]/90 transition-colors">
-                Commencer l'analyse
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </Link>
+        {/* CTA Section - Traffic to AchzodCoaching */}
+        <section className="py-24 border-t border-white/5 bg-[#FCDD00]/[0.02]">
+          <div className="mx-auto max-w-4xl px-4">
+            <div className="flex flex-col md:flex-row items-center gap-10 bg-white/[0.03] border border-white/10 p-8 md:p-12 rounded-sm relative overflow-hidden">
+              {/* Decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#FCDD00]/10 blur-[60px] -translate-y-1/2 translate-x-1/2" />
+              
+              <div className="flex-1 text-center md:text-left relative z-10">
+                <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
+                  [ REJOINDRE L'ÉLITE ]
+                </p>
+                <h2 className="mb-4 text-3xl md:text-4xl font-black text-white tracking-tighter uppercase">
+                  TRANSFORME TON PHYSIQUE <br />
+                  <span className="text-[#FCDD00]">DÈS AUJOURD'HUI</span>
+                </h2>
+                <p className="mb-8 text-lg text-white/60">
+                  Ton corps n'a jamais manqué d'effort. Il a manqué de méthode. 
+                  Biomécanique, hormones, récupération : rejoins le coaching ACHZOD pour des résultats réels.
+                </p>
+                <a 
+                  href="https://www.achzodcoaching.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-[#FCDD00] text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all rounded-sm shadow-[0_0_20px_rgba(252,221,0,0.2)]"
+                >
+                  Découvrir mes formules
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+              <div className="hidden md:block w-1/3">
+                <div className="relative aspect-square">
+                  <img 
+                    src="https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg" 
+                    alt="ACHZOD Coaching"
+                    className="w-full h-full object-contain rotate-3 hover:rotate-0 transition-transform duration-500"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>
