@@ -1,4 +1,4 @@
-// Blog articles data - ACHZOD original content
+// Blog articles data - ACHZOD 
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
 import { ultrahuman_ARTICLES } from "./ultrahumanArticles";
@@ -9086,7 +9086,7 @@ L'hydratation est un facteur souvent complètement ignoré dans les discussions 
 
 Ces changements hormonaux créent un environnement moins favorable à la croissance musculaire et plus favorable au stockage des graisses.
 
-**Impact sur la performance** : La déshydratation réduit la force musculaire, l'endurance, et la capacité de récupération. Cela se traduit par des entraînements de moindre qualité, moins de volume total, et donc moins de stimulus de croissance.
+**Impact sur la performance** : La déshydratation réduit la force musculaire, l'endurance, et la capacité de récupération. Cela se  des entraînements de moindre qualité, moins de volume total, et donc moins de stimulus de croissance.
 
 **Impact sur le métabolisme** : L'hydratation optimale soutient tous les processus métaboliques, y compris la lipolyse (breakdown des graisses) et la synthèse protéique.
 
@@ -15536,7 +15536,7 @@ Cette sollicitation en position étirée est cruciale pour l'hypertrophie muscul
 
 ### 3. Transfert fonctionnel
 
-Le squat est un mouvement multi-articulaire qui reproduit des schémas moteurs naturels : s'accroupir, se relever, sauter, sprinter. Cette fonctionnalité se traduit par un meilleur développement global de la force et de la masse musculaire.
+Le squat est un mouvement multi-articulaire qui reproduit des schémas moteurs naturels : s'accroupir, se relever, sauter, sprinter. Cette fonctionnalité se  un meilleur développement global de la force et de la masse musculaire.
 
 ## Le hip thrust n'est pas inutile pour autant
 
@@ -31852,8 +31852,8 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
   },
 ];
 
-// Combine all articles (base + SARMS + PEPTIDES + ACHZOD)
-const ALL_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES, ...SARMS_ARTICLES, ...PEPTIDES_ARTICLES, ...ACHZOD_ARTICLES];
+// Combine all articles (base + SARMS + PEPTIDES + Ultrahuman)
+const ALL_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES, ...SARMS_ARTICLES, ...PEPTIDES_ARTICLES, ...ultrahuman_ARTICLES];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
   return ALL_ARTICLES.find((article) => article.slug === slug);
