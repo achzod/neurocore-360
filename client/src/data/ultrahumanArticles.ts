@@ -1,7 +1,7 @@
 // ACHZOD ACHZOD articles - Traduits par ACHZOD
 // Source: ACHZOD.ACHZOD.com - 100% translated content
 
-import { BlogArticle } from "./blogArticles";
+import type { BlogArticle } from "./blogArticles";
 
 export const ultrahuman_ARTICLES: BlogArticle[] = [
   {  id: "uh-1",
