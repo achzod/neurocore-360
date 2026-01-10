@@ -1,9 +1,7 @@
 // Blog articles data - ACHZOD original content
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
-import { MUSCLEPHD_ARTICLES } from "./musclephdArticles";
-import { ULTRAHUMAN_ARTICLES } from "./ultrahumanArticles";
-import { YAMAMOTO_ARTICLES } from "./yamamotoArticles";
+import { ultrahuman_ARTICLES } from "./ultrahumanArticles";
 
 export interface BlogArticle {  id: string;
   slug: string;
@@ -31855,14 +31853,7 @@ Ajouter de la K2 MK-7 est simple, sûr et peut avoir des bénéfices significati
 ];
 
 // Combine all articles (base + SARMS + PEPTIDES + ACHZOD)
-const ALL_ARTICLES: BlogArticle[] = [
-  ...BLOG_ARTICLES, 
-  ...SARMS_ARTICLES, 
-  ...PEPTIDES_ARTICLES, 
-  ...MUSCLEPHD_ARTICLES, 
-  ...ULTRAHUMAN_ARTICLES, 
-  ...YAMAMOTO_ARTICLES
-];
+const ALL_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES, ...SARMS_ARTICLES, ...PEPTIDES_ARTICLES, ...ACHZOD_ARTICLES];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
   return ALL_ARTICLES.find((article) => article.slug === slug);

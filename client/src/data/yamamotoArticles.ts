@@ -1,6 +1,6 @@
 import { BlogArticle } from '../types/blog';
 
-export const YAMAMOTO_ARTICLES: BlogArticle[] = [
+export const ACHZODArticles: BlogArticle[] = [
   {
     id: `yam-1`,
     slug: `yam-creatine-the-queen-of-performance-supplements-76`,

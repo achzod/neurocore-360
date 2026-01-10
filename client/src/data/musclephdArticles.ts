@@ -3,7 +3,7 @@
 
 import { BlogArticle } from "./blogArticles";
 
-export const MUSCLEPHD_ARTICLES: BlogArticle[] = [
+export const ACHZOD_ARTICLES: BlogArticle[] = [
   {  id: "mph-1",
     priority: 11,
     slug: "strategies-stimulant-le-metabolisme",
