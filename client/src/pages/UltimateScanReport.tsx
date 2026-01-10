@@ -1,6 +1,6 @@
 /**
- * APEXLABS - Ultimate Scan Report (Elite Tier)
- * Style Ultrahuman - Dashboard Elite avec analyse photo et biomecanique
+ * APEXLABS - Ultimate Scan Report (Ultimate Tier)
+ * Style Ultrahuman - Dashboard complet avec analyse photo et biomecanique
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -41,14 +41,14 @@ import {
   HeartPulse
 } from 'lucide-react';
 
-// Theme definitions - Gold for Elite
+// Theme definitions - Gold for Ultimate
 const THEMES: Theme[] = [
   {
     id: 'ultrahuman',
     name: 'M1 Black',
     type: 'dark',
     colors: {
-      primary: '#F59E0B', // Amber/Gold for Elite
+      primary: '#F59E0B', // Amber/Gold for Ultimate
       background: '#000000',
       surface: '#0a0a0a',
       border: 'rgba(245, 158, 11, 0.15)',
@@ -370,7 +370,7 @@ const UltimateScanReport: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-amber-500 mx-auto mb-4" />
-          <p className="text-white/70">Chargement du rapport Elite...</p>
+          <p className="text-white/70">Chargement du rapport Ultimate...</p>
         </div>
       </div>
     );
@@ -457,7 +457,7 @@ const UltimateScanReport: React.FC = () => {
             <div className="p-6 rounded-sm border mb-8" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Target size={20} className="text-amber-400" />
-                Synthese Executive Elite
+                Synthese Executive Ultimate
               </h3>
               <div className="prose prose-invert max-w-none">
                 {report.heroSummary.split('\n').map((para, i) => (
@@ -633,7 +633,7 @@ const UltimateScanReport: React.FC = () => {
           <section id="supplements" className="mb-12 scroll-mt-24">
             <div className="flex items-center gap-4 mb-6">
               <Pill size={24} style={{ color: currentTheme.colors.primary }} />
-              <h2 className="text-xl font-bold">Stack Supplements Elite</h2>
+              <h2 className="text-xl font-bold">Stack Supplements Ultimate</h2>
             </div>
 
             <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
@@ -670,7 +670,7 @@ const UltimateScanReport: React.FC = () => {
           <section id="plan" className="mb-12 scroll-mt-24">
             <div className="flex items-center gap-4 mb-6">
               <Calendar size={24} style={{ color: currentTheme.colors.primary }} />
-              <h2 className="text-xl font-bold">Plan d'Action Elite 12 Semaines</h2>
+              <h2 className="text-xl font-bold">Plan d'Action Ultimate 12 Semaines</h2>
             </div>
 
             <div className="space-y-4">
@@ -697,7 +697,7 @@ const UltimateScanReport: React.FC = () => {
           {/* Conclusion */}
           {report.conclusion && (
             <section className="mb-12 p-6 rounded-sm border-2" style={{ borderColor: currentTheme.colors.primary, backgroundColor: `${currentTheme.colors.primary}10` }}>
-              <h3 className="text-lg font-bold mb-4">Conclusion Elite</h3>
+              <h3 className="text-lg font-bold mb-4">Conclusion Ultimate</h3>
               <p className="text-[var(--color-text)] leading-relaxed">{report.conclusion}</p>
               <div className="mt-4 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
                 <Zap size={16} className="text-amber-400" />
@@ -711,14 +711,14 @@ const UltimateScanReport: React.FC = () => {
             <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Star size={20} style={{ color: currentTheme.colors.primary }} />
-                Ton Avis Elite
+                Ton Avis Ultimate
               </h3>
 
               {reviewSubmitted ? (
                 <div className="flex items-center gap-3 p-4 rounded bg-amber-500/10 border border-amber-500/20">
                   <CheckCircle2 className="text-amber-400" size={24} />
                   <div>
-                    <p className="font-bold text-amber-400">Merci pour ton avis Elite !</p>
+                    <p className="font-bold text-amber-400">Merci pour ton avis Ultimate !</p>
                     <p className="text-sm text-[var(--color-text-muted)]">Ton feedback est precieux.</p>
                   </div>
                 </div>
@@ -740,7 +740,7 @@ const UltimateScanReport: React.FC = () => {
                     <textarea
                       value={reviewComment}
                       onChange={e => setReviewComment(e.target.value)}
-                      placeholder="Qu'as-tu pense de ton rapport Elite ?"
+                      placeholder="Qu'as-tu pense de ton rapport Ultimate ?"
                       className="w-full p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
                       rows={3}
                     />
@@ -770,7 +770,7 @@ const UltimateScanReport: React.FC = () => {
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Zap className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
                 <span className="text-sm font-medium uppercase tracking-wider" style={{ color: currentTheme.colors.primary }}>
-                  Accompagnement Premium
+                  Accompagnement complet
                 </span>
               </div>
               <h2 className="text-2xl font-bold mb-4">Coaching 1:1 avec Achzod</h2>

@@ -34,9 +34,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   }, [sections, searchTerm]);
 
-  const auditLabel = auditType === 'DISCOVERY_SCAN' ? 'Discovery Scan' :
-                     auditType === 'ANABOLIC_BIOSCAN' ? 'Anabolic Bioscan' :
-                     auditType === 'ULTIMATE_SCAN' ? 'Ultimate Scan' : 'Audit';
+  const auditLabel = auditType === 'GRATUIT' ? 'Discovery Scan' :
+                     auditType === 'PREMIUM' ? 'Anabolic Bioscan' :
+                     auditType === 'ELITE' ? 'Ultimate Scan' : 'Audit';
 
   return (
     <nav className="h-full flex flex-col">

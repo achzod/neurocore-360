@@ -210,7 +210,13 @@ export async function sendReportReadyEmail(
   try {
     const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
-    const reportLink = `${baseUrl}/report/${auditId}`;
+    const reportPath =
+      auditType === "GRATUIT"
+        ? `/scan/${auditId}`
+        : auditType === "PREMIUM"
+        ? `/anabolic/${auditId}`
+        : `/ultimate/${auditId}`;
+    const reportLink = `${baseUrl}${reportPath}`;
     const planLabel = auditType === "GRATUIT" ? "Discovery Scan" : auditType === "PREMIUM" ? "Anabolic Bioscan" : "Ultimate Scan";
     const planColor = auditType === "ELITE" ? COLORS.purple : auditType === "PREMIUM" ? COLORS.primary : COLORS.textMuted;
 
@@ -414,7 +420,7 @@ export async function sendAdminEmailNewAudit(
   }
 }
 
-// Email GRATUIT: demande avis + upsell Premium avec code ANALYSE20
+// Email GRATUIT: demande avis + upsell Anabolic Bioscan avec code ANALYSE20
 export async function sendGratuitUpsellEmail(
   email: string,
   auditId: string,
@@ -424,7 +430,7 @@ export async function sendGratuitUpsellEmail(
   try {
     const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
-    const checkoutLink = `${baseUrl}/audit-complet/questionnaire?promo=ANALYSE20`;
+    const checkoutLink = `${baseUrl}/questionnaire?plan=anabolic&promo=ANALYSE20`;
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
@@ -548,10 +554,10 @@ export async function sendPremiumJ7Email(
     });
 
     const result = await response.json() as { result: boolean };
-    console.log(`[SendPulse] Premium J+7 email sent to ${email}:`, result);
+    console.log(`[SendPulse] Audit J+7 email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
-    console.error("[SendPulse] Error sending premium J+7 email:", error);
+    console.error("[SendPulse] Error sending audit J+7 email:", error);
     return false;
   }
 }
@@ -619,10 +625,10 @@ export async function sendPremiumJ14Email(
     });
 
     const result = await response.json() as { result: boolean };
-    console.log(`[SendPulse] Premium J+14 email sent to ${email}:`, result);
+    console.log(`[SendPulse] Audit J+14 email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
-    console.error("[SendPulse] Error sending premium J+14 email:", error);
+    console.error("[SendPulse] Error sending audit J+14 email:", error);
     return false;
   }
 }
@@ -892,7 +898,7 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
                     <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Anabolic Bioscan — Audit métabolique complet
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Pro Panel 360 — L'analyse ultime + photos
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Ultimate Scan — L'analyse ultime + photos
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Blood Analysis — 50+ biomarqueurs

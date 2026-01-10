@@ -1,6 +1,6 @@
 /**
- * APEXLABS - Anabolic Bioscan Report (Premium Tier)
- * Style Ultrahuman - Dashboard Premium avec sections detaillees
+ * APEXLABS - Anabolic Bioscan Report (Anabolic Tier)
+ * Style Ultrahuman - Dashboard complet avec sections detaillees
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -374,7 +374,7 @@ const AnabolicScanReport: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
-          <p className="text-white/70">Chargement du rapport Premium...</p>
+          <p className="text-white/70">Chargement du rapport complet...</p>
         </div>
       </div>
     );

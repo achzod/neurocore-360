@@ -324,6 +324,13 @@ function QuestionField({
 }
 
 const PHOTO_FIELDS = ["photo-front", "photo-side", "photo-back"];
+const normalizePlanParam = (plan: string | null): "gratuit" | "anabolic" | "ultimate" => {
+  const value = (plan || "").toLowerCase();
+  if (["ultimate", "ultimate-scan", "elite", "pro", "pro-panel", "propanel"].includes(value)) return "ultimate";
+  if (["gratuit", "free", "discovery", "discovery-scan"].includes(value)) return "gratuit";
+  if (["anabolic", "anabolic-bioscan"].includes(value)) return "anabolic";
+  return "anabolic";
+};
 
 function QuestionnaireContent() {
   const [, navigate] = useLocation();
@@ -334,14 +341,14 @@ function QuestionnaireContent() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
 
-  // Lire le plan depuis l'URL (premium = Anabolic Bioscan, pro = Ultimate Scan)
+  // Lire le plan depuis l'URL (anabolic = Anabolic Bioscan, ultimate = Ultimate Scan)
   const [selectedPlan] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("plan") || "premium"; // Default to premium (pas de photos)
+    return normalizePlanParam(urlParams.get("plan"));
   });
 
-  // Filtrer les sections : analyse-posturale (photos) uniquement pour plan=pro (Ultimate Scan)
-  const filteredSections = selectedPlan === "pro"
+  // Filtrer les sections : analyse-posturale (photos) uniquement pour Ultimate Scan
+  const filteredSections = selectedPlan === "ultimate"
     ? QUESTIONNAIRE_SECTIONS
     : QUESTIONNAIRE_SECTIONS.filter(s => s.id !== "analyse-posturale");
 
@@ -616,10 +623,10 @@ function QuestionnaireContent() {
       return;
     }
 
-    // Vérifier les photos UNIQUEMENT pour Ultimate Scan (plan=pro)
-    // La section analyse-posturale n'existe pas pour premium, donc on skip la validation
+    // Vérifier les photos UNIQUEMENT pour Ultimate Scan
+    // La section analyse-posturale n'existe pas pour Anabolic Bioscan, donc on skip la validation
     const isLastSection = currentSectionIndex === filteredSections.length - 1;
-    if (isLastSection && selectedPlan === "pro") {
+    if (isLastSection && selectedPlan === "ultimate") {
       const missingPhotos = PHOTO_FIELDS.filter(field => !photoData[field]);
       if (missingPhotos.length > 0) {
         toast({

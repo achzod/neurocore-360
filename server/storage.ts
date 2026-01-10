@@ -138,7 +138,7 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       code: "ANALYSE20",
       discountPercent: 20,
-      description: "Code promo 20% sur analyse Premium",
+      description: "Code promo 20% sur Anabolic Bioscan",
       validFor: "PREMIUM",
       maxUses: null,
       currentUses: 0,

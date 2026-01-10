@@ -570,10 +570,10 @@ export default function AuditGratuit() {
             className="text-center mb-16"
           >
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-              Gratuit vs Premium
+              Gratuit vs Anabolic Bioscan
             </h2>
             <p className="text-white/50 text-lg">
-              Le Discovery Scan te donne le diagnostic. Les offres premium te donnent les solutions.
+              Le Discovery Scan te donne le diagnostic. L'Anabolic Bioscan et l'Ultimate Scan te donnent les solutions.
             </p>
           </motion.div>
 
@@ -607,7 +607,7 @@ export default function AuditGratuit() {
               </Link>
             </motion.div>
 
-            {/* Premium */}
+            {/* Anabolic Bioscan */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}

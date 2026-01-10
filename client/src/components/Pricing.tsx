@@ -34,7 +34,7 @@ const tiers: PricingTier[] = [
       { text: "Analyse photo", included: false },
     ],
     cta: "Commencer gratuitement",
-    href: "/audit-complet/questionnaire?plan=free",
+    href: "/questionnaire?plan=gratuit",
     icon: <Zap className="w-5 h-5" />,
     gradient: "from-gray-500 to-gray-600",
   },
@@ -57,12 +57,12 @@ const tiers: PricingTier[] = [
       { text: "Analyse photo", included: false },
     ],
     cta: "Obtenir Anabolic",
-    href: "/audit-complet/questionnaire?plan=essential",
+    href: "/questionnaire?plan=anabolic",
     icon: <Sparkles className="w-5 h-5" />,
     gradient: "from-primary to-emerald-400",
   },
   {
-    name: "Pro Panel 360",
+    name: "Ultimate Scan",
     price: "99",
     period: "one-time",
     description: "Rapport ~45 pages (25+ sections) + wearables + analyse photo",
@@ -70,7 +70,7 @@ const tiers: PricingTier[] = [
     features: [
       { text: "210 questions ultra-détaillées", included: true },
       { text: "Dashboard avancé temps réel", included: true },
-      { text: "Rapport premium 25+ sections", included: true },
+      { text: "Rapport complet 25+ sections", included: true },
       { text: "Sync Apple Watch, Oura, Garmin...", included: true },
       { text: "Analyse photo (posture, composition)", included: true },
       { text: "Nutrition timing avancé", included: true },
@@ -78,8 +78,8 @@ const tiers: PricingTier[] = [
       { text: "Psychologie & blocages mentaux", included: true },
       { text: "Support prioritaire", included: true },
     ],
-    cta: "Passer Pro Panel",
-    href: "/audit-complet/questionnaire?plan=elite",
+    cta: "Passer a Ultimate Scan",
+    href: "/questionnaire?plan=ultimate",
     icon: <Crown className="w-5 h-5" />,
     gradient: "from-violet-500 to-purple-500",
   },
@@ -197,7 +197,7 @@ export function Pricing() {
                   className={`w-full py-4 rounded font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
                     tier.popular
                       ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
-                      : tier.name === "Pro Panel 360"
+                      : tier.name === "Ultimate Scan"
                       ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}

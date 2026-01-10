@@ -806,7 +806,7 @@ export default function AuditDetail() {
                 <p className="text-muted-foreground text-sm mt-1">
                   {isPremiumUser
                     ? "Acces complet aux 15 domaines d'analyse expert."
-                    : "4 sections accessibles. Passez en Premium pour debloquer les 11 sections avancees."}
+                    : "4 sections accessibles. Passez a l'Anabolic Bioscan pour debloquer les 11 sections avancees."}
                 </p>
               </div>
             </div>
@@ -882,9 +882,9 @@ export default function AuditDetail() {
                   </p>
                 </div>
                 <Link href="/audit-complet/checkout">
-                  <Button size="lg" data-testid="button-upgrade-premium">
+                  <Button size="lg" data-testid="button-upgrade-anabolic">
                     <Unlock className="mr-2 h-4 w-4" />
-                    Passer Premium
+                    Passer a l'Anabolic Bioscan
                   </Button>
                 </Link>
               </CardContent>

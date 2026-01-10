@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS email_tracking (
 
 -- Insert default promo codes
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-VALUES ('ANALYSE20', 20, 'Code promo 20% sur analyse Premium', 'PREMIUM')
+VALUES ('ANALYSE20', 20, 'Code promo 20% sur Anabolic Bioscan', 'PREMIUM')
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
@@ -157,4 +157,3 @@ CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
 
 -- Note: Si certaines tables existent déjà, certaines erreurs peuvent apparaître.
 -- C'est normal, le script utilise CREATE TABLE IF NOT EXISTS pour éviter les doublons.
-

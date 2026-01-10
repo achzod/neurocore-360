@@ -283,7 +283,7 @@ export function generateExportHTMLFromTxt(
   const inferTierFromTxt = (t: string): AuditTier => {
     const lower = t.toLowerCase();
     if (lower.includes("analyse gratuite") || lower.includes("infos importantes")) return "GRATUIT";
-    if (lower.includes("analyse premium") || lower.includes("rappel important")) return "PREMIUM";
+    if (lower.includes("anabolic bioscan") || lower.includes("ultimate scan") || lower.includes("rappel important")) return "PREMIUM";
     // Par défaut on considère PREMIUM (sinon on sous-livre)
     return "PREMIUM";
   };
@@ -1388,8 +1388,8 @@ export function generateExportHTMLFromTxt(
         <!-- ELITE (Recommandé) -->
         <div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.12) 0%, rgba(94, 234, 212, 0.03) 100%); border: 2px solid var(--primary); border-radius: 20px; padding: 32px; position: relative;">
           <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #0B0B0F; padding: 6px 20px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Recommandé</div>
-          <div style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Coaching premium</div>
-          <h3 style="font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">Elite</h3>
+          <div style="font-size: 0.7rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Coaching personnalise</div>
+          <h3 style="font-size: 1.6rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">Accompagnement complet</h3>
           <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Pour ceux qui veulent des résultats rapides avec un accompagnement total.</p>
 
           <!-- Prix avec déduction -->
@@ -1421,7 +1421,7 @@ export function generateExportHTMLFromTxt(
             <li style="margin-bottom: 8px; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Corrections vidéo de ta technique</li>
             <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Réponses prioritaires 24/7</li>
           </ul>
-          <a href="https://www.achzodcoaching.com/coaching-elite" target="_blank" style="display: block; text-align: center; padding: 14px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 12px; color: #0B0B0F; font-weight: 800; text-decoration: none;">Choisir Elite</a>
+          <a href="https://www.achzodcoaching.com/coaching-elite" target="_blank" style="display: block; text-align: center; padding: 14px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 12px; color: #0B0B0F; font-weight: 800; text-decoration: none;">Decouvrir le coaching</a>
         </div>
 
         <!-- PRIVATE LAB -->

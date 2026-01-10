@@ -578,7 +578,7 @@ export default function AdminDashboard() {
                             onClick={() => {
                               setSelectedAuditId(q.id);
                               setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'Anabolic Bioscan !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                               setShowCtaModal(true);
                             }}
                           >
@@ -592,7 +592,7 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* Section: GRATUIT - Upsell Premium */}
+              {/* Section: GRATUIT - Upsell Anabolic Bioscan */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-green-500/10">
@@ -600,7 +600,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Analyses GRATUITES</h3>
-                    <p className="text-sm text-muted-foreground">Upsell Premium avec code ANALYSE20 (-20%)</p>
+                    <p className="text-sm text-muted-foreground">Upsell Anabolic Bioscan avec code ANALYSE20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => a.type === "GRATUIT" && a.reportDeliveryStatus === "SENT").length}
@@ -644,14 +644,14 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* Section: PREMIUM J+7 */}
+              {/* Section: ANABOLIC/ULTIMATE J+7 */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-purple-500/10">
                     <Crown className="w-5 h-5 text-purple-500" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">PREMIUM J+7</h3>
+                    <h3 className="text-lg font-semibold">ANABOLIC/ULTIMATE J+7</h3>
                     <p className="text-sm text-muted-foreground">Demande avis + CTA coaching APEXLABS20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
@@ -666,7 +666,7 @@ export default function AdminDashboard() {
                     getDaysSinceSent(a.reportSentAt)! >= 7
                   );
                   return j7Audits.length === 0 ? (
-                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Premium/Elite de +7 jours</CardContent></Card>
+                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Anabolic/Ultimate de +7 jours</CardContent></Card>
                   ) : (
                     <div className="grid gap-3">
                       {j7Audits.slice(0, 5).map((audit) => {
@@ -711,14 +711,14 @@ export default function AdminDashboard() {
                 })()}
               </div>
 
-              {/* Section: PREMIUM J+14 */}
+              {/* Section: ANABOLIC/ULTIMATE J+14 */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-amber-500/10">
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">PREMIUM J+14 (Dernière chance)</h3>
+                    <h3 className="text-lg font-semibold">ANABOLIC/ULTIMATE J+14 (Derniere chance)</h3>
                     <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - APEXLABS20</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
@@ -733,7 +733,7 @@ export default function AdminDashboard() {
                     getDaysSinceSent(a.reportSentAt)! >= 14
                   );
                   return j14Audits.length === 0 ? (
-                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Premium/Elite de +14 jours</CardContent></Card>
+                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Anabolic/Ultimate de +14 jours</CardContent></Card>
                   ) : (
                     <div className="grid gap-3">
                       {j14Audits.slice(0, 5).map((audit) => {
@@ -1069,7 +1069,7 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setSelectedAuditId(q.id);
                                 setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'Anabolic Bioscan !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >
@@ -1242,8 +1242,8 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewPromo({ ...newPromo, validFor: e.target.value })}
                   >
                     <option value="ALL">Tous les audits</option>
-                    <option value="PREMIUM">Premium uniquement</option>
-                    <option value="ELITE">Elite uniquement</option>
+                    <option value="PREMIUM">Anabolic Bioscan uniquement</option>
+                    <option value="ELITE">Ultimate Scan uniquement</option>
                   </select>
                 </div>
               </div>
@@ -1335,4 +1335,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-

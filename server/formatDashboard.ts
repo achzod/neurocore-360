@@ -39,6 +39,7 @@ const SECTION_CATEGORIES: Record<string, DashboardSection['category']> = {
   'analyse entrainement et periodisation': 'analysis',
   'analyse systeme cardiovasculaire': 'analysis',
   'analyse metabolisme et nutrition': 'analysis',
+  'analyse energie et recuperation': 'analysis',
   'analyse sommeil et recuperation': 'analysis',
   'analyse digestion et microbiote': 'analysis',
   'analyse axes hormonaux': 'analysis',
@@ -173,6 +174,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     "ANALYSE BIOMECANIQUE ET SANGLE PROFONDE",
     "ANALYSE ENTRAINEMENT ET PERIODISATION",
     "ANALYSE SYSTEME CARDIOVASCULAIRE",
+    "ANALYSE ENERGIE ET RECUPERATION",
     "ANALYSE METABOLISME ET NUTRITION",
     "ANALYSE SOMMEIL ET RECUPERATION",
     "ANALYSE DIGESTION ET MICROBIOTE",
@@ -192,6 +194,10 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     "ANALYSE D'EXPERT", // Parfois généré
   ];
 
+  const normalizedTitles = new Map(
+    VALID_TITLES.map(title => [normalizeTitle(title), title])
+  );
+
   let currentPos = 0;
   for (let i = 0; i < sectionLines.length; i++) {
     const line = sectionLines[i].trim();
@@ -202,8 +208,8 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
       continue;
     }
     
-    // Ne garder QUE les titres connus de la liste VALID_TITLES
-    const matchedTitle = VALID_TITLES.find(t => line.toUpperCase() === t.toUpperCase());
+    // Ne garder QUE les titres connus de la liste VALID_TITLES (normalisés)
+    const matchedTitle = normalizedTitles.get(normalizeTitle(line));
     
     if (matchedTitle) {
       // Vérifier qu'on n'a pas déjà cette section (éviter les doublons)

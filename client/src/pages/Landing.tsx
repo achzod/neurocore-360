@@ -1546,7 +1546,7 @@ const ORIGINAL_STATIC_REVIEWS = [
   { id: "r093", email: "raymond.albert@gmail.com", rating: 5, comment: "Sonia Tlev a popularisé le TBC. Achzod a créé le NBC - Neuro Body Challenge. Niveau supérieur.", createdAt: new Date("2025-10-04") },
   { id: "r094", email: "genevieve.fernand@yahoo.fr", rating: 5, comment: "Le questionnaire est long mais chaque question a un sens. Le rapport qui en découle est précis.", createdAt: new Date("2025-10-03") },
   { id: "r095", email: "jacques.gaston@gmail.com", rating: 5, comment: "Beta testeur convaincu. J'ai vu ce projet naître et grandir. Achzod est un visionnaire.", createdAt: new Date("2025-10-02") },
-  { id: "r096", email: "jeanne.leon@proton.me", rating: 4, comment: "Excellent outil. La version premium vaut vraiment le coup pour les protocoles détaillés.", createdAt: new Date("2025-10-01") },
+  { id: "r096", email: "jeanne.leon@proton.me", rating: 4, comment: "Excellent outil. La version complete vaut vraiment le coup pour les protocoles detailles.", createdAt: new Date("2025-10-01") },
   { id: "r097", email: "maurice.ernest@gmail.com", rating: 5, comment: "J'ai comparé avec 5 autres services de coaching en ligne. NEUROCORE est loin devant.", createdAt: new Date("2025-10-01") },
   { id: "r098", email: "simone.armand@outlook.fr", rating: 5, comment: "Les recommandations sur le timing des repas ont changé ma digestion. Simple mais efficace.", createdAt: new Date("2025-10-01") },
   { id: "r099", email: "robert.emile@gmail.com", rating: 5, comment: "Jamcore DZ divertit sur YouTube. NEUROCORE transforme dans la vraie vie. Pas le même objectif.", createdAt: new Date("2025-10-01") },

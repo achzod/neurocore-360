@@ -127,7 +127,11 @@ export function generatePremiumHTMLFromTxt(
   }).join('');
 
   // CTA Fallback
-  const inferredTier: AuditTier = txt.toLowerCase().includes('premium') ? 'PREMIUM' : 'GRATUIT';
+  const lowerTxt = txt.toLowerCase();
+  const inferredTier: AuditTier =
+    lowerTxt.includes('discovery scan') || lowerTxt.includes('analyse gratuite')
+      ? 'GRATUIT'
+      : 'PREMIUM';
   const ctaDebut = dashboard.ctaDebut || getCTADebut(inferredTier, PRICING.PREMIUM);
   const ctaFin = dashboard.ctaFin || getCTAFin(inferredTier, PRICING.PREMIUM);
 
@@ -605,7 +609,7 @@ export function generatePremiumHTMLFromTxt(
               <li>Support prioritaire 7j/7</li>
               <li>Optimisation sommeil & stress</li>
             </ul>
-            <a href="https://www.achzodcoaching.com/coaching-elite" class="btn-tech outline">Choisir Elite</a>
+            <a href="https://www.achzodcoaching.com/coaching-elite" class="btn-tech outline">Decouvrir le coaching</a>
           </div>
         </div>
       </section>

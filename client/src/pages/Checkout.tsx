@@ -30,14 +30,33 @@ export default function Checkout() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [responses, setResponses] = useState<Record<string, unknown>>({});
+  const [photoData, setPhotoData] = useState<Record<string, string>>({});
   const [promoCode, setPromoCode] = useState("");
   const [promoValidating, setPromoValidating] = useState(false);
   const [validatedPromo, setValidatedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
 
+  const normalizePlanId = (planId: string | null): string | null => {
+    if (!planId) return planId;
+    if (planId === "premium") return "anabolic";
+    if (planId === "elite" || planId === "pro" || planId === "propanel" || planId === "pro-panel") {
+      return "ultimate";
+    }
+    return planId;
+  };
+
+  const getPlanType = (planId: string | null): "GRATUIT" | "PREMIUM" | "ELITE" | "ALL" => {
+    const normalized = normalizePlanId(planId);
+    if (normalized === "gratuit") return "GRATUIT";
+    if (normalized === "anabolic") return "PREMIUM";
+    if (normalized === "ultimate") return "ELITE";
+    return "ALL";
+  };
+
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
     const savedResponses = localStorage.getItem("neurocore_responses");
+    const savedPhotos = sessionStorage.getItem("neurocore_photos");
 
     if (!savedEmail || !savedResponses) {
       navigate("/audit-complet/questionnaire");
@@ -46,6 +65,13 @@ export default function Checkout() {
 
     setEmail(savedEmail);
     setResponses(JSON.parse(savedResponses));
+    if (savedPhotos) {
+      try {
+        setPhotoData(JSON.parse(savedPhotos));
+      } catch {
+        sessionStorage.removeItem("neurocore_photos");
+      }
+    }
   }, [navigate]);
 
   const validatePromoCode = async () => {
@@ -60,7 +86,7 @@ export default function Checkout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: promoCode.trim(),
-          auditType: selectedPlan?.toUpperCase() || "ALL",
+          auditType: getPlanType(selectedPlan),
         }),
       });
       const data = await response.json();
@@ -97,39 +123,45 @@ export default function Checkout() {
   }, [selectedPlan]);
 
   const STRIPE_PRICE_IDS: Record<string, string> = {
-    premium: "price_1SisNBRDE5WXnLZXF6QIJuh4",
-    elite: "price_1SisNCRDE5WXnLZXTk4obahF",
+    anabolic: "price_1SisNBRDE5WXnLZXF6QIJuh4",
+    ultimate: "price_1SisNCRDE5WXnLZXTk4obahF",
   };
 
   const createAuditMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const type = planId.toUpperCase() as "GRATUIT" | "PREMIUM" | "ELITE";
+      const normalizedPlan = normalizePlanId(planId) || planId;
+      const type = getPlanType(normalizedPlan) as "GRATUIT" | "PREMIUM" | "ELITE";
+      const mergedResponses =
+        normalizedPlan === "ultimate"
+          ? { ...responses, ...photoData }
+          : responses;
 
-      if (planId === "gratuit") {
-        return apiRequest("POST", "/api/audit/create", {
+      if (normalizedPlan === "gratuit") {
+        return apiRequest("POST", "/api/discovery-scan/create", {
           email,
-          type,
-          responses,
+          responses: mergedResponses,
         });
-      } else {
-        const response = await apiRequest("POST", "/api/stripe/create-checkout-session", {
-          priceId: STRIPE_PRICE_IDS[planId],
-          email,
-          planType: type,
-          responses,
-          promoCode: validatedPromo?.code || null,
-        });
-        return response.json();
       }
+
+      const response = await apiRequest("POST", "/api/stripe/create-checkout-session", {
+        priceId: STRIPE_PRICE_IDS[normalizedPlan],
+        email,
+        planType: type,
+        responses: mergedResponses,
+        promoCode: validatedPromo?.code || null,
+      });
+      return response.json();
     },
     onSuccess: (data: any) => {
-      if (selectedPlan === "gratuit") {
+      const normalizedPlan = normalizePlanId(selectedPlan);
+      if (normalizedPlan === "gratuit") {
         toast({
           title: "Audit créé avec succès !",
           description: "Tu vas recevoir un email avec tes résultats.",
         });
         localStorage.removeItem("neurocore_responses");
         localStorage.removeItem("neurocore_section");
+        sessionStorage.removeItem("neurocore_photos");
         navigate("/auth/check-email");
       } else if (data?.url) {
         window.location.href = data.url;
@@ -145,13 +177,26 @@ export default function Checkout() {
   });
 
   const handleSelectPlan = (planId: string) => {
-    setSelectedPlan(planId);
+    setSelectedPlan(normalizePlanId(planId));
   };
 
   const handleConfirm = () => {
-    if (selectedPlan) {
-      createAuditMutation.mutate(selectedPlan);
+    const normalizedPlan = normalizePlanId(selectedPlan);
+    if (!normalizedPlan) return;
+    if (normalizedPlan === "ultimate") {
+      const missingPhotos = ["photo-front", "photo-side", "photo-back"].filter(
+        (field) => !photoData[field]
+      );
+      if (missingPhotos.length > 0) {
+        toast({
+          title: "Photos manquantes",
+          description: "Les 3 photos (face, profil, dos) sont obligatoires pour Ultimate Scan.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
+    createAuditMutation.mutate(normalizedPlan);
   };
 
   return (

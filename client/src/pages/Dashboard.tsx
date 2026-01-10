@@ -8,6 +8,8 @@ import { Footer } from "@/components/Footer";
 import { useQuery } from "@tanstack/react-query";
 import type { Audit } from "@shared/schema";
 import { RadarChart } from "@/components/RadarChart";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   FileText,
   Plus,
@@ -65,9 +67,9 @@ function getScoreLevel(score: number): { label: string; color: string } {
 
 function AuditTypeLabel({ type }: { type: string }) {
   const config = {
-    GRATUIT: { label: "Analyse Gratuite", icon: Star, className: "bg-muted text-muted-foreground" },
-    PREMIUM: { label: "Analyse Premium", icon: Crown, className: "bg-primary text-primary-foreground" },
-    ELITE: { label: "Analyse Elite", icon: Zap, className: "bg-accent text-accent-foreground" },
+    GRATUIT: { label: "Discovery Scan", icon: Star, className: "bg-muted text-muted-foreground" },
+    PREMIUM: { label: "Anabolic Bioscan", icon: Crown, className: "bg-primary text-primary-foreground" },
+    ELITE: { label: "Ultimate Scan", icon: Zap, className: "bg-accent text-accent-foreground" },
   };
   const typeConfig = config[type as keyof typeof config] || config.GRATUIT;
   const Icon = typeConfig.icon;
@@ -530,6 +532,7 @@ function EmptyState() {
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const email = localStorage.getItem("neurocore_email");
@@ -540,13 +543,58 @@ export default function Dashboard() {
     setUserEmail(email);
   }, [navigate]);
 
-  const { data: audits, isLoading } = useQuery<Audit[]>({
+  const { data: audits, isLoading, refetch } = useQuery<Audit[]>({
     queryKey: [`/api/audits?email=${encodeURIComponent(userEmail || "")}`],
     enabled: !!userEmail,
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
+
+    const confirmSession = async () => {
+      try {
+        const response = await apiRequest("POST", "/api/stripe/confirm-session", { sessionId });
+        const data = await response.json();
+        if (data?.success) {
+          toast({
+            title: "Paiement confirme",
+            description: "Ton rapport est en cours de generation.",
+          });
+          await refetch();
+        } else if (data?.status) {
+          toast({
+            title: "Paiement en attente",
+            description: "La confirmation est en cours. Recharge dans quelques minutes.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Erreur confirmation",
+          description: "Impossible de confirmer le paiement pour le moment.",
+          variant: "destructive",
+        });
+      } finally {
+        params.delete("session_id");
+        params.delete("success");
+        const cleanUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+        window.history.replaceState({}, "", cleanUrl);
+      }
+    };
+
+    confirmSession();
+  }, [refetch, toast]);
+
   const latestAudit = audits?.[0];
   const hasCompletedAudit = latestAudit?.status === "COMPLETED" && latestAudit?.scores;
+  const reportPath =
+    latestAudit?.type === "GRATUIT"
+      ? `/scan/${latestAudit?.id}`
+      : latestAudit?.type === "PREMIUM"
+      ? `/anabolic/${latestAudit?.id}`
+      : `/ultimate/${latestAudit?.id}`;
 
   if (isLoading) {
     return (
@@ -621,10 +669,10 @@ export default function Dashboard() {
                             Rapport classique
                           </Button>
                         </Link>
-                        <Link href={`/report/${latestAudit.id}`}>
-                          <Button size="lg" data-testid="button-view-report-premium">
+                        <Link href={reportPath}>
+                          <Button size="lg" data-testid="button-view-report-anabolic">
                             <Sparkles className="mr-2 h-4 w-4" />
-                            Rapport Premium
+                            Rapport complet
                           </Button>
                         </Link>
                       </div>
@@ -730,7 +778,7 @@ export default function Dashboard() {
                     </div>
                     <Link href="/#pricing">
                       <Button size="lg" data-testid="button-upgrade-banner">
-                        Voir les offres Premium
+                        Voir les offres completes
                       </Button>
                     </Link>
                   </CardContent>

@@ -706,7 +706,7 @@ export default function BloodAnalysis() {
                   <p className="text-muted-foreground mb-6">
                     Les 99€ de cette analyse sont deduits si tu prends un coaching.
                   </p>
-                  <Link href="/offers/pro-panel">
+                  <Link href="/offers/ultimate-scan">
                     <Button size="lg" className="gap-2 bg-red-500 hover:bg-red-600">
                       Voir les coachings
                       <ArrowRight className="h-5 w-5" />

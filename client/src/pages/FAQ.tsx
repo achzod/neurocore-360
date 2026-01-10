@@ -33,7 +33,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
-    answer: "Le questionnaire prend 15-45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est généré automatiquement dès que tu termines - tu le reçois en quelques minutes par email. Pour les offres premium (Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum."
+    answer: "Le questionnaire prend 15-45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est généré automatiquement dès que tu termines - tu le reçois en quelques minutes par email. Pour les offres payantes (Anabolic Bioscan, Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum."
   },
   {
     question: "Qui es-tu exactement, Achzod ?",
@@ -49,7 +49,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 49€ une fois. Pro Panel 360 = 99€ une fois. Blood Analysis = 99€ une fois. Burnout Engine = 39€ une fois."
+    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 49€ une fois. Ultimate Scan = 99€ une fois. Blood Analysis = 99€ une fois. Burnout Engine = 39€ une fois."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",
@@ -177,7 +177,7 @@ export default function FAQ() {
                 Prêt à découvrir ton potentiel ?
               </h2>
               <p className="text-lg text-white/50">
-                Commence gratuitement ou passe directement à une offre premium.
+                Commence gratuitement ou passe directement à une offre payante.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
                 <Link href="/offers/discovery-scan">

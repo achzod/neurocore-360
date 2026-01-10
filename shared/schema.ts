@@ -256,14 +256,14 @@ export interface Question {
 export const PRICING_PLANS = [
   {
     id: "gratuit",
-    name: "Audit Découverte",
+    name: "Discovery Scan",
     price: 0,
     priceLabel: "Gratuit",
     subtitle: "Pour tester",
     description: "Questionnaire 180 questions + rapport decouverte",
     icon: "Star",
     color: "slate",
-    href: "/offers/audit-gratuit",
+    href: "/offers/discovery-scan",
     features: [
       "Résumé Exécutif",
       "Analyse Anthropométrique",
@@ -275,19 +275,18 @@ export const PRICING_PLANS = [
     cta: "Commencer gratuitement",
   },
   {
-    id: "premium",
+    id: "anabolic",
     name: "Anabolic Bioscan",
     price: 79,
     priceLabel: "79€",
     subtitle: "Paiement unique",
-    description: "Analyse complete 15 domaines + photos + protocoles",
+    description: "Analyse complete 15 domaines + protocoles personnalises",
     icon: "Crown",
     color: "emerald",
-    href: "/offers/audit-premium",
+    href: "/offers/anabolic-bioscan",
     coachingNote: "Deduit de ton coaching",
     features: [
       "15 sections d'analyse completes",
-      "Analyse photos (posture, composition)",
       "Profil Hormonal complet",
       "Digestion & Microbiome",
       "Protocole Nutrition detaille",
@@ -321,7 +320,7 @@ export const PRICING_PLANS = [
     cta: "Analyser mon sang",
   },
   {
-    id: "propanel",
+    id: "ultimate",
     name: "Ultimate Scan",
     price: 149,
     priceLabel: "149€",
@@ -329,7 +328,7 @@ export const PRICING_PLANS = [
     description: "Anabolic Bioscan + wearables + blessures",
     icon: "Zap",
     color: "cyan",
-    href: "/offers/pro-panel",
+    href: "/offers/ultimate-scan",
     coachingNote: "Deduit de ton coaching Private Lab",
     features: [
       "Tout l'Anabolic Bioscan inclus",

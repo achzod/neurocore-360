@@ -21,11 +21,11 @@ export function getCTADebut(tier: AuditTier, amountPaid: number = PRICING.PREMIU
 Tu consultes actuellement l'analyse GRATUITE de ton profil NEUROCORE 360.
 Cette version te donne un apercu de tes domaines cles et identifie tes priorites d'optimisation.
 
-Pour debloquer l'analyse COMPLETE avec tous les details, protocoles personnalises, stack de supplements detaillee et feuille de route precise, passe a l'analyse PREMIUM.
+Pour debloquer l'analyse COMPLETE avec tous les details, protocoles personnalises, stack de supplements detaillee et feuille de route precise, passe a l'Anabolic Bioscan.
 
-Si tu decides de prendre un coaching avec moi apres ton analyse PREMIUM, le montant que tu auras paye pour cette analyse sera DEDUIT A 100% du prix du coaching.
+Si tu decides de prendre un coaching avec moi apres ton Anabolic Bioscan, le montant que tu auras paye pour cette analyse sera DEDUIT A 100% du prix du coaching.
 
-Pour toute question ou pour passer en PREMIUM :
+Pour toute question ou pour passer en Anabolic Bioscan :
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
 
@@ -33,9 +33,10 @@ Site: ${CONTACT.website}
 `;
   }
 
+  const tierLabel = tier === 'ELITE' ? "Ultimate Scan" : "Anabolic Bioscan";
   return `RAPPEL IMPORTANT
 
-Tu consultes ton analyse PREMIUM NEUROCORE 360 complete.
+Tu consultes ton analyse ${tierLabel} NEUROCORE 360 complete.
 
 IMPORTANT : Si tu decides de prendre un coaching avec moi apres cette analyse, le montant que tu as paye pour cette analyse (${amountPaid}EUR) sera DEDUIT A 100% du prix du coaching.
 

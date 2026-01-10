@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Anabolic Bioscan
- * Premium Design with React Animations - 59€
+ * Anabolic Design with React Animations - 59€
  */
 
 import { useRef } from "react";
@@ -289,7 +289,7 @@ export default function AuditPremium() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/questionnaire?plan=premium">
+            <Link href="/questionnaire?plan=anabolic">
               <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                 Commencer mon scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -515,7 +515,7 @@ export default function AuditPremium() {
                 <span className="text-white text-5xl font-bold tracking-[-0.04em]">59€</span>
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
-              <Link href="/questionnaire?plan=premium">
+              <Link href="/questionnaire?plan=anabolic">
                 <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -542,7 +542,7 @@ export default function AuditPremium() {
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             Diagnostic + protocoles + plan d'action. Tout ce qu'il te faut pour transformer ta sante.
           </p>
-          <Link href="/questionnaire?plan=premium">
+          <Link href="/questionnaire?plan=anabolic">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Anabolic Bioscan — 59€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

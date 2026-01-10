@@ -58,6 +58,7 @@ function Router() {
       <Route path="/apexlabs" component={ApexLabs} />
       <Route path="/audit-complet" component={Landing} />
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
+      <Route path="/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
       <Route path="/blood-analysis" component={BloodAnalysis} />
       <Route path="/burnout-detection" component={BurnoutDetectionPage} />

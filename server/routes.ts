@@ -72,6 +72,23 @@ export async function registerRoutes(
     }
   }
 
+  const PHOTO_FIELD_VARIANTS: string[][] = [
+    ["photoFront", "photo-front"],
+    ["photoSide", "photo-side"],
+    ["photoBack", "photo-back"],
+  ];
+
+  function extractPhotoValue(source: Record<string, unknown> | null | undefined, keys: string[]): string | null {
+    if (!source) return null;
+    for (const key of keys) {
+      const value = (source as any)?.[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value;
+      }
+    }
+    return null;
+  }
+
   function extractPhotosFromAudit(audit: any): string[] {
     const out: string[] = [];
     // 1) audit.photos (si jamais on a un tableau)
@@ -80,11 +97,15 @@ export async function registerRoutes(
     }
     // 2) audit.responses (flux principal)
     const r = audit?.responses || {};
-    const maybe = [r.photoFront, r.photoSide, r.photoBack].filter((p: any) => typeof p === "string" && p.trim().length > 0);
-    out.push(...(maybe as string[]));
+    const responsePhotos = PHOTO_FIELD_VARIANTS
+      .map((keys) => extractPhotoValue(r, keys))
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+    out.push(...responsePhotos);
     // 3) legacy champs directs
-    const legacy = [audit?.photoFront, audit?.photoSide, audit?.photoBack].filter((p: any) => typeof p === "string" && p.trim().length > 0);
-    out.push(...(legacy as string[]));
+    const legacy = PHOTO_FIELD_VARIANTS
+      .map((keys) => extractPhotoValue(audit, keys))
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+    out.push(...legacy);
 
     // Nettoyage: éviter les doublons
     const uniq = Array.from(new Set(out));
@@ -158,13 +179,10 @@ export async function registerRoutes(
   });
 
   const hasThreePhotos = (responses: Record<string, unknown>): boolean => {
-    const pics = [
-      (responses as any)?.photoFront,
-      (responses as any)?.photoSide,
-      (responses as any)?.photoBack,
-    ];
-    const valid = pics.filter((p) => typeof p === "string" && p.trim().length > 100);
-    return valid.length === 3;
+    const pics = PHOTO_FIELD_VARIANTS
+      .map((keys) => extractPhotoValue(responses, keys))
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 100);
+    return pics.length === 3;
   };
 
   // Test endpoint for Claude API
@@ -227,6 +245,31 @@ export async function registerRoutes(
   app.post("/api/audit/create", async (req, res) => {
     try {
       const data = createAuditBodySchema.parse(req.body);
+      if (data.type === "GRATUIT") {
+        const audit = await storage.createAudit({
+          userId: "",
+          type: data.type,
+          email: data.email,
+          responses: data.responses,
+        });
+
+        const result = await analyzeDiscoveryScan(data.responses as any);
+        const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
+
+        await storage.updateAudit(audit.id, {
+          narrativeReport,
+          reportDeliveryStatus: "READY",
+        });
+
+        const baseUrl = getBaseUrl();
+        const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+        if (emailSent) {
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+        }
+
+        res.json(audit);
+        return;
+      }
       // Photos obligatoires UNIQUEMENT pour Ultimate Scan (ELITE)
       if (data.type === "ELITE" && !hasThreePhotos(data.responses)) {
         res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
@@ -513,6 +556,7 @@ export async function registerRoutes(
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
           const supplementStack = parseSupplementsFromTxt(report.txt);
+          const auditScores = audit.scores || {};
 
           // Helper pour calculer le level
           const getLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
@@ -522,14 +566,50 @@ export async function registerRoutes(
             return "faible";
           };
 
+          const normalizeTitle = (value: string) =>
+            value
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]+/g, ' ')
+              .trim();
+
+          const averageScores = (values: Array<number | undefined>): number | null => {
+            const usable = values.filter((v): v is number => typeof v === "number" && !Number.isNaN(v));
+            if (usable.length === 0) return null;
+            const sum = usable.reduce((acc, val) => acc + val, 0);
+            return Math.round(sum / usable.length);
+          };
+
+          const resolveScoreFromTitle = (title: string): number | null => {
+            const t = normalizeTitle(title);
+
+            if (t.includes("metabolisme") && t.includes("nutrition")) {
+              return averageScores([auditScores.metabolismeenergie, auditScores.nutritiontracking]);
+            }
+            if (t.includes("nutrition")) return auditScores.nutritiontracking ?? null;
+            if (t.includes("metabolisme") || t.includes("energie")) return auditScores.metabolismeenergie ?? null;
+            if (t.includes("sommeil") || t.includes("recuperation")) return auditScores.sommeilrecuperation ?? null;
+            if (t.includes("digestion") || t.includes("microbiote")) return auditScores.digestionmicrobiome ?? null;
+            if (t.includes("cardio") || t.includes("hrv") || t.includes("cardiovasculaire")) return auditScores.hrvcardiaque ?? null;
+            if (t.includes("entrainement") || t.includes("performance") || t.includes("activite")) return auditScores.activiteperformance ?? null;
+            if (t.includes("hormon")) return auditScores.hormonesstress ?? null;
+            if (t.includes("biomarque")) return auditScores.analysesbiomarqueurs ?? null;
+            if (t.includes("lifestyle") || t.includes("substances") || t.includes("mode de vie")) return auditScores.lifestylesubstances ?? null;
+            if (t.includes("biomecanique") || t.includes("mobilite") || t.includes("postur")) return auditScores.biomecaniquemobilite ?? null;
+            if (t.includes("composition")) return auditScores.compositioncorporelle ?? null;
+            if (t.includes("profil")) return auditScores.profilbase ?? null;
+            if (t.includes("neurotransmetteurs")) return auditScores.neurotransmetteurs ?? null;
+            return null;
+          };
+
           // On mappe le format dashboard vers le format attendu par AuditDetail.tsx
-          const globalScore = audit.scores?.global || 76;
+          const globalScore = auditScores.global ?? dashboard.global ?? 76;
           const mappedSections = dashboard.sections
             .filter(s => s.category !== 'executive')
             .map(s => {
-              // Extraire le score de la section depuis le contenu si disponible
-              const scoreMatch = s.content.match(/Score\s*:\s*(\d+)/i);
-              const sectionScore = scoreMatch ? parseInt(scoreMatch[1]) : 70;
+              const scoreFromAudit = resolveScoreFromTitle(s.title);
+              const sectionScore = s.score > 0 ? s.score : (scoreFromAudit ?? globalScore);
               return {
                 id: s.id,
                 title: s.title,
@@ -552,8 +632,8 @@ export async function registerRoutes(
             executiveNarrative: dashboard.resumeExecutif || "",
             globalDiagnosis: "",
             sections: mappedSections,
-            prioritySections: mappedSections.filter(s => s.score < 60).slice(0, 3).map(s => s.id),
-            strengthSections: mappedSections.filter(s => s.score >= 70).slice(0, 3).map(s => s.id),
+            prioritySections: [],
+            strengthSections: [],
             supplementStack: supplementStack,
             lifestyleProtocol: "",
             weeklyPlan: {
@@ -568,6 +648,20 @@ export async function registerRoutes(
             generatedAt: dashboard.generatedAt,
             photoAnalysis: report.photoAnalysis || null
           };
+
+          const analysisSectionIds = new Set(
+            dashboard.sections.filter(s => s.category === "analysis").map(s => s.id)
+          );
+          const analysisSections = mappedSections.filter(s => analysisSectionIds.has(s.id));
+
+          mappedReport.prioritySections = analysisSections
+            .filter(s => s.score < 60)
+            .slice(0, 3)
+            .map(s => s.id);
+          mappedReport.strengthSections = analysisSections
+            .filter(s => s.score >= 70)
+            .slice(0, 3)
+            .map(s => s.id);
 
           res.json(mappedReport);
           return;
@@ -1351,8 +1445,8 @@ export async function registerRoutes(
             quantity: 1,
           },
         ],
-        mode: planType === 'ELITE' ? 'subscription' : 'payment',
-        success_url: `${baseUrl}/dashboard?email=${encodeURIComponent(email)}&success=true`,
+        mode: 'payment',
+        success_url: `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/audit-complet/checkout?cancelled=true`,
         customer_email: email,
         metadata: {
@@ -1379,6 +1473,88 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("Stripe checkout error:", error);
       res.status(500).json({ error: error.message || "Erreur création session" });
+    }
+  });
+
+  app.post("/api/stripe/confirm-session", async (req, res) => {
+    try {
+      const sessionId = req.body?.sessionId || req.query?.session_id;
+      if (!sessionId || typeof sessionId !== "string") {
+        res.status(400).json({ error: "sessionId requis" });
+        return;
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
+
+      const isPaid = session.payment_status === "paid" || session.status === "complete";
+      if (!isPaid) {
+        res.status(202).json({ success: false, status: session.payment_status || session.status });
+        return;
+      }
+
+      const email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        session.metadata?.email ||
+        "";
+      const planType = session.metadata?.planType;
+
+      if (!email || !planType) {
+        res.status(400).json({ error: "Metadata Stripe manquante" });
+        return;
+      }
+
+      const existingAudits = await storage.getAuditsByEmail(email);
+      const sessionCreatedAt = session.created ? session.created * 1000 : Date.now();
+      const recentAudit = existingAudits.find((audit) => {
+        if (audit.type !== planType) return false;
+        const createdAt = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
+        return createdAt >= sessionCreatedAt - 6 * 60 * 60 * 1000;
+      });
+
+      if (recentAudit) {
+        res.json({ success: true, auditId: recentAudit.id, existing: true });
+        return;
+      }
+
+      const progress = await storage.getProgress(email);
+      let responses = progress?.responses as Record<string, unknown> | string | undefined;
+      if (typeof responses === "string") {
+        try {
+          responses = JSON.parse(responses);
+        } catch {
+          responses = undefined;
+        }
+      }
+
+      if (!responses || Object.keys(responses).length === 0) {
+        res.status(400).json({ error: "QUESTIONNAIRE_MISSING" });
+        return;
+      }
+
+      if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
+        return;
+      }
+
+      const audit = await storage.createAudit({
+        userId: "",
+        type: planType,
+        email,
+        responses: responses as Record<string, unknown>,
+      });
+
+      await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
+      processReportAndSendEmail(audit.id, audit.email, audit.type);
+
+      res.json({ success: true, auditId: audit.id });
+    } catch (error: any) {
+      console.error("Stripe confirmation error:", error);
+      res.status(500).json({ error: error.message || "Erreur confirmation paiement" });
     }
   });
 
@@ -1827,7 +2003,7 @@ export async function registerRoutes(
 
         // Default promo codes
         `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-         VALUES ('ANALYSE20', 20, 'Code promo 20% sur analyse Premium', 'PREMIUM')
+         VALUES ('ANALYSE20', 20, 'Code promo 20% sur Anabolic Bioscan', 'PREMIUM')
          ON CONFLICT (code) DO NOTHING`,
         `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
          VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
@@ -2269,6 +2445,12 @@ export async function registerRoutes(
       });
 
       console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
+
+      const baseUrl = getBaseUrl();
+      const emailSent = await sendReportReadyEmail(email, audit.id, audit.type, baseUrl);
+      if (emailSent) {
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+      }
 
       res.json({
         success: true,

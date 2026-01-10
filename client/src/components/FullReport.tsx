@@ -1717,7 +1717,7 @@ export function FullReport({ reportData = DEFAULT_REPORT_DATA, initialTheme = 'n
                     transition={{ duration: 2, repeat: Infinity }}
                   />
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
-                    Audit Premium
+                    Rapport complet
                   </span>
                 </motion.div>
                 <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">

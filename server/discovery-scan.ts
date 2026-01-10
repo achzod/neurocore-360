@@ -12,6 +12,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { searchArticles, searchFullText } from './knowledge/storage';
+import { normalizeResponses } from './responseNormalizer';
 
 // ============================================
 // TYPES
@@ -645,7 +646,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 // ============================================
 
 // System prompt pour la synthèse globale
-const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
+const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
 
 Tu rediges un audit expert 100% personnalise, profondement humain, indetectable comme IA, avec un ton direct, precis, incarne, analytique et ultra vivant.
 
@@ -687,7 +688,7 @@ SOURCES A INTEGRER NATURELLEMENT:
 // SECTION-SPECIFIC AI GENERATION
 // ============================================
 
-const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach d'elite avec 11 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
+const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 11 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
 
 INTERDITS ABSOLUS (penalite SEVERE si non respecte):
 - "Bonjour [Prenom]" ou toute formule de salutation
@@ -1361,18 +1362,19 @@ function cleanMarkdownToHTML(text: string): string {
 // ============================================
 
 export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promise<DiscoveryAnalysisResult> {
-  console.log(`[Discovery] Analyzing scan for ${responses.prenom || 'Client'}...`);
+  const normalized = normalizeResponses(responses as Record<string, unknown>) as DiscoveryResponses;
+  console.log(`[Discovery] Analyzing scan for ${normalized.prenom || 'Client'}...`);
 
   // Calculate scores for each domain
   const scoresByDomain = {
-    sommeil: scoreSommeil(responses),
-    stress: scoreStress(responses),
-    energie: scoreEnergie(responses),
-    digestion: scoreDigestion(responses),
-    training: scoreTraining(responses),
-    nutrition: scoreNutrition(responses),
-    lifestyle: scoreLifestyle(responses),
-    mindset: scoreMindset(responses)
+    sommeil: scoreSommeil(normalized),
+    stress: scoreStress(normalized),
+    energie: scoreEnergie(normalized),
+    digestion: scoreDigestion(normalized),
+    training: scoreTraining(normalized),
+    nutrition: scoreNutrition(normalized),
+    lifestyle: scoreLifestyle(normalized),
+    mindset: scoreMindset(normalized)
   };
 
   // Calculate global score (weighted average)
@@ -1394,18 +1396,18 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
   );
 
   // Detect blocages
-  const blocages = detectBlocages(responses, scoresByDomain);
+  const blocages = detectBlocages(normalized, scoresByDomain);
 
   // Get knowledge context
   const knowledgeContext = await getKnowledgeContextForBlocages(blocages);
 
   // Generate AI synthesis
-  const synthese = await generateAISynthesis(responses, scoresByDomain, blocages, knowledgeContext);
+  const synthese = await generateAISynthesis(normalized, scoresByDomain, blocages, knowledgeContext);
 
   // Generate CTA message based on blocages
   let ctaMessage: string;
   const criticalCount = blocages.filter(b => b.severity === 'critique').length;
-  const objectif = responses.objectif || 'tes objectifs';
+  const objectif = normalized.objectif || 'tes objectifs';
 
   if (criticalCount >= 2) {
     ctaMessage = `${criticalCount} blocages critiques identifiés. Ces dysfonctionnements sabotent directement ton objectif de ${objectif}.
@@ -1476,8 +1478,9 @@ export async function convertToNarrativeReport(
   result: DiscoveryAnalysisResult,
   responses: DiscoveryResponses
 ): Promise<ReportData> {
-  const prenom = responses.prenom || 'Client';
-  const objectif = responses.objectif || 'tes objectifs';
+  const normalized = normalizeResponses(responses as Record<string, unknown>) as DiscoveryResponses;
+  const prenom = normalized.prenom || 'Client';
+  const objectif = normalized.objectif || 'tes objectifs';
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
 
@@ -1486,7 +1489,7 @@ export async function convertToNarrativeReport(
   const aiContentPromises = domains.map(async (domain) => {
     const score = result.scoresByDomain[domain as keyof typeof result.scoresByDomain];
     const knowledgeContext = await getKnowledgeContextForDomain(domain);
-    const content = await generateSectionContentAI(domain, score, responses, knowledgeContext);
+    const content = await generateSectionContentAI(domain, score, normalized, knowledgeContext);
     return { domain, content };
   });
 
