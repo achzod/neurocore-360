@@ -13,7 +13,7 @@ export const MUSCLEPHD_ARTICLES: BlogArticle[] = [
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/07/Dick-Rocket-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -110,7 +110,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/07/MHCover.png",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -212,7 +212,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/07/Supp-Resize.png",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -304,7 +304,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/04/Metroflex.jpg",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -442,7 +442,7 @@ Ceci est un résumé de nos connaissances scientifiques actuelles sur ce qui fai
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/03/Chick-Bench.jpg",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -512,7 +512,7 @@ En fin de compte, vos objectifs n’ont pas nécessairement d’importance, car 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "7 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/02/Tats-and-Squats.jpg",
+    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -572,7 +572,7 @@ Si les squats vous inquiètent toujours, cherchez un bon entraîneur ou un entra
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/01/Archer-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -716,7 +716,7 @@ Ces résultats expliquent pourquoi il est important d’inclure à la fois des j
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/01/Big-Ben.jpg",
+    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -806,7 +806,7 @@ Si vous souhaitez une discussion encore plus approfondie sur ce sujet, consultez
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/01/Chalk2-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -921,7 +921,7 @@ Nous n’avons pas besoin de résumer l’intégralité de l’article ici, mais
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/02/Meal-Frequency.jpg",
+    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1023,7 +1023,7 @@ Dans l’ensemble, la fréquence des repas a peu d’effet sur la composition co
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/03/GP-Cover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1132,7 +1132,7 @@ Alors oui, je vois des gens cesser de faire des progrès après 5 à 6 ans de ca
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/03/Overload.jpg",
+    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1274,7 +1274,7 @@ Enfin, aussi importantes que soient les sciences biologiques et la biomécanique
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/04/Pushup2-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1386,7 +1386,7 @@ Enfin, même si votre entraînement est un peu altéré, essayez d'améliorer un
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Verkho-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1495,7 +1495,7 @@ Gardez les yeux ouverts car nous rédigerons probablement et (espérons-le) publ
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Caduceus-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1590,7 +1590,7 @@ Les maladies graves nécessitent de prendre quelques jours de congé, car il est
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Half-Moon.jpg",
+    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1722,7 +1722,7 @@ En fin de compte, 1,6 g/kg de protéines convient aux personnes normales. Mais e
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/FF2.jpg",
+    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1809,7 +1809,7 @@ Donc, cela ne représente pas vraiment un scénario « comment faire » dans leq
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "20 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Hormesis2.png",
+    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -1994,7 +1994,7 @@ L'exercice et l'hormèse sont encore un sujet relativement nouveau, alors restez
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Lighthouse-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
     content: `## Introduction : Le mythe de la motivation
 
 La motivation semble être l'un de ces mots à la mode dans la communauté du fitness et dans le monde en général. Nous sommes bombardés de messages de motivation sur les réseaux sociaux, d'affiches ringardes sur les murs du travail ou de l'école et même de gourous du développement personnel qui écrivent des livres entiers sur l'art de la motivation personnelle.
@@ -2098,7 +2098,7 @@ Mais l'amour pour ceux qui comptent dans votre vie ? Cette motivation ne s'étei
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Bed1-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -2233,7 +2233,7 @@ Au moment de la publication, le numéro de référence 15 (Gunning, 2001) n'éta
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "23 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Field.jpg",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -2422,7 +2422,7 @@ Nous comprenons qu’il s’agit d’un long examen de cet article, mais il est 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Timing-Cover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -2552,7 +2552,7 @@ Pour les haltérophiles qui cherchent simplement à augmenter leur force ou leur
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Courthouse-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -2704,7 +2704,7 @@ Si vous êtes convoqué au tribunal des gains, comment plaiderez-vous ? Et dans
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/BEER-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -2812,7 +2812,7 @@ Dans l’ensemble, personne n’est ici pour prêcher sur la méchanceté de l�
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "33 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Coral-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3063,7 +3063,7 @@ En fin de compte, ajouter de la variation à votre programme peut empêcher les 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "17 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/04/PBB-Cover.png",
+    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3177,7 +3177,7 @@ C'est le pouvoir du bodybuilding.`
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "24 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Balance-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3367,7 +3367,7 @@ Nous savons que cet article contient probablement des passages ambigus – princ
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "20 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Roller-Coaster-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3521,7 +3521,7 @@ Nous savons depuis au moins 1887 que la nutrition peut fortement influencer à l
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Beach1-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3669,7 +3669,7 @@ Si vous souhaitez lire l’un de ces sujets plus en détail, consultez les analy
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/02/Muscle-Memz.jpg",
+    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3771,7 +3771,7 @@ Ainsi, après une discussion longue et complexe, il semble y avoir de bonnes rai
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "18 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Not-Bob-Sanders-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3909,7 +3909,7 @@ En fin de compte, il y a plusieurs facteurs qui font des athlètes d’élite ce
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Morning-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -3989,7 +3989,7 @@ En conclusion, l’entraînement à jeun peut certainement présenter certains a
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "22 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Exhausted-Runner-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4191,7 +4191,7 @@ Si vous souhaitez une discussion plus approfondie, consultez ces articles du Dr 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Pill1-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4336,7 +4336,7 @@ Puisque ni le Dr Wilson ni moi-même ne sommes médecins, nous n’allons pas pa
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Globe-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4481,7 +4481,7 @@ Remarque : La plupart des anciennes références utilisées dans cet article ne
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/03/Split-Sun-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4611,7 +4611,7 @@ Nous ne savons toujours pas si l’hyperplasie est isolée ou non pour les bodyb
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/03/Hip-Thrust-Cover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4716,7 +4716,7 @@ L'équipe à l'origine du livre blanc a demandé le retrait de plusieurs article
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/08/shutterstock_612399530-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4819,7 +4819,7 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/08/Pothole-Cana-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4873,7 +4873,7 @@ Département des nombres. (2017). Revenu du ménage à Muncie, IN. Extrait de :
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "7 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/08/Crossfit-Coach-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -4961,7 +4961,7 @@ Dans une grande partie de mes propres entraînements et prescriptions d’entra�
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/CreaCover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -5119,7 +5119,7 @@ De plus, l’utilisation à long terme de la créatine semble totalement sans da
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/08/shutterstock_752658715-1-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -5229,7 +5229,7 @@ Dans l’ensemble, la caféine est l’un des compléments les plus efficaces po
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/07/Binch1-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -5359,7 +5359,7 @@ Les dorsaux échouent tous les trois pour le développé couché.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "39 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Moon-Phase-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -5663,7 +5663,7 @@ Puisque nous disposons de suffisamment de données, nous inclurons un graphique 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "21 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/03/Crossfit-Squad.jpg",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -5816,7 +5816,7 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "13 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/07/Intense-Cover.jpg",
+    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -5927,7 +5927,7 @@ Les méthodes d’intensification peuvent être un excellent moyen de pousser vo
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "17 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/04/Strain-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6075,7 +6075,7 @@ Nous résumerons l’intégralité de l’article avec la meilleure citation en 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "21 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/03/Deadlift-2.jpg",
+    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6240,7 +6240,7 @@ Enfin, si quelqu’un se demande pourquoi nous avons passé autant de temps à d
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/11/Untitled-design-21.png",
+    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6359,7 +6359,7 @@ Est-ce que tout le monde devra éventuellement se décharger ? Probablement pas.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Hammie-Cover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6485,7 +6485,7 @@ Il est donc important de concevoir votre formation autour de ces connaissances. 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/12/shutterstock_1686913357-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6620,7 +6620,7 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "28 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/03/shutterstock_255388594-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6839,7 +6839,7 @@ Nous utilisons généralement simplement un système de numérotation pour nos c
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/03/shutterstock_1724207548-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -6907,7 +6907,7 @@ En résumé, l’eau n’est pas du tout passionnante, mais elle peut être l’
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/03/Lunchbox-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
     content: `## Introduction : Qui prépare votre déjeuner ?
 
 Avant d'aller plus loin, je dois créditer l'esprit original de cette réflexion car je n'ai pas inventé ce concept. Ce qui suit est un message puissant inspiré de Clint Darden, dynamophile d'élite, conférencier motivateur et survivant du cancer.
@@ -7016,7 +7016,7 @@ Vous êtes le chef cuisinier de votre existence. Si le menu ne vous plaît pas, 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/03/Westside.jpg",
+    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7117,7 +7117,7 @@ Remarque : Au moment de la publication, les articles originaux des numéros cit�
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/03/Rule-Book.jpg",
+    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7232,7 +7232,7 @@ J'espère que vous faites déjà toutes les choses de cette liste, et sinon, ess
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/09/What-Id-do-Differently-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7327,7 +7327,7 @@ Nous espérons que cet article offrira un aperçu unique de la formation à long
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/03/Physics-Cover.jpg",
+    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7414,7 +7414,7 @@ Comme toujours, la connaissance, c'est le pouvoir !`
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/08/Untitled-design-20.png",
+    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7506,7 +7506,7 @@ The Eternal – Bury Tomorrow (métal)`
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/05/shutterstock_1369044449-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7632,7 +7632,7 @@ Enfin, voici un autre article que nous laissons au véritable format APA. Nous s
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/06/Part-1-3.png",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7725,7 +7725,7 @@ Bien que chaque section individuelle ici puisse probablement utiliser à elle se
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "8 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/06/Part-1-1.png",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7797,7 +7797,7 @@ Réfléchissez de manière critique à votre programme de formation actuel, que 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "19 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/08/Micro-Cover.jpg",
+    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -7953,7 +7953,7 @@ Au moment de la publication, la référence n° 17 n'était plus disponible sous
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "28 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/08/Untitled-design-31-1000x600.png",
+    image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -8161,7 +8161,7 @@ C’est une autre pièce que nous mettrons probablement à jour au fil du temps.
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/06/Part-1-4.png",
+    image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -8255,7 +8255,7 @@ Merci d'avoir lu jusqu'ici la série et nous aurons un autre épisode sous peu !
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "21 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/03/Crossfit-Squad.jpg",
+    image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -8405,7 +8405,7 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/04/Ronnie-Cover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -8507,7 +8507,7 @@ En fin de compte, les parties excentriques et concentriques d’un ascenseur son
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "22 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/03/Calves-Cover-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -8696,7 +8696,7 @@ Mec, nous avons presque parcouru tout l’article sans un jeu de mots sur la vac
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "30 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/09/Ronnies-1109x600.jpg",
+    image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -8897,7 +8897,7 @@ Comme pour toute théorie scientifique, nous continuons à façonner celle-ci et
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "16 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/11/shutterstock_500226739-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9002,7 +9002,7 @@ En fin de compte, tout plan de régime sera difficile à suivre. Aucun objectif 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "31 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/09/Arnold-Rows-1092x600.jpg",
+    image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9212,7 +9212,7 @@ Pour l’instant, amusez-vous à lire – nous avons certainement aimé collecte
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/12/Part-1-7.png",
+    image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9284,7 +9284,7 @@ Intéressé à devenir un frère basé sur des preuves ? Eh bien, nous avons ex
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "27 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Rail-Switch-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9494,7 +9494,7 @@ Les deux côtés de l’argument BCAA sont présentés dans cet article, mais le
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/10/shutterstock_1784529176-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9586,7 +9586,7 @@ En fin de compte, les masques n’amélioreront probablement aucun aspect de vot
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/12/shutterstock_1311492077-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9729,7 +9729,7 @@ Soyez simplement heureux que nous soyons l’animal le plus intelligent de la pl
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/05/Post-Cover.jpg",
+    image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9849,7 +9849,7 @@ En fin de compte, la nutrition après l’entraînement est l’une des meilleur
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "13 min",
-    image: "https://themusclephd.com/wp-content/uploads/2020/07/Campfire-1200x600.jpg",
+    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -9958,7 +9958,7 @@ Heureusement, c’est exactement à cela que sert The Muscle PhD. Vous apportez 
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/02/StretchCover.jpg",
+    image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -10048,7 +10048,7 @@ Donc, si l’un de vos objectifs d’entraînement est d’améliorer la flexibi
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/02/Clock.jpg",
+    image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -10138,7 +10138,7 @@ Si vous souhaitez une discussion encore plus approfondie sur le sujet, consultez
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "9 min",
-    image: "https://themusclephd.com/wp-content/uploads/2019/02/SquatCover.jpg",
+    image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter
@@ -10234,7 +10234,7 @@ En conclusion, les ischio-jambiers ne sont pas trop impliqués dans les squats s
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://themusclephd.com/wp-content/uploads/2021/06/Part-1-5.png",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
     content: `-Facebook
 
 -Twitter

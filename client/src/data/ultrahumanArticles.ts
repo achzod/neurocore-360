@@ -13,7 +13,7 @@ export const ULTRAHUMAN_ARTICLES: BlogArticle[] = [
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6887efdc1111d8ebcebb28fc_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_14_16%20AM.png",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
     content: `Ved Asudania, Kanika Guptaa, Aditi Shanmugama, Matthew Drillerb, Bhuvan Srinivasana, Aditi Bhattacharyaa
 
 aUltrahuman Healthcare Pvt. Ltd., Inde – École des services connexes de santé, des services sociaux et du sport, Université de La Trobe, Australie
@@ -130,7 +130,7 @@ Contactez partenaires@ultrahuman.com pour les requêtes commerciales etscience@u
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688888d60ecf1b33a92fca21_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_14_27%20AM.png",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format&fit=crop",
     content: `Ved Asudani, Prejwal Prabhakaran, Prakhar Chauhan, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Le score de rythme de stress (SR) de 29 213 utilisateurs d'Ultrahuman Ring AIR de 33 pays a été analysé pendant 36 jours pour comprendre le paysage régional, national et par âge du stress quotidien.
@@ -218,7 +218,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688a7d9ea1db771aadd834b8_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2005_54_47%20PM.png",
+    image: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&auto=format&fit=crop",
     content: `Ved Asudani, Prakhar Chauhan, Mihir Kale, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Les exercices cardiovasculaires (aérobies) et les profils de sommeil ultérieurs de 1 938 adultes (âgés de 20 à 40 ans) dans quatre régions différentes ont été suivis pendant 30 jours à l'aide de l'Ultrahuman Ring AIR.
@@ -298,7 +298,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "12 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6887f3755d0e98c5aa05d1d8_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2003_09_30%20AM.png",
+    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop",
     content: `Trishala Fernandes, Aditi Shanmugam, Kanika Gupta, Tanish Nagpal, Adhit Shet, Bhuvan Srinivasan, Aditi Bhattacharya
 
 Objectif : Étudier l'effet du blocage de la lumière bleue sur le sommeil et la récupération chez les utilisateurs d'Ultrahuman Ring AIR.
@@ -374,7 +374,7 @@ Contactez partenaires@ultrahuman.com pour les requêtes commerciales etscience@u
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "15 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6888cd8c04a7896c895d988c_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_56%20AM.png",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop",
     content: `Ved Asudani, Prakhar Chauhan, Prejwal Prabhakaran, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Le stress diurne calculé par le score de rythme de stress d'Ultrahuman et la variabilité de la fréquence cardiaque du sommeil (VRC) des utilisateurs masculins de Ring AIR (N = 2 345) dans quatre régions géographiques a été étudié pour évaluer l'effet du timing des exercices cardiovasculaires.
@@ -470,7 +470,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688879784dbce9936633c2aa_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_35%20AM.png",
+    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&auto=format&fit=crop",
     content: `Aditi Bhattacharyaa, Andy Kingb, Chris Dicksonb, Sama Dalala
 
 aUltrahuman Healthcare Pvt. Ltd., Inde – Cambridge Sleep Sciences Ltd., Angleterre
@@ -556,7 +556,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "14 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6879528188ebce914242e772_4.png",
+    image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop",
     content: `Apurva Hendi, Aditi Bhattacharya, Nishanth Krishnan, Bijoy Sijo, Kanika Gupta, Mohit Kumar, Bhuvan Srinivasan
 
 Objectif : Comparer la concordance de l'algorithme de suivi du cycle Ultrahumain (CT) derrière la prise d'alimentation « Cycle et ovulation » à la méthode du calendrier et au kit de prédiction de l'ovulation basé sur l'urine (OPK).
@@ -650,7 +650,7 @@ Contactez partenaires@ultrahuman.com pour les requêtes commerciales etscience@u
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6887f681083a8b8e39683348_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_31%20AM.png",
+    image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop",
     content: `Prejwal Prabhakaran, Sama Dalal, Prakhar Chauhan, Ved Asudani, Bhuvan Srinivasan, Aditi Bhattacharya.
 
 - « Objectif : Étudier les modèles spécifiques au sexe en matière de fréquence cardiaque diurne (FC) et de variabilité de la fréquence cardiaque (VRC). »
@@ -738,7 +738,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/68888a15564adc46a2a7d642_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_33%20AM.png",
+    image: "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=800&auto=format&fit=crop",
     content: `Ved Asudani, Prejwal Prabhakaran, Prakhar Chauhan, Bhuvan Srinivasan, Aditi Bhattacharya, Mohit Kumar
 
 - Les niveaux de cortisol salivaire à quatre moments différents de la journée ont été collectés auprès d'un ensemble d'utilisateurs d'Ultrahuman Ring Air pendant une période de cinq jours (N = 93 échantillons).
@@ -822,7 +822,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688a8cf8c4c41532e473a0a6_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_54%20AM.png",
+    image: "https://images.unsplash.com/photo-1511909525232-61113c912358?w=800&auto=format&fit=crop",
     content: `Nishanth Krishnan, Ved Asudani, Pawanpreet Singh, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Les profils de sommeil dans la région du Conseil de coopération du Golfe (CCG) ont été évalués à l'aide de la configuration du mode Ramadan (RMC) et des signatures de perturbation du sommeil à l'aube (DSD).
@@ -896,7 +896,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688a87c0e906661f4d0c2185_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_50%20AM.png",
+    image: "https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=800&auto=format&fit=crop",
     content: `Nishanth Krishnan, Roshan Nagesh, Pawanpreet Singh, Ved Asudani, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Ultrahuman Ring AIR a été comparé à un appareil portable grand public (Apple Watch) et à un appareil médical de test du sommeil approuvé par la FDA (SleepImage) pour examiner le chevauchement de la détection de la fréquence cardiaque pendant le sommeil.
@@ -978,7 +978,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "10 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688a7ca090127a08d8451312_ChatGPT%20Image%20Jul%2030%2C%202025%2C%2012_35_49%20PM%201.png",
+    image: "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&auto=format&fit=crop",
     content: `Aditi Shanmugam, Prejwal Prabhakaran, Ved Asudani, Akshay Joshi, Amith Suraj, Arun Prasath, Yogansh Namdeo, Apoorv Shankar, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Ultrahuman Ring AIR a été comparé aux capteurs de température de référence (iButton) dans deux paramètres.
@@ -1061,7 +1061,7 @@ Contactez partenaires@ultrahuman.com pour les requêtes commerciales etscience@u
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "5 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/688a89001da2d88144c68301_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_14_02%20AM.png",
+    image: "https://images.unsplash.com/photo-1508963493744-76fce69379c0?w=800&auto=format&fit=crop",
     content: `Pawanpreet Singh, Roshan Nagesh, Nishanth Krishnan, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya
 
 Le suivi du sommeil dans le monde réel à la maison est la pierre angulaire d’un suivi personnalisé du bien-être. Cela aide à personnaliser l’alimentation, le mode de vie et l’exercice1.
@@ -1111,7 +1111,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "11 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6888866952e93b797158807c_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_11_31%20AM.png",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
     content: `Prejwal Prabhakaran, Mihir Kale, Sama Dalal, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Diverses mesures du sommeil de 5 145 utilisateurs aux États-Unis (fuseaux horaires de l'Est, du Pacifique, du Centre et des Montagnes) ont été analysées une semaine avant le début de l'heure d'été du printemps, le jour du changement d'heure et une semaine après pour évaluer l'impact de l'heure d'été (DST) sur le sommeil.
@@ -1189,7 +1189,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "13 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6888cc6b5b1bb084e9b3182c_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2005_55_52%20PM.png",
+    image: "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&auto=format&fit=crop",
     content: `Ved Asudani, Prejwal Prabhakaran, Sama Dalal, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Pour comprendre la récupération après une nuit de mauvais sommeil, nous avons suivi 4 582 utilisateurs d'Ultrahuman Ring AIR sur une période de 7 jours.
@@ -1276,7 +1276,7 @@ Contactez support@ultrahuman.com pour les requêtes commerciales et science@ultr
     author: "ACHZOD",
     date: "2025-01-10",
     readTime: "17 min",
-    image: "https://cdn.prod.website-files.com/687950e16b1858f3aa3dcd8b/6887f662767ff8b859a174c9_ChatGPT%20Image%20Jul%2029%2C%202025%2C%2002_13_43%20AM.png",
+    image: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=800&auto=format&fit=crop",
     content: `Ved Asudani, Prakhar Chauhan, Nishanth Krishnan, Apurva Hendi, Mohit Kumar, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - « Objectif : examiner comment l'IMC, le stress et l'activité quotidienne affectent la variabilité de la durée du cycle menstruel selon les âges, comme le rapportent les utilisateurs d'Ultrahuman Ring AIR. »
