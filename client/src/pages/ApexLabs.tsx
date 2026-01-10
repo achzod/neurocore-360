@@ -402,14 +402,14 @@ function Header() {
           <button onClick={() => scrollToSection('reviews')} className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors">
             Résultats
           </button>
-          <button onClick={() => scrollToSection('join-waitlist')} className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors">
+          <button onClick={() => scrollToSection('hero-form')} className="text-xs font-bold uppercase text-[#A3A3A3] hover:text-white transition-colors">
             Vision
           </button>
         </nav>
 
         {/* CTA Button - Yellow bg, black text, Inter Black, rounded-sm */}
         <button
-          onClick={() => scrollToSection('join-waitlist')}
+          onClick={() => scrollToSection('hero-form')}
           className="px-5 py-2.5 bg-[#FCDD00] text-black text-xs font-black uppercase tracking-wide rounded-sm hover:bg-[#FCDD00]/90 transition-colors"
         >
           S'inscrire
@@ -498,7 +498,7 @@ function Hero() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section id="hero-form" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Floating Reviews Badge - Side */}
       <motion.button
         onClick={scrollToReviews}
@@ -916,7 +916,7 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
               </div>
               {/* CTA Button - Scroll to waitlist */}
               <button
-                onClick={() => document.getElementById('join-waitlist')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => document.getElementById('hero-form')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
               >
                 Réserver ma place
@@ -1196,7 +1196,7 @@ function VisionSection() {
   };
 
   return (
-    <section id="join-waitlist" className="py-32 relative bg-neutral-900 overflow-hidden">
+    <section id="vision" className="py-32 relative bg-neutral-900 overflow-hidden">
       {/* Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
 
