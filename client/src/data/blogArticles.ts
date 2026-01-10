@@ -1,9 +1,6 @@
 // Blog articles data - ACHZOD original content
 import { SARMS_ARTICLES } from "./sarmsArticles";
 import { PEPTIDES_ARTICLES } from "./peptidesArticles";
-import { ACHZOD_ARTICLES } from "./ACHZODArticles";
-import { ACHZOD_ARTICLES } from "./ACHZODArticles";
-import ACHZOD_ARTICLES from "./ACHZODArticles.json";
 
 export interface BlogArticle {  id: string;
   slug: string;
@@ -36,16 +33,6 @@ export const BLOG_CATEGORIES = [
 ] as const;
 
 export const BLOG_ARTICLES: BlogArticle[] = [
-  // ============================================================================
-  // ACHZOD - Articles traduits par ACHZOD
-  // ============================================================================
-  ...(ACHZOD_ARTICLES as BlogArticle[]),
-
-  // ============================================================================
-  // ACHZOD - Articles traduits par ACHZOD (Sommeil, HRV, Métabolisme, etc.)
-  // ============================================================================
-  ...ACHZOD_ARTICLES,
-
   // ============================================================================
   // STRESS & HRV
   // ============================================================================
