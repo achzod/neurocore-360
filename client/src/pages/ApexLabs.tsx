@@ -1075,6 +1075,9 @@ function ReviewsSection() {
                 <div>
                   <div className="font-sans font-bold text-white text-lg">{review.name}</div>
                   <div className="font-mono text-[11px] text-gray-500 uppercase tracking-wider">{review.role}</div>
+                  <div className="font-mono text-[10px] text-gray-600 mt-1">
+                    {new Date(review.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-xl font-bold text-neuro-signal">{review.metric}</div>
