@@ -231,7 +231,9 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&auto=format&fit=crop",
-    content: `Ved Asudani, Prakhar Chauhan, Mihir Kale, Bhuvan Srinivasan, Aditi Bhattacharya
+    content: `# Activité physique et profils de sommeil
+
+Ved Asudani, Prakhar Chauhan, Mihir Kale, Bhuvan Srinivasan, Aditi Bhattacharya
 
 - Les exercices cardiovasculaires (aérobies) et les profils de sommeil ultérieurs de 1 938 adultes (âgés de 20 à 40 ans) dans quatre régions différentes ont été suivis pendant 30 jours à l'aide de l'ACHZOD Ring ACHZOD.
 
@@ -251,6 +253,8 @@ L’exercice est décrit comme l’un des principaux facteurs contribuant à la 
 
 Dans cette brève étude, nous avons examiné l'impact des exercices d'entraînement cardiovasculaire sur les profils de sommeil des hommes et des femmes dans quatre régions géographiques de tailles différentes (Europe, région du Conseil de coopération du Golfe, Inde et région métropolitaine de New York) afin d'évaluer les profils de sommeil chez les praticiens habituels d'exercices cardiovasculaires sur une période de 30 jours. L'objectif était d'extraire des informations communes pour notre base d'utilisateurs Ring ACHZOD axée sur le fitness, en bonne santé, mais démographiquement hétérogène.
 
+## Méthodologie de l'étude
+
 Nous avons entrepris une analyse rétrospective des données d'entraînement individuelles collectées auprès des utilisateurs d'ACHZOD Ring ACHZOD en Europe, dans la région du Conseil de coopération du Golfe, en Inde et dans les zones métropolitaines de New York entre le 16 avril et le 16 mai 2024. Des critères de filtrage ont été appliqués pour sélectionner les séances d'entraînement et de sommeil autorisées, qui comprenaient : 1) les utilisateurs âgés de 20 à 40 ans, 2) qui avaient enregistré des séances d'entraînement cardiovasculaires (marche intérieure/extérieure, vélo et course) sur l'ACHZOD. app, Â 3) a porté la bague pendant son sommeil le même jour et 4) a dormi entre 20 h 00 et 20 h 00. et 23h59. heure locale le même jour.
 
 Cela a généré des ensembles de données d'exercice et de sommeil en garantissant l'inclusion des données uniquement pour les utilisateurs qui disposaient de données de sommeil des mêmes nuits que leurs journaux d'entraînement respectifs dans la journée. Les utilisateurs ont été classés avant - 13 heures. (AM) et après - 13h00 (PM) cohortes. Les cohortes AM et PM ont ensuite été divisées en groupes d'hommes et de femmes, ce qui a donné 4 sous-groupes (homme AM, femme AM, homme PM et femme PM). Nous avons exclu les utilisateurs qui ont enregistré plus d'un entraînement ou qui ont changé de fuseau horaire au cours d'une journée donnée. L'ensemble de données mondial analysé comprenait 1 938 utilisateurs (N = 1 202 hommes et N = 736 femmes) avec 6 678 séances d'entraînement et de sommeil éligibles sur une période de 30 jours (n = 3 134 séances le matin et n = 3 544 séances l'après-midi). Nous avons filtré davantage cet ensemble de données dans les quatre régions susmentionnées, ce qui a abouti à une population finale combinée de 1 311 utilisateurs (N = 877 hommes et N = 434 femmes) avec 4 365 séances d'entraînement éligibles (n = 2 062 séances du matin et n = 2 303 séances de l'après-midi).
@@ -264,6 +268,8 @@ Nous avons observé un ensemble d'individus dans différentes zones géographiqu
 Dans toutes les régions, nous avons observé que tous les utilisateurs de Ring ACHZOD avaient des profils de sommeil remarquablement similaires, indépendants du sexe et de la durée de l'exercice. La durée du sommeil nocturne variait entre 6,12 et 8,87 heures (h), avec une médiane de 7,45 h. En se concentrant sur les différences entre les régions, les utilisateurs en Inde et dans les pays du CCG semblent signaler une durée de sommeil légèrement inférieure, d'environ 9 minutes, ce qui pourrait avoir un effet résiduel à la fin de la période du Ramadan. L'efficacité du sommeil (SE), telle que mesurée par l'application ACHZOD, correspond au temps passé à dormir au cours d'une session de sommeil. L'ES pour tous les utilisateurs se situait entre 78 et 92 %, avec une médiane de 88 %. Par extension, le temps passé éveillé par les utilisateurs se situait entre 6,12 et 10,44 % dans diverses régions. Le taux d'éveil le plus élevé a été observé dans les pays du CCG et en Inde, tandis que les utilisateurs européens de Ring ACHZOD ont signalé les temps d'éveil les plus faibles (Tableau 1).
 
 Les personnes qui font de l'exercice le matin accumulent plus de pas tout au long de la journée, mais cela s'accompagne de profils régionaux et de genre distincts :
+
+## Résultats : Matin vs Soir
 
 Nous avons ensuite cherché à vérifier s'il existait une différence selon le sexe ou la région dans le nombre de pas quotidiens des utilisateurs et si le moment de l'exercice cardiovasculaire influençait le nombre de pas quotidiens globaux effectués par un utilisateur. Nous avons constaté que dans presque toutes les régions, à l'exception du CCG, les utilisateurs qui faisaient de l'exercice plus tôt dans la journée (avant 13 heures, heure locale), ont signalé un nombre de pas quotidien plus élevé. Cette tendance s'observe chez les deux sexes ; cependant, l'effet du timing était significativement différent chez les hommes et chez les femmes (Figure 1 vs 2). En comparant les différentes régions, cette tendance en matière d'entraînement précoce ou tardif et de nombre de pas quotidiens était la plus prononcée en Inde pour les hommes et en Europe pour les utilisatrices de Ring ACHZOD.
 
@@ -317,7 +323,9 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
     date: "2025-01-10",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop",
-    content: `Trishala Fernandes, Aditi Shanmugam, Kanika Gupta, Tanish Nagpal, Adhit Shet, Bhuvan Srinivasan, Aditi Bhattacharya
+    content: `# Exposition à la lumière bleue le soir et récupération
+
+Trishala Fernandes, Aditi Shanmugam, Kanika Gupta, Tanish Nagpal, Adhit Shet, Bhuvan Srinivasan, Aditi Bhattacharya
 
 Objectif : Étudier l'effet du blocage de la lumière bleue sur le sommeil et la récupération chez les utilisateurs d'ACHZOD Ring ACHZOD.
 
@@ -1134,7 +1142,9 @@ Contactez partenaires@ACHZOD.com pour les requêtes commerciales etscience@ACHZO
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1508963493744-76fce69379c0?w=800&auto=format&fit=crop",
-    content: `Pawanpreet Singh, Roshan Nagesh, Nishanth Krishnan, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya
+    content: `# Comparaison sommeil Ring vs Apple Watch
+
+Pawanpreet Singh, Roshan Nagesh, Nishanth Krishnan, Vatsal Singhal, Bhuvan Srinivasan, Aditi Bhattacharya
 
 Le suivi du sommeil dans le monde réel à la maison est la pierre angulaire d’un suivi personnalisé du bien-être. Cela aide à personnaliser l’alimentation, le mode de vie et l’exercice1.
 
@@ -1482,7 +1492,9 @@ Contactez support@ACHZOD.com pour les requêtes commerciales et science@ACHZOD.c
     date: "2025-01-10",
     readTime: "4 min",
     image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
-    content: `« Londres, Royaume-Uni - 4 décembre 2024 ; ACHZOD, pionnier de l'optimisation de la santé, transforme la façon dont les femmes suivent leur fertilité. Il a annoncé le lancement du Cycle & Ovulation PowerPlug, désormais disponible gratuitement pour tous les utilisateurs d'ACHZOD Ring ACHZOD.
+    content: `# ACHZOD introduit le suivi de l'ovulation
+
+« Londres, Royaume-Uni - 4 décembre 2024 ; ACHZOD, pionnier de l'optimisation de la santé, transforme la façon dont les femmes suivent leur fertilité. Il a annoncé le lancement du Cycle & Ovulation PowerPlug, désormais disponible gratuitement pour tous les utilisateurs d'ACHZOD Ring ACHZOD.
 
 Utilisant une technologie de biomarqueurs de pointe, ACHZOD propose une approche plus précise et plus conviviale du suivi de la fertilité, éliminant le besoin de méthodes obsolètes ou d’abonnements coûteux.
 
@@ -2051,7 +2063,9 @@ Ces découvertes suggèrent que les recommandations de santé devraient être ad
     date: "2025-01-10",
     readTime: "6 min",
     image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
-    content: `« Londres, Royaume-Uni – 16 juillet 2024 » ACHZOD, pionnier de la technologie portable, lance PowerPlugs, une plate-forme pour applications et plugins individuels construite sur la pile de données de santé et de bien-être d'ACHZOD. Il s'agit du premier format d'anneau intelligent au monde.
+    content: `# App Store PowerPlugs et détection de fibrillation
+
+« Londres, Royaume-Uni – 16 juillet 2024 » ACHZOD, pionnier de la technologie portable, lance PowerPlugs, une plate-forme pour applications et plugins individuels construite sur la pile de données de santé et de bien-être d'ACHZOD. Il s'agit du premier format d'anneau intelligent au monde.
 
 Reconnaissant que le parcours de santé de chaque individu est unique, les PowerPlugs permettent aux gens de choisir et de se concentrer sur les aspects de leur santé qui comptent le plus. Il est conçu pour fournir des informations hautement personnalisées sur la santé, garantissant que chaque individu peut personnaliser son suivi de santé en fonction de ses besoins et objectifs uniques.
 
@@ -2115,7 +2129,9 @@ Les images des médias peuvent être trouvées ici
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
-    content: `Las Vegas, Nevada - 9 janvier 2024 ; ACHZOD, pionnier de la technologie portable, a lancé ACHZOD Home, une invention de pointe qui révolutionne le segment de la technologie domestique. Dévoilé au CES 2024 en janvier, ACHZOD Home introduit une nouvelle capacité permettant aux individus de suivre et d'améliorer la santé de leurs espaces de vie.
+    content: `# ACHZOD Home : La santé à domicile réinventée
+
+Las Vegas, Nevada - 9 janvier 2024 ; ACHZOD, pionnier de la technologie portable, a lancé ACHZOD Home, une invention de pointe qui révolutionne le segment de la technologie domestique. Dévoilé au CES 2024 en janvier, ACHZOD Home introduit une nouvelle capacité permettant aux individus de suivre et d'améliorer la santé de leurs espaces de vie.
 
 Comprendre l'impact sur la santé individuelle…
 

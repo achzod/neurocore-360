@@ -19,11 +19,39 @@ import {
   type BlogArticle,
 } from "@/data/blogArticles";
 import ReactMarkdown from "react-markdown";
+import { useEffect } from "react";
 
 export default function BlogArticlePage() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
   const article = getArticleBySlug(params.slug || "");
+
+  useEffect(() => {
+    if (article) {
+      document.title = `${article.title} | Blog ACHZOD`;
+      
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', article.excerpt);
+      }
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', article.title);
+
+      const ogDescription = document.querySelector('meta[property="og:description"]');
+      if (ogDescription) ogDescription.setAttribute('content', article.excerpt);
+
+      const ogImage = document.querySelector('meta[property="og:image"]');
+      if (ogImage) {
+        ogImage.setAttribute('content', article.image);
+      } else {
+        const newOgImage = document.createElement('meta');
+        newOgImage.setAttribute('property', 'og:image');
+        newOgImage.setAttribute('content', article.image);
+        document.head.appendChild(newOgImage);
+      }
+    }
+  }, [article]);
 
   if (!article) {
     return (

@@ -467,7 +467,9 @@ Ceci est un résumé de nos connaissances scientifiques actuelles sur ce qui fai
     date: "2025-01-10",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# La connexion esprit-muscle
+
+-Facebook
 
 -Twitter
 
@@ -4096,7 +4098,9 @@ En fin de compte, il y a plusieurs facteurs qui font des athlètes d’élite ce
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Entraînement à jeun
+
+-Facebook
 
 -Twitter
 
@@ -4114,6 +4118,8 @@ Demandez à n’importe quel bodybuilder quelle est sa stratégie de perte de gr
 
 Les preuves positives de la pratique du cardio à jeun existent certainement. Des études montrent que le cardio à jeun peut améliorer la sensibilité à l’insuline ainsi que le transport du glucose et des acides gras (10,18,19). Des études montrent également que l’oxydation des graisses est plus importante lors d’exercices de faible intensité, tels que le cardio à l’état d’équilibre, lorsqu’ils sont effectués à jeun(1). D'autres études montrent que l'entraînement en résistance à jeun entraîne des gains similaires à l'entraînement en résistance nourri(9,10,17). Tout cela semble bien – l’affaire est classée, n’est-ce pas ?
 
+## Mythes et Réalités
+
 Pas si vite. Bien que l’oxydation des graisses soit certainement plus importante pendant l’exercice à l’état d’équilibre, en particulier à jeun, il est important de se rappeler qu’une bonne partie de cette graisse brûlée comme carburant provient des réserves intramusculaires de triglycérides et non du tissu adipeux (14). Ainsi, une séance de cardio à jeun occasionnelle ne fera pas grand-chose pour votre physique, cependant, un cardio à jeun régulier pourrait avoir plus d'avantages car vous développerez des adaptations à long terme pour brûler les graisses comme carburant pendant l'entraînement.
 
  des études montrent que les sujets s'entraînant dans un état nourri peuvent s'entraîner à des intensités plus élevées pendant des périodes plus longues que les sujets à jeun (13). Bien que cette situation ne représente pas l’individu qui suit volontairement un entraînement à jeun, il s’agit d’un élément intéressant lorsque l’on considère la performance et la combustion des calories en général. Des intensités d'entraînement plus élevées entraînent une combustion accrue de calories même une fois l'entraînement terminé – c'est ce qu'on appelle « la consommation excessive d'oxygène après l'exercice » ou « EPOC ». Des études montrent que les sujets entraînés dans un état nourri présentent des niveaux d'EPOC plus élevés que les sujets à jeun (2,6). Évidemment, l’intensité de l’entraînement pourrait jouer un rôle important à cet égard, mais existe-t-il un autre facteur ?
@@ -4123,6 +4129,8 @@ Nous savons que l'entraînement à jeun peut augmenter la dépendance aux graiss
 Bien qu’une grande partie de ce que vous venez de lire semble certainement négatif, les études ne montrent aucune différence significative lors de l’examen des changements à long terme dans la composition corporelle chez des sujets effectuant des exercices à jeun et nourris (5,8,10,15,17). Ainsi, même si l’entraînement à jeun peut donner des résultats négatifs, cela ne semble pas avoir d’impact négatif sur les adaptations à l’exercice à long terme. Une étude a révélé un avantage important à l’entraînement à jeun lorsqu’on envisage un régime alimentaire de type « groupé ». Les sujets qui s'entraînaient à jeun dans cette étude n'ont pas gagné autant de graisse corporelle que les sujets qui s'entraînaient dans un état nourri lorsque les deux groupes de sujets suivaient un régime à 30 % au-dessus des calories d'entretien (18). Cela peut être dû en partie à l’amélioration de la sensibilité à l’insuline et du transport des nutriments que nous observons avec l’exercice à jeun.
 
 Il est désormais important de révéler l’éléphant dans la pièce : certaines personnes préfèrent tout simplement s’entraîner le ventre vide ! C’est une très bonne raison de s’entraîner à jeun ; Même si la science ne soutient pas toujours l’entraînement à jeun plutôt que l’entraînement nourri, la science soutient l’entraînement en général. Et si s’entraîner l’estomac vide vous permet d’obtenir un meilleur entraînement, qu’il en soit ainsi. Effectuer un entraînement en résistance pendant le jeûne peut toujours entraîner des gains (9) et même des gains musculaires et de force équivalents par rapport à un entraînement nourri (10,17).
+
+## Conseils Pratiques
 
 Alors si vous préférez vous entraîner à jeun, quelle est la meilleure façon de le faire ? Si votre objectif est de toujours bien performer pendant votre entraînement, je vous recommande fortement de boire de l’eau. Je sais que certains prêcheront également sur les jeûnes hydriques mais, franchement, la déshydratation n’a aucun effet positif sur la performance physique ou les adaptations (17). Deuxièmement, c’est une bonne idée de placer votre entraînement vers la fin de votre jeûne afin de pouvoir prendre votre repas après l’entraînement peu de temps après. Que vous soyez un entraîneur du matin ou un entraîneur du soir, essayez d’espacer votre jeûne pour que votre entraînement se termine à la fin. Des études montrent que l'entraînement à jeun peut en fait améliorer l'effet de reconstitution du glycogène et la réponse anabolisante d'un repas après l'entraînement (4). Ces effets proviennent probablement d’une plus grande déplétion en glycogène avant le repas. Cependant, une meilleure sensibilité à l’insuline et un meilleur transport des nutriments jouent également un rôle dans cette réponse et sont des effets directs d’un entraînement à jeun.
 
@@ -5048,7 +5056,9 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Nids-de-poule : Gérer les blessures
+
+-Facebook
 
 -Twitter
 
@@ -5059,6 +5069,8 @@ Si vous savez ce que vous faites et disposez d’une forme de levage décente, l
 
 
 Non, non, sortez votre esprit du caniveau. Le titre de celui-ci fait référence aux imperfections de la route. Si vous recherchez des informations sur une certaine plante psychédélique ou une multitude d’insinuations, vous pourriez être un peu déçu par celle-ci.
+
+## L'analogie de la route
 
 La Ball State University est une université bien connue du Midwest. Il est réputé à l'échelle nationale pour ses programmes d'architecture, de soins infirmiers, d'éducation et de journalisme, ainsi que pour sa propension aux réunions de week-end avec de grandes quantités de consommation « fluide ». Pour une école de l'Indiana, Ball State dispose d'un campus assez agréable avec plusieurs offres d'activités, de restauration et sociales pour les étudiants. Maintenant, avant que cela ne ressemble à une publicité pour Ball State, nous devons vous prévenir. Faites un pas hors du campus de Ball State et vous êtes à Muncie, IN.
 
@@ -5079,6 +5091,8 @@ Des nids-de-poule se forment sur la route au fil du temps en raison des variatio
 Désormais, quiconque vit dans une région remplie de nids-de-poule connaît assez bien cette routine. Lorsque vous conduisez sur une route infestée de nids-de-poule, vous n’allez pas conduire en ligne droite. Vous allez vous coucher, esquiver, plonger, plonger et… éviter les nids-de-poule à gauche et à droite. Il faudra que ce soit la même idée avec la formation. Une fois que vous aurez récupéré quelques bosses et contusions mineures ainsi qu’une grosse blessure de Bertha, l’entraînement devra changer un peu.
 
 En tant que débutant, votre chemin vers la gloire est assez simple. Il suffit d’appuyer sur l’accélérateur et c’est parti. Mais à mesure que vous subissez ces petites (et grosses) blessures causées par des nids-de-poule, vous allez maintenant devoir conduire un peu plus prudemment. Gardez un œil sur la route. Contournez les nids-de-poule plutôt que de les traverser. Si vous parvenez à contourner ces nids-de-poule, vous êtes hors de danger. Si vous y conduisez, vous passerez un mauvais moment.
+
+## Adapter son entraînement
 
 Réaliser des gains significatifs à long terme nécessite une planification intelligente. Ce plan ressemble beaucoup à une feuille de route : si vous avez un objectif spécifique en tête, votre feuille de route vous aide à atteindre cet objectif. Cependant, en tant que vétéran, votre feuille de route va être parsemée de nids-de-poule de différentes tailles. Par conséquent, trouvez des moyens de modifier votre feuille de route afin de contourner ces bobos.
 
@@ -8546,7 +8560,9 @@ C’est une autre pièce que nous mettrons probablement à jour au fil du temps.
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Écrire votre propre programme, partie 3
+
+-Facebook
 
 -Twitter
 
@@ -8562,6 +8578,8 @@ Cela étant dit, passons au sujet qui nous intéresse. Dans la troisième partie
 
 Et c'est parti.
 
+## Pourquoi varier les exercices ?
+
 On parle de variation et de surcharge progressive dans un même morceau car ce sont des parents assez proches. Comme nous en discutons dans l’article plus long sur les variations d’exercices ici, changer d’exercices est en fait une forme de surcharge progressive. Il y a plusieurs raisons à cela :
 
 - Changer d'exercice peut imposer un stimulus mécanique différent. Étant donné que nos muscles sont essentiellement de gros morceaux de compartiments neuromusculaires individuels, le remplacement d'un nouvel angle de pression ou de traction, par exemple, peut affecter différentes régions du muscle de différentes manières. Pour le bodybuilder ou l’athlète physique, changer d’exercices est un élément clé de votre plan d’entraînement à long terme.
@@ -8569,6 +8587,8 @@ On parle de variation et de surcharge progressive dans un même morceau car ce s
 - Changer d'exercices est une excellente forme de surcharge progressive pour les débutants. Quand quelqu’un commence à s’entraîner, vous ne le feriez probablement pas s’accroupir, s’asseoir et soulever tout de suite. Au lieu de cela, vous les débuterez avec des variations plus simples et progresserez à mesure qu’ils amélioreront leur technique.
 
 -  changer d'exercice peut être une forme indirecte de surcharge car, pour de nombreuses personnes, cela permet de garder l'entraînement frais et intéressant. Savoir que vous avez une nouvelle série d’exercices à réaliser la prochaine fois que vous irez à la salle de sport peut être le petit coup de pouce dont vous avez besoin pour faire passer votre entraînement au niveau supérieur. Chaque fois que je découvre un nouvel exercice ou une nouvelle machine, je suis excité. C’est assez rare de nos jours, mais cela me motive et j’ai hâte de réaliser cet exercice. Bon sang, je travaille dans un centre de formation ultramoderne et j'ai toujours un abonnement à une salle de sport commerciale pour cette raison précise : je peux utiliser des trucs différents !
+
+## Fréquence de changement
 
 Cela soulève donc la question ultime : à quelle fréquence devez-vous changer d’exercice ? Eh bien, ça dépend (je les ai encore !). Quel est votre niveau de formation ? Antécédents de blessures ? Niveau de motivation ? Fréquence des entraînements ? Tous ces facteurs peuvent influencer la fréquence à laquelle vous devez varier vos exercices :
 
