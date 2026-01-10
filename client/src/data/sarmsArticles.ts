@@ -1374,13 +1374,29 @@ Bien que les 3 prêtendent faire des choses très similaires, ils fonctionnent d
 
 Les steroides anabolisants-androgenes (SAA) sont des androgenes steroidiens qui incluent les androgenes naturels comme la testostérone ainsi que les androgenes synthetiques qui sont structurellement apparentes et fournissent des ratios et des resultats anabolisants:androgenes variables.
 
+**Mecanisme d'action detaille** : Les steroides anabolisants fonctionnent en penetrant directement dans les cellules musculaires grace a leur structure lipophile. Une fois a l'interieur, ils se lient aux recepteurs androgenes (RA) dans le cytoplasme, formant un complexe hormone-recepteur. Ce complexe migre ensuite vers le noyau cellulaire ou il se fixe sur des sequences specifiques d'ADN appelees "elements de reponse aux androgenes" (ARE). Cette liaison active la transcription de genes impliques dans la synthese proteique, notamment les genes codant pour les proteines contractiles comme l'actine et la myosine.
+
+Les etudes montrent que les steroides anabolisants peuvent augmenter la synthese proteique musculaire de 20 a 30% par rapport aux valeurs basales. Une meta-analyse publiee dans le British Journal of Sports Medicine (Bhasin et al., 2001) a demontre que les utilisateurs de steroides anabolisants gagnaient en moyenne 2 a 5 kg de masse maigre sur des cycles de 10 a 14 semaines, avec des augmentations de force de 5 a 20%.
+
 ### Prohormones
 
 Les prohormones, d'autre part, sont des precurseurs des hormones. Cela signifie qu'elles doivent être converties dans le corps en la substance cible (qui pourrait être la nandrolone, par exemple). De cette facon, les steroides sont la voie la plus directe.
 
+**Mecanisme de conversion enzymatique** : Les prohormones necessitent une conversion enzymatique pour devenir actives. Cette conversion se produit principalement dans le foie grace a des enzymes comme la 3β-hydroxysteroid deshydrogenase (3β-HSD) et la 17β-hydroxysteroid deshydrogenase (17β-HSD). Par exemple, la 4-androstenedione est convertie en testosterone par la 17β-HSD, tandis que la 19-norandrostenedione est transformee en nandrolone.
+
+Le probleme majeur de ce mecanisme est le taux de conversion variable. Selon les etudes, seulement 5 a 15% de la prohormone ingere est effectivement convertie en hormone active. Cela signifie que des doses elevees sont necessaires pour obtenir des effets significatifs, ce qui augmente proportionnellement la charge hepatique et les risques d'effets secondaires usage.
+
 ### SARMs
 
 Les modulateurs selectifs des recepteurs aux androgenes (SARMs), d'autre part, ciblent des recepteurs specifiques dans les muscles, la graisse et les os pour provoquer une reponse amelioree.
+
+**Selectivite tissulaire : le concept cle** : Contrairement aux steroides qui activent les recepteurs androgenes dans tous les tissus (prostate, cuir chevelu, peau, foie), les SARMs ont ete concus pour avoir une affinite preferentielle pour les tissus musculaires et osseux. Cette selectivite repose sur plusieurs mecanismes :
+
+1. **Selectivite de liaison** : Les SARMs ont des conformations moleculaires differentes qui influencent leur affinite selon le type de tissu
+2. **Recrutement differentiel de co-regulateurs** : Chaque tissu possede un profil unique de co-activateurs et co-represseurs qui modulent la reponse au SARM
+3. **Metabolisme tissu-specifique** : Certains SARMs sont metabolises differemment selon le tissu, ce qui affecte leur activite locale
+
+Des etudes precliniques ont demontre que l'ostarine (MK-2866) peut augmenter la masse musculaire maigre de 1 a 1.5 kg sur 12 semaines chez des sujets sains, avec un impact minimal sur la prostate (Dalton et al., 2011). Le RAD-140 a montre un ratio anabolisant:androgene de 90:1 dans les etudes animales, comparativement a un ratio de 1:1 pour la testosterone.
 
 Bien sur, une difference cle est la disponibilite et la qualite de chacun auxquels nous avons acces. Dans la plupart des pays, la vente de steroides anabolisants est interdite. Cela a conduit a un marche noir rempli de produits sous-doses ou surdoses qui pourraient ne pas être ce qu'ils prêtendent être. Les prohormones ont egalement fait l'objet d'un examen minutieux, de nombreux anciens favoris comme le superdrol etant maintenant interdits. Il existe cependant un certain nombre, comme l'Epistane, encore disponibles. Les SARMs sont sans doute la categorie la plus "montante" avec des recherches croissantes derriere eux, en particulier l'ostarine. Même ainsi, achetez toujours aupres d'une marque et d'un distributeur reputes.
 
@@ -1457,7 +1473,9 @@ Il convient de noter que, si vous etes un athlete soumis a des tests antidopage,
 
 ---
 
-**Tu veux comprendre les effets secondaires et la science hormonale ?** Découvre [Anabolic Code](https://www.achzodcoaching.com/product/anabolic-code-la-science-interdite-de-lhgh-de-ligf-1-et-des-peptides-au-service-de-ta-mutation-corporelle), le guide complet sur l'HGH, l'IGF-1 et les peptides. Disponible en ebook et version physique sur Amazon.
+[![Anabolic Code](https://cdn.prod.website-files.com/5fd0a9c447b7bb9814a00d71/6851ebc888d485c358317cfe_Ebook%20Anabolic%20Code%20Cover-min.jpg)](https://achzodcoaching.com)
+
+**Découvre Anabolic Code** - Le guide complet sur l'optimisation hormonale sur [achzodcoaching.com](https://achzodcoaching.com)
     `,
   },
   {
