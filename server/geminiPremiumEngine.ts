@@ -98,11 +98,10 @@ async function getKnowledgeContextForSection(section: string): Promise<string> {
   if (keywords.length === 0) return '';
 
   try {
-    // TOUTES LES SOURCES de la bibliotheque
+    // 8 SOURCES OFFICIELLES (6 complètes + 2 partielles)
     const allSources = [
       'huberman', 'sbs', 'applied_metabolics', 'examine', 'peter_attia',
-      'marek_health', 'chris_masterjohn', 'renaissance_periodization', 'mpmd',
-      'newsletter', 'achzod', 'manual'
+      'newsletter', 'renaissance_periodization', 'mpmd'
     ];
 
     // Recherche avec plus de keywords et plus d'articles

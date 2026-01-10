@@ -6,21 +6,18 @@
 import { searchArticles, ScrapedArticle } from "./storage";
 
 /**
- * SOURCES AUTORISÉES pour tous les produits - TOUTE LA BIBLIOTHÈQUE
+ * SOURCES AUTORISÉES pour tous les 5 produits
+ * 6 sources complètes + 2 partielles = 8 sources au total
  */
 export const ALLOWED_SOURCES = [
-  'huberman',
-  'sbs',
-  'applied_metabolics',
-  'examine',
-  'peter_attia',
-  'marek_health',
-  'chris_masterjohn',
-  'renaissance_periodization',
-  'mpmd',
-  'newsletter',
-  'achzod',
-  'manual'
+  'huberman',              // ✅ 100 articles
+  'sbs',                   // ✅ 17 articles
+  'applied_metabolics',    // ✅ 316 articles
+  'examine',               // ✅ 66 articles
+  'peter_attia',           // ✅ 28 articles
+  'newsletter',            // ✅ 68 articles (ACHZOD)
+  'renaissance_periodization', // ⚠️ 7 articles (partiel mais suffisant)
+  'mpmd'                   // ⚠️ 6 articles (partiel mais suffisant)
 ] as const;
 
 /**
