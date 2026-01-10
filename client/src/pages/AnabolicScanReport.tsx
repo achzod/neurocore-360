@@ -44,14 +44,14 @@ const THEMES: Theme[] = [
     name: 'M1 Black',
     type: 'dark',
     colors: {
-      primary: '#10B981', // Emerald for Premium
+      primary: '#FCDD00', // Ultrahuman Yellow for Anabolic Bioscan
       background: '#000000',
       surface: '#0a0a0a',
-      border: 'rgba(16, 185, 129, 0.15)',
+      border: 'rgba(252, 221, 0, 0.15)',
       text: '#FFFFFF',
       textMuted: '#a1a1aa',
-      grid: 'rgba(16, 185, 129, 0.05)',
-      glow: 'rgba(16, 185, 129, 0.2)'
+      grid: 'rgba(252, 221, 0, 0.05)',
+      glow: 'rgba(252, 221, 0, 0.2)'
     }
   },
   {
@@ -296,10 +296,20 @@ const AnabolicScanReport: React.FC = () => {
     { id: 'review', title: 'Votre Avis', subtitle: 'Feedback', content: '' }
   ];
 
-  // Convert to metrics for radar
-  const metricsData: Metric[] = report?.sections.slice(0, 8).map(s => ({
-    label: s.title.split(' ')[0],
-    value: Math.round(s.score / 10),
+  // Convert to metrics for radar with smart labels
+  const metricsData: Metric[] = report?.sections.slice(0, 8).map(s => {
+    // Smart label extraction: remove "ANALYSE" and "PROTOCOLE" prefixes
+    let label = s.title
+      .replace(/^ANALYSE\s+/i, '')
+      .replace(/^PROTOCOLE\s+/i, '')
+      .split(' ')
+      .slice(0, 2) // Take first 2 words max
+      .join(' ')
+      .substring(0, 20); // Max 20 chars
+
+    return {
+      label,
+      value: Math.round(s.score / 10),
     max: 10,
     description: s.title,
     key: s.id
