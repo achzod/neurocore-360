@@ -14,7 +14,9 @@ export const ACHZOD_ARTICLES: BlogArticle[] = [
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Stratégies stimulant le métabolisme
+
+-Facebook
 
 -Twitter
 
@@ -117,7 +119,9 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     date: "2025-01-10",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Mésaventures de musculation
+
+-Facebook
 
 -Twitter
 
@@ -225,7 +229,9 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Erreurs courantes liées aux suppléments
+
+-Facebook
 
 -Twitter
 
@@ -323,7 +329,9 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     date: "2025-01-10",
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Qu’est-ce qui cause la croissance ?
+
+-Facebook
 
 -Twitter
 
@@ -545,7 +553,9 @@ En fin de compte, vos objectifs n’ont pas nécessairement d’importance, car 
     date: "2025-01-10",
     readTime: "7 min",
     image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Les squats sont-ils mauvais pour vos genoux ?
+
+-Facebook
 
 -Twitter
 
@@ -611,7 +621,9 @@ Si les squats vous inquiètent toujours, cherchez un bon entraîneur ou un entra
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Entraînement des types de fibres musculaires
+
+-Facebook
 
 -Twitter
 
@@ -761,7 +773,9 @@ Ces résultats expliquent pourquoi il est important d’inclure à la fois des j
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Temps sous tension
+
+-Facebook
 
 -Twitter
 
@@ -857,7 +871,9 @@ Si vous souhaitez une discussion encore plus approfondie sur ce sujet, consultez
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Biomécanique et croissance
+
+-Facebook
 
 -Twitter
 
@@ -978,7 +994,9 @@ Nous n’avons pas besoin de résumer l’intégralité de l’article ici, mais
     date: "2025-01-10",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Fréquence des repas
+
+-Facebook
 
 -Twitter
 
@@ -1086,7 +1104,9 @@ Dans l’ensemble, la fréquence des repas a peu d’effet sur la composition co
     date: "2025-01-10",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Potentiel génétique
+
+-Facebook
 
 -Twitter
 
@@ -1201,7 +1221,9 @@ Alors oui, je vois des gens cesser de faire des progrès après 5 à 6 ans de ca
     date: "2025-01-10",
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Surcharge progressive
+
+-Facebook
 
 -Twitter
 
@@ -1349,7 +1371,9 @@ En fin de compte, il existe plusieurs façons de planifier une surcharge progres
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Formation à la maison
+
+-Facebook
 
 -Twitter
 
@@ -1467,7 +1491,9 @@ Si vous ne choisissez pas de tout mettre en œuvre et de vous procurer un ensemb
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Périodisation en musculation
+
+-Facebook
 
 -Twitter
 
@@ -1582,7 +1608,9 @@ Gardez les yeux ouverts car nous rédigerons probablement et (espérons-le) publ
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Entraînement pendant la maladie
+
+-Facebook
 
 -Twitter
 
@@ -1683,7 +1711,9 @@ Les maladies graves nécessitent de prendre quelques jours de congé, car il est
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Apport en protéines et bodybuilders
+
+-Facebook
 
 -Twitter
 
@@ -1821,7 +1851,9 @@ En fin de compte, 1,6 g/kg de protéines convient aux personnes normales. Mais e
     date: "2025-01-10",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Science musculaire pour les réducteurs
+
+-Facebook
 
 -Twitter
 
@@ -1914,7 +1946,9 @@ Donc, cela ne représente pas vraiment un scénario « comment faire » dans leq
     date: "2025-01-10",
     readTime: "20 min",
     image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Hormèse
+
+-Facebook
 
 -Twitter
 
@@ -2105,7 +2139,9 @@ L'exercice et l'hormèse sont encore un sujet relativement nouveau, alors restez
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
-    content: `## Introduction : Le mythe de la motivation
+    content: `# Un secret de motivation : La science derrière une discipline durable
+
+## Introduction : Le mythe de la motivation
 
 La motivation semble être l'un de ces mots à la mode dans la communauté du fitness et dans le monde en général. Nous sommes bombardés de messages de motivation sur les réseaux sociaux, d'affiches ringardes sur les murs du travail ou de l'école et même de gourous du développement personnel qui écrivent des livres entiers sur l'art de la motivation personnelle.
 
@@ -2215,7 +2251,9 @@ Mais l'amour pour ceux qui comptent dans votre vie ? Cette motivation ne s'étei
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Sommeil et musculation
+
+-Facebook
 
 -Twitter
 
@@ -2356,7 +2394,9 @@ Au moment de la publication, le numéro de référence 15 (Gunning, 2001) n'éta
     date: "2025-01-10",
     readTime: "23 min",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Protéines végétales ou animales
+
+-Facebook
 
 -Twitter
 
@@ -2551,7 +2591,9 @@ Nous comprenons qu’il s’agit d’un long examen de cet article, mais il est 
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Calendrier des nutriments
+
+-Facebook
 
 -Twitter
 
@@ -2687,7 +2729,9 @@ Pour les haltérophiles qui cherchent simplement à augmenter leur force ou leur
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# La salle d
+
+-Facebook
 
 -Twitter
 
@@ -2845,7 +2889,9 @@ Si vous êtes convoqué au tribunal des gains, comment plaiderez-vous ? Et dans
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Alcool et gains
+
+-Facebook
 
 -Twitter
 
@@ -2959,7 +3005,9 @@ Dans l’ensemble, personne n’est ici pour prêcher sur la méchanceté de l�
     date: "2025-01-10",
     readTime: "33 min",
     image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Variation d
+
+-Facebook
 
 -Twitter
 
@@ -3216,7 +3264,9 @@ En fin de compte, ajouter de la variation à votre programme peut empêcher les 
     date: "2025-01-10",
     readTime: "17 min",
     image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Le pouvoir de la musculation
+
+-Facebook
 
 -Twitter
 
@@ -3336,7 +3386,9 @@ C'est le pouvoir du bodybuilding.
     date: "2025-01-10",
     readTime: "24 min",
     image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Calories et bilan énergétique
+
+-Facebook
 
 -Twitter
 
@@ -3532,7 +3584,9 @@ Nous savons que cet article contient probablement des passages ambigus – princ
     date: "2025-01-10",
     readTime: "20 min",
     image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Cyclisme des glucides
+
+-Facebook
 
 -Twitter
 
@@ -3692,7 +3746,9 @@ Nous savons depuis au moins 1887 que la nutrition peut fortement influencer à l
     date: "2025-01-10",
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Un « bref » guide de la coupe
+
+-Facebook
 
 -Twitter
 
@@ -3846,7 +3902,9 @@ Si vous souhaitez lire l’un de ces sujets plus en détail, consultez les analy
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Mémoire musculaire
+
+-Facebook
 
 -Twitter
 
@@ -3954,7 +4012,9 @@ Ainsi, après une discussion longue et complexe, il semble y avoir de bonnes rai
     date: "2025-01-10",
     readTime: "18 min",
     image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Génétique et athlètes d
+
+-Facebook
 
 -Twitter
 
@@ -4190,7 +4250,9 @@ Alors si vous préférez vous entraîner à jeun, quelle est la meilleure façon
     date: "2025-01-10",
     readTime: "22 min",
     image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Fatigue du SNC
+
+-Facebook
 
 -Twitter
 
@@ -4398,7 +4460,9 @@ Si vous souhaitez une discussion plus approfondie, consultez ces articles du Dr 
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Analgésiques et gains
+
+-Facebook
 
 -Twitter
 
@@ -4549,7 +4613,9 @@ Puisque ni le Dr Wilson ni moi-même ne sommes médecins, nous n’allons pas pa
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Science musculaire : une histoire
+
+-Facebook
 
 -Twitter
 
@@ -4700,7 +4766,9 @@ Remarque : La plupart des anciennes références utilisées  ne sont plus dispo
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Hypertrophie vs hyperplasie
+
+-Facebook
 
 -Twitter
 
@@ -4836,7 +4904,9 @@ Nous ne savons toujours pas si l’hyperplasie est isolée ou non pour les bodyb
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Squats vs poussées de hanche
+
+-Facebook
 
 -Twitter
 
@@ -4947,7 +5017,9 @@ L'équipe à l'origine du livre blanc a demandé le retrait ieurs articles de Ba
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Les soulevés de terre sont-ils dangereux ?
+
+-Facebook
 
 -Twitter
 
@@ -5122,7 +5194,9 @@ Département des nombres. (2017). Revenu du ménage à Muncie, IN. Extrait de :
     date: "2025-01-10",
     readTime: "7 min",
     image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# La règle des 3 %
+
+-Facebook
 
 -Twitter
 
@@ -5216,7 +5290,9 @@ Dans une grande partie de mes propres entraînements et prescriptions d’entra�
     date: "2025-01-10",
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Tout sur la créatine
+
+-Facebook
 
 -Twitter
 
@@ -5380,7 +5456,9 @@ Espérons que cet article réponde à toutes vos questions brûlantes sur la sup
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Tout sur la caféine
+
+-Facebook
 
 -Twitter
 
@@ -5496,7 +5574,9 @@ Dans l’ensemble, la caféine est l’un des compléments les plus efficaces po
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Lats dans le développé couché
+
+-Facebook
 
 -Twitter
 
@@ -5632,7 +5712,9 @@ Les dorsaux échouent tous les trois pour le développé couché.
     date: "2025-01-10",
     readTime: "39 min",
     image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Fréquence de formation
+
+-Facebook
 
 -Twitter
 
@@ -5942,7 +6024,9 @@ Puisque nous disposons de suffisamment de données, nous inclurons un graphique 
     date: "2025-01-10",
     readTime: "21 min",
     image: "https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Différences entre les sexes dans la formation
+
+-Facebook
 
 -Twitter
 
@@ -6101,7 +6185,9 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
     date: "2025-01-10",
     readTime: "13 min",
     image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Méthodes d
+
+-Facebook
 
 -Twitter
 
@@ -6218,7 +6304,9 @@ Les méthodes d’intensification peuvent être un excellent moyen de pousser vo
     date: "2025-01-10",
     readTime: "17 min",
     image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# S
+
+-Facebook
 
 -Twitter
 
@@ -6372,7 +6460,9 @@ Nous résumerons l’intégralité de l’article avec la meilleure citation en 
     date: "2025-01-10",
     readTime: "21 min",
     image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Des soulevés de terre le jour de l
+
+-Facebook
 
 -Twitter
 
@@ -6543,7 +6633,9 @@ Alors, pouvez-vous faire des soulevés de terre le jour de l'arrière ? Bien sû
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Déchargements
+
+-Facebook
 
 -Twitter
 
@@ -6668,7 +6760,9 @@ Est-ce que tout le monde devra éventuellement se décharger ? Probablement pas.
     date: "2025-01-10",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Ischio-jambiers dans le squat
+
+-Facebook
 
 -Twitter
 
@@ -6800,7 +6894,9 @@ Il est donc important de concevoir votre formation autour de ces connaissances. 
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Entraînement thoracique 101
+
+-Facebook
 
 -Twitter
 
@@ -6941,7 +7037,9 @@ Le Dr Jacob Wilson est PDG du laboratoire de performance humaine de l'Applied Sc
     date: "2025-01-10",
     readTime: "28 min",
     image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Quantification de la tension mécanique
+
+-Facebook
 
 -Twitter
 
@@ -7166,7 +7264,9 @@ Nous utilisons généralement simplement un système de numérotation pour nos c
     date: "2025-01-10",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Hydratation
+
+-Facebook
 
 -Twitter
 
@@ -7240,7 +7340,9 @@ Si vous vous entraînez le matin, buvez de l'eau avant de vous coucher le soir. 
     date: "2025-01-10",
     readTime: "5 min",
     image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
-    content: `## Introduction : Qui prépare votre déjeuner ?
+    content: `# La boîte à lunch : Une leçon de responsabilité personnelle
+
+## Introduction : Qui prépare votre déjeuner ?
 
 Avant d'aller plus loin, je dois créditer l'esprit original de cette réflexion car je n'ai pas inventé ce concept. Ce qui suit est un message puissant inspiré de Clint Darden, dynamophile d'élite, conférencier motivateur et survivant du cancer.
 
@@ -7355,7 +7457,9 @@ Vous êtes le chef cuisinier de votre existence. Si le menu ne vous plaît pas, 
     date: "2025-01-10",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# S
+
+-Facebook
 
 -Twitter
 
@@ -7462,7 +7566,9 @@ Remarque : Au moment de la publication, les articles originaux des numéros cit�
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Le livre de règles du partenaire de formation
+
+-Facebook
 
 -Twitter
 
@@ -7583,7 +7689,9 @@ J'espère que vous faites déjà toutes les choses de cette liste, et sinon, ess
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Ce que je ferais différemment
+
+-Facebook
 
 -Twitter
 
@@ -7684,7 +7792,9 @@ Nous espérons que cet article offrira un aperçu unique de la formation à long
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# [Quelques] Physique du bodybuilding
+
+-Facebook
 
 -Twitter
 
@@ -7777,7 +7887,9 @@ Comme toujours, la connaissance, c'est le pouvoir !
     date: "2025-01-10",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Soyez excité
+
+-Facebook
 
 -Twitter
 
@@ -7875,7 +7987,9 @@ The Eternal – Bury Tomorrow (métal)
     date: "2025-01-10",
     readTime: "15 min",
     image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Recomposition corporelle
+
+-Facebook
 
 -Twitter
 
@@ -8007,7 +8121,9 @@ Dans l’ensemble, la recomposition corporelle est certainement une possibilité
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Écrire votre propre programme, partie 2
+
+-Facebook
 
 -Twitter
 
@@ -8106,7 +8222,9 @@ Bien que chaque section individuelle ici puisse probablement utiliser à elle se
     date: "2025-01-10",
     readTime: "8 min",
     image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Écrire votre propre programme, partie 1
+
+-Facebook
 
 -Twitter
 
@@ -8184,7 +8302,9 @@ Réfléchissez de manière critique à votre programme de formation actuel, que 
     date: "2025-01-10",
     readTime: "19 min",
     image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Micronutriments
+
+-Facebook
 
 -Twitter
 
@@ -8346,7 +8466,9 @@ Au moment de la publication, la référence n° 17 n'était plus disponible sous
     date: "2025-01-10",
     readTime: "28 min",
     image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Musculation vs dynamophilie
+
+-Facebook
 
 -Twitter
 
@@ -8666,7 +8788,9 @@ Merci d'avoir lu jusqu'ici la série et nous aurons un autre épisode sous peu !
     date: "2025-01-10",
     readTime: "21 min",
     image: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Différences entre les sexes dans la formation
+
+-Facebook
 
 -Twitter
 
@@ -8822,7 +8946,9 @@ Dans l’ensemble, il n’y a vraiment aucune raison de penser que les hommes et
     date: "2025-01-10",
     readTime: "12 min",
     image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Excentriques et croissance
+
+-Facebook
 
 -Twitter
 
@@ -8930,7 +9056,9 @@ En fin de compte, les parties excentriques et concentriques d’un ascenseur son
     date: "2025-01-10",
     readTime: "22 min",
     image: "https://images.unsplash.com/photo-1598971639058-fab3c3109a00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Entraînement des mollets 101
+
+-Facebook
 
 -Twitter
 
@@ -9125,7 +9253,9 @@ Mec, nous avons presque parcouru tout l’article sans un jeu de mots sur la vac
     date: "2025-01-10",
     readTime: "30 min",
     image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# La taille = la force ?
+
+-Facebook
 
 -Twitter
 
@@ -9332,7 +9462,9 @@ Comme pour toute théorie scientifique, nous continuons à façonner celle-ci et
     date: "2025-01-10",
     readTime: "16 min",
     image: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Inconvénient nutritionnel
+
+-Facebook
 
 -Twitter
 
@@ -9443,7 +9575,9 @@ En fin de compte, tout plan de régime sera difficile à suivre. Aucun objectif 
     date: "2025-01-10",
     readTime: "31 min",
     image: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Amplitude de mouvement et croissance
+
+-Facebook
 
 -Twitter
 
@@ -9659,7 +9793,9 @@ Pour l’instant, amusez-vous à lire – nous avons certainement aimé collecte
     date: "2025-01-10",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1581009137042-c552e485697a?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Qu’est-ce que la Broscience ?
+
+-Facebook
 
 -Twitter
 
@@ -9737,7 +9873,9 @@ Intéressé à devenir un frère basé sur des preuves ? Eh bien, nous avons ex
     date: "2025-01-10",
     readTime: "27 min",
     image: "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# BCAA : pomper ou vider ?
+
+-Facebook
 
 -Twitter
 
@@ -9777,7 +9915,7 @@ Nous voyons l’importance de la leucine en comparant différentes sources ou ap
 
 Il est facile de voir l’importance de la leucine dans les études qui ajoutent de la leucine supplémentaire à des sujets consommant déjà suffisamment de protéines de lactosérum pour atteindre le seuil de leucine – il n’y a aucun avantage supplémentaire (22).  on peut simplement assimiler les sources de protéines végétales aux sources de protéines animales en consommant une plus grande quantité de protéines végétales. Cela égalise la teneur en leucine entre les protéines, ce qui égalise également la réponse à la synthèse des protéines musculaires (19,33).
 
-Il convient de noter que, même si la leucine semble avoir toute la gloire en matière de synthèse des protéines, l’isoleucine et la valine peuvent également jouer un rôle. Plusieurs enzymes et signaux cellulaires doivent être activés pour que la synthèse des protéines ait lieu, et encore moins qu’elle soit maximisée. La consommation de leucine seule peut ne pas activer certains de ces signaux clés autant que la prise des 3 BCAA ensemble(23,26). La leucine reste probablement le BCAA le plus important en ce qui concerne la synthèse des protéines, mais la prise de tous les BCAA semble être plus efficace que la seule leucine seule.
+, même si la leucine semble avoir toute la gloire en matière de synthèse des protéines, l’isoleucine et la valine peuvent également jouer un rôle. Plusieurs enzymes et signaux cellulaires doivent être activés pour que la synthèse des protéines ait lieu, et encore moins qu’elle soit maximisée. La consommation de leucine seule peut ne pas activer certains de ces signaux clés autant que la prise des 3 BCAA ensemble(23,26). La leucine reste probablement le BCAA le plus important en ce qui concerne la synthèse des protéines, mais la prise de tous les BCAA semble être plus efficace que la seule leucine seule.
 
 En fin de compte, les BCAA à eux seuls peuvent absolument augmenter la synthèse des protéines musculaires (17) et constituent un élément essentiel de l'apport en protéines si l'on considère l'effet qu'une source de protéines peut avoir sur les gains (18). Alors, avec toutes ces informations, à quoi servent les BCAA en matière d’entraînement ?
 
@@ -9953,7 +10091,9 @@ Les deux côtés de l’argument BCAA sont présentés , mais le véritable poin
     date: "2025-01-10",
     readTime: "11 min",
     image: "https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# S
+
+-Facebook
 
 -Twitter
 
@@ -10051,7 +10191,9 @@ En fin de compte, les masques n’amélioreront probablement aucun aspect de vot
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1577221084712-45b0445d2b00?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Mode Bête
+
+-Facebook
 
 -Twitter
 
@@ -10200,7 +10342,9 @@ Soyez simplement heureux que nous soyons l’animal le plus intelligent de la pl
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Nutrition post-entraînement
+
+-Facebook
 
 -Twitter
 
@@ -10326,7 +10470,9 @@ En fin de compte, la nutrition après l’entraînement est l’une des meilleur
     date: "2025-01-10",
     readTime: "13 min",
     image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Une histoire de trois bodybuilders
+
+-Facebook
 
 -Twitter
 
@@ -10441,7 +10587,9 @@ Heureusement, c’est exactement à cela que sert ACHZOD. Vous apportez la déte
     date: "2025-01-10",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Étirement et performance
+
+-Facebook
 
 -Twitter
 
@@ -10537,7 +10685,9 @@ Donc, si l’un de vos objectifs d’entraînement est d’améliorer la flexibi
     date: "2025-01-10",
     readTime: "10 min",
     image: "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Temps sous tension
+
+-Facebook
 
 -Twitter
 
@@ -10633,7 +10783,9 @@ Si vous souhaitez une discussion encore plus approfondie sur le sujet, consultez
     date: "2025-01-10",
     readTime: "9 min",
     image: "https://images.unsplash.com/photo-1507398941214-572c25f4b1dc?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Ischio-jambiers et force de squat
+
+-Facebook
 
 -Twitter
 
@@ -10735,7 +10887,9 @@ Le domaine de la résistance et du conditionnement est un domaine intéressant d
     date: "2025-01-10",
     readTime: "14 min",
     image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop",
-    content: `-Facebook
+    content: `# Écrire votre propre programme, partie 4
+
+-Facebook
 
 -Twitter
 
