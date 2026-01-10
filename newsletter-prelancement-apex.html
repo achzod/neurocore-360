@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Labs - Pré-lancement</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* Advanced animations for ApexLabs */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), 0 0 40px rgba(0, 255, 255, 0.1);
+      }
+      50% {
+        box-shadow: 0 0 40px rgba(0, 255, 255, 0.6), 0 0 80px rgba(0, 255, 255, 0.3);
+      }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    @keyframes rotate-border {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes grid-flow {
+      0% { background-position: 0 0; }
+      100% { background-position: 100px 100px; }
+    }
+
+    @keyframes text-glow {
+      0%, 100% {
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5),
+                     0 0 20px rgba(0, 255, 255, 0.3),
+                     0 0 30px rgba(0, 255, 255, 0.1);
+      }
+      50% {
+        text-shadow: 0 0 20px rgba(0, 255, 255, 0.8),
+                     0 0 40px rgba(0, 255, 255, 0.5),
+                     0 0 60px rgba(0, 255, 255, 0.3);
+      }
+    }
+
+    @keyframes border-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .animate-pulse-glow {
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    .animate-fade-in-up {
+      animation: fade-in-up 1s ease-out forwards;
+    }
+
+    .gradient-text {
+      background: linear-gradient(90deg, #00ffff, #00ccff, #0099ff, #00ccff, #00ffff);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+    }
+
+    .text-glow {
+      animation: text-glow 2s ease-in-out infinite;
+    }
+
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: grid-flow 20s linear infinite;
+    }
+
+    .cta-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .cta-button::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #00ffff, #00ccff, #0099ff, #00ccff, #00ffff);
+      border-radius: 14px;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background-size: 400% 400%;
+      animation: shimmer 3s ease infinite;
+    }
+
+    .cta-button:hover::before {
+      opacity: 1;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .offer-card {
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+
+    .offer-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 16px;
+      padding: 2px;
+      background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 153, 255, 0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .offer-card:hover::before {
+      opacity: 1;
+    }
+
+    .offer-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(0, 255, 255, 0.2);
+    }
+
+    .spinning-border {
+      position: relative;
+    }
+
+    .spinning-border::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      background: conic-gradient(from 0deg, transparent, #00ffff, transparent);
+      animation: border-spin 3s linear infinite;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+
+  <!-- Container -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #000000;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+
+        <!-- Main Card -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" class="grid-bg" style="background-color: #050505; border-radius: 24px; border: 1px solid rgba(0, 255, 255, 0.2); overflow: hidden; box-shadow: 0 25px 80px rgba(0, 255, 255, 0.15);">
+
+          <!-- Header with Logo -->
+          <tr>
+            <td style="padding: 48px 40px 24px 40px; text-align: center;">
+              <div class="animate-pulse-glow" style="display: inline-block; padding: 16px 32px; border: 1px solid rgba(0, 255, 255, 0.4); border-radius: 12px; background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 153, 255, 0.05) 100%); box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);">
+                <span style="font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">APEX</span>
+                <span class="gradient-text" style="font-size: 28px; font-weight: 900; letter-spacing: -0.5px;">LABS</span>
+              </div>
+              <p style="color: #666666; font-size: 11px; margin-top: 16px; letter-spacing: 3px; text-transform: uppercase;">Optimisation Humaine & Bio-Data</p>
+            </td>
+          </tr>
+
+          <!-- Hero Section -->
+          <tr>
+            <td class="animate-fade-in-up" style="padding: 24px 40px 40px 40px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 32px; font-weight: 900; line-height: 1.2; margin: 0 0 24px 0; letter-spacing: -1px;">
+                Pendant 4 mois, j'ai disparu.<br>
+                <span class="gradient-text text-glow" style="font-size: 32px; font-weight: 900;">Voici pourquoi.</span>
+              </h1>
+              <p style="color: #999999; font-size: 16px; line-height: 1.9; margin: 0;">
+                Pas de vacances. Pas de pause. J'ai mis ma vie entre parenthèses pour construire quelque chose qui n'existait pas. Une obsession. Des nuits blanches à coder. Des centaines d'heures à compiler tout ce que je sais sur le corps humain, la physiologie, les hormones, la nutrition, l'entraînement, le sommeil, la récupération. Ligne par ligne. Seul. Aujourd'hui, c'est prêt. Et je voulais que tu sois le premier à le voir.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+
+          <!-- Le Problème -->
+          <tr>
+            <td style="padding: 40px;">
+              <div style="display: inline-block; padding: 6px 14px; background: rgba(255, 59, 59, 0.15); border-radius: 20px; border: 1px solid rgba(255, 59, 59, 0.4); margin-bottom: 20px;">
+                <span style="color: #ff3b3b; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">Le constat qui m'a fait démarrer</span>
+              </div>
+
+              <p style="color: #ffffff; font-size: 20px; line-height: 1.7; margin: 0 0 24px 0; font-weight: 700;">
+                95% des gens que je coache optimisent à l'aveugle.
+              </p>
+
+              <p style="color: #999999; font-size: 15px; line-height: 1.9; margin: 0 0 16px 0;">
+                Ils suivent des protocoles copiés-collés de YouTube. Ils prennent de la créatine parce qu'un influenceur l'a dit. Ils font du jeûne intermittent sans savoir si leur cortisol est déjà dans le rouge. Ils s'entraînent 6 fois par semaine alors que leur système nerveux est cramé. Ils mangent "healthy" mais leur insuline fait les montagnes russes toute la journée. Ils dorment 7h mais ne passent jamais en sommeil profond.
+              </p>
+
+              <p style="color: #ffffff; font-size: 16px; line-height: 1.9; margin: 0; font-weight: 600;">
+                C'est faux. Le problème n'est pas l'effort. Le problème, c'est que personne ne leur a jamais montré OÙ sont leurs vrais blocages.
+              </p>
+            </td>
+          </tr>
+
+          <!-- La Vérité -->
+          <tr>
+            <td style="padding: 0 40px 40px 40px;">
+              <div class="animate-pulse-glow" style="background: linear-gradient(135deg, rgba(0, 255, 255, 0.15) 0%, rgba(0, 153, 255, 0.1) 100%); border-radius: 16px; padding: 32px; border: 1px solid rgba(0, 255, 255, 0.3); box-shadow: 0 0 40px rgba(0, 255, 255, 0.1);">
+                <p style="color: #00ffff; font-size: 16px; line-height: 1.9; margin: 0; font-weight: 500;">
+                  Ton corps est un système. Tout est connecté. Ton sommeil affecte tes hormones. Tes hormones affectent ta faim. Ta faim affecte tes choix alimentaires. Tes choix alimentaires affectent ton énergie. Ton énergie affecte ton entraînement. Ton entraînement affecte ta récupération. Ta récupération affecte ton sommeil. Et la boucle recommence. Si tu ne comprends pas OÙ ça coince dans cette chaîne, tu peux t'acharner pendant des années sans avancer.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+
+          <!-- L'Histoire -->
+          <tr>
+            <td style="padding: 40px;">
+              <div style="display: inline-block; padding: 6px 14px; background: rgba(0, 255, 255, 0.15); border-radius: 20px; border: 1px solid rgba(0, 255, 255, 0.4); margin-bottom: 20px;">
+                <span style="color: #00ffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">Comment tout a commencé</span>
+              </div>
+
+              <p style="color: #999999; font-size: 15px; line-height: 1.9; margin: 0 0 20px 0;">
+                En septembre dernier, j'ai créé deux questionnaires gratuits pour ma communauté. Un audit métabolique de 40 questions. Un audit anabolique de 24 questions. Je voulais voir si mon intuition était bonne. Si les gens avaient besoin qu'on leur explique leur corps différemment.
+              </p>
+
+              <p style="color: #999999; font-size: 15px; line-height: 1.9; margin: 0 0 20px 0;">
+                Les retours m'ont scotché. Des dizaines de messages. Des gens qui me disaient qu'ils n'avaient jamais compris pourquoi ils stagnaient avant de lire mon analyse. Qu'ils avaient enfin mis des mots sur ce qu'ils ressentaient. Que personne ne leur avait jamais expliqué le lien entre leur digestion et leur prise de gras. Entre leur sommeil et leurs envies de sucre. Entre leur posture et leurs douleurs chroniques.
+              </p>
+
+              <p style="color: #ffffff; font-size: 17px; line-height: 1.8; margin: 0 0 20px 0; font-weight: 600;">
+                C'est là que j'ai su que je devais aller beaucoup plus loin.
+              </p>
+
+              <p style="color: #999999; font-size: 15px; line-height: 1.9; margin: 0;">
+                J'ai passé 4 mois à construire ce qui n'existait pas. Une plateforme complète. Pas un simple quiz avec un PDF générique à la fin. Un vrai système d'analyse qui croise chaque réponse avec mes 11 certifications en biomécanique, nutrition, préparation physique, hormones et biohacking. Mon diplôme d'ingénieur en sécurité informatique a enfin servi à quelque chose.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+
+          <!-- La Vision -->
+          <tr>
+            <td style="padding: 40px;">
+              <div style="display: inline-block; padding: 6px 14px; background: rgba(0, 255, 255, 0.15); border-radius: 20px; border: 1px solid rgba(0, 255, 255, 0.4); margin-bottom: 20px;">
+                <span style="color: #00ffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">Ce que j'ai construit</span>
+              </div>
+
+              <p class="text-glow" style="color: #00ffff; font-size: 22px; line-height: 1.5; margin: 0 0 20px 0; font-weight: 900; letter-spacing: -0.5px;">
+                La plateforme d'analyse corporelle la plus complète qui existe.
+              </p>
+
+              <p style="color: #999999; font-size: 15px; line-height: 1.9; margin: 0 0 24px 0;">
+                Tu réponds à un questionnaire approfondi sur ton mode de vie, ton alimentation, ton sommeil, ton entraînement, ton stress, tes douleurs, ta digestion. Tu uploades tes photos (face, profil, dos) pour l'analyse posturale et morphologique. Et tu reçois un rapport de 18 sections qui décortique chaque aspect de ta physiologie avec des protocoles concrets, personnalisés, applicables dès demain.
+              </p>
+
+              <!-- Steps -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 0;">
+                <tr>
+                  <td style="padding: 16px 0; color: #999999; font-size: 15px; border-bottom: 1px solid rgba(0, 255, 255, 0.1);">
+                    <span style="display: inline-block; width: 28px; height: 28px; background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%); border-radius: 50%; text-align: center; line-height: 28px; color: #000000; font-size: 12px; font-weight: 900; margin-right: 14px;">01</span>
+                    Tu réponds au questionnaire complet (15-20 minutes)
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 16px 0; color: #999999; font-size: 15px; border-bottom: 1px solid rgba(0, 255, 255, 0.1);">
+                    <span style="display: inline-block; width: 28px; height: 28px; background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%); border-radius: 50%; text-align: center; line-height: 28px; color: #000000; font-size: 12px; font-weight: 900; margin-right: 14px;">02</span>
+                    Tu connectes ton wearable et tu uploades tes photos
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 16px 0; color: #999999; font-size: 15px; border-bottom: 1px solid rgba(0, 255, 255, 0.1);">
+                    <span style="display: inline-block; width: 28px; height: 28px; background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%); border-radius: 50%; text-align: center; line-height: 28px; color: #000000; font-size: 12px; font-weight: 900; margin-right: 14px;">03</span>
+                    Je croise tout avec mes 11 certifications
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 16px 0; color: #999999; font-size: 15px;">
+                    <span style="display: inline-block; width: 28px; height: 28px; background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%); border-radius: 50%; text-align: center; line-height: 28px; color: #000000; font-size: 12px; font-weight: 900; margin-right: 14px;">04</span>
+                    Tu reçois ton rapport avec des protocoles minute par minute
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+
+          <!-- Les Offres -->
+          <tr>
+            <td style="padding: 40px 40px 20px 40px;">
+              <div style="display: inline-block; padding: 6px 14px; background: rgba(0, 255, 255, 0.15); border-radius: 20px; border: 1px solid rgba(0, 255, 255, 0.4); margin-bottom: 16px;">
+                <span style="color: #00ffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">5 niveaux d'analyse</span>
+              </div>
+              <div style="padding: 16px 20px; background: linear-gradient(135deg, rgba(255, 204, 0, 0.15) 0%, rgba(255, 153, 0, 0.05) 100%); border-radius: 12px; border: 1px solid rgba(255, 204, 0, 0.4);">
+                <p style="color: #ffcc00; font-size: 14px; line-height: 1.7; margin: 0;">
+                  <strong>Montant 100% déduit</strong> si tu décides ensuite de travailler avec moi en coaching (hors offre STARTER).
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Offer 1: Discovery Scan -->
+          <tr>
+            <td style="padding: 16px 40px;">
+              <table class="offer-card" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <tr>
+                  <td style="padding: 28px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <h3 style="color: #ffffff; font-size: 20px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Discovery Scan</h3>
+                        </td>
+                        <td style="text-align: right; vertical-align: middle;">
+                          <span class="gradient-text" style="font-size: 24px; font-weight: 900;">Gratuit</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #888888; font-size: 14px; line-height: 1.8; margin: 16px 0 0 0;">
+                      Ton point d'entrée pour découvrir la plateforme. Executive Summary avec tes 3 blocages principaux, analyse visuelle et posturale, analyse métabolisme et nutrition, et ton plan d'action 14 jours.
+                    </p>
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 255, 255, 0.1);">
+                      <p style="color: #666666; font-size: 13px; margin: 0;">
+                        <span style="color: #00ffff;">✓</span> 4 sections d'analyse
+                        <span style="color: #00ffff; margin-left: 16px;">✓</span> Score global sur 100
+                        <span style="color: #00ffff; margin-left: 16px;">✓</span> Plan 14 jours
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Offer 2: Burnout Engine -->
+          <tr>
+            <td style="padding: 8px 40px;">
+              <table class="offer-card" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%); border-radius: 16px; border: 1px solid rgba(255, 59, 59, 0.4);">
+                <tr>
+                  <td style="padding: 28px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <h3 style="color: #ffffff; font-size: 20px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Burnout Engine</h3>
+                        </td>
+                        <td style="text-align: right; vertical-align: middle;">
+                          <span style="color: #ff3b3b; font-size: 24px; font-weight: 900;">39€</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #888888; font-size: 14px; line-height: 1.8; margin: 16px 0 0 0;">
+                      Score de risque burnout, analyse de ton axe HPA (hypothalamo-hypophyso-surrénalien), analyse sommeil complète et protocole 4 semaines pour resynchroniser ton système nerveux.
+                    </p>
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 59, 59, 0.1);">
+                      <p style="color: #666666; font-size: 13px; margin: 0;">
+                        <span style="color: #ff3b3b;">✓</span> Score risque burnout
+                        <span style="color: #ff3b3b; margin-left: 16px;">✓</span> Analyse axe HPA
+                        <span style="color: #ff3b3b; margin-left: 16px;">✓</span> Protocole 4 semaines
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Offer 3: Anabolic Bioscan -->
+          <tr>
+            <td style="padding: 8px 40px;">
+              <table class="offer-card" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%); border-radius: 16px; border: 1px solid rgba(0, 255, 255, 0.4);">
+                <tr>
+                  <td style="padding: 28px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <h3 style="color: #ffffff; font-size: 20px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Anabolic Bioscan</h3>
+                        </td>
+                        <td style="text-align: right; vertical-align: middle;">
+                          <span style="color: #00ffff; font-size: 24px; font-weight: 900;">59€</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #888888; font-size: 14px; line-height: 1.8; margin: 16px 0 0 0;">
+                      16 sections d'analyse profonde, 5 protocoles détaillés minute par minute, plan 30-60-90 jours et stack supplements personnalisé avec dosages et timing.
+                    </p>
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 255, 255, 0.1);">
+                      <p style="color: #666666; font-size: 13px; margin: 0;">
+                        <span style="color: #00ffff;">✓</span> 16 sections
+                        <span style="color: #00ffff; margin-left: 16px;">✓</span> 5 protocoles
+                        <span style="color: #00ffff; margin-left: 16px;">✓</span> Stack supps
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Offer 4: Ultimate Scan -->
+          <tr>
+            <td style="padding: 8px 40px;">
+              <table class="offer-card animate-pulse-glow" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%); border-radius: 16px; border: 2px solid #00ffff; box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);">
+                <tr>
+                  <td style="padding: 28px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <span style="display: inline-block; background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%); color: #000000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;">Le plus complet</span>
+                          <h3 style="color: #ffffff; font-size: 20px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Ultimate Scan</h3>
+                        </td>
+                        <td style="text-align: right; vertical-align: middle;">
+                          <span class="text-glow" style="color: #00ffff; font-size: 24px; font-weight: 900;">79€</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #888888; font-size: 14px; line-height: 1.8; margin: 16px 0 0 0;">
+                      Tout l'Anabolic Bioscan + analyse complète de tes 3 photos, screening morpho-physiologique, score posture sur 100, sync wearables. 18 sections au total.
+                    </p>
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 255, 255, 0.2);">
+                      <p style="color: #666666; font-size: 13px; margin: 0;">
+                        <span style="color: #00ffff;">✓</span> 18 sections
+                        <span style="color: #00ffff; margin-left: 12px;">✓</span> Analyse photos
+                        <span style="color: #00ffff; margin-left: 12px;">✓</span> Sync wearables
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Offer 5: Blood Analysis -->
+          <tr>
+            <td style="padding: 8px 40px 40px 40px;">
+              <table class="offer-card" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%); border-radius: 16px; border: 1px solid rgba(0, 255, 255, 0.4);">
+                <tr>
+                  <td style="padding: 28px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle;">
+                          <h3 style="color: #ffffff; font-size: 20px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">Blood Analysis</h3>
+                        </td>
+                        <td style="text-align: right; vertical-align: middle;">
+                          <span style="color: #00ffff; font-size: 24px; font-weight: 900;">99€</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="color: #888888; font-size: 14px; line-height: 1.8; margin: 16px 0 0 0;">
+                      Upload ton PDF, extraction auto des marqueurs, radars de risques visuels avec ranges OPTIMAUX (pas juste "normaux"), analyse croisée par axe et protocoles ciblés.
+                    </p>
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 255, 255, 0.1);">
+                      <p style="color: #666666; font-size: 13px; margin: 0;">
+                        <span style="color: #00ffff;">✓</span> Extraction auto
+                        <span style="color: #00ffff; margin-left: 16px;">✓</span> Radars visuels
+                        <span style="color: #00ffff; margin-left: 16px;">✓</span> Historique
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+
+          <!-- Social Proof -->
+          <tr>
+            <td style="padding: 40px;">
+              <div style="display: inline-block; padding: 6px 14px; background: rgba(0, 255, 255, 0.15); border-radius: 20px; border: 1px solid rgba(0, 255, 255, 0.4); margin-bottom: 24px;">
+                <span style="color: #00ffff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">Ce qu'ils en disent</span>
+              </div>
+
+              <div style="margin-bottom: 24px; padding: 20px; background: rgba(0, 255, 255, 0.05); border-radius: 12px; border-left: 3px solid #00ffff;">
+                <p style="color: #dddddd; font-size: 15px; line-height: 1.7; margin: 0 0 12px 0; font-style: italic;">
+                  "Le rapport m'a ouvert les yeux sur mes déséquilibres hormonaux. En 3 mois, j'ai retrouvé mon énergie et perdu 6kg de gras sans changer drastiquement mon alimentation."
+                </p>
+                <p style="color: #00ffff; font-size: 13px; margin: 0; font-weight: 600;">Thomas D., Entrepreneur, 38 ans</p>
+              </div>
+
+              <div style="margin-bottom: 24px; padding: 20px; background: rgba(0, 255, 255, 0.05); border-radius: 12px; border-left: 3px solid #00ffff;">
+                <p style="color: #dddddd; font-size: 15px; line-height: 1.7; margin: 0 0 12px 0; font-style: italic;">
+                  "L'analyse posturale a identifié des compensations que je traînais depuis des années. Mes douleurs de dos ont disparu et mes performances en CrossFit ont explosé."
+                </p>
+                <p style="color: #00ffff; font-size: 13px; margin: 0; font-weight: 600;">Sophie M., Athlète CrossFit, 31 ans</p>
+              </div>
+
+              <div style="padding: 20px; background: rgba(255, 59, 59, 0.05); border-radius: 12px; border-left: 3px solid #ff3b3b;">
+                <p style="color: #dddddd; font-size: 15px; line-height: 1.7; margin: 0 0 12px 0; font-style: italic;">
+                  "Le Burnout Engine m'a littéralement sauvé. J'étais au bord du gouffre sans le savoir. Mon score de risque était à 87/100. Après le protocole, je dors enfin correctement."
+                </p>
+                <p style="color: #ff3b3b; font-size: 13px; margin: 0; font-weight: 600;">Marc L., Cadre dirigeant, 44 ans</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.4) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+
+          <!-- CTA Section -->
+          <tr>
+            <td style="padding: 48px 40px;">
+              <div style="text-align: center;">
+                <h2 class="text-glow" style="color: #00ffff; font-size: 28px; font-weight: 900; margin: 0 0 16px 0; letter-spacing: -1px;">
+                  Le lancement arrive.
+                </h2>
+                <p style="color: #999999; font-size: 16px; line-height: 1.8; margin: 0 0 32px 0;">
+                  Inscris-toi maintenant pour être notifié en premier<br>et accéder à la plateforme avant tout le monde.
+                </p>
+
+                <a href="https://apexlabsprelaunch.achzodcoaching.com/apexlabs" class="cta-button" style="display: inline-block; background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%); color: #000000; font-size: 17px; font-weight: 900; text-decoration: none; padding: 20px 56px; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 8px 32px rgba(0, 255, 255, 0.5); text-transform: uppercase;">
+                  Découvrir Apex Labs
+                </a>
+
+                <p style="color: #666666; font-size: 13px; margin: 24px 0 0 0;">
+                  Aucun paiement requis. Tu seras juste prévenu en premier.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Signature -->
+          <tr>
+            <td style="padding: 0 40px 40px 40px;">
+              <div style="background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 153, 255, 0.05) 100%); border-radius: 16px; padding: 28px; border: 1px solid rgba(0, 255, 255, 0.3);">
+                <p style="color: #999999; font-size: 14px; line-height: 1.8; margin: 0 0 12px 0;">
+                  Des questions sur la plateforme ? Réponds directement à cet email. Je lis chaque message personnellement.
+                </p>
+                <p style="color: #ffffff; font-size: 16px; margin: 0; font-weight: 900;">
+                  <span class="gradient-text" style="font-size: 16px;">ACHZOD</span>
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px 40px; text-align: center;">
+              <p style="color: #555555; font-size: 12px; margin: 0 0 8px 0;">
+                Tu reçois cet email car tu es inscrit à la liste de pré-lancement Apex Labs.
+              </p>
+              <p style="color: #555555; font-size: 12px; margin: 0;">
+                <a href="mailto:contact@achzodcoaching.com?subject=Désinscription%20Newsletter%20ApexLabs&body=Je%20souhaite%20me%20désinscrire%20de%20la%20newsletter%20ApexLabs.%0A%0AMerci." style="color: #888888; text-decoration: underline;">Se désinscrire</a>
+                <span style="color: #333; margin: 0 12px;">•</span>
+                <a href="https://apexlabsprelaunch.achzodcoaching.com/apexlabs" style="color: #888888; text-decoration: underline;">Voir sur le web</a>
+              </p>
+              <p style="color: #444444; font-size: 11px; margin: 16px 0 0 0;">
+                © 2025 Apex Labs by Achzod. Tous droits réservés.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- End Main Card -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- End Container -->
+
+</body>
+</html>
