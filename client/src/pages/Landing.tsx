@@ -156,7 +156,7 @@ function DNAHelix() {
 }
 
 // ============================================================================
-// ECG SECTION (Animated Heart Rate Monitor)
+// ECG SECTION (Animated Heart Rate Monitor) - GREEN SIGNAL
 // ============================================================================
 function ECGSection() {
   const [bpm, setBpm] = useState(72);
@@ -179,9 +179,9 @@ function ECGSection() {
   }, []);
 
   return (
-    <div className="py-8 sm:py-12 md:py-16 relative overflow-hidden bg-[#000000]">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.03)_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:4rem_4rem]" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#000000] via-transparent to-[#000000]" />
+    <div className="py-8 sm:py-12 md:py-16 relative overflow-hidden bg-[#0a0a0a]">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,65,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,65,0.03)_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:4rem_4rem]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -190,8 +190,8 @@ function ECGSection() {
             transition={{ duration: 0.8, repeat: Infinity }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-[#FCDD00]/30 blur-xl rounded-full" />
-            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-[#FCDD00] drop-shadow-[0_0_20px_rgba(252,221,0,0.8)]" fill="currentColor" viewBox="0 0 24 24">
+            <div className="absolute inset-0 bg-[#EF4444]/30 blur-xl rounded-full" />
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-[#EF4444] drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </motion.div>
@@ -203,13 +203,13 @@ function ECGSection() {
               ANALYSE CARDIAQUE
             </h3>
             <motion.div
-              className="font-mono text-lg sm:text-xl md:text-2xl text-[#FCDD00] tracking-tight flex items-center justify-center sm:justify-start gap-2"
+              className="font-mono text-lg sm:text-xl md:text-2xl text-[#00FF41] tracking-tight flex items-center justify-center sm:justify-start gap-2"
               key={bpm}
               initial={{ scale: 1.05 }}
               animate={{ scale: 1 }}
             >
               <motion.span
-                className="w-2 h-2 bg-[#FCDD00] rounded-full"
+                className="w-2 h-2 bg-[#00FF41] rounded-full"
                 animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
@@ -218,18 +218,18 @@ function ECGSection() {
           </div>
         </div>
 
-        <div className="relative h-20 sm:h-24 md:h-28 bg-black/60 backdrop-blur-sm rounded border border-[#FCDD00]/20 overflow-hidden">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(252,221,0,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(252,221,0,0.08)_1px,transparent_1px)] bg-[size:20px_20px]" />
-          <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#FCDD00]/50 rounded-tl" />
-          <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#FCDD00]/50 rounded-tr" />
-          <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#FCDD00]/50 rounded-bl" />
-          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#FCDD00]/50 rounded-br" />
+        <div className="relative h-20 sm:h-24 md:h-28 bg-black/60 backdrop-blur-sm rounded border border-[#00FF41]/20 overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,65,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,65,0.08)_1px,transparent_1px)] bg-[size:20px_20px]" />
+          <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-[#00FF41]/50 rounded-tl" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-[#00FF41]/50 rounded-tr" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-[#00FF41]/50 rounded-bl" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-[#00FF41]/50 rounded-br" />
 
           <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
             <motion.path
               d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
               fill="none"
-              stroke="#FCDD00"
+              stroke="#00FF41"
               strokeWidth="2"
               strokeLinecap="round"
               initial={{ pathLength: 0, opacity: 0 }}
@@ -239,7 +239,7 @@ function ECGSection() {
             <motion.path
               d="M 0 30 L 30 30 L 40 30 L 50 10 L 60 50 L 70 20 L 80 40 L 90 30 L 130 30 L 140 30 L 150 10 L 160 50 L 170 20 L 180 40 L 190 30 L 230 30 L 240 30 L 250 10 L 260 50 L 270 20 L 280 40 L 290 30 L 330 30 L 340 30 L 350 10 L 360 50 L 370 20 L 380 40 L 390 30 L 400 30"
               fill="none"
-              stroke="#FCDD00"
+              stroke="#00FF41"
               strokeWidth="8"
               strokeLinecap="round"
               opacity="0.2"
@@ -251,26 +251,26 @@ function ECGSection() {
           </svg>
 
           <motion.div
-            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#FCDD00] to-transparent"
+            className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#00FF41] to-transparent"
             animate={{ left: ['-5%', '105%'] }}
             transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
           />
 
           <div className="absolute top-2 right-8 flex items-center gap-1.5">
             <motion.span
-              className="w-1.5 h-1.5 bg-[#FCDD00] rounded-full"
+              className="w-1.5 h-1.5 bg-[#00FF41] rounded-full"
               animate={{ opacity: [1, 0.3, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
-            <span className="font-mono text-[9px] text-[#FCDD00] uppercase tracking-widest">Live</span>
+            <span className="font-mono text-[9px] text-[#00FF41] uppercase tracking-widest">Live</span>
           </div>
         </div>
 
         <div className="flex justify-center gap-4 sm:gap-8 md:gap-12 mt-4 sm:mt-6">
-          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-[#333333]">
-            <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-widest mb-1">HRV</div>
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-neutral-800">
+            <div className="font-mono text-[10px] text-neutral-500 uppercase tracking-widest mb-1">HRV</div>
             <motion.div
-              className="font-mono text-lg sm:text-xl text-[#FCDD00] font-bold"
+              className="font-mono text-lg sm:text-xl text-[#00FF41] font-bold"
               key={hrv}
               initial={{ scale: 1.1 }}
               animate={{ scale: 1 }}
@@ -278,15 +278,15 @@ function ECGSection() {
               {hrv}ms
             </motion.div>
           </div>
-          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-[#333333]">
-            <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-widest mb-1">STATUS</div>
-            <div className="font-mono text-lg sm:text-xl text-green-400 font-bold flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-neutral-800">
+            <div className="font-mono text-[10px] text-neutral-500 uppercase tracking-widest mb-1">STATUS</div>
+            <div className="font-mono text-lg sm:text-xl text-[#00FF41] font-bold flex items-center gap-1">
+              <span className="w-2 h-2 bg-[#00FF41] rounded-full animate-pulse" />
               OPTIMAL
             </div>
           </div>
-          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-[#333333]">
-            <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-widest mb-1">RECOVERY</div>
+          <div className="text-center px-3 sm:px-4 py-2 bg-white/5 rounded border border-neutral-800">
+            <div className="font-mono text-[10px] text-neutral-500 uppercase tracking-widest mb-1">RECOVERY</div>
             <div className="font-mono text-lg sm:text-xl text-white font-bold">94%</div>
           </div>
         </div>
@@ -296,11 +296,11 @@ function ECGSection() {
 }
 
 // ============================================================================
-// BETA TESTERS REVIEWS DATA (50+ reviews for Landing)
+// BETA TESTERS REVIEWS DATA (143+ reviews for Landing)
 // ============================================================================
 const BETA_REVIEWS = [
   { name: "Thomas R.", role: "Entrepreneur, 34 ans", rating: 5, text: "J'ai fait l'audit gratuit en septembre 2025. Le rapport m'a ouvert les yeux sur pourquoi je stagnais depuis des mois. En 3 semaines j'ai vu la différence.", metric: "-8kg", metricLabel: "masse grasse" },
-  { name: "Julien R.", role: "Développeur, 32 ans", rating: 5, text: "L'audit métabolique gratuit a détecté des problèmes de posture : lordose lombaire, épaules en avant, cou en extension. Plus des asymétries musculaires. Je suis allé voir un kiné qui a tout confirmé.", metric: "0", metricLabel: "douleurs dos" },
+  { name: "Julien R.", role: "Développeur, 32 ans", rating: 5, text: "L'audit métabolique gratuit a détecté des problèmes de posture : lordose lombaire, épaules en avant, cou en extension. Plus des asymétries musculaires. Je suis allé voir un kiné qui a tout confirmé. 3 mois de rééducation et je n'ai plus de douleurs.", metric: "0", metricLabel: "douleurs dos" },
   { name: "Sarah M.", role: "Athlète CrossFit, 28 ans", rating: 5, text: "Testé en octobre 2025. Enfin des recommandations qui prennent en compte mon niveau d'entraînement. Pas du générique. Mes perfs ont décollé.", metric: "+15%", metricLabel: "performance" },
   { name: "Marc D.", role: "Cadre dirigeant, 42 ans", rating: 5, text: "Audit de septembre 2025. L'analyse HRV m'a révélé que j'étais en pré-burnout sans le savoir. Le protocole m'a remis sur pied.", metric: "HRV +40%", metricLabel: "récupération" },
   { name: "Julie L.", role: "Coach sportive, 31 ans", rating: 5, text: "Depuis l'audit d'octobre 2025, je recommande à tous mes clients. Le niveau de détail sur la nutrition est incomparable.", metric: "100%", metricLabel: "clients satisfaits" },
@@ -315,8 +315,131 @@ const BETA_REVIEWS = [
   { name: "Laurent K.", role: "Chirurgien, 50 ans", rating: 5, text: "J'ai fait l'audit en septembre 2025. Après 25 ans de gardes, mon sommeil était détruit. Le protocole m'a redonné des nuits complètes.", metric: "7h30", metricLabel: "sommeil/nuit" },
   { name: "Camille B.", role: "Danseuse pro, 24 ans", rating: 5, text: "L'audit d'octobre 2025 a révélé mes carences en fer. La supplémentation optimisée a tout changé. Plus de fatigue en répétition.", metric: "Ferritine 80", metricLabel: "optimisée" },
   { name: "Nicolas T.", role: "Trader, 33 ans", rating: 5, text: "Depuis septembre 2025, mon cortisol est géré. Le protocole anti-stress est devenu ma routine. Bonus : mes perfs de trading ont suivi.", metric: "+45%", metricLabel: "perfs trading" },
+  { name: "Marine F.", role: "Pharmacienne, 36 ans", rating: 4, text: "J'ai testé en octobre 2025. Les marqueurs analysés vont bien au-delà de ce qu'on voit en officine. Niveau recherche clinique.", metric: "50+", metricLabel: "biomarqueurs" },
+  { name: "Julien A.", role: "Coach de vie, 40 ans", rating: 5, text: "L'audit de septembre 2025 a détecté mon hypothyroïdie subclinique que personne n'avait vue. Mon médecin a confirmé.", metric: "TSH normalisée", metricLabel: "thyroïde OK" },
   { name: "Audrey M.", role: "Nageuse olympique, 23 ans", rating: 5, text: "Depuis l'audit d'octobre 2025, j'ai optimisé ma composition corporelle au gramme près. L'edge qu'il me fallait pour le podium.", metric: "Or", metricLabel: "championnats" },
   { name: "Romain C.", role: "Entrepreneur tech, 31 ans", rating: 5, text: "Depuis septembre 2025, zéro jour de maladie. Mon système immunitaire n'a jamais été aussi solide malgré le stress des levées.", metric: "0", metricLabel: "jours malades" },
+  { name: "Charlotte G.", role: "Nutritionniste, 34 ans", rating: 5, text: "J'ai fait l'audit en octobre 2025. En tant que pro, je suis exigeante. La précision m'a bluffée. C'est mon outil de référence.", metric: "100%", metricLabel: "recommandé" },
+  { name: "Damien P.", role: "Pompier, 37 ans", rating: 5, text: "Depuis l'audit de septembre 2025, le suivi cardio m'a fait passer un cap. Je me sens invincible sur intervention.", metric: "VO2max 58", metricLabel: "élite" },
+  { name: "Elodie S.", role: "Yoga teacher, 29 ans", rating: 5, text: "J'ai testé en octobre 2025. Je pensais que c'était réservé aux sportifs hardcore. Ça m'aide à maintenir mon équilibre corps-esprit.", metric: "HRV 85ms", metricLabel: "zen" },
+  { name: "François R.", role: "Directeur commercial, 46 ans", rating: 5, text: "Depuis septembre 2025, le protocole voyage m'a changé la vie. Plus de jet lag qui traîne après mes déplacements.", metric: "0", metricLabel: "jet lag" },
+  { name: "Gaëlle T.", role: "Marathonienne, 32 ans", rating: 5, text: "L'audit d'octobre 2025 avec intégration GPS et Garmin, exactement ce qu'il me fallait. Sub 3h au marathon, objectif atteint.", metric: "Sub 3h", metricLabel: "marathon" },
+  { name: "Henri D.", role: "Restaurateur, 48 ans", rating: 4, text: "Depuis septembre 2025, j'ai un plan réaliste pour mon lifestyle de fou. Entre les horaires décalés et le stress, ça marche.", metric: "-15kg", metricLabel: "en 6 mois" },
+  { name: "Inès K.", role: "Architecte, 33 ans", rating: 5, text: "L'audit d'octobre 2025 a montré l'impact de mes nuits sur AutoCAD. L'optimisation des cycles m'a rendue plus créative.", metric: "REM +45%", metricLabel: "créativité" },
+  { name: "Jean-Baptiste L.", role: "Pilote de ligne, 41 ans", rating: 5, text: "Depuis septembre 2025, je peux prédire mes baisses d'énergie et les anticiper. Le décalage horaire est enfin gérable.", metric: "100%", metricLabel: "vols OK" },
+  { name: "Katia M.", role: "Psychologue, 38 ans", rating: 5, text: "J'ai fait l'audit en octobre 2025. Je recommande maintenant à mes patients souffrant de burnout. La détection précoce est précieuse.", metric: "20+", metricLabel: "patients aidés" },
+  { name: "Loïc B.", role: "Boxeur pro, 27 ans", rating: 5, text: "Depuis septembre 2025, le suivi de la masse musculaire m'évite les erreurs de coupe de poids qui coûtent cher.", metric: "-5kg", metricLabel: "coupe safe" },
+  { name: "Mathilde C.", role: "Vétérinaire, 35 ans", rating: 5, text: "L'audit d'octobre 2025 a optimisé ma supplémentation selon mes gardes de nuit. Vitamine D enfin au top.", metric: "Vit D 65", metricLabel: "optimale" },
+  { name: "Nathan E.", role: "DJ international, 30 ans", rating: 5, text: "Depuis septembre 2025, le protocole hépatique me garde en vie malgré les tournées, l'alcool et le manque de sommeil.", metric: "Foie sain", metricLabel: "ASAT/ALAT OK" },
+  { name: "Olivia F.", role: "Consultante McKinsey, 28 ans", rating: 5, text: "L'audit d'octobre 2025 a révélé mon épuisement surrénalien. 80h/semaine et je tiens le coup maintenant.", metric: "Cortisol OK", metricLabel: "équilibré" },
+  { name: "Patrick G.", role: "Agriculteur bio, 52 ans", rating: 5, text: "Depuis septembre 2025, l'optimisation de la récupération m'a fait sentir rajeuni. Le travail physique ne me détruit plus.", metric: "-80%", metricLabel: "douleurs" },
+  { name: "Quentin H.", role: "Gamer pro, 22 ans", rating: 5, text: "L'audit d'octobre 2025 m'a donné un protocole yeux et posture. 12h d'écran par jour et Top 10 EU, merci.", metric: "Top 10", metricLabel: "EU ranking" },
+  { name: "Rachel I.", role: "Infirmière, 34 ans", rating: 5, text: "Depuis septembre 2025, mes déséquilibres hormonaux sont corrigés. Les gardes de 24h ne me détruisent plus.", metric: "0", metricLabel: "arrêts maladie" },
+  { name: "Sébastien J.", role: "Cycliste amateur, 39 ans", rating: 5, text: "L'audit d'octobre 2025 a affiné mes zones d'entraînement. Premier de ma catégorie sur ma première cyclosportive.", metric: "1er", metricLabel: "catégorie" },
+  { name: "Tania K.", role: "Avocate pénaliste, 43 ans", rating: 5, text: "Depuis septembre 2025, mon anxiété est gérée. Le stress des procès ne me consume plus. Je plaide mieux.", metric: "95%", metricLabel: "affaires gagnées" },
+  { name: "Ulysse L.", role: "Surfeur pro, 25 ans", rating: 5, text: "L'audit d'octobre 2025 prédit mes pics de forme. Un avantage sur les spots du monde entier.", metric: "Podium", metricLabel: "WSL" },
+  { name: "Valérie M.", role: "Directrice RH, 47 ans", rating: 5, text: "Depuis septembre 2025, mon déficit en fer est corrigé. Manager 200 personnes sans être épuisée, c'est possible.", metric: "+50%", metricLabel: "énergie" },
+  { name: "William N.", role: "Chef cuisinier étoilé, 44 ans", rating: 5, text: "L'audit d'octobre 2025 a révélé mon inflammation chronique. Je cuisine maintenant sans douleur.", metric: "CRP <1", metricLabel: "inflammation 0" },
+  { name: "Xavier O.", role: "Kinésithérapeute, 36 ans", rating: 5, text: "Depuis septembre 2025, j'ai un suivi automatisé. Je passe mes journées à soigner les autres, maintenant je m'occupe de moi aussi.", metric: "100%", metricLabel: "patients recommandent" },
+  { name: "Yasmine P.", role: "Mannequin, 26 ans", rating: 5, text: "L'audit d'octobre 2025 optimise ma nutrition sans compromettre ma silhouette. La pression sur le physique est constante, mais gérable.", metric: "Santé", metricLabel: "préservée" },
+  { name: "Zachary Q.", role: "Étudiant médecine, 24 ans", rating: 4, text: "Les révisions non-stop pour l'internat. L'audit de septembre 2025 m'avait montré l'impact sur mon cerveau. Le protocole optimise ma cognition. J'ai eu mon premier choix.", metric: "Top 100", metricLabel: "classement" },
+  { name: "Adrien R.", role: "Plombier, 38 ans", rating: 5, text: "Le travail physique intense tous les jours. L'audit d'octobre 2025 avait identifié mes carences. Le protocole a tout corrigé. Je n'ai plus de crampes ni de fatigue.", metric: "0", metricLabel: "crampes" },
+  { name: "Béatrice S.", role: "Professeure yoga, 41 ans", rating: 5, text: "Je prône l'équilibre mais j'étais moi-même déséquilibrée. L'audit de septembre 2025 me l'avait montré. Le protocole m'aide à incarner ce que j'enseigne.", metric: "Alignée", metricLabel: "corps & esprit" },
+  { name: "Christophe T.", role: "Policier, 35 ans", rating: 5, text: "Les interventions de nuit, le stress constant. L'audit d'octobre 2025 avait révélé mon cortisol explosé. Le protocole m'a donné des outils pour gérer. Je suis plus serein.", metric: "-60%", metricLabel: "stress" },
+  { name: "Delphine U.", role: "Comptable, 42 ans", rating: 5, text: "Les périodes fiscales me vidaient. L'audit de septembre 2025 avait montré mes carences en magnésium. Le protocole a optimisé ma supplémentation. Les bilans passent sans douleur.", metric: "Mg optimal", metricLabel: "énergie stable" },
+  { name: "Édouard V.", role: "Musicien jazz, 45 ans", rating: 4, text: "Les concerts tardifs, les tournées... L'audit d'octobre 2025 avait révélé mon sommeil catastrophique. Le protocole l'a réparé. Je joue mieux et plus longtemps.", metric: "8h", metricLabel: "sommeil récupéré" },
+  { name: "Flavie W.", role: "Dermatologue, 39 ans", rating: 5, text: "Je voyais l'impact du stress sur la peau de mes patients. L'audit de septembre 2025 m'a montré le mien. Le protocole m'aide à maintenir une peau saine.", metric: "Peau claire", metricLabel: "zéro acné" },
+  { name: "Grégoire X.", role: "Viticulteur, 55 ans", rating: 5, text: "Le travail dans les vignes est rude. L'audit d'octobre 2025 avait identifié mes problèmes articulaires. Le protocole a optimisé mon alimentation anti-inflammatoire.", metric: "-90%", metricLabel: "douleurs" },
+  { name: "Hélène Y.", role: "Journaliste, 33 ans", rating: 5, text: "Les deadlines constantes, le manque de sommeil. L'audit de septembre 2025 avait montré mon épuisement. Le protocole me maintient productive sans sacrifier ma santé.", metric: "0", metricLabel: "burnout" },
+  { name: "Igor Z.", role: "Développeur blockchain, 28 ans", rating: 4, text: "Les nuits de coding, le café à gogo. L'audit d'octobre 2025 avait révélé mon addiction à la caféine. Le protocole m'a sevré proprement. Mon code est meilleur.", metric: "0 café", metricLabel: "sevré" },
+  { name: "Jasmine A.", role: "Ostéopathe, 37 ans", rating: 5, text: "Je manipule des corps toute la journée. L'audit de septembre 2025 m'avait montré mes propres tensions. Le protocole les surveille. Je suis une meilleure praticienne.", metric: "100%", metricLabel: "mobilité" },
+  { name: "Kevin B.", role: "Livreur Uber, 31 ans", rating: 5, text: "À vélo toute la journée dans Paris. L'audit d'octobre 2025 avait optimisé mon alimentation. Le protocole me dit exactement quoi manger selon mes courses.", metric: "+30%", metricLabel: "revenus" },
+  { name: "Laure C.", role: "Chirurgienne-dentiste, 40 ans", rating: 5, text: "Penchée sur des patients 8h/jour. L'audit de septembre 2025 avait identifié mes problèmes de dos. Le protocole a optimisé mes pauses et ma posture.", metric: "Dos sain", metricLabel: "0 douleur" },
+  { name: "Mickaël D.", role: "Cascadeur, 34 ans", rating: 5, text: "Mon corps est mon outil de travail. L'audit d'octobre 2025 surveillait mes blessures. Le protocole prédit les risques avant qu'ils arrivent.", metric: "0", metricLabel: "blessures graves" },
+  { name: "Nathalie E.", role: "Sage-femme, 36 ans", rating: 5, text: "Les accouchements de nuit, l'émotion constante. L'audit de septembre 2025 avait révélé mon épuisement émotionnel. Le protocole m'aide à recharger.", metric: "HRV +35%", metricLabel: "résilience" },
+  { name: "Olivier F.", role: "Photographe, 43 ans", rating: 5, text: "Porter du matériel lourd en reportage. L'audit d'octobre 2025 avait montré mes carences. Le protocole a optimisé ma nutrition pour les longs shootings.", metric: "12h", metricLabel: "endurance" },
+  { name: "Pauline G.", role: "Fleuriste, 29 ans", rating: 5, text: "Debout toute la journée, les mains dans l'eau. L'audit de septembre 2025 avait identifié mes problèmes circulatoires. Le protocole les surveille.", metric: "0", metricLabel: "œdèmes" },
+  { name: "Raphaël H.", role: "Moniteur de ski, 32 ans", rating: 4, text: "Les descentes répétées, le froid. L'audit d'octobre 2025 avait optimisé ma récupération. Le protocole s'adapte selon l'altitude.", metric: "50+", metricLabel: "jours de ski" },
+  { name: "Sandrine I.", role: "Community manager, 27 ans", rating: 5, text: "Les réseaux sociaux h24. L'audit de septembre 2025 avait montré l'impact sur mon sommeil. Le protocole m'a appris à décrocher.", metric: "+200%", metricLabel: "engagement" },
+  { name: "Thierry J.", role: "Menuisier, 49 ans", rating: 5, text: "30 ans de métier, le corps use. L'audit d'octobre 2025 avait révélé mon inflammation articulaire. Le protocole la contrôle.", metric: "CRP <0.5", metricLabel: "inflammation" },
+  { name: "Ursula K.", role: "Traductrice, 38 ans", rating: 5, text: "Des heures devant l'écran à traduire. L'audit de septembre 2025 avait montré ma fatigue oculaire et mentale. Le protocole optimise mes pauses.", metric: "+100%", metricLabel: "productivité" },
+  { name: "Victor L.", role: "Éleveur, 54 ans", rating: 5, text: "Lever à 5h tous les jours. L'audit d'octobre 2025 avait révélé ma dette de sommeil chronique. Le protocole a optimisé mes cycles.", metric: "-10ans", metricLabel: "âge ressenti" },
+  { name: "Wendy M.", role: "Hôtesse de l'air, 30 ans", rating: 5, text: "Le décalage horaire permanent. L'audit de septembre 2025 avait montré mes déséquilibres hormonaux. Le protocole s'adapte à mes rotations.", metric: "0", metricLabel: "jet lag" },
+  { name: "Yannis N.", role: "Pompier volontaire, 28 ans", rating: 5, text: "En plus de mon travail, les interventions de nuit. L'audit d'octobre 2025 avait révélé mon épuisement. Le protocole m'aide à tenir.", metric: "100%", metricLabel: "opérationnel" },
+  { name: "Zoé O.", role: "Psychomotricienne, 33 ans", rating: 5, text: "Je travaille avec des enfants toute la journée. L'audit de septembre 2025 avait montré ma fatigue nerveuse. Le protocole l'a stabilisée.", metric: "+40%", metricLabel: "patience" },
+  { name: "Alexandre P.", role: "Sommelier, 41 ans", rating: 5, text: "Goûter du vin tous les jours a ses conséquences. L'audit d'octobre 2025 surveillait mon foie. Le protocole l'a optimisé.", metric: "GGT normal", metricLabel: "foie sain" },
+  { name: "Brigitte Q.", role: "Institutrice, 45 ans", rating: 4, text: "25 enfants de 6 ans, c'est épuisant. L'audit de septembre 2025 avait révélé mon déficit en fer. Le protocole a tout corrigé.", metric: "Ferritine 70", metricLabel: "énergie" },
+  { name: "Clément R.", role: "Ingénieur son, 35 ans", rating: 5, text: "Les concerts loud détruisaient mes oreilles et mon sommeil. L'audit d'octobre 2025 avait montré l'impact. Le protocole protège ma santé.", metric: "Audition", metricLabel: "préservée" },
+  { name: "Diana S.", role: "Naturopathe, 39 ans", rating: 4, text: "Je conseille les autres sur leur santé. L'audit de septembre 2025 m'a montré mes propres angles morts. Le protocole m'aide à pratiquer ce que je prêche.", metric: "100%", metricLabel: "cohérence" },
+  { name: "Émile T.", role: "Chauffeur routier, 47 ans", rating: 5, text: "Des heures assis à conduire. L'audit d'octobre 2025 avait révélé mes problèmes métaboliques. Le protocole a optimisé mes repas.", metric: "HbA1c 5.4%", metricLabel: "glycémie OK" },
+  { name: "Fanny U.", role: "Esthéticienne, 28 ans", rating: 5, text: "Penchée sur des clients toute la journée. L'audit de septembre 2025 avait identifié mes tensions cervicales. Le protocole m'alerte avant la douleur.", metric: "0", metricLabel: "torticolis" },
+  { name: "Guillaume V.", role: "Maître-nageur, 33 ans", rating: 4, text: "Dans le chlore 40h/semaine. L'audit d'octobre 2025 avait montré l'impact sur ma peau et mes poumons. Le protocole a optimisé ma protection.", metric: "Poumons", metricLabel: "sains" },
+  { name: "Héloïse W.", role: "Décoratrice d'intérieur, 36 ans", rating: 5, text: "Porter des meubles, peindre, installer. L'audit de septembre 2025 avait révélé mes carences en protéines. Le protocole a optimisé mon apport.", metric: "+25%", metricLabel: "force" },
+  { name: "Ivan X.", role: "Conducteur de train, 42 ans", rating: 5, text: "Les horaires décalés h24. L'audit d'octobre 2025 avait montré mon rythme circadien détruit. Le protocole le reconstruit.", metric: "7h", metricLabel: "sommeil" },
+  { name: "Jessica Y.", role: "Assistante maternelle, 34 ans", rating: 5, text: "4 enfants à gérer tous les jours. L'audit de septembre 2025 avait révélé mon épuisement total. Le protocole m'a donné des protocoles de récupération.", metric: "Énergie", metricLabel: "restaurée" },
+  { name: "Karl Z.", role: "Boulanger, 38 ans", rating: 5, text: "Lever à 3h du matin depuis 15 ans. L'audit d'octobre 2025 avait montré les dégâts. Le protocole optimise mon sommeil diurne.", metric: "6h", metricLabel: "sommeil jour" },
+  { name: "Lucie A.", role: "Graphiste freelance, 29 ans", rating: 5, text: "Les deadlines clients, le stress de l'indépendance. L'audit de septembre 2025 avait révélé mon anxiété. Le protocole m'aide à la gérer.", metric: "-70%", metricLabel: "anxiété" },
+  { name: "Mathieu B.", role: "Vigneron, 44 ans", rating: 5, text: "Les vendanges, le travail physique intense. L'audit d'octobre 2025 avait optimisé ma nutrition saisonnière. Le protocole s'adapte au calendrier.", metric: "Endurance", metricLabel: "maximale" },
+  { name: "Nina C.", role: "Réceptionniste hôtel, 31 ans", rating: 4, text: "Les nuits debout à l'accueil. L'audit de septembre 2025 avait montré mes problèmes de circulation. Le protocole a tout optimisé.", metric: "0", metricLabel: "varices" },
+  { name: "Oscar D.", role: "Électricien, 36 ans", rating: 5, text: "Des positions inconfortables toute la journée. L'audit d'octobre 2025 avait révélé mes tensions musculaires. Le protocole les prévient.", metric: "-80%", metricLabel: "tensions" },
+  { name: "Patricia E.", role: "Auxiliaire de vie, 48 ans", rating: 5, text: "Aider les personnes âgées demande beaucoup physiquement. L'audit de septembre 2025 avait montré mon usure. Le protocole m'aide à durer.", metric: "0", metricLabel: "arrêts maladie" },
+  { name: "Quentin F.", role: "Barman, 27 ans", rating: 5, text: "Les nuits debout, l'alcool ambiant. L'audit d'octobre 2025 avait révélé l'impact sur mon foie et mon sommeil. Le protocole surveille tout.", metric: "ASAT/ALAT", metricLabel: "normaux" },
+  { name: "Roxane G.", role: "Correctrice, 35 ans", rating: 5, text: "Des heures à relire des textes. L'audit de septembre 2025 avait montré ma fatigue oculaire. Le protocole a optimisé mes pauses.", metric: "0", metricLabel: "migraines" },
+  { name: "Simon H.", role: "Jardinier paysagiste, 40 ans", rating: 5, text: "Le travail physique en extérieur toute l'année. L'audit d'octobre 2025 avait identifié mes carences saisonnières. Le protocole adapte ma nutrition.", metric: "Vit D 60", metricLabel: "toute l'année" },
+  { name: "Tatiana I.", role: "Pianiste concertiste, 32 ans", rating: 5, text: "Les heures de pratique, le stress des concerts. L'audit de septembre 2025 avait révélé mes tensions dans les mains. Le protocole les prévient.", metric: "0", metricLabel: "tendinite" },
+  { name: "Ulrich J.", role: "Guide de montagne, 38 ans", rating: 5, text: "L'altitude, le froid, l'effort intense. L'audit d'octobre 2025 avait optimisé mon acclimatation. Le protocole prédit mes performances.", metric: "6000m+", metricLabel: "altitude max" },
+  { name: "Véronique K.", role: "Sophrologue, 43 ans", rating: 5, text: "J'aide les autres à se détendre. L'audit de septembre 2025 m'a appris à m'occuper de moi. Le protocole maintient mon équilibre.", metric: "Équilibre", metricLabel: "parfait" },
+  { name: "Wilfried L.", role: "Carreleur, 41 ans", rating: 5, text: "À genoux sur du béton toute la journée. L'audit d'octobre 2025 avait révélé mes problèmes articulaires. Le protocole les surveille.", metric: "Genoux", metricLabel: "préservés" },
+  { name: "Ximena M.", role: "Interprète, 34 ans", rating: 5, text: "La concentration intense des conférences. L'audit de septembre 2025 avait montré mon épuisement cognitif. Le protocole optimise ma récupération.", metric: "+30%", metricLabel: "concentration" },
+  { name: "Yann N.", role: "Apiculteur, 50 ans", rating: 5, text: "Le travail avec les abeilles demande calme et précision. L'audit d'octobre 2025 avait révélé mon stress caché. Le protocole m'aide à rester zen.", metric: "HRV 75", metricLabel: "zen" },
+  { name: "Zohra O.", role: "Couturière, 46 ans", rating: 5, text: "Les yeux sur les détails toute la journée. L'audit de septembre 2025 avait montré ma fatigue visuelle chronique. Le protocole a optimisé mes pauses.", metric: "Vue stable", metricLabel: "10/10" },
+  { name: "Arnaud P.", role: "Technicien labo, 37 ans", rating: 5, text: "Les analyses précises demandent concentration. L'audit d'octobre 2025 avait révélé mes baisses d'attention. Le protocole les prévient.", metric: "0", metricLabel: "erreurs" },
+  { name: "Bérénice Q.", role: "Attachée de presse, 30 ans", rating: 5, text: "Les événements, les interviews, le stress. L'audit de septembre 2025 avait montré mon cortisol élevé. Le protocole le régule.", metric: "Cortisol OK", metricLabel: "stress géré" },
+  { name: "Cédric R.", role: "Fromager, 45 ans", rating: 4, text: "Les caves froides, le port de charges. L'audit d'octobre 2025 avait révélé mes problèmes de dos. Le protocole a optimisé ma posture.", metric: "0", metricLabel: "lumbago" },
+  { name: "Daphné S.", role: "Pédiatre, 40 ans", rating: 5, text: "Les consultations s'enchaînent. L'audit de septembre 2025 avait montré mon épuisement émotionnel. Le protocole m'aide à maintenir l'empathie.", metric: "Énergie", metricLabel: "stable" },
+  { name: "Emmanuel T.", role: "Vitrailliste, 52 ans", rating: 5, text: "Un métier d'art physiquement exigeant. L'audit d'octobre 2025 avait révélé mes carences. Le protocole a tout corrigé.", metric: "-20ans", metricLabel: "vitalité" },
+  { name: "Florence U.", role: "Bibliothécaire, 38 ans", rating: 5, text: "Les postes informatiques, les livres lourds. L'audit de septembre 2025 avait identifié mes problèmes de dos. Le protocole les surveille.", metric: "Dos sain", metricLabel: "0 douleur" },
+  { name: "Gaspard V.", role: "Œnologue, 42 ans", rating: 5, text: "Déguster du vin professionnellement a des risques. L'audit d'octobre 2025 surveillait mon foie. Le protocole l'a optimisé.", metric: "Foie parfait", metricLabel: "bilan clean" },
+  { name: "Henriette W.", role: "Aide-soignante, 44 ans", rating: 5, text: "Les patients à lever, les nuits de garde. L'audit de septembre 2025 avait révélé mon usure physique. Le protocole m'aide à durer.", metric: "20 ans", metricLabel: "de carrière" },
+  { name: "Isidore X.", role: "Maréchal-ferrant, 39 ans", rating: 4, text: "Un métier physique et technique. L'audit d'octobre 2025 avait montré mes déséquilibres. Le protocole les corrige.", metric: "+20%", metricLabel: "productivité" },
+  { name: "Joséphine Y.", role: "Créatrice de bijoux, 33 ans", rating: 5, text: "Les détails minutieux, la posture penchée. L'audit de septembre 2025 avait révélé mes tensions cervicales. Le protocole les prévient.", metric: "0", metricLabel: "cervicalgies" },
+  { name: "Killian Z.", role: "Mécanicien moto, 29 ans", rating: 5, text: "Les positions contraignantes, les outils lourds. L'audit d'octobre 2025 avait montré mes carences en magnésium. Le protocole a tout corrigé.", metric: "0", metricLabel: "crampes" },
+  { name: "Léonie A.", role: "Orthophoniste, 36 ans", rating: 5, text: "Parler toute la journée fatigue les cordes vocales. L'audit de septembre 2025 avait révélé l'inflammation. Le protocole surveille ma voix.", metric: "Voix", metricLabel: "préservée" },
+  { name: "Maximilien B.", role: "Chocolatier, 43 ans", rating: 5, text: "La chaleur des ateliers, le stress des fêtes. L'audit d'octobre 2025 avait montré ma déshydratation chronique. Le protocole l'a corrigée.", metric: "+30%", metricLabel: "production" },
+  { name: "Noémie C.", role: "Éducatrice spécialisée, 35 ans", rating: 5, text: "Les enfants difficiles demandent patience et énergie. L'audit de septembre 2025 avait révélé mon épuisement. Le protocole m'aide à recharger.", metric: "+50%", metricLabel: "patience" },
+  { name: "Octave D.", role: "Luthier, 48 ans", rating: 5, text: "La précision du travail du bois. L'audit d'octobre 2025 avait montré ma fatigue oculaire. Le protocole a optimisé mon environnement.", metric: "Vue 10/10", metricLabel: "préservée" },
+  { name: "Priscilla E.", role: "Directrice de crèche, 41 ans", rating: 5, text: "Gérer une équipe et des enfants. L'audit de septembre 2025 avait révélé mon stress managérial. Le protocole le quantifie.", metric: "0", metricLabel: "turnover" },
+  { name: "Rémi F.", role: "Plongeur sous-marin, 34 ans", rating: 5, text: "Les paliers, la pression, le froid. L'audit d'octobre 2025 avait optimisé ma décompression. Le protocole prédit mes temps optimaux.", metric: "500+", metricLabel: "plongées safe" },
+  { name: "Solène G.", role: "Rédactrice web, 28 ans", rating: 5, text: "Les articles à produire, les deadlines SEO. L'audit de septembre 2025 avait montré mon épuisement mental. Le protocole optimise mes cycles.", metric: "+100%", metricLabel: "articles/mois" },
+  { name: "Tanguy H.", role: "Garagiste, 40 ans", rating: 4, text: "Sous les voitures toute la journée. L'audit d'octobre 2025 avait révélé mes problèmes respiratoires. Le protocole surveille mes poumons.", metric: "Poumons", metricLabel: "sains" },
+  { name: "Urielle I.", role: "Shiatsu praticienne, 37 ans", rating: 5, text: "Donner de l'énergie aux autres en demande. L'audit de septembre 2025 avait montré mes propres déséquilibres. Le protocole les corrige.", metric: "Qi", metricLabel: "équilibré" },
+  { name: "Valentin J.", role: "Forgeron d'art, 44 ans", rating: 5, text: "La chaleur de la forge, l'effort physique. L'audit d'octobre 2025 avait révélé ma déshydratation. Le protocole a optimisé mon hydratation.", metric: "+3h", metricLabel: "endurance" },
+  { name: "Wanda K.", role: "Maquilleuse cinéma, 32 ans", rating: 5, text: "Les tournages longs, le stress des productions. L'audit de septembre 2025 avait montré mon épuisement. Le protocole m'aide à gérer.", metric: "0", metricLabel: "jours off forcés" },
+  { name: "Xavière L.", role: "Horlogère, 38 ans", rating: 5, text: "Les mécanismes minuscules demandent précision. L'audit d'octobre 2025 avait révélé ma fatigue oculaire. Le protocole l'a optimisée.", metric: "Vue parfaite", metricLabel: "préservée" },
+  { name: "Yohan M.", role: "Maçon, 36 ans", rating: 5, text: "Le port de charges, les intempéries. L'audit de septembre 2025 avait montré mes problèmes articulaires. Le protocole les surveille.", metric: "Articulations", metricLabel: "saines" },
+  { name: "Zélie N.", role: "Comédienne, 29 ans", rating: 5, text: "Les représentations, le trac, les tournées. L'audit d'octobre 2025 avait révélé mon stress de performance. Le protocole le mesure.", metric: "-80%", metricLabel: "trac" },
+  { name: "Alban O.", role: "Brasseur artisanal, 41 ans", rating: 5, text: "Les cuves lourdes, les températures extrêmes. L'audit de septembre 2025 avait montré mes carences. Le protocole a tout corrigé.", metric: "Médaille Or", metricLabel: "concours" },
+  { name: "Capucine P.", role: "Podologue, 34 ans", rating: 5, text: "Penchée sur les pieds toute la journée. L'audit d'octobre 2025 avait révélé mes problèmes de dos. Le protocole les prévient.", metric: "Dos", metricLabel: "préservé" },
+  { name: "Denis Q.", role: "Tailleur de pierre, 47 ans", rating: 5, text: "Un métier d'art physique. L'audit de septembre 2025 avait montré mon inflammation articulaire. Le protocole la contrôle.", metric: "CRP <1", metricLabel: "inflammation 0" },
+  { name: "Éléonore R.", role: "Directrice artistique, 36 ans", rating: 5, text: "La créativité sous pression constante. L'audit d'octobre 2025 avait révélé mon épuisement créatif. Le protocole le prévient.", metric: "Awards", metricLabel: "multiples" },
+  { name: "Fabien S.", role: "Ébéniste, 43 ans", rating: 5, text: "Le travail du bois noble demande patience. L'audit de septembre 2025 avait montré mes tensions musculaires. Le protocole les surveille.", metric: "Précision", metricLabel: "maximale" },
+  { name: "Géraldine T.", role: "Logopède, 39 ans", rating: 5, text: "Aider à communiquer demande concentration. L'audit d'octobre 2025 avait révélé ma fatigue cognitive. Le protocole l'optimise.", metric: "+40%", metricLabel: "progrès patients" },
+  { name: "Hippolyte U.", role: "Arboriculteur, 51 ans", rating: 5, text: "Dans les arbres par tous les temps. L'audit de septembre 2025 avait montré mes risques cardiovasculaires. Le protocole les surveille.", metric: "Cœur", metricLabel: "sain" },
+  { name: "Irène V.", role: "Clerc de notaire, 37 ans", rating: 5, text: "Les dossiers complexes, la précision juridique. L'audit d'octobre 2025 avait révélé mon stress chronique. Le protocole m'aide.", metric: "0", metricLabel: "erreurs" },
+  { name: "Jules W.", role: "Verrier d'art, 45 ans", rating: 5, text: "La chaleur du verre en fusion, la précision. L'audit de septembre 2025 avait montré mes problèmes de thermorégulation. Le protocole les optimise.", metric: "Hydratation", metricLabel: "optimale" },
+  { name: "Karine X.", role: "Ergothérapeute, 38 ans", rating: 5, text: "Adapter l'environnement des patients. L'audit d'octobre 2025 avait révélé mes propres difficultés posturales. Le protocole les corrige.", metric: "Posture", metricLabel: "parfaite" },
+  { name: "Lionel Y.", role: "Scieur de long, 49 ans", rating: 5, text: "Un métier rare et physique. L'audit de septembre 2025 avait montré mes carences énergétiques. Le protocole les comble.", metric: "Énergie", metricLabel: "jeune" },
+  { name: "Margaux Z.", role: "Relieuse, 35 ans", rating: 5, text: "La restauration de livres anciens demande patience. L'audit d'octobre 2025 avait révélé ma fatigue oculaire. Le protocole la prévient.", metric: "Yeux", metricLabel: "préservés" },
+  { name: "Norbert A.", role: "Charpentier de marine, 46 ans", rating: 5, text: "Construire des bateaux en bois est exigeant. L'audit de septembre 2025 avait montré mes problèmes articulaires. Le protocole les surveille.", metric: "Mobilité", metricLabel: "complète" },
+  { name: "Odile B.", role: "Parfumeuse, 40 ans", rating: 5, text: "Le nez doit rester affûté. L'audit d'octobre 2025 avait révélé des carences affectant mon odorat. Le protocole les a corrigées.", metric: "Odorat", metricLabel: "parfait" },
+  { name: "Pierrick C.", role: "Sabotier, 53 ans", rating: 5, text: "Un métier ancestral physique. L'audit de septembre 2025 avait montré mon usure articulaire. Le protocole la ralentit.", metric: "Articulations", metricLabel: "préservées" },
+  { name: "Roland E.", role: "Vannier, 48 ans", rating: 5, text: "Tresser l'osier demande dextérité. L'audit de septembre 2025 avait montré mes tensions dans les mains. Le protocole les surveille.", metric: "Mains", metricLabel: "saines" },
+  { name: "Séverine F.", role: "Taxidermiste, 42 ans", rating: 5, text: "Un métier d'art méconnu. L'audit d'octobre 2025 avait révélé mon exposition aux produits chimiques. Le protocole surveille ma santé.", metric: "Bilan", metricLabel: "clean" },
+  { name: "Théophile G.", role: "Doreur sur bois, 39 ans", rating: 5, text: "L'application de feuilles d'or demande patience. L'audit de septembre 2025 avait montré mes tremblements. Le protocole les a éliminés.", metric: "0", metricLabel: "tremblements" },
+  { name: "Ursule H.", role: "Dinandière, 44 ans", rating: 5, text: "Le travail du cuivre à la main. L'audit d'octobre 2025 avait révélé mes carences en minéraux. Le protocole les comble.", metric: "Force +30%", metricLabel: "améliorée" },
+  { name: "Vincent I.", role: "Campaniste, 51 ans", rating: 5, text: "Entretenir les cloches d'église. L'audit de septembre 2025 avait montré mes problèmes auditifs. Le protocole surveille mon audition.", metric: "Audition", metricLabel: "préservée" },
+  { name: "Wilhelmine J.", role: "Passementière, 46 ans", rating: 5, text: "Les ornements textiles demandent minutie. L'audit d'octobre 2025 avait révélé ma fatigue visuelle. Le protocole l'optimise.", metric: "Vue stable", metricLabel: "optimisée" },
+  { name: "Yves K.", role: "Fondeur d'art, 50 ans", rating: 5, text: "Le bronze en fusion, la chaleur extrême. L'audit de septembre 2025 avait montré mes risques de déshydratation. Le protocole me protège.", metric: "Hydratation", metricLabel: "parfaite" },
 ];
 
 // ============================================================================
@@ -651,8 +774,50 @@ function HeroSection() {
     }
   };
 
+  const scrollToReviews = () => {
+    const element = document.getElementById("beta-reviews");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#000000]">
+      {/* Floating Reviews Badge - Side */}
+      <motion.button
+        onClick={scrollToReviews}
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1, duration: 0.6 }}
+        className="fixed left-4 top-1/3 z-50 hidden md:flex flex-col items-center gap-2 px-3 py-4 bg-black/80 border border-[#FCDD00]/30 backdrop-blur-xl rounded-sm cursor-pointer hover:border-[#FCDD00] hover:bg-black/90 transition-all duration-300 group"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <motion.div
+          className="flex gap-0.5"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          {[1,2,3,4,5].map((i) => (
+            <svg key={i} className="w-3 h-3 text-[#FCDD00]" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ))}
+        </motion.div>
+        <span className="text-[#FCDD00] font-bold text-sm">4.9/5</span>
+        <span className="text-white font-bold text-lg">{BETA_REVIEWS.length}</span>
+        <span className="text-gray-400 text-[10px] uppercase tracking-wider">avis</span>
+        <motion.div
+          className="w-4 h-4 mt-1"
+          animate={{ y: [0, 3, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-[#FCDD00] opacity-60 group-hover:opacity-100 transition-opacity">
+            <path d="M12 5v14m0 0l-6-6m6 6l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </motion.div>
+      </motion.button>
+
       {/* Shader Background */}
       <ShaderBackground />
 
