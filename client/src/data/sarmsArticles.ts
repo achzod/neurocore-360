@@ -1,4 +1,4 @@
-// SARMS Articles - ACHZOD Original Content
+// SARMS Articles - ACHZOD 
 // To be imported and spread into BLOG_ARTICLES
 
 import type { BlogArticle } from "./blogArticles";

@@ -1,4 +1,4 @@
-// PEPTIDES Articles - ACHZOD Original Content
+// PEPTIDES Articles - ACHZOD 
 // To be imported and spread into BLOG_ARTICLES
 
 import type { BlogArticle } from "./blogArticles";
@@ -856,7 +856,7 @@ La modification de certains acides aminés (notamment l'utilisation de D-acides 
 
 La caractéristique distinctive d'Ipamorelin est sa haute sélectivité. Contrairement aux autres GHRP qui activent plusieurs voies hormonales simultanément, Ipamorelin active principalement le récepteur GHS-R1a (récepteur de la ghréline) de manière ciblée, sans stimuler significativement d'autres réponses hormonales.
 
-Cette sélectivité se traduit par :
+Cette sélectivité se  :
 
 - **Pas d'augmentation significative du cortisol** : Contrairement à GHRP-2 et GHRP-6 qui élèvent le cortisol
 - **Pas d'augmentation significative de la prolactine** : Évitant les effets secondaires liés à cette hormone
@@ -1904,7 +1904,7 @@ C'est le domaine le plus étudié pour GHK-Cu. Les études montrent :
 
 **Réduction des rides** : Des essais cliniques ont démontré une amélioration visible des rides fines après 12 semaines d'application topique. Les mesures objectives (profilométrie cutanée) confirment ces observations.
 
-**Amélioration de l'élasticité** : L'augmentation de la production d'élastine et de collagène se traduit par une peau plus ferme et plus élastique.
+**Amélioration de l'élasticité** : L'augmentation de la production d'élastine et de collagène se  une peau plus ferme et plus élastique.
 
 **Réduction des taches** : La modulation de la production de mélanine peut atténuer l'hyperpigmentation.
 
