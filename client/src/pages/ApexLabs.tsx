@@ -28,8 +28,8 @@ const OFFERS: Offer[] = [
     id: 'discovery-scan',
     title: "DISCOVERY SCAN",
     subtitle: "L'Analyse Initiale",
-    description: "Tu stagnes, t'es creve, tu sais pas pourquoi. Ce scan gratuit analyse 10 domaines cles de ta sante en ~50 questions: sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle et mindset. Tu repars avec un score global sur 100, la liste de tes blocages metaboliques et hormonaux, et un rapport de 5-7 pages. Le point de depart pour comprendre ce qui cloche vraiment.",
-    features: ["10 domaines analyses", "Score global sur 100", "Identification des blocages", "Rapport 5-7 pages"],
+    description: "Tu stagnes, tu es crevé, tu ne sais pas pourquoi. Ce scan gratuit analyse 10 domaines clés de ta santé en ~50 questions: sommeil, stress, énergie, digestion, entraînement, nutrition, lifestyle et mindset. Tu repars avec un score global sur 100, la liste de tes blocages métaboliques et hormonaux, et un audit complet de ce qui ne va pas, section par section. Le point de départ pour comprendre ce qui cloche vraiment.",
+    features: ["10 domaines analysés", "Score global sur 100", "Identification des blocages", "Audit complet section par section"],
     price: "Gratuit",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/hr_hrv.png",
     reverse: false
@@ -38,8 +38,8 @@ const OFFERS: Offer[] = [
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
     subtitle: "Analyse Approfondie",
-    description: "L'analyse complete pour ceux qui veulent des reponses. 150 questions sur 17 sections: profil hormonal detaille (testosterone, cortisol, thyroide), axes cliniques (diabete, SII, fatigue surrenalienne), nutrition avancee, supplements et composition corporelle. Tu recois un protocole Matin Anti-Cortisol, un protocole Soir Sommeil, un reset digestif 14 jours, un stack supplements personnalise et un plan d'action 30-60-90 jours. Rapport de 20+ pages.",
-    features: ["17 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack supplements personnalise"],
+    description: "L'analyse complète pour ceux qui veulent des réponses. 150 questions sur 17 sections: profil hormonal détaillé (testostérone, cortisol, thyroïde), axes cliniques (diabète, SII, fatigue surrénalienne), nutrition avancée, suppléments et composition corporelle. Tu reçois un protocole Matin Anti-Cortisol, un protocole Soir Sommeil, un reset digestif 14 jours, un stack suppléments personnalisé et un plan d'action 30-60-90 jours. Rapport de 20+ pages.",
+    features: ["17 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
     price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
@@ -47,9 +47,9 @@ const OFFERS: Offer[] = [
   {
     id: 'blood-analysis',
     title: "BLOOD ANALYSIS",
-    subtitle: "La Verite Biologique",
-    description: "Ton medecin te dit que tout est 'normal' mais tu te sens toujours comme de la merde? Normal ≠ Optimal. Upload ton bilan sanguin et j'analyse 39 biomarqueurs sur 6 panels (hormonal, thyroidien, metabolique, inflammatoire, vitamines, hepatique/renal) avec des ranges OPTIMAUX. Je detecte les patterns invisibles, les correlations entre marqueurs, et je te donne des protocoles de correction cibles. Radars visuels + rapport complet.",
-    features: ["39 biomarqueurs analyses", "6 panels complets", "Ranges optimaux", "Protocoles personnalises"],
+    subtitle: "La Vérité Biologique",
+    description: "Ton médecin te dit que tout est 'normal' mais tu te sens toujours mal? Normal ≠ Optimal. Upload ton bilan sanguin et j'analyse 39 biomarqueurs sur 6 panels (hormonal, thyroïdien, métabolique, inflammatoire, vitamines, hépatique/rénal) avec des ranges OPTIMAUX. Je détecte les patterns invisibles, les corrélations entre marqueurs, et je te donne des protocoles de correction ciblés. Radars visuels + rapport complet.",
+    features: ["39 biomarqueurs analysés", "6 panels complets", "Ranges optimaux", "Protocoles personnalisés"],
     price: "99€",
     imageUrl: "",
     reverse: false,
@@ -58,9 +58,9 @@ const OFFERS: Offer[] = [
   {
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
-    subtitle: "L'Analyse Complete",
-    description: "Le scan le plus complet du marche. 210 questions sur 22 sections + analyse photo posturale (face, dos, profil) + integration de tes donnees wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilite, psychologie du mindset. Je croise 3 sources de donnees pour generer le rapport le plus precis possible. 40-50 pages de protocoles personnalises.",
-    features: ["22 sections d'analyse", "Analyse photo posturale", "Integration wearables", "Protocole 30-60-90 jours"],
+    subtitle: "L'Analyse Complète",
+    description: "Le scan le plus complet du marché. 210 questions sur 22 sections + analyse photo posturale (face, dos, profil) + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
+    features: ["22 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
     price: "79€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
@@ -68,9 +68,9 @@ const OFFERS: Offer[] = [
   {
     id: 'burnout-detection',
     title: "BURNOUT DETECTION",
-    subtitle: "Detection Precoce",
-    description: "Epuise. Irritable. Deconnecte. Si tu te reconnais, ce scan est pour toi. Questionnaire specialise de 80+ questions pour detecter les signes precoces du burnout AVANT qu'il soit trop tard. Tu recois un score de risque sur 100, l'identification de ta phase actuelle (alarme, resistance ou epuisement), une analyse de ton systeme nerveux et un protocole de recuperation structure sur 4 semaines. Plus tu detectes tot, plus tu recuperes vite.",
-    features: ["Score de risque burnout", "Analyse systeme nerveux", "Qualite du sommeil", "Protocole recuperation 4 semaines"],
+    subtitle: "Détection Précoce",
+    description: "Épuisé. Irritable. Déconnecté. Si tu te reconnais, ce scan est pour toi. Questionnaire spécialisé de 80+ questions pour détecter les signes précoces du burnout AVANT qu'il soit trop tard. Tu reçois un score de risque sur 100, l'identification de ta phase actuelle (alarme, résistance ou épuisement), une analyse de ton système nerveux et un protocole de récupération structuré sur 4 semaines. Plus tu détectes tôt, plus tu récupères vite.",
+    features: ["Score de risque burnout", "Analyse système nerveux", "Qualité du sommeil", "Protocole récupération 4 semaines"],
     price: "39€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
@@ -409,7 +409,7 @@ function Header() {
 
         {/* CTA Button - Yellow bg, black text, Inter Black, rounded-sm */}
         <button
-          onClick={() => scrollToSection('offers')}
+          onClick={() => scrollToSection('join-waitlist')}
           className="px-5 py-2.5 bg-[#FCDD00] text-black text-xs font-black uppercase tracking-wide rounded-sm hover:bg-[#FCDD00]/90 transition-colors"
         >
           S'inscrire
@@ -426,7 +426,7 @@ function Hero() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [objective, setObjective] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'already'>('idle');
   const [spotsLeft, setSpotsLeft] = useState(199);
 
   // Fetch real spots count from API on mount
@@ -465,8 +465,12 @@ function Hero() {
       const data = await response.json();
 
       if (data.success) {
-        setStatus('success');
-        setSpotsLeft(prev => Math.max(0, prev - 1));
+        if (data.alreadyRegistered) {
+          setStatus('already');
+        } else {
+          setStatus('success');
+          setSpotsLeft(prev => Math.max(0, prev - 1));
+        }
         setEmail('');
         setName('');
         setObjective('');
@@ -661,6 +665,19 @@ function Hero() {
                         [RÉESSAYER]
                     </button>
                 </div>
+            ) : status === 'already' ? (
+                <div className="bg-black border border-[#FCDD00]/30 p-8">
+                    <div className="font-mono text-[10px] text-[#FCDD00] uppercase tracking-[0.2em] mb-2">
+                        ALREADY_REGISTERED
+                    </div>
+                    <div className="text-white text-xl font-black uppercase tracking-tight mb-2">
+                        DÉJÀ INSCRIT
+                    </div>
+                    <p className="text-neutral-400 text-sm font-light">Cet email est déjà enregistré sur la liste d'attente. Je te contacterai très prochainement.</p>
+                    <button onClick={() => setStatus('idle')} className="mt-4 font-mono text-[10px] text-neutral-600 hover:text-[#FCDD00] uppercase tracking-widest">
+                        [NOUVELLE_CANDIDATURE]
+                    </button>
+                </div>
             ) : (
                 <form onSubmit={handleQuickJoin} className="bg-black border border-neutral-800 p-6 md:p-8 space-y-6">
                     {/* Terminal Header */}
@@ -728,6 +745,15 @@ function Hero() {
                         {status === 'loading' ? 'PROCESSING...' : 'CANDIDATER'}
                         <span className="text-lg">→</span>
                     </button>
+
+                    {/* Deduction Info */}
+                    <div className="text-center pt-3">
+                        <div className="inline-block px-4 py-2 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded-sm">
+                            <span className="font-mono text-xs text-[#FCDD00] font-bold tracking-wide">
+                                💯 100% DÉDUIT SI TU PRENDS UN COACHING
+                            </span>
+                        </div>
+                    </div>
 
                     {/* Spots Counter */}
                     <div className="text-center pt-2 border-t border-neutral-800 mt-4">
@@ -878,23 +904,34 @@ function OfferCard({ offer, index }: { offer: Offer; index: number }) {
           </div>
 
           {/* Price Block - Design System Style */}
-          <div className="pt-6 flex flex-col sm:flex-row items-start gap-4">
-            <div className="inline-block bg-black border border-neutral-800 px-6 py-4">
-              <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-600 mb-1">
-                Investissement
+          <div className="pt-6 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="inline-block bg-black border border-neutral-800 px-6 py-4">
+                <div className="font-mono text-[9px] uppercase tracking-widest text-neutral-600 mb-1">
+                  Investissement
+                </div>
+                <div className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                  {price}
+                </div>
               </div>
-              <div className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                {price}
-              </div>
+              {/* CTA Button - Scroll to waitlist */}
+              <button
+                onClick={() => document.getElementById('join-waitlist')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
+              >
+                Réserver ma place
+                <span>&gt;</span>
+              </button>
             </div>
-            {/* CTA Button - Scroll to waitlist */}
-            <button
-              onClick={() => document.getElementById('join-waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-6 py-4 bg-[#FCDD00] text-black font-mono text-xs uppercase tracking-widest hover:bg-[#FCDD00]/80 transition-colors flex items-center gap-2"
-            >
-              Réserver ma place
-              <span>&gt;</span>
-            </button>
+
+            {/* Deduction Badge - Only for paid offers */}
+            {price !== "Gratuit" && (
+              <div className="inline-block px-4 py-2 bg-[#FCDD00]/10 border border-[#FCDD00]/30 rounded-sm">
+                <span className="font-mono text-xs text-[#FCDD00] font-bold tracking-wide">
+                  💯 100% DÉDUIT SI TU PRENDS UN COACHING
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
