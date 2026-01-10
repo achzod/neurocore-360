@@ -227,9 +227,9 @@ export async function registerRoutes(
   app.post("/api/audit/create", async (req, res) => {
     try {
       const data = createAuditBodySchema.parse(req.body);
-      // P0: Exiger 3 photos pour PREMIUM/ELITE
-      if (data.type !== "GRATUIT" && !hasThreePhotos(data.responses)) {
-        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires (face, profil, dos)" });
+      // Photos obligatoires UNIQUEMENT pour Ultimate Scan (ELITE)
+      if (data.type === "ELITE" && !hasThreePhotos(data.responses)) {
+        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
         return;
       }
       const audit = await storage.createAudit({
