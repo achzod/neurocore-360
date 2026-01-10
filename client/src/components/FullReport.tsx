@@ -110,33 +110,18 @@ export interface ReportData {
 // ============================================================================
 const THEMES: Theme[] = [
   {
-    id: 'neurocore',
-    name: 'Neurocore',
-    type: 'dark',
-    colors: {
-      primary: '#0efc6d',
-      background: '#000000',
-      surface: '#09090B',
-      border: 'rgba(255, 255, 255, 0.08)',
-      text: '#EDEDED',
-      textMuted: '#71717A',
-      grid: 'rgba(14, 252, 109, 0.06)',
-      glow: 'rgba(14, 252, 109, 0.15)',
-    },
-  },
-  {
     id: 'ultrahuman',
     name: 'M1 Black',
     type: 'dark',
     colors: {
-      primary: '#E1E1E1',
+      primary: '#FCDD00',
       background: '#000000',
-      surface: '#09090B',
-      border: 'rgba(255, 255, 255, 0.12)',
-      text: '#EDEDED',
-      textMuted: '#71717A',
-      grid: 'rgba(255, 255, 255, 0.08)',
-      glow: 'rgba(255, 255, 255, 0.1)',
+      surface: '#0a0a0a',
+      border: 'rgba(252, 221, 0, 0.15)',
+      text: '#FFFFFF',
+      textMuted: '#a1a1aa',
+      grid: 'rgba(252, 221, 0, 0.05)',
+      glow: 'rgba(252, 221, 0, 0.2)',
     },
   },
   {
@@ -167,6 +152,21 @@ const THEMES: Theme[] = [
       textMuted: '#737373',
       grid: 'rgba(0, 0, 0, 0.04)',
       glow: 'rgba(0, 0, 0, 0.05)',
+    },
+  },
+  {
+    id: 'organic',
+    name: 'Sand Stone',
+    type: 'light',
+    colors: {
+      primary: '#A85A32',
+      background: '#F0EFE9',
+      surface: '#E6E4DD',
+      border: 'rgba(168, 90, 50, 0.1)',
+      text: '#292524',
+      textMuted: '#78716C',
+      grid: 'rgba(168, 90, 50, 0.05)',
+      glow: 'rgba(168, 90, 50, 0.1)',
     },
   },
 ];
@@ -393,7 +393,7 @@ const RadialProgress = ({
   max,
   size = 180,
   strokeWidth = 4,
-  color = '#0efc6d',
+  color = '#FCDD00',
   label,
   animated = true,
 }: {

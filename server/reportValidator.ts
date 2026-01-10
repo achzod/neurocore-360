@@ -10,7 +10,7 @@
  */
 
 import { AuditTier } from './types';
-import { getSectionsForTier } from './geminiPremiumEngine';
+import { getSectionsForTier } from './reportStructure';
 
 export interface ValidationResult {
   isValid: boolean;

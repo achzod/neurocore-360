@@ -1,19 +1,19 @@
 const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
 const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 const SENDER_EMAIL = "coaching@achzodcoaching.com";
-const SENDER_NAME = "NEUROCORE 360";
+const SENDER_NAME = "ApexLabs by Achzod";
 
 // SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
 const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
 
-// NEUROCORE 360 Design System
+// ApexLabs Design System (Ultrahuman style)
 const COLORS = {
-  primary: '#0efc6d',
+  primary: '#FCDD00',
   background: '#000000',
-  surface: '#09090B',
-  border: 'rgba(255, 255, 255, 0.08)',
-  text: '#EDEDED',
-  textMuted: '#71717A',
+  surface: '#0a0a0a',
+  border: 'rgba(252, 221, 0, 0.15)',
+  text: '#FFFFFF',
+  textMuted: '#a1a1aa',
   warning: '#f59e0b',
   purple: '#8b5cf6',
 };
@@ -59,7 +59,7 @@ function encodeBase64(str: string): string {
 }
 
 // Reusable email wrapper with NEUROCORE 360 design
-function getEmailWrapper(content: string, headerGradient: string = `linear-gradient(135deg, ${COLORS.primary} 0%, #059669 100%)`): string {
+function getEmailWrapper(content: string, headerGradient: string = `linear-gradient(135deg, ${COLORS.primary} 0%, #d4af37 100%)`): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -83,14 +83,14 @@ function getEmailWrapper(content: string, headerGradient: string = `linear-gradi
                   <td align="center">
                     <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;">
                       <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${COLORS.background};"></div>
-                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">NEUROCORE 360</span>
+                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">APEXLABS</span>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">Audit Metabolique</h1>
-                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">15 Domaines d'Analyse</p>
+                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">Scan Bio-Data</h1>
+                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">Analyse Métabolique Complète</p>
                   </td>
                 </tr>
               </table>
@@ -630,7 +630,7 @@ const PROMO_EMAIL_CONFIG: Record<string, {
     subtitle: "Merci pour ton avis sur le Discovery Scan",
     description: "Utilise ce code pour bénéficier de 20% de réduction sur toutes les formules de coaching Achzod.",
     discount: "-20% sur le coaching",
-    gradient: "linear-gradient(135deg, #0efc6d 0%, #059669 100%)",
+    gradient: "linear-gradient(135deg, #FCDD00 0%, #d4af37 100%)",
   },
   ANABOLIC_BIOSCAN: {
     title: "49€ déduits du coaching",

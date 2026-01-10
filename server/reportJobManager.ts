@@ -1,11 +1,10 @@
-import { generateAndConvertAudit } from "./geminiPremiumEngine";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
-import { getSectionsForTier } from "./geminiPremiumEngine";
+import { getSectionsForTier } from "./reportStructure";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
