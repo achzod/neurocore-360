@@ -1,7 +1,7 @@
 const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
 const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 const SENDER_EMAIL = "coaching@achzodcoaching.com";
-const SENDER_NAME = "NEUROCORE 360";
+const SENDER_NAME = "ApexLabs by Achzod";
 
 // SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
 const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
@@ -58,8 +58,13 @@ function encodeBase64(str: string): string {
   return Buffer.from(str).toString("base64");
 }
 
-// Reusable email wrapper with NEUROCORE 360 design
-function getEmailWrapper(content: string, headerGradient: string = `linear-gradient(135deg, ${COLORS.primary} 0%, #059669 100%)`): string {
+// Reusable email wrapper with ApexLabs design
+function getEmailWrapper(
+  content: string,
+  headerGradient: string = `linear-gradient(135deg, ${COLORS.primary} 0%, #059669 100%)`,
+  headerTitle: string = "Audit Métabolique",
+  headerSubtitle: string = "Analyse Personnalisée"
+): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -83,14 +88,14 @@ function getEmailWrapper(content: string, headerGradient: string = `linear-gradi
                   <td align="center">
                     <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;">
                       <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${COLORS.background};"></div>
-                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">NEUROCORE 360</span>
+                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">APEXLABS BY ACHZOD</span>
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">Audit Metabolique</h1>
-                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">15 Domaines d'Analyse</p>
+                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">${headerTitle}</h1>
+                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">${headerSubtitle}</p>
                   </td>
                 </tr>
               </table>
@@ -206,13 +211,18 @@ export async function sendReportReadyEmail(
     const token = await getAccessToken();
     const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
     const reportLink = `${baseUrl}/report/${auditId}`;
-    const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
+    const planLabel = auditType === "GRATUIT" ? "Discovery Scan" : auditType === "PREMIUM" ? "Anabolic Bioscan" : "Ultimate Scan";
     const planColor = auditType === "ELITE" ? COLORS.purple : auditType === "PREMIUM" ? COLORS.primary : COLORS.textMuted;
+
+    // Dynamic titles based on audit type
+    const headerTitle = planLabel;
+    const headerSubtitle = auditType === "GRATUIT" ? "5 Piliers Santé" : auditType === "PREMIUM" ? "16 Domaines d'Analyse" : "18 Domaines d'Analyse";
+    const domainsCount = auditType === "GRATUIT" ? "5 piliers de santé" : auditType === "PREMIUM" ? "16 domaines de santé" : "18 domaines de santé";
 
     const content = `
       <div style="text-align: center; margin-bottom: 28px;">
         <span style="display: inline-block; background: ${planColor}20; color: ${planColor}; padding: 8px 20px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${planColor}40;">
-          Rapport ${planLabel}
+          ${planLabel}
         </span>
       </div>
 
@@ -221,7 +231,7 @@ export async function sendReportReadyEmail(
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 12px; text-align: center;">
-        J'ai termine l'analyse complete de ton profil metabolique a travers les <strong style="color: ${COLORS.text};">15 domaines de sante</strong>.
+        J'ai termine l'analyse complete de ton profil metabolique a travers les <strong style="color: ${COLORS.text};">${domainsCount}</strong>.
       </p>
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
         Decouvre tes scores, recommandations personnalisees et protocoles.
@@ -241,7 +251,7 @@ export async function sendReportReadyEmail(
       </div>
     `;
 
-    const emailContent = getEmailWrapper(content);
+    const emailContent = getEmailWrapper(content, `linear-gradient(135deg, ${planColor} 0%, ${planColor}dd 100%)`, headerTitle, headerSubtitle);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -252,10 +262,10 @@ export async function sendReportReadyEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Ton audit NEUROCORE 360 est pret ! Consulte ton rapport ici : ${reportLink}`,
-          subject: `Ton Audit 360 ${planLabel} est Pret`,
+          text: `Ton ${planLabel} ApexLabs est pret ! Consulte ton rapport ici : ${reportLink}`,
+          subject: `Ton ${planLabel} est Pret`,
           from: {
-            name: SENDER_NAME,
+            name: "ApexLabs by Achzod",
             email: SENDER_EMAIL,
           },
           to: [{ email }],
@@ -287,7 +297,7 @@ export async function sendMagicLinkEmail(
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
-        Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits NEUROCORE 360.
+        Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits ApexLabs.
       </p>
 
       ${getPrimaryButton('Acceder a mon dashboard', magicLink)}
@@ -316,14 +326,14 @@ export async function sendMagicLinkEmail(
       },
       body: JSON.stringify({
         email: {
-          subject: "Ton lien de connexion NEUROCORE 360",
+          subject: "Ton lien de connexion ApexLabs",
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
           },
           to: [{ email }],
           html: encodeBase64(emailContent),
-          text: `Connexion NEUROCORE 360 - Clique sur ce lien pour acceder a ton dashboard : ${magicLink}`,
+          text: `Connexion ApexLabs - Clique sur ce lien pour acceder a ton dashboard : ${magicLink}`,
         },
       }),
     });
@@ -346,7 +356,7 @@ export async function sendAdminEmailNewAudit(
   try {
     const adminEmail = "achzodyt@gmail.com";
     const token = await getAccessToken();
-    const planLabel = auditType === "GRATUIT" ? "Gratuit" : auditType === "PREMIUM" ? "Premium" : "Elite";
+    const planLabel = auditType === "GRATUIT" ? "Discovery Scan" : auditType === "PREMIUM" ? "Anabolic Bioscan" : "Ultimate Scan";
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 24px; font-weight: 700;">
@@ -385,7 +395,7 @@ export async function sendAdminEmailNewAudit(
         email: {
           html: encodeBase64(emailContent),
           text: `Nouvelle analyse ${planLabel} generee pour ${clientName} (${clientEmail}) - Audit ID: ${auditId}`,
-          subject: `[NEUROCORE 360] Nouvelle analyse ${planLabel} - ${clientName}`,
+          subject: `[ApexLabs] Nouvelle analyse ${planLabel} - ${clientName}`,
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
@@ -419,7 +429,7 @@ export async function sendGratuitUpsellEmail(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Merci d'avoir teste NEUROCORE 360 !
+        Merci d'avoir teste ApexLabs !
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
@@ -428,26 +438,26 @@ export async function sendGratuitUpsellEmail(
 
       ${getReviewSection(dashboardLink)}
 
-      <!-- Upsell Premium -->
+      <!-- Upsell Anabolic Bioscan -->
       <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.primary}15 0%, ${COLORS.primary}05 100%); border-radius: 12px; border: 1px solid ${COLORS.primary}30;">
         <h3 style="color: ${COLORS.primary}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
           Passe au niveau superieur
         </h3>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-          Tu as eu un apercu de ton profil. Avec l'analyse <strong style="color: ${COLORS.text};">Premium</strong>, decouvre :
+          Tu as eu un apercu de ton profil. Avec l'<strong style="color: ${COLORS.text};">Anabolic Bioscan</strong>, decouvre :
         </p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse approfondie sur 15 domaines</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse approfondie sur 16 domaines</td></tr>
           <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocole de supplements personnalise</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse de tes photos corporelles</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Recommandations alimentaires detaillees</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocoles nutrition et entrainement</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Plan d'action 30/60/90 jours</td></tr>
         </table>
         <div style="text-align: center; margin-bottom: 20px;">
           <span style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
             -20% avec le code ANALYSE20
           </span>
         </div>
-        ${getPrimaryButton('Passer au Premium (-20%)', checkoutLink)}
+        ${getPrimaryButton('Passer a l\'Anabolic Bioscan (-20%)', checkoutLink)}
       </div>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
@@ -464,7 +474,7 @@ export async function sendGratuitUpsellEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Merci d'avoir teste NEUROCORE 360 ! Laisse ton avis et decouvre l'analyse Premium avec -20% : code ANALYSE20`,
+          text: `Merci d'avoir teste ApexLabs ! Laisse ton avis et decouvre l'Anabolic Bioscan avec -20% : code ANALYSE20`,
           subject: "Ton avis compte + Offre speciale -20%",
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
@@ -625,26 +635,26 @@ const PROMO_EMAIL_CONFIG: Record<string, {
   discount: string;
   gradient: string;
 }> = {
-  DISCOVERY: {
+  GRATUIT: {
     title: "Ton code promo -20%",
     subtitle: "Merci pour ton avis sur le Discovery Scan",
     description: "Utilise ce code pour bénéficier de 20% de réduction sur toutes les formules de coaching Achzod.",
     discount: "-20% sur le coaching",
     gradient: "linear-gradient(135deg, #0efc6d 0%, #059669 100%)",
   },
-  ANABOLIC_BIOSCAN: {
-    title: "49€ déduits du coaching",
+  PREMIUM: {
+    title: "59€ déduits du coaching",
     subtitle: "Merci pour ton avis sur l'Anabolic Bioscan",
-    description: "Le montant de ton Anabolic Bioscan (49€) est intégralement déduit si tu passes au coaching Achzod.",
-    discount: "-49€ sur le coaching",
-    gradient: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
+    description: "Le montant de ton Anabolic Bioscan (59€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-59€ sur le coaching",
+    gradient: "linear-gradient(135deg, #0efc6d 0%, #059669 100%)",
   },
-  PRO_PANEL_360: {
-    title: "99€ déduits du coaching",
-    subtitle: "Merci pour ton avis sur le Pro Panel 360",
-    description: "Le montant de ton Pro Panel 360 (99€) est intégralement déduit si tu passes au coaching Achzod.",
-    discount: "-99€ sur le coaching",
-    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+  ELITE: {
+    title: "79€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur l'Ultimate Scan",
+    description: "Le montant de ton Ultimate Scan (79€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-79€ sur le coaching",
+    gradient: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
   },
   BLOOD_ANALYSIS: {
     title: "99€ déduits du coaching",
@@ -670,7 +680,7 @@ export async function sendPromoCodeEmail(
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
-    const config = PROMO_EMAIL_CONFIG[auditType] || PROMO_EMAIL_CONFIG.DISCOVERY;
+    const config = PROMO_EMAIL_CONFIG[auditType] || PROMO_EMAIL_CONFIG.GRATUIT;
 
     const content = `
       <p style="color: ${COLORS.text}; font-size: 18px; line-height: 1.6; margin: 0 0 24px;">
@@ -800,7 +810,7 @@ export async function sendAdminReviewNotification(
         email: {
           html: encodeBase64(emailContent),
           text: `Nouvel avis ${rating}/5 pour ${auditType}: "${comment.substring(0, 100)}..." - A valider dans le dashboard admin.`,
-          subject: `[NEUROCORE 360] Nouvel avis ${stars} a valider`,
+          subject: `[ApexLabs] Nouvel avis ${stars} a valider`,
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
