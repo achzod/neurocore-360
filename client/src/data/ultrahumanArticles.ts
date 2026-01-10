@@ -3,7 +3,7 @@
 
 import { BlogArticle } from "./blogArticles";
 
-export const ACHZOD_ARTICLES: BlogArticle[] = [
+export const ultrahuman_ARTICLES: BlogArticle[] = [
   {  id: "uh-1",
     priority: 46,
     slug: "informations-de-ring-achzod-sur-la-sante-du-sommeil-e",
