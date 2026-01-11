@@ -5,7 +5,8 @@ import { ultrahuman_ARTICLES } from "./ultrahumanArticles";
 import { ACHZOD_ARTICLES as MUSCLEPHD_ARTICLES } from "./musclephdArticles";
 import { ACHZODArticles as YAMAMOTO_ARTICLES } from "./yamamotoArticles";
 
-export interface BlogArticle {  id: string;
+export interface BlogArticle {
+  id: string;
   slug: string;
   title: string;
   excerpt: string;
@@ -13,9 +14,11 @@ export interface BlogArticle {  id: string;
   category: string;
   author: string;
   date: string;
-  readTime: string;
-  image: string;
+  readTime?: string;
+  image?: string;
   featured?: boolean;
+  priority?: number;
+  imageUrl?: string;
 }
 
 export const BLOG_CATEGORIES = [

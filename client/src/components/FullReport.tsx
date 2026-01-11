@@ -1243,10 +1243,10 @@ const CoachingCTA = ({ color }: { color: string }) => {
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.name}
-              className={`p-5 rounded relative ${plan.popular ? 'ring-2' : ''}`}
+              className="p-5 rounded relative"
               style={{
                 backgroundColor: 'var(--color-bg)',
-                ringColor: plan.popular ? color : 'transparent'
+                boxShadow: plan.popular ? `0 0 0 2px ${color}` : 'none'
               }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}

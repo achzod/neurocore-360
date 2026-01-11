@@ -765,7 +765,8 @@ export function registerBurnoutRoutes(app: Express): void {
         return;
       }
 
-      res.json({ ...record.report, email: record.email });
+      const safeReport = (record.report && typeof record.report === "object") ? record.report as Record<string, unknown> : {};
+      res.json({ ...safeReport, email: record.email });
     } catch (error) {
       console.error("[Burnout] Fetch error:", error);
       res.status(500).json({ error: "Erreur serveur" });

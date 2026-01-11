@@ -641,8 +641,8 @@ export async function registerRoutes(
             executiveNarrative: dashboard.resumeExecutif || "",
             globalDiagnosis: "",
             sections: mappedSections,
-            prioritySections: [],
-            strengthSections: [],
+            prioritySections: [] as string[],
+            strengthSections: [] as string[],
             supplementStack: supplementStack,
             lifestyleProtocol: "",
             weeklyPlan: {
@@ -1551,10 +1551,17 @@ export async function registerRoutes(
         return;
       }
 
+      if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE") {
+        res.status(400).json({ error: "PLAN_INVALID" });
+        return;
+      }
+
+      const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
+
       const existingAudits = await storage.getAuditsByEmail(email);
       const sessionCreatedAt = session.created ? session.created * 1000 : Date.now();
       const recentAudit = existingAudits.find((audit) => {
-        if (audit.type !== planType) return false;
+        if (audit.type !== normalizedPlanType) return false;
         const createdAt = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
         return createdAt >= sessionCreatedAt - 6 * 60 * 60 * 1000;
       });
@@ -1579,21 +1586,21 @@ export async function registerRoutes(
         return;
       }
 
-      if (planType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+      if (normalizedPlanType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
         res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
         return;
       }
 
       const audit = await storage.createAudit({
         userId: "",
-        type: planType,
+        type: normalizedPlanType,
         email,
         responses: responses as Record<string, unknown>,
       });
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
-      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
-      processReportAndSendEmail(audit.id, audit.email, audit.type);
+      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, normalizedPlanType);
+      processReportAndSendEmail(audit.id, audit.email, normalizedPlanType);
 
       res.json({ success: true, auditId: audit.id });
     } catch (error: any) {

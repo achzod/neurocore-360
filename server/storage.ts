@@ -93,7 +93,7 @@ export interface BurnoutReportRecord {
   id: string;
   email: string;
   responses: Record<string, unknown>;
-  report: Record<string, unknown>;
+  report: unknown;
   createdAt: Date | string;
 }
 
@@ -116,7 +116,7 @@ export interface IStorage {
 
   getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined>;
   saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress>;
-  createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: Record<string, unknown> }): Promise<BurnoutReportRecord>;
+  createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord>;
   getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
 
   createMagicToken(email: string): Promise<string>;
@@ -344,7 +344,7 @@ export class MemStorage implements IStorage {
     return progress;
   }
 
-  async createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: Record<string, unknown> }): Promise<BurnoutReportRecord> {
+  async createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord> {
     const id = randomUUID();
     const record: BurnoutReportRecord = {
       id,
@@ -838,7 +838,7 @@ export class PgStorage implements IStorage {
     };
   }
 
-  async createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: Record<string, unknown> }): Promise<BurnoutReportRecord> {
+  async createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord> {
     await this.ensureBurnoutReportsTable();
     const id = randomUUID();
     const result = await pool.query(

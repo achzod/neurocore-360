@@ -1581,7 +1581,7 @@ async function callGemini(prompt: string): Promise<string> {
 // =============================================================================
 
 async function generateValidatedPremiumSection(
-  section: string,
+  section: SectionName,
   tier: AuditTier,
   fullDataStr: string,
   clientName: string

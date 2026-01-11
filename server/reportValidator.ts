@@ -249,7 +249,7 @@ export function validateReport(
     txtLower.includes(marker.toLowerCase()) || htmlLower.includes(marker.toLowerCase())
   );
 
-  if (!hasReviewSection && tier !== 'GRATUIT') {
+  if (!hasReviewSection) {
     warnings.push('Section demande de review/avis manquante');
   }
 

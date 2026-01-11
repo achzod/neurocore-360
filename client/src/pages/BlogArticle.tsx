@@ -42,13 +42,16 @@ export default function BlogArticlePage() {
       if (ogDescription) ogDescription.setAttribute('content', article.excerpt);
 
       const ogImage = document.querySelector('meta[property="og:image"]');
-      if (ogImage) {
-        ogImage.setAttribute('content', article.image);
-      } else {
-        const newOgImage = document.createElement('meta');
-        newOgImage.setAttribute('property', 'og:image');
-        newOgImage.setAttribute('content', article.image);
-        document.head.appendChild(newOgImage);
+      const image = article.image || article.imageUrl || "https://placehold.co/1200x600/0a0a0a/ffffff?text=APEXLABS";
+      if (image) {
+        if (ogImage) {
+          ogImage.setAttribute('content', image);
+        } else {
+          const newOgImage = document.createElement('meta');
+          newOgImage.setAttribute('property', 'og:image');
+          newOgImage.setAttribute('content', image);
+          document.head.appendChild(newOgImage);
+        }
       }
     }
   }, [article]);
@@ -86,6 +89,7 @@ export default function BlogArticlePage() {
     article.category;
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const heroImage = article.image || article.imageUrl || "https://placehold.co/1200x600/0a0a0a/ffffff?text=APEXLABS";
 
   return (
     <div className="min-h-screen bg-[#050505]">
@@ -94,7 +98,7 @@ export default function BlogArticlePage() {
         {/* Hero Image */}
         <div className="relative h-[40vh] min-h-[300px] md:h-[50vh] w-full overflow-hidden">
           <img
-            src={article.image}
+            src={heroImage}
             alt={article.title}
             className="h-full w-full object-cover grayscale"
           />

@@ -1228,3 +1228,4 @@ L'équilibre hormonal n'est pas un état fixe à atteindre, mais un processus dy
 
 *Vos hormones sont la clé. Il est temps de les comprendre.*
     `,
+};
