@@ -269,7 +269,7 @@ export default function AuditPremium() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            ~150 questions sur 17 sections: nutrition detaillee, profil hormonal,
+            ~137 questions sur 16 sections: nutrition detaillee, profil hormonal,
             axes cliniques (thyroide, diabete, SII), supplements, biomarqueurs, composition corporelle.
           </motion.p>
 
@@ -492,7 +492,7 @@ export default function AuditPremium() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Analyse complete 17 sections",
+                "Analyse complete 16 sections",
                 "156 questions personnalisees",
                 "Integration wearables",
                 "Protocole Matin Anti-Cortisol",

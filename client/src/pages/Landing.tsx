@@ -38,8 +38,8 @@ const OFFERS: Offer[] = [
     id: 'anabolic-bioscan',
     title: "ANABOLIC BIOSCAN",
     subtitle: "Analyse Approfondie",
-    description: "L'analyse complète pour ceux qui veulent des réponses. 137 questions sur 17 sections: profil hormonal détaillé (testostérone, cortisol, thyroïde), axes cliniques (diabète, SII, fatigue surrénalienne), nutrition avancée, suppléments et composition corporelle. Tu reçois un protocole Matin Anti-Cortisol, un protocole Soir Sommeil, un reset digestif 14 jours, un stack suppléments personnalisé et un plan d'action 30-60-90 jours. Rapport de 20+ pages.",
-    features: ["17 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
+    description: "L'analyse complète pour ceux qui veulent des réponses. 137 questions sur 16 sections: profil hormonal détaillé (testostérone, cortisol, thyroïde), axes cliniques (diabète, SII, fatigue surrénalienne), nutrition avancée, suppléments et composition corporelle. Tu reçois un protocole Matin Anti-Cortisol, un protocole Soir Sommeil, un reset digestif 14 jours, un stack suppléments personnalisé et un plan d'action 30-60-90 jours. Rapport de 20+ pages.",
+    features: ["16 sections d'analyse", "Profil hormonal complet", "Axes cliniques", "Stack suppléments personnalisé"],
     price: "59€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/bmi_stress_activity.png",
     reverse: true
@@ -59,8 +59,8 @@ const OFFERS: Offer[] = [
     id: 'ultimate-scan',
     title: "ULTIMATE SCAN",
     subtitle: "L'Analyse Complète",
-    description: "Le scan le plus complet du marché. 183 questions sur 23 sections + analyse photo posturale (face, dos, profil) + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
-    features: ["23 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
+    description: "Le scan le plus complet du marché. 183 questions sur 18 sections + analyse photo posturale (face, dos, profil) + intégration de tes données wearables (Oura, Whoop, Garmin, Apple Watch). On couvre tout: nutrition timing, cardio & performance Zone 2, analyse HRV, blessures & mobilité, psychologie du mindset. Je croise 3 sources de données pour générer le rapport le plus précis possible. 40-50 pages de protocoles personnalisés.",
+    features: ["18 sections d'analyse", "Analyse photo posturale", "Intégration wearables", "Protocole 30-60-90 jours"],
     price: "99€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true

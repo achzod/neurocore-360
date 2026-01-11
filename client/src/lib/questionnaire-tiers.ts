@@ -2,8 +2,8 @@
  * NEUROCORE 360 - Système de Questionnaire 3 Tiers
  *
  * GRATUIT (Discovery Scan, 0€): ~66 questions - Dashboard basique
- * ANABOLIC BIOSCAN (59€): ~137 questions - Rapport Achzod 18 sections
- * ULTIMATE SCAN (79€): ~183 questions - Rapport 25 sections + Wearables + Analyse Photo
+ * ANABOLIC BIOSCAN (59€): ~137 questions - Rapport Achzod 16 sections
+ * ULTIMATE SCAN (79€): ~183 questions - Rapport 18 sections + Wearables + Analyse Photo
  *
  * Chaque question a un champ `tier`:
  * - "free" = disponible pour tous

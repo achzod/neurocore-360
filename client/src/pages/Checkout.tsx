@@ -48,7 +48,7 @@ const PRICING_PLANS: PricingPlan[] = [
       "Radar de performance",
     ],
     lockedFeatures: [
-      "Rapport complet 17 sections",
+      "Rapport complet 16 sections",
       "Protocoles 90 jours",
       "Stack suppléments",
       "Wearables & analyse photo",
@@ -63,7 +63,7 @@ const PRICING_PLANS: PricingPlan[] = [
     coachingNote: "Le meilleur équilibre profondeur / prix",
     features: [
       "137 questions approfondies",
-      "Rapport 17 sections",
+      "Rapport 16 sections",
       "Axes cliniques + hormones",
       "Protocoles 90 jours détaillés",
       "Stack suppléments personnalisé",
@@ -81,7 +81,7 @@ const PRICING_PLANS: PricingPlan[] = [
     priceLabel: "79€",
     features: [
       "183 questions ultra-détaillées",
-      "Rapport 23 sections",
+      "Rapport 18 sections",
       "Wearables (Oura, Whoop, Garmin...)",
       "Analyse photo posturale",
       "Nutrition timing + cardio avancé",

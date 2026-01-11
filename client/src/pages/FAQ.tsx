@@ -17,7 +17,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Quelle est la différence entre les différentes offres ?",
-    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions, diagnostic global, dashboard interactif. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 17 sections d'analyse, protocoles 30-60-90 jours, stack suppléments optimisé. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle) + wearables, 23 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance. BURNOUT ENGINE (39€) : Détection du risque de burnout + protocole récupération 4 semaines."
+    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions, diagnostic global, dashboard interactif. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles 30-60-90 jours, stack suppléments optimisé. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle) + wearables, 18 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance. BURNOUT ENGINE (39€) : Détection du risque de burnout + protocole récupération 4 semaines."
   },
   {
     question: "Comment fonctionne la synchronisation des wearables ?",

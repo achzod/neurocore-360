@@ -34,11 +34,11 @@ export default function DeductionCoaching() {
     },
     {
       analysis: "Ultimate Scan",
-      analysisPrice: 149,
+      analysisPrice: 79,
       coaching: "Elite (6 mois)",
       coachingPrice: 497,
-      finalPrice: 348,
-      savings: 149,
+      finalPrice: 418,
+      savings: 79,
     },
     {
       analysis: "Blood Analysis",

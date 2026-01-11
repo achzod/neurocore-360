@@ -530,8 +530,49 @@ function EmptyState() {
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [confirmingCheckout, setConfirmingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get("session_id");
+    const success = urlParams.get("success");
+
+    if (sessionId && success) {
+      setConfirmingCheckout(true);
+      setCheckoutError(null);
+      window.history.replaceState({}, "", "/dashboard");
+
+      (async () => {
+        try {
+          const response = await fetch("/api/stripe/confirm-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId }),
+          });
+          const data = await response.json();
+
+          if (response.ok && data.success && data.auditId) {
+            navigate(`/dashboard/${data.auditId}`);
+            return;
+          }
+
+          if (data?.error === "QUESTIONNAIRE_MISSING") {
+            setCheckoutError("Questionnaire manquant. Reprends le questionnaire pour finaliser ton audit.");
+          } else if (data?.error === "NEED_PHOTOS") {
+            setCheckoutError("Photos manquantes pour l'Ultimate Scan. Ajoute les 3 photos (face, profil, dos).");
+          } else {
+            setCheckoutError(data?.error || "Erreur de confirmation du paiement.");
+          }
+        } catch {
+          setCheckoutError("Erreur de confirmation du paiement.");
+        } finally {
+          setConfirmingCheckout(false);
+        }
+      })();
+      return;
+    }
+
     const email = localStorage.getItem("neurocore_email");
     if (!email) {
       navigate("/auth/login");
@@ -547,6 +588,37 @@ export default function Dashboard() {
 
   const latestAudit = audits?.[0];
   const hasCompletedAudit = latestAudit?.status === "COMPLETED" && latestAudit?.scores;
+
+  if (confirmingCheckout) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="mt-4 text-muted-foreground">Confirmation du paiement en cours...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (checkoutError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+          <h2 className="text-2xl font-bold">Paiement confirmé</h2>
+          <p className="mt-2 text-muted-foreground">{checkoutError}</p>
+          <Link href="/audit-complet/questionnaire">
+            <Button className="mt-6">Reprendre le questionnaire</Button>
+          </Link>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -361,7 +361,8 @@ ${photoAnalysisStr}
 `;
 
   const auditParts: string[] = [];
-  const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
+  const ctaAmount = tier === "ELITE" ? PRICING.ELITE : PRICING.PREMIUM;
+  const ctaDebut = getCTADebut(tier, ctaAmount);
   auditParts.push(ctaDebut);
   auditParts.push(`\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`);
   auditParts.push(`Genere le ${new Date().toLocaleString('fr-FR')}\n`);
@@ -547,7 +548,7 @@ ${PROMPT_SECTION.replace("{section}", section)
     }
   });
 
-  const ctaFin = getCTAFin(tier, PRICING.PREMIUM);
+  const ctaFin = getCTAFin(tier, ctaAmount);
   auditParts.push('\n\n' + ctaFin);
 
   const fullAuditTxt = auditParts.join('\n');

@@ -623,7 +623,7 @@ export default function AuditGratuit() {
                   "Protocoles d'action personnalises",
                   "Stack supplements optimise",
                   "Plan 30-60-90 jours",
-                  "17 sections d'analyse",
+                  "16 sections d'analyse",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <Check className="w-5 h-5 text-[#FCDD00]" />
