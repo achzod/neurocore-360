@@ -611,14 +611,17 @@ function QuestionnaireContent() {
                 setTerraConnected(false);
                 setTerraSkippedQuestions([]);
                 // User connected but no data yet - might be SDK provider
-                toast({
-                  title: "Connexion en cours...",
-                  description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
-                  duration: 8000,
-                });
-              }
-            })
-            .catch(err => console.error("[Terra] Sync check failed:", err));
+              toast({
+                title: "Connexion en cours...",
+                description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
+                duration: 8000,
+              });
+              // Reset any previous skips/state to avoid stale prefill
+              setTerraConnected(false);
+              setTerraSkippedQuestions([]);
+            }
+          })
+          .catch(err => console.error("[Terra] Sync check failed:", err));
         }
       }
     } catch (e) {
