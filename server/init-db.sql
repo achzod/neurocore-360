@@ -38,6 +38,28 @@ CREATE TABLE IF NOT EXISTS questionnaire_progress (
   last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+-- Table: burnout_progress
+CREATE TABLE IF NOT EXISTS burnout_progress (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  current_section TEXT NOT NULL DEFAULT '0',
+  total_sections TEXT NOT NULL DEFAULT '6',
+  percent_complete TEXT NOT NULL DEFAULT '0',
+  responses JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: burnout_reports
+CREATE TABLE IF NOT EXISTS burnout_reports (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL,
+  responses JSONB NOT NULL DEFAULT '{}',
+  report JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
 -- Table: magic_tokens
 CREATE TABLE IF NOT EXISTS magic_tokens (
   token VARCHAR(255) PRIMARY KEY,
@@ -154,6 +176,9 @@ CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
 CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
 CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_burnout_progress_email ON burnout_progress(email);
+CREATE INDEX IF NOT EXISTS idx_burnout_reports_email ON burnout_reports(email);
+CREATE INDEX IF NOT EXISTS idx_burnout_reports_created_at ON burnout_reports(created_at);
 
 -- Note: Si certaines tables existent déjà, certaines erreurs peuvent apparaître.
 -- C'est normal, le script utilise CREATE TABLE IF NOT EXISTS pour éviter les doublons.

@@ -144,7 +144,7 @@ export default function TestAudit() {
                   className="flex-1"
                   data-testid="button-plan-anabolic"
                 >
-                  Anabolic Bioscan (15 sections)
+                  Anabolic (17 sections)
                 </Button>
                 <Button
                   variant={planType === "ELITE" ? "default" : "outline"}
@@ -152,7 +152,7 @@ export default function TestAudit() {
                   className="flex-1"
                   data-testid="button-plan-ultimate"
                 >
-                  Ultimate Scan (15 sections)
+                  Ultimate (23 sections)
                 </Button>
               </div>
             </div>

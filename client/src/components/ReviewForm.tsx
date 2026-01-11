@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,44 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [auditEmail, setAuditEmail] = useState<string | null>(null);
+  const [auditType, setAuditType] = useState<string | null>(null);
+  const [auditLoadError, setAuditLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (onSubmit || !auditId) return;
+
+    const loadAudit = async () => {
+      try {
+        const response = await fetch(`/api/audits/${auditId}`);
+        if (!response.ok) {
+          throw new Error("Audit non trouvé");
+        }
+        const data = await response.json();
+        const type = String(data.type || "").toUpperCase();
+        const mappedType =
+          type === "GRATUIT"
+            ? "DISCOVERY"
+            : type === "PREMIUM"
+            ? "ANABOLIC_BIOSCAN"
+            : type === "ELITE"
+            ? "ULTIMATE_SCAN"
+            : type === "BLOOD_ANALYSIS"
+            ? "BLOOD_ANALYSIS"
+            : type === "BURNOUT"
+            ? "BURNOUT"
+            : null;
+
+        setAuditEmail(data.email || null);
+        setAuditType(mappedType);
+      } catch (err) {
+        console.error("ReviewForm audit load failed:", err);
+        setAuditLoadError("Impossible de charger l'audit.");
+      }
+    };
+
+    loadAudit();
+  }, [auditId, onSubmit]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -35,10 +73,13 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
       if (onSubmit) {
         await onSubmit({ rating, comment });
       } else {
+        if (!auditEmail || !auditType) {
+          throw new Error("Email ou type d'audit manquant");
+        }
         const response = await fetch("/api/submit-review", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ auditId, rating, comment }),
+          body: JSON.stringify({ auditId, rating, comment, email: auditEmail, auditType }),
         });
         const data = await response.json();
         if (!data.success) {
@@ -149,6 +190,9 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
             </motion.p>
           )}
         </AnimatePresence>
+        {auditLoadError && (
+          <p className="text-xs text-destructive">{auditLoadError}</p>
+        )}
 
         <Button
           onClick={handleSubmit}
@@ -174,4 +218,3 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
 }
 
 export default ReviewForm;
-

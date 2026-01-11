@@ -1,6 +1,6 @@
 /**
- * APEXLABS - Anabolic Bioscan Report (Anabolic Tier)
- * Style Ultrahuman - Dashboard complet avec sections detaillees
+ * APEXLABS - Anabolic Bioscan Report
+ * Style Ultrahuman - Dashboard Anabolic avec sections detaillees
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,6 +8,7 @@ import { useParams, Link } from 'wouter';
 import { Sidebar } from '@/components/ultrahuman/Sidebar';
 import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
+import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, SectionContent, Metric } from '@/components/ultrahuman/types';
 import {
   Menu,
@@ -37,69 +38,7 @@ import {
   Crown
 } from 'lucide-react';
 
-// Theme definitions
-const THEMES: Theme[] = [
-  {
-    id: 'ultrahuman',
-    name: 'M1 Black',
-    type: 'dark',
-    colors: {
-      primary: '#FCDD00', // Ultrahuman Yellow for Anabolic Bioscan
-      background: '#000000',
-      surface: '#0a0a0a',
-      border: 'rgba(252, 221, 0, 0.15)',
-      text: '#FFFFFF',
-      textMuted: '#a1a1aa',
-      grid: 'rgba(252, 221, 0, 0.05)',
-      glow: 'rgba(252, 221, 0, 0.2)'
-    }
-  },
-  {
-    id: 'metabolic',
-    name: 'Ice Blue',
-    type: 'dark',
-    colors: {
-      primary: '#38BDF8',
-      background: '#020617',
-      surface: '#0f172a',
-      border: 'rgba(56, 189, 248, 0.15)',
-      text: '#F1F5F9',
-      textMuted: '#94A3B8',
-      grid: 'rgba(56, 189, 248, 0.05)',
-      glow: 'rgba(56, 189, 248, 0.25)'
-    }
-  },
-  {
-    id: 'titanium',
-    name: 'Titanium Light',
-    type: 'light',
-    colors: {
-      primary: '#059669',
-      background: '#F2F2F2',
-      surface: '#FFFFFF',
-      border: 'rgba(0, 0, 0, 0.08)',
-      text: '#171717',
-      textMuted: '#737373',
-      grid: 'rgba(0, 0, 0, 0.04)',
-      glow: 'rgba(0, 0, 0, 0.05)'
-    }
-  },
-  {
-    id: 'organic',
-    name: 'Sand Stone',
-    type: 'light',
-    colors: {
-      primary: '#059669',
-      background: '#F0EFE9',
-      surface: '#E6E4DD',
-      border: 'rgba(5, 150, 105, 0.1)',
-      text: '#292524',
-      textMuted: '#78716C',
-      grid: 'rgba(5, 150, 105, 0.05)',
-      glow: 'rgba(5, 150, 105, 0.1)'
-    }
-  }
-];
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
 // Narrative Report types from API
 interface SupplementProtocol {
@@ -296,25 +235,14 @@ const AnabolicScanReport: React.FC = () => {
     { id: 'review', title: 'Votre Avis', subtitle: 'Feedback', content: '' }
   ];
 
-  // Convert to metrics for radar with smart labels
-  const metricsData: Metric[] = report?.sections.slice(0, 8).map(s => {
-    // Smart label extraction: remove "ANALYSE" and "PROTOCOLE" prefixes
-    let label = s.title
-      .replace(/^ANALYSE\s+/i, '')
-      .replace(/^PROTOCOLE\s+/i, '')
-      .split(' ')
-      .slice(0, 2) // Take first 2 words max
-      .join(' ')
-      .substring(0, 20); // Max 20 chars
-
-    return {
-      label,
-      value: Math.round(s.score / 10),
-      max: 10,
-      description: s.title,
-      key: s.id
-    };
-  }) || [];
+  // Convert to metrics for radar
+  const metricsData: Metric[] = report?.sections.slice(0, 8).map(s => ({
+    label: s.title.split(' ')[0],
+    value: Math.round(s.score / 10),
+    max: 10,
+    description: s.title,
+    key: s.id
+  })) || [];
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -336,7 +264,7 @@ const AnabolicScanReport: React.FC = () => {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auditId || reviewRating === 0 || reviewComment.length < 10) {
+    if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
       setReviewError('Veuillez remplir tous les champs');
       return;
     }
@@ -349,7 +277,7 @@ const AnabolicScanReport: React.FC = () => {
         body: JSON.stringify({
           auditId,
           email: reviewEmail,
-          auditType: 'PREMIUM',
+          auditType: 'ANABOLIC_BIOSCAN',
           rating: reviewRating,
           comment: reviewComment
         })
@@ -374,7 +302,7 @@ const AnabolicScanReport: React.FC = () => {
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
-          <p className="text-white/70">Chargement du rapport complet...</p>
+          <p className="text-white/70">Chargement du rapport Anabolic...</p>
         </div>
       </div>
     );

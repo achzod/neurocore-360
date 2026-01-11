@@ -282,18 +282,25 @@ export function generateExportHTMLFromTxt(
   // (nécessaire pour éviter "CTA début/fin manquants" dans le HTML)
   const inferTierFromTxt = (t: string): AuditTier => {
     const lower = t.toLowerCase();
-    if (lower.includes("analyse gratuite") || lower.includes("infos importantes")) return "GRATUIT";
-    if (lower.includes("anabolic bioscan") || lower.includes("ultimate scan") || lower.includes("rappel important")) return "PREMIUM";
+    if (lower.includes("analyse gratuite") || lower.includes("discovery scan")) return "GRATUIT";
+    if (lower.includes("ultimate scan") || lower.includes("pro panel") || lower.includes("pro panel 360") || lower.includes("elite scan")) return "ELITE";
+    if (lower.includes("anabolic bioscan") || lower.includes("premium scan") || lower.includes("rappel important")) return "PREMIUM";
     // Par défaut on considère PREMIUM (sinon on sous-livre)
     return "PREMIUM";
   };
 
   const inferredTier = inferTierFromTxt(txt);
+  const heroBadgeLabel = inferredTier === "GRATUIT"
+    ? "DISCOVERY SCAN"
+    : inferredTier === "ELITE"
+    ? "ULTIMATE SCAN"
+    : "ANABOLIC BIOSCAN";
+  const ctaAmount = inferredTier === "ELITE" ? PRICING.ELITE : PRICING.PREMIUM;
   if (!dashboard.ctaDebut || !dashboard.ctaDebut.trim()) {
-    dashboard.ctaDebut = getCTADebut(inferredTier, PRICING.PREMIUM);
+    dashboard.ctaDebut = getCTADebut(inferredTier, ctaAmount);
   }
   if (!dashboard.ctaFin || !dashboard.ctaFin.trim()) {
-    dashboard.ctaFin = getCTAFin(inferredTier, PRICING.PREMIUM);
+    dashboard.ctaFin = getCTAFin(inferredTier, ctaAmount);
   }
   
   // Extraire les scores réels OU générer des scores cohérents basés sur le score global
@@ -1115,7 +1122,7 @@ export function generateExportHTMLFromTxt(
     <header class="hero" style="padding: 40px 30px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
         <div>
-          <span class="hero-badge">AUDIT 360 PREMIUM</span>
+          <span class="hero-badge">${heroBadgeLabel}</span>
           <h1 style="font-size: 2.2rem; margin: 12px 0 8px 0;">${dashboard.clientName}</h1>
           <p style="font-size: 0.95rem; color: var(--text-muted); margin: 0;">
             Généré le ${dashboard.generatedAt}${dashboard.clientName ? '' : ''} • Email: ${dashboard.clientName ? (dashboard.clientName.includes('@') ? dashboard.clientName : 'non fourni') : 'non fourni'}

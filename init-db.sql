@@ -38,6 +38,28 @@ CREATE TABLE IF NOT EXISTS questionnaire_progress (
   last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+-- Table: burnout_progress
+CREATE TABLE IF NOT EXISTS burnout_progress (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  current_section TEXT NOT NULL DEFAULT '0',
+  total_sections TEXT NOT NULL DEFAULT '6',
+  percent_complete TEXT NOT NULL DEFAULT '0',
+  responses JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: burnout_reports
+CREATE TABLE IF NOT EXISTS burnout_reports (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL,
+  responses JSONB NOT NULL DEFAULT '{}',
+  report JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
 -- Table: magic_tokens
 CREATE TABLE IF NOT EXISTS magic_tokens (
   token VARCHAR(255) PRIMARY KEY,
@@ -59,14 +81,19 @@ CREATE TABLE IF NOT EXISTS report_jobs (
   completed_at TIMESTAMP
 );
 
--- Table: reviews
+-- Table: reviews (with promo code workflow)
 CREATE TABLE IF NOT EXISTS reviews (
   id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
   audit_id VARCHAR(36) NOT NULL,
   user_id VARCHAR(36),
+  email VARCHAR(255) NOT NULL,
+  audit_type VARCHAR(50) NOT NULL, -- DISCOVERY, ANABOLIC_BIOSCAN, ULTIMATE_SCAN, BLOOD_ANALYSIS, BURNOUT
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
   comment TEXT NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, approved, rejected
+  promo_code VARCHAR(50), -- code sent to user
+  promo_code_sent_at TIMESTAMP,
+  admin_notes TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   reviewed_at TIMESTAMP,
   reviewed_by VARCHAR(255)
@@ -86,13 +113,72 @@ CREATE TABLE IF NOT EXISTS cta_history (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+-- Table: promo_codes
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  code VARCHAR(50) NOT NULL UNIQUE,
+  discount_percent INTEGER NOT NULL CHECK (discount_percent >= 1 AND discount_percent <= 100),
+  description TEXT,
+  valid_for VARCHAR(20) NOT NULL DEFAULT 'ALL', -- ALL, PREMIUM, ELITE
+  max_uses INTEGER DEFAULT NULL, -- NULL = unlimited
+  current_uses INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  expires_at TIMESTAMP DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: email_tracking (pour suivre les ouvertures)
+CREATE TABLE IF NOT EXISTS email_tracking (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id VARCHAR(36) NOT NULL,
+  email_type VARCHAR(50) NOT NULL, -- 'GRATUIT_UPSELL', 'PREMIUM_J7', 'PREMIUM_J14'
+  sent_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  opened_at TIMESTAMP DEFAULT NULL,
+  clicked_at TIMESTAMP DEFAULT NULL
+);
+
+-- Insert default promo codes
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('ANALYSE20', 20, 'Code promo 20% sur Anabolic Bioscan', 'PREMIUM')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+-- Promo codes for review rewards (audit type specific)
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('DISCOVERY20', 20, 'Code Discovery Scan - 20% coaching Achzod', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('ANABOLICBIOSCAN', 0, 'Code Anabolic Bioscan - 59€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('ULTIMATESCAN', 0, 'Code Ultimate Scan - 79€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('BLOOD', 0, 'Code Blood Analysis - 99€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO promo_codes (code, discount_percent, description, valid_for)
+VALUES ('BURNOUT', 0, 'Code Burnout Engine - 39€ déduits du coaching', 'ALL')
+ON CONFLICT (code) DO NOTHING;
+
 -- Index pour améliorer les performances
 CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email);
 CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id);
+CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code);
+CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
 CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
 CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_burnout_progress_email ON burnout_progress(email);
+CREATE INDEX IF NOT EXISTS idx_burnout_reports_email ON burnout_reports(email);
+CREATE INDEX IF NOT EXISTS idx_burnout_reports_created_at ON burnout_reports(created_at);
 
 -- Note: Si certaines tables existent déjà, certaines erreurs peuvent apparaître.
 -- C'est normal, le script utilise CREATE TABLE IF NOT EXISTS pour éviter les doublons.

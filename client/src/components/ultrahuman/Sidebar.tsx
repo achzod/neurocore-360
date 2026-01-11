@@ -34,9 +34,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   }, [sections, searchTerm]);
 
-  const auditLabel = auditType === 'GRATUIT' ? 'Discovery Scan' :
-                     auditType === 'PREMIUM' ? 'Anabolic Bioscan' :
-                     auditType === 'ELITE' ? 'Ultimate Scan' : 'Audit';
+  const auditLabel =
+    auditType === 'GRATUIT' || auditType === 'DISCOVERY'
+      ? 'Discovery Scan'
+      : auditType === 'PREMIUM' || auditType === 'ANABOLIC_BIOSCAN'
+      ? 'Anabolic Bioscan'
+      : auditType === 'ELITE' || auditType === 'ULTIMATE_SCAN'
+      ? 'Ultimate Scan'
+      : auditType === 'BURNOUT'
+      ? 'Burnout Engine'
+      : auditType === 'BLOOD_ANALYSIS'
+      ? 'Blood Analysis'
+      : 'Audit';
 
   return (
     <nav className="h-full flex flex-col">

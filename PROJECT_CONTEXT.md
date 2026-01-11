@@ -60,8 +60,8 @@ Règles absolues :
 - Objectif : Landing page de pré-lancement avec waitlist
 - Offres présentées :
   - Discovery Scan (Gratuit) - 50 questions, 5 piliers
-  - Anabolic Bioscan (49€) - 150 questions, rapport 25 pages
-  - Pro Panel 360 (99€) - 210 questions, 45 pages, photos
+  - Anabolic Bioscan (59€) - 150 questions, rapport 25 pages
+  - Ultimate Scan (79€) - 210 questions, 45 pages, photos
   - Blood Analysis (99€) - Analyse bilan sanguin, 50+ biomarqueurs
   - Burnout Engine (39€) - 80 questions, détection burnout
 
@@ -69,7 +69,7 @@ Règles absolues :
 
 ## 4) CONTRAINTES MÉTIER (Achzod / audits)
 - Ne JAMAIS inventer des chiffres, claims marketing, ou fonctionnalités non existantes
-- Les prix sont FIXES : Discovery=Gratuit, Anabolic=49€, Pro Panel=99€, Blood=99€, Burnout=39€
+- Les prix sont FIXES : Discovery=Gratuit, Anabolic=59€, Ultimate=79€, Blood=99€, Burnout=39€
 - Tutoiement obligatoire dans les communications (pas de "vous")
 - Pas de tirets longs IA "—" dans le contenu
 - Pas de claims "500+ clients" ou chiffres inventés
@@ -87,7 +87,7 @@ Règles absolues :
 - Hébergement : Render.com
 - Email : SendPulse API (SMTP + Address Books)
 - Paiement : Stripe (optionnel)
-- Wearables : Terra API (optionnel, plan Elite)
+- Wearables : Terra API (optionnel, plan Ultimate Scan)
 - Domaine : achzodcoaching.com (Squarespace DNS)
 
 ### Workflow Git :

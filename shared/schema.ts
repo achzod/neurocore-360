@@ -38,6 +38,8 @@ export const ReportDeliveryStatus = {
   READY: "READY",
   SENT: "SENT",
   FAILED: "FAILED",
+  NEEDS_REVIEW: "NEEDS_REVIEW",
+  NEED_PHOTOS: "NEED_PHOTOS",
 } as const;
 
 export type ReportDeliveryStatusEnum = (typeof ReportDeliveryStatus)[keyof typeof ReportDeliveryStatus];

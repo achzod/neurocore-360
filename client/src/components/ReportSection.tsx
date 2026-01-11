@@ -92,7 +92,7 @@ export function ReportSection({
           </p>
           <Button onClick={onUnlock} className="gap-2">
             <Star className="w-4 h-4" />
-            Passer a l'Anabolic Bioscan
+            Passer en Anabolic
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>

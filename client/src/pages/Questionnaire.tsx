@@ -64,11 +64,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Header } from "@/components/Header";
-import type { Question } from "@/lib/questionnaire-tiers";
 import {
-  getQuestionsForSection,
-  getSectionsForPlan,
-  getTierForPlan,
+  filterQuestionsByGender,
+  getQuestionsForTier,
+  getSectionsForTier,
+  type Question,
 } from "@/lib/questionnaire-tiers";
 import {
   ChevronLeft,
@@ -76,6 +76,7 @@ import {
   Check,
   Save,
   User,
+  Stethoscope,
   Scale,
   Zap,
   Apple,
@@ -83,25 +84,24 @@ import {
   Dumbbell,
   Moon,
   Heart,
+  HeartPulse,
   TestTube,
+  Pill,
   Activity,
   Coffee,
   Bone,
   Brain,
+  BrainCircuit,
   HeartHandshake,
   Camera,
-  Stethoscope,
+  TrendingUp,
   Target,
   Utensils,
   UtensilsCrossed,
-  TrendingUp,
-  Pill,
-  Clock,
-  HeartPulse,
-  BrainCircuit,
   Upload,
   AlertCircle,
   X,
+  Clock,
   Watch,
   Smartphone,
   Link2,
@@ -116,6 +116,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ElementType> = {
   User,
+  Stethoscope,
   Scale,
   Zap,
   Apple,
@@ -123,22 +124,20 @@ const iconMap: Record<string, React.ElementType> = {
   Dumbbell,
   Moon,
   Heart,
+  HeartPulse,
   TestTube,
+  Pill,
   Activity,
   Coffee,
   Bone,
   Brain,
+  BrainCircuit,
   HeartHandshake,
   Camera,
-  Stethoscope,
   Target,
   Utensils,
   UtensilsCrossed,
   TrendingUp,
-  Pill,
-  Clock,
-  HeartPulse,
-  BrainCircuit,
 };
 
 function QuestionField({
@@ -163,7 +162,6 @@ function QuestionField({
           data-testid={`input-${question.id}`}
         />
       );
-
     case "email":
       return (
         <Input
@@ -356,12 +354,23 @@ function QuestionField({
 }
 
 const PHOTO_FIELDS = ["photo-front", "photo-side", "photo-back"];
-const normalizePlanParam = (plan: string | null): "gratuit" | "anabolic" | "ultimate" => {
-  const value = (plan || "").toLowerCase();
-  if (["ultimate", "ultimate-scan", "elite", "pro", "pro-panel", "propanel"].includes(value)) return "ultimate";
-  if (["gratuit", "free", "discovery", "discovery-scan"].includes(value)) return "gratuit";
-  if (["anabolic", "anabolic-bioscan"].includes(value)) return "anabolic";
-  return "anabolic";
+
+type PlanId = "gratuit" | "anabolic" | "ultimate";
+type PlanTier = "free" | "essential" | "elite";
+
+const PLAN_TIER_MAP: Record<PlanId, PlanTier> = {
+  gratuit: "free",
+  anabolic: "essential",
+  ultimate: "elite",
+};
+
+const normalizePlan = (plan: string | null | undefined): PlanId | null => {
+  if (!plan) return null;
+  const normalized = plan.toLowerCase();
+  if (normalized === "gratuit" || normalized === "discovery" || normalized === "free") return "gratuit";
+  if (normalized === "anabolic" || normalized === "premium" || normalized === "essential") return "anabolic";
+  if (normalized === "ultimate" || normalized === "elite" || normalized === "pro") return "ultimate";
+  return null;
 };
 
 function QuestionnaireContent() {
@@ -373,15 +382,20 @@ function QuestionnaireContent() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
 
-  // Lire le plan depuis l'URL (anabolic = Anabolic Bioscan, ultimate = Ultimate Scan)
-  const [selectedPlan] = useState(() => {
+  // Lire le plan depuis l'URL (anabolic/ultimate/gratuit)
+  const [selectedPlan] = useState<PlanId>(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    return normalizePlanParam(urlParams.get("plan"));
+    const urlPlan = normalizePlan(urlParams.get("plan"));
+    const storedPlan = normalizePlan(localStorage.getItem("neurocore_plan"));
+    const plan = urlPlan ?? storedPlan ?? "gratuit";
+    localStorage.setItem("neurocore_plan", plan);
+    return plan;
   });
 
-  const questionnaireTier = getTierForPlan(selectedPlan);
-  const filteredSections = getSectionsForPlan(selectedPlan);
-  const excludedQuestionIds = ["email"];
+  const selectedTier = PLAN_TIER_MAP[selectedPlan];
+  const allowWearables = selectedPlan === "ultimate";
+  const allQuestions = getQuestionsForTier(selectedTier);
+  const filteredSections = getSectionsForTier(selectedTier);
 
   // Bounds check pour éviter undefined
   const safeIndex = Math.min(Math.max(0, currentSectionIndex), filteredSections.length - 1);
@@ -393,14 +407,31 @@ function QuestionnaireContent() {
   const [terraConnecting, setTerraConnecting] = useState(false);
   const [terraConnected, setTerraConnected] = useState(false);
   const [terraSkippedQuestions, setTerraSkippedQuestions] = useState<string[]>([]);
+  const normalizedSex = userSex === "homme" || userSex === "femme" ? userSex : undefined;
   const sectionQuestions = currentSection
-    ? getQuestionsForSection(currentSection.id, questionnaireTier, userSex, excludedQuestionIds)
+    ? (
+      normalizedSex
+        ? filterQuestionsByGender(
+            allQuestions.filter(q => q.sectionId === currentSection.id),
+            normalizedSex,
+          )
+        : allQuestions.filter(q => q.sectionId === currentSection.id)
+    )
     : [];
   const IconComponent = currentSection ? (iconMap[currentSection.icon] || User) : User;
 
   const totalProgress = Math.round(((currentSectionIndex + 1) / filteredSections.length) * 100);
 
-  const showWearables = selectedPlan === "ultimate";
+  const shouldShowQuestion = (question: Question) => {
+    if (!question.conditionalOn) return true;
+    const [dependencyId, expectedValue] = question.conditionalOn.split(":");
+    if (!dependencyId || !expectedValue) return true;
+    const answer = responses[dependencyId];
+    if (Array.isArray(answer)) {
+      return answer.includes(expectedValue);
+    }
+    return answer === expectedValue;
+  };
 
   // Charger la progression depuis la DB
   const loadProgressFromDB = async (userEmail: string) => {
@@ -412,8 +443,7 @@ function QuestionnaireContent() {
           console.log("[Questionnaire] Loaded progress from DB:", Object.keys(data.responses).length, "responses");
           setResponses(prev => ({ ...prev, ...data.responses }));
           if (data.currentSection !== undefined) {
-            const maxIndex = Math.max(0, filteredSections.length - 1);
-            setCurrentSectionIndex(Math.min(data.currentSection, maxIndex));
+            setCurrentSectionIndex(data.currentSection);
           }
           if (data.responses["sexe"]) setSexConfirmed(true);
           if (data.responses["prenom"]) setPrenomConfirmed(true);
@@ -428,10 +458,6 @@ function QuestionnaireContent() {
 
   useEffect(() => {
     try {
-      if (!showWearables) {
-        setWearablesSyncShown(true);
-        return;
-      }
       const savedEmail = localStorage.getItem("neurocore_email");
       const savedResponses = localStorage.getItem("neurocore_responses");
       const savedSection = localStorage.getItem("neurocore_section");
@@ -464,8 +490,8 @@ function QuestionnaireContent() {
         setPhotoData(parsedPhotos);
       }
 
-      if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0) {
-        setResponses({ ...parsedResponses, ...parsedPhotos });
+      if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0 || savedEmail) {
+        setResponses({ ...parsedResponses, ...parsedPhotos, ...(savedEmail ? { email: savedEmail } : {}) });
       }
 
       if (savedSection) {
@@ -484,6 +510,10 @@ function QuestionnaireContent() {
       }
       if (parsedResponses["prenom"]) {
         setPrenomConfirmed(true);
+      }
+
+      if (!allowWearables) {
+        return;
       }
 
       // Check URL params for Terra callback
@@ -516,27 +546,44 @@ function QuestionnaireContent() {
 
         const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
         if (emailToCheck) {
+          const referenceId =
+            sessionStorage.getItem("terraReferenceId") ||
+            localStorage.getItem("terraReferenceId") ||
+            "";
+          const startedAt =
+            sessionStorage.getItem("terraStartedAt") ||
+            localStorage.getItem("terraStartedAt") ||
+            "";
+          const query = new URLSearchParams();
+          if (referenceId) query.set("referenceId", referenceId);
+          if (startedAt) query.set("since", startedAt);
+
           // Fetch mapped wearable answers
-          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}`)
+          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}${query.toString() ? `?${query.toString()}` : ""}`)
             .then(res => res.json())
             .then(data => {
-              const answers = data.answers || {};
-              const answerCount = Object.keys(answers).length;
-              const hasAnswers = data.success && data.hasData && answerCount > 0;
-
-              if (hasAnswers) {
+              if (data.success && data.hasData) {
                 setTerraConnected(true);
-                setResponses(prev => ({ ...prev, ...answers }));
-                console.log("[Terra] Pre-filled", answerCount, "answers from wearable");
+                // Pre-fill responses with wearable data
+                if (data.answers && Object.keys(data.answers).length > 0) {
+                  setResponses(prev => ({ ...prev, ...data.answers }));
+                  console.log("[Terra] Pre-filled", Object.keys(data.answers).length, "answers from wearable");
+                }
+                // Store skipped questions
                 if (data.skippedQuestions && data.skippedQuestions.length > 0) {
                   setTerraSkippedQuestions(data.skippedQuestions);
                   console.log("[Terra] Will skip", data.skippedQuestions.length, "questions");
                 }
+                sessionStorage.removeItem("terraReferenceId");
+                sessionStorage.removeItem("terraStartedAt");
+                localStorage.removeItem("terraReferenceId");
+                localStorage.removeItem("terraStartedAt");
                 toast({
                   title: "Wearable synchronise !",
-                  description: `${answerCount} reponses pre-remplies automatiquement.`,
+                  description: `${Object.keys(data.answers || {}).length} reponses pre-remplies automatiquement.`,
                 });
               } else if (terraSuccess === "true") {
+                setTerraConnected(false);
                 // User connected but no data yet - might be SDK provider
                 toast({
                   title: "Connexion en cours...",
@@ -551,7 +598,7 @@ function QuestionnaireContent() {
     } catch (e) {
       console.error("[Questionnaire] Init error:", e);
     }
-  }, [showWearables, toast]);
+  }, []);
 
   useEffect(() => {
     if (emailSubmitted) {
@@ -568,7 +615,6 @@ function QuestionnaireContent() {
       return apiRequest("POST", "/api/questionnaire/save-progress", {
         email,
         currentSection: currentSectionIndex,
-        totalSections: filteredSections.length,
         responses,
       });
     },
@@ -646,6 +692,7 @@ function QuestionnaireContent() {
     if (email && email.includes("@")) {
       setEmailSubmitted(true);
       localStorage.setItem("neurocore_email", email);
+      setResponses((prev) => ({ ...prev, email }));
     }
   };
 
@@ -665,7 +712,6 @@ function QuestionnaireContent() {
     }
 
     // Vérifier les photos UNIQUEMENT pour Ultimate Scan
-    // La section analyse-posturale n'existe pas pour Anabolic Bioscan, donc on skip la validation
     const isLastSection = currentSectionIndex === filteredSections.length - 1;
     if (isLastSection && selectedPlan === "ultimate") {
       const missingPhotos = PHOTO_FIELDS.filter(field => !photoData[field]);
@@ -687,7 +733,7 @@ function QuestionnaireContent() {
       PHOTO_FIELDS.forEach((f) => delete responsesToSave[f]);
       localStorage.setItem("neurocore_responses", JSON.stringify(responsesToSave));
       sessionStorage.setItem("neurocore_photos", JSON.stringify(photoData));
-      navigate("/audit-complet/checkout");
+      navigate(`/audit-complet/checkout?plan=${selectedPlan}`);
     }
   };
 
@@ -715,6 +761,7 @@ function QuestionnaireContent() {
     localStorage.removeItem("neurocore_email");
     localStorage.removeItem("neurocore_responses");
     localStorage.removeItem("neurocore_section");
+    localStorage.removeItem("neurocore_plan");
     sessionStorage.removeItem("neurocore_photos");
     setEmail("");
     setEmailSubmitted(false);
@@ -988,7 +1035,7 @@ function QuestionnaireContent() {
                       </Button>
                     )}
                   </motion.div>
-                ) : currentSectionIndex === 0 && prenomConfirmed && showWearables && !wearablesSyncShown ? (
+                ) : allowWearables && currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
                   /* WEARABLES SYNC SCREEN */
                   <motion.div
                     key="wearables-sync"
@@ -1090,6 +1137,13 @@ function QuestionnaireContent() {
                               // Stocker l'état avant de quitter la page
                               sessionStorage.setItem("terraConnecting", "true");
                               sessionStorage.setItem("questionnaireProgress", JSON.stringify(responses));
+                              if (data.referenceId) {
+                                const now = String(Date.now());
+                                sessionStorage.setItem("terraReferenceId", data.referenceId);
+                                sessionStorage.setItem("terraStartedAt", now);
+                                localStorage.setItem("terraReferenceId", data.referenceId);
+                                localStorage.setItem("terraStartedAt", now);
+                              }
                               // Rediriger vers Terra (fonctionne sur mobile)
                               window.location.href = data.widgetUrl;
                             } else {
@@ -1142,7 +1196,7 @@ function QuestionnaireContent() {
                 ) : (
                   <>
                     {/* Show badge if some questions were auto-filled */}
-                    {terraSkippedQuestions.length > 0 && sectionQuestions.some(q => terraSkippedQuestions.includes(q.id)) && (
+                    {allowWearables && terraSkippedQuestions.length > 0 && sectionQuestions.some(q => terraSkippedQuestions.includes(q.id)) && (
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1158,8 +1212,9 @@ function QuestionnaireContent() {
                       </motion.div>
                     )}
                     {sectionQuestions
-                      .filter(q => (q.id !== "sexe" && q.id !== "prenom") || currentSectionIndex !== 0)
-                      .filter(q => !terraSkippedQuestions.includes(q.id))
+                      .filter(q => q.id !== "sexe" && q.id !== "prenom" && q.id !== "email")
+                      .filter(shouldShowQuestion)
+                      .filter(q => !allowWearables || !terraSkippedQuestions.includes(q.id))
                       .map((question, index) => (
                       <motion.div
                         key={question.id}

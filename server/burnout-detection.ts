@@ -8,7 +8,9 @@
 import type { Express } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { searchArticles } from "./knowledge/storage";
+import { ALLOWED_SOURCES } from "./knowledge/search";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
+import { storage } from "./storage";
 
 // Initialize Anthropic client
 let anthropicClient: Anthropic | null = null;
@@ -31,6 +33,7 @@ interface BurnoutReportData {
   globalScore: number;
   phase: "alarme" | "resistance" | "epuisement";
   phaseLabel: string;
+  phaseDescription: string;
   clientName: string;
   generatedAt: string;
   metrics: {
@@ -57,6 +60,33 @@ const BURNOUT_CATEGORIES = [
   { id: "emotionnel", name: "Emotionnel", questionPrefix: "em", description: "Équilibre" },
   { id: "physique", name: "Physique", questionPrefix: "p", description: "Corps" },
   { id: "social", name: "Social", questionPrefix: "so", description: "Relations" },
+];
+
+const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
+const MIN_BURNOUT_SECTION_LINES = 12;
+const MIN_BURNOUT_SECTION_CHARS: Record<string, number> = {
+  intro: 1200,
+  analyse: 1600,
+  protocole: 1500,
+  supplements: 1400,
+  conclusion: 900,
+};
+const SOURCE_MARKERS = [
+  "huberman",
+  "peter attia",
+  "peter_attia",
+  "applied metabolics",
+  "applied_metabolics",
+  "stronger by science",
+  "sbs",
+  "examine",
+  "renaissance periodization",
+  "renaissance_periodization",
+  "mpmd",
+  "newsletter",
+  "achzod",
+  "matthew walker",
+  "sapolsky",
 ];
 
 // Phase descriptions
@@ -208,7 +238,7 @@ async function getBurnoutKnowledge(phase: string, categories: string[]): Promise
     if (categories.includes("cognitif")) keywords.push("cognition", "dopamine", "focus");
     if (categories.includes("emotionnel")) keywords.push("anxiété", "sérotonine", "GABA");
 
-    const articles = await searchArticles(keywords, 6);
+    const articles = await searchArticles(keywords, 6, ALLOWED_SOURCES as unknown as string[]);
     if (articles.length === 0) return "";
 
     return articles.map(a =>
@@ -217,6 +247,33 @@ async function getBurnoutKnowledge(phase: string, categories: string[]): Promise
   } catch (error) {
     console.error("[Burnout] Knowledge search error:", error);
     return "";
+  }
+}
+
+function normalizeSourceMarker(value: string): string {
+  return value.toLowerCase().replace(/[_\s]+/g, "");
+}
+
+function findSourcesInText(text: string): string[] {
+  const lower = text.toLowerCase();
+  return SOURCE_MARKERS.filter((marker) => lower.includes(marker)).map(normalizeSourceMarker);
+}
+
+function validateBurnoutSection(sectionType: string, content: string, knowledgeContext: string): void {
+  const trimmed = content.trim();
+  const minChars = MIN_BURNOUT_SECTION_CHARS[sectionType] || 900;
+  const textLineCount = trimmed.split(/\n+/).filter((line) => line.trim()).length;
+  const paragraphCount = (trimmed.match(/<p>/g) || []).length;
+  const lineCount = Math.max(textLineCount, paragraphCount);
+  const knowledgeSources = findSourcesInText(knowledgeContext);
+  const sourcesInContent = findSourcesInText(trimmed);
+  const hasSource = sourcesInContent.some((src) => knowledgeSources.includes(src));
+
+  if (trimmed.length < minChars || lineCount < MIN_BURNOUT_SECTION_LINES) {
+    throw new Error(`BURNOUT_SECTION_TOO_SHORT:${sectionType}`);
+  }
+  if (!hasSource) {
+    throw new Error(`BURNOUT_SECTION_MISSING_SOURCES:${sectionType}`);
   }
 }
 
@@ -234,6 +291,9 @@ async function generateBurnoutSection(
   }
 ): Promise<string> {
   const client = getAnthropicClient();
+  if (!data.knowledgeContext || data.knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+    throw new Error("BURNOUT_KNOWLEDGE_CONTEXT_EMPTY");
+  }
 
   const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
   const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
@@ -272,6 +332,8 @@ DONNÉES:
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+
 Écris 3 paragraphes PERCUTANTS:
 1. Diagnostic direct de la situation (pas de "bienvenue" - va droit au but)
 2. Ce que la phase ${data.phase} signifie biologiquement pour son corps (cortisol, HPA, surrénales)
@@ -290,6 +352,8 @@ Phase: ${data.phase}
 
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
+
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
 
 Pour chaque catégorie critique ou attention:
 1. Ce que ce score RÉVÈLE vraiment (pas de langue de bois)
@@ -312,6 +376,8 @@ Nutrition: ${data.protocols.nutrition.join(", ")}
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+
 Structure en 3 parties:
 1. SEMAINE 1-2: Actions d'URGENCE (ce qu'il doit faire DÈS DEMAIN)
 2. SEMAINE 3-4: Consolidation (pourquoi chaque action compte biologiquement)
@@ -332,6 +398,8 @@ ${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+
 Pour CHAQUE supplément, explique comme un EXPERT (pas comme une notice):
 
 1. POURQUOI ce supplément dans SON cas précis
@@ -349,6 +417,11 @@ Format: HTML (<p>, <strong>). Paragraphes détaillés par supplément.`,
     conclusion: `Tu es Achzod, coach expert. Conclusion pour ${data.clientName}.
 
 ${antiAIRules}
+
+CONTEXTE SCIENTIFIQUE:
+${data.knowledgeContext}
+
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
 
 SITUATION:
 - Phase: ${data.phase}
@@ -386,7 +459,7 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
 
     // Clean markdown artifacts
     content = content
-      .replace(/\*\*/g, "<strong>").replace(/\*\*/g, "</strong>")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/##\s*/g, "")
       .replace(/\*/g, "")
       .replace(/^[-•]\s+/gm, "")
@@ -394,10 +467,11 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
       .replace(/-{4,}/g, "")
       .trim();
 
+    validateBurnoutSection(sectionType, content, data.knowledgeContext);
     return content;
   } catch (error) {
     console.error(`[Burnout] Claude error for ${sectionType}:`, error);
-    return `<p>Analyse en cours de génération...</p>`;
+    throw error;
   }
 }
 
@@ -449,10 +523,13 @@ async function analyzeBurnout(responses: BurnoutResponse, email: string): Promis
   // Get knowledge context
   const criticalCategories = metrics.filter(m => m.value <= 4).map(m => m.key);
   const knowledgeContext = await getBurnoutKnowledge(phase, criticalCategories);
+  if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+    throw new Error("BURNOUT_KNOWLEDGE_CONTEXT_EMPTY");
+  }
 
   console.log(`[Burnout] Generating sections for ${email}, phase=${phase}, score=${globalScore}`);
 
-  // Generate sections with Gemini
+  // Generate sections with Claude
   const sectionData = { phase, phaseInfo, globalScore, metrics, protocols, knowledgeContext, clientName };
 
   const [introContent, analyseContent, protocoleContent, supplementsContent, conclusionContent] = await Promise.all([
@@ -512,15 +589,13 @@ async function analyzeBurnout(responses: BurnoutResponse, email: string): Promis
     globalScore,
     phase,
     phaseLabel: phaseInfo.label,
+    phaseDescription: phaseInfo.description,
     clientName,
     generatedAt: new Date().toISOString(),
     metrics,
     sections,
   };
 }
-
-// In-memory store
-const burnoutStore = new Map<string, BurnoutReportData & { email: string }>();
 
 export function registerBurnoutRoutes(app: Express): void {
   /**
@@ -544,13 +619,15 @@ export function registerBurnoutRoutes(app: Express): void {
 
       const result = await analyzeBurnout(responses, email);
 
-      // Generate ID and store
-      const id = `burnout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      burnoutStore.set(id, { ...result, email });
+      const record = await storage.createBurnoutReport({
+        email,
+        responses,
+        report: result,
+      });
 
-      console.log(`[Burnout] Result: ID=${id}, Phase=${result.phase}, Score=${result.globalScore}`);
+      console.log(`[Burnout] Result: ID=${record.id}, Phase=${result.phase}, Score=${result.globalScore}`);
 
-      res.json({ success: true, id, ...result });
+      res.json({ success: true, id: record.id });
     } catch (error) {
       console.error("[Burnout] Analysis error:", error);
       res.status(500).json({ error: "Erreur lors de l'analyse" });
@@ -563,14 +640,13 @@ export function registerBurnoutRoutes(app: Express): void {
   app.get("/api/burnout-detection/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const result = burnoutStore.get(id);
-
-      if (result) {
-        res.json(result);
+      const record = await storage.getBurnoutReport(id);
+      if (!record) {
+        res.status(404).json({ error: "Analyse non trouvée" });
         return;
       }
 
-      res.status(404).json({ error: "Analyse non trouvée" });
+      res.json({ ...record.report, email: record.email });
     } catch (error) {
       console.error("[Burnout] Fetch error:", error);
       res.status(500).json({ error: "Erreur serveur" });
@@ -595,15 +671,62 @@ export function registerBurnoutRoutes(app: Express): void {
       });
 
       const result = await analyzeBurnout(testResponses, "test@example.com");
-      const id = `burnout-test-${Date.now()}`;
-      burnoutStore.set(id, { ...result, email: "test@example.com" });
+      const record = await storage.createBurnoutReport({
+        email: "test@example.com",
+        responses: testResponses,
+        report: result,
+      });
 
-      console.log(`[Burnout] Test created: ID=${id}`);
+      console.log(`[Burnout] Test created: ID=${record.id}`);
 
-      res.json({ success: true, id, url: `/burnout/${id}`, ...result });
+      res.json({ success: true, id: record.id, url: `/burnout/${record.id}` });
     } catch (error) {
       console.error("[Burnout] Create test error:", error);
       res.status(500).json({ error: "Erreur création test" });
+    }
+  });
+
+  app.post("/api/burnout-detection/save-progress", async (req, res) => {
+    try {
+      const { email, currentSection, totalSections, responses } = req.body;
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ error: "Email invalide" });
+        return;
+      }
+      if (typeof currentSection !== "number") {
+        res.status(400).json({ error: "Section invalide" });
+        return;
+      }
+
+      const progress = await storage.saveBurnoutProgress({
+        email,
+        currentSection,
+        totalSections,
+        responses: responses || {},
+      });
+      res.json({ success: true, progress });
+    } catch (error) {
+      console.error("[Burnout] Save progress error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/burnout-detection/progress/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ error: "Email invalide" });
+        return;
+      }
+      const progress = await storage.getBurnoutProgress(email);
+      if (!progress) {
+        res.json({ success: true, progress: null });
+        return;
+      }
+      res.json({ success: true, progress });
+    } catch (error) {
+      console.error("[Burnout] Fetch progress error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
   });
 }

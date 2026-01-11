@@ -49,14 +49,14 @@ Parce que je veux te prouver que mon système marche AVANT que tu sortes ta cart
 
 ---
 
-## 2. ANABOLIC BIOSCAN - 49€ (MON BEST-SELLER)
+## 2. ANABOLIC BIOSCAN - 59€ (MON BEST-SELLER)
 
 ### C'EST QUOI ?
 L'audit métabolique complet - celui que je faisais en coaching one-to-one à 300€/mois. Tu reçois un rapport de ~25 pages avec des protocoles que j'ai testés sur des centaines de clients. C'est comme avoir mon cerveau de coach dans un PDF.
 
 ### LES ÉTAPES EXACTES:
 1. **Tu choisis Anabolic Bioscan** (depuis le dashboard ou la landing page)
-2. **Tu paies 49€** via Stripe (carte ou Apple/Google Pay, 30 secondes)
+2. **Tu paies 59€** via Stripe (carte ou Apple/Google Pay, 30 secondes)
 3. **Tu déverrouilles 100 questions supplémentaires** (total = 150 questions, 35-40 minutes)
    - Questions genre-spécifiques (hommes: testostérone, libido, érections | femmes: cycle, SOPK, thyroïde)
    - Axes cliniques approfondis (thyroïde T3/T4, SII, SIBO, candidose, adrenal fatigue)
@@ -183,7 +183,7 @@ L'audit métabolique complet - celui que je faisais en coaching one-to-one à 30
 - **Questionnaire terminé → Rapport reçu** : 24h max (souvent 12h)
 - **Support email si questions** : Réponse sous 48h
 
-### CE QUE TU NE REÇOIS PAS (réservé au Pro Panel 360):
+### CE QUE TU NE REÇOIS PAS (réservé à l'Ultimate Scan):
 ❌ Analyse photo (posture, composition corporelle)
 ❌ Sync wearables en temps réel
 ❌ Dashboard avancé avec tracking continu
@@ -199,14 +199,14 @@ L'audit métabolique complet - celui que je faisais en coaching one-to-one à 30
 
 ---
 
-## 3. PRO PANEL 360 - 99€ (L'ANALYSE ULTIME)
+## 3. ULTIMATE SCAN - 79€ (L'ANALYSE ULTIME)
 
 ### C'EST QUOI ?
-L'audit le plus complet du marché francophone. Ce que les cliniques d'optimisation humaine aux USA facturent $500-1000, je te le donne à 99€. Tu reçois un rapport de ~45 pages + analyse photo + sync wearables + dashboard temps réel. C'est comme avoir une équipe médicale qui t'analyse pendant 1 mois.
+L'audit le plus complet du marché francophone. Ce que les cliniques d'optimisation humaine aux USA facturent $500-1000, je te le donne à 79€. Tu reçois un rapport de ~45 pages + analyse photo + sync wearables + dashboard temps réel. C'est comme avoir une équipe médicale qui t'analyse pendant 1 mois.
 
 ### LES ÉTAPES EXACTES:
-1. **Tu choisis Pro Panel 360**
-2. **Tu paies 99€** via Stripe
+1. **Tu choisis Ultimate Scan**
+2. **Tu paies 79€** via Stripe
 3. **Tu déverrouilles TOUT le questionnaire** (210 questions, 45-60 minutes)
    - Tout l'Anabolic Bioscan +
    - Questions HRV & variabilité cardiaque avancées
@@ -479,8 +479,8 @@ Parce que les gens en burnout n'ont souvent plus de budget ou d'énergie pour d�
 | Offre | Prix | Questions | Rapport | Temps | Parfait pour |
 |-------|------|-----------|---------|-------|-------------|
 | **Discovery Scan** | 0€ | 50 | Dashboard interactif | 15 min | Découvrir le système |
-| **Anabolic Bioscan** | 49€ | 150 | 25 pages (17 sections) | 35 min | Optimisation complète |
-| **Pro Panel 360** | 99€ | 210 | 45 pages (25+ sections) + photos + wearables | 45 min | Performance ultime |
+| **Anabolic Bioscan** | 59€ | 150 | 25 pages (17 sections) | 35 min | Optimisation complète |
+| **Ultimate Scan** | 79€ | 210 | 45 pages (25+ sections) + photos + wearables | 45 min | Performance ultime |
 | **Blood Analysis** | 99€ | 0 (upload bilan) | 10-15 pages | 5 min upload | Optimisation sur data objectives |
 | **Burnout Engine** | 39€ | 80 | 8-10 pages | 20 min | Prévention/récupération burnout |
 
@@ -501,7 +501,7 @@ OUI. Chiffrement SSL/TLS, serveurs EU (RGPD), je ne vends JAMAIS tes données. T
 À VIE. Tu gardes l'accès pour toujours. Tu peux refaire les questionnaires plus tard pour comparer.
 
 **"Je peux upgrader plus tard ?"**
-OUI. Tu commences par le Discovery Scan gratuit, puis tu upgrades vers Anabolic ou Pro Panel. Tu ne paies que la différence.
+OUI. Tu commences par le Discovery Scan gratuit, puis tu upgrades vers Anabolic ou Ultimate Scan. Tu ne paies que la différence.
 
 ---
 

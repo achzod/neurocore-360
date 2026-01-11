@@ -78,6 +78,27 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
+const KNOWN_SOURCES = [
+  "Huberman",
+  "Peter Attia",
+  "Attia",
+  "Applied Metabolics",
+  "Stronger By Science",
+  "SBS",
+  "Examine",
+  "Renaissance Periodization",
+  "MPMD",
+  "Newsletter",
+  "ACHZOD",
+];
+
+function extractSourceMentions(context: string): string[] {
+  const lower = context.toLowerCase();
+  const matches = KNOWN_SOURCES.filter((source) => lower.includes(source.toLowerCase()));
+  return Array.from(new Set(matches));
+}
+
 // Initialize Anthropic client
 let anthropicClient: Anthropic | null = null;
 
@@ -413,6 +434,26 @@ ${photoAnalysisStr}
         }
       }
 
+      if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+        try {
+          knowledgeContext = await generateKnowledgeContext(clientData as Record<string, any>);
+          if (knowledgeContext) {
+            console.log(`[Claude] Knowledge context fallback loaded for section "${section}" (${knowledgeContext.length} chars)`);
+          }
+        } catch (kbError) {
+          console.log(`[Claude] Knowledge context fallback unavailable for "${section}": ${kbError}`);
+        }
+      }
+
+      if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+        throw new Error(`KNOWLEDGE_CONTEXT_EMPTY:${section}`);
+      }
+
+      const sourceMentions = extractSourceMentions(knowledgeContext);
+      const sourcesHint = sourceMentions.length > 0
+        ? `Cite explicitement au moins 2 sources parmi: ${sourceMentions.join(", ")}.`
+        : "Cite explicitement au moins 2 sources parmi: Huberman, Attia, Examine, Applied Metabolics, SBS, MPMD, Newsletter, ACHZOD.";
+
       // Calcul de la longueur cible basé sur le tier
       const targetChars = tier === 'GRATUIT'
         ? '3500-5000 caracteres (environ 90-130 lignes)' // Discovery Scan: 5-7 pages total
@@ -429,6 +470,7 @@ INSTRUCTIONS IMPORTANTES:
 - Evite les generalites - sois specifique
 - Structure clairement avec des paragraphes et listes
 - N'utilise pas de markdown (pas de ** ou ##)
+- Integre des references scientifiques reelles (sources de la knowledge base)
 
 LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Cette section doit contenir ${targetChars}
@@ -437,10 +479,9 @@ LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Inclus des mecanismes biologiques, des exemples concrets, des protocoles detailles
 - Si c'est une analyse: explique le POURQUOI, les MECANISMES, les CONSEQUENCES, les SOLUTIONS
 - Si c'est un protocole: detaille chaque etape minute par minute avec variantes
+- ${sourcesHint}
 
-${knowledgeContext ? `
 ${knowledgeContext}
-` : ""}
 ${PROMPT_SECTION.replace("{section}", section)
   .replace("{section_specific_instructions}", specificInstructions)
   .replace("{data}", fullDataStr)}`;

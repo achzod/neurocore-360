@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Anabolic Bioscan
- * Anabolic Design with React Animations - 59€
+ * Anabolic Bioscan Design with React Animations - 59€
  */
 
 import { useRef } from "react";

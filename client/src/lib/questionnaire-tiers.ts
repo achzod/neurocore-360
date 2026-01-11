@@ -1,9 +1,9 @@
 /**
  * NEUROCORE 360 - Système de Questionnaire 3 Tiers
  *
- * GRATUIT (0€): ~60 questions - Dashboard basique
- * ANABOLIC BIOSCAN (59€): ~140 questions - Rapport Achzod complet
- * ULTIMATE SCAN (79€): ~180 questions - Rapport complet + Terra Wearables + Analyse Photo
+ * GRATUIT (Discovery Scan, 0€): ~66 questions - Dashboard basique
+ * ANABOLIC BIOSCAN (59€): ~137 questions - Rapport Achzod 18 sections
+ * ULTIMATE SCAN (79€): ~183 questions - Rapport 25 sections + Wearables + Analyse Photo
  *
  * Chaque question a un champ `tier`:
  * - "free" = disponible pour tous
@@ -13,7 +13,6 @@
 
 export type QuestionTier = "free" | "essential" | "elite";
 export type QuestionType = "text" | "number" | "email" | "select" | "radio" | "checkbox" | "textarea" | "photo" | "scale";
-export type PlanType = "gratuit" | "anabolic" | "ultimate";
 
 export interface QuestionOption {
   value: string;
@@ -28,12 +27,12 @@ export interface Question {
   tier: QuestionTier;
   options?: QuestionOption[];
   placeholder?: string;
-  required?: boolean;
+  helpText?: string;
   min?: number;
   max?: number;
   unit?: string;
-  helpText?: string;
-  showFor?: "homme" | "femme" | "all"; // Genre-specific questions
+  required?: boolean;
+  showFor?: "homme" | "femme"; // Genre-specific questions
   conditionalOn?: string; // Show only if this question has a certain answer
 }
 
@@ -51,7 +50,7 @@ export interface Section {
 // ============================================================================
 
 export const SECTIONS: Section[] = [
-  // FREE SECTIONS (9)
+  // FREE SECTIONS (10)
   { id: "profil-base", title: "Profil de Base", subtitle: "Informations générales", icon: "User", tier: "free", order: 1 },
   { id: "sante-historique", title: "Santé & Historique", subtitle: "Antécédents et blocages", icon: "Stethoscope", tier: "free", order: 2 },
   { id: "sommeil", title: "Sommeil", subtitle: "Qualité et habitudes", icon: "Moon", tier: "free", order: 3 },
@@ -72,17 +71,17 @@ export const SECTIONS: Section[] = [
   { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 16 },
   { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 17 },
 
-  // PRO PANEL 360 SECTIONS (+6)
-  { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 18 },
-  { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 19 },
-  { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 20 },
-  { id: "blessures-douleurs", title: "Blessures & Douleurs", subtitle: "Douleurs, mobilité, prévention", icon: "Bone", tier: "elite", order: 21 },
-  { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 22 },
-  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 23 },
+  // ULTIMATE SCAN SECTIONS (+6)
+  { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 17 },
+  { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 18 },
+  { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 19 },
+  { id: "blessures-douleurs", title: "Blessures & Douleurs", subtitle: "Douleurs, mobilité, prévention", icon: "Bone", tier: "elite", order: 20 },
+  { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 21 },
+  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 22 },
 ];
 
 // ============================================================================
-// QUESTIONS - FREE TIER (~50 questions)
+// QUESTIONS - FREE TIER (~66 questions)
 // ============================================================================
 
 export const QUESTIONS_FREE: Question[] = [
@@ -90,19 +89,19 @@ export const QUESTIONS_FREE: Question[] = [
   { id: "sexe", sectionId: "profil-base", type: "radio", label: "Tu es ?", tier: "free", options: [{ value: "homme", label: "Homme" }, { value: "femme", label: "Femme" }], required: true },
   { id: "prenom", sectionId: "profil-base", type: "text", label: "Ton prénom ?", tier: "free", placeholder: "Ex: Marc, Sophie...", required: true },
   { id: "email", sectionId: "profil-base", type: "email", label: "Ton email ?", tier: "free", placeholder: "pour recevoir ton rapport", required: true },
-  { id: "instagram", sectionId: "profil-base", type: "text", label: "Ton Instagram ? (optionnel)", tier: "free", placeholder: "@ton_pseudo", required: false },
-  { id: "age", sectionId: "profil-base", type: "number", label: "Ton âge ?", tier: "free", placeholder: "Ex: 32", min: 15, max: 99, required: true },
-  { id: "taille", sectionId: "profil-base", type: "number", label: "Ta taille (cm) ?", tier: "free", placeholder: "Ex: 175", min: 140, max: 220, unit: "cm", required: true },
-  { id: "poids", sectionId: "profil-base", type: "number", label: "Ton poids (kg) ?", tier: "free", placeholder: "Ex: 78", min: 40, max: 200, unit: "kg", required: true },
+  { id: "instagram", sectionId: "profil-base", type: "text", label: "Ton Instagram ? (optionnel)", tier: "free", placeholder: "@ton_pseudo" },
+  { id: "age", sectionId: "profil-base", type: "number", label: "Ton âge ?", tier: "free", min: 18, max: 100, unit: "ans", placeholder: "Ex: 29", required: true },
+  { id: "taille", sectionId: "profil-base", type: "number", label: "Ta taille ?", tier: "free", min: 140, max: 220, unit: "cm", placeholder: "Ex: 178", required: true },
+  { id: "poids", sectionId: "profil-base", type: "number", label: "Ton poids ?", tier: "free", min: 40, max: 200, unit: "kg", placeholder: "Ex: 72", required: true },
   { id: "objectif", sectionId: "profil-base", type: "select", label: "Ton objectif principal ?", tier: "free", options: [{ value: "perte-graisse", label: "Perte de graisse" }, { value: "prise-muscle", label: "Prise de muscle" }, { value: "recomposition", label: "Recomposition" }, { value: "performance", label: "Performance" }, { value: "sante", label: "Santé générale" }, { value: "energie", label: "Plus d'énergie" }], required: true },
 
   // SANTÉ & HISTORIQUE (6 questions)
-  { id: "diagnostic-medical", sectionId: "sante-historique", type: "checkbox", label: "Diagnostic médical connu ?", tier: "free", options: [{ value: "thyroide", label: "Thyroïde" }, { value: "diabete", label: "Diabète/prédiabète" }, { value: "sopk", label: "SOPK" }, { value: "hypogonadisme", label: "Hypogonadisme" }, { value: "autre", label: "Autre" }, { value: "aucun", label: "Aucun" }], required: true },
-  { id: "traitement-medical", sectionId: "sante-historique", type: "select", label: "Traitement affectant poids/énergie ?", tier: "free", options: [{ value: "non", label: "Non" }, { value: "oui-hormones", label: "Oui (hormones)" }, { value: "oui-antidep", label: "Oui (antidépresseurs)" }, { value: "oui-autre", label: "Oui (autre)" }], required: true },
-  { id: "bilan-sanguin-recent", sectionId: "sante-historique", type: "select", label: "Bilan sanguin récent ?", tier: "free", options: [{ value: "jamais", label: "Jamais fait" }, { value: "plus-1an", label: "+1 an" }, { value: "moins-1an", label: "Moins d'1 an" }, { value: "moins-6mois", label: "Moins de 6 mois" }], required: true },
-  { id: "plateau-metabolique", sectionId: "sante-historique", type: "select", label: "Déjà eu un plateau (bloqué malgré régime/sport) ?", tier: "free", options: [{ value: "jamais", label: "Jamais" }, { value: "une-fois", label: "Oui, une fois" }, { value: "plusieurs", label: "Plusieurs fois" }, { value: "actuellement", label: "Actuellement" }], required: true },
-  { id: "tca-historique", sectionId: "sante-historique", type: "select", label: "Troubles alimentaires passés/actuels ?", tier: "free", options: [{ value: "jamais", label: "Jamais" }, { value: "passe", label: "Dans le passé" }, { value: "actuel", label: "Actuellement" }], required: true },
-  { id: "experience-sportive", sectionId: "sante-historique", type: "select", label: "Expérience sportive ?", tier: "free", options: [{ value: "debutant", label: "Débutant (<1 an)" }, { value: "intermediaire", label: "Intermédiaire (1-3 ans)" }, { value: "avance", label: "Avancé (3+ ans)" }, { value: "expert", label: "Expert (5+ ans)" }], required: true },
+  { id: "diagnostic-medical", sectionId: "sante-historique", type: "checkbox", label: "Diagnostic médical connu ?", tier: "free", options: [{ value: "thyroide", label: "Thyroïde" }, { value: "diabete", label: "Diabète/prédiabète" }, { value: "sopk", label: "SOPK" }, { value: "hypogonadisme", label: "Hypogonadisme" }, { value: "autre", label: "Autre" }, { value: "aucun", label: "Aucun" }] },
+  { id: "traitement-medical", sectionId: "sante-historique", type: "select", label: "Traitement affectant poids/énergie ?", tier: "free", options: [{ value: "non", label: "Non" }, { value: "oui-hormones", label: "Oui (hormones)" }, { value: "oui-antidep", label: "Oui (antidépresseurs)" }, { value: "oui-autre", label: "Oui (autre)" }] },
+  { id: "bilan-sanguin-recent", sectionId: "sante-historique", type: "select", label: "Bilan sanguin récent ?", tier: "free", options: [{ value: "jamais", label: "Jamais fait" }, { value: "plus-1an", label: "+1 an" }, { value: "moins-1an", label: "Moins d'1 an" }, { value: "moins-6mois", label: "Moins de 6 mois" }] },
+  { id: "plateau-metabolique", sectionId: "sante-historique", type: "select", label: "Déjà eu un plateau (bloqué malgré régime/sport) ?", tier: "free", options: [{ value: "jamais", label: "Jamais" }, { value: "une-fois", label: "Oui, une fois" }, { value: "plusieurs", label: "Plusieurs fois" }, { value: "actuellement", label: "Actuellement" }] },
+  { id: "tca-historique", sectionId: "sante-historique", type: "select", label: "Troubles alimentaires passés/actuels ?", tier: "free", options: [{ value: "jamais", label: "Jamais" }, { value: "passe", label: "Dans le passé" }, { value: "actuel", label: "Actuellement" }] },
+  { id: "experience-sportive", sectionId: "sante-historique", type: "select", label: "Expérience sportive ?", tier: "free", options: [{ value: "debutant", label: "Débutant (<1 an)" }, { value: "intermediaire", label: "Intermédiaire (1-3 ans)" }, { value: "avance", label: "Avancé (3+ ans)" }, { value: "expert", label: "Expert (5+ ans)" }] },
 
   // SOMMEIL (6 questions)
   { id: "heures-sommeil", sectionId: "sommeil", type: "select", label: "Heures de sommeil par nuit ?", tier: "free", options: [{ value: "moins-5", label: "Moins de 5h" }, { value: "5-6", label: "5-6h" }, { value: "6-7", label: "6-7h" }, { value: "7-8", label: "7-8h" }, { value: "8+", label: "8h+" }] },
@@ -270,7 +269,7 @@ export const QUESTIONS_ESSENTIAL: Question[] = [
 ];
 
 // ============================================================================
-// QUESTIONS - PRO PANEL 360 (ajoutées aux ANABOLIC BIOSCAN)
+// QUESTIONS - ULTIMATE SCAN (ajoutées aux ANABOLIC BIOSCAN)
 // ============================================================================
 
 export const QUESTIONS_ELITE: Question[] = [
@@ -337,18 +336,6 @@ export const QUESTIONS_ELITE: Question[] = [
 // HELPER FUNCTIONS
 // ============================================================================
 
-export function getTierForPlan(plan: PlanType): QuestionTier {
-  switch (plan) {
-    case "gratuit":
-      return "free";
-    case "ultimate":
-      return "elite";
-    case "anabolic":
-    default:
-      return "essential";
-  }
-}
-
 /**
  * Get all questions for a specific tier
  */
@@ -378,49 +365,11 @@ export function getSectionsForTier(tier: QuestionTier): Section[] {
   }).sort((a, b) => a.order - b.order);
 }
 
-export function getSectionsForPlan(plan: PlanType): Section[] {
-  return getSectionsForTier(getTierForPlan(plan));
-}
-
-export function getQuestionsForSection(
-  sectionId: string,
-  tier: QuestionTier,
-  gender?: "homme" | "femme",
-  excludedIds: string[] = []
-) {
-  const excluded = new Set(excludedIds);
-  return getQuestionsForTier(tier).filter((q) => {
-    if (q.sectionId !== sectionId) return false;
-    if (excluded.has(q.id)) return false;
-    if (!q.showFor || q.showFor === "all") return true;
-    if (!gender) return true;
-    return q.showFor === gender;
-  });
-}
-
-export function getSectionProgress(
-  sectionId: string,
-  tier: QuestionTier,
-  responses: Record<string, unknown>,
-  gender?: "homme" | "femme",
-  excludedIds: string[] = []
-) {
-  const sectionQuestions = getQuestionsForSection(sectionId, tier, gender, excludedIds);
-  const answeredQuestions = sectionQuestions.filter(
-    (q) => responses[q.id] !== undefined && responses[q.id] !== ""
-  );
-  return {
-    total: sectionQuestions.length,
-    answered: answeredQuestions.length,
-    percentage: Math.round((answeredQuestions.length / sectionQuestions.length) * 100),
-  };
-}
-
 /**
  * Filter questions by gender
  */
 export function filterQuestionsByGender(questions: Question[], gender: "homme" | "femme"): Question[] {
-  return questions.filter(q => !q.showFor || q.showFor === "all" || q.showFor === gender);
+  return questions.filter(q => !q.showFor || q.showFor === gender);
 }
 
 /**

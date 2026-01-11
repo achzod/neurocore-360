@@ -1522,7 +1522,7 @@ ANABOLIC BIOSCAN (niveau intermediaire) :
 - Plan nutrition et entrainement adapte a ton profil hormonal
 - Roadmap 30-60-90 jours avec checkpoints
 
-ULTIMATE SCAN - PRO PANEL 360 (niveau expert) :
+ULTIMATE SCAN (niveau expert) :
 Tout l'Anabolic Bioscan + :
 - Analyse photo posturale et composition corporelle
 - Analyse biomecanique complete (psoas, diaphragme, sangle profonde)

@@ -216,7 +216,7 @@ export default function Press() {
               <p className="text-[#FCDD00] text-xs font-mono tracking-[0.3em] uppercase mb-4">
                 [ PLACEMENTS PREMIUM ]
               </p>
-              <h2 className="mb-4 text-3xl font-bold text-white">Placements presse</h2>
+              <h2 className="mb-4 text-3xl font-bold text-white">Placements Presse</h2>
               <p className="text-white/50">
                 Cliquez pour lire l'article sur chaque média
               </p>

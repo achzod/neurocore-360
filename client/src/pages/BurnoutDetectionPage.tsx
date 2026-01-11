@@ -3,7 +3,7 @@
  * Neuro-endocrine questionnaire with 50 questions
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -159,15 +159,67 @@ export default function BurnoutDetectionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<BurnoutResult | null>(null);
 
+  const totalSections = BURNOUT_SECTIONS.length;
   const currentSection = BURNOUT_SECTIONS[currentSectionIndex];
   const totalQuestions = BURNOUT_SECTIONS.reduce((acc, s) => acc + s.questions.length, 0);
   const answeredQuestions = Object.keys(responses).length;
   const progress = (answeredQuestions / totalQuestions) * 100;
 
   const isSectionComplete = currentSection?.questions.every((q) => responses[q.id]);
+  const isEmailValid = email.includes("@");
+
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("burnout_email");
+    if (!storedEmail) return;
+
+    const loadProgress = async () => {
+      try {
+        const response = await fetch(`/api/burnout-detection/progress/${encodeURIComponent(storedEmail)}`);
+        const data = await response.json();
+        if (data.success && data.progress) {
+          setEmail(storedEmail);
+          setResponses(data.progress.responses || {});
+          setCurrentSectionIndex(Number(data.progress.currentSection) || 0);
+          setStep("questions");
+          return;
+        }
+      } catch (err) {
+        console.error("Burnout progress load failed:", err);
+      }
+
+      const storedResponses = localStorage.getItem("burnout_responses");
+      const storedSection = localStorage.getItem("burnout_section");
+      if (storedResponses) {
+        setEmail(storedEmail);
+        setResponses(JSON.parse(storedResponses));
+        setCurrentSectionIndex(storedSection ? Number(storedSection) : 0);
+        setStep("questions");
+      }
+    };
+
+    loadProgress();
+  }, []);
 
   const handleResponse = (questionId: string, value: string) => {
     setResponses((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  const saveProgress = async (nextSection?: number, nextResponses?: Record<string, string>) => {
+    if (!email || !email.includes("@")) return;
+    try {
+      await fetch("/api/burnout-detection/save-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          currentSection: typeof nextSection === "number" ? nextSection : currentSectionIndex,
+          totalSections,
+          responses: nextResponses || responses,
+        }),
+      });
+    } catch (err) {
+      console.error("Burnout progress save failed:", err);
+    }
   };
 
   const handleNext = () => {
@@ -183,6 +235,36 @@ export default function BurnoutDetectionPage() {
       setCurrentSectionIndex((prev) => prev - 1);
     }
   };
+
+  useEffect(() => {
+    if (!email) return;
+    localStorage.setItem("burnout_email", email);
+    localStorage.setItem("burnout_responses", JSON.stringify(responses));
+    localStorage.setItem("burnout_section", String(currentSectionIndex));
+  }, [email, responses, currentSectionIndex]);
+
+  useEffect(() => {
+    if (!email || Object.keys(responses).length === 0) return;
+    const timer = setTimeout(() => {
+      saveProgress();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [responses]);
+
+  useEffect(() => {
+    if (!email) return;
+    saveProgress(currentSectionIndex);
+  }, [currentSectionIndex]);
+
+  useEffect(() => {
+    if (!email) return;
+    const interval = setInterval(() => {
+      if (Object.keys(responses).length > 0) {
+        saveProgress();
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [email, responses]);
 
   const handleSubmit = async () => {
     if (!email) {
@@ -209,17 +291,20 @@ export default function BurnoutDetectionPage() {
       const data = await response.json();
       // Redirect to the new Ultrahuman-style dashboard with the ID
       if (data.id) {
+        localStorage.removeItem("burnout_email");
+        localStorage.removeItem("burnout_responses");
+        localStorage.removeItem("burnout_section");
         setLocation(`/burnout/${data.id}`);
       } else {
-        // Fallback to localStorage if no ID
-        localStorage.setItem('burnoutResult', JSON.stringify(data));
-        setLocation('/burnout/latest');
+        throw new Error("Missing report ID");
       }
     } catch (error) {
-      // Fallback: calculate locally if API fails
-      const localResult = calculateBurnoutScore(responses);
-      localStorage.setItem('burnoutResult', JSON.stringify(localResult));
-      setLocation('/burnout/latest');
+      toast({
+        title: "Erreur d'analyse",
+        description: "Impossible de generer ton rapport pour le moment. Reessaie dans quelques minutes.",
+        variant: "destructive",
+      });
+      setStep("email");
     } finally {
       setIsProcessing(false);
     }
@@ -359,7 +444,7 @@ export default function BurnoutDetectionPage() {
             >
               <Badge className="mb-6 bg-purple-500/20 text-purple-600 border-purple-500/30">
                 <Brain className="mr-2 h-3 w-3" />
-                Burnout Detection - 49€
+                Burnout Detection - 39€
               </Badge>
 
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4">
@@ -390,10 +475,26 @@ export default function BurnoutDetectionPage() {
                 ))}
               </div>
 
+              <div className="max-w-md mx-auto text-left mb-6">
+                <Label htmlFor="email-intro">Ton email</Label>
+                <Input
+                  id="email-intro"
+                  type="email"
+                  placeholder="ton@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  On sauvegarde ta progression pour que tu puisses reprendre plus tard.
+                </p>
+              </div>
+
               <Button
                 size="lg"
                 className="gap-2 bg-purple-500 hover:bg-purple-600"
                 onClick={() => setStep("questions")}
+                disabled={!isEmailValid}
               >
                 Commencer l'evaluation
                 <ArrowRight className="h-5 w-5" />
@@ -531,7 +632,7 @@ export default function BurnoutDetectionPage() {
                     </div>
 
                     <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="text-3xl font-bold text-purple-500 mb-1">49€</div>
+                      <div className="text-3xl font-bold text-purple-500 mb-1">39€</div>
                       <p className="text-sm text-muted-foreground">Paiement unique</p>
                     </div>
 
@@ -549,7 +650,7 @@ export default function BurnoutDetectionPage() {
                       ) : (
                         <>
                           <Brain className="h-5 w-5" />
-                          Voir mes resultats - 49€
+                          Voir mes resultats - 39€
                         </>
                       )}
                     </Button>
@@ -718,7 +819,7 @@ export default function BurnoutDetectionPage() {
                   <p className="text-muted-foreground mb-6">
                     Decouvre nos programmes de coaching pour sortir du burnout durablement.
                   </p>
-                  <Link href="/offers/ultimate-scan">
+                  <Link href="/offers/pro-panel">
                     <Button size="lg" className="gap-2 bg-purple-500 hover:bg-purple-600">
                       Voir les coachings
                       <ArrowRight className="h-5 w-5" />

@@ -15,7 +15,7 @@ import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
 const PROGRESS_CHECK_INTERVAL_MS = 2 * 60 * 1000;
 
 // Minimum validation score to accept report
-const MIN_VALIDATION_SCORE = 60;
+const MIN_VALIDATION_SCORE = 75;
 
 /**
  * Report Job Manager - Handles async AI report generation with persistence
@@ -181,7 +181,8 @@ async function generateReportAsync(
 ): Promise<void> {
   const startTime = Date.now();
   console.log(`[ReportJobManager] Starting async generation for ${auditId}`);
-  const normalizedResponses = normalizeResponses(responses, { mode: "discovery" });
+  const normalizeMode = auditType === "GRATUIT" ? "discovery" : "analysis";
+  const normalizedResponses = normalizeResponses(responses, { mode: normalizeMode });
 
   try {
     await storage.createOrUpdateReportJob({

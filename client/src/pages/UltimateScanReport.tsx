@@ -1,6 +1,6 @@
 /**
- * APEXLABS - Ultimate Scan Report (Ultimate Tier)
- * Style Ultrahuman - Dashboard complet avec analyse photo et biomecanique
+ * APEXLABS - Ultimate Scan Report
+ * Style Ultrahuman - Dashboard Ultimate avec analyse photo et biomecanique
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,6 +8,7 @@ import { useParams, Link } from 'wouter';
 import { Sidebar } from '@/components/ultrahuman/Sidebar';
 import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
+import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, SectionContent, Metric } from '@/components/ultrahuman/types';
 import {
   Menu,
@@ -41,69 +42,7 @@ import {
   HeartPulse
 } from 'lucide-react';
 
-// Theme definitions - Gold for Ultimate
-const THEMES: Theme[] = [
-  {
-    id: 'ultrahuman',
-    name: 'M1 Black',
-    type: 'dark',
-    colors: {
-      primary: '#F59E0B', // Amber/Gold for Ultimate
-      background: '#000000',
-      surface: '#0a0a0a',
-      border: 'rgba(245, 158, 11, 0.15)',
-      text: '#FFFFFF',
-      textMuted: '#a1a1aa',
-      grid: 'rgba(245, 158, 11, 0.05)',
-      glow: 'rgba(245, 158, 11, 0.2)'
-    }
-  },
-  {
-    id: 'metabolic',
-    name: 'Ice Blue',
-    type: 'dark',
-    colors: {
-      primary: '#38BDF8',
-      background: '#020617',
-      surface: '#0f172a',
-      border: 'rgba(56, 189, 248, 0.15)',
-      text: '#F1F5F9',
-      textMuted: '#94A3B8',
-      grid: 'rgba(56, 189, 248, 0.05)',
-      glow: 'rgba(56, 189, 248, 0.25)'
-    }
-  },
-  {
-    id: 'titanium',
-    name: 'Titanium Light',
-    type: 'light',
-    colors: {
-      primary: '#D97706',
-      background: '#F2F2F2',
-      surface: '#FFFFFF',
-      border: 'rgba(0, 0, 0, 0.08)',
-      text: '#171717',
-      textMuted: '#737373',
-      grid: 'rgba(0, 0, 0, 0.04)',
-      glow: 'rgba(0, 0, 0, 0.05)'
-    }
-  },
-  {
-    id: 'organic',
-    name: 'Sand Stone',
-    type: 'light',
-    colors: {
-      primary: '#D97706',
-      background: '#F0EFE9',
-      surface: '#E6E4DD',
-      border: 'rgba(217, 119, 6, 0.1)',
-      text: '#292524',
-      textMuted: '#78716C',
-      grid: 'rgba(217, 119, 6, 0.05)',
-      glow: 'rgba(217, 119, 6, 0.1)'
-    }
-  }
-];
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
 // Types
 interface SupplementProtocol {
@@ -336,7 +275,7 @@ const UltimateScanReport: React.FC = () => {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auditId || reviewRating === 0 || reviewComment.length < 10) {
+    if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
       setReviewError('Veuillez remplir tous les champs');
       return;
     }
@@ -349,7 +288,7 @@ const UltimateScanReport: React.FC = () => {
         body: JSON.stringify({
           auditId,
           email: reviewEmail,
-          auditType: 'ELITE',
+          auditType: 'ULTIMATE_SCAN',
           rating: reviewRating,
           comment: reviewComment
         })
@@ -770,7 +709,7 @@ const UltimateScanReport: React.FC = () => {
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Zap className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
                 <span className="text-sm font-medium uppercase tracking-wider" style={{ color: currentTheme.colors.primary }}>
-                  Accompagnement complet
+                  Accompagnement Ultimate
                 </span>
               </div>
               <h2 className="text-2xl font-bold mb-4">Coaching 1:1 avec Achzod</h2>

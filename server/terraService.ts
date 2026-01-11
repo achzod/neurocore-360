@@ -289,7 +289,7 @@ export async function generateTerraWidget(
   // Créer le reference_id avec le prefix du site pour le dispatcher
   // IMPORTANT: sanitize le userId pour éviter les caractères spéciaux qui cassent l'URL
   const sanitizedUserId = userId.replace(/[^a-zA-Z0-9-_]/g, '_');
-  const referenceId = `${sitePrefix}_${sanitizedUserId}`;
+  const referenceId = `${sitePrefix}_${sanitizedUserId}_${Date.now()}`;
 
   try {
     const response = await fetch(`${TERRA_CONFIG.BASE_URL}/auth/generateWidgetSession`, {

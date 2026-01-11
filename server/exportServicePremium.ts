@@ -131,9 +131,12 @@ export function generatePremiumHTMLFromTxt(
   const inferredTier: AuditTier =
     lowerTxt.includes('discovery scan') || lowerTxt.includes('analyse gratuite')
       ? 'GRATUIT'
+      : lowerTxt.includes('ultimate scan') || lowerTxt.includes('pro panel') || lowerTxt.includes('elite scan')
+      ? 'ELITE'
       : 'PREMIUM';
-  const ctaDebut = dashboard.ctaDebut || getCTADebut(inferredTier, PRICING.PREMIUM);
-  const ctaFin = dashboard.ctaFin || getCTAFin(inferredTier, PRICING.PREMIUM);
+  const ctaAmount = inferredTier === 'ELITE' ? PRICING.ELITE : PRICING.PREMIUM;
+  const ctaDebut = dashboard.ctaDebut || getCTADebut(inferredTier, ctaAmount);
+  const ctaFin = dashboard.ctaFin || getCTAFin(inferredTier, ctaAmount);
 
   return `<!DOCTYPE html>
 <html lang="fr">

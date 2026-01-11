@@ -253,22 +253,31 @@ export async function registerRoutes(
           responses: data.responses,
         });
 
-        const result = await analyzeDiscoveryScan(data.responses as any);
-        const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
+        try {
+          const result = await analyzeDiscoveryScan(data.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
 
-        await storage.updateAudit(audit.id, {
-          narrativeReport,
-          reportDeliveryStatus: "READY",
-        });
+          await storage.updateAudit(audit.id, {
+            narrativeReport,
+            reportDeliveryStatus: "READY",
+          });
 
-        const baseUrl = getBaseUrl();
-        const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
-        if (emailSent) {
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+          const baseUrl = getBaseUrl();
+          const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+          if (emailSent) {
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+            const clientName = (data.responses as any)?.prenom || data.email.split("@")[0];
+            await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+          }
+
+          res.json(audit);
+          return;
+        } catch (error) {
+          console.error("[Discovery Scan] Generation error:", error);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
+          return;
         }
-
-        res.json(audit);
-        return;
       }
       // Photos obligatoires UNIQUEMENT pour Ultimate Scan (ELITE)
       if (data.type === "ELITE" && !hasThreePhotos(data.responses)) {
@@ -1029,9 +1038,21 @@ export async function registerRoutes(
   // Get mapped Terra answers for questionnaire pre-fill
   app.get("/api/terra/answers/:email", async (req, res) => {
     try {
-      const records = await storage.getTerraDataByEmail(req.params.email);
+      const referenceId = typeof req.query.referenceId === "string" ? req.query.referenceId : "";
+      const sinceMs = typeof req.query.since === "string" ? Number(req.query.since) : null;
 
-      if (!records || records.length === 0) {
+      const records = referenceId
+        ? await storage.getTerraDataByReference(referenceId)
+        : await storage.getTerraDataByEmail(req.params.email);
+
+      const filteredRecords = sinceMs
+        ? records.filter((record) => {
+            const createdAt = record.createdAt ? new Date(record.createdAt).getTime() : 0;
+            return createdAt >= sinceMs;
+          })
+        : records;
+
+      if (!filteredRecords || filteredRecords.length === 0) {
         res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [] });
         return;
       }
@@ -1046,7 +1067,7 @@ export async function registerRoutes(
         calories: {},
       };
 
-      for (const record of records) {
+      for (const record of filteredRecords) {
         const data = record.data?.data?.[0] || record.data?.data || {};
 
         // HRV
@@ -1099,7 +1120,12 @@ export async function registerRoutes(
 
       // Map to questionnaire answers
       const mapped = mapTerraDataToAnswers(aggregated as any);
-      const providerKey = String(records[0]?.provider || "").toLowerCase();
+      if (Object.keys(mapped.answers).length === 0) {
+        res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [] });
+        return;
+      }
+
+      const providerKey = String(filteredRecords[0]?.provider || "").toLowerCase();
       const providerAnswers: Record<string, string> = {
         apple: "apple",
         garmin: "garmin",
@@ -1115,7 +1141,7 @@ export async function registerRoutes(
       res.json({
         success: true,
         hasData: true,
-        provider: records[0]?.provider || "WEARABLE",
+        provider: filteredRecords[0]?.provider || "WEARABLE",
         answers: mapped.answers,
         skippedQuestions: mapped.skippedQuestionIds,
         summary: mapped.summary,
@@ -1173,23 +1199,29 @@ export async function registerRoutes(
 
         await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING" });
 
-        // Generate new Discovery Scan report with AI content
-        const result = await analyzeDiscoveryScan(audit.responses as any);
-        const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+        try {
+          // Generate new Discovery Scan report with AI content
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
 
-        await storage.updateAudit(auditId, {
-          narrativeReport,
-          reportDeliveryStatus: "READY"
-        });
+          await storage.updateAudit(auditId, {
+            narrativeReport,
+            reportDeliveryStatus: "READY"
+          });
 
-        console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
+          console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
 
-        res.json({
-          success: true,
-          message: "Discovery Scan regenere",
-          auditId,
-          narrativeReport
-        });
+          res.json({
+            success: true,
+            message: "Discovery Scan regenere",
+            auditId,
+            narrativeReport
+          });
+        } catch (genError) {
+          console.error("[Regenerate] Discovery Scan generation error:", genError);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
+        }
         return;
       }
 
@@ -1686,7 +1718,7 @@ export async function registerRoutes(
       const review = await reviewStorage.createReview(data as any);
 
       // Notify admin of new review to validate
-      const auditType = (audit.planType as string) || "DISCOVERY";
+      const auditType = parsed.auditType || "DISCOVERY";
       sendAdminReviewNotification(
         data.email,
         auditType,
@@ -1944,6 +1976,26 @@ export async function registerRoutes(
           started_at TIMESTAMP DEFAULT NOW() NOT NULL,
           last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
+
+        `CREATE TABLE IF NOT EXISTS burnout_progress (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          current_section TEXT NOT NULL DEFAULT '0',
+          total_sections TEXT NOT NULL DEFAULT '6',
+          percent_complete TEXT NOT NULL DEFAULT '0',
+          responses JSONB NOT NULL DEFAULT '{}',
+          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
+
+        `CREATE TABLE IF NOT EXISTS burnout_reports (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL,
+          responses JSONB NOT NULL DEFAULT '{}',
+          report JSONB NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
         
         `CREATE TABLE IF NOT EXISTS magic_tokens (
           token VARCHAR(255) PRIMARY KEY,
@@ -1968,9 +2020,14 @@ export async function registerRoutes(
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
           audit_id VARCHAR(36) NOT NULL,
           user_id VARCHAR(36),
+          email VARCHAR(255) NOT NULL,
+          audit_type VARCHAR(50) NOT NULL,
           rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
           comment TEXT NOT NULL,
           status VARCHAR(20) NOT NULL DEFAULT 'pending',
+          promo_code VARCHAR(50),
+          promo_code_sent_at TIMESTAMP,
+          admin_notes TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           reviewed_at TIMESTAMP,
           reviewed_by VARCHAR(255)
@@ -2031,7 +2088,10 @@ export async function registerRoutes(
         `CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id)`,
         `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`,
         `CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`,
-        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`
+        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_burnout_progress_email ON burnout_progress(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_burnout_reports_email ON burnout_reports(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_burnout_reports_created_at ON burnout_reports(created_at)`
       ];
       
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
@@ -2446,29 +2506,37 @@ export async function registerRoutes(
         responses,
       });
 
-      // Generate analysis and convert to NarrativeReport format with AI content
-      const result = await analyzeDiscoveryScan(responses);
-      const narrativeReport = await convertToNarrativeReport(result, responses);
+      try {
+        // Generate analysis and convert to NarrativeReport format with AI content
+        const result = await analyzeDiscoveryScan(responses);
+        const narrativeReport = await convertToNarrativeReport(result, responses);
 
-      // Update audit with report (same format as PREMIUM/ELITE)
-      await storage.updateAudit(audit.id, {
-        narrativeReport,
-        reportDeliveryStatus: "READY"
-      });
+        // Update audit with report (same format as PREMIUM/ELITE)
+        await storage.updateAudit(audit.id, {
+          narrativeReport,
+          reportDeliveryStatus: "READY"
+        });
 
-      console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
+        console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
 
-      const baseUrl = getBaseUrl();
-      const emailSent = await sendReportReadyEmail(email, audit.id, audit.type, baseUrl);
-      if (emailSent) {
-        await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+        const baseUrl = getBaseUrl();
+        const emailSent = await sendReportReadyEmail(email, audit.id, audit.type, baseUrl);
+        if (emailSent) {
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+          const clientName = (responses as any)?.prenom || email.split("@")[0];
+          await sendAdminEmailNewAudit(email, clientName, audit.type, audit.id);
+        }
+
+        res.json({
+          success: true,
+          auditId: audit.id,
+          narrativeReport
+        });
+      } catch (error) {
+        console.error("[Discovery Scan] Create error (generation):", error);
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        res.status(500).json({ success: false, error: "Rapport en révision. Réessaie plus tard." });
       }
-
-      res.json({
-        success: true,
-        auditId: audit.id,
-        narrativeReport
-      });
     } catch (error: any) {
       console.error("[Discovery Scan] Create error:", error);
       res.status(500).json({

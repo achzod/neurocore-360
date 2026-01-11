@@ -12,6 +12,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { searchArticles, searchFullText } from './knowledge/storage';
+import { ALLOWED_SOURCES } from './knowledge/search';
 import { normalizeResponses } from './responseNormalizer';
 
 // ============================================
@@ -132,6 +133,25 @@ export interface BlockageAnalysis {
   consequences: string[]; // Métabo, hormonal, psycho, etc.
   sources: string[]; // Huberman, Attia, etc.
 }
+
+const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
+const MIN_DISCOVERY_SECTION_CHARS = 1200;
+const MIN_DISCOVERY_SECTION_LINES = 18;
+const SOURCE_MARKERS = [
+  "huberman",
+  "peter attia",
+  "attia",
+  "applied metabolics",
+  "stronger by science",
+  "sbs",
+  "examine",
+  "renaissance periodization",
+  "mpmd",
+  "newsletter",
+  "achzod",
+  "matthew walker",
+  "sapolsky",
+];
 
 // ============================================
 // SCORING FUNCTIONS
@@ -621,9 +641,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 
   try {
     // Search in knowledge base
-    const articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, [
-      'huberman', 'peter_attia', 'examine', 'marek_health', 'chris_masterjohn', 'rp'
-    ]);
+    const articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
 
     if (articles.length === 0) {
       return '';
@@ -923,14 +941,25 @@ async function generateSectionContentAI(
   const objectif = responses.objectif || 'tes objectifs';
   const sexe = responses.sexe || 'homme';
   const age = responses.age || 30;
+  const knowledgeLower = knowledgeContext.toLowerCase();
+
+  if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+    throw new Error(`[Discovery] Knowledge context manquant pour ${domain}`);
+  }
+
+  const availableSources = SOURCE_MARKERS.filter((marker) => knowledgeLower.includes(marker));
+  const sourcesHint =
+    availableSources.length > 0
+      ? availableSources.join(", ")
+      : "Huberman, Attia, Examine, Applied Metabolics, SBS, MPMD, Newsletter, ACHZOD";
 
   // Extract relevant responses for this domain
   const domainResponses = extractDomainResponses(domain, responses);
   const instructions = SECTION_INSTRUCTIONS[domain] || '';
 
   // GARDE-FOUS: Minimum 20 lines = ~1200 characters
-  const MIN_CONTENT_LENGTH = 1200;
-  const MIN_LINE_COUNT = 18;
+  const MIN_CONTENT_LENGTH = MIN_DISCOVERY_SECTION_CHARS;
+  const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
   const MAX_RETRIES = 3;
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
@@ -966,6 +995,7 @@ REGLES ABSOLUES:
 5. Connecte avec les autres systemes corporels (ex: cortisol affecte testosterone, sommeil affecte GH)
 6. Integre les donnees scientifiques de la knowledge base ci-dessus
 7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
+8. Cite explicitement au moins 2 sources parmi: ${sourcesHint}
 
 FORMAT OBLIGATOIRE:
 - JAMAIS de tiret long ou tiret cadratin (utilise : ou . a la place)
@@ -1006,19 +1036,20 @@ FORMAT OBLIGATOIRE:
       const lines = rawText.split(/\n+/).filter(l => l.trim().length > 30);
       const lineCount = lines.length;
       const charCount = rawText.length;
+      const sourcesUsed = SOURCE_MARKERS.filter((marker) => rawText.toLowerCase().includes(marker));
+      const hasSources = sourcesUsed.length > 0;
 
-      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines`);
+      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"}`);
 
       // VALIDATION: Check minimum length
-      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT) {
+      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT && hasSources) {
         console.log(`[Discovery] ✓ Section ${domain} VALIDATED (${charCount} chars, ${lineCount} lines)`);
         return cleanMarkdownToHTML(rawText);
       }
 
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
-        console.warn(`[Discovery] ⚠️ Section ${domain} still short after ${MAX_RETRIES} attempts (${charCount} chars, ${lineCount} lines). Using anyway.`);
-        return cleanMarkdownToHTML(rawText);
+        throw new Error(`[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"})`);
       }
 
       console.log(`[Discovery] ✗ Section ${domain} TOO SHORT (${charCount} chars, ${lineCount} lines < ${MIN_LINE_COUNT}). Retrying...`);
@@ -1109,13 +1140,14 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
 
   try {
     // Search with more keywords and get more articles
-    const articles = await searchArticles(keywords.slice(0, 5), 6);
+    const articles = await searchArticles(keywords.slice(0, 5), 6, ALLOWED_SOURCES as unknown as string[]);
 
     if (articles.length === 0) {
       // Try full-text search as fallback
-      const ftArticles = await searchFullText(domain, 4);
-      if (ftArticles.length > 0) {
-        return ftArticles.map(a =>
+      const ftArticles = await searchFullText(domain, 6);
+      const filteredFt = ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any));
+      if (filteredFt.length > 0) {
+        return filteredFt.map(a =>
           `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
         ).join('\n\n---\n\n');
       }
@@ -1263,6 +1295,10 @@ async function generateAISynthesis(
   blocages: BlockageAnalysis[],
   knowledgeContext: string
 ): Promise<string> {
+  if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+    throw new Error("[Discovery] Knowledge context manquant pour la synthese");
+  }
+
   const anthropic = new Anthropic();
 
   const blocagesSummary = blocages.map(b =>
@@ -1320,11 +1356,19 @@ RAPPELS CRITIQUES:
 
     const textContent = response.content.find(c => c.type === 'text');
     const rawText = textContent?.text || '';
+    const cleaned = cleanMarkdownToHTML(rawText);
+    const sourcesUsed = SOURCE_MARKERS.filter((marker) => cleaned.toLowerCase().includes(marker));
+    if (sourcesUsed.length === 0) {
+      throw new Error("[Discovery] Synthese sans sources detectees");
+    }
 
     // Post-process: convert markdown to clean HTML and remove artifacts
-    return cleanMarkdownToHTML(rawText);
+    return cleaned;
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
+    if (error instanceof Error && /knowledge|source/i.test(error.message)) {
+      throw error;
+    }
     return `Analyse détectée: ${blocages.length} blocages identifiés affectant ton objectif "${responses.objectif}".`;
   }
 }
@@ -1494,6 +1538,11 @@ export async function convertToNarrativeReport(
   });
 
   const aiContents = await Promise.all(aiContentPromises);
+  const invalidSections = aiContents.filter(({ content }) => !content || content.length < MIN_DISCOVERY_SECTION_CHARS);
+  if (invalidSections.length > 0) {
+    const names = invalidSections.map(s => s.domain).join(", ");
+    throw new Error(`[Discovery] Sections invalides ou vides: ${names}`);
+  }
   const aiContentMap = new Map(aiContents.map(({ domain, content }) => [domain, content]));
 
   console.log(`[Discovery] AI content generated for all sections`);

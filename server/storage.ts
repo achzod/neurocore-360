@@ -7,6 +7,7 @@ import type {
   InsertAudit,
   QuestionnaireProgress,
   SaveProgressInput,
+  AuditStatusEnum,
   ReportDeliveryStatusEnum,
   ReportJob,
   ReportJobStatusEnum,
@@ -69,6 +70,33 @@ export interface EmailTracking {
   clickedAt: Date | null;
 }
 
+export interface BurnoutProgress {
+  id: string;
+  email: string;
+  currentSection: number;
+  totalSections: number;
+  percentComplete: number;
+  responses: Record<string, unknown>;
+  status: AuditStatusEnum;
+  startedAt: Date | string;
+  lastActivityAt: Date | string;
+}
+
+export interface SaveBurnoutProgressInput {
+  email: string;
+  currentSection: number;
+  totalSections?: number;
+  responses: Record<string, unknown>;
+}
+
+export interface BurnoutReportRecord {
+  id: string;
+  email: string;
+  responses: Record<string, unknown>;
+  report: Record<string, unknown>;
+  createdAt: Date | string;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -85,6 +113,11 @@ export interface IStorage {
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
   saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress>;
   getAllIncompleteProgress(): Promise<QuestionnaireProgress[]>;
+
+  getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined>;
+  saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress>;
+  createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: Record<string, unknown> }): Promise<BurnoutReportRecord>;
+  getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
 
   createMagicToken(email: string): Promise<string>;
   verifyMagicToken(token: string): Promise<string | null>;
@@ -119,6 +152,8 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private audits: Map<string, Audit>;
   private progress: Map<string, QuestionnaireProgress>;
+  private burnoutProgress: Map<string, BurnoutProgress>;
+  private burnoutReports: Map<string, BurnoutReportRecord>;
   private magicTokens: Map<string, MagicToken>;
   private reportArtifacts: ReportArtifact[];
   private promoCodes: Map<string, PromoCode>;
@@ -128,6 +163,8 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.audits = new Map();
     this.progress = new Map();
+    this.burnoutProgress = new Map();
+    this.burnoutReports = new Map();
     this.magicTokens = new Map();
     this.reportArtifacts = [];
     this.promoCodes = new Map();
@@ -280,6 +317,48 @@ export class MemStorage implements IStorage {
     return Array.from(this.progress.values())
       .filter(p => p.status === "IN_PROGRESS")
       .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime());
+  }
+
+  async getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined> {
+    return this.burnoutProgress.get(email);
+  }
+
+  async saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress> {
+    const existing = this.burnoutProgress.get(input.email);
+    const totalSections = input.totalSections ?? 6;
+    const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
+
+    const progress: BurnoutProgress = {
+      id: existing?.id || randomUUID(),
+      email: input.email,
+      currentSection: input.currentSection,
+      totalSections,
+      percentComplete,
+      responses: input.responses,
+      status: input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS",
+      startedAt: existing?.startedAt || new Date(),
+      lastActivityAt: new Date(),
+    };
+
+    this.burnoutProgress.set(input.email, progress);
+    return progress;
+  }
+
+  async createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: Record<string, unknown> }): Promise<BurnoutReportRecord> {
+    const id = randomUUID();
+    const record: BurnoutReportRecord = {
+      id,
+      email: input.email,
+      responses: input.responses,
+      report: input.report,
+      createdAt: new Date(),
+    };
+    this.burnoutReports.set(id, record);
+    return record;
+  }
+
+  async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
+    return this.burnoutReports.get(id);
   }
 
   private calculateScores(responses: Record<string, unknown>): Record<string, number> {
@@ -680,6 +759,116 @@ export class PgStorage implements IStorage {
     }));
   }
 
+  async getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined> {
+    await this.ensureBurnoutProgressTable();
+    const result = await pool.query("SELECT * FROM burnout_progress WHERE email = $1", [email]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      currentSection: parseInt(row.current_section),
+      totalSections: parseInt(row.total_sections),
+      percentComplete: parseInt(row.percent_complete),
+      responses: row.responses || {},
+      status: row.status,
+      startedAt: row.started_at,
+      lastActivityAt: row.last_activity_at,
+    };
+  }
+
+  async saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress> {
+    await this.ensureBurnoutProgressTable();
+    const existing = await this.getBurnoutProgress(input.email);
+    const totalSections = input.totalSections ?? 6;
+    const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
+    const status: AuditStatusEnum = input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS";
+
+    if (existing) {
+      const result = await pool.query(
+        `UPDATE burnout_progress SET current_section = $1, total_sections = $2, percent_complete = $3, responses = $4, status = $5, last_activity_at = NOW() WHERE email = $6 RETURNING *`,
+        [
+          input.currentSection.toString(),
+          totalSections.toString(),
+          percentComplete.toString(),
+          JSON.stringify(input.responses || {}),
+          status,
+          input.email,
+        ]
+      );
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        email: row.email,
+        currentSection: parseInt(row.current_section),
+        totalSections: parseInt(row.total_sections),
+        percentComplete: parseInt(row.percent_complete),
+        responses: row.responses || {},
+        status: row.status,
+        startedAt: row.started_at,
+        lastActivityAt: row.last_activity_at,
+      };
+    }
+
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO burnout_progress (id, email, current_section, total_sections, percent_complete, responses, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        id,
+        input.email,
+        input.currentSection.toString(),
+        totalSections.toString(),
+        percentComplete.toString(),
+        JSON.stringify(input.responses || {}),
+        status,
+      ]
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      currentSection: parseInt(row.current_section),
+      totalSections: parseInt(row.total_sections),
+      percentComplete: parseInt(row.percent_complete),
+      responses: row.responses || {},
+      status: row.status,
+      startedAt: row.started_at,
+      lastActivityAt: row.last_activity_at,
+    };
+  }
+
+  async createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: Record<string, unknown> }): Promise<BurnoutReportRecord> {
+    await this.ensureBurnoutReportsTable();
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO burnout_reports (id, email, responses, report) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [id, input.email, JSON.stringify(input.responses || {}), JSON.stringify(input.report)]
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      responses: row.responses || {},
+      report: row.report || {},
+      createdAt: row.created_at,
+    };
+  }
+
+  async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
+    await this.ensureBurnoutReportsTable();
+    const result = await pool.query("SELECT * FROM burnout_reports WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      responses: row.responses || {},
+      report: row.report || {},
+      createdAt: row.created_at,
+    };
+  }
+
   async createMagicToken(email: string): Promise<string> {
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -982,6 +1171,8 @@ export class PgStorage implements IStorage {
   // ==================== TERRA DATA STORAGE ====================
 
   private ensuredTerraTable = false;
+  private ensuredBurnoutProgressTable = false;
+  private ensuredBurnoutReportsTable = false;
 
   private async ensureTerraDataTable(): Promise<void> {
     if (this.ensuredTerraTable) return;
@@ -1004,6 +1195,51 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error creating terra_data table:", err);
       this.ensuredTerraTable = true;
+    }
+  }
+
+  private async ensureBurnoutProgressTable(): Promise<void> {
+    if (this.ensuredBurnoutProgressTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS burnout_progress (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          current_section TEXT NOT NULL DEFAULT '0',
+          total_sections TEXT NOT NULL DEFAULT '6',
+          percent_complete TEXT NOT NULL DEFAULT '0',
+          responses JSONB NOT NULL DEFAULT '{}',
+          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_burnout_progress_email ON burnout_progress(email)`);
+      this.ensuredBurnoutProgressTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating burnout_progress table:", err);
+      this.ensuredBurnoutProgressTable = true;
+    }
+  }
+
+  private async ensureBurnoutReportsTable(): Promise<void> {
+    if (this.ensuredBurnoutReportsTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS burnout_reports (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL,
+          responses JSONB NOT NULL DEFAULT '{}',
+          report JSONB NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_burnout_reports_email ON burnout_reports(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_burnout_reports_created_at ON burnout_reports(created_at)`);
+      this.ensuredBurnoutReportsTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating burnout_reports table:", err);
+      this.ensuredBurnoutReportsTable = true;
     }
   }
 

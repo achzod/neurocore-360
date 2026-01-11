@@ -322,7 +322,7 @@ export default function AuditGratuit() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <Link href="/questionnaire">
+            <Link href="/questionnaire?plan=gratuit">
               <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 Commencer le scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -570,10 +570,10 @@ export default function AuditGratuit() {
             className="text-center mb-16"
           >
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-              Gratuit vs Anabolic Bioscan
+              Gratuit vs Anabolic
             </h2>
             <p className="text-white/50 text-lg">
-              Le Discovery Scan te donne le diagnostic. L'Anabolic Bioscan et l'Ultimate Scan te donnent les solutions.
+              Le Discovery Scan te donne le diagnostic. Les offres payantes te donnent les solutions.
             </p>
           </motion.div>
 
@@ -600,14 +600,14 @@ export default function AuditGratuit() {
                   </li>
                 ))}
               </ul>
-              <Link href="/questionnaire">
+              <Link href="/questionnaire?plan=gratuit">
                 <button className="w-full mt-8 bg-[#FCDD00] text-black font-semibold py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all">
                   Commencer
                 </button>
               </Link>
             </motion.div>
 
-            {/* Anabolic Bioscan */}
+            {/* Anabolic */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -657,7 +657,7 @@ export default function AuditGratuit() {
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
             5 minutes. 56 questions. Un diagnostic qui peut tout changer.
           </p>
-          <Link href="/questionnaire">
+          <Link href="/questionnaire?plan=gratuit">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Discovery Scan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
