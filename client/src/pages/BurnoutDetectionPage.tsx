@@ -863,7 +863,7 @@ export default function BurnoutDetectionPage() {
                   <p className="text-muted-foreground mb-6">
                     Decouvre nos programmes de coaching pour sortir du burnout durablement.
                   </p>
-                  <Link href="/offers/pro-panel">
+                  <Link href="/offers/ultimate-scan">
                     <Button size="lg" className="gap-2 bg-purple-500 hover:bg-purple-600">
                       Voir les coachings
                       <ArrowRight className="h-5 w-5" />

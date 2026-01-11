@@ -131,7 +131,7 @@ export function generatePremiumHTMLFromTxt(
   const inferredTier: AuditTier =
     lowerTxt.includes('discovery scan') || lowerTxt.includes('analyse gratuite')
       ? 'GRATUIT'
-      : lowerTxt.includes('ultimate scan') || lowerTxt.includes('pro panel') || lowerTxt.includes('elite scan')
+      : lowerTxt.includes('ultimate scan')
       ? 'ELITE'
       : 'PREMIUM';
   const ctaAmount = inferredTier === 'ELITE' ? PRICING.ELITE : PRICING.PREMIUM;

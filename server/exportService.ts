@@ -283,8 +283,8 @@ export function generateExportHTMLFromTxt(
   const inferTierFromTxt = (t: string): AuditTier => {
     const lower = t.toLowerCase();
     if (lower.includes("analyse gratuite") || lower.includes("discovery scan")) return "GRATUIT";
-    if (lower.includes("ultimate scan") || lower.includes("pro panel") || lower.includes("pro panel 360") || lower.includes("elite scan")) return "ELITE";
-    if (lower.includes("anabolic bioscan") || lower.includes("premium scan") || lower.includes("rappel important")) return "PREMIUM";
+    if (lower.includes("ultimate scan")) return "ELITE";
+    if (lower.includes("anabolic bioscan")) return "PREMIUM";
     // Par défaut on considère PREMIUM (sinon on sous-livre)
     return "PREMIUM";
   };
