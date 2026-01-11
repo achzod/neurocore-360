@@ -24,3 +24,4 @@ services:
       # - SESSION_SECRET (généré automatiquement ou random string)
       # - SMTP_USER (ton email SendPulse)
       # - SMTP_PASS (ton pass SendPulse)
+      # - STRIPE_BURNOUT_PRICE_ID (price_id Stripe pour Burnout Engine)

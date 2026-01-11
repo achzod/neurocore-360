@@ -499,7 +499,7 @@ ${photoAnalysisStr}
   const auditParts: string[] = [];
   const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
   auditParts.push(ctaDebut);
-  auditParts.push(`\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`);
+  auditParts.push(`\n AUDIT COMPLET APEXLABS - ${fullName.toUpperCase()} \n`);
   auditParts.push(`Genere le ${new Date().toLocaleString('fr-FR')}\n`);
 
   let newSectionsGenerated = 0;

@@ -149,7 +149,7 @@ function getReviewSection(dashboardLink: string): string {
       <div style="font-size: 32px; margin-bottom: 16px; letter-spacing: 4px;">★★★★★</div>
       <h3 style="color: ${COLORS.warning}; font-size: 18px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px;">Ton avis compte !</h3>
       <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 20px; line-height: 1.6;">
-        30 secondes pour noter ton experience.<br>Ton retour aide d'autres personnes a decouvrir NEUROCORE 360.
+        30 secondes pour noter ton experience.<br>Ton retour aide d'autres personnes a decouvrir APEXLABS.
       </p>
       ${getPrimaryButton('Laisser mon avis', `${dashboardLink}#review`, COLORS.warning)}
     </div>
@@ -588,7 +588,7 @@ export async function sendPremiumJ14Email(
           Derniere opportunite : -20%
         </h3>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-          Tu as fait ton analyse NEUROCORE 360. Tu as les informations. Il ne te manque plus que <strong style="color: ${COLORS.text};">l'accompagnement</strong> pour passer a l'action.
+          Tu as fait ton analyse APEXLABS. Tu as les informations. Il ne te manque plus que <strong style="color: ${COLORS.text};">l'accompagnement</strong> pour passer a l'action.
         </p>
         <div style="text-align: center; margin-bottom: 20px;">
           <span style="display: inline-block; background: ${COLORS.warning}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">

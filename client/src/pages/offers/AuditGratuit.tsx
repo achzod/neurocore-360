@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Discovery Scan
- * TRUE Ultrahuman Design - 56 questions, 10 domaines
+ * TRUE Ultrahuman Design - 66 questions, 10 domaines
  */
 
 import { useRef } from "react";
@@ -312,7 +312,7 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
           >
-            ~50 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion,
+            ~66 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion,
             entrainement, nutrition, lifestyle. J'identifie tes blocages metaboliques et hormonaux.
           </motion.p>
 
@@ -376,7 +376,7 @@ export default function AuditGratuit() {
                 Identifie ce qui te bloque vraiment.
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                56 questions ciblees analysent chaque aspect de ta sante : sommeil,
+                66 questions ciblees analysent chaque aspect de ta sante : sommeil,
                 hormones, digestion, stress, metabolisme, lifestyle. Je detecte
                 les desequilibres caches que tu ne soupconnes meme pas.
               </p>
@@ -655,7 +655,7 @@ export default function AuditGratuit() {
             <span className="text-[#FCDD00]">tes blocages ?</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            5 minutes. 56 questions. Un diagnostic qui peut tout changer.
+            5 minutes. 66 questions. Un diagnostic qui peut tout changer.
           </p>
           <Link href="/questionnaire?plan=gratuit">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">

@@ -1569,13 +1569,13 @@ export function generateFullAnalysis(responses: Responses): AnalysisResult {
 
   let globalSummary = "";
   if (global >= 75) {
-    globalSummary = "Ton profil NEUROCORE 360 revele des fondations excellentes. Tu es dans le top 20% des personnes que nous analysons. Les recommandations ci-dessous te permettront de passer du 'bien' a 'l'exceptionnel' en ciblant les quelques points d'optimisation restants.";
+    globalSummary = "Ton profil APEXLABS revele des fondations excellentes. Tu es dans le top 20% des personnes que nous analysons. Les recommandations ci-dessous te permettront de passer du 'bien' a 'l'exceptionnel' en ciblant les quelques points d'optimisation restants.";
   } else if (global >= 60) {
-    globalSummary = "Ton profil NEUROCORE 360 montre un potentiel significatif avec des zones d'optimisation claires. En adressant systematiquement les priorites identifiees, tu peux t'attendre a des gains notables en energie, composition corporelle et bien-etre general dans les 8-12 prochaines semaines.";
+    globalSummary = "Ton profil APEXLABS montre un potentiel significatif avec des zones d'optimisation claires. En adressant systematiquement les priorites identifiees, tu peux t'attendre a des gains notables en energie, composition corporelle et bien-etre general dans les 8-12 prochaines semaines.";
   } else if (global >= 45) {
-    globalSummary = "Ton profil NEUROCORE 360 met en evidence des domaines necessitant une attention immediate. La bonne nouvelle : avec les interventions ciblees que nous proposons, tu as un potentiel de transformation important. Concentre-toi sur les 3 priorites avant d'aller plus loin.";
+    globalSummary = "Ton profil APEXLABS met en evidence des domaines necessitant une attention immediate. La bonne nouvelle : avec les interventions ciblees que nous proposons, tu as un potentiel de transformation important. Concentre-toi sur les 3 priorites avant d'aller plus loin.";
   } else {
-    globalSummary = "Ton profil NEUROCORE 360 revele des desequilibres majeurs qui expliquent probablement beaucoup de tes symptomes actuels. C'est une base de travail precieuse : chaque zone identifiee est une opportunite d'amelioration concrete. Avec un plan structure, les progres seront visibles rapidement.";
+    globalSummary = "Ton profil APEXLABS revele des desequilibres majeurs qui expliquent probablement beaucoup de tes symptomes actuels. C'est une base de travail precieuse : chaque zone identifiee est une opportunite d'amelioration concrete. Avec un plan structure, les progres seront visibles rapidement.";
   }
 
   const executiveSummary = generateExecutiveSummary(global, sections, priorities, strengths, responses);
@@ -1632,7 +1632,7 @@ function generateExecutiveSummary(
     neurotransmetteurs: "Neurotransmetteurs",
   };
 
-  let summary = `Avec un score global de ${global}%, ton audit NEUROCORE 360 complete revele `;
+  let summary = `Avec un score global de ${global}%, ton audit APEXLABS complet revele `;
   
   if (global >= 70) {
     summary += "un profil globalement sain avec des opportunites d'optimisation ciblees. ";

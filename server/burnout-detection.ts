@@ -11,9 +11,15 @@ import { searchArticles } from "./knowledge/storage";
 import { ALLOWED_SOURCES } from "./knowledge/search";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { storage } from "./storage";
+import { getUncachableStripeClient } from "./stripeClient";
 
 // Initialize Anthropic client
 let anthropicClient: Anthropic | null = null;
+const BURNOUT_PRICE_ID = process.env.STRIPE_BURNOUT_PRICE_ID || "";
+
+function getBaseUrl(): string {
+  return process.env.BASE_URL || "https://neurocore-360.onrender.com";
+}
 
 function getAnthropicClient(): Anthropic {
   if (!anthropicClient) {
@@ -598,6 +604,119 @@ async function analyzeBurnout(responses: BurnoutResponse, email: string): Promis
 }
 
 export function registerBurnoutRoutes(app: Express): void {
+  /**
+   * POST /api/burnout-detection/create-checkout-session
+   */
+  app.post("/api/burnout-detection/create-checkout-session", async (req, res) => {
+    try {
+      const { responses, email } = req.body;
+
+      if (!responses || Object.keys(responses).length === 0) {
+        res.status(400).json({ error: "Aucune réponse fournie" });
+        return;
+      }
+
+      if (!email || !email.includes("@")) {
+        res.status(400).json({ error: "Email invalide" });
+        return;
+      }
+
+      if (!BURNOUT_PRICE_ID) {
+        res.status(503).json({
+          error: "Paiement indisponible",
+          message: "STRIPE_BURNOUT_PRICE_ID non configure",
+        });
+        return;
+      }
+
+      await storage.saveBurnoutProgress({
+        email,
+        currentSection: BURNOUT_CATEGORIES.length - 1,
+        totalSections: BURNOUT_CATEGORIES.length,
+        responses,
+      });
+
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = getBaseUrl();
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: BURNOUT_PRICE_ID,
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: `${baseUrl}/burnout-detection?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/burnout-detection?cancelled=true`,
+        customer_email: email,
+        metadata: {
+          email,
+          planType: "BURNOUT",
+        },
+      });
+
+      res.json({ success: true, sessionId: session.id, url: session.url });
+    } catch (error) {
+      console.error("[Burnout] Stripe checkout error:", error);
+      res.status(500).json({ error: "Erreur création session" });
+    }
+  });
+
+  /**
+   * POST /api/burnout-detection/confirm-session
+   */
+  app.post("/api/burnout-detection/confirm-session", async (req, res) => {
+    try {
+      const sessionId = req.body?.sessionId || req.query?.session_id;
+      if (!sessionId || typeof sessionId !== "string") {
+        res.status(400).json({ error: "sessionId requis" });
+        return;
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
+
+      const isPaid = session.payment_status === "paid" || session.status === "complete";
+      if (!isPaid) {
+        res.status(202).json({ success: false, status: session.payment_status || session.status });
+        return;
+      }
+
+      const email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        session.metadata?.email ||
+        "";
+
+      if (!email) {
+        res.status(400).json({ error: "Email introuvable" });
+        return;
+      }
+
+      const progress = await storage.getBurnoutProgress(email);
+      const responses = progress?.responses || {};
+      if (!responses || Object.keys(responses).length === 0) {
+        res.status(400).json({ error: "QUESTIONNAIRE_MISSING" });
+        return;
+      }
+
+      const result = await analyzeBurnout(responses as BurnoutResponse, email);
+      const record = await storage.createBurnoutReport({
+        email,
+        responses,
+        report: result,
+      });
+
+      res.json({ success: true, id: record.id });
+    } catch (error) {
+      console.error("[Burnout] Stripe confirmation error:", error);
+      res.status(500).json({ error: "Erreur confirmation paiement" });
+    }
+  });
+
   /**
    * POST /api/burnout-detection/analyze
    */

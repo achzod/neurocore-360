@@ -19,7 +19,7 @@ export function getCTADebut(tier: AuditTier, amountPaid: number = PRICING.PREMIU
   if (tier === 'GRATUIT') {
     return `INFOS IMPORTANTES
 
-Tu consultes actuellement l'analyse GRATUITE de ton profil NEUROCORE 360.
+Tu consultes actuellement l'analyse GRATUITE de ton profil APEXLABS.
 Cette version te donne un apercu de tes domaines cles et identifie tes priorites d'optimisation.
 
 Pour debloquer l'analyse COMPLETE avec tous les details, protocoles personnalises, stack de supplements detaillee et feuille de route precise, passe a l'Anabolic Bioscan.
@@ -37,7 +37,7 @@ Site: ${CONTACT.website}
   const tierLabel = tier === 'ELITE' ? "Ultimate Scan" : "Anabolic Bioscan";
   return `RAPPEL IMPORTANT
 
-Tu consultes ton analyse ${tierLabel} NEUROCORE 360 complete.
+Tu consultes ton analyse ${tierLabel} APEXLABS complete.
 
 IMPORTANT : Si tu decides de prendre un coaching avec moi apres cette analyse, le montant que tu as paye pour cette analyse (${amountPaid}EUR) sera DEDUIT A 100% du prix du coaching.
 
@@ -59,7 +59,7 @@ export function getCTAFin(tier: AuditTier, amountPaid: number = PRICING.PREMIUM)
 PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT
 ====================================================================
 
-Tu as entre les mains un apercu de ton profil NEUROCORE 360. Cette analyse gratuite t'a revele tes priorites. Maintenant, deux options :
+Tu as entre les mains un apercu de ton profil APEXLABS. Cette analyse gratuite t'a revele tes priorites. Maintenant, deux options :
 
 OPTION 1 : PASSE A L'ACTION AVEC ANABOLIC BIOSCAN (59 EUR)
 
@@ -95,7 +95,7 @@ Email: ${CONTACT.email}
 Site: ${CONTACT.website}
 
 ---
-Rapport genere par ACHZOD - NEUROCORE 360
+Rapport genere par ACHZOD - APEXLABS
 `;
   }
 
@@ -151,6 +151,6 @@ Email: ${CONTACT.email}
 Site: ${CONTACT.website}
 
 ---
-Rapport genere par ACHZOD - NEUROCORE 360
+Rapport genere par ACHZOD - APEXLABS
 `;
 }

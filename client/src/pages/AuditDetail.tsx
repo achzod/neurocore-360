@@ -37,6 +37,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
+import { AuditTypeDisplayNames } from "@shared/schema";
 
 interface SupplementProtocol {
   name: string;
@@ -674,7 +675,7 @@ export default function AuditDetail() {
                       {report.auditType === "ELITE" && <Zap className="mr-1 h-3 w-3" />}
                       {report.auditType === "PREMIUM" && <Crown className="mr-1 h-3 w-3" />}
                       {report.auditType === "GRATUIT" && <Star className="mr-1 h-3 w-3" />}
-                      Bilan {report.auditType}
+                      Bilan {AuditTypeDisplayNames[report.auditType] ?? report.auditType}
                     </Badge>
                     <h1 className="text-3xl font-bold tracking-tight">APEXLABS</h1>
                     <p className="text-slate-300 mt-1">Audit 360 Complet</p>

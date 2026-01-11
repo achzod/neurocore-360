@@ -545,21 +545,44 @@ function QuestionnaireContent() {
         setWearablesSyncShown(true);
 
         const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
+        const referenceId =
+          sessionStorage.getItem("terraReferenceId") ||
+          localStorage.getItem("terraReferenceId") ||
+          "";
+        const startedAtRaw =
+          sessionStorage.getItem("terraStartedAt") ||
+          localStorage.getItem("terraStartedAt") ||
+          "";
+        const startedAtMs = startedAtRaw ? Number(startedAtRaw) : NaN;
+        const startedAtValid = Number.isFinite(startedAtMs);
+        const maxSyncWindowMs = 6 * 60 * 60 * 1000;
+        const isStale = startedAtValid ? Date.now() - startedAtMs > maxSyncWindowMs : true;
+
+        if (!emailToCheck || !referenceId || !startedAtValid || isStale) {
+          setTerraConnected(false);
+          setTerraSkippedQuestions([]);
+          sessionStorage.removeItem("terraReferenceId");
+          sessionStorage.removeItem("terraStartedAt");
+          localStorage.removeItem("terraReferenceId");
+          localStorage.removeItem("terraStartedAt");
+          if (terraSuccess === "true" || wasConnecting === "true") {
+            toast({
+              title: "Connexion expiree",
+              description: "Ta tentative de synchronisation a expire. Reconnecte ton wearable pour pre-remplir les questions.",
+              variant: "destructive",
+              duration: 8000,
+            });
+          }
+          return;
+        }
+
         if (emailToCheck) {
-          const referenceId =
-            sessionStorage.getItem("terraReferenceId") ||
-            localStorage.getItem("terraReferenceId") ||
-            "";
-          const startedAt =
-            sessionStorage.getItem("terraStartedAt") ||
-            localStorage.getItem("terraStartedAt") ||
-            "";
           const query = new URLSearchParams();
-          if (referenceId) query.set("referenceId", referenceId);
-          if (startedAt) query.set("since", startedAt);
+          query.set("referenceId", referenceId);
+          query.set("since", String(startedAtMs));
 
           // Fetch mapped wearable answers
-          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}${query.toString() ? `?${query.toString()}` : ""}`)
+          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}?${query.toString()}`)
             .then(res => res.json())
             .then(data => {
               if (data.success && data.hasData) {
@@ -573,6 +596,8 @@ function QuestionnaireContent() {
                 if (data.skippedQuestions && data.skippedQuestions.length > 0) {
                   setTerraSkippedQuestions(data.skippedQuestions);
                   console.log("[Terra] Will skip", data.skippedQuestions.length, "questions");
+                } else {
+                  setTerraSkippedQuestions([]);
                 }
                 sessionStorage.removeItem("terraReferenceId");
                 sessionStorage.removeItem("terraStartedAt");
@@ -584,6 +609,7 @@ function QuestionnaireContent() {
                 });
               } else if (terraSuccess === "true") {
                 setTerraConnected(false);
+                setTerraSkippedQuestions([]);
                 // User connected but no data yet - might be SDK provider
                 toast({
                   title: "Connexion en cours...",
@@ -615,6 +641,7 @@ function QuestionnaireContent() {
       return apiRequest("POST", "/api/questionnaire/save-progress", {
         email,
         currentSection: currentSectionIndex,
+        totalSections: filteredSections.length,
         responses,
       });
     },
@@ -705,7 +732,7 @@ function QuestionnaireContent() {
     setResponses((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Si on est dans la section 0 et qu'on n'a pas encore confirmé le prénom, ne pas avancer
     if (currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed) {
       return;
@@ -729,6 +756,13 @@ function QuestionnaireContent() {
       setCurrentSectionIndex((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      if (emailSubmitted && email) {
+        try {
+          await saveProgressMutation.mutateAsync();
+        } catch {
+          // Best-effort save; proceed to checkout even if it fails.
+        }
+      }
       const responsesToSave = { ...responses };
       PHOTO_FIELDS.forEach((f) => delete responsesToSave[f]);
       localStorage.setItem("neurocore_responses", JSON.stringify(responsesToSave));
@@ -933,11 +967,11 @@ function QuestionnaireContent() {
                   <IconComponent className="h-6 w-6 text-primary" />
                   {currentSection.title}
                 </CardTitle>
-                <p className="text-muted-foreground">{currentSection.description}</p>
+                <p className="text-muted-foreground">{currentSection.subtitle}</p>
               </CardHeader>
               <CardContent className="space-y-8">
                 {/* Message d'importance pour la section Analyse Posturale */}
-                {currentSection.id === "analyse-posturale" && (
+                {currentSection.id === "analyse-photo" && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

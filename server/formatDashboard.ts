@@ -88,7 +88,7 @@ function normalizeTitle(title: string): string {
 }
 
 function extractClientName(txtContent: string): string {
-  const match = txtContent.match(/AUDIT COMPLET NEUROCORE 360 - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
+  const match = txtContent.match(/AUDIT COMPLET (?:NEUROCORE 360|APEXLABS) - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
   if (match) {
     return match[1].trim();
   }
@@ -133,7 +133,7 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
       const idx = txtContent.indexOf(marker);
       if (idx !== -1) {
         // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
-        const endMarkers = ['AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
+        const endMarkers = ['AUDIT COMPLET APEXLABS', 'AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
         let endIdx = txtContent.length;
         for (const endMarker of endMarkers) {
           const endPos = txtContent.indexOf(endMarker, idx + marker.length);

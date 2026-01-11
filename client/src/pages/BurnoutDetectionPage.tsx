@@ -151,7 +151,7 @@ interface BurnoutResult {
 
 export default function BurnoutDetectionPage() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [step, setStep] = useState<Step>("intro");
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -199,6 +199,54 @@ export default function BurnoutDetectionPage() {
 
     loadProgress();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const success = params.get("success");
+    const cancelled = params.get("cancelled");
+
+    if (cancelled === "true") {
+      toast({
+        title: "Paiement annule",
+        description: "Tu peux reprendre quand tu veux pour finaliser ton rapport.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
+    if (success === "true" && sessionId) {
+      setStep("processing");
+      setIsProcessing(true);
+      fetch("/api/burnout-detection/confirm-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.id) {
+            localStorage.removeItem("burnout_email");
+            localStorage.removeItem("burnout_responses");
+            localStorage.removeItem("burnout_section");
+            window.history.replaceState({}, "", window.location.pathname);
+            setLocation(`/burnout/${data.id}`);
+            return;
+          }
+          throw new Error(data?.error || "Validation paiement echouee");
+        })
+        .catch(() => {
+          setStep("email");
+          toast({
+            title: "Erreur de paiement",
+            description: "Impossible de valider le paiement. Reessaie.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => setIsProcessing(false));
+    }
+  }, [location, setLocation, toast]);
 
   const handleResponse = (questionId: string, value: string) => {
     setResponses((prev) => ({ ...prev, [questionId]: value }));
@@ -280,28 +328,25 @@ export default function BurnoutDetectionPage() {
     setIsProcessing(true);
 
     try {
-      const response = await fetch("/api/burnout-detection/analyze", {
+      await saveProgress(currentSectionIndex, responses);
+      const response = await fetch("/api/burnout-detection/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ responses, email }),
       });
 
-      if (!response.ok) throw new Error("Analysis failed");
+      if (!response.ok) throw new Error("Checkout failed");
 
       const data = await response.json();
-      // Redirect to the new Ultrahuman-style dashboard with the ID
-      if (data.id) {
-        localStorage.removeItem("burnout_email");
-        localStorage.removeItem("burnout_responses");
-        localStorage.removeItem("burnout_section");
-        setLocation(`/burnout/${data.id}`);
-      } else {
-        throw new Error("Missing report ID");
+      if (data.url) {
+        window.location.href = data.url;
+        return;
       }
+      throw new Error(data.error || "Missing checkout URL");
     } catch (error) {
       toast({
-        title: "Erreur d'analyse",
-        description: "Impossible de generer ton rapport pour le moment. Reessaie dans quelques minutes.",
+        title: "Erreur de paiement",
+        description: "Impossible de lancer le paiement pour le moment. Reessaie dans quelques minutes.",
         variant: "destructive",
       });
       setStep("email");
@@ -614,8 +659,7 @@ export default function BurnoutDetectionPage() {
 
                   <h2 className="text-xl font-bold mb-2">Questionnaire termine</h2>
                   <p className="text-muted-foreground mb-6">
-                    Entre ton email pour recevoir ton rapport complet et ton protocole
-                    de sortie personnalise.
+                    Entre ton email pour recevoir ton rapport complet et passer au paiement securise.
                   </p>
 
                   <div className="space-y-4">
@@ -645,12 +689,12 @@ export default function BurnoutDetectionPage() {
                       {isProcessing ? (
                         <>
                           <Loader2 className="h-5 w-5 animate-spin" />
-                          Analyse en cours...
+                          Redirection...
                         </>
                       ) : (
                         <>
                           <Brain className="h-5 w-5" />
-                          Voir mes resultats - 39€
+                          Proceder au paiement - 39€
                         </>
                       )}
                     </Button>
@@ -676,7 +720,7 @@ export default function BurnoutDetectionPage() {
                   </div>
                   <h2 className="text-xl font-bold mb-2">Analyse en cours...</h2>
                   <p className="text-muted-foreground">
-                    Calcul du score de burnout et generation du protocole personnalise.
+                    Validation du paiement et generation du protocole personnalise.
                   </p>
                 </CardContent>
               </Card>

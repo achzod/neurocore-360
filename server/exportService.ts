@@ -467,7 +467,7 @@ export function generateExportHTMLFromTxt(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEUROCORE 360 - ${dashboard.clientName}</title>
+  <title>APEXLABS - ${dashboard.clientName}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
@@ -1302,7 +1302,7 @@ export function generateExportHTMLFromTxt(
         Ton avis compte enormement
       </h3>
       <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.7; margin-bottom: 24px;">
-        Tu viens de recevoir ton audit NEUROCORE 360.<br>
+        Tu viens de recevoir ton audit APEXLABS.<br>
         Prends 30 secondes pour noter ton experience et aider d'autres personnes a decouvrir cet outil.
       </p>
 
@@ -1335,7 +1335,7 @@ export function generateExportHTMLFromTxt(
       </div>
     </div>
 
-    <!-- CTA Premium - Coaching avec déduction NEUROCORE -->
+    <!-- CTA Premium - Coaching avec déduction APEXLABS -->
     <div style="max-width: 1100px; margin: 48px auto 60px; padding: 0 16px;">
 
       <!-- Intro - Pourquoi les gens stagnent -->
@@ -1347,7 +1347,7 @@ export function generateExportHTMLFromTxt(
           <strong style="color: var(--text);">L'information sans application = frustration.</strong>
         </p>
         <div style="margin-top: 20px; padding: 16px 32px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 12px; display: inline-block;">
-          <span style="color: #0B0B0F; font-weight: 800; font-size: 1.1rem;">TES 79€ NEUROCORE SONT DÉDUITS À 100% DU COACHING</span>
+          <span style="color: #0B0B0F; font-weight: 800; font-size: 1.1rem;">TES 79€ D'AUDIT APEXLABS SONT DÉDUITS À 100% DU COACHING</span>
         </div>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 12px;">Tu ne paies pas deux fois. L'audit devient ton ticket d'entrée.</p>
       </div>
@@ -1488,7 +1488,7 @@ export function generateExportHTMLFromTxt(
       <!-- Rappel déduction -->
       <div style="text-align: center; margin-top: 32px; padding: 20px; background: linear-gradient(90deg, rgba(94, 234, 212, 0.1), rgba(52, 211, 153, 0.1)); border-radius: 12px; border: 1px solid var(--primary);">
         <p style="color: var(--text); margin: 0; font-size: 1rem;">
-          <strong>Rappel :</strong> Tes 79€ du NEUROCORE 360 sont <strong style="color: var(--primary);">intégralement déduits</strong> de n'importe quelle formule.<br>
+          <strong>Rappel :</strong> Tes 79€ d'audit APEXLABS sont <strong style="color: var(--primary);">intégralement déduits</strong> de n'importe quelle formule.<br>
           <span style="color: var(--text-muted); font-size: 0.9rem;">Tu ne paies jamais deux fois. C'est ton investissement initial qui travaille pour toi.</span>
         </p>
       </div>
@@ -1575,7 +1575,7 @@ export function generateExportHTMLFromTxt(
     </div>
 
     <footer class="footer">
-      <p>Rapport généré par <strong>NEUROCORE 360</strong> - par ACHZOD</p>
+      <p>Rapport généré par <strong>APEXLABS</strong> - par ACHZOD</p>
       <p>Expertise certifiée • Science appliquée • Résultats mesurables</p>
     </footer>
 

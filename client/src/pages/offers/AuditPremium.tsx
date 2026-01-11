@@ -493,7 +493,7 @@ export default function AuditPremium() {
             <div className="grid sm:grid-cols-2 gap-6">
               {[
                 "Analyse complete 16 sections",
-                "156 questions personnalisees",
+                "137 questions personnalisees",
                 "Integration wearables",
                 "Protocole Matin Anti-Cortisol",
                 "Protocole Soir Sommeil",
