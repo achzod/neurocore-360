@@ -64,8 +64,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Header } from "@/components/Header";
-import { QUESTIONNAIRE_SECTIONS, type Question } from "@shared/schema";
-import { getQuestionsForSection, getSectionProgress } from "@/lib/questionnaire-data";
+import type { Question } from "@/lib/questionnaire-tiers";
+import {
+  getQuestionsForSection,
+  getSectionsForPlan,
+  getTierForPlan,
+} from "@/lib/questionnaire-tiers";
 import {
   ChevronLeft,
   ChevronRight,
@@ -86,10 +90,18 @@ import {
   Brain,
   HeartHandshake,
   Camera,
+  Stethoscope,
+  Target,
+  Utensils,
+  UtensilsCrossed,
+  TrendingUp,
+  Pill,
+  Clock,
+  HeartPulse,
+  BrainCircuit,
   Upload,
   AlertCircle,
   X,
-  Clock,
   Watch,
   Smartphone,
   Link2,
@@ -118,6 +130,15 @@ const iconMap: Record<string, React.ElementType> = {
   Brain,
   HeartHandshake,
   Camera,
+  Stethoscope,
+  Target,
+  Utensils,
+  UtensilsCrossed,
+  TrendingUp,
+  Pill,
+  Clock,
+  HeartPulse,
+  BrainCircuit,
 };
 
 function QuestionField({
@@ -136,6 +157,17 @@ function QuestionField({
       return (
         <Input
           type="text"
+          placeholder={question.placeholder}
+          value={(value as string) || ""}
+          onChange={(e) => onChange(e.target.value)}
+          data-testid={`input-${question.id}`}
+        />
+      );
+
+    case "email":
+      return (
+        <Input
+          type="email"
           placeholder={question.placeholder}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -347,10 +379,9 @@ function QuestionnaireContent() {
     return normalizePlanParam(urlParams.get("plan"));
   });
 
-  // Filtrer les sections : analyse-posturale (photos) uniquement pour Ultimate Scan
-  const filteredSections = selectedPlan === "ultimate"
-    ? QUESTIONNAIRE_SECTIONS
-    : QUESTIONNAIRE_SECTIONS.filter(s => s.id !== "analyse-posturale");
+  const questionnaireTier = getTierForPlan(selectedPlan);
+  const filteredSections = getSectionsForPlan(selectedPlan);
+  const excludedQuestionIds = ["email"];
 
   // Bounds check pour éviter undefined
   const safeIndex = Math.min(Math.max(0, currentSectionIndex), filteredSections.length - 1);
@@ -362,10 +393,14 @@ function QuestionnaireContent() {
   const [terraConnecting, setTerraConnecting] = useState(false);
   const [terraConnected, setTerraConnected] = useState(false);
   const [terraSkippedQuestions, setTerraSkippedQuestions] = useState<string[]>([]);
-  const sectionQuestions = currentSection ? getQuestionsForSection(currentSection.id, userSex) : [];
+  const sectionQuestions = currentSection
+    ? getQuestionsForSection(currentSection.id, questionnaireTier, userSex, excludedQuestionIds)
+    : [];
   const IconComponent = currentSection ? (iconMap[currentSection.icon] || User) : User;
 
   const totalProgress = Math.round(((currentSectionIndex + 1) / filteredSections.length) * 100);
+
+  const showWearables = selectedPlan === "ultimate";
 
   // Charger la progression depuis la DB
   const loadProgressFromDB = async (userEmail: string) => {
@@ -377,7 +412,8 @@ function QuestionnaireContent() {
           console.log("[Questionnaire] Loaded progress from DB:", Object.keys(data.responses).length, "responses");
           setResponses(prev => ({ ...prev, ...data.responses }));
           if (data.currentSection !== undefined) {
-            setCurrentSectionIndex(data.currentSection);
+            const maxIndex = Math.max(0, filteredSections.length - 1);
+            setCurrentSectionIndex(Math.min(data.currentSection, maxIndex));
           }
           if (data.responses["sexe"]) setSexConfirmed(true);
           if (data.responses["prenom"]) setPrenomConfirmed(true);
@@ -392,6 +428,10 @@ function QuestionnaireContent() {
 
   useEffect(() => {
     try {
+      if (!showWearables) {
+        setWearablesSyncShown(true);
+        return;
+      }
       const savedEmail = localStorage.getItem("neurocore_email");
       const savedResponses = localStorage.getItem("neurocore_responses");
       const savedSection = localStorage.getItem("neurocore_section");
@@ -480,21 +520,21 @@ function QuestionnaireContent() {
           fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}`)
             .then(res => res.json())
             .then(data => {
-              if (data.success && data.hasData) {
+              const answers = data.answers || {};
+              const answerCount = Object.keys(answers).length;
+              const hasAnswers = data.success && data.hasData && answerCount > 0;
+
+              if (hasAnswers) {
                 setTerraConnected(true);
-                // Pre-fill responses with wearable data
-                if (data.answers && Object.keys(data.answers).length > 0) {
-                  setResponses(prev => ({ ...prev, ...data.answers }));
-                  console.log("[Terra] Pre-filled", Object.keys(data.answers).length, "answers from wearable");
-                }
-                // Store skipped questions
+                setResponses(prev => ({ ...prev, ...answers }));
+                console.log("[Terra] Pre-filled", answerCount, "answers from wearable");
                 if (data.skippedQuestions && data.skippedQuestions.length > 0) {
                   setTerraSkippedQuestions(data.skippedQuestions);
                   console.log("[Terra] Will skip", data.skippedQuestions.length, "questions");
                 }
                 toast({
                   title: "Wearable synchronise !",
-                  description: `${Object.keys(data.answers || {}).length} reponses pre-remplies automatiquement.`,
+                  description: `${answerCount} reponses pre-remplies automatiquement.`,
                 });
               } else if (terraSuccess === "true") {
                 // User connected but no data yet - might be SDK provider
@@ -511,7 +551,7 @@ function QuestionnaireContent() {
     } catch (e) {
       console.error("[Questionnaire] Init error:", e);
     }
-  }, []);
+  }, [showWearables, toast]);
 
   useEffect(() => {
     if (emailSubmitted) {
@@ -528,6 +568,7 @@ function QuestionnaireContent() {
       return apiRequest("POST", "/api/questionnaire/save-progress", {
         email,
         currentSection: currentSectionIndex,
+        totalSections: filteredSections.length,
         responses,
       });
     },
@@ -947,7 +988,7 @@ function QuestionnaireContent() {
                       </Button>
                     )}
                   </motion.div>
-                ) : currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
+                ) : currentSectionIndex === 0 && prenomConfirmed && showWearables && !wearablesSyncShown ? (
                   /* WEARABLES SYNC SCREEN */
                   <motion.div
                     key="wearables-sync"

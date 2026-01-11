@@ -1,18 +1,19 @@
 /**
  * NEUROCORE 360 - Système de Questionnaire 3 Tiers
  *
- * GRATUIT (0€): ~50 questions - Dashboard basique
- * ANABOLIC BIOSCAN (49€): ~150 questions - Rapport Achzod 18 sections
- * PRO PANEL 360 (99€): ~210 questions - Rapport premium 25 sections + Terra Wearables + Analyse Photo
+ * GRATUIT (0€): ~60 questions - Dashboard basique
+ * ANABOLIC BIOSCAN (59€): ~140 questions - Rapport Achzod complet
+ * ULTIMATE SCAN (79€): ~180 questions - Rapport complet + Terra Wearables + Analyse Photo
  *
  * Chaque question a un champ `tier`:
  * - "free" = disponible pour tous
- * - "essential" = ANABOLIC BIOSCAN (49€)
- * - "elite" = PRO PANEL 360 (99€)
+ * - "essential" = ANABOLIC BIOSCAN (59€)
+ * - "elite" = ULTIMATE SCAN (79€)
  */
 
 export type QuestionTier = "free" | "essential" | "elite";
-export type QuestionType = "text" | "number" | "email" | "select" | "radio" | "checkbox" | "textarea" | "photo";
+export type QuestionType = "text" | "number" | "email" | "select" | "radio" | "checkbox" | "textarea" | "photo" | "scale";
+export type PlanType = "gratuit" | "anabolic" | "ultimate";
 
 export interface QuestionOption {
   value: string;
@@ -28,7 +29,11 @@ export interface Question {
   options?: QuestionOption[];
   placeholder?: string;
   required?: boolean;
-  showFor?: "homme" | "femme"; // Genre-specific questions
+  min?: number;
+  max?: number;
+  unit?: string;
+  helpText?: string;
+  showFor?: "homme" | "femme" | "all"; // Genre-specific questions
   conditionalOn?: string; // Show only if this question has a certain answer
 }
 
@@ -68,12 +73,12 @@ export const SECTIONS: Section[] = [
   { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 17 },
 
   // PRO PANEL 360 SECTIONS (+6)
-  { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 17 },
-  { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 18 },
-  { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 19 },
-  { id: "blessures-douleurs", title: "Blessures & Douleurs", subtitle: "Douleurs, mobilité, prévention", icon: "Bone", tier: "elite", order: 20 },
-  { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 21 },
-  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 22 },
+  { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 18 },
+  { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 19 },
+  { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 20 },
+  { id: "blessures-douleurs", title: "Blessures & Douleurs", subtitle: "Douleurs, mobilité, prévention", icon: "Bone", tier: "elite", order: 21 },
+  { id: "psychologie-mental", title: "Psychologie", subtitle: "Mental et blocages", icon: "BrainCircuit", tier: "elite", order: 22 },
+  { id: "analyse-photo", title: "Analyse Photo", subtitle: "Photos pour analyse posturale", icon: "Camera", tier: "elite", order: 23 },
 ];
 
 // ============================================================================
@@ -85,7 +90,7 @@ export const QUESTIONS_FREE: Question[] = [
   { id: "sexe", sectionId: "profil-base", type: "radio", label: "Tu es ?", tier: "free", options: [{ value: "homme", label: "Homme" }, { value: "femme", label: "Femme" }], required: true },
   { id: "prenom", sectionId: "profil-base", type: "text", label: "Ton prénom ?", tier: "free", placeholder: "Ex: Marc, Sophie...", required: true },
   { id: "email", sectionId: "profil-base", type: "email", label: "Ton email ?", tier: "free", placeholder: "pour recevoir ton rapport", required: true },
-  { id: "instagram", sectionId: "profil-base", type: "text", label: "Ton Instagram ? (optionnel)", tier: "free", placeholder: "@ton_pseudo", required: true },
+  { id: "instagram", sectionId: "profil-base", type: "text", label: "Ton Instagram ? (optionnel)", tier: "free", placeholder: "@ton_pseudo", required: false },
   { id: "age", sectionId: "profil-base", type: "number", label: "Ton âge ?", tier: "free", placeholder: "Ex: 32", min: 15, max: 99, required: true },
   { id: "taille", sectionId: "profil-base", type: "number", label: "Ta taille (cm) ?", tier: "free", placeholder: "Ex: 175", min: 140, max: 220, unit: "cm", required: true },
   { id: "poids", sectionId: "profil-base", type: "number", label: "Ton poids (kg) ?", tier: "free", placeholder: "Ex: 78", min: 40, max: 200, unit: "kg", required: true },
@@ -332,6 +337,18 @@ export const QUESTIONS_ELITE: Question[] = [
 // HELPER FUNCTIONS
 // ============================================================================
 
+export function getTierForPlan(plan: PlanType): QuestionTier {
+  switch (plan) {
+    case "gratuit":
+      return "free";
+    case "ultimate":
+      return "elite";
+    case "anabolic":
+    default:
+      return "essential";
+  }
+}
+
 /**
  * Get all questions for a specific tier
  */
@@ -361,11 +378,49 @@ export function getSectionsForTier(tier: QuestionTier): Section[] {
   }).sort((a, b) => a.order - b.order);
 }
 
+export function getSectionsForPlan(plan: PlanType): Section[] {
+  return getSectionsForTier(getTierForPlan(plan));
+}
+
+export function getQuestionsForSection(
+  sectionId: string,
+  tier: QuestionTier,
+  gender?: "homme" | "femme",
+  excludedIds: string[] = []
+) {
+  const excluded = new Set(excludedIds);
+  return getQuestionsForTier(tier).filter((q) => {
+    if (q.sectionId !== sectionId) return false;
+    if (excluded.has(q.id)) return false;
+    if (!q.showFor || q.showFor === "all") return true;
+    if (!gender) return true;
+    return q.showFor === gender;
+  });
+}
+
+export function getSectionProgress(
+  sectionId: string,
+  tier: QuestionTier,
+  responses: Record<string, unknown>,
+  gender?: "homme" | "femme",
+  excludedIds: string[] = []
+) {
+  const sectionQuestions = getQuestionsForSection(sectionId, tier, gender, excludedIds);
+  const answeredQuestions = sectionQuestions.filter(
+    (q) => responses[q.id] !== undefined && responses[q.id] !== ""
+  );
+  return {
+    total: sectionQuestions.length,
+    answered: answeredQuestions.length,
+    percentage: Math.round((answeredQuestions.length / sectionQuestions.length) * 100),
+  };
+}
+
 /**
  * Filter questions by gender
  */
 export function filterQuestionsByGender(questions: Question[], gender: "homme" | "femme"): Question[] {
-  return questions.filter(q => !q.showFor || q.showFor === gender);
+  return questions.filter(q => !q.showFor || q.showFor === "all" || q.showFor === gender);
 }
 
 /**
@@ -381,4 +436,4 @@ export function getQuestionCounts(): { free: number; essential: number; elite: n
 
 // Export counts for display
 export const TIER_QUESTION_COUNTS = getQuestionCounts();
-// Result: { free: ~50, essential: ~150, elite: ~210 }
+// Result: { free: 66, essential: 137, elite: 183 }

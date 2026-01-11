@@ -1362,7 +1362,7 @@ function cleanMarkdownToHTML(text: string): string {
 // ============================================
 
 export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promise<DiscoveryAnalysisResult> {
-  const normalized = normalizeResponses(responses as Record<string, unknown>) as DiscoveryResponses;
+  const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
   console.log(`[Discovery] Analyzing scan for ${normalized.prenom || 'Client'}...`);
 
   // Calculate scores for each domain
@@ -1478,7 +1478,7 @@ export async function convertToNarrativeReport(
   result: DiscoveryAnalysisResult,
   responses: DiscoveryResponses
 ): Promise<ReportData> {
-  const normalized = normalizeResponses(responses as Record<string, unknown>) as DiscoveryResponses;
+  const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
   const prenom = normalized.prenom || 'Client';
   const objectif = normalized.objectif || 'tes objectifs';
 

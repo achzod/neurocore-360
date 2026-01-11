@@ -257,7 +257,7 @@ export class MemStorage implements IStorage {
 
   async saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress> {
     const existing = this.progress.get(input.email);
-    const totalSections = 13;
+    const totalSections = input.totalSections ?? 13;
     const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
 
     const progress: QuestionnaireProgress = {
@@ -621,14 +621,14 @@ export class PgStorage implements IStorage {
 
   async saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress> {
     const existing = await this.getProgress(input.email);
-    const totalSections = 13;
+    const totalSections = input.totalSections ?? 13;
     const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
     const status = input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS";
 
     if (existing) {
       const result = await pool.query(
-        `UPDATE questionnaire_progress SET current_section = $1, percent_complete = $2, responses = $3, status = $4, last_activity_at = NOW() WHERE email = $5 RETURNING *`,
-        [input.currentSection.toString(), percentComplete.toString(), JSON.stringify(input.responses), status, input.email]
+        `UPDATE questionnaire_progress SET current_section = $1, total_sections = $2, percent_complete = $3, responses = $4, status = $5, last_activity_at = NOW() WHERE email = $6 RETURNING *`,
+        [input.currentSection.toString(), totalSections.toString(), percentComplete.toString(), JSON.stringify(input.responses), status, input.email]
       );
       const row = result.rows[0];
       return {

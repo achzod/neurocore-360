@@ -1099,6 +1099,18 @@ export async function registerRoutes(
 
       // Map to questionnaire answers
       const mapped = mapTerraDataToAnswers(aggregated as any);
+      const providerKey = String(records[0]?.provider || "").toLowerCase();
+      const providerAnswers: Record<string, string> = {
+        apple: "apple",
+        garmin: "garmin",
+        oura: "oura",
+        whoop: "whoop",
+      };
+      const providerAnswer = providerKey ? (providerAnswers[providerKey] || "autre") : "";
+      if (providerAnswer && Object.keys(mapped.answers).length > 0 && !mapped.answers["montre-connectee"]) {
+        mapped.answers["montre-connectee"] = providerAnswer;
+        mapped.skippedQuestionIds = Array.from(new Set([...mapped.skippedQuestionIds, "montre-connectee"]));
+      }
 
       res.json({
         success: true,

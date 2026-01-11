@@ -181,7 +181,7 @@ async function generateReportAsync(
 ): Promise<void> {
   const startTime = Date.now();
   console.log(`[ReportJobManager] Starting async generation for ${auditId}`);
-  const normalizedResponses = normalizeResponses(responses);
+  const normalizedResponses = normalizeResponses(responses, { mode: "discovery" });
 
   try {
     await storage.createOrUpdateReportJob({

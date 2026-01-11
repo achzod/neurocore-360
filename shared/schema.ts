@@ -127,7 +127,8 @@ export interface QuestionnaireProgress {
 
 export const saveProgressSchema = z.object({
   email: z.string().email(),
-  currentSection: z.number().min(0).max(14),
+  currentSection: z.number().min(0).max(50),
+  totalSections: z.number().min(1).max(50).optional(),
   responses: z.record(z.unknown()),
 });
 
