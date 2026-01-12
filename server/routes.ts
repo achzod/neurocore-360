@@ -2596,15 +2596,23 @@ export async function registerRoutes(
         return;
       }
 
-      const result = await analyzeDiscoveryScan(audit.responses as any);
-      const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+      // Fire-and-forget regeneration to avoid blocking the UI
+      res.json({ success: true, auditId: audit.id, started: true });
 
-      await storage.updateAudit(audit.id, {
-        narrativeReport,
-        reportDeliveryStatus: "READY",
-      });
-
-      res.json({ success: true, auditId: audit.id });
+      (async () => {
+        try {
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await storage.updateAudit(audit.id, {
+            narrativeReport,
+            reportDeliveryStatus: "READY",
+          });
+          console.log(`[Discovery Regenerate] Success for ${audit.id}`);
+        } catch (err) {
+          console.error("[Discovery Regenerate] Error:", err);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        }
+      })();
     } catch (error) {
       console.error("[Discovery Scan] Regeneration error:", error);
       res.status(500).json({ success: false, error: "Erreur regénération" });

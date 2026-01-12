@@ -624,8 +624,7 @@ export default function AuditDetail() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Analyse en cours</h2>
             <p className="text-muted-foreground mb-8">
-              Votre dossier est en cours d'analyse par ACHZOD.
-              <br />Vous recevrez une notification des que votre bilan sera disponible.
+              Je suis en train d'analyser ton dossier. Je t'envoie l'email dès que ton bilan est prêt.
             </p>
             
             <Card className="text-left">
@@ -637,37 +636,28 @@ export default function AuditDetail() {
                   <div>
                     <h3 className="font-semibold">Temps de traitement</h3>
                     <p className="text-sm text-muted-foreground">
-                      Votre rapport personnalise sera disponible sous 24 a 48 heures.
+                      Ton rapport sera dispo sous 24 à 48h au maximum (souvent bien plus rapide).
                     </p>
                   </div>
                 </div>
                 {auditData.type === "GRATUIT" && (
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-col gap-2">
                     <Button
                       variant="outline"
                       onClick={async () => {
                         setRegenLoading(true);
                         try {
-                          const res = await fetch(`/api/discovery-scan/${params.auditId}/regenerate`, {
+                          await fetch(`/api/discovery-scan/${params.auditId}/regenerate`, {
                             method: "POST",
                           });
-                          if (res.ok) {
-                            toast({
-                              title: "Regeneration lancee",
-                              description: "Le rapport Discovery va etre recalculé.",
-                            });
-                            window.location.reload();
-                          } else {
-                            toast({
-                              title: "Impossible de regenerer",
-                              description: "Réessaie dans un instant ou contacte le support.",
-                              variant: "destructive",
-                            });
-                          }
+                          toast({
+                            title: "Recalcul lancé",
+                            description: "Je regénère ton rapport. Recharge dans quelques secondes.",
+                          });
                         } catch {
                           toast({
                             title: "Erreur",
-                            description: "Regeneration échouée.",
+                            description: "Regeneration échouée. Réessaie ou contacte le support.",
                             variant: "destructive",
                           });
                         } finally {
@@ -678,6 +668,9 @@ export default function AuditDetail() {
                     >
                       {regenLoading ? "Recalcul..." : "Forcer la génération"}
                     </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Si tu vois ce message trop longtemps, clique sur Forcer la génération.
+                    </p>
                   </div>
                 )}
               </CardContent>
