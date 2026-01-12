@@ -578,7 +578,7 @@ export default function AdminDashboard() {
                             onClick={() => {
                               setSelectedAuditId(q.id);
                               setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Anabolic !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Anabolic !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                               setShowCtaModal(true);
                             }}
                           >
@@ -1069,7 +1069,7 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setSelectedAuditId(q.id);
                                 setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Anabolic !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Anabolic !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >
