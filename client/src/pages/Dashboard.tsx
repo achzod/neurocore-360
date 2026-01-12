@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, type CSSProperties } from "react";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,8 @@ import {
   Wheat,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { ULTRAHUMAN_THEMES } from "@/components/ultrahuman/themes";
+import type { Theme } from "@/components/ultrahuman/types";
 
 const sectionConfig: Record<string, { label: string; shortLabel: string; icon: typeof Activity; color: string }> = {
   profilbase: { label: "Profil de Base", shortLabel: "Profil", icon: Target, color: "hsl(160, 84%, 39%)" },
@@ -55,6 +57,34 @@ const sectionConfig: Record<string, { label: string; shortLabel: string; icon: t
   neurotransmetteurs: { label: "Neurotransmetteurs", shortLabel: "Neuro", icon: Sparkles, color: "hsl(300, 65%, 55%)" },
   hormonessexuelles: { label: "Hormones Sexuelles et Libido", shortLabel: "Libido", icon: Heart, color: "hsl(340, 70%, 50%)" },
 };
+
+const THEME_PRESETS: Theme[] = [
+  {
+    id: "dashboard-core",
+    name: "ApexLabs",
+    type: "dark",
+    colors: {
+      primary: "#FCDD00",
+      background: "#050505",
+      surface: "#0B0B0F",
+      border: "rgba(255,255,255,0.08)",
+      text: "#F5F5F5",
+      textMuted: "#9CA3AF",
+      grid: "rgba(255,255,255,0.05)",
+      glow: "rgba(252,221,0,0.18)",
+    },
+  },
+  ...ULTRAHUMAN_THEMES,
+];
+
+function getReportPath(type: string, id: string) {
+  if (!id) return "/dashboard";
+  if (type === "GRATUIT") return `/scan/${id}`;
+  if (type === "PREMIUM") return `/anabolic/${id}`;
+  if (type === "ELITE") return `/ultimate/${id}`;
+  if (type === "BURNOUT") return `/burnout/${id}`;
+  return `/dashboard/${id}`;
+}
 
 function getScoreLevel(score: number): { label: string; color: string } {
   if (score >= 80) return { label: "Excellent", color: "text-primary" };
@@ -117,7 +147,7 @@ function GlobalScoreDisplay({ score }: { score: number }) {
   );
 }
 
-function RadarSection({ scores }: { scores: Record<string, number> }) {
+function RadarSection({ scores, cardStyle }: { scores: Record<string, number>; cardStyle?: CSSProperties }) {
   const radarData = Object.entries(scores)
     .filter(([key]) => key !== "global" && sectionConfig[key])
     .map(([key, score]) => ({
@@ -127,7 +157,7 @@ function RadarSection({ scores }: { scores: Record<string, number> }) {
     }));
 
   return (
-    <Card>
+    <Card style={cardStyle}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
@@ -141,7 +171,7 @@ function RadarSection({ scores }: { scores: Record<string, number> }) {
   );
 }
 
-function StrengthsWeaknessesSection({ scores }: { scores: Record<string, number> }) {
+function StrengthsWeaknessesSection({ scores, cardStyle, mutedStyle }: { scores: Record<string, number>; cardStyle?: CSSProperties; mutedStyle?: CSSProperties }) {
   const sortedSections = Object.entries(scores)
     .filter(([key]) => key !== "global" && sectionConfig[key])
     .sort(([, a], [, b]) => b - a);
@@ -151,7 +181,7 @@ function StrengthsWeaknessesSection({ scores }: { scores: Record<string, number>
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      <Card className="border-primary/30 bg-primary/5">
+      <Card className="border-primary/30 bg-primary/5" style={cardStyle}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Award className="h-5 w-5 text-primary" />
@@ -185,12 +215,12 @@ function StrengthsWeaknessesSection({ scores }: { scores: Record<string, number>
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Aucun point fort identifie pour le moment.</p>
+            <p className="text-sm" style={mutedStyle}>Aucun point fort identifie pour le moment.</p>
           )}
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/30 bg-destructive/5">
+      <Card className="border-destructive/30 bg-destructive/5" style={cardStyle}>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -224,7 +254,7 @@ function StrengthsWeaknessesSection({ scores }: { scores: Record<string, number>
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Tous tes domaines sont au-dessus de 60%. Excellent !</p>
+            <p className="text-sm" style={mutedStyle}>Tous tes domaines sont au-dessus de 60%. Excellent !</p>
           )}
         </CardContent>
       </Card>
@@ -232,7 +262,7 @@ function StrengthsWeaknessesSection({ scores }: { scores: Record<string, number>
   );
 }
 
-function QuickInsightsSection({ scores }: { scores: Record<string, number> }) {
+function QuickInsightsSection({ scores, cardStyle, mutedStyle }: { scores: Record<string, number>; cardStyle?: CSSProperties; mutedStyle?: CSSProperties }) {
   const nutritionScore = scores.nutritiontracking || 0;
   const activiteScore = scores.activiteperformance || 0;
   const sommeilScore = scores.sommeilrecuperation || 0;
@@ -291,7 +321,7 @@ function QuickInsightsSection({ scores }: { scores: Record<string, number> }) {
   }
 
   return (
-    <Card>
+    <Card style={cardStyle}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-accent" />
@@ -315,7 +345,7 @@ function QuickInsightsSection({ scores }: { scores: Record<string, number> }) {
                     <p className="font-medium">{insight.title}</p>
                     <Badge variant="outline">{insight.metric}</Badge>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{insight.description}</p>
+                  <p className="mt-1 text-sm" style={mutedStyle}>{insight.description}</p>
                 </div>
               </div>
             );
@@ -326,7 +356,7 @@ function QuickInsightsSection({ scores }: { scores: Record<string, number> }) {
   );
 }
 
-function KeyMetricsSection({ scores }: { scores: Record<string, number> }) {
+function KeyMetricsSection({ scores, cardStyle, mutedStyle }: { scores: Record<string, number>; cardStyle?: CSSProperties; mutedStyle?: CSSProperties }) {
   const globalScore = scores.global || 0;
   const totalSections = Object.keys(scores).filter(k => k !== "global" && sectionConfig[k]).length;
   const strongSections = Object.entries(scores).filter(([k, s]) => k !== "global" && sectionConfig[k] && s >= 70).length;
@@ -355,13 +385,13 @@ function KeyMetricsSection({ scores }: { scores: Record<string, number> }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            <Card>
+            <Card style={cardStyle}>
               <CardContent className="flex items-center gap-4 p-4">
                 <div className={`flex h-12 w-12 items-center justify-center rounded bg-${metric.color}/10`}>
                   <Icon className={`h-6 w-6 text-${metric.color}`} />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">{metric.label}</p>
+                  <p className="text-sm" style={mutedStyle}>{metric.label}</p>
                   <p className="text-2xl font-bold" data-testid={`metric-${metric.label.replace(/\s/g, '-').toLowerCase()}`}>
                     {metric.value}
                   </p>
@@ -375,7 +405,7 @@ function KeyMetricsSection({ scores }: { scores: Record<string, number> }) {
   );
 }
 
-function SectionScoresGrid({ scores }: { scores: Record<string, number> }) {
+function SectionScoresGrid({ scores, cardStyle, mutedStyle }: { scores: Record<string, number>; cardStyle?: CSSProperties; mutedStyle?: CSSProperties }) {
   const sortedSections = Object.entries(scores)
     .filter(([key]) => key !== "global" && sectionConfig[key])
     .sort(([, a], [, b]) => b - a);
@@ -389,7 +419,7 @@ function SectionScoresGrid({ scores }: { scores: Record<string, number> }) {
         const level = getScoreLevel(score);
         
         return (
-          <Card key={key} className="group hover:border-primary/50">
+          <Card key={key} className="group hover:border-primary/50" style={cardStyle}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -401,7 +431,7 @@ function SectionScoresGrid({ scores }: { scores: Record<string, number> }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium leading-tight">{config.shortLabel}</p>
-                    <p className={`text-xs ${level.color}`}>{level.label}</p>
+                    <p className={`text-xs ${level.color}`} style={mutedStyle}>{level.label}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -425,10 +455,14 @@ function SectionScoresGrid({ scores }: { scores: Record<string, number> }) {
   );
 }
 
-function AuditCard({ audit, index }: { audit: Audit; index: number }) {
+function AuditCard({ audit, index, themeColors }: { audit: Audit; index: number; themeColors?: Theme["colors"] }) {
   const isCompleted = audit.status === "COMPLETED";
   const globalScore = audit.scores?.global || 0;
   const level = getScoreLevel(globalScore);
+  const surfaceStyle = themeColors
+    ? { backgroundColor: themeColors.surface, borderColor: themeColors.border }
+    : undefined;
+  const mutedStyle = themeColors ? { color: themeColors.textMuted } : undefined;
 
   return (
     <motion.div
@@ -436,7 +470,7 @@ function AuditCard({ audit, index }: { audit: Audit; index: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
     >
-      <Card className="group hover:border-primary/50">
+      <Card className="group hover:border-primary/50" style={surfaceStyle}>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded bg-primary/10 text-primary">
@@ -444,7 +478,7 @@ function AuditCard({ audit, index }: { audit: Audit; index: number }) {
             </div>
             <div>
               <CardTitle className="text-lg">Audit APEXLABS</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm" style={mutedStyle}>
                 {new Date(audit.createdAt).toLocaleDateString("fr-FR", {
                   day: "numeric",
                   month: "long",
@@ -480,7 +514,7 @@ function AuditCard({ audit, index }: { audit: Audit; index: number }) {
                   <p className={`text-xs ${level.color}`}>{level.label}</p>
                 </div>
                 <div className="h-12 w-px bg-border" />
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm" style={mutedStyle}>
                   <p>15 domaines analyses</p>
                   <p className="flex items-center gap-1 text-primary">
                     <TrendingUp className="h-3 w-3" />
@@ -505,15 +539,23 @@ function AuditCard({ audit, index }: { audit: Audit; index: number }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ themeColors }: { themeColors?: Theme["colors"] }) {
+  const surfaceStyle = themeColors
+    ? { backgroundColor: themeColors.surface, borderColor: themeColors.border }
+    : undefined;
+  const mutedStyle = themeColors ? { color: themeColors.textMuted } : undefined;
+
   return (
-    <Card className="border-dashed">
+    <Card className="border-dashed" style={surfaceStyle}>
       <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-sm bg-muted">
-          <FileText className="h-8 w-8 text-muted-foreground" />
+        <div
+          className="flex h-16 w-16 items-center justify-center rounded-sm"
+          style={{ backgroundColor: themeColors?.surface || "var(--muted)" }}
+        >
+          <FileText className="h-8 w-8" style={mutedStyle} />
         </div>
         <h3 className="mt-6 text-lg font-semibold">Aucun audit pour le moment</h3>
-        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        <p className="mt-2 max-w-sm text-sm" style={mutedStyle}>
           Commence ton premier audit APEXLABS pour decouvrir ton profil metabolique complet.
         </p>
         <Link href="/audit-complet/questionnaire">
@@ -532,6 +574,20 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [confirmingCheckout, setConfirmingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(THEME_PRESETS[0]);
+
+  const themeColors = currentTheme.colors;
+  const cardStyle = useMemo(
+    () => ({
+      backgroundColor: themeColors.surface,
+      borderColor: themeColors.border,
+    }),
+    [themeColors]
+  );
+  const mutedStyle = useMemo(
+    () => ({ color: themeColors.textMuted }),
+    [themeColors]
+  );
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -635,10 +691,23 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ backgroundColor: themeColors.background, color: themeColors.text }}
+    >
+      {/* Grid background */}
+      <div
+        className="pointer-events-none fixed inset-0"
+        style={{
+          backgroundImage: `linear-gradient(to right, ${themeColors.grid} 1px, transparent 1px), linear-gradient(to bottom, ${themeColors.grid} 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+          opacity: 0.6,
+        }}
+      />
+
       <Header />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:py-12">
+      <main className="relative mx-auto max-w-7xl px-4 py-8 sm:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -646,23 +715,48 @@ export default function Dashboard() {
         >
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Mon Dashboard</h1>
-              <p className="mt-1 text-muted-foreground">
-                Bienvenue, {userEmail}
+              <p className="text-xs uppercase tracking-[0.3em]" style={mutedStyle}>
+                ApexLabs • Tableau de bord
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight mt-2">
+                {userEmail ? `${userEmail.split("@")[0]}, voici tes analyses.` : "Tes analyses."}
+              </h1>
+              <p className="mt-2 text-sm" style={mutedStyle}>
+                Je consolide tous tes scans ici. Passe en revue, upgrade, et relance un audit quand tu veux.
               </p>
             </div>
-            <Link href="/audit-complet/questionnaire">
-              <Button data-testid="button-new-audit">
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvel audit
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:items-end gap-3">
+              <div className="flex items-center gap-2">
+                {THEME_PRESETS.slice(0, 3).map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setCurrentTheme(t)}
+                    className={`h-9 px-3 rounded-full border text-xs uppercase tracking-widest transition-all ${
+                      currentTheme.id === t.id ? "opacity-100" : "opacity-60 hover:opacity-100"
+                    }`}
+                    style={{
+                      borderColor: themeColors.border,
+                      color: themeColors.text,
+                      backgroundColor: currentTheme.id === t.id ? themeColors.surface : "transparent",
+                    }}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+              <Link href="/audit-complet/questionnaire">
+                <Button data-testid="button-new-audit">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouvel audit
+                </Button>
+              </Link>
+            </div>
           </div>
         </motion.div>
 
         {!audits || audits.length === 0 ? (
           <div className="mt-8">
-            <EmptyState />
+            <EmptyState themeColors={themeColors} />
           </div>
         ) : (
           <>
@@ -673,8 +767,11 @@ export default function Dashboard() {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="mt-8"
               >
-                <Card className="overflow-hidden">
-                  <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 p-6 sm:p-8">
+                <Card className="overflow-hidden" style={cardStyle}>
+                  <div
+                    className="p-6 sm:p-8"
+                    style={{ background: `linear-gradient(135deg, ${themeColors.glow} 0%, transparent 65%)` }}
+                  >
                     <div className="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
                       <div className="flex flex-col items-center gap-4 sm:flex-row">
                         <GlobalScoreDisplay score={latestAudit.scores.global || 0} />
@@ -687,16 +784,16 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <Link href={`/dashboard/${latestAudit.id}`}>
-                          <Button size="lg" variant="outline" data-testid="button-view-latest">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Rapport classique
-                          </Button>
-                        </Link>
-                        <Link href={`/report/${latestAudit.id}`}>
+                        <Link href={getReportPath(latestAudit.type, latestAudit.id)}>
                           <Button size="lg" data-testid="button-view-report-complet">
                             <Sparkles className="mr-2 h-4 w-4" />
                             Rapport complet
+                          </Button>
+                        </Link>
+                        <Link href={`/dashboard/${latestAudit.id}`}>
+                          <Button size="lg" variant="outline" data-testid="button-view-latest">
+                            <Eye className="mr-2 h-4 w-4" />
+                            Vue classique
                           </Button>
                         </Link>
                       </div>
@@ -713,7 +810,11 @@ export default function Dashboard() {
                 transition={{ duration: 0.5, delay: 0.15 }}
                 className="mt-8"
               >
-                <KeyMetricsSection scores={latestAudit.scores as Record<string, number>} />
+                <KeyMetricsSection
+                  scores={latestAudit.scores as Record<string, number>}
+                  cardStyle={cardStyle}
+                  mutedStyle={mutedStyle}
+                />
               </motion.div>
             )}
 
@@ -724,7 +825,11 @@ export default function Dashboard() {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="mt-8"
               >
-                <StrengthsWeaknessesSection scores={latestAudit.scores as Record<string, number>} />
+                <StrengthsWeaknessesSection
+                  scores={latestAudit.scores as Record<string, number>}
+                  cardStyle={cardStyle}
+                  mutedStyle={mutedStyle}
+                />
               </motion.div>
             )}
 
@@ -735,7 +840,11 @@ export default function Dashboard() {
                 transition={{ duration: 0.5, delay: 0.25 }}
                 className="mt-8"
               >
-                <QuickInsightsSection scores={latestAudit.scores as Record<string, number>} />
+                <QuickInsightsSection
+                  scores={latestAudit.scores as Record<string, number>}
+                  cardStyle={cardStyle}
+                  mutedStyle={mutedStyle}
+                />
               </motion.div>
             )}
 
@@ -746,7 +855,7 @@ export default function Dashboard() {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="mt-8"
               >
-                <RadarSection scores={latestAudit.scores as Record<string, number>} />
+                <RadarSection scores={latestAudit.scores as Record<string, number>} cardStyle={cardStyle} />
               </motion.div>
             )}
 
@@ -761,7 +870,11 @@ export default function Dashboard() {
                   <Activity className="h-5 w-5 text-primary" />
                   Scores par domaine
                 </h2>
-                <SectionScoresGrid scores={latestAudit.scores as Record<string, number>} />
+                <SectionScoresGrid
+                  scores={latestAudit.scores as Record<string, number>}
+                  cardStyle={cardStyle}
+                  mutedStyle={mutedStyle}
+                />
               </motion.div>
             )}
 
@@ -777,7 +890,7 @@ export default function Dashboard() {
               </h2>
               <div className="grid gap-6 lg:grid-cols-2">
                 {audits.map((audit, index) => (
-                  <AuditCard key={audit.id} audit={audit} index={index} />
+                  <AuditCard key={audit.id} audit={audit} index={index} themeColors={themeColors} />
                 ))}
               </div>
             </motion.div>
@@ -789,15 +902,18 @@ export default function Dashboard() {
                 transition={{ duration: 0.5, delay: 0.5 }}
                 className="mt-12"
               >
-                <Card className="overflow-hidden bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10">
-                  <CardContent className="flex flex-col items-center gap-6 p-8 text-center sm:flex-row sm:text-left">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-sm bg-primary">
+                <Card className="overflow-hidden" style={cardStyle}>
+                  <CardContent
+                    className="flex flex-col items-center gap-6 p-8 text-center sm:flex-row sm:text-left"
+                    style={{ background: `linear-gradient(120deg, ${themeColors.glow} 0%, transparent 70%)` }}
+                  >
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-sm" style={{ backgroundColor: themeColors.primary }}>
                       <Crown className="h-8 w-8 text-primary-foreground" />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold">Passe au niveau superieur</h3>
-                      <p className="mt-2 text-muted-foreground">
-                        Debloque toutes les sections de ton rapport et accede a des protocoles supplements detailles.
+                      <p className="mt-2 text-sm" style={mutedStyle}>
+                        Je debloque toutes tes sections, j ajoute les protocoles et la stack complete. Choisis ton scan payant.
                       </p>
                     </div>
                     <Link href="/#pricing">
