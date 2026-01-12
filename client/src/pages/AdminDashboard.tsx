@@ -88,12 +88,14 @@ interface PromoCode {
 }
 
 const ADMIN_PASSWORD = "badboy007";
+const ADMIN_ENV_KEY = import.meta.env.VITE_ADMIN_KEY || "";
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("admin_auth") === "true";
   });
   const [password, setPassword] = useState("");
+  const [adminKey, setAdminKey] = useState<string | null>(() => sessionStorage.getItem("admin_key"));
   const [passwordError, setPasswordError] = useState(false);
   const [activeTab, setActiveTab] = useState("relances");
   const [audits, setAudits] = useState<Audit[]>([]);
@@ -115,9 +117,12 @@ export default function AdminDashboard() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    const valid = ADMIN_ENV_KEY ? password === ADMIN_ENV_KEY : password === ADMIN_PASSWORD;
+    if (valid) {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
+      sessionStorage.setItem("admin_key", password);
+      setAdminKey(password);
       setPasswordError(false);
     } else {
       setPasswordError(true);
@@ -131,9 +136,12 @@ export default function AdminDashboard() {
   const { toast } = useToast();
 
   const fetchAudits = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/audits");
+      const response = await fetch("/api/admin/audits", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setAudits(data.audits);
@@ -169,9 +177,12 @@ export default function AdminDashboard() {
   };
 
   const fetchIncompleteQuestionnaires = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/incomplete-questionnaires");
+      const response = await fetch("/api/admin/incomplete-questionnaires", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setIncompleteQuestionnaires(data.questionnaires);
@@ -188,9 +199,12 @@ export default function AdminDashboard() {
   };
 
   const fetchPromoCodes = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/promo-codes");
+      const response = await fetch("/api/admin/promo-codes", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setPromoCodes(data.codes);
