@@ -42,7 +42,24 @@ import {
   HeartPulse
 } from 'lucide-react';
 
-const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+const THEMES: Theme[] = [
+  {
+    id: "ultimate",
+    name: "Gold Core",
+    type: "dark",
+    colors: {
+      primary: "#f5b300",
+      background: "#0A0A0F",
+      surface: "#0F111A",
+      border: "rgba(245, 179, 0, 0.2)",
+      text: "#F8F5EB",
+      textMuted: "#C7BF9E",
+      grid: "rgba(245, 179, 0, 0.08)",
+      glow: "rgba(245, 179, 0, 0.25)",
+    },
+  },
+  ...ULTRAHUMAN_THEMES,
+];
 
 // Types
 interface SupplementProtocol {

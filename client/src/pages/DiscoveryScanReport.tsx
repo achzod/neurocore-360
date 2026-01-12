@@ -492,8 +492,8 @@ const DiscoveryScanReport: React.FC = () => {
                   <h4 className="text-xl font-bold mb-2">Merci pour ton avis !</h4>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                     {hasExistingReview
-                      ? 'Tu as deja laisse un avis pour ce scan.'
-                      : 'Ton code promo te sera envoye par email apres validation.'}
+                      ? 'Ton avis est deja enregistre.'
+                      : 'Je t envoie ton code promo par email apres validation.'}
                   </p>
                 </div>
               ) : (
@@ -548,7 +548,7 @@ const DiscoveryScanReport: React.FC = () => {
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="Qu'as-tu pense de ce Discovery Scan ? Ton avis nous aide a nous ameliorer..."
+                      placeholder="Qu'as-tu pense de ce Discovery Scan ? Ton avis m aide a te livrer encore mieux..."
                       rows={4}
                       required
                       minLength={10}

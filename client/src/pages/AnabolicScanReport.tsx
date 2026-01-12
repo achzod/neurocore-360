@@ -38,7 +38,24 @@ import {
   Crown
 } from 'lucide-react';
 
-const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+const THEMES: Theme[] = [
+  {
+    id: "anabolic",
+    name: "Emerald Drive",
+    type: "dark",
+    colors: {
+      primary: "#10B981",
+      background: "#030712",
+      surface: "#0B1020",
+      border: "rgba(16, 185, 129, 0.18)",
+      text: "#E5F7F0",
+      textMuted: "#94A3AF",
+      grid: "rgba(16, 185, 129, 0.08)",
+      glow: "rgba(16, 185, 129, 0.25)",
+    },
+  },
+  ...ULTRAHUMAN_THEMES,
+];
 
 // Narrative Report types from API
 interface SupplementProtocol {
