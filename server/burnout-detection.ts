@@ -18,7 +18,7 @@ let anthropicClient: Anthropic | null = null;
 const BURNOUT_PRICE_ID = process.env.STRIPE_BURNOUT_PRICE_ID || "";
 
 function getBaseUrl(): string {
-  return process.env.BASE_URL || "https://neurocore-360.onrender.com";
+  return process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || "https://neurocore-360.onrender.com";
 }
 
 function getAnthropicClient(): Anthropic {

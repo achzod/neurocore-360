@@ -307,8 +307,8 @@ export async function generateTerraWidget(
         // L'app est déjà sur l'App Store, l'user la télécharge et autorise Apple Health
         // Les données sont ensuite envoyées automatiquement à notre webhook
         use_terra_avengers_app: useAppleHealth,
-        auth_success_redirect_url: redirectUrl || `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_success=true`,
-        auth_failure_redirect_url: `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_error=true`,
+        auth_success_redirect_url: redirectUrl || `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_success=true`,
+        auth_failure_redirect_url: `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_error=true`,
       }),
     });
 

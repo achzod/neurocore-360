@@ -369,7 +369,7 @@ const normalizePlan = (plan: string | null | undefined): PlanId | null => {
   const normalized = plan.toLowerCase();
   if (normalized === "gratuit" || normalized === "discovery" || normalized === "free") return "gratuit";
   if (normalized === "anabolic" || normalized === "premium" || normalized === "essential") return "anabolic";
-  if (normalized === "ultimate" || normalized === "elite" || normalized === "pro") return "ultimate";
+  if (normalized === "ultimate" || normalized === "elite") return "ultimate";
   return null;
 };
 
