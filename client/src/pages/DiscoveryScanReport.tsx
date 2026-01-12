@@ -5,6 +5,7 @@ import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
 import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, ReportData } from '@/components/ultrahuman/types';
+import { Button } from '@/components/ui/button';
 import {
   Menu,
   ArrowUp,
@@ -289,6 +290,26 @@ const DiscoveryScanReport: React.FC = () => {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-white/70">{error || 'Rapport non disponible'}</p>
+          {auditId && (
+            <div className="mt-6 flex items-center justify-center">
+              <Button
+                onClick={async () => {
+                  setError(null);
+                  setIsRegenerating(true);
+                  setRegenAttempts(0);
+                  try {
+                    await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
+                  } catch {
+                    // best-effort
+                  } finally {
+                    setLoading(true);
+                  }
+                }}
+              >
+                Recalculer maintenant
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
