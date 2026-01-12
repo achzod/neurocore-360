@@ -404,6 +404,7 @@ export default function AuditDetail() {
   const [auditData, setAuditData] = useState<{ type: string; reportDeliveryStatus: string; email: string; scores: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
 
   const handleExportPDF = async () => {
     if (!report || !auditId) return;
@@ -610,6 +611,45 @@ export default function AuditDetail() {
                     </p>
                   </div>
                 </div>
+                {auditData.type === "GRATUIT" && (
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        setRegenLoading(true);
+                        try {
+                          const res = await fetch(`/api/discovery-scan/${params.auditId}/regenerate`, {
+                            method: "POST",
+                          });
+                          if (res.ok) {
+                            toast({
+                              title: "Regeneration lancee",
+                              description: "Le rapport Discovery va etre recalculé.",
+                            });
+                            window.location.reload();
+                          } else {
+                            toast({
+                              title: "Impossible de regenerer",
+                              description: "Réessaie dans un instant ou contacte le support.",
+                              variant: "destructive",
+                            });
+                          }
+                        } catch {
+                          toast({
+                            title: "Erreur",
+                            description: "Regeneration échouée.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setRegenLoading(false);
+                        }
+                      }}
+                      disabled={regenLoading}
+                    >
+                      {regenLoading ? "Recalcul..." : "Forcer la génération"}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

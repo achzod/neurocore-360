@@ -2580,6 +2580,37 @@ export async function registerRoutes(
     }
   });
 
+  // Force regenerate a Discovery Scan if stuck
+  app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
+    try {
+      const { auditId } = req.params;
+      const audit = await storage.getAudit(auditId);
+
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      if (audit.type !== "GRATUIT") {
+        res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
+        return;
+      }
+
+      const result = await analyzeDiscoveryScan(audit.responses as any);
+      const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+
+      await storage.updateAudit(audit.id, {
+        narrativeReport,
+        reportDeliveryStatus: "READY",
+      });
+
+      res.json({ success: true, auditId: audit.id });
+    } catch (error) {
+      console.error("[Discovery Scan] Regeneration error:", error);
+      res.status(500).json({ success: false, error: "Erreur regénération" });
+    }
+  });
+
   // ==================== WAITLIST/SUBSCRIBE ROUTES ====================
 
   // Helper: Get database pool with proper config
