@@ -529,7 +529,19 @@ export default function AuditDetail() {
         const audit = await auditRes.json();
         setAuditData(audit);
 
-        if (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") {
+        // If Discovery and report seems missing, try fallback endpoint
+        if (audit.type === "GRATUIT") {
+          const discoveryRes = await fetch(`/api/discovery-scan/${auditId}`);
+          if (discoveryRes.ok) {
+            const discoveryReport = await discoveryRes.json();
+            if (discoveryReport && !discoveryReport.error && !discoveryReport.message) {
+              setReport(discoveryReport);
+              setAuditData(prev => prev ? { ...prev, reportDeliveryStatus: "READY" } : prev);
+            }
+          }
+        }
+
+        if (!report && (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT")) {
           const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
           if (reportRes.ok) {
             const reportData = await reportRes.json();
@@ -547,12 +559,13 @@ export default function AuditDetail() {
     fetchData();
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, [auditId]);
+  }, [auditId, report]);
 
   // Auto-regenerate Discovery stuck in PENDING/GENERATING
   useEffect(() => {
     const autoRegen = async () => {
       if (!auditData) return;
+      if (report) return; // already have report, no regen
       if (regenTriggered) return;
       if (auditData.type !== "GRATUIT") return;
       if (auditData.reportDeliveryStatus === "READY" || auditData.reportDeliveryStatus === "SENT") return;
