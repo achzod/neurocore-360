@@ -405,6 +405,7 @@ export default function AuditDetail() {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [regenLoading, setRegenLoading] = useState(false);
+  const [regenTriggered, setRegenTriggered] = useState(false);
 
   const handleExportPDF = async () => {
     if (!report || !auditId) return;
@@ -547,6 +548,35 @@ export default function AuditDetail() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [auditId]);
+
+  // Auto-regenerate Discovery stuck in PENDING/GENERATING
+  useEffect(() => {
+    const autoRegen = async () => {
+      if (!auditData) return;
+      if (regenTriggered) return;
+      if (auditData.type !== "GRATUIT") return;
+      if (auditData.reportDeliveryStatus === "READY" || auditData.reportDeliveryStatus === "SENT") return;
+      setRegenTriggered(true);
+      setRegenLoading(true);
+      try {
+        await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
+        toast({
+          title: "Regeneration lancee",
+          description: "Le rapport Discovery est recalculé. Recharge dans quelques secondes.",
+        });
+        window.location.reload();
+      } catch {
+        toast({
+          title: "Regeneration echouée",
+          description: "Reessaie ou contacte le support.",
+          variant: "destructive",
+        });
+      } finally {
+        setRegenLoading(false);
+      }
+    };
+    autoRegen();
+  }, [auditData, auditId, regenTriggered, toast]);
 
   if (loading) {
     return (
