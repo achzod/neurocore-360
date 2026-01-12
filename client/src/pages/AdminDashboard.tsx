@@ -158,9 +158,12 @@ export default function AdminDashboard() {
   };
 
   const fetchPendingReviews = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/reviews/pending");
+      const response = await fetch("/api/admin/reviews/pending", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setReviews(data.reviews);
@@ -221,6 +224,15 @@ export default function AdminDashboard() {
   };
 
   const handleCreatePromo = async () => {
+    if (!adminKey) {
+      toast({
+        title: "Clé admin manquante",
+        description: "Reconnecte-toi avec la clé admin pour gérer les codes promo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!newPromo.code || !newPromo.discountPercent) {
       toast({
         title: "Erreur",
@@ -233,7 +245,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch("/api/admin/promo-codes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({
           code: newPromo.code.toUpperCase(),
           discountPercent: newPromo.discountPercent,
@@ -269,10 +281,11 @@ export default function AdminDashboard() {
   };
 
   const handleTogglePromo = async (promo: PromoCode) => {
+    if (!adminKey) return;
     try {
       const response = await fetch(`/api/admin/promo-codes/${promo.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ isActive: !promo.isActive }),
       });
       const data = await response.json();
@@ -293,11 +306,12 @@ export default function AdminDashboard() {
   };
 
   const sendSequenceEmail = async (auditId: string, emailType: string, emailLabel: string) => {
+    if (!adminKey) return;
     setSendingEmailId(`${auditId}-${emailType}`);
     try {
       const response = await fetch("/api/admin/send-sequence-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ auditId, emailType }),
       });
       const data = await response.json();
@@ -340,7 +354,7 @@ export default function AdminDashboard() {
       fetchIncompleteQuestionnaires();
       fetchPromoCodes();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, adminKey]);
 
   // Refresh current tab data when switching
   useEffect(() => {
@@ -354,14 +368,15 @@ export default function AdminDashboard() {
     } else if (activeTab === "promo") {
       fetchPromoCodes();
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, adminKey]);
 
   const handleApprove = async (reviewId: string) => {
+    if (!adminKey) return;
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ reviewedBy: "admin" }),
       });
       const data = await response.json();
@@ -384,11 +399,12 @@ export default function AdminDashboard() {
   };
 
   const handleReject = async (reviewId: string) => {
+    if (!adminKey) return;
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ reviewedBy: "admin" }),
       });
       const data = await response.json();
@@ -411,6 +427,14 @@ export default function AdminDashboard() {
   };
 
   const handleSendCTA = async () => {
+    if (!adminKey) {
+      toast({
+        title: "Clé admin manquante",
+        description: "Reconnecte-toi pour envoyer un message.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!selectedAuditId || !ctaSubject || !ctaMessage) {
       toast({
         title: "Erreur",
@@ -423,7 +447,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch("/api/admin/send-cta", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey || "" },
         body: JSON.stringify({
           auditId: selectedAuditId,
           subject: ctaSubject,

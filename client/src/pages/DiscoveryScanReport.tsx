@@ -56,9 +56,12 @@ const DiscoveryScanReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenAttempts, setRegenAttempts] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const regenTimer = useRef<number | null>(null);
 
   // Review form state
   const [reviewRating, setReviewRating] = useState<number>(0);
@@ -71,7 +74,9 @@ const DiscoveryScanReport: React.FC = () => {
 
   // Fetch report data
   useEffect(() => {
-    const fetchReport = async () => {
+    let cancelled = false;
+
+    const fetchReport = async (attempt = 0) => {
       if (!auditId) {
         setError('ID audit manquant');
         setLoading(false);
@@ -82,9 +87,28 @@ const DiscoveryScanReport: React.FC = () => {
         const response = await fetch(`/api/discovery-scan/${auditId}`);
         const data = await response.json();
 
+        const isPending = response.status === 202 || data?.status === 'regenerating';
+        if (isPending) {
+          if (cancelled) return;
+          setIsRegenerating(true);
+          setError(null);
+          setLoading(false);
+          const nextAttempt = attempt + 1;
+          setRegenAttempts(nextAttempt);
+
+          if (nextAttempt <= 12) {
+            regenTimer.current = window.setTimeout(() => fetchReport(nextAttempt), 3500);
+          } else {
+            setError("Regeneration en attente trop longue. Clique sur Recalculer ou reessaie plus tard.");
+            setIsRegenerating(false);
+          }
+          return;
+        }
+
         // Check if error response
         if (data.error) {
           setError(data.error);
+          setIsRegenerating(false);
           setLoading(false);
           return;
         }
@@ -92,6 +116,7 @@ const DiscoveryScanReport: React.FC = () => {
         // API returns ReportData directly (not wrapped)
         if (!data.globalScore || !data.sections) {
           setError('Format de rapport invalide');
+          setIsRegenerating(false);
           setLoading(false);
           return;
         }
@@ -100,6 +125,7 @@ const DiscoveryScanReport: React.FC = () => {
         if (data.sections?.length > 0) {
           setActiveSection(data.sections[0].id);
         }
+        setIsRegenerating(false);
       } catch (err) {
         setError('Erreur de chargement du rapport');
       } finally {
@@ -107,7 +133,17 @@ const DiscoveryScanReport: React.FC = () => {
       }
     };
 
-    fetchReport();
+    setLoading(true);
+    setError(null);
+    setIsRegenerating(false);
+    fetchReport(0);
+
+    return () => {
+      cancelled = true;
+      if (regenTimer.current) {
+        clearTimeout(regenTimer.current);
+      }
+    };
   }, [auditId]);
 
   // Apply theme CSS variables
@@ -226,12 +262,21 @@ const DiscoveryScanReport: React.FC = () => {
   };
 
   // Loading state
-  if (loading) {
+  if ((loading || isRegenerating) && !reportData) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-white/50 mx-auto mb-4" />
-          <p className="text-white/70">Chargement du rapport...</p>
+          <p className="text-white/70">
+            {isRegenerating
+              ? "Je recalcule ton rapport Discovery. La page se met a jour automatiquement..."
+              : "Chargement du rapport..."}
+          </p>
+          {isRegenerating && (
+            <p className="text-xs text-white/50 mt-2">
+              Tentative {regenAttempts}/12
+            </p>
+          )}
         </div>
       </div>
     );
@@ -476,7 +521,7 @@ const DiscoveryScanReport: React.FC = () => {
           </div>
 
           {/* Review Section */}
-          <section className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>
+          <section id="review" className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
                 <Star className="w-10 h-10 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />

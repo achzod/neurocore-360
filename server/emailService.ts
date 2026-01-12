@@ -209,7 +209,6 @@ export async function sendReportReadyEmail(
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
-    const dashboardLink = `${baseUrl}/dashboard/${auditId}`;
     const reportPath =
       auditType === "GRATUIT"
         ? `/scan/${auditId}`
@@ -217,6 +216,7 @@ export async function sendReportReadyEmail(
         ? `/anabolic/${auditId}`
         : `/ultimate/${auditId}`;
     const reportLink = `${baseUrl}${reportPath}`;
+    const reviewLink = `${reportLink}#review`;
     const planLabel = auditType === "GRATUIT" ? "Discovery Scan" : auditType === "PREMIUM" ? "Anabolic Bioscan" : "Ultimate Scan";
     const planColor = auditType === "ELITE" ? COLORS.purple : auditType === "PREMIUM" ? COLORS.primary : COLORS.textMuted;
 
@@ -245,7 +245,7 @@ export async function sendReportReadyEmail(
 
       ${getPrimaryButton('Consulter mon rapport', reportLink)}
 
-      ${getReviewSection(dashboardLink)}
+      ${getReviewSection(reviewLink)}
 
       <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">

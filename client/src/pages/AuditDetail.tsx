@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -398,6 +398,7 @@ function WeeklyPlan({ weeklyPlan }: { weeklyPlan: NarrativeReport["weeklyPlan"] 
 export default function AuditDetail() {
   const params = useParams<{ auditId: string }>();
   const auditId = params.auditId;
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const [report, setReport] = useState<NarrativeReport | null>(null);
@@ -560,6 +561,23 @@ export default function AuditDetail() {
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [auditId, report]);
+
+  // Redirect to Ultrahuman per-offer UI to ensure consistent experience
+  useEffect(() => {
+    if (!auditData || !auditId) return;
+    const target =
+      auditData.type === "GRATUIT"
+        ? `/scan/${auditId}`
+        : auditData.type === "PREMIUM"
+        ? `/anabolic/${auditId}`
+        : auditData.type === "ELITE"
+        ? `/ultimate/${auditId}`
+        : null;
+
+    if (target) {
+      navigate(target, { replace: true });
+    }
+  }, [auditData, auditId, navigate]);
 
   // Auto-regenerate Discovery stuck in PENDING/GENERATING
   useEffect(() => {

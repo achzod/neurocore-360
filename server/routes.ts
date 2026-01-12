@@ -2569,8 +2569,38 @@ export async function registerRoutes(
         return;
       }
 
-      // Return narrativeReport in same format dashboard expects
-      res.json(audit.narrativeReport);
+      // If report already exists, return it immediately
+      if (audit.narrativeReport) {
+        res.json(audit.narrativeReport);
+        return;
+      }
+
+      // No report stored -> trigger a fresh generation in background
+      // to avoid users getting stuck on "Analyse en cours".
+      if (audit.reportDeliveryStatus !== "GENERATING") {
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+      }
+
+      res.status(202).json({
+        success: true,
+        status: "regenerating",
+        message: "Recalcul du rapport lance",
+      });
+
+      (async () => {
+        try {
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await storage.updateAudit(audit.id, {
+            narrativeReport,
+            reportDeliveryStatus: "READY",
+          });
+          console.log(`[Discovery Fetch] Report regenerated for ${audit.id}`);
+        } catch (err) {
+          console.error("[Discovery Fetch] Regeneration error:", err);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        }
+      })();
     } catch (error: any) {
       console.error("[Discovery Scan] Fetch error:", error);
       res.status(500).json({
