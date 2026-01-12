@@ -24,7 +24,24 @@ import {
   Moon
 } from 'lucide-react';
 
-const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+const THEMES: Theme[] = [
+  {
+    id: "burnout",
+    name: "Amber Heat",
+    type: "dark",
+    colors: {
+      primary: "#f97316",
+      background: "#0B0A0A",
+      surface: "#141110",
+      border: "rgba(249, 115, 22, 0.2)",
+      text: "#F7EDE5",
+      textMuted: "#B9A69A",
+      grid: "rgba(249, 115, 22, 0.08)",
+      glow: "rgba(249, 115, 22, 0.22)",
+    },
+  },
+  ...ULTRAHUMAN_THEMES,
+];
 
 interface BurnoutReportData {
   globalScore: number;
