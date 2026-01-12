@@ -1,7 +1,7 @@
 const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
 const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
-const SENDER_EMAIL = "coaching@achzodcoaching.com";
-const SENDER_NAME = "ApexLabs by Achzod";
+const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
+const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
 
 // SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
 const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
@@ -279,9 +279,12 @@ export async function sendReportReadyEmail(
       }),
     });
 
-    const result = await response.json() as { result: boolean };
+    const result = await response.json() as { result: boolean; error?: any; message?: any };
     console.log(`[SendPulse] Report ready email sent to ${email}:`, result);
-    return result.result === true;
+    if (result.result === true) return true;
+    // Fallback log + tolerate non-true with warning
+    console.warn("[SendPulse] Report email not confirmed sent:", result);
+    return false;
   } catch (error) {
     console.error("[SendPulse] Error sending report email:", error);
     return false;
