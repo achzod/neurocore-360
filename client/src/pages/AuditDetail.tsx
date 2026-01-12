@@ -562,9 +562,8 @@ export default function AuditDetail() {
         await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
         toast({
           title: "Regeneration lancee",
-          description: "Le rapport Discovery est recalculé. Recharge dans quelques secondes.",
+          description: "Je recalcule ton rapport Discovery. Il s'affichera dès qu'il est prêt.",
         });
-        window.location.reload();
       } catch {
         toast({
           title: "Regeneration echouée",
@@ -652,7 +651,7 @@ export default function AuditDetail() {
                           });
                           toast({
                             title: "Recalcul lancé",
-                            description: "Je regénère ton rapport. Recharge dans quelques secondes.",
+                            description: "Je regénère ton rapport. Il s'affichera dès qu'il est prêt.",
                           });
                         } catch {
                           toast({
