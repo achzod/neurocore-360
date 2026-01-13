@@ -503,7 +503,7 @@ const DiscoveryScanReport: React.FC = () => {
                       <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
                         {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                       </span>
-                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight">
+                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
                         {section.title}
                       </h2>
                       {section.subtitle && (
@@ -531,7 +531,8 @@ const DiscoveryScanReport: React.FC = () => {
                         '--tw-prose-body': 'var(--color-text)',
                         '--tw-prose-headings': 'var(--color-text)',
                         '--tw-prose-strong': 'var(--color-text)',
-                        '--tw-prose-bullets': 'var(--color-primary)'
+                        '--tw-prose-bullets': 'var(--color-primary)',
+                        color: 'var(--color-text)'
                       } as React.CSSProperties}
                       dangerouslySetInnerHTML={{ __html: section.content }}
                     />

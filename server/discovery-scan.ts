@@ -11,6 +11,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+import { OPENAI_CONFIG } from './openaiConfig';
 import { searchArticles, searchFullText } from './knowledge/storage';
 import { ALLOWED_SOURCES } from './knowledge/search';
 import { normalizeResponses } from './responseNormalizer';
@@ -137,6 +139,7 @@ export interface BlockageAnalysis {
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
 const MIN_DISCOVERY_SECTION_CHARS = 2000;
 const MIN_DISCOVERY_SECTION_LINES = 24;
+const MIN_DISCOVERY_SECTION_WORDS = 320;
 const SOURCE_MARKERS = [
   "huberman",
   "peter attia",
@@ -152,6 +155,10 @@ const SOURCE_MARKERS = [
   "matthew walker",
   "sapolsky",
 ];
+
+const openai = OPENAI_CONFIG.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY })
+  : null;
 
 // ============================================
 // SCORING FUNCTIONS
@@ -988,6 +995,21 @@ FORMAT OBLIGATOIRE:
 - Prose fluide uniquement, paragraphes separes par lignes vides
 - Ecris a la deuxieme personne du singulier, comme si TU parlais directement a ${prenom}`;
 
+  const isValidContent = (text: string) => {
+    const lines = text.split(/\n+/).filter(l => l.trim().length > 30);
+    const lineCount = lines.length;
+    const charCount = text.length;
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    return {
+      lineCount,
+      charCount,
+      wordCount,
+      isValid:
+        charCount >= MIN_CONTENT_LENGTH &&
+        (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS),
+    };
+  };
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await anthropic.messages.create({
@@ -1015,31 +1037,69 @@ FORMAT OBLIGATOIRE:
         .replace(/^\s*\d+\.\s+/gm, '')
         .trim();
 
-      // Count meaningful lines
-      const lines = rawText.split(/\n+/).filter(l => l.trim().length > 30);
-      const lineCount = lines.length;
-      const charCount = rawText.length;
-      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines`);
+      const validation = isValidContent(rawText);
+      console.log(
+        `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines`
+      );
 
       // VALIDATION: Check minimum length
-      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT) {
-        console.log(`[Discovery] ✓ Section ${domain} VALIDATED (${charCount} chars, ${lineCount} lines)`);
+      if (validation.isValid) {
+        console.log(
+          `[Discovery] ✓ Section ${domain} VALIDATED (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+        );
         return cleanMarkdownToHTML(rawText);
       }
 
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
         throw new Error(
-          `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${charCount} chars, ${lineCount} lines)`
+          `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
         );
       }
 
-      console.log(`[Discovery] ✗ Section ${domain} TOO SHORT (${charCount} chars, ${lineCount} lines < ${MIN_LINE_COUNT}). Retrying...`);
+      console.log(
+        `[Discovery] ✗ Section ${domain} TOO SHORT (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines). Retrying...`
+      );
     } catch (error) {
       console.error(`[Discovery] AI section ${domain} error (attempt ${attempt}):`, error);
       if (attempt === MAX_RETRIES) {
-        return '';
+        break;
       }
+    }
+  }
+
+  if (!openai) {
+    return '';
+  }
+
+  console.warn(`[Discovery] Fallback OpenAI pour section ${domain}`);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: OPENAI_CONFIG.OPENAI_MODEL,
+        messages: [
+          { role: 'system', content: SECTION_SYSTEM_PROMPT },
+          { role: 'user', content: buildPrompt(attempt) }
+        ],
+        temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+        max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+      });
+      const rawText = response.choices[0]?.message?.content || '';
+      if (!rawText.trim()) {
+        continue;
+      }
+      const validation = isValidContent(rawText);
+      if (validation.isValid) {
+        console.log(
+          `[Discovery] ✓ OpenAI section ${domain} OK (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+        );
+        return cleanMarkdownToHTML(rawText);
+      }
+      console.warn(
+        `[Discovery] OpenAI section ${domain} too short (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+      );
+    } catch (error) {
+      console.error(`[Discovery] OpenAI section ${domain} error:`, error);
     }
   }
 
@@ -1349,6 +1409,28 @@ RAPPELS CRITIQUES:
     return cleanMarkdownToHTML(rawText);
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
+
+    if (openai) {
+      try {
+        console.warn('[Discovery] Fallback OpenAI pour synthese globale');
+        const response = await openai.chat.completions.create({
+          model: OPENAI_CONFIG.OPENAI_MODEL,
+          messages: [
+            { role: 'system', content: DISCOVERY_SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+          max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+        });
+        const text = response.choices[0]?.message?.content || '';
+        if (text.trim()) {
+          return cleanMarkdownToHTML(text);
+        }
+      } catch (fallbackError) {
+        console.error('[Discovery] OpenAI synthesis fallback error:', fallbackError);
+      }
+    }
+
     return `Analyse détectée: ${blocages.length} blocages identifiés affectant ton objectif "${responses.objectif}".`;
   }
 }
@@ -1356,6 +1438,9 @@ RAPPELS CRITIQUES:
 // Convert markdown artifacts to clean HTML - CRITICAL: Remove all em dashes
 function cleanMarkdownToHTML(text: string): string {
   return text
+    // Remove any explicit sources/references lines even if inline
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+    .replace(/Sources?\s*:.*$/gmi, '')
     // CRITICAL: Remove ALL em dashes (—) and en dashes (–) FIRST
     .replace(/—/g, ':')
     .replace(/–/g, '-')
@@ -1377,6 +1462,8 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
     // Remove any remaining markdown artifacts
     .replace(/`([^`]+)`/g, '$1')
+    // Strip inline color styles that can cause black-on-black
+    .replace(/\s*style=(\"|')[^\"']*color[^\"']*(\"|')/gi, '')
     // Final pass: remove any remaining em dashes that slipped through
     .replace(/—/g, ':')
     .replace(/–/g, '-')
