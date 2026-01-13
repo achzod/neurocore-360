@@ -143,7 +143,6 @@ const SOURCE_MARKERS = [
   "renaissance periodization",
   "mpmd",
   "newsletter",
-  "achzod",
 ];
 
 const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client"];

@@ -140,6 +140,8 @@ function cleanPremiumContent(content: string): string {
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
+    .replace(/\bclients\b/gi, 'profils')
+    .replace(/\bclient\b/gi, 'profil')
     // Remove em dashes and special characters
     .replace(/—/g, ':')
     .replace(/–/g, '-')

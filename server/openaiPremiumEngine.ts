@@ -26,7 +26,7 @@ function getFirstNameForReport(clientData: ClientData): string {
   const email = (clientData as any)?.email;
   if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
 
-  return "Client";
+  return "Profil";
 }
 
 // Cache system (identique à Gemini)
@@ -78,6 +78,11 @@ function generateAuditId(): string {
 const openai = new OpenAI({
   apiKey: OPENAI_CONFIG.OPENAI_API_KEY,
 });
+
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter)\\b",
+  "gi"
+);
 
 const OPENAI_MODEL = OPENAI_CONFIG.OPENAI_MODEL;
 const OPENAI_TEMPERATURE = OPENAI_CONFIG.OPENAI_TEMPERATURE;
@@ -489,7 +494,7 @@ export async function generateAuditTxtWithOpenAI(
     : 'Analyse photo indisponible (incident vision).';
 
   const fullDataStr = `
-DONNEES CLIENT:
+DONNEES PROFIL:
 ${dataStr}
 
 ANALYSE PHOTO POSTURALE:
@@ -597,6 +602,11 @@ ${photoAnalysisStr}
       }
 
       const cleanedText = sectionText
+        .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
+        .replace(/Sources?\s*:.*$/gmi, "")
+        .replace(SOURCE_NAME_REGEX, "")
+        .replace(/\bclients\b/gi, "profils")
+        .replace(/\bclient\b/gi, "profil")
         .replace(/\*\*/g, "")
         .replace(/##/g, "")
         .replace(/__/g, "")

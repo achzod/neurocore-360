@@ -1474,6 +1474,9 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/Sources?\s*:.*$/gmi, '')
     // Remove any explicit source names
     .replace(SOURCE_NAME_REGEX, "")
+    // Remove "client" language (single-author voice)
+    .replace(/\bclients\b/gi, "profils")
+    .replace(/\bclient\b/gi, "profil")
     // CRITICAL: Remove ALL em dashes (—) and en dashes (–) FIRST
     .replace(/—/g, ':')
     .replace(/–/g, '-')
