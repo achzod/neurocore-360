@@ -1475,7 +1475,7 @@ export function analyzePsychologieMental(responses: Responses): SectionScore {
   let soutienScore = 80;
   if (soutienSocial === "pas-du-tout" || soutienSocial === "peu") {
     soutienScore = soutienSocial === "pas-du-tout" ? 30 : 50;
-    insights.push("Le manque de soutien social est un facteur de risque majeur pour l'abandon des objectifs de sante. Les etudes montrent que l'entourage impacte directement nos comportements : nous adoptons les habitudes de notre environnement. L'isolement augmente aussi le stress et reduit la motivation.");
+    insights.push("Le manque de soutien social est un facteur de risque majeur pour l'abandon des objectifs de sante. Les etudes montrent que l'entourage impacte directement le comportement : tu finis souvent par adopter les habitudes de ton environnement. L'isolement augmente aussi le stress et reduit la motivation.");
     recommendations.push("Chercher une communaute alignee avec tes objectifs (groupe de sport, communaute en ligne, coaching de groupe).");
     recommendations.push("Communiquer tes objectifs a tes proches et demander leur soutien explicitement.");
   }
@@ -1569,11 +1569,11 @@ export function generateFullAnalysis(responses: Responses): AnalysisResult {
 
   let globalSummary = "";
   if (global >= 75) {
-    globalSummary = "Ton profil APEXLABS revele des fondations excellentes. Tu es dans le top 20% des personnes que nous analysons. Les recommandations ci-dessous te permettront de passer du 'bien' a 'l'exceptionnel' en ciblant les quelques points d'optimisation restants.";
+    globalSummary = "Ton profil APEXLABS revele des fondations excellentes. Tu es dans le top 20% des personnes que j'analyse. Les recommandations ci-dessous te permettront de passer du 'bien' a 'l'exceptionnel' en ciblant les quelques points d'optimisation restants.";
   } else if (global >= 60) {
     globalSummary = "Ton profil APEXLABS montre un potentiel significatif avec des zones d'optimisation claires. En adressant systematiquement les priorites identifiees, tu peux t'attendre a des gains notables en energie, composition corporelle et bien-etre general dans les 8-12 prochaines semaines.";
   } else if (global >= 45) {
-    globalSummary = "Ton profil APEXLABS met en evidence des domaines necessitant une attention immediate. La bonne nouvelle : avec les interventions ciblees que nous proposons, tu as un potentiel de transformation important. Concentre-toi sur les 3 priorites avant d'aller plus loin.";
+    globalSummary = "Ton profil APEXLABS met en evidence des domaines necessitant une attention immediate. La bonne nouvelle : avec les interventions ciblees que je propose, tu as un potentiel de transformation important. Concentre-toi sur les 3 priorites avant d'aller plus loin.";
   } else {
     globalSummary = "Ton profil APEXLABS revele des desequilibres majeurs qui expliquent probablement beaucoup de tes symptomes actuels. C'est une base de travail precieuse : chaque zone identifiee est une opportunite d'amelioration concrete. Avec un plan structure, les progres seront visibles rapidement.";
   }
@@ -1643,11 +1643,11 @@ function generateExecutiveSummary(
   }
 
   if (objectif === "perte-graisse") {
-    summary += "Pour ton objectif de perte de graisse, nous avons identifie les leviers metaboliques et hormonaux specifiques a activer. ";
+    summary += "Pour ton objectif de perte de graisse, j'ai identifie les leviers metaboliques et hormonaux specifiques a activer. ";
   } else if (objectif === "prise-muscle") {
     summary += "Pour ta prise de muscle, le plan cible l'optimisation de ta nutrition proteique, ta recuperation, et tes hormones anaboliques. ";
   } else if (objectif === "energie") {
-    summary += "Pour booster ton energie, nous ciblons tes mitochondries, ta glycemie, et ton sommeil - les trois piliers energetiques. ";
+    summary += "Pour booster ton energie, je cible tes mitochondries, ta glycemie, et ton sommeil - les trois piliers energetiques. ";
   }
 
   const priorityScores = priorities.map(p => sections[p]?.score || 0);
