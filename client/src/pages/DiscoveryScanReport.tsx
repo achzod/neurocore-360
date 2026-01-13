@@ -97,7 +97,7 @@ const DiscoveryScanReport: React.FC = () => {
           const nextAttempt = attempt + 1;
           setRegenAttempts(nextAttempt);
 
-          if (nextAttempt <= 12) {
+          if (nextAttempt <= 30) {
             regenTimer.current = window.setTimeout(() => fetchReport(nextAttempt), 3500);
           } else {
             setError("Regeneration en attente trop longue. Clique sur Recalculer ou reessaie plus tard.");

@@ -253,31 +253,33 @@ export async function registerRoutes(
           responses: data.responses,
         });
 
-        try {
-          const result = await analyzeDiscoveryScan(data.responses as any);
-          const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+        res.json(audit);
 
-          await storage.updateAudit(audit.id, {
-            narrativeReport,
-            reportDeliveryStatus: "READY",
-          });
+        (async () => {
+          try {
+            const result = await analyzeDiscoveryScan(data.responses as any);
+            const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
 
-          const baseUrl = getBaseUrl();
-          const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
-          if (emailSent) {
-            await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-            const clientName = (data.responses as any)?.prenom || data.email.split("@")[0];
-            await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+            await storage.updateAudit(audit.id, {
+              narrativeReport,
+              reportDeliveryStatus: "READY",
+            });
+
+            const baseUrl = getBaseUrl();
+            const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+            if (emailSent) {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+              const clientName = (data.responses as any)?.prenom || data.email.split("@")[0];
+              await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+            }
+          } catch (error) {
+            console.error("[Discovery Scan] Generation error:", error);
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
           }
+        })();
 
-          res.json(audit);
-          return;
-        } catch (error) {
-          console.error("[Discovery Scan] Generation error:", error);
-          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
-          res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
-          return;
-        }
+        return;
       }
       // Photos obligatoires UNIQUEMENT pour Ultimate Scan (ELITE)
       if (data.type === "ELITE" && !hasThreePhotos(data.responses)) {
@@ -1570,7 +1572,7 @@ export async function registerRoutes(
       });
 
       if (recentAudit) {
-        res.json({ success: true, auditId: recentAudit.id, existing: true });
+        res.json({ success: true, auditId: recentAudit.id, auditType: recentAudit.type, existing: true });
         return;
       }
 
@@ -1605,7 +1607,7 @@ export async function registerRoutes(
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, normalizedPlanType);
       processReportAndSendEmail(audit.id, audit.email, normalizedPlanType);
 
-      res.json({ success: true, auditId: audit.id });
+      res.json({ success: true, auditId: audit.id, auditType: audit.type });
     } catch (error: any) {
       console.error("Stripe confirmation error:", error);
       res.status(500).json({ error: error.message || "Erreur confirmation paiement" });
@@ -1618,7 +1620,25 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const allAudits = await storage.getAllAudits();
-      res.json({ success: true, audits: allAudits });
+      const burnoutReports = await storage.getAllBurnoutReports();
+      const mappedBurnout = burnoutReports.map((report) => ({
+        id: report.id,
+        email: report.email,
+        type: "BURNOUT",
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: report.createdAt,
+        createdAt: report.createdAt,
+        completedAt: report.createdAt,
+      }));
+
+      const audits = [...mappedBurnout, ...allAudits].sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
+      res.json({ success: true, audits });
     } catch (error) {
       console.error("[Admin Audits] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -2580,15 +2600,20 @@ export async function registerRoutes(
 
       // No report stored -> trigger a fresh generation in background
       // to avoid users getting stuck on "Analyse en cours".
-      if (audit.reportDeliveryStatus !== "GENERATING") {
+      const shouldRegenerate = audit.reportDeliveryStatus !== "GENERATING";
+      if (shouldRegenerate) {
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       }
 
       res.status(202).json({
         success: true,
-        status: "regenerating",
-        message: "Recalcul du rapport lance",
+        status: shouldRegenerate ? "regenerating" : "generating",
+        message: shouldRegenerate ? "Recalcul du rapport lance" : "Generation en cours",
       });
+
+      if (!shouldRegenerate) {
+        return;
+      }
 
       (async () => {
         try {

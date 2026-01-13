@@ -225,8 +225,8 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
 <div style="background: var(--surface-2); border-radius: 12px; padding: 20px; margin-top: 24px;">
   <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 12px;">Prochaine étape :</p>
   <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6;">
-    Réponds à cet email ou contacte-moi directement pour qu'on échange sur ta situation.
-    On fait un call de 15 min pour voir si on est un bon fit. Pas de pression, pas de bullshit.
+    Réponds à cet email ou contacte-moi directement pour échanger sur ta situation.
+    Je te propose un call de 15 min pour voir si c'est un bon fit. Pas de pression, pas de bullshit.
   </p>
   <p style="font-size: 1rem; color: var(--primary); margin-top: 16px;">
     <strong>Email</strong> : coaching@achzodcoaching.com<br/>

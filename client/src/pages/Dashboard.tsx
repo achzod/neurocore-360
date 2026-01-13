@@ -526,7 +526,7 @@ function AuditCard({ audit, index, themeColors }: { audit: Audit; index: number;
           )}
 
           <div className="mt-6">
-            <Link href={`/dashboard/${audit.id}`}>
+            <Link href={getReportPath(audit.type, audit.id)}>
               <Button className="w-full" data-testid={`button-view-${audit.id}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 Consulter le rapport complet
@@ -609,7 +609,8 @@ export default function Dashboard() {
           const data = await response.json();
 
           if (response.ok && data.success && data.auditId) {
-            navigate(`/dashboard/${data.auditId}`);
+            const target = getReportPath(data.auditType || "", data.auditId);
+            navigate(target);
             return;
           }
 
@@ -788,12 +789,6 @@ export default function Dashboard() {
                           <Button size="lg" data-testid="button-view-report-complet">
                             <Sparkles className="mr-2 h-4 w-4" />
                             Rapport complet
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/${latestAudit.id}`}>
-                          <Button size="lg" variant="outline" data-testid="button-view-latest">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Vue classique
                           </Button>
                         </Link>
                       </div>

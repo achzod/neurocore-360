@@ -855,7 +855,7 @@ REGLES D'OR :
 
 PHASE 2 : REPARATION (Jour 8 a 14)
 
-On continue l'elimination + on ajoute :
+Je continue l'elimination + j'ajoute :
 + Glutamine : 5g matin a jeun
 + Probiotiques : [souche recommandee]
 + Bouillon d'os : 1 tasse/jour (collagene pour la paroi)
@@ -872,7 +872,7 @@ RESTAURANT / REPAS EXTERIEURS (regles) :
 - Demander : cuisson a l'huile d'olive
 - Boire : eau plate
 
-Ce protocole est STRICT mais TEMPORAIRE (14 jours). Apres, on assouplit.
+Ce protocole est STRICT mais TEMPORAIRE (14 jours). Apres, j'assouplis.
 `,
 
   "Protocole Bureau Anti-Sedentarite": `
@@ -1277,9 +1277,9 @@ FORMAT OBLIGATOIRE :
 
 SYNTHESE FINALE
 
-[Prenom], on a passe 2 heures ensemble sur ton profil. Voici ce que je retiens :
+[Prenom], j'ai passe 2 heures sur ton profil. Voici ce que je retiens :
 
-TES ATOUTS (ce sur quoi on va capitaliser) :
+TES ATOUTS (ce sur quoi je vais capitaliser) :
 + [Atout 1 - specifique a LUI]
 + [Atout 2 - specifique a LUI]
 + [Atout 3 - specifique a LUI]
@@ -1491,10 +1491,10 @@ OBJECTIF : Clore le rapport avec impact + upsell naturel vers Anabolic Bioscan.
 STRUCTURE EN 4 BLOCS :
 
 1. TON BILAN EN 60 SECONDES (1000 chars) :
-Resume percutant de ce qu'on a decouvert :
+Resume percutant de ce que j'ai decouvert :
 - Ton score global : X/100 (base sur energie, metabolisme, lifestyle)
 - Les 3 forces qui jouent en ta faveur
-- Les 3 blocages qu'on a identifies
+- Les 3 blocages que j'ai identifies
 Style : comme si tu resumais un dossier medical a un collegue.
 
 2. TON PLAN D'ACTION 14 JOURS (1500 chars) :

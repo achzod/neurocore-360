@@ -204,7 +204,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       title: 'Lecture globale',
       subtitle: 'Le Paradoxe',
       content: `<p>Ton corps hurle quelque chose que tu refuses d'entendre.</p>
-<p>Tu fais tout ce qu'on attend d'un gars qui veut optimiser sa sante. Et pourtant... tu stagnes. L'energie manque. La recuperation traine. Les resultats ne suivent pas l'investissement.</p>
+        <p>Tu fais tout ce que j'attends d'un gars qui veut optimiser sa sante. Et pourtant... tu stagnes. L'energie manque. La recuperation traine. Les resultats ne suivent pas l'investissement.</p>
 <p><strong>Systeme nerveux : 38 sur 100.</strong> Le score le plus bas de ton bilan. Et c'est precisement ce score qui tire tout le reste vers le bas.</p>
 <p>Stress eleve. Anxiete frequente. Concentration difficile. Ce triptyque raconte une histoire que ton corps connait par coeur : mode survie permanent. Ton systeme nerveux sympathique — celui qui gere la reponse au danger — tourne en surregime.</p>`,
       chips: ['Mode Survie', 'Sympathique Dominant', 'Frein Metabolique'],

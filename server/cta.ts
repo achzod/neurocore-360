@@ -83,7 +83,7 @@ Tout ce qu'inclut Anabolic Bioscan PLUS :
 
 OPTION 3 : COACHING PERSONNALISE DIRECTEMENT
 
-Tu veux qu'on travaille ensemble maintenant ? Je propose trois formules :
+Tu veux que je t'accompagne maintenant ? Je propose trois formules :
 - Essential Elite : suivi hebdomadaire, ajustements continus
 - Private Lab : coaching intensif, analyse avancee
 - Elite : accompagnement complet transformation
@@ -143,8 +143,8 @@ CODE PROMO : neurocore20 (-25% sur Essential Elite et Private Lab)
 
 PROCHAINE ETAPE :
 
-Reponds a cet email ou contacte-moi directement pour qu'on echange sur ta situation.
-On fait un call de 15min pour voir si on est un bon fit.
+Reponds a cet email ou contacte-moi directement pour echanger sur ta situation.
+Je te propose un call de 15min pour voir si c'est un bon fit.
 Pas de pression, pas de bullshit.
 
 Email: ${CONTACT.email}

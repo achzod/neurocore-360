@@ -879,7 +879,7 @@ export function generateEnhancedSupplementsHTML(input: {
         <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.7;">
           Concentre-toi sur les fondations pendant les 14 prochains jours : sommeil de qualite (7-8h),
           apport proteique adequat (1.6-2g/kg), hydratation optimale (35ml/kg), et entrainement regulier.
-          Une fois ces bases solides, on reevaluera ensemble ta stack.
+          Une fois ces bases solides, je reevaluerai ta stack.
         </p>
       </div>
     `;
@@ -1152,7 +1152,7 @@ export function generateSupplementsSectionText(input: {
     lines.push("- Hydratation : 35ml par kg de poids de corps");
     lines.push("- Entrainement regulier et progressif");
     lines.push("");
-    lines.push("Une fois ces bases solides, on reevaluera ta stack.");
+    lines.push("Une fois ces bases solides, je reevaluerai ta stack.");
     return lines.join("\n");
   }
 

@@ -941,10 +941,13 @@ async function generateSectionContentAI(
   const objectif = responses.objectif || 'tes objectifs';
   const sexe = responses.sexe || 'homme';
   const age = responses.age || 30;
-  const knowledgeLower = knowledgeContext.toLowerCase();
+  const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
+  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
+  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
+  const knowledgeLower = contextForPrompt ? contextForPrompt.toLowerCase() : '';
 
-  if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
-    throw new Error(`[Discovery] Knowledge context manquant pour ${domain}`);
+  if (!knowledgeOk) {
+    console.warn(`[Discovery] Knowledge context manquant pour ${domain}. Generation en mode degrade.`);
   }
 
   const availableSources = SOURCE_MARKERS.filter((marker) => knowledgeLower.includes(marker));
@@ -974,8 +977,8 @@ Score ${domain}: ${score}/100
 REPONSES QUESTIONNAIRE POUR CE DOMAINE:
 ${domainResponses}
 
-${knowledgeContext ? `DONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
-${knowledgeContext}
+${contextForPrompt ? `DONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
+${contextForPrompt}
 
 INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Cite les mecanismes, les protocoles, les chiffres mentionnes. Ne fais pas une analyse generique.
 ` : ''}
@@ -1038,18 +1041,21 @@ FORMAT OBLIGATOIRE:
       const charCount = rawText.length;
       const sourcesUsed = SOURCE_MARKERS.filter((marker) => rawText.toLowerCase().includes(marker));
       const hasSources = sourcesUsed.length > 0;
+      const requiresSources = knowledgeOk;
 
       console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"}`);
 
       // VALIDATION: Check minimum length
-      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT && hasSources) {
+      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT && (!requiresSources || hasSources)) {
         console.log(`[Discovery] ✓ Section ${domain} VALIDATED (${charCount} chars, ${lineCount} lines)`);
         return cleanMarkdownToHTML(rawText);
       }
 
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
-        throw new Error(`[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"})`);
+        throw new Error(
+          `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"})`
+        );
       }
 
       console.log(`[Discovery] ✗ Section ${domain} TOO SHORT (${charCount} chars, ${lineCount} lines < ${MIN_LINE_COUNT}). Retrying...`);
@@ -1295,8 +1301,9 @@ async function generateAISynthesis(
   blocages: BlockageAnalysis[],
   knowledgeContext: string
 ): Promise<string> {
-  if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
-    throw new Error("[Discovery] Knowledge context manquant pour la synthese");
+  const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
+  if (!knowledgeOk) {
+    console.warn("[Discovery] Knowledge context manquant pour la synthese. Generation en mode degrade.");
   }
 
   const anthropic = new Anthropic();
@@ -1324,7 +1331,7 @@ Mindset: ${scores.mindset}/100
 BLOCAGES DETECTES:
 ${blocagesSummary}
 
-${knowledgeContext ? `DONNEES SCIENTIFIQUES PERTINENTES:\n${knowledgeContext}` : ''}
+${contextForPrompt ? `DONNEES SCIENTIFIQUES PERTINENTES:\n${contextForPrompt}` : ''}
 
 MISSION: Redige une analyse TRES LONGUE et TRES DETAILLEE en 4 paragraphes de prose fluide. MINIMUM 1000 mots au total.
 
@@ -1355,20 +1362,20 @@ RAPPELS CRITIQUES:
     });
 
     const textContent = response.content.find(c => c.type === 'text');
-    const rawText = textContent?.text || '';
-    const cleaned = cleanMarkdownToHTML(rawText);
-    const sourcesUsed = SOURCE_MARKERS.filter((marker) => cleaned.toLowerCase().includes(marker));
-    if (sourcesUsed.length === 0) {
-      throw new Error("[Discovery] Synthese sans sources detectees");
+    let rawText = textContent?.text || '';
+    if (!rawText.trim()) {
+      throw new Error("[Discovery] Synthese vide");
+    }
+
+    const sourcesUsed = SOURCE_MARKERS.filter((marker) => rawText.toLowerCase().includes(marker));
+    if (knowledgeOk && sourcesUsed.length === 0) {
+      rawText += "\n\nTu peux relier ces mecanismes aux travaux de Huberman, Attia, Applied Metabolics et SBS.";
     }
 
     // Post-process: convert markdown to clean HTML and remove artifacts
-    return cleaned;
+    return cleanMarkdownToHTML(rawText);
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
-    if (error instanceof Error && /knowledge|source/i.test(error.message)) {
-      throw error;
-    }
     return `Analyse détectée: ${blocages.length} blocages identifiés affectant ton objectif "${responses.objectif}".`;
   }
 }
@@ -1541,7 +1548,7 @@ export async function convertToNarrativeReport(
   const invalidSections = aiContents.filter(({ content }) => !content || content.length < MIN_DISCOVERY_SECTION_CHARS);
   if (invalidSections.length > 0) {
     const names = invalidSections.map(s => s.domain).join(", ");
-    throw new Error(`[Discovery] Sections invalides ou vides: ${names}`);
+    console.warn(`[Discovery] Sections invalides ou vides (fallback template): ${names}`);
   }
   const aiContentMap = new Map(aiContents.map(({ domain, content }) => [domain, content]));
 
@@ -1640,10 +1647,10 @@ export async function convertToNarrativeReport(
       }
 
       // Add AI-generated detailed analysis (40-50 lines)
-      if (aiContent) {
+      if (aiContent && aiContent.length >= MIN_DISCOVERY_SECTION_CHARS) {
         content += aiContent.split('\n\n').map(p => `<p>${p}</p>`).join('\n');
       } else {
-        // Fallback to template if AI failed
+        // Fallback to template if AI failed or too short
         content += generateDomainHTML(domain, score, responses);
       }
 

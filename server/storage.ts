@@ -118,6 +118,7 @@ export interface IStorage {
   saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress>;
   createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord>;
   getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
+  getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
 
   createMagicToken(email: string): Promise<string>;
   verifyMagicToken(token: string): Promise<string | null>;
@@ -359,6 +360,14 @@ export class MemStorage implements IStorage {
 
   async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
     return this.burnoutReports.get(id);
+  }
+
+  async getAllBurnoutReports(): Promise<BurnoutReportRecord[]> {
+    return Array.from(this.burnoutReports.values()).sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
   }
 
   private calculateScores(responses: Record<string, unknown>): Record<string, number> {
@@ -867,6 +876,18 @@ export class PgStorage implements IStorage {
       report: row.report || {},
       createdAt: row.created_at,
     };
+  }
+
+  async getAllBurnoutReports(): Promise<BurnoutReportRecord[]> {
+    await this.ensureBurnoutReportsTable();
+    const result = await pool.query("SELECT * FROM burnout_reports ORDER BY created_at DESC LIMIT 100");
+    return result.rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      responses: row.responses || {},
+      report: row.report || {},
+      createdAt: row.created_at,
+    }));
   }
 
   async createMagicToken(email: string): Promise<string> {

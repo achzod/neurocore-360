@@ -90,6 +90,14 @@ interface PromoCode {
 const ADMIN_PASSWORD = "badboy007";
 const ADMIN_ENV_KEY = import.meta.env.VITE_ADMIN_KEY || "";
 
+const getAuditReportUrl = (audit: Audit) => {
+  if (audit.type === "GRATUIT") return `/scan/${audit.id}`;
+  if (audit.type === "PREMIUM") return `/anabolic/${audit.id}`;
+  if (audit.type === "ELITE") return `/ultimate/${audit.id}`;
+  if (audit.type === "BURNOUT") return `/burnout/${audit.id}`;
+  return `/dashboard/${audit.id}`;
+};
+
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("admin_auth") === "true";
@@ -898,7 +906,7 @@ export default function AdminDashboard() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(`/dashboard/${audit.id}`, "_blank")}
+                            onClick={() => window.open(getAuditReportUrl(audit), "_blank")}
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             Voir le rapport
