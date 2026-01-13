@@ -119,6 +119,7 @@ export interface IStorage {
   saveBurnoutProgress(input: SaveBurnoutProgressInput): Promise<BurnoutProgress>;
   createBurnoutReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<BurnoutReportRecord>;
   getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined>;
+  updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined>;
   getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
 
   createMagicToken(email: string): Promise<string>;
@@ -361,6 +362,17 @@ export class MemStorage implements IStorage {
 
   async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
     return this.burnoutReports.get(id);
+  }
+
+  async updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined> {
+    const existing = this.burnoutReports.get(id);
+    if (!existing) return undefined;
+    const updated: BurnoutReportRecord = {
+      ...existing,
+      report,
+    };
+    this.burnoutReports.set(id, updated);
+    return updated;
   }
 
   async getAllBurnoutReports(): Promise<BurnoutReportRecord[]> {
@@ -868,6 +880,23 @@ export class PgStorage implements IStorage {
   async getBurnoutReport(id: string): Promise<BurnoutReportRecord | undefined> {
     await this.ensureBurnoutReportsTable();
     const result = await pool.query("SELECT * FROM burnout_reports WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      responses: row.responses || {},
+      report: row.report || {},
+      createdAt: row.created_at,
+    };
+  }
+
+  async updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined> {
+    await this.ensureBurnoutReportsTable();
+    const result = await pool.query(
+      `UPDATE burnout_reports SET report = $2 WHERE id = $1 RETURNING *`,
+      [id, JSON.stringify(report)]
+    );
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
     return {

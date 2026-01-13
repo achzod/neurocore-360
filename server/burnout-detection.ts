@@ -879,6 +879,29 @@ export function registerBurnoutRoutes(app: Express): void {
   });
 
   /**
+   * POST /api/burnout-detection/:id/regenerate
+   */
+  app.post("/api/burnout-detection/:id/regenerate", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const record = await storage.getBurnoutReport(id);
+      if (!record) {
+        res.status(404).json({ error: "Analyse non trouvée" });
+        return;
+      }
+
+      const responses = (record.responses || {}) as BurnoutResponse;
+      const result = await analyzeBurnout(responses, record.email);
+      const updated = await storage.updateBurnoutReport(record.id, result);
+
+      res.json({ success: true, id: record.id, report: updated?.report || result });
+    } catch (error) {
+      console.error("[Burnout] Regenerate error:", error);
+      res.status(500).json({ error: "Erreur regeneration burnout" });
+    }
+  });
+
+  /**
    * POST /api/burnout-detection/create-test
    */
   app.post("/api/burnout-detection/create-test", async (req, res) => {
