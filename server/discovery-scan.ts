@@ -1833,7 +1833,7 @@ export async function convertToNarrativeReport(
     sections,
     clientName: prenom,
     generatedAt: new Date().toISOString(),
-    auditType: "DISCOVERY_SCAN"
+    auditType: "GRATUIT"
   };
 }
 
