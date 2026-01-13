@@ -1041,9 +1041,12 @@ export async function registerRoutes(
       const referenceId = typeof req.query.referenceId === "string" ? req.query.referenceId : "";
       const sinceMs = typeof req.query.since === "string" ? Number(req.query.since) : null;
 
-      const records = referenceId
-        ? await storage.getTerraDataByReference(referenceId)
-        : await storage.getTerraDataByEmail(req.params.email);
+      if (!referenceId) {
+        res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [], reason: "REFERENCE_REQUIRED" });
+        return;
+      }
+
+      const records = await storage.getTerraDataByReference(referenceId);
 
       const filteredRecords = sinceMs
         ? records.filter((record) => {

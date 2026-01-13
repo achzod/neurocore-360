@@ -540,7 +540,7 @@ function QuestionnaireContent() {
 
       // Check if returning from Terra widget
       const wasConnecting = sessionStorage.getItem("terraConnecting");
-      if (wasConnecting === "true" || terraSuccess === "true") {
+      if (terraSuccess === "true" || terraError === "true") {
         sessionStorage.removeItem("terraConnecting");
         setWearablesSyncShown(true);
 
@@ -565,7 +565,7 @@ function QuestionnaireContent() {
           sessionStorage.removeItem("terraStartedAt");
           localStorage.removeItem("terraReferenceId");
           localStorage.removeItem("terraStartedAt");
-          if (terraSuccess === "true" || wasConnecting === "true") {
+          if (terraSuccess === "true" || terraError === "true") {
             toast({
               title: "Connexion expiree",
               description: "Ta tentative de synchronisation a expire. Reconnecte ton wearable pour pre-remplir les questions.",
@@ -611,18 +611,29 @@ function QuestionnaireContent() {
                 setTerraConnected(false);
                 setTerraSkippedQuestions([]);
                 // User connected but no data yet - might be SDK provider
-              toast({
-                title: "Connexion en cours...",
-                description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
-                duration: 8000,
-              });
-              // Reset any previous skips/state to avoid stale prefill
-              setTerraConnected(false);
-              setTerraSkippedQuestions([]);
-            }
-          })
+                toast({
+                  title: "Connexion en cours...",
+                  description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
+                  duration: 8000,
+                });
+                // Reset any previous skips/state to avoid stale prefill
+                setTerraConnected(false);
+                setTerraSkippedQuestions([]);
+              }
+            })
           .catch(err => console.error("[Terra] Sync check failed:", err));
         }
+      } else if (wasConnecting === "true") {
+        sessionStorage.removeItem("terraConnecting");
+        setWearablesSyncShown(true);
+        setTerraConnected(false);
+        setTerraSkippedQuestions([]);
+        toast({
+          title: "Connexion non confirmee",
+          description: "Je n'ai pas reçu de confirmation Terra. Si tu veux la sync, relance la connexion.",
+          variant: "destructive",
+          duration: 8000,
+        });
       }
     } catch (e) {
       console.error("[Questionnaire] Init error:", e);
