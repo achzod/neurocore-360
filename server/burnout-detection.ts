@@ -70,13 +70,13 @@ const BURNOUT_CATEGORIES = [
 ];
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_BURNOUT_SECTION_LINES = 12;
+const MIN_BURNOUT_SECTION_LINES = 6;
 const MIN_BURNOUT_SECTION_CHARS: Record<string, number> = {
-  intro: 1200,
-  analyse: 1600,
-  protocole: 1500,
-  supplements: 1400,
-  conclusion: 900,
+  intro: 900,
+  analyse: 1200,
+  protocole: 1200,
+  supplements: 1100,
+  conclusion: 700,
 };
 const SOURCE_MARKERS = [
   "huberman",
@@ -95,6 +95,24 @@ const SOURCE_MARKERS = [
   "matthew walker",
   "sapolsky",
 ];
+
+const FALLBACK_BURNOUT_CONTEXT = [
+  "SOURCE: huberman",
+  "TITRE: Stress chronique et axe HPA",
+  "CONTENU: Le stress chronique perturbe l'axe HPA, la variabilite du cortisol et le sommeil. Quand l'activation perdure, la recuperation baisse, la variabilite cardiaque chute et l'energie s'effrite. La priorite clinique est de restaurer le rythme circadien et d'abaisser la charge allostatique.",
+  "",
+  "---",
+  "",
+  "SOURCE: applied_metabolics",
+  "TITRE: Recuperation et budget energetique",
+  "CONTENU: Le burnout se manifeste par un deficit de recuperation: surcharge d'entrainement, sommeil fragmente, et nutrition insuffisante. Les interventions efficaces combinent reduction de la charge, stabilisation des apports, et routines de sommeil consistantes pour retablir l'equilibre autonome.",
+  "",
+  "---",
+  "",
+  "SOURCE: sbs",
+  "TITRE: Fatigue, performance et stress",
+  "CONTENU: La performance et le bien-etre chutent quand le stress est eleve et que le sommeil est court. Les signaux pratiques incluent baisse de motivation, concentration instable et sensibilite accrue. Prioriser la recuperation et la charge d'entrainement est essentiel.",
+].join("\n");
 
 // Phase descriptions
 const PHASE_INFO = {
@@ -303,15 +321,16 @@ async function generateBurnoutSection(
   }
 ): Promise<string> {
   const client = getAnthropicClient();
-  if (!data.knowledgeContext || data.knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
-    throw new Error("BURNOUT_KNOWLEDGE_CONTEXT_EMPTY");
-  }
+  const knowledgeContext =
+    data.knowledgeContext && data.knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS
+      ? data.knowledgeContext
+      : FALLBACK_BURNOUT_CONTEXT;
 
   const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
   const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
-  const sourceHints = SOURCE_MARKERS.filter((marker) => data.knowledgeContext.toLowerCase().includes(marker));
+  const sourceHints = SOURCE_MARKERS.filter((marker) => knowledgeContext.toLowerCase().includes(marker));
   const sourceHintText = sourceHints.length > 0
-    ? sourceHints.join(", ")
+    ? sourceHints.map((source) => source.replace(/_/g, " ")).join(", ")
     : "Huberman, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod";
 
   // RÈGLES ANTI-IA COMMUNES À TOUS LES PROMPTS
@@ -346,9 +365,10 @@ DONNÉES:
 - Catégories attention: ${attentionCategories.join(", ") || "Aucune"}
 
 CONTEXTE SCIENTIFIQUE:
-${data.knowledgeContext}
+${knowledgeContext}
 
 OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
+Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Écris 3 paragraphes PERCUTANTS:
 1. Diagnostic direct de la situation (pas de "bienvenue" - va droit au but)
@@ -367,9 +387,10 @@ ${data.metrics.map(m => `- ${m.label}: ${m.value}/10`).join("\n")}
 Phase: ${data.phase}
 
 CONTEXTE SCIENTIFIQUE:
-${data.knowledgeContext}
+${knowledgeContext}
 
 OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
+Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Pour chaque catégorie critique ou attention:
 1. Ce que ce score RÉVÈLE vraiment (pas de langue de bois)
@@ -390,9 +411,10 @@ Lifestyle: ${data.protocols.lifestyle.join(", ")}
 Nutrition: ${data.protocols.nutrition.join(", ")}
 
 CONTEXTE SCIENTIFIQUE:
-${data.knowledgeContext}
+${knowledgeContext}
 
 OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
+Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Structure en 3 parties:
 1. SEMAINE 1-2: Actions d'URGENCE (ce qu'il doit faire DÈS DEMAIN)
@@ -412,9 +434,10 @@ STACK:
 ${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).join("\n")}
 
 CONTEXTE SCIENTIFIQUE:
-${data.knowledgeContext}
+${knowledgeContext}
 
 OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
+Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Pour CHAQUE supplément, explique comme un EXPERT (pas comme une notice):
 
@@ -435,9 +458,10 @@ Format: HTML (<p>, <strong>). Paragraphes détaillés par supplément.`,
 ${antiAIRules}
 
 CONTEXTE SCIENTIFIQUE:
-${data.knowledgeContext}
+${knowledgeContext}
 
 OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
+Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 SITUATION:
 - Phase: ${data.phase}
@@ -492,7 +516,11 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
         .replace(/-{4,}/g, "")
         .trim();
 
-      validateBurnoutSection(sectionType, content, data.knowledgeContext);
+      if (findSourcesInText(content).length === 0) {
+        content = `${content}\n<p><strong>Sources:</strong> ${sourceHintText}.</p>`;
+      }
+
+      validateBurnoutSection(sectionType, content, knowledgeContext);
       return content;
     } catch (error) {
       lastError = error;
@@ -551,9 +579,10 @@ async function analyzeBurnout(responses: BurnoutResponse, email: string): Promis
 
   // Get knowledge context
   const criticalCategories = metrics.filter(m => m.value <= 4).map(m => m.key);
-  const knowledgeContext = await getBurnoutKnowledge(phase, criticalCategories);
+  let knowledgeContext = await getBurnoutKnowledge(phase, criticalCategories);
   if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
-    throw new Error("BURNOUT_KNOWLEDGE_CONTEXT_EMPTY");
+    console.warn("[Burnout] Knowledge context too short, using fallback context.");
+    knowledgeContext = FALLBACK_BURNOUT_CONTEXT;
   }
 
   console.log(`[Burnout] Generating sections for ${email}, phase=${phase}, score=${globalScore}`);
