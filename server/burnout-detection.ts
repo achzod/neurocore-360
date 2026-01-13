@@ -7,7 +7,7 @@
 
 import type { Express } from "express";
 import Anthropic from "@anthropic-ai/sdk";
-import { searchArticles } from "./knowledge/storage";
+import { searchArticles, searchFullText } from "./knowledge/storage";
 import { ALLOWED_SOURCES } from "./knowledge/search";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { storage } from "./storage";
@@ -245,7 +245,12 @@ async function getBurnoutKnowledge(phase: string, categories: string[]): Promise
     if (categories.includes("cognitif")) keywords.push("cognition", "dopamine", "focus");
     if (categories.includes("emotionnel")) keywords.push("anxiété", "sérotonine", "GABA");
 
-    const articles = await searchArticles(keywords, 6, ALLOWED_SOURCES as unknown as string[]);
+    let articles = await searchArticles(keywords, 6, ALLOWED_SOURCES as unknown as string[]);
+    if (articles.length === 0) {
+      const fallbackQuery = ["stress", "cortisol", "burnout", "fatigue"].join(" ");
+      const ft = await searchFullText(fallbackQuery, 6);
+      articles = ft.filter(a => (ALLOWED_SOURCES as unknown as string[]).includes(a.source as string));
+    }
     if (articles.length === 0) return "";
 
     return articles.map(a =>
@@ -274,7 +279,7 @@ function validateBurnoutSection(sectionType: string, content: string, knowledgeC
   const lineCount = Math.max(textLineCount, paragraphCount);
   const knowledgeSources = findSourcesInText(knowledgeContext);
   const sourcesInContent = findSourcesInText(trimmed);
-  const hasSource = sourcesInContent.some((src) => knowledgeSources.includes(src));
+  const hasSource = knowledgeSources.length === 0 ? true : sourcesInContent.some((src) => knowledgeSources.includes(src));
 
   if (trimmed.length < minChars || lineCount < MIN_BURNOUT_SECTION_LINES) {
     throw new Error(`BURNOUT_SECTION_TOO_SHORT:${sectionType}`);
@@ -304,6 +309,10 @@ async function generateBurnoutSection(
 
   const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
   const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
+  const sourceHints = SOURCE_MARKERS.filter((marker) => data.knowledgeContext.toLowerCase().includes(marker));
+  const sourceHintText = sourceHints.length > 0
+    ? sourceHints.join(", ")
+    : "Huberman, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod";
 
   // RÈGLES ANTI-IA COMMUNES À TOUS LES PROMPTS
   const antiAIRules = `
@@ -339,7 +348,7 @@ DONNÉES:
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
 
 Écris 3 paragraphes PERCUTANTS:
 1. Diagnostic direct de la situation (pas de "bienvenue" - va droit au but)
@@ -360,7 +369,7 @@ Phase: ${data.phase}
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
 
 Pour chaque catégorie critique ou attention:
 1. Ce que ce score RÉVÈLE vraiment (pas de langue de bois)
@@ -383,7 +392,7 @@ Nutrition: ${data.protocols.nutrition.join(", ")}
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
 
 Structure en 3 parties:
 1. SEMAINE 1-2: Actions d'URGENCE (ce qu'il doit faire DÈS DEMAIN)
@@ -405,7 +414,7 @@ ${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
 
 Pour CHAQUE supplément, explique comme un EXPERT (pas comme une notice):
 
@@ -428,7 +437,7 @@ ${antiAIRules}
 CONTEXTE SCIENTIFIQUE:
 ${data.knowledgeContext}
 
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE (ex: Huberman Lab, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod). Pas de sources inventées.
+OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
 
 SITUATION:
 - Phase: ${data.phase}
@@ -448,38 +457,51 @@ Une phrase finale qui résonne avec SA situation spécifique.
 Format: HTML (<p>, <strong>). Ton direct et motivant.`
   };
 
-  try {
-    const response = await client.messages.create({
-      model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL, // claude-opus-4-5-20251101
-      max_tokens: 3000,
-      temperature: 0.7,
-      messages: [{ role: "user", content: prompts[sectionType] || prompts.intro }],
-    });
+  const MAX_RETRIES = 3;
+  let lastError: unknown = null;
 
-    let content = "";
-    if (response.content && response.content.length > 0) {
-      const firstBlock = response.content[0];
-      if (firstBlock.type === "text") {
-        content = firstBlock.text;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const retryNote =
+      attempt === 1
+        ? ""
+        : `\nATTENTION: Ta reponse precedente a ete rejetee. Tu DOIS citer explicitement 1-2 sources EXACTES parmi: ${sourceHintText}. Allonge le texte si besoin pour atteindre le format.\n`;
+
+    try {
+      const response = await client.messages.create({
+        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL, // claude-opus-4-5-20251101
+        max_tokens: 3200,
+        temperature: 0.6,
+        messages: [{ role: "user", content: `${prompts[sectionType] || prompts.intro}${retryNote}` }],
+      });
+
+      let content = "";
+      if (response.content && response.content.length > 0) {
+        const firstBlock = response.content[0];
+        if (firstBlock.type === "text") {
+          content = firstBlock.text;
+        }
       }
+
+      // Clean markdown artifacts
+      content = content
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/##\s*/g, "")
+        .replace(/\*/g, "")
+        .replace(/^[-•]\s+/gm, "")
+        .replace(/={4,}/g, "")
+        .replace(/-{4,}/g, "")
+        .trim();
+
+      validateBurnoutSection(sectionType, content, data.knowledgeContext);
+      return content;
+    } catch (error) {
+      lastError = error;
+      console.error(`[Burnout] Claude error for ${sectionType} (attempt ${attempt}):`, error);
+      if (attempt === MAX_RETRIES) break;
     }
-
-    // Clean markdown artifacts
-    content = content
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/##\s*/g, "")
-      .replace(/\*/g, "")
-      .replace(/^[-•]\s+/gm, "")
-      .replace(/={4,}/g, "")
-      .replace(/-{4,}/g, "")
-      .trim();
-
-    validateBurnoutSection(sectionType, content, data.knowledgeContext);
-    return content;
-  } catch (error) {
-    console.error(`[Burnout] Claude error for ${sectionType}:`, error);
-    throw error;
   }
+
+  throw lastError;
 }
 
 // Main analysis function
