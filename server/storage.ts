@@ -11,6 +11,7 @@ import type {
   ReportDeliveryStatusEnum,
   ReportJob,
   ReportJobStatusEnum,
+  ReviewAuditTypeEnum,
 } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 
@@ -1372,7 +1373,7 @@ export interface Review {
   auditId: string;
   userId?: string;
   email: string;
-  auditType: AuditTypeEnum;
+  auditType: ReviewAuditTypeEnum;
   rating: number;
   comment: string;
   status: ReviewStatusEnum;
@@ -1388,13 +1389,13 @@ export interface InsertReview {
   auditId: string;
   userId?: string;
   email: string;
-  auditType: AuditTypeEnum;
+  auditType: ReviewAuditTypeEnum;
   rating: number;
   comment: string;
 }
 
 // Promo codes mapping by audit type
-export const PROMO_CODES_BY_AUDIT_TYPE: Record<AuditTypeEnum, { code: string; description: string }> = {
+export const PROMO_CODES_BY_AUDIT_TYPE: Record<ReviewAuditTypeEnum, { code: string; description: string }> = {
   'DISCOVERY': { code: 'DISCOVERY20', description: '-20% sur le coaching Achzod' },
   'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ déduits du coaching' },
   'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ déduits du coaching' },
@@ -1415,13 +1416,40 @@ export interface IReviewStorage {
 }
 
 class PgReviewStorage implements IReviewStorage {
+  private ensuredReviewsTable = false;
+
+  private async ensureReviewsTable(): Promise<void> {
+    if (this.ensuredReviewsTable) return;
+    await pool.query(
+      `CREATE TABLE IF NOT EXISTS reviews (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        audit_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36),
+        email VARCHAR(255) NOT NULL,
+        audit_type VARCHAR(50) NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        promo_code VARCHAR(50),
+        promo_code_sent_at TIMESTAMP,
+        admin_notes TEXT,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        reviewed_at TIMESTAMP,
+        reviewed_by VARCHAR(255)
+      )`
+    );
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`);
+    this.ensuredReviewsTable = true;
+  }
+
   private rowToReview(row: any): Review {
     return {
       id: row.id,
       auditId: row.audit_id,
       userId: row.user_id,
       email: row.email,
-      auditType: row.audit_type as AuditTypeEnum,
+      auditType: row.audit_type as ReviewAuditTypeEnum,
       rating: row.rating,
       comment: row.comment,
       status: row.status as ReviewStatusEnum,
@@ -1435,6 +1463,7 @@ class PgReviewStorage implements IReviewStorage {
   }
 
   async createReview(data: InsertReview): Promise<Review> {
+    await this.ensureReviewsTable();
     const id = randomUUID();
     const result = await pool.query(
       `INSERT INTO reviews (id, audit_id, user_id, email, audit_type, rating, comment, status, created_at)
@@ -1446,18 +1475,21 @@ class PgReviewStorage implements IReviewStorage {
   }
 
   async getReviewById(id: string): Promise<Review | undefined> {
+    await this.ensureReviewsTable();
     const result = await pool.query("SELECT * FROM reviews WHERE id = $1", [id]);
     if (result.rows.length === 0) return undefined;
     return this.rowToReview(result.rows[0]);
   }
 
   async getReviewByAuditId(auditId: string): Promise<Review | undefined> {
+    await this.ensureReviewsTable();
     const result = await pool.query("SELECT * FROM reviews WHERE audit_id = $1", [auditId]);
     if (result.rows.length === 0) return undefined;
     return this.rowToReview(result.rows[0]);
   }
 
   async getApprovedReviews(): Promise<Review[]> {
+    await this.ensureReviewsTable();
     const result = await pool.query(
       "SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC"
     );
@@ -1465,6 +1497,7 @@ class PgReviewStorage implements IReviewStorage {
   }
 
   async getPendingReviews(): Promise<Review[]> {
+    await this.ensureReviewsTable();
     const result = await pool.query(
       "SELECT * FROM reviews WHERE status = 'pending' ORDER BY created_at DESC"
     );
@@ -1472,11 +1505,13 @@ class PgReviewStorage implements IReviewStorage {
   }
 
   async getAllReviews(): Promise<Review[]> {
+    await this.ensureReviewsTable();
     const result = await pool.query("SELECT * FROM reviews ORDER BY created_at DESC");
     return result.rows.map((row: any) => this.rowToReview(row));
   }
 
   async approveReview(id: string, reviewedBy?: string, adminNotes?: string): Promise<Review | undefined> {
+    await this.ensureReviewsTable();
     const result = await pool.query(
       `UPDATE reviews SET status = 'approved', reviewed_at = NOW(), reviewed_by = $2, admin_notes = $3
        WHERE id = $1 RETURNING *`,
@@ -1487,6 +1522,7 @@ class PgReviewStorage implements IReviewStorage {
   }
 
   async rejectReview(id: string, reviewedBy?: string, adminNotes?: string): Promise<Review | undefined> {
+    await this.ensureReviewsTable();
     const result = await pool.query(
       `UPDATE reviews SET status = 'rejected', reviewed_at = NOW(), reviewed_by = $2, admin_notes = $3
        WHERE id = $1 RETURNING *`,
@@ -1497,6 +1533,7 @@ class PgReviewStorage implements IReviewStorage {
   }
 
   async markPromoCodeSent(id: string, promoCode: string): Promise<Review | undefined> {
+    await this.ensureReviewsTable();
     const result = await pool.query(
       `UPDATE reviews SET promo_code = $2, promo_code_sent_at = NOW()
        WHERE id = $1 RETURNING *`,

@@ -513,6 +513,9 @@ const BurnoutEngineReport: React.FC = () => {
                       className="w-full p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
                       rows={3}
                     />
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                      {reviewComment.length}/10 caracteres minimum
+                    </p>
                   </div>
 
                   <div>

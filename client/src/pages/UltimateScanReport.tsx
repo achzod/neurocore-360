@@ -293,7 +293,7 @@ const UltimateScanReport: React.FC = () => {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
-      setReviewError('Veuillez remplir tous les champs');
+      setReviewError('Veuillez remplir tous les champs (commentaire 10 caracteres minimum)');
       return;
     }
 
@@ -700,6 +700,9 @@ const UltimateScanReport: React.FC = () => {
                       className="w-full p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
                       rows={3}
                     />
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                      {reviewComment.length}/10 caracteres minimum
+                    </p>
                   </div>
 
                   {reviewError && <p className="text-red-400 text-sm">{reviewError}</p>}
