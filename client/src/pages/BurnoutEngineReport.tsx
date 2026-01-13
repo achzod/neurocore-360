@@ -472,7 +472,7 @@ const BurnoutEngineReport: React.FC = () => {
                   <CheckCircle2 className="text-emerald-400" size={24} />
                   <div>
                     <p className="font-bold text-emerald-400">Merci pour ton avis !</p>
-                    <p className="text-sm text-[var(--color-text-muted)]">Ton retour nous aide a nous ameliorer.</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">Ton retour m'aide a m'ameliorer.</p>
                   </div>
                 </div>
               ) : hasExistingReview ? (

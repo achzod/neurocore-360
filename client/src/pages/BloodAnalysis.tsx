@@ -480,7 +480,7 @@ export default function BloodAnalysis() {
 
                   <h2 className="text-xl font-bold mb-2">PDF analyse avec succes</h2>
                   <p className="text-muted-foreground mb-6">
-                    Nous avons extrait tous tes biomarqueurs. Finalise le paiement pour
+                    J'ai extrait tous tes biomarqueurs. Finalise le paiement pour
                     acceder a ton rapport complet.
                   </p>
 
