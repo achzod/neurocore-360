@@ -87,12 +87,26 @@ function normalizeTitle(title: string): string {
     .trim();
 }
 
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod)\\b",
+  "gi"
+);
+
+function cleanSectionContent(content: string): string {
+  return content
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+    .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
+    .replace(SOURCE_NAME_REGEX, '')
+    .trim();
+}
+
 function extractClientName(txtContent: string): string {
   const match = txtContent.match(/AUDIT COMPLET (?:NEUROCORE 360|APEXLABS) - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
   if (match) {
     return match[1].trim();
   }
-  return 'Client';
+  return 'Profil';
 }
 
 function extractGeneratedAt(txtContent: string): string {
@@ -246,7 +260,8 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   
   for (let i = 0; i < sectionMatches.length; i++) {
     const { title, startIndex, endIndex } = sectionMatches[i];
-    const content = txtContent.substring(startIndex, endIndex).trim();
+    const rawContent = txtContent.substring(startIndex, endIndex).trim();
+    const content = cleanSectionContent(rawContent);
     
     const normalizedTitle = normalizeTitle(title);
     const category = SECTION_CATEGORIES[normalizedTitle] || 'analysis';

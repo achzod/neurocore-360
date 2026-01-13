@@ -122,6 +122,11 @@ async function getKnowledgeContextForSection(section: string): Promise<string> {
 }
 
 // Clean AI markers and formatting issues from generated content
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod)\\b",
+  "gi"
+);
+
 function cleanPremiumContent(content: string): string {
   return content
     // Remove meta phrases
@@ -131,6 +136,10 @@ function cleanPremiumContent(content: string): string {
     .replace(/^(Voici (mon analyse|l['']analyse|une analyse)[^.]*\.?\s*)/gi, '')
     .replace(/^(Analyse de la section[^.]*\.?\s*)/gi, '')
     .replace(/^(Permettez-moi|Laisse-moi|Laissez-moi)[^.]*\.?\s*/gi, '')
+    // Remove sources lines/names
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+    .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(SOURCE_NAME_REGEX, '')
     // Remove em dashes and special characters
     .replace(/—/g, ':')
     .replace(/–/g, '-')
@@ -357,7 +366,7 @@ function getFirstNameForReport(clientData: ClientData): string {
   const email = (clientData as any)?.email;
   if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
 
-  return "Client";
+  return "toi";
 }
 
 const PROMPT_SECTION = `Tu es Achzod, coach sportif expert avec 11 certifications internationales, specialiste en biomecanique, nutrition, hormones, preparation physique et biohacking.
@@ -374,6 +383,9 @@ INTERDITS ABSOLUS (penalite SEVERE si non respecte) :
 - Phrases de transition inutiles comme "Passons maintenant a..."
 - Ton robotique ou structure trop previsible
 - Exces de politesse ou de precautions ("je te suggererais peut-etre de considerer...")
+- Ne dis jamais "client", "nous", "notre" ou "on"
+- Ne cite jamais de sources, d'auteurs, d'etudes ni de publications
+- AUCUNE liste a puces dans la sortie finale : transforme en narration fluide
 
 CE QUI REND TON TEXTE HUMAIN :
 - Commence DIRECTEMENT par l'analyse, pas par une intro
@@ -432,14 +444,14 @@ LONGUEUR DE SECTION (OBLIGATOIRE POUR RAPPORT PREMIUM)
 
 KNOWLEDGE BASE OBLIGATOIRE (100% BASE SCIENTIFIQUE)
 - Tu DOIS te baser a 100% sur les donnees scientifiques fournies dans la knowledge base
-- Cite les sources : Huberman, Attia, Examine, Applied Metabolics, ACHZOD, newsletters
-- Donne des PROTOCOLES PRECIS avec dosages, timing, duree (comme dans la bibli)
+- INTERDICTION de citer des sources, auteurs, publications ou noms propres
+- Integre les mecanismes et protocoles PRECIS (dosages, timing, duree) comme dans la bibli
 - INTERDICTION de donner des conseils generiques sans base scientifique
 - Pour chaque recommandation, explique le POURQUOI biochimique/physiologique
 
 {section_specific_instructions}
 
-Donnees du client :
+Donnees du profil :
 {data}
 `;
 
@@ -1614,7 +1626,7 @@ async function generateValidatedPremiumSection(
 
   const buildPrompt = (attempt: number) => {
     const retryWarning = attempt > 1
-      ? `\n\nATTENTION CRITIQUE: Ta reponse precedente etait BEAUCOUP TROP COURTE. Tu DOIS ecrire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres). Developpe CHAQUE mecanisme en detail. Donne des exemples concrets. Explique les cascades physiologiques. C'est un rapport PREMIUM que le client a PAYE.\n`
+      ? `\n\nATTENTION CRITIQUE: Ta reponse precedente etait BEAUCOUP TROP COURTE. Tu DOIS ecrire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres). Developpe CHAQUE mecanisme en detail. Donne des exemples concrets. Explique les cascades physiologiques. C'est un rapport PREMIUM exigeant.\n`
       : '';
 
     const knowledgeInsert = hasKnowledge
@@ -1623,11 +1635,11 @@ ${knowledgeContext}
 
 INSTRUCTION CRITIQUE ABSOLUE:
 1. Tu DOIS te baser a 100% sur ces donnees scientifiques pour ton analyse
-2. Cite les sources explicitement : "Selon Huberman...", "D'apres les etudes citees par Attia...", "La recherche d'Examine montre..."
+2. INTERDICTION de citer des sources, auteurs, publications ou noms propres
 3. Reprends les PROTOCOLES PRECIS mentionnes dans les articles (dosages, timing, duree)
 4. Explique les MECANISMES BIOLOGIQUES (enzymes, hormones, voies metaboliques) exactement comme dans les sources
 5. Si un protocole correctif est mentionne (ex: pronation pour espace sous-acromial, DIM pour dominance estrogene), tu DOIS l'inclure
-6. ZERO conseil generique - tout doit etre source et precis
+6. ZERO conseil generique - tout doit etre precis et mecanistique
 7. Pour les recommandations d'entrainement : inclus les corrections biomecaniques si pertinentes (rotation externe, position de la scapula, etc.)
 \n`
       : '';
@@ -1640,14 +1652,14 @@ INSTRUCTION CRITIQUE ABSOLUE:
 ${knowledgeInsert}
 ${retryWarning}
 
-RAPPEL LONGUEUR OBLIGATOIRE (RAPPORT PREMIUM PAYANT):
+RAPPEL LONGUEUR OBLIGATOIRE (RAPPORT PREMIUM):
 - Cette section DOIT faire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres) = 20-25 LIGNES SUBSTANTIELLES minimum
 - Developpe en profondeur, pas de listes telegraphiques
 - Explique les MECANISMES BIOLOGIQUES derriere chaque point (enzymes, hormones, cascades)
 - Donne des EXEMPLES CONCRETS personnalises pour ${clientName}
 - Pour les protocoles: minute par minute, variantes, erreurs a eviter, DOSAGES PRECIS
 - BASE TOI A 100% SUR LA KNOWLEDGE BASE fournie ci-dessus - ZERO conseil generique
-- Cite les sources (Huberman, Attia, Examine, ACHZOD, etc.) naturellement dans le texte
+- INTERDICTION de citer des sources ou noms propres
 - Inclus les PROTOCOLES CORRECTIFS specifiques (biomeca, hormones, nutrition) quand pertinents`;
   };
 

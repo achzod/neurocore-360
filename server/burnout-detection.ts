@@ -7,6 +7,8 @@
 
 import type { Express } from "express";
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { OPENAI_CONFIG } from "./openaiConfig";
 import { searchArticles, searchFullText } from "./knowledge/storage";
 import { ALLOWED_SOURCES } from "./knowledge/search";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
@@ -70,13 +72,20 @@ const BURNOUT_CATEGORIES = [
 ];
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_BURNOUT_SECTION_LINES = 6;
+const MIN_BURNOUT_SECTION_LINES = 20;
 const MIN_BURNOUT_SECTION_CHARS: Record<string, number> = {
-  intro: 900,
-  analyse: 1200,
-  protocole: 1200,
-  supplements: 1100,
-  conclusion: 700,
+  intro: 2000,
+  analyse: 2600,
+  protocole: 2600,
+  supplements: 2400,
+  conclusion: 1800,
+};
+const MIN_BURNOUT_SECTION_WORDS: Record<string, number> = {
+  intro: 260,
+  analyse: 340,
+  protocole: 340,
+  supplements: 320,
+  conclusion: 220,
 };
 const SOURCE_MARKERS = [
   "huberman",
@@ -113,6 +122,10 @@ const FALLBACK_BURNOUT_CONTEXT = [
   "TITRE: Fatigue, performance et stress",
   "CONTENU: La performance et le bien-etre chutent quand le stress est eleve et que le sommeil est court. Les signaux pratiques incluent baisse de motivation, concentration instable et sensibilite accrue. Prioriser la recuperation et la charge d'entrainement est essentiel.",
 ].join("\n");
+
+const openai = OPENAI_CONFIG.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY })
+  : null;
 
 // Phase descriptions
 const PHASE_INFO = {
@@ -289,21 +302,41 @@ function findSourcesInText(text: string): string[] {
   return SOURCE_MARKERS.filter((marker) => lower.includes(marker)).map(normalizeSourceMarker);
 }
 
-function validateBurnoutSection(sectionType: string, content: string, knowledgeContext: string): void {
+function sanitizeBurnoutContent(content: string): string {
+  let cleaned = content
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
+    .replace(/Sources?\s*:.*$/gmi, "")
+    .replace(/^\s*Source\s*:.*$/gmi, "")
+    .replace(/\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod|matthew walker|sapolsky)\b/gi, "")
+    .replace(/\s*style=(\"|')[^\"']*color[^\"']*(\"|')/gi, "")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/##\s*/g, "")
+    .replace(/\*/g, "")
+    .replace(/^[-•]\s+/gm, "")
+    .replace(/={4,}/g, "")
+    .replace(/-{4,}/g, "")
+    .trim();
+  return cleaned;
+}
+
+function validateBurnoutSection(sectionType: string, content: string): void {
   const trimmed = content.trim();
   const minChars = MIN_BURNOUT_SECTION_CHARS[sectionType] || 900;
+  const minWords = MIN_BURNOUT_SECTION_WORDS[sectionType] || 220;
   const textLineCount = trimmed.split(/\n+/).filter((line) => line.trim()).length;
   const paragraphCount = (trimmed.match(/<p>/g) || []).length;
   const lineCount = Math.max(textLineCount, paragraphCount);
-  const knowledgeSources = findSourcesInText(knowledgeContext);
-  const sourcesInContent = findSourcesInText(trimmed);
-  const hasSource = knowledgeSources.length === 0 ? true : sourcesInContent.some((src) => knowledgeSources.includes(src));
+  const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+  const lower = trimmed.toLowerCase();
+  const hasClient = /\bclient\b/.test(lower);
+  const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
+  const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker)) || lower.includes("sources:");
 
-  if (trimmed.length < minChars || lineCount < MIN_BURNOUT_SECTION_LINES) {
+  if (trimmed.length < minChars || lineCount < MIN_BURNOUT_SECTION_LINES || wordCount < minWords) {
     throw new Error(`BURNOUT_SECTION_TOO_SHORT:${sectionType}`);
   }
-  if (!hasSource) {
-    throw new Error(`BURNOUT_SECTION_MISSING_SOURCES:${sectionType}`);
+  if (hasClient || hasNous || hasSources) {
+    throw new Error(`BURNOUT_SECTION_FORBIDDEN_WORDS:${sectionType}`);
   }
 }
 
@@ -328,11 +361,6 @@ async function generateBurnoutSection(
 
   const criticalCategories = data.metrics.filter(m => m.value <= 4).map(m => m.label);
   const attentionCategories = data.metrics.filter(m => m.value > 4 && m.value <= 6).map(m => m.label);
-  const sourceHints = SOURCE_MARKERS.filter((marker) => knowledgeContext.toLowerCase().includes(marker));
-  const sourceHintText = sourceHints.length > 0
-    ? sourceHints.map((source) => source.replace(/_/g, " ")).join(", ")
-    : "Huberman, Applied Metabolics, SBS, Examine, Peter Attia, MPMD, Renaissance Periodization, newsletter Achzod";
-
   // RÈGLES ANTI-IA COMMUNES À TOUS LES PROMPTS
   const antiAIRules = `
 RÈGLES ANTI-IA (CRITIQUES - TON TEXTE DOIT ÊTRE 100% INDÉTECTABLE):
@@ -351,7 +379,10 @@ CE QUI REND TON TEXTE HUMAIN:
 - Apartés personnels ("Honnêtement...", "Ce que je vois...")
 - Observations spécifiques qui prouvent que tu as LU ses données
 - Varie la longueur des phrases
-- Sois direct, pas condescendant`;
+- Sois direct, pas condescendant
+- Tutoiement obligatoire ("tu", "ton", "tes")
+- Ne dis jamais "client", "nous", "notre" ou "on"
+- Ne cite JAMAIS de sources, d'auteurs, d'etudes, ni de noms propres`;
 
   const prompts: Record<string, string> = {
     intro: `Tu es Achzod, expert en gestion du stress et burnout avec 11 certifications internationales. Tu analyses le profil de ${data.clientName}.
@@ -367,8 +398,7 @@ DONNÉES:
 CONTEXTE SCIENTIFIQUE:
 ${knowledgeContext}
 
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
-Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
+OBLIGATION: integre les mecanismes issus du CONTEXTE SCIENTIFIQUE, mais sans jamais citer de sources.
 
 Écris 3 paragraphes PERCUTANTS:
 1. Diagnostic direct de la situation (pas de "bienvenue" - va droit au but)
@@ -386,18 +416,15 @@ ${data.metrics.map(m => `- ${m.label}: ${m.value}/10`).join("\n")}
 
 Phase: ${data.phase}
 
-CONTEXTE SCIENTIFIQUE:
+CONTEXTE SCIENTIFIQUE (A INTEGRER SANS CITATION):
 ${knowledgeContext}
-
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
-Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Pour chaque catégorie critique ou attention:
 1. Ce que ce score RÉVÈLE vraiment (pas de langue de bois)
 2. Les mécanismes biologiques impliqués (cortisol, HPA, neurotransmetteurs) - sois PRÉCIS
 3. Comment cette catégorie SABOTE les autres (interconnexions)
 
-Écris comme si tu parlais à ce client après avoir passé 2h sur son dossier. Pas de généralités.
+Écris comme si tu parlais à cette personne après avoir passé 2h sur son dossier. Pas de généralités.
 
 Format: HTML (<p>, <strong>). 4-5 paragraphes substantiels et PERSONNALISÉS.`,
 
@@ -410,11 +437,8 @@ Suppléments: ${data.protocols.supplements.map(s => `${s.name} (${s.dosage})`).j
 Lifestyle: ${data.protocols.lifestyle.join(", ")}
 Nutrition: ${data.protocols.nutrition.join(", ")}
 
-CONTEXTE SCIENTIFIQUE:
+CONTEXTE SCIENTIFIQUE (A INTEGRER SANS CITATION):
 ${knowledgeContext}
-
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
-Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Structure en 3 parties:
 1. SEMAINE 1-2: Actions d'URGENCE (ce qu'il doit faire DÈS DEMAIN)
@@ -433,11 +457,8 @@ ${antiAIRules}
 STACK:
 ${data.protocols.supplements.map(s => `- ${s.name}: ${s.dosage} - ${s.reason}`).join("\n")}
 
-CONTEXTE SCIENTIFIQUE:
+CONTEXTE SCIENTIFIQUE (A INTEGRER SANS CITATION):
 ${knowledgeContext}
-
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
-Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 Pour CHAQUE supplément, explique comme un EXPERT (pas comme une notice):
 
@@ -449,7 +470,7 @@ Pour CHAQUE supplément, explique comme un EXPERT (pas comme une notice):
 6. SIGNES que ça fonctionne (quand il saura que ça marche)
 7. PRÉCAUTIONS spécifiques à sa phase
 
-Le client doit COMPRENDRE ce qu'il prend et POURQUOI. Pas juste une liste de produits.
+La personne doit COMPRENDRE ce qu'elle prend et POURQUOI. Pas juste une liste de produits.
 
 Format: HTML (<p>, <strong>). Paragraphes détaillés par supplément.`,
 
@@ -457,11 +478,8 @@ Format: HTML (<p>, <strong>). Paragraphes détaillés par supplément.`,
 
 ${antiAIRules}
 
-CONTEXTE SCIENTIFIQUE:
+CONTEXTE SCIENTIFIQUE (A INTEGRER SANS CITATION):
 ${knowledgeContext}
-
-OBLIGATION: cite explicitement 1-2 sources du CONTEXTE SCIENTIFIQUE. Sources disponibles: ${sourceHintText}. Pas de sources inventées.
-Termine par une phrase "Sources: ..." avec 1-2 sources EXACTES parmi celles disponibles.
 
 SITUATION:
 - Phase: ${data.phase}
@@ -483,12 +501,14 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
 
   const MAX_RETRIES = 3;
   let lastError: unknown = null;
+  const minChars = MIN_BURNOUT_SECTION_CHARS[sectionType] || 900;
+  const minWords = MIN_BURNOUT_SECTION_WORDS[sectionType] || 220;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const retryNote =
       attempt === 1
         ? ""
-        : `\nATTENTION: Ta reponse precedente a ete rejetee. Tu DOIS citer explicitement 1-2 sources EXACTES parmi: ${sourceHintText}. Allonge le texte si besoin pour atteindre le format.\n`;
+        : `\nATTENTION: Ta reponse precedente a ete rejetee. Elle est TROP COURTE ou pas assez dense. Tu DOIS produire au moins ${minChars} caracteres et ${minWords} mots, avec des paragraphes substantiels.\n`;
 
     try {
       const response = await client.messages.create({
@@ -506,21 +526,8 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
         }
       }
 
-      // Clean markdown artifacts
-      content = content
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        .replace(/##\s*/g, "")
-        .replace(/\*/g, "")
-        .replace(/^[-•]\s+/gm, "")
-        .replace(/={4,}/g, "")
-        .replace(/-{4,}/g, "")
-        .trim();
-
-      if (findSourcesInText(content).length === 0) {
-        content = `${content}\n<p><strong>Sources:</strong> ${sourceHintText}.</p>`;
-      }
-
-      validateBurnoutSection(sectionType, content, knowledgeContext);
+      content = sanitizeBurnoutContent(content);
+      validateBurnoutSection(sectionType, content);
       return content;
     } catch (error) {
       lastError = error;
@@ -529,12 +536,36 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
     }
   }
 
+  if (openai) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: OPENAI_CONFIG.OPENAI_MODEL,
+          messages: [
+            { role: "system", content: antiAIRules },
+            { role: "user", content: `${prompts[sectionType] || prompts.intro}\n\nATTENTION: Tu dois produire au moins ${minChars} caracteres et ${minWords} mots, sans citer de sources.` },
+          ],
+          temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+          max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+        });
+        const raw = response.choices[0]?.message?.content || "";
+        if (!raw.trim()) continue;
+        const cleaned = sanitizeBurnoutContent(raw);
+        validateBurnoutSection(sectionType, cleaned);
+        return cleaned;
+      } catch (fallbackError) {
+        lastError = fallbackError;
+        console.error(`[Burnout] OpenAI error for ${sectionType} (attempt ${attempt}):`, fallbackError);
+      }
+    }
+  }
+
   throw lastError;
 }
 
 // Main analysis function
 async function analyzeBurnout(responses: BurnoutResponse, email: string): Promise<BurnoutReportData> {
-  const clientName = email.split("@")[0] || "Client";
+  const clientName = email.split("@")[0] || "Profil";
 
   // Calculate scores per category (0-10 scale for metrics)
   const metrics = BURNOUT_CATEGORIES.map((cat) => {

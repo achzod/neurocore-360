@@ -156,6 +156,21 @@ const SOURCE_MARKERS = [
   "sapolsky",
 ];
 
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod|matthew walker|sapolsky)\\b",
+  "gi"
+);
+
+function getDiscoveryFirstName(responses: DiscoveryResponses): string {
+  const direct = responses.prenom;
+  if (direct && String(direct).trim()) return String(direct).trim().split(/\s+/)[0];
+  const email = responses.email;
+  if (email && typeof email === "string" && email.includes("@")) {
+    return email.split("@")[0].trim();
+  }
+  return "toi";
+}
+
 const openai = OPENAI_CONFIG.OPENAI_API_KEY
   ? new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY })
   : null;
@@ -648,7 +663,13 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 
   try {
     // Search in knowledge base
-    const articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
+    let articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
+
+    if (articles.length === 0) {
+      const fallbackQuery = uniqueKeywords.slice(0, 6).join(" ");
+      const ft = await searchFullText(fallbackQuery, 6);
+      articles = ft.filter(a => (ALLOWED_SOURCES as unknown as string[]).includes(a.source as string));
+    }
 
     if (articles.length === 0) {
       return '';
@@ -685,7 +706,7 @@ REGLES ABSOLUES STYLE:
 - Images concretes, pas de jargon inutile
 
 REGLES ABSOLUES CONTENU:
-- NE JAMAIS INVENTER : analyse uniquement ce que le client a vraiment dit
+- NE JAMAIS INVENTER : analyse uniquement ce que la personne a vraiment dit
 - Connecte TOUT : sommeil - cortisol - entrainement - plateaux - digestion - energie - stress - hormones
 - Explique SCIENTIFIQUEMENT ET EN PROFONDEUR :
   * Mecanismes physiologiques precis (hormones, enzymes, neurotransmetteurs, cascades metaboliques)
@@ -702,7 +723,8 @@ REGLES ABSOLUES FORMAT:
 - JAMAIS d'emojis
 - Paragraphes separes par des lignes vides
 - Commence DIRECTEMENT par l'analyse
-- Ne cite JAMAIS de sources ni d'auteurs (pas de "Sources:", pas de noms propres).`;
+- Ne cite JAMAIS de sources ni d'auteurs (pas de "Sources:", pas de noms propres).
+- Ne dis jamais "client", "nous", "notre" ou "on". Tu parles uniquement en "tu" et "je".`;
 
 // ============================================
 // SECTION-SPECIFIC AI GENERATION
@@ -741,7 +763,8 @@ FORMAT OBLIGATOIRE:
 - NE JAMAIS repeter le titre de la section
 - Commence DIRECTEMENT par l'analyse
 - Paragraphes separes par lignes vides
-- Ne cite JAMAIS de sources ni d'auteurs`;
+- Ne cite JAMAIS de sources ni d'auteurs
+- Ne dis jamais "client", "nous", "notre" ou "on".`;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
   sommeil: `
@@ -932,7 +955,7 @@ async function generateSectionContentAI(
   knowledgeContext: string
 ): Promise<string> {
   const anthropic = new Anthropic();
-  const prenom = responses.prenom || 'Client';
+  const prenom = getDiscoveryFirstName(responses);
   const objectif = responses.objectif || 'tes objectifs';
   const sexe = responses.sexe || 'homme';
   const age = responses.age || 30;
@@ -954,7 +977,7 @@ async function generateSectionContentAI(
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
 
-PROFIL CLIENT:
+PROFIL:
 Prenom: ${prenom}
 Sexe: ${sexe}
 Age: ${age} ans
@@ -978,7 +1001,7 @@ ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS
 ` : ''}
 
 REGLES ABSOLUES:
-1. Commence DIRECTEMENT par l'analyse du client, jamais par un titre ou une intro generique
+1. Commence DIRECTEMENT par l'analyse du profil, jamais par un titre ou une intro generique
 2. Tutoie ${prenom} tout au long du texte (tu, ton, tes)
 3. Explique les MECANISMES biochimiques en detail (hormones, enzymes, recepteurs, cascades)
 4. Cite des CHIFFRES precis (pourcentages, durees, seuils, dosages)
@@ -986,6 +1009,7 @@ REGLES ABSOLUES:
 6. Integre les donnees scientifiques de la knowledge base ci-dessus
 7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
 8. Ne cite jamais de sources ni d'auteurs (pas de "Sources:", pas de noms propres)
+9. Ne dis jamais "client", "nous", "notre" ou "on"
 
 FORMAT OBLIGATOIRE:
 - JAMAIS de tiret long ou tiret cadratin (utilise : ou . a la place)
@@ -1000,13 +1024,20 @@ FORMAT OBLIGATOIRE:
     const lineCount = lines.length;
     const charCount = text.length;
     const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const lower = text.toLowerCase();
+    const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker));
+    const hasClient = /\bclient\b/.test(lower);
+    const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
     return {
       lineCount,
       charCount,
       wordCount,
       isValid:
         charCount >= MIN_CONTENT_LENGTH &&
-        (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS),
+        (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS) &&
+        !hasSources &&
+        !hasClient &&
+        !hasNous,
     };
   };
 
@@ -1291,7 +1322,7 @@ function extractDomainResponses(domain: string, responses: DiscoveryResponses): 
 }
 
 // Original system prompt for global synthesis (kept for backward compatibility)
-const DISCOVERY_GLOBAL_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des clients qui veulent comprendre POURQUOI leur corps dysfonctionne.
+const DISCOVERY_GLOBAL_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des personnes qui veulent comprendre POURQUOI leur corps dysfonctionne.
 
 MISSION: Rediger une analyse clinique TRES LONGUE et TRES DETAILLEE (minimum 800 mots) des dysfonctionnements detectes. EXPLIQUER les mecanismes, PAS donner de solutions.
 
@@ -1349,7 +1380,7 @@ async function generateAISynthesis(
     `[${b.severity.toUpperCase()}] ${b.domain}: ${b.title}\n${b.mechanism}`
   ).join('\n\n');
 
-  const userPrompt = `PROFIL CLIENT:
+  const userPrompt = `PROFIL:
 Prenom: ${responses.prenom}
 Sexe: ${responses.sexe}
 Age: ${responses.age} ans
@@ -1441,6 +1472,8 @@ function cleanMarkdownToHTML(text: string): string {
     // Remove any explicit sources/references lines even if inline
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
+    // Remove any explicit source names
+    .replace(SOURCE_NAME_REGEX, "")
     // CRITICAL: Remove ALL em dashes (—) and en dashes (–) FIRST
     .replace(/—/g, ':')
     .replace(/–/g, '-')
@@ -1476,7 +1509,7 @@ function cleanMarkdownToHTML(text: string): string {
 
 export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promise<DiscoveryAnalysisResult> {
   const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
-  console.log(`[Discovery] Analyzing scan for ${normalized.prenom || 'Client'}...`);
+  console.log(`[Discovery] Analyzing scan for ${getDiscoveryFirstName(normalized)}...`);
 
   // Calculate scores for each domain
   const scoresByDomain = {
@@ -1592,7 +1625,7 @@ export async function convertToNarrativeReport(
   responses: DiscoveryResponses
 ): Promise<ReportData> {
   const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
-  const prenom = normalized.prenom || 'Client';
+  const prenom = getDiscoveryFirstName(normalized);
   const objectif = normalized.objectif || 'tes objectifs';
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
@@ -2101,7 +2134,7 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 // ============================================
 
 export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses: DiscoveryResponses): string {
-  const prenom = responses.prenom || 'Client';
+  const prenom = getDiscoveryFirstName(responses);
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const scoreColor = (score: number) => {

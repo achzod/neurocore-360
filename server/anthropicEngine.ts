@@ -93,10 +93,37 @@ const KNOWN_SOURCES = [
   "ACHZOD",
 ];
 
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod)\\b",
+  "gi"
+);
+
+const FORBIDDEN_PATTERNS = [
+  /\bclient\b/i,
+  /\bnous\b/i,
+  /\bnotre\b/i,
+];
+
 function extractSourceMentions(context: string): string[] {
   const lower = context.toLowerCase();
   const matches = KNOWN_SOURCES.filter((source) => lower.includes(source.toLowerCase()));
   return Array.from(new Set(matches));
+}
+
+function sanitizePremiumText(text: string): string {
+  return text
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
+    .replace(/Sources?\s*:.*$/gmi, "")
+    .replace(SOURCE_NAME_REGEX, "")
+    .replace(/\*\*/g, "")
+    .replace(/##/g, "")
+    .replace(/__/g, "")
+    .replace(/\*/g, "")
+    .trim();
+}
+
+function hasForbiddenPhrases(text: string): boolean {
+  return FORBIDDEN_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 // Initialize Anthropic client
@@ -141,6 +168,20 @@ function getMaxTokensForSection(section: SectionName, tier: AuditTier = 'PREMIUM
   if (s.includes("analyse")) return SECTION_TOKEN_LIMITS.ANALYSIS;
 
   return SECTION_TOKEN_LIMITS.DEFAULT;
+}
+
+function getMinCharsForSection(section: SectionName, tier: AuditTier = 'PREMIUM'): number {
+  const s = String(section).toLowerCase();
+  if (tier === 'GRATUIT') {
+    if (s.includes("executive summary")) return 2200;
+    if (s.includes("synthese") || s.includes("prochaines etapes")) return 2200;
+    return 2400;
+  }
+  if (s.includes("executive summary")) return 2800;
+  if (s.includes("kpi") || s.includes("tableau")) return 2400;
+  if (s.includes("stack") || s.includes("supplements")) return 1800;
+  if (s.includes("synthese") || s.includes("prochaines etapes")) return 2600;
+  return 3200;
 }
 
 function degradedSectionText(section: SectionName): string {
@@ -285,7 +326,7 @@ export async function generateAuditTxtWithClaude(
 ): Promise<string | null> {
   const startTime = Date.now();
 
-  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -353,7 +394,7 @@ export async function generateAuditTxtWithClaude(
     : 'Analyse photo indisponible.';
 
   const fullDataStr = `
-DONNEES CLIENT:
+DONNEES PROFIL:
 ${dataStr}
 
 ANALYSE PHOTO POSTURALE:
@@ -450,11 +491,6 @@ ${photoAnalysisStr}
         throw new Error(`KNOWLEDGE_CONTEXT_EMPTY:${section}`);
       }
 
-      const sourceMentions = extractSourceMentions(knowledgeContext);
-      const sourcesHint = sourceMentions.length > 0
-        ? `Cite explicitement au moins 2 sources parmi: ${sourceMentions.join(", ")}.`
-        : "Cite explicitement au moins 2 sources parmi: Huberman, Attia, Examine, Applied Metabolics, SBS, MPMD, Newsletter, ACHZOD.";
-
       // Calcul de la longueur cible basé sur le tier
       const targetChars = tier === 'GRATUIT'
         ? '3500-5000 caracteres (environ 90-130 lignes)' // Discovery Scan: 5-7 pages total
@@ -467,11 +503,13 @@ Tu analyses les donnees de ${firstName} pour lui fournir un audit personnalise d
 INSTRUCTIONS IMPORTANTES:
 - Sois direct, concret et actionnable
 - Utilise un ton expert mais accessible
-- Personnalise chaque recommandation aux donnees du client
+- Personnalise chaque recommandation aux donnees du profil
 - Evite les generalites - sois specifique
-- Structure clairement avec des paragraphes et listes
+- Paragraphes uniquement (pas de listes, pas de puces)
+- Si une consigne de section propose un format liste, transforme-la en narration fluide
 - N'utilise pas de markdown (pas de ** ou ##)
-- Integre des references scientifiques reelles (sources de la knowledge base)
+- Integre la knowledge base sans citer de sources ni noms propres
+- Ne dis jamais "client", "nous", "notre" ou "on"
 
 LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Cette section doit contenir ${targetChars}
@@ -480,7 +518,7 @@ LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Inclus des mecanismes biologiques, des exemples concrets, des protocoles detailles
 - Si c'est une analyse: explique le POURQUOI, les MECANISMES, les CONSEQUENCES, les SOLUTIONS
 - Si c'est un protocole: detaille chaque etape minute par minute avec variantes
-- ${sourcesHint}
+- Interdiction de citer des sources, auteurs, etudes, ou noms propres
 
 ${knowledgeContext}
 ${PROMPT_SECTION.replace("{section}", section)
@@ -488,14 +526,40 @@ ${PROMPT_SECTION.replace("{section}", section)
   .replace("{data}", fullDataStr)}`;
 
       const t0 = Date.now();
-      let sectionText = await callClaude(claudePrompt, {
-        maxTokens: maxTokensForThisSection,
-        label: String(section),
-      });
+      const minChars = getMinCharsForSection(section as SectionName, tier);
+      let cleanedText = "";
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const retryNote =
+          attempt === 1
+            ? ""
+            : `\nATTENTION: Ta reponse etait trop courte ou contenait des mots interdits. Tu dois fournir un texte plus long (min ${minChars} caracteres), sans "client", "nous", "notre" ni sources.\n`;
+        const prompt = `${claudePrompt}\n${retryNote}`;
+
+        const sectionText = await callClaude(prompt, {
+          maxTokens: maxTokensForThisSection,
+          label: `${String(section)}#${attempt}`,
+        });
+
+        if (!sectionText) continue;
+
+        const candidate = sanitizePremiumText(sectionText);
+        const forbidden = hasForbiddenPhrases(candidate);
+
+        if (!forbidden && candidate.length >= minChars) {
+          cleanedText = candidate;
+          break;
+        }
+
+        if (!cleanedText || candidate.length > cleanedText.length) {
+          cleanedText = candidate;
+        }
+      }
+
       const dt = Date.now() - t0;
       console.log(`[Claude] Section "${section}" terminee en ${(dt / 1000).toFixed(1)}s`);
 
-      if (!sectionText) {
+      if (!cleanedText || cleanedText.length < minChars || hasForbiddenPhrases(cleanedText)) {
         const degraded = degradedSectionText(section as SectionName);
         cachedSections[section] = degraded;
         saveToCache(auditId, {
@@ -510,12 +574,6 @@ ${PROMPT_SECTION.replace("{section}", section)
         newSectionsGenerated++;
         return { section, text: degraded, fromCache: false };
       }
-
-      const cleanedText = sectionText
-        .replace(/\*\*/g, "")
-        .replace(/##/g, "")
-        .replace(/__/g, "")
-        .replace(/\*/g, "");
 
       cachedSections[section] = cleanedText;
       saveToCache(auditId, {

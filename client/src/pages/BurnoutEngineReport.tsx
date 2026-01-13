@@ -24,24 +24,16 @@ import {
   Moon
 } from 'lucide-react';
 
-const THEMES: Theme[] = [
-  {
-    id: "burnout",
-    name: "Amber Heat",
-    type: "dark",
-    colors: {
-      primary: "#f97316",
-      background: "#0B0A0A",
-      surface: "#141110",
-      border: "rgba(249, 115, 22, 0.2)",
-      text: "#F7EDE5",
-      textMuted: "#B9A69A",
-      grid: "rgba(249, 115, 22, 0.08)",
-      glow: "rgba(249, 115, 22, 0.22)",
-    },
-  },
-  ...ULTRAHUMAN_THEMES,
-];
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+
+const withAlpha = (hex: string, alpha: number): string => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 interface BurnoutReportData {
   globalScore: number;
@@ -64,35 +56,32 @@ const METRIC_ICONS: Record<string, React.ElementType> = {
   social: Users
 };
 
-const PHASE_CONFIG = {
-  alarme: {
-    color: '#22C55E',
-    bgColor: 'rgba(34, 197, 94, 0.1)',
-    label: 'Phase d\'Alarme',
-    icon: AlertTriangle
-  },
-  resistance: {
-    color: '#F59E0B',
-    bgColor: 'rgba(245, 158, 11, 0.1)',
-    label: 'Phase de Resistance',
-    icon: Target
-  },
-  epuisement: {
-    color: '#EF4444',
-    bgColor: 'rgba(239, 68, 68, 0.1)',
-    label: 'Phase d\'Epuisement',
-    icon: Flame
-  }
+const PHASE_LABELS = {
+  alarme: { label: 'Phase d\'Alarme', icon: AlertTriangle },
+  resistance: { label: 'Phase de Resistance', icon: Target },
+  epuisement: { label: 'Phase d\'Epuisement', icon: Flame }
 };
 
-const getLevelStatus = (level: 'optimal' | 'attention' | 'critique') => {
+const getPhaseConfig = (phase: 'alarme' | 'resistance' | 'epuisement', theme: Theme) => {
+  const base = PHASE_LABELS[phase];
+  return {
+    label: base.label,
+    icon: base.icon,
+    color: theme.colors.primary,
+    bgColor: withAlpha(theme.colors.primary, 0.12),
+  };
+};
+
+const getLevelStatus = (level: 'optimal' | 'attention' | 'critique', theme: Theme) => {
+  const primary = theme.colors.primary;
+  const soft = withAlpha(primary, 0.12);
   switch (level) {
     case 'optimal':
-      return { label: 'OPTIMAL', color: 'bg-green-500/10 text-green-500', barColor: '#22C55E' };
+      return { label: 'OPTIMAL', style: { color: primary, backgroundColor: soft }, barColor: primary };
     case 'attention':
-      return { label: 'ATTENTION', color: 'bg-amber-500/10 text-amber-500', barColor: '#F59E0B' };
+      return { label: 'ATTENTION', style: { color: primary, backgroundColor: soft }, barColor: primary };
     case 'critique':
-      return { label: 'CRITIQUE', color: 'bg-red-500/10 text-red-500', barColor: '#EF4444' };
+      return { label: 'CRITIQUE', style: { color: primary, backgroundColor: soft }, barColor: primary };
   }
 };
 
@@ -299,7 +288,10 @@ const BurnoutEngineReport: React.FC = () => {
 
   if (!reportData) return null;
 
-  const phaseConfig = PHASE_CONFIG[reportData.phase];
+  const phaseConfig = getPhaseConfig(reportData.phase, currentTheme);
+  const primary = currentTheme.colors.primary;
+  const primarySoft = withAlpha(primary, 0.12);
+  const primaryBorder = withAlpha(primary, 0.3);
   const PhaseIcon = phaseConfig.icon;
 
   return (
@@ -387,7 +379,7 @@ const BurnoutEngineReport: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {reportData.metrics.map((metric) => {
                 const level = getMetricLevel(metric.value);
-                const status = getLevelStatus(level);
+                const status = getLevelStatus(level, currentTheme);
                 const Icon = METRIC_ICONS[metric.key] || Activity;
                 const percent = Math.round((metric.value / metric.max) * 100);
 
@@ -399,7 +391,7 @@ const BurnoutEngineReport: React.FC = () => {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <Icon className="w-5 h-5" style={{ color: status.barColor }} />
-                      <span className={`text-xs px-2 py-1 rounded-full ${status.color}`}>
+                      <span className="text-xs px-2 py-1 rounded-full" style={status.style}>
                         {status.label}
                       </span>
                     </div>
@@ -468,18 +460,18 @@ const BurnoutEngineReport: React.FC = () => {
               </h3>
 
               {reviewSubmitted ? (
-                <div className="flex items-center gap-3 p-4 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  <CheckCircle2 className="text-emerald-400" size={24} />
+                <div className="flex items-center gap-3 p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                  <CheckCircle2 style={{ color: primary }} size={24} />
                   <div>
-                    <p className="font-bold text-emerald-400">Merci pour ton avis !</p>
+                    <p className="font-bold" style={{ color: primary }}>Merci pour ton avis !</p>
                     <p className="text-sm text-[var(--color-text-muted)]">Ton retour m'aide a m'ameliorer.</p>
                   </div>
                 </div>
               ) : hasExistingReview ? (
-                <div className="flex items-center gap-3 p-4 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  <CheckCircle2 className="text-emerald-400" size={24} />
+                <div className="flex items-center gap-3 p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                  <CheckCircle2 style={{ color: primary }} size={24} />
                   <div>
-                    <p className="font-bold text-emerald-400">Avis deja enregistre</p>
+                    <p className="font-bold" style={{ color: primary }}>Avis deja enregistre</p>
                     <p className="text-sm text-[var(--color-text-muted)]">Merci pour ta contribution.</p>
                   </div>
                 </div>
@@ -497,7 +489,8 @@ const BurnoutEngineReport: React.FC = () => {
                         >
                           <Star
                             size={32}
-                            className={star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-[var(--color-text-muted)]/30'}
+                            className={star <= reviewRating ? 'fill-current' : 'text-[var(--color-text-muted)]/30'}
+                            style={star <= reviewRating ? { color: primary } : undefined}
                           />
                         </button>
                       ))}

@@ -100,8 +100,8 @@ const AI_PATTERNS = [
 ];
 
 // Minimum section lengths (in characters)
-const MIN_SECTION_LENGTH_PREMIUM = 2500;
-const MIN_SECTION_LENGTH_GRATUIT = 1500;
+const MIN_SECTION_LENGTH_PREMIUM = 3200;
+const MIN_SECTION_LENGTH_GRATUIT = 2000;
 const MIN_TOTAL_LENGTH_PREMIUM = 60000; // ~40+ pages
 const MIN_TOTAL_LENGTH_GRATUIT = 15000; // ~10+ pages
 
@@ -131,7 +131,7 @@ const REVIEW_MARKERS = [
   "recommander",
 ];
 
-// Knowledge base source markers
+// Knowledge base source markers (should NOT appear in final text)
 const SOURCE_MARKERS = [
   "huberman",
   "peter attia",
@@ -145,6 +145,8 @@ const SOURCE_MARKERS = [
   "newsletter",
   "achzod",
 ];
+
+const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client"];
 
 export function validateReport(
   reportTxt: string,
@@ -227,12 +229,16 @@ export function validateReport(
     warnings.push(`Patterns IA détectés (${aiPatternsFound.length}): ${aiPatternsFound.join(', ')}`);
   }
 
-  // 4. Knowledge source presence
+  // 4. Knowledge source visibility (should be absent in output)
   const sourcesFound = SOURCE_MARKERS.filter((marker) => txtLower.includes(marker));
-  if (sourcesFound.length === 0) {
-    errors.push("Aucune source scientifique détectée (Huberman, Attia, Examine, Applied Metabolics, SBS, etc.)");
-  } else if (sourcesFound.length < 2) {
-    warnings.push(`Sources insuffisantes détectées: ${sourcesFound.join(", ")}`);
+  if (sourcesFound.length > 0) {
+    errors.push(`Sources visibles dans le texte: ${sourcesFound.join(", ")}`);
+  }
+
+  // 4b. Single-author voice (no "nous"/"client")
+  const multiFound = MULTI_PERSON_MARKERS.filter((marker) => new RegExp(`\\b${marker}\\b`).test(txtLower));
+  if (multiFound.length > 0) {
+    errors.push(`Pronoms collectifs/termes interdits detectes: ${multiFound.join(", ")}`);
   }
 
   // 5. Check CTA presence
