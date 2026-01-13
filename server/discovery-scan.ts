@@ -135,8 +135,8 @@ export interface BlockageAnalysis {
 }
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_DISCOVERY_SECTION_CHARS = 1200;
-const MIN_DISCOVERY_SECTION_LINES = 18;
+const MIN_DISCOVERY_SECTION_CHARS = 2000;
+const MIN_DISCOVERY_SECTION_LINES = 24;
 const SOURCE_MARKERS = [
   "huberman",
   "peter attia",
@@ -649,7 +649,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 
     // Build context from relevant articles
     const context = articles.map(a =>
-      `[${a.source}] ${a.title}\nKey points: ${a.content.substring(0, 500)}...`
+      `TITRE: ${a.title}\nPOINTS CLES: ${a.content.substring(0, 500)}...`
     ).join('\n\n---\n\n');
 
     return context;
@@ -695,12 +695,7 @@ REGLES ABSOLUES FORMAT:
 - JAMAIS d'emojis
 - Paragraphes separes par des lignes vides
 - Commence DIRECTEMENT par l'analyse
-
-SOURCES A INTEGRER NATURELLEMENT:
-- Newsletters ACHZOD, Applied Metabolics
-- Andrew Huberman, Peter Attia, Matthew Walker
-- Robert Sapolsky, Ben Bikman, Stronger By Science
-- Renaissance Periodization, Examine, Marek Health`;
+- Ne cite JAMAIS de sources ni d'auteurs (pas de "Sources:", pas de noms propres).`;
 
 // ============================================
 // SECTION-SPECIFIC AI GENERATION
@@ -733,12 +728,13 @@ STYLE OBLIGATOIRE:
 - Analyse chirurgicale mais accessible
 
 FORMAT OBLIGATOIRE:
-- MINIMUM 40-50 lignes (1500+ caracteres)
+- MINIMUM 45-55 lignes (2000+ caracteres)
 - Texte brut fluide, PAS de markdown
 - JAMAIS de tiret long (—), JAMAIS d'emojis
 - NE JAMAIS repeter le titre de la section
 - Commence DIRECTEMENT par l'analyse
-- Paragraphes separes par lignes vides`;
+- Paragraphes separes par lignes vides
+- Ne cite JAMAIS de sources ni d'auteurs`;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
   sommeil: `
@@ -753,7 +749,6 @@ INSTRUCTIONS SPECIFIQUES POUR "SOMMEIL":
 - ADENOSINE et pression de sommeil, CHRONOTYPE
 - Sommeil et TESTOSTERONE : chaque heure en moins = -10-15% de T
 - Sommeil et RECUPERATION : synthese proteique reduite de 18-25%
-- Cite Huberman (Sleep Toolkit), Walker (Why We Sleep), Attia
 - MINIMUM 45-50 lignes tres detaillees
 `,
 
@@ -775,7 +770,6 @@ INSTRUCTIONS SPECIFIQUES POUR "STRESS":
 - METHODES de gestion actuelles ou leur absence
 - NERF VAGUE et balance sympathique/parasympathique
 - Stress et INFLAMMATION : CRP, IL-6, TNF-alpha
-- Cite Sapolsky, Huberman, Applied Metabolics
 - MINIMUM 45-50 lignes
 `,
 
@@ -797,7 +791,6 @@ INSTRUCTIONS SPECIFIQUES POUR "ENERGIE":
   * Dysfonction = moins ATP + plus de ROS
 - THERMOGENESE : frilosite = metabolisme ralenti, possible hypothyroidie subclinique
 - Energie et THYROIDE : T3 libre, conversion T4-T3, rT3
-- Cite Bikman (Why We Get Sick), Attia, Applied Metabolics
 - MINIMUM 45-50 lignes
 `,
 
@@ -818,7 +811,6 @@ INSTRUCTIONS SPECIFIQUES POUR "DIGESTION":
 - PERMEABILITE INTESTINALE : zonuline, tight junctions, inflammation systemique
 - Digestion et ABSORPTION : manger parfait mais mal absorber
 - Fatigue post-repas : reponse insulinique excessive, leaky gut
-- Cite Masterjohn pour micronutriments
 - MINIMUM 40-45 lignes
 `,
 
@@ -843,7 +835,6 @@ INSTRUCTIONS SPECIFIQUES POUR "TRAINING":
 - PERIODISATION : lineaire, ondulee, en blocs
 - DELOAD et supercompensation
 - Recuperation mauvaise : HRV basse, cortisol chronique, deficit calorique trop agressif
-- Cite SBS, Renaissance Periodization, Applied Metabolics
 - MINIMUM 45-50 lignes techniques
 `,
 
@@ -872,7 +863,6 @@ INSTRUCTIONS SPECIFIQUES POUR "NUTRITION":
   * Impact sommeil (supprime REM)
   * Impact testosterone (-20-30%)
 - ALIMENTS TRANSFORMES : huiles vegetales, additifs, sucres caches
-- Cite Examine, Bikman, SBS, Applied Metabolics
 - MINIMUM 50-55 lignes avec chiffres
 `,
 
@@ -897,7 +887,6 @@ INSTRUCTIONS SPECIFIQUES POUR "LIFESTYLE":
 - MOUVEMENT QUOTIDIEN : marche, escaliers, micro-mouvements
 - ENVIRONNEMENT TRAVAIL : stress, horaires, charge mentale
 - Lifestyle et RYTHME CIRCADIEN : alignement ou desalignement
-- Cite Huberman (lumiere, dopamine), Attia (NEAT, longevite)
 - MINIMUM 40-45 lignes
 `,
 
@@ -923,13 +912,12 @@ INSTRUCTIONS SPECIFIQUES POUR "MINDSET":
   * Cortisol haut - anxiete - decisions impulsives
 - Valorise ses EFFORTS passes meme si resultats absents
 - Probleme souvent pas le mindset mais blocages physiologiques
-- Cite Huberman (dopamine), Sapolsky (stress et comportement)
 - MINIMUM 40-45 lignes
 `
 };
 
 // Function to generate AI content for a specific section
-// WITH VALIDATION: Minimum 20 lines, retry if too short, must use knowledge base
+// WITH VALIDATION: Minimum 24 lines, retry if too short
 async function generateSectionContentAI(
   domain: string,
   score: number,
@@ -943,17 +931,10 @@ async function generateSectionContentAI(
   const age = responses.age || 30;
   const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
   const contextForPrompt = knowledgeOk ? knowledgeContext : '';
-  const knowledgeLower = contextForPrompt ? contextForPrompt.toLowerCase() : '';
 
   if (!knowledgeOk) {
     console.warn(`[Discovery] Knowledge context manquant pour ${domain}. Generation en mode degrade.`);
   }
-
-  const availableSources = SOURCE_MARKERS.filter((marker) => knowledgeLower.includes(marker));
-  const sourcesHint =
-    availableSources.length > 0
-      ? availableSources.join(", ")
-      : "Huberman, Attia, Examine, Applied Metabolics, SBS, MPMD, Newsletter, ACHZOD";
 
   // Extract relevant responses for this domain
   const domainResponses = extractDomainResponses(domain, responses);
@@ -962,7 +943,7 @@ async function generateSectionContentAI(
   // GARDE-FOUS: Minimum 20 lines = ~1200 characters
   const MIN_CONTENT_LENGTH = MIN_DISCOVERY_SECTION_CHARS;
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 4;
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
 
@@ -979,14 +960,14 @@ ${domainResponses}
 ${contextForPrompt ? `DONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
 ${contextForPrompt}
 
-INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Cite les mecanismes, les protocoles, les chiffres mentionnes. Ne fais pas une analyse generique.
+INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Decris les mecanismes, les protocoles, les chiffres mentionnes. Ne fais pas une analyse generique.
 ` : ''}
 
 ${instructions}
 
-MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 40-50 lignes pour la section ${domain.toUpperCase()}.
+MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 45-55 lignes pour la section ${domain.toUpperCase()}.
 ${attempt > 1 ? `
-ATTENTION: Ta reponse precedente etait TROP COURTE (moins de 20 lignes). Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 40-50 lignes de texte dense et technique.
+ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 45-55 lignes de texte dense et technique.
 ` : ''}
 
 REGLES ABSOLUES:
@@ -997,7 +978,7 @@ REGLES ABSOLUES:
 5. Connecte avec les autres systemes corporels (ex: cortisol affecte testosterone, sommeil affecte GH)
 6. Integre les donnees scientifiques de la knowledge base ci-dessus
 7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
-8. Cite explicitement au moins 2 sources parmi: ${sourcesHint}
+8. Ne cite jamais de sources ni d'auteurs (pas de "Sources:", pas de noms propres)
 
 FORMAT OBLIGATOIRE:
 - JAMAIS de tiret long ou tiret cadratin (utilise : ou . a la place)
@@ -1011,7 +992,7 @@ FORMAT OBLIGATOIRE:
     try {
       const response = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 3500, // Increased for longer content
+        max_tokens: 4200, // Longer content
         system: SECTION_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildPrompt(attempt) }]
       });
@@ -1038,14 +1019,10 @@ FORMAT OBLIGATOIRE:
       const lines = rawText.split(/\n+/).filter(l => l.trim().length > 30);
       const lineCount = lines.length;
       const charCount = rawText.length;
-      const sourcesUsed = SOURCE_MARKERS.filter((marker) => rawText.toLowerCase().includes(marker));
-      const hasSources = sourcesUsed.length > 0;
-      const requiresSources = knowledgeOk;
-
-      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"}`);
+      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines`);
 
       // VALIDATION: Check minimum length
-      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT && (!requiresSources || hasSources)) {
+      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT) {
         console.log(`[Discovery] ✓ Section ${domain} VALIDATED (${charCount} chars, ${lineCount} lines)`);
         return cleanMarkdownToHTML(rawText);
       }
@@ -1053,7 +1030,7 @@ FORMAT OBLIGATOIRE:
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
         throw new Error(
-          `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${charCount} chars, ${lineCount} lines, sources=${sourcesUsed.join("|") || "none"})`
+          `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${charCount} chars, ${lineCount} lines)`
         );
       }
 
@@ -1337,9 +1314,9 @@ MISSION: Redige une analyse TRES LONGUE et TRES DETAILLEE en 4 paragraphes de pr
 
 STRUCTURE OBLIGATOIRE:
 
-PARAGRAPHE 1 (minimum 250 mots): Le dysfonctionnement central. Explique le mecanisme biochimique precis du blocage principal. Cite les enzymes, recepteurs, hormones impliques. Donne des chiffres (pourcentages, durees, seuils). Explique la physiopathologie sans donner de solution.
+PARAGRAPHE 1 (minimum 250 mots): Le dysfonctionnement central. Explique le mecanisme biochimique precis du blocage principal. Decris les enzymes, recepteurs, hormones impliques. Donne des chiffres (pourcentages, durees, seuils). Explique la physiopathologie sans donner de solution.
 
-PARAGRAPHE 2 (minimum 250 mots): La cascade systemique. Decris comment ce dysfonctionnement affecte les autres systemes de ${responses.prenom}. Explique les interactions sommeil/cortisol/insuline/testosterone. Cite les boucles de retroaction. Integre des donnees de Huberman, Attia, Walker.
+PARAGRAPHE 2 (minimum 250 mots): La cascade systemique. Decris comment ce dysfonctionnement affecte les autres systemes de ${responses.prenom}. Explique les interactions sommeil/cortisol/insuline/testosterone. Decris les boucles de retroaction.
 
 PARAGRAPHE 3 (minimum 250 mots): L'impact metabolique complet. Detail les consequences sur le metabolisme energetique, la thyroide, les mitochondries, la sensibilite a l'insuline. Explique pourquoi la perte de gras est bloquee ou pourquoi la prise de muscle est compromise. Chiffres et mecanismes.
 
@@ -1351,6 +1328,7 @@ RAPPELS CRITIQUES:
 - PAS de markdown (##, **, -, *)
 - PAS d'emojis
 - PAS de recommandations ni solutions
+- Ne cite JAMAIS de sources ni d'auteurs
 - MINIMUM 1000 mots au total`;
 
   try {
@@ -1365,11 +1343,6 @@ RAPPELS CRITIQUES:
     let rawText = textContent?.text || '';
     if (!rawText.trim()) {
       throw new Error("[Discovery] Synthese vide");
-    }
-
-    const sourcesUsed = SOURCE_MARKERS.filter((marker) => rawText.toLowerCase().includes(marker));
-    if (knowledgeOk && sourcesUsed.length === 0) {
-      rawText += "\n\nTu peux relier ces mecanismes aux travaux de Huberman, Attia, Applied Metabolics et SBS.";
     }
 
     // Post-process: convert markdown to clean HTML and remove artifacts
@@ -1390,6 +1363,8 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\u2013/g, '-')  // Unicode en dash
     // Remove markdown headers (## Title -> Title)
     .replace(/^#{1,4}\s+(.+)$/gm, '$1')
+    // Remove any source lines (client should never see sources in Discovery)
+    .replace(/^\s*Sources?:.*$/gmi, '')
     // Convert **bold** to <strong>
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     // Convert *italic* to <em>
@@ -1642,7 +1617,6 @@ export async function convertToNarrativeReport(
       if (domainBlocages.length > 0) {
         domainBlocages.forEach(b => {
           content += `<p><strong>${b.title}</strong></p>`;
-          content += `<p class="text-sm italic" style="color: #a1a1aa;">Sources: ${b.sources.join(' | ')}</p>\n`;
         });
       }
 
@@ -2076,9 +2050,6 @@ export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses
           ${blocage.consequences.map(c => `<li>${c}</li>`).join('')}
         </ul>
       </div>
-      <div class="sources">
-        Sources: ${blocage.sources.join(' | ')}
-      </div>
     </div>
   `).join('');
 
@@ -2270,13 +2241,6 @@ export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses
       position: absolute;
       left: 0;
       color: var(--primary);
-    }
-
-    .sources {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      opacity: 0.7;
-      font-style: italic;
     }
 
     .synthese {

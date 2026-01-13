@@ -528,7 +528,7 @@ const DiscoveryScanReport: React.FC = () => {
                     <div
                       className="prose prose-lg max-w-none"
                       style={{
-                        '--tw-prose-body': 'var(--color-text-muted)',
+                        '--tw-prose-body': 'var(--color-text)',
                         '--tw-prose-headings': 'var(--color-text)',
                         '--tw-prose-strong': 'var(--color-text)',
                         '--tw-prose-bullets': 'var(--color-primary)'
