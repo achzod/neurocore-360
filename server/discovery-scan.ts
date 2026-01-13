@@ -943,7 +943,6 @@ async function generateSectionContentAI(
   const age = responses.age || 30;
   const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
   const contextForPrompt = knowledgeOk ? knowledgeContext : '';
-  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
   const knowledgeLower = contextForPrompt ? contextForPrompt.toLowerCase() : '';
 
   if (!knowledgeOk) {
@@ -1302,6 +1301,7 @@ async function generateAISynthesis(
   knowledgeContext: string
 ): Promise<string> {
   const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
+  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
   if (!knowledgeOk) {
     console.warn("[Discovery] Knowledge context manquant pour la synthese. Generation en mode degrade.");
   }
