@@ -214,16 +214,50 @@ export async function sendReportReadyEmail(
         ? `/scan/${auditId}`
         : auditType === "PREMIUM"
         ? `/anabolic/${auditId}`
+        : auditType === "ELITE"
+        ? `/ultimate/${auditId}`
+        : auditType === "BURNOUT"
+        ? `/burnout/${auditId}`
         : `/ultimate/${auditId}`;
     const reportLink = `${baseUrl}${reportPath}`;
     const reviewLink = `${reportLink}#review`;
-    const planLabel = auditType === "GRATUIT" ? "Discovery Scan" : auditType === "PREMIUM" ? "Anabolic Bioscan" : "Ultimate Scan";
-    const planColor = auditType === "ELITE" ? COLORS.purple : auditType === "PREMIUM" ? COLORS.primary : COLORS.textMuted;
+    const planLabel =
+      auditType === "GRATUIT"
+        ? "Discovery Scan"
+        : auditType === "PREMIUM"
+        ? "Anabolic Bioscan"
+        : auditType === "ELITE"
+        ? "Ultimate Scan"
+        : auditType === "BURNOUT"
+        ? "Burnout Engine"
+        : "Ultimate Scan";
+    const planColor =
+      auditType === "BURNOUT"
+        ? COLORS.warning
+        : auditType === "ELITE"
+        ? COLORS.purple
+        : auditType === "PREMIUM"
+        ? COLORS.primary
+        : COLORS.textMuted;
 
     // Dynamic titles based on audit type
     const headerTitle = planLabel;
-    const headerSubtitle = auditType === "GRATUIT" ? "5 Piliers Santé" : auditType === "PREMIUM" ? "16 Domaines d'Analyse" : "18 Domaines d'Analyse";
-    const domainsCount = auditType === "GRATUIT" ? "5 piliers de santé" : auditType === "PREMIUM" ? "16 domaines de santé" : "18 domaines de santé";
+    const headerSubtitle =
+      auditType === "GRATUIT"
+        ? "5 Piliers Santé"
+        : auditType === "PREMIUM"
+        ? "16 Domaines d'Analyse"
+        : auditType === "ELITE"
+        ? "18 Domaines d'Analyse"
+        : "Burnout • 6 dimensions";
+    const domainsCount =
+      auditType === "GRATUIT"
+        ? "5 piliers de santé"
+        : auditType === "PREMIUM"
+        ? "16 domaines de santé"
+        : auditType === "ELITE"
+        ? "18 domaines de santé"
+        : "6 dimensions de burnout";
 
     const content = `
       <div style="text-align: center; margin-bottom: 28px;">
@@ -237,7 +271,7 @@ export async function sendReportReadyEmail(
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 12px; text-align: center;">
-        J'ai termine l'analyse complete de ton profil metabolique a travers les <strong style="color: ${COLORS.text};">${domainsCount}</strong>.
+        J'ai termine l'analyse complete de ton profil a travers les <strong style="color: ${COLORS.text};">${domainsCount}</strong>.
       </p>
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
         Decouvre tes scores, recommandations personnalisees et protocoles.
@@ -365,7 +399,16 @@ export async function sendAdminEmailNewAudit(
   try {
     const adminEmail = "achzodyt@gmail.com";
     const token = await getAccessToken();
-    const planLabel = auditType === "GRATUIT" ? "Discovery Scan" : auditType === "PREMIUM" ? "Anabolic Bioscan" : "Ultimate Scan";
+    const planLabel =
+      auditType === "GRATUIT"
+        ? "Discovery Scan"
+        : auditType === "PREMIUM"
+        ? "Anabolic Bioscan"
+        : auditType === "ELITE"
+        ? "Ultimate Scan"
+        : auditType === "BURNOUT"
+        ? "Burnout Engine"
+        : "Ultimate Scan";
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 24px; font-weight: 700;">

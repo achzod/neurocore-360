@@ -11,6 +11,7 @@ import { searchArticles } from "./knowledge/storage";
 import { ALLOWED_SOURCES } from "./knowledge/search";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { storage } from "./storage";
+import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
 import { getUncachableStripeClient } from "./stripeClient";
 
 // Initialize Anthropic client
@@ -710,6 +711,17 @@ export function registerBurnoutRoutes(app: Express): void {
         report: result,
       });
 
+      const baseUrl = getBaseUrl();
+      try {
+        const emailSent = await sendReportReadyEmail(email, record.id, "BURNOUT", baseUrl);
+        if (emailSent) {
+          const clientName = (responses as any)?.prenom || email.split("@")[0];
+          await sendAdminEmailNewAudit(email, clientName, "BURNOUT", record.id);
+        }
+      } catch (err) {
+        console.error("[Burnout] Email send failed:", err);
+      }
+
       res.json({ success: true, id: record.id });
     } catch (error) {
       console.error("[Burnout] Stripe confirmation error:", error);
@@ -743,6 +755,17 @@ export function registerBurnoutRoutes(app: Express): void {
         responses,
         report: result,
       });
+
+      const baseUrl = getBaseUrl();
+      try {
+        const emailSent = await sendReportReadyEmail(email, record.id, "BURNOUT", baseUrl);
+        if (emailSent) {
+          const clientName = (responses as any)?.prenom || email.split("@")[0];
+          await sendAdminEmailNewAudit(email, clientName, "BURNOUT", record.id);
+        }
+      } catch (err) {
+        console.error("[Burnout] Email send failed:", err);
+      }
 
       console.log(`[Burnout] Result: ID=${record.id}, Phase=${result.phase}, Score=${result.globalScore}`);
 
