@@ -400,7 +400,7 @@ export async function generateAuditTxtWithOpenAI(
 ): Promise<string | null> {
   const startTime = Date.now();
 
-  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -523,6 +523,7 @@ ${photoAnalysisStr}
         const generated = generateSupplementsSectionText({
           responses: clientData as any,
           globalScore: typeof scores?.global === "number" ? scores.global : undefined,
+          firstName,
         });
 
         cachedSections[section] = generated;

@@ -22,6 +22,7 @@ import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
 import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
 import { ClientData, PhotoAnalysis } from "./types";
+import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
 import { isAnthropicAvailable } from "./anthropicEngine";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
@@ -566,9 +567,20 @@ export async function registerRoutes(
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
-          const supplementStack = parseSupplementsFromTxt(report.txt);
           const auditScores = audit.scores || {};
-
+          const globalScore = auditScores.global ?? dashboard.global ?? 76;
+          const firstName =
+            (audit.responses as any)?.prenom ||
+            (audit.email ? audit.email.split("@")[0] : "Client");
+          const supplementStack = generateSupplementStack({
+            responses: (audit.responses as any) || {},
+            globalScore,
+          });
+          const supplementsHtml = generateEnhancedSupplementsHTML({
+            responses: (audit.responses as any) || {},
+            globalScore,
+            firstName,
+          });
           // Helper pour calculer le level
           const getLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
             if (score >= 80) return "excellent";
@@ -615,9 +627,8 @@ export async function registerRoutes(
           };
 
           // On mappe le format dashboard vers le format attendu par AuditDetail.tsx
-          const globalScore = auditScores.global ?? dashboard.global ?? 76;
           const mappedSections = dashboard.sections
-            .filter(s => s.category !== 'executive')
+            .filter(s => s.category !== 'executive' && s.category !== 'supplements')
             .map(s => {
               const scoreFromAudit = resolveScoreFromTitle(s.title);
               const sectionScore = s.score > 0 ? s.score : (scoreFromAudit ?? globalScore);
@@ -646,6 +657,9 @@ export async function registerRoutes(
             prioritySections: [] as string[],
             strengthSections: [] as string[],
             supplementStack: supplementStack,
+            supplementsHtml,
+            ctaDebut: dashboard.ctaDebut,
+            ctaFin: dashboard.ctaFin,
             lifestyleProtocol: "",
             weeklyPlan: {
               week1: "Mise en place des fondations: posture, respiration, activation neuromusculaire",

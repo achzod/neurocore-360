@@ -1270,3 +1270,43 @@ export function generateSupplementsSectionText(input: {
 
   return lines.join("\n");
 }
+
+export function generateSupplementStack(input: {
+  responses: Record<string, unknown>;
+  globalScore?: number;
+}): Array<{
+  name: string;
+  dosage: string;
+  timing: string;
+  duration: string;
+  why: string;
+  brands: string[];
+  warnings: string;
+  evidence: string;
+}> {
+  const responses = input.responses || {};
+  const meds = [
+    ...toStringArray(responses["medicaments"]),
+    ...toStringArray(responses["medications"]),
+  ];
+
+  const baseScore =
+    typeof input.globalScore === "number" && Number.isFinite(input.globalScore)
+      ? Math.max(30, Math.min(90, input.globalScore))
+      : 55;
+
+  const domains = [
+    "sleep",
+    "cortisol_stress",
+    "performance",
+    "cardiovascular",
+    "neurotransmitters",
+    "testosterone",
+    "joints",
+  ];
+
+  const all = domains.flatMap((domain) => selectSupplementsForDomain(domain, baseScore, responses, meds));
+  const picked = uniqueByName(all);
+
+  return picked.slice(0, 6).map(formatSupplementForReport);
+}

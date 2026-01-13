@@ -38,24 +38,16 @@ import {
   Crown
 } from 'lucide-react';
 
-const THEMES: Theme[] = [
-  {
-    id: "anabolic",
-    name: "Emerald Drive",
-    type: "dark",
-    colors: {
-      primary: "#10B981",
-      background: "#030712",
-      surface: "#0B1020",
-      border: "rgba(16, 185, 129, 0.18)",
-      text: "#E5F7F0",
-      textMuted: "#94A3AF",
-      grid: "rgba(16, 185, 129, 0.08)",
-      glow: "rgba(16, 185, 129, 0.25)",
-    },
-  },
-  ...ULTRAHUMAN_THEMES,
-];
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+
+const withAlpha = (hex: string, alpha: number): string => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 // Narrative Report types from API
 interface SupplementProtocol {
@@ -92,6 +84,9 @@ interface NarrativeReport {
   prioritySections: string[];
   strengthSections: string[];
   supplementStack: SupplementProtocol[];
+  supplementsHtml?: string;
+  ctaDebut?: string;
+  ctaFin?: string;
   lifestyleProtocol: string;
   weeklyPlan: {
     week1: string;
@@ -122,11 +117,16 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   'neurotransmetteurs': Brain
 };
 
-const getScoreStatus = (value: number) => {
-  if (value >= 80) return { label: 'EXCELLENT', color: 'bg-emerald-500/20 text-emerald-400' };
-  if (value >= 65) return { label: 'BON', color: 'bg-blue-500/20 text-blue-400' };
-  if (value >= 50) return { label: 'MOYEN', color: 'bg-amber-500/20 text-amber-400' };
-  return { label: 'CRITIQUE', color: 'bg-red-500/20 text-red-400' };
+const getScoreStatus = (value: number, theme: Theme) => {
+  const base = {
+    backgroundColor: withAlpha(theme.colors.primary, 0.12),
+    color: theme.colors.primary,
+    borderColor: withAlpha(theme.colors.primary, 0.35)
+  };
+  if (value >= 80) return { label: 'EXCELLENT', style: base };
+  if (value >= 65) return { label: 'BON', style: base };
+  if (value >= 50) return { label: 'MOYEN', style: base };
+  return { label: 'CRITIQUE', style: base };
 };
 
 const AnabolicScanReport: React.FC = () => {
@@ -167,7 +167,8 @@ const AnabolicScanReport: React.FC = () => {
           return;
         }
         const auditData = await auditRes.json();
-        setClientName(auditData.email?.split('@')[0] || 'Client');
+        const nameFromResponses = auditData.responses?.prenom;
+        setClientName(nameFromResponses || auditData.email?.split('@')[0] || 'Client');
         setReviewEmail(auditData.email || '');
 
         // Check if report is ready
@@ -216,6 +217,15 @@ const AnabolicScanReport: React.FC = () => {
     root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
     root.style.setProperty('--color-primary', currentTheme.colors.primary);
     root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--text', currentTheme.colors.text);
+    root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
+    root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--surface-1', currentTheme.colors.surface);
+    root.style.setProperty('--surface-2', currentTheme.colors.background);
+    root.style.setProperty('--border', currentTheme.colors.border);
+    root.style.setProperty('--primary', currentTheme.colors.primary);
+    root.style.setProperty('--accent-ok', currentTheme.colors.primary);
+    root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
   // Scroll handling
@@ -243,12 +253,21 @@ const AnabolicScanReport: React.FC = () => {
     content: s.introduction
   })) || [];
 
+  const sanitizeCtaText = (text: string) =>
+    text
+      .split('\n')
+      .filter(line => !/^[-=]{3,}$/.test(line.trim()))
+      .join('\n')
+      .trim();
+
   // Add special sections
   const allSections: SectionContent[] = [
     { id: 'dashboard', title: 'Dashboard', subtitle: 'Vue globale', content: '' },
+    ...(report?.ctaDebut ? [{ id: 'cta-debut', title: 'Rappel Coaching', subtitle: 'Important', content: '' }] : []),
     ...sidebarSections,
     { id: 'supplements', title: 'Stack Supplements', subtitle: 'Protocole', content: '' },
     { id: 'plan', title: 'Plan 12 Semaines', subtitle: 'Action', content: '' },
+    ...(report?.ctaFin ? [{ id: 'cta-fin', title: 'Coaching', subtitle: 'Prochaine etape', content: '' }] : []),
     { id: 'review', title: 'Votre Avis', subtitle: 'Feedback', content: '' }
   ];
 
@@ -318,7 +337,7 @@ const AnabolicScanReport: React.FC = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
           <p className="text-white/70">Chargement du rapport Anabolic...</p>
         </div>
       </div>
@@ -330,11 +349,14 @@ const AnabolicScanReport: React.FC = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
           <h2 className="text-xl font-bold text-white mb-2">{error || 'Rapport non disponible'}</h2>
           <p className="text-white/60 mb-6">Ton rapport est en cours de preparation ou le lien est invalide.</p>
           <Link href="/dashboard">
-            <button className="px-6 py-3 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition">
+            <button
+              className="px-6 py-3 font-bold rounded-lg transition"
+              style={{ backgroundColor: currentTheme.colors.primary, color: '#000' }}
+            >
               Retour au dashboard
             </button>
           </Link>
@@ -344,6 +366,10 @@ const AnabolicScanReport: React.FC = () => {
   }
 
   const globalScore = report.global;
+  const primary = currentTheme.colors.primary;
+  const primarySoft = withAlpha(primary, 0.12);
+  const primaryBorder = withAlpha(primary, 0.25);
+  const primaryFaint = withAlpha(primary, 0.08);
 
   return (
     <div
@@ -406,12 +432,29 @@ const AnabolicScanReport: React.FC = () => {
         <div className="max-w-4xl mx-auto px-6 py-12 lg:py-16">
           {/* Header Badge */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <Crown size={14} className="text-emerald-400" />
-              <span className="text-xs font-bold text-emerald-400 tracking-wider">ANABOLIC BIOSCAN</span>
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+              style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}
+            >
+              <Crown size={14} style={{ color: primary }} />
+              <span className="text-xs font-bold tracking-wider" style={{ color: primary }}>ANABOLIC BIOSCAN</span>
             </div>
             <span className="text-xs text-[var(--color-text-muted)]">{report.sections.length} sections</span>
           </div>
+
+          {report.ctaDebut && (
+            <section id="cta-debut" className="mb-12">
+              <div
+                className="p-6 rounded-sm border"
+                style={{ backgroundColor: currentTheme.colors.surface, borderColor: primaryBorder }}
+              >
+                <h3 className="text-lg font-bold mb-3" style={{ color: primary }}>Rappel Coaching</h3>
+                <p className="text-sm text-[var(--color-text-muted)] whitespace-pre-line">
+                  {sanitizeCtaText(report.ctaDebut)}
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* Dashboard Section */}
           <section id="dashboard" className="mb-16">
@@ -428,9 +471,14 @@ const AnabolicScanReport: React.FC = () => {
                   color={currentTheme.colors.primary}
                 />
                 <div className="mt-4 text-center">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getScoreStatus(globalScore).color}`}>
-                    {getScoreStatus(globalScore).label}
-                  </span>
+                  {(() => {
+                    const status = getScoreStatus(globalScore, currentTheme);
+                    return (
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold border" style={status.style}>
+                        {status.label}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -448,7 +496,7 @@ const AnabolicScanReport: React.FC = () => {
             <div className="p-6 rounded-sm border mb-8"
               style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Target size={20} className="text-emerald-400" />
+                <Target size={20} style={{ color: primary }} />
                 Synthese Executive
               </h3>
               <div className="prose prose-invert max-w-none">
@@ -460,8 +508,11 @@ const AnabolicScanReport: React.FC = () => {
 
             {/* Strengths & Weaknesses */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="p-6 rounded-sm border border-emerald-500/20 bg-emerald-500/5">
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-emerald-400">
+              <div
+                className="p-6 rounded-sm border"
+                style={{ borderColor: primaryBorder, backgroundColor: primaryFaint }}
+              >
+                <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
                   <TrendingUp size={16} />
                   Points Forts
                 </h4>
@@ -470,16 +521,19 @@ const AnabolicScanReport: React.FC = () => {
                     .filter(s => s.score >= 70)
                     .slice(0, 3)
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between p-2 rounded bg-emerald-500/10">
+                      <div key={s.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: primarySoft }}>
                         <span className="text-sm">{s.title}</span>
-                        <span className="text-xs font-bold text-emerald-400">{s.score}%</span>
+                        <span className="text-xs font-bold" style={{ color: primary }}>{s.score}%</span>
                       </div>
                     ))}
                 </div>
               </div>
 
-              <div className="p-6 rounded-sm border border-amber-500/20 bg-amber-500/5">
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-amber-400">
+              <div
+                className="p-6 rounded-sm border"
+                style={{ borderColor: primaryBorder, backgroundColor: primaryFaint }}
+              >
+                <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
                   <TrendingDown size={16} />
                   Axes d'Optimisation
                 </h4>
@@ -488,9 +542,9 @@ const AnabolicScanReport: React.FC = () => {
                     .filter(s => s.score < 60)
                     .slice(0, 3)
                     .map(s => (
-                      <div key={s.id} className="flex items-center justify-between p-2 rounded bg-amber-500/10">
+                      <div key={s.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: primarySoft }}>
                         <span className="text-sm">{s.title}</span>
-                        <span className="text-xs font-bold text-amber-400">{s.score}%</span>
+                        <span className="text-xs font-bold" style={{ color: primary }}>{s.score}%</span>
                       </div>
                     ))}
                 </div>
@@ -510,7 +564,7 @@ const AnabolicScanReport: React.FC = () => {
           {/* Detailed Sections */}
           {report.sections.map((section, idx) => {
             const Icon = SECTION_ICONS[section.id] || Activity;
-            const status = getScoreStatus(section.score);
+            const status = getScoreStatus(section.score, currentTheme);
 
             return (
               <section key={section.id} id={section.id} className="mb-12 scroll-mt-24">
@@ -524,7 +578,7 @@ const AnabolicScanReport: React.FC = () => {
                       <h2 className="text-xl font-bold">{section.title}</h2>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${status.color}`}>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold border" style={status.style}>
                         {section.score}%
                       </span>
                       <span className="text-xs text-[var(--color-text-muted)]">{status.label}</span>
@@ -543,15 +597,15 @@ const AnabolicScanReport: React.FC = () => {
                   )}
 
                   {section.whatIsWrong && (
-                    <div className="p-4 rounded bg-amber-500/10 border border-amber-500/20">
-                      <h4 className="text-sm font-bold text-amber-400 mb-2">CE QUI NE VA PAS</h4>
+                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>CE QUI NE VA PAS</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.whatIsWrong}</p>
                     </div>
                   )}
 
                   {section.recommendations && (
-                    <div className="p-4 rounded bg-emerald-500/10 border border-emerald-500/20">
-                      <h4 className="text-sm font-bold text-emerald-400 mb-2">RECOMMANDATIONS</h4>
+                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>RECOMMANDATIONS</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.recommendations}</p>
                     </div>
                   )}
@@ -576,35 +630,41 @@ const AnabolicScanReport: React.FC = () => {
 
             <div className="p-6 rounded-sm border"
               style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border)]">
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Supplement</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Dosage</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Timing</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold hidden md:table-cell">Duree</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.supplementStack?.slice(0, 10).map((supp, idx) => (
-                      <tr key={idx} className="border-b border-[var(--color-border)]/50">
-                        <td className="py-3 px-2">
-                          <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{supp.name}</span>
-                          {supp.brands?.length > 0 && (
-                            <div className="text-xs text-[var(--color-text-muted)]">{supp.brands[0]}</div>
-                          )}
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{supp.dosage}</span>
-                        </td>
-                        <td className="py-3 px-2 text-[var(--color-text-muted)]">{supp.timing}</td>
-                        <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{supp.duration}</td>
+              {report.supplementsHtml && (
+                <div className="mb-8" dangerouslySetInnerHTML={{ __html: report.supplementsHtml }} />
+              )}
+
+              {report.supplementStack?.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--color-border)]">
+                        <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Supplement</th>
+                        <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Dosage</th>
+                        <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Timing</th>
+                        <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold hidden md:table-cell">Duree</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {report.supplementStack?.slice(0, 10).map((supp, idx) => (
+                        <tr key={idx} className="border-b border-[var(--color-border)]/50">
+                          <td className="py-3 px-2">
+                            <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{supp.name}</span>
+                            {supp.brands?.length > 0 && (
+                              <div className="text-xs text-[var(--color-text-muted)]">{supp.brands[0]}</div>
+                            )}
+                          </td>
+                          <td className="py-3 px-2">
+                            <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{supp.dosage}</span>
+                          </td>
+                          <td className="py-3 px-2 text-[var(--color-text-muted)]">{supp.timing}</td>
+                          <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{supp.duration}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </section>
 
@@ -617,13 +677,13 @@ const AnabolicScanReport: React.FC = () => {
 
             <div className="space-y-4">
               {[
-                { title: 'Semaine 1', subtitle: 'Fondations', content: report.weeklyPlan?.week1, color: 'emerald' },
-                { title: 'Semaine 2', subtitle: 'Consolidation', content: report.weeklyPlan?.week2, color: 'blue' },
-                { title: 'Semaines 3-4', subtitle: 'Optimisation', content: report.weeklyPlan?.weeks3_4, color: 'purple' },
-                { title: 'Mois 2-3', subtitle: 'Maintenance', content: report.weeklyPlan?.months2_3, color: 'amber' }
+                { title: 'Semaine 1', subtitle: 'Fondations', content: report.weeklyPlan?.week1, alpha: 0.7 },
+                { title: 'Semaine 2', subtitle: 'Consolidation', content: report.weeklyPlan?.week2, alpha: 0.55 },
+                { title: 'Semaines 3-4', subtitle: 'Optimisation', content: report.weeklyPlan?.weeks3_4, alpha: 0.45 },
+                { title: 'Mois 2-3', subtitle: 'Maintenance', content: report.weeklyPlan?.months2_3, alpha: 0.35 }
               ].map((phase, idx) => (
                 <div key={idx} className="flex gap-4">
-                  <div className={`w-1 rounded-full bg-${phase.color}-500`} />
+                  <div className="w-1 rounded-full" style={{ backgroundColor: withAlpha(primary, phase.alpha) }} />
                   <div className="flex-1 p-4 rounded border"
                     style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                     <div className="flex items-center gap-2 mb-2">
@@ -652,6 +712,20 @@ const AnabolicScanReport: React.FC = () => {
             </section>
           )}
 
+          {report.ctaFin && (
+            <section id="cta-fin" className="mb-12">
+              <div
+                className="p-6 rounded-sm border"
+                style={{ backgroundColor: currentTheme.colors.surface, borderColor: primaryBorder }}
+              >
+                <h3 className="text-lg font-bold mb-3" style={{ color: primary }}>Coaching Personnalise</h3>
+                <p className="text-sm text-[var(--color-text-muted)] whitespace-pre-line">
+                  {sanitizeCtaText(report.ctaFin)}
+                </p>
+              </div>
+            </section>
+          )}
+
           {/* Review Section */}
           <section id="review" className="mb-12 scroll-mt-24">
             <div className="p-6 rounded-sm border"
@@ -662,10 +736,13 @@ const AnabolicScanReport: React.FC = () => {
               </h3>
 
               {reviewSubmitted ? (
-                <div className="flex items-center gap-3 p-4 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  <CheckCircle2 className="text-emerald-400" size={24} />
+                <div
+                  className="flex items-center gap-3 p-4 rounded border"
+                  style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}
+                >
+                  <CheckCircle2 size={24} style={{ color: primary }} />
                   <div>
-                    <p className="font-bold text-emerald-400">Merci pour ton avis !</p>
+                    <p className="font-bold" style={{ color: primary }}>Merci pour ton avis !</p>
                     <p className="text-sm text-[var(--color-text-muted)]">Ton retour m'aide a m'ameliorer.</p>
                   </div>
                 </div>
@@ -683,7 +760,8 @@ const AnabolicScanReport: React.FC = () => {
                         >
                           <Star
                             size={32}
-                            className={star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-[var(--color-text-muted)]/30'}
+                            className={star <= reviewRating ? 'fill-current' : 'text-[var(--color-text-muted)]/30'}
+                            style={star <= reviewRating ? { color: primary } : undefined}
                           />
                         </button>
                       ))}

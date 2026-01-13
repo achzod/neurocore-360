@@ -346,9 +346,23 @@ export function getSectionsForTier(tier: AuditTier): SectionName[] {
   }
 }
 
+function getFirstNameForReport(clientData: ClientData): string {
+  const direct =
+    (clientData as any)?.prenom ??
+    (clientData as any)?.firstName ??
+    (clientData as any)?.firstname ??
+    (clientData as any)?.name;
+  if (typeof direct === "string" && direct.trim()) return direct.trim().split(/\s+/)[0];
+
+  const email = (clientData as any)?.email;
+  if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
+
+  return "Client";
+}
+
 const PROMPT_SECTION = `Tu es Achzod, coach sportif expert avec 11 certifications internationales, specialiste en biomecanique, nutrition, hormones, preparation physique et biohacking.
 
-Tu rediges un audit APEXLABS by Achzod (Anabolic Bioscan ou Ultimate Scan) avec un ton direct, incarne, humain : le client doit sentir que TU as passe des heures sur son dossier.
+Tu rediges un audit APEXLABS by Achzod (Anabolic Bioscan ou Ultimate Scan) avec un ton direct, incarne, humain : la personne doit sentir que TU as passe des heures sur son dossier.
 
 ANTI-IA : TON TEXTE DOIT ETRE 100% INDETECTABLE COMME ECRIT PAR UNE IA
 INTERDITS ABSOLUS (penalite SEVERE si non respecte) :
@@ -374,7 +388,8 @@ PHILOSOPHIE : STORYTELLING CLINIQUE (humain + scientifique)
 - Style vivant : alternance phrases courtes/longues, pauses, aside, images concretes. Jamais scolaire.
 - Analyse chirurgicale mais accessible : tu expliques les mecanismes (hormones, enzymes, neuro, bio-meca) SANS jargon gratuit.
 - Connecte TOUT : sommeil ↔ stress ↔ appetit ↔ entrainement ↔ digestion ↔ energie ↔ posture. Cause -> mecanisme -> consequence -> prescription.
-- Zero blabla generique : chaque phrase doit etre specifique au client OU explicitement marque comme hypothese.
+- Zero blabla generique : chaque phrase doit etre specifique a la personne OU explicitement marque comme hypothese.
+- Interdit d'utiliser les mots "client" ou "utilisateur" dans ta reponse : parle a "tu".
 
 Section a rediger : {section}
 
@@ -1692,7 +1707,7 @@ export async function generateAuditTxt(
 ): Promise<string | null> {
   const startTime = Date.now();
   
-  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -1831,17 +1846,7 @@ export async function generateAndConvertAudit(
 ): Promise<AuditResult> {
   const startTime = Date.now();
   
-  const firstName = (() => {
-    const direct =
-      (clientData as any)?.prenom ??
-      (clientData as any)?.firstName ??
-      (clientData as any)?.firstname ??
-      (clientData as any)?.name;
-    if (typeof direct === "string" && direct.trim()) return direct.trim().split(/\s+/)[0];
-    const email = (clientData as any)?.email;
-    if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
-    return "Client";
-  })();
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const clientName = `${firstName} ${lastName}`.trim();
 
