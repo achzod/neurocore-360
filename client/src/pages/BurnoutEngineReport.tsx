@@ -183,6 +183,7 @@ const BurnoutEngineReport: React.FC = () => {
     root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
     root.style.setProperty('--color-primary', currentTheme.colors.primary);
     root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--color-on-primary', currentTheme.type === 'dark' ? '#000' : '#fff');
     root.style.setProperty('--primary', currentTheme.colors.primary);
     root.style.setProperty('--text', currentTheme.colors.text);
     root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);

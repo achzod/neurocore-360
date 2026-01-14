@@ -63,6 +63,11 @@ const DiscoveryScanReport: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const regenTimer = useRef<number | null>(null);
+  const displayGlobalScore = reportData
+    ? reportData.globalScore > 10
+      ? Math.round(reportData.globalScore) / 10
+      : reportData.globalScore
+    : 0;
 
   // Review form state
   const [reviewRating, setReviewRating] = useState<number>(0);
@@ -157,6 +162,7 @@ const DiscoveryScanReport: React.FC = () => {
     root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
     root.style.setProperty('--color-primary', currentTheme.colors.primary);
     root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--color-on-primary', currentTheme.type === 'dark' ? '#000' : '#fff');
     root.style.setProperty('--text', currentTheme.colors.text);
     root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
     root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
@@ -411,13 +417,13 @@ const DiscoveryScanReport: React.FC = () => {
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton scan.</span>
                 </h1>
                 <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                  {reportData.globalScore}/10 — {reportData.globalScore >= 7 ? 'Une base solide.' : reportData.globalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
+                  {displayGlobalScore}/10 — {displayGlobalScore >= 7 ? 'Une base solide.' : displayGlobalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
                 </p>
               </div>
 
               <div className="flex gap-4 items-end">
                 <div className="text-right hidden md:block">
-                  <div className="text-3xl font-bold font-mono">{reportData.globalScore}<span className="text-lg opacity-50">/10</span></div>
+                  <div className="text-3xl font-bold font-mono">{displayGlobalScore}<span className="text-lg opacity-50">/10</span></div>
                   <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
                 </div>
               </div>
@@ -433,7 +439,7 @@ const DiscoveryScanReport: React.FC = () => {
                 <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
                 <div className="flex items-center justify-center py-8">
                   <RadialProgress
-                    score={reportData.globalScore}
+                    score={displayGlobalScore}
                     max={10}
                     size={180}
                     strokeWidth={4}
@@ -441,8 +447,8 @@ const DiscoveryScanReport: React.FC = () => {
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${getScoreStatus(reportData.globalScore).color}`}>
-                    {getScoreStatus(reportData.globalScore).label}
+                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${getScoreStatus(displayGlobalScore).color}`}>
+                    {getScoreStatus(displayGlobalScore).label}
                   </span>
                 </div>
               </div>
@@ -496,7 +502,7 @@ const DiscoveryScanReport: React.FC = () => {
                   </p>
                 </div>
                 <div className="w-full md:w-2/3 h-[150px]">
-                  <ProjectionChart color={currentTheme.colors.primary} currentScore={reportData.globalScore} />
+              <ProjectionChart color={currentTheme.colors.primary} currentScore={displayGlobalScore} />
                 </div>
               </div>
             </section>

@@ -1677,6 +1677,7 @@ export async function convertToNarrativeReport(
   const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
   const prenom = getDiscoveryFirstName(normalized);
   const objectif = normalized.objectif || 'tes objectifs';
+  const globalScore10 = Math.round((result.globalScore / 10) * 10) / 10;
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
 
@@ -1718,7 +1719,7 @@ export async function convertToNarrativeReport(
     subtitle: "Discovery Scan",
     content: `<p>${prenom}, j'ai ouvert ton dossier et chaque reponse compte. Ce Discovery Scan est une radiographie rapide mais precise de tes mecanismes : ce qui tourne bien, ce qui cale, et pourquoi.</p>
 <p>Je relie sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset. Rien n'est isole. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la duree.</p>
-<p>Ton score global de <strong>${result.globalScore}/100</strong> donne la facade, mais la realite est dans les details : ${result.blocages.length} blocages structurants, souvent invisibles a l'oeil nu, qui expliquent tes plateaux et tes efforts mal recompenses.</p>
+<p>Ton score global de <strong>${globalScore10}/10</strong> donne la facade, mais la realite est dans les details : ${result.blocages.length} blocages structurants, souvent invisibles a l'oeil nu, qui expliquent tes plateaux et tes efforts mal recompenses.</p>
 <p>Ici, je ne donne pas de solutions. Je montre la logique biologique, les cascades et les signaux. Tu vas comprendre ou se perd ton potentiel et pourquoi le corps resiste. Ensuite, tu choisiras si tu veux le plan complet.</p>`,
     chips: ["Analyse Complète", `${result.blocages.length} Blocages`]
   });
@@ -1980,7 +1981,7 @@ export async function convertToNarrativeReport(
   });
 
   return {
-    globalScore: Math.round(result.globalScore / 10 * 10) / 10, // Convert to 0-10 scale
+    globalScore: globalScore10,
     metrics,
     sections,
     clientName: prenom,
