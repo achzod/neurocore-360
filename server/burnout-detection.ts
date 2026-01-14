@@ -1004,11 +1004,17 @@ export function registerBurnoutRoutes(app: Express): void {
         return;
       }
 
-      const responses = (record.responses || {}) as BurnoutResponse;
-      const result = await analyzeBurnout(responses, record.email);
-      const updated = await storage.updateBurnoutReport(record.id, result);
+      res.json({ success: true, id: record.id, started: true });
 
-      res.json({ success: true, id: record.id, report: updated?.report || result });
+      (async () => {
+        try {
+          const responses = (record.responses || {}) as BurnoutResponse;
+          const result = await analyzeBurnout(responses, record.email);
+          await storage.updateBurnoutReport(record.id, result);
+        } catch (error) {
+          console.error("[Burnout] Regenerate background error:", error);
+        }
+      })();
     } catch (error) {
       console.error("[Burnout] Regenerate error:", error);
       res.status(500).json({ error: "Erreur regeneration burnout" });
