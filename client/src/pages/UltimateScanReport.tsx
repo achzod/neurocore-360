@@ -421,7 +421,15 @@ const UltimateScanReport: React.FC = () => {
 
               <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                 <h3 className="text-sm font-bold mb-4 uppercase tracking-wider text-[var(--color-text-muted)]">Radar Performance</h3>
-                <MetricsRadar data={metricsData} color={currentTheme.colors.primary} />
+                <MetricsRadar
+                  data={metricsData}
+                  color={currentTheme.colors.primary}
+                  gridColor={currentTheme.colors.grid}
+                  labelColor={currentTheme.colors.textMuted}
+                  tooltipBg={currentTheme.colors.surface}
+                  tooltipBorder={currentTheme.colors.border}
+                  tooltipText={currentTheme.colors.text}
+                />
               </div>
             </div>
 

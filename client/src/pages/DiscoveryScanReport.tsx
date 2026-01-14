@@ -459,7 +459,15 @@ const DiscoveryScanReport: React.FC = () => {
                   <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Balance Systemique</h3>
                 </div>
                 <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
-                  <MetricsRadar data={reportData.metrics} color={currentTheme.colors.primary} />
+                  <MetricsRadar
+                    data={reportData.metrics}
+                    color={currentTheme.colors.primary}
+                    gridColor={currentTheme.colors.grid}
+                    labelColor={currentTheme.colors.textMuted}
+                    tooltipBg={currentTheme.colors.surface}
+                    tooltipBorder={currentTheme.colors.border}
+                    tooltipText={currentTheme.colors.text}
+                  />
                 </div>
               </div>
 

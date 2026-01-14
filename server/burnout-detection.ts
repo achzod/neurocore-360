@@ -223,44 +223,56 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
     : "C'est le moment idéal pour optimiser. Tu as encore toutes tes ressources.";
 
   return `
-<div style="background: linear-gradient(135deg, rgba(94, 234, 212, 0.1) 0%, rgba(94, 234, 212, 0.02) 100%); border: 1px solid rgba(94, 234, 212, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
-  <p style="font-size: 1.1rem; color: var(--text); margin-bottom: 16px;"><strong>${urgencyText}</strong></p>
+<div style="background: color-mix(in srgb, var(--primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+  <p style="font-size: 1.05rem; color: var(--text); margin: 0;"><strong>${urgencyText}</strong></p>
 </div>
 
-<p style="font-size: 1.05rem; color: var(--text); line-height: 1.7; margin-bottom: 20px;">
-  Cette analyse t'a donné une cartographie de ta situation. Mais l'information seule ne change rien.
-  Ce qui fait la différence, c'est l'exécution et l'accompagnement.
+<p style="font-size: 1rem; color: var(--text); line-height: 1.7; margin-bottom: 20px;">
+  Cette analyse t'a donne une cartographie claire. Mais l'information seule ne change rien.
+  Ce qui fait la difference, c'est l'execution et l'accompagnement.
 </p>
 
-<h4 style="font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 24px 0 16px;">OPTION 1 : ANABOLIC BIOSCAN (59€)</h4>
-<p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
-  Une analyse complète de ton profil métabolique avec 16 domaines analysés, 5 protocoles fermés,
-  stack supplements personnalisée et plan 30-60-90 jours. Idéal pour avoir une feuille de route complète.
-</p>
+<div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+  <div style="background: var(--surface-1); border: 2px solid var(--primary); border-radius: 16px; padding: 20px;">
+    <div style="font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); margin-bottom: 8px;">Option 1</div>
+    <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 10px;">Anabolic Bioscan</h4>
+    <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+      16 domaines analyses, 5 protocoles fermes, stack supplements personnalisee, plan 30-60-90 jours.
+    </p>
+    <a href="/offers/anabolic-bioscan" style="display: block; text-align: center; padding: 10px 12px; border-radius: 10px; background: var(--primary); color: var(--color-on-primary); font-weight: 700; text-decoration: none;">
+      Choisir Anabolic Bioscan
+    </a>
+  </div>
 
-<h4 style="font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 24px 0 16px;">OPTION 2 : COACHING PERSONNALISÉ</h4>
-<p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
-  Si tu veux un accompagnement réel avec ajustements en temps réel, suivi de tes KPIs,
-  et quelqu'un qui te tient accountable.
-</p>
-<ul style="margin: 12px 0; padding-left: 20px; color: var(--text-secondary);">
-  <li style="margin-bottom: 8px;"><strong>Essential Elite</strong> : Suivi hebdomadaire, ajustements continus</li>
-  <li style="margin-bottom: 8px;"><strong>Private Lab</strong> : Coaching intensif, analyses avancées</li>
-</ul>
-<p style="font-size: 1rem; color: var(--accent-ok); font-weight: 600; margin: 16px 0;">
-  BONUS : Si tu prends un Anabolic Bioscan avant le coaching, les 59€ sont déduits à 100% du prix.
-</p>
-<p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 8px;">
-  CODE PROMO : <strong>neurocore20</strong> (-25% sur Essential Elite et Private Lab)
-</p>
+  <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 20px;">
+    <div style="font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Option 2</div>
+    <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 10px;">Coaching personnalise</h4>
+    <ul style="margin: 0 0 14px; padding-left: 18px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
+      <li><strong>Essential Elite</strong> : suivi hebdomadaire, ajustements continus</li>
+      <li><strong>Private Lab</strong> : coaching intensif, analyses avancees</li>
+    </ul>
+    <a href="https://achzodcoaching.com" target="_blank" style="display: block; text-align: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; text-decoration: none;">
+      Voir le coaching
+    </a>
+  </div>
+</div>
 
-<div style="background: var(--surface-2); border-radius: 12px; padding: 20px; margin-top: 24px;">
-  <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 12px;">Prochaine étape :</p>
-  <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.6;">
-    Réponds à cet email ou contacte-moi directement pour échanger sur ta situation.
-    Je te propose un call de 15 min pour voir si c'est un bon fit. Pas de pression, pas de bullshit.
+<div style="margin-top: 20px; padding: 16px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);">
+  <p style="margin: 0 0 8px; color: var(--primary); font-weight: 700;">BONUS</p>
+  <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">
+    Si tu prends un Anabolic Bioscan avant le coaching, les 59€ sont deduits a 100% du prix.
   </p>
-  <p style="font-size: 1rem; color: var(--primary); margin-top: 16px;">
+  <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 0.95rem;">
+    CODE PROMO : <strong>neurocore20</strong> (-25% sur Essential Elite et Private Lab)
+  </p>
+</div>
+
+<div style="background: var(--surface-2); border-radius: 12px; padding: 18px; margin-top: 20px; border: 1px solid var(--border);">
+  <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 8px;">Prochaine etape :</p>
+  <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 12px;">
+    Reponds a cet email ou contacte-moi directement. Call de 15 min pour voir si c'est un bon fit.
+  </p>
+  <p style="font-size: 0.95rem; color: var(--primary); margin: 0;">
     <strong>Email</strong> : coaching@achzodcoaching.com<br/>
     <strong>Site</strong> : achzodcoaching.com
   </p>

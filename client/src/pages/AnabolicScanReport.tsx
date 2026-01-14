@@ -49,6 +49,35 @@ const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const parseCtaText = (text?: string) => {
+  if (!text) {
+    return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
+  }
+  const lines = text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !/^[-=]{3,}$/.test(line))
+    .filter(line => !/rapport genere/i.test(line));
+
+  const promoLine = lines.find(line => /code promo/i.test(line)) || "";
+  const bonusLine = lines.find(line => /bonus/i.test(line)) || "";
+  const emailLine = lines.find(line => /^email\s*:/i.test(line)) || "";
+  const siteLine = lines.find(line => /^site\s*:/i.test(line)) || "";
+
+  const bullets = lines
+    .filter(line => /^(\+|\-|\d+\.)\s+/.test(line))
+    .map(line => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim());
+
+  const paragraphs = lines.filter(line => {
+    if (/^(rappel important|infos importantes)$/i.test(line)) return false;
+    if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
+    return !/^(\+|\-|\d+\.)\s+/.test(line);
+  });
+
+  return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine };
+};
+
 // Narrative Report types from API
 interface SupplementProtocol {
   name: string;
@@ -254,12 +283,90 @@ const AnabolicScanReport: React.FC = () => {
     content: s.introduction
   })) || [];
 
-  const sanitizeCtaText = (text: string) =>
-    text
-      .split('\n')
-      .filter(line => !/^[-=]{3,}$/.test(line.trim()))
-      .join('\n')
-      .trim();
+  const renderCtaPanel = (text: string, badgeLabel: string) => {
+    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = parseCtaText(text);
+    const contactEmail = emailLine.replace(/^email\s*:\s*/i, "") || "coaching@achzodcoaching.com";
+    const contactSite = siteLine.replace(/^site\s*:\s*/i, "") || "achzodcoaching.com";
+
+    return (
+      <div
+        className="rounded-sm p-8"
+        style={{
+          background: `linear-gradient(135deg, ${primary}15 0%, ${currentTheme.colors.surface} 100%)`,
+          border: `1px solid ${primary}30`
+        }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <span
+            className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+            style={{ backgroundColor: primarySoft, color: primary }}
+          >
+            {badgeLabel}
+          </span>
+          <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+            Coaching Achzod
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {paragraphs.map((line, idx) => (
+            <p key={idx} className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+              {line}
+            </p>
+          ))}
+        </div>
+
+        {bullets.length > 0 && (
+          <ul className="mt-5 space-y-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+            {bullets.map((bullet, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span style={{ color: primary }}>•</span>
+                <span>{bullet}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {(promoLine || bonusLine) && (
+          <div className="mt-5 p-4 rounded-sm" style={{ backgroundColor: primarySoft, border: `1px solid ${primaryBorder}` }}>
+            {bonusLine && <p className="text-sm font-semibold mb-2" style={{ color: primary }}>{bonusLine}</p>}
+            {promoLine && <p className="text-sm font-semibold" style={{ color: currentTheme.colors.text }}>{promoLine}</p>}
+          </div>
+        )}
+
+        {(contactEmail || contactSite) && (
+          <div className="mt-5 p-4 rounded-sm" style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}>
+            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
+              Contact direct
+            </p>
+            <p className="text-sm" style={{ color: currentTheme.colors.text }}>
+              Email : <strong>{contactEmail}</strong><br />
+              Site : <strong>{contactSite}</strong>
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <a
+            href={`mailto:${contactEmail}`}
+            className="flex-1 px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+            style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
+          >
+            Ecrire a Achzod
+          </a>
+          <a
+            href={`https://${contactSite}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+            style={{ border: `1px solid ${primary}`, color: primary }}
+          >
+            Voir le coaching
+          </a>
+        </div>
+      </div>
+    );
+  };
 
   // Add special sections
   const allSections: SectionContent[] = [
@@ -272,14 +379,44 @@ const AnabolicScanReport: React.FC = () => {
     { id: 'review', title: 'Votre Avis', subtitle: 'Feedback', content: '' }
   ];
 
-  // Convert to metrics for radar
-  const metricsData: Metric[] = report?.sections.slice(0, 8).map(s => ({
-    label: s.title.split(' ')[0],
-    value: Math.round(s.score / 10),
+  const RADAR_LABELS: Record<string, string> = {
+    "profil-base": "Profil",
+    "composition-corporelle": "Composition",
+    "metabolisme-energie": "Metabo",
+    "nutrition-tracking": "Nutrition",
+    "digestion-microbiome": "Digestion",
+    "activite-performance": "Training",
+    "sommeil-recuperation": "Sommeil",
+    "hrv-cardiaque": "HRV",
+    "cardio-endurance": "Cardio",
+    "analyses-biomarqueurs": "Bio",
+    "hormones-stress": "Hormones",
+    "lifestyle-substances": "Lifestyle",
+    "biomecanique-mobilite": "Mobilite",
+    "psychologie-mental": "Mental",
+    "neurotransmetteurs": "Neuro"
+  };
+
+  const shortLabelFromTitle = (title: string, fallback: string) => {
+    const cleaned = title
+      .replace(/^analyse\s+/i, "")
+      .replace(/^protocole\s+/i, "")
+      .replace(/^plan\s+/i, "")
+      .replace(/^synthese\s+/i, "")
+      .replace(/^kpi\s+et\s+tableau\s+de\s+bord\s*/i, "KPI ")
+      .trim();
+    const words = cleaned.split(/\s+/);
+    return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
+  };
+
+  const radarSections = report?.sections.filter(s => SECTION_ICONS[s.id]).slice(0, 8) || [];
+  const metricsData: Metric[] = radarSections.map(s => ({
+    label: RADAR_LABELS[s.id] || shortLabelFromTitle(s.title, s.title),
+    value: Math.round((s.score / 10) * 10) / 10,
     max: 10,
     description: s.title,
     key: s.id
-  })) || [];
+  }));
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -448,15 +585,8 @@ const AnabolicScanReport: React.FC = () => {
 
           {report.ctaDebut && (
             <section id="cta-debut" className="mb-12">
-              <div
-                className="p-6 rounded-sm border"
-                style={{ backgroundColor: currentTheme.colors.surface, borderColor: primaryBorder }}
-              >
-                <h3 className="text-lg font-bold mb-3" style={{ color: primary }}>Rappel Coaching</h3>
-                <p className="text-sm text-[var(--color-text-muted)] whitespace-pre-line">
-                  {sanitizeCtaText(report.ctaDebut)}
-                </p>
-              </div>
+              <h3 className="text-lg font-bold mb-4" style={{ color: primary }}>Rappel Coaching</h3>
+              {renderCtaPanel(report.ctaDebut, "Important")}
             </section>
           )}
 
@@ -492,7 +622,15 @@ const AnabolicScanReport: React.FC = () => {
                 <h3 className="text-sm font-bold mb-4 uppercase tracking-wider text-[var(--color-text-muted)]">
                   Radar Performance
                 </h3>
-                <MetricsRadar data={metricsData} color={currentTheme.colors.primary} />
+                <MetricsRadar
+                  data={metricsData}
+                  color={currentTheme.colors.primary}
+                  gridColor={currentTheme.colors.grid}
+                  labelColor={currentTheme.colors.textMuted}
+                  tooltipBg={currentTheme.colors.surface}
+                  tooltipBorder={currentTheme.colors.border}
+                  tooltipText={currentTheme.colors.text}
+                />
               </div>
             </div>
 
@@ -718,15 +856,8 @@ const AnabolicScanReport: React.FC = () => {
 
           {report.ctaFin && (
             <section id="cta-fin" className="mb-12">
-              <div
-                className="p-6 rounded-sm border"
-                style={{ backgroundColor: currentTheme.colors.surface, borderColor: primaryBorder }}
-              >
-                <h3 className="text-lg font-bold mb-3" style={{ color: primary }}>Coaching Personnalise</h3>
-                <p className="text-sm text-[var(--color-text-muted)] whitespace-pre-line">
-                  {sanitizeCtaText(report.ctaFin)}
-                </p>
-              </div>
+              <h3 className="text-lg font-bold mb-4" style={{ color: primary }}>Coaching Personnalise</h3>
+              {renderCtaPanel(report.ctaFin, "Execution")}
             </section>
           )}
 

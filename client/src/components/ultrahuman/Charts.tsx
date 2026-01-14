@@ -18,23 +18,35 @@ import { Metric } from './types';
 interface RadarProps {
   data: Metric[];
   color: string;
+  gridColor?: string;
+  labelColor?: string;
+  tooltipBg?: string;
+  tooltipBorder?: string;
+  tooltipText?: string;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  tooltipBg,
+  tooltipBorder,
+  tooltipText,
+  tooltipMuted
+}: any) => {
   if (active && payload && payload.length) {
     return (
       <div
         className="p-4 rounded shadow-2xl backdrop-blur-md min-w-[120px] z-50"
-        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+        style={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}` }}
       >
-        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>
+        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: tooltipMuted }}>
           {payload[0].payload.subject}
         </p>
         <div className="flex items-end gap-1">
-          <span className="text-3xl font-bold leading-none" style={{ color: 'var(--color-text)' }}>
+          <span className="text-3xl font-bold leading-none" style={{ color: tooltipText }}>
             {payload[0].value}
           </span>
-          <span className="text-sm font-medium mb-0.5" style={{ color: 'var(--color-text-muted)' }}>/10</span>
+          <span className="text-sm font-medium mb-0.5" style={{ color: tooltipMuted }}>/10</span>
         </div>
       </div>
     );
@@ -42,7 +54,16 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export const MetricsRadar: React.FC<RadarProps> = ({ data, color }) => {
+export const MetricsRadar: React.FC<RadarProps> = ({
+  data,
+  color,
+  gridColor = 'var(--color-grid)',
+  labelColor = 'var(--color-text-muted)',
+  tooltipBg = 'var(--color-surface)',
+  tooltipBorder = 'var(--color-border)',
+  tooltipText = 'var(--color-text)'
+}) => {
+  const tooltipMuted = labelColor;
   const chartData = data.map(m => ({
     subject: m.label,
     A: m.value,
@@ -53,15 +74,15 @@ export const MetricsRadar: React.FC<RadarProps> = ({ data, color }) => {
     <div className="w-full h-[320px] relative group cursor-crosshair">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
-          <PolarGrid stroke="var(--color-grid)" />
+          <PolarGrid stroke={gridColor} />
           <PolarAngleAxis
             dataKey="subject"
-            tick={{ fill: 'var(--color-text-muted)', fontSize: 11, fontWeight: 600 }}
+            tick={{ fill: labelColor, fontSize: 11, fontWeight: 600 }}
           />
           <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
           <Tooltip
-            content={<CustomTooltip />}
-            cursor={{ strokeOpacity: 0.2 }}
+            content={<CustomTooltip tooltipBg={tooltipBg} tooltipBorder={tooltipBorder} tooltipText={tooltipText} tooltipMuted={tooltipMuted} />}
+            cursor={{ stroke: gridColor, strokeOpacity: 0.4 }}
             allowEscapeViewBox={{ x: true, y: true }}
             wrapperStyle={{ zIndex: 100 }}
           />
