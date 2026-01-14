@@ -100,10 +100,10 @@ const AI_PATTERNS = [
 ];
 
 // Minimum section lengths (in characters)
-const MIN_SECTION_LENGTH_PREMIUM = 3200;
-const MIN_SECTION_LENGTH_GRATUIT = 2000;
-const MIN_TOTAL_LENGTH_PREMIUM = 60000; // ~40+ pages
-const MIN_TOTAL_LENGTH_GRATUIT = 15000; // ~10+ pages
+const MIN_SECTION_LENGTH_PREMIUM = 4200;
+const MIN_SECTION_LENGTH_GRATUIT = 2400;
+const MIN_TOTAL_LENGTH_PREMIUM = 75000; // ~45-50 pages
+const MIN_TOTAL_LENGTH_GRATUIT = 18000; // ~12+ pages
 
 // Required CTA markers
 const CTA_MARKERS = [

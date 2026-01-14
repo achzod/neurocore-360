@@ -127,24 +127,40 @@ interface NarrativeReport {
   auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE';
 }
 
-// Icon mapping
-const SECTION_ICONS: Record<string, React.ElementType> = {
-  'profil-base': Activity,
-  'composition-corporelle': Target,
-  'metabolisme-energie': Flame,
-  'nutrition-tracking': Apple,
-  'digestion-microbiome': Activity,
-  'activite-performance': Dumbbell,
-  'sommeil-recuperation': Moon,
-  'hrv-cardiaque': Heart,
-  'cardio-endurance': Heart,
-  'analyses-biomarqueurs': Activity,
-  'hormones-stress': Brain,
-  'lifestyle-substances': Sun,
-  'biomecanique-mobilite': Dumbbell,
-  'psychologie-mental': Lightbulb,
-  'neurotransmetteurs': Brain
+const SECTION_ICON_BY_ID: Record<string, React.ElementType> = {
+  'executive-summary': Target,
+  'analyse-entrainement-et-periodisation': Dumbbell,
+  'analyse-systeme-cardiovasculaire': Heart,
+  'analyse-metabolisme-et-nutrition': Flame,
+  'analyse-sommeil-et-recuperation': Moon,
+  'analyse-digestion-et-microbiote': Activity,
+  'analyse-axes-hormonaux': Brain,
+  'protocole-matin-anti-cortisol': Sun,
+  'protocole-soir-verrouillage-sommeil': Moon,
+  'protocole-digestion-14-jours': Flame,
+  'protocole-bureau-anti-sedentarite': Activity,
+  'protocole-entrainement-personnalise': Dumbbell,
+  'plan-semaine-par-semaine-30-60-90': Calendar,
+  'kpi-et-tableau-de-bord': Target,
+  'stack-supplements-optimise': Pill,
+  'synthese-et-prochaines-etapes': Target
 };
+
+const resolveSectionIcon = (section: NarrativeSection): React.ElementType => {
+  const byId = SECTION_ICON_BY_ID[section.id];
+  if (byId) return byId;
+  const title = section.title.toLowerCase();
+  if (title.includes('entrainement')) return Dumbbell;
+  if (title.includes('cardio')) return Heart;
+  if (title.includes('metabolisme') || title.includes('nutrition')) return Flame;
+  if (title.includes('sommeil')) return Moon;
+  if (title.includes('digestion')) return Activity;
+  if (title.includes('hormon')) return Brain;
+  if (title.includes('protocole')) return Activity;
+  return Activity;
+};
+
+const isAnalysisSection = (section: NarrativeSection): boolean => /analyse/i.test(section.title);
 
 const getScoreStatus = (value: number, theme: Theme) => {
   const base = {
@@ -380,21 +396,31 @@ const AnabolicScanReport: React.FC = () => {
   ];
 
   const RADAR_LABELS: Record<string, string> = {
-    "profil-base": "Profil",
-    "composition-corporelle": "Composition",
-    "metabolisme-energie": "Metabo",
-    "nutrition-tracking": "Nutrition",
-    "digestion-microbiome": "Digestion",
-    "activite-performance": "Training",
-    "sommeil-recuperation": "Sommeil",
-    "hrv-cardiaque": "HRV",
-    "cardio-endurance": "Cardio",
-    "analyses-biomarqueurs": "Bio",
-    "hormones-stress": "Hormones",
-    "lifestyle-substances": "Lifestyle",
-    "biomecanique-mobilite": "Mobilite",
-    "psychologie-mental": "Mental",
-    "neurotransmetteurs": "Neuro"
+    'analyse-entrainement-et-periodisation': 'Training',
+    'analyse-systeme-cardiovasculaire': 'Cardio',
+    'analyse-metabolisme-et-nutrition': 'Metabo',
+    'analyse-sommeil-et-recuperation': 'Sommeil',
+    'analyse-digestion-et-microbiote': 'Digestion',
+    'analyse-axes-hormonaux': 'Hormones',
+    'analyse-visuelle-et-posturale-complete': 'Posture',
+    'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
+    'analyse-energie-et-recuperation': 'Energie',
+    // Legacy ids (fallback)
+    'profil-base': 'Profil',
+    'composition-corporelle': 'Composition',
+    'metabolisme-energie': 'Metabo',
+    'nutrition-tracking': 'Nutrition',
+    'digestion-microbiome': 'Digestion',
+    'activite-performance': 'Training',
+    'sommeil-recuperation': 'Sommeil',
+    'hrv-cardiaque': 'HRV',
+    'cardio-endurance': 'Cardio',
+    'analyses-biomarqueurs': 'Bio',
+    'hormones-stress': 'Hormones',
+    'lifestyle-substances': 'Lifestyle',
+    'biomecanique-mobilite': 'Mobilite',
+    'psychologie-mental': 'Mental',
+    'neurotransmetteurs': 'Neuro'
   };
 
   const shortLabelFromTitle = (title: string, fallback: string) => {
@@ -409,7 +435,7 @@ const AnabolicScanReport: React.FC = () => {
     return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
   };
 
-  const radarSections = report?.sections.filter(s => SECTION_ICONS[s.id]).slice(0, 8) || [];
+  const radarSections = report?.sections.filter(isAnalysisSection).slice(0, 8) || [];
   const metricsData: Metric[] = radarSections.map(s => ({
     label: RADAR_LABELS[s.id] || shortLabelFromTitle(s.title, s.title),
     value: Math.round((s.score / 10) * 10) / 10,
@@ -641,7 +667,7 @@ const AnabolicScanReport: React.FC = () => {
                 <Target size={20} style={{ color: primary }} />
                 Synthese Executive
               </h3>
-              <div className="prose prose-invert max-w-none">
+              <div className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}>
                 {report.heroSummary.split('\n').map((para, i) => (
                   para.trim() && <p key={i} className="text-[var(--color-text-muted)] leading-relaxed mb-3">{para}</p>
                 ))}
@@ -705,7 +731,7 @@ const AnabolicScanReport: React.FC = () => {
 
           {/* Detailed Sections */}
           {report.sections.map((section, idx) => {
-            const Icon = SECTION_ICONS[section.id] || Activity;
+            const Icon = resolveSectionIcon(section);
             const status = getScoreStatus(section.score, currentTheme);
 
             return (

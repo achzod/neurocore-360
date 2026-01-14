@@ -51,7 +51,7 @@ export default function CGV() {
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
               Est considere comme "client" toute personne physique ou morale realisant aupres de ce
-              site une commande validee par notre plateforme de paiement securisee.
+              site une commande validee par ma plateforme de paiement securisee.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
               AchzodCoaching se reserve la possibilite d'adapter ou de modifier les presentes Conditions
@@ -122,7 +122,7 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 4 - Commandes</h2>
             <p className="text-white/60 leading-relaxed">
-              L'acceptation d'une commande se fait via notre plateforme de paiement securisee Stripe.
+              L'acceptation d'une commande se fait via ma plateforme de paiement securisee Stripe.
               Une fois votre commande saisie, un mail de confirmation vous sera adresse et votre
               commande enregistree.
             </p>

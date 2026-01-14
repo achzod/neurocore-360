@@ -552,7 +552,7 @@ const DiscoveryScanReport: React.FC = () => {
                   {/* Section Content */}
                   <div className="flex-1 min-w-0">
                     <div
-                      className="prose prose-lg max-w-none"
+                      className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}
                       style={{
                         '--tw-prose-body': 'var(--color-text)',
                         '--tw-prose-headings': 'var(--color-text)',

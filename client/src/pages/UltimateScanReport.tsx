@@ -42,24 +42,7 @@ import {
   HeartPulse
 } from 'lucide-react';
 
-const THEMES: Theme[] = [
-  {
-    id: "ultimate",
-    name: "Gold Core",
-    type: "dark",
-    colors: {
-      primary: "#f5b300",
-      background: "#0A0A0F",
-      surface: "#0F111A",
-      border: "rgba(245, 179, 0, 0.2)",
-      text: "#F8F5EB",
-      textMuted: "#C7BF9E",
-      grid: "rgba(245, 179, 0, 0.08)",
-      glow: "rgba(245, 179, 0, 0.25)",
-    },
-  },
-  ...ULTRAHUMAN_THEMES,
-];
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
 // Types
 interface SupplementProtocol {
@@ -106,6 +89,8 @@ interface NarrativeReport {
   prioritySections: string[];
   strengthSections: string[];
   supplementStack: SupplementProtocol[];
+  ctaDebut?: string;
+  ctaFin?: string;
   lifestyleProtocol: string;
   weeklyPlan: {
     week1: string;
@@ -118,33 +103,92 @@ interface NarrativeReport {
   photoAnalysis?: PhotoAnalysis;
 }
 
-// Icon mapping
-const SECTION_ICONS: Record<string, React.ElementType> = {
-  'profil-base': Activity,
-  'composition-corporelle': Target,
-  'metabolisme-energie': Flame,
-  'nutrition-tracking': Apple,
-  'digestion-microbiome': Activity,
-  'activite-performance': Dumbbell,
-  'sommeil-recuperation': Moon,
-  'hrv-cardiaque': HeartPulse,
-  'cardio-endurance': Heart,
-  'analyses-biomarqueurs': Activity,
-  'hormones-stress': Brain,
-  'lifestyle-substances': Sun,
-  'biomecanique-mobilite': Bone,
-  'psychologie-mental': Lightbulb,
-  'neurotransmetteurs': Brain,
-  'blessures-douleurs': Bone,
-  'nutrition-timing': Apple,
-  'cardio-performance': HeartPulse
+const withAlpha = (hex: string, alpha: number): string => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const getScoreStatus = (value: number) => {
-  if (value >= 80) return { label: 'EXCELLENT', color: 'bg-amber-500/20 text-amber-400' };
-  if (value >= 65) return { label: 'BON', color: 'bg-blue-500/20 text-blue-400' };
-  if (value >= 50) return { label: 'MOYEN', color: 'bg-orange-500/20 text-orange-400' };
-  return { label: 'CRITIQUE', color: 'bg-red-500/20 text-red-400' };
+const parseCtaText = (text?: string) => {
+  if (!text) {
+    return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
+  }
+  const lines = text
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !/^[-=]{3,}$/.test(line))
+    .filter(line => !/rapport genere/i.test(line));
+
+  const promoLine = lines.find(line => /code promo/i.test(line)) || "";
+  const bonusLine = lines.find(line => /bonus/i.test(line)) || "";
+  const emailLine = lines.find(line => /^email\s*:/i.test(line)) || "";
+  const siteLine = lines.find(line => /^site\s*:/i.test(line)) || "";
+
+  const bullets = lines
+    .filter(line => /^(\+|\-|\d+\.)\s+/.test(line))
+    .map(line => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim());
+
+  const paragraphs = lines.filter(line => {
+    if (/^(rappel important|infos importantes)$/i.test(line)) return false;
+    if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
+    return !/^(\+|\-|\d+\.)\s+/.test(line);
+  });
+
+  return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine };
+};
+
+const SECTION_ICON_BY_ID: Record<string, React.ElementType> = {
+  'executive-summary': Target,
+  'analyse-visuelle-et-posturale-complete': Bone,
+  'analyse-biomecanique-et-sangle-profonde': Bone,
+  'analyse-entrainement-et-periodisation': Dumbbell,
+  'analyse-systeme-cardiovasculaire': HeartPulse,
+  'analyse-metabolisme-et-nutrition': Flame,
+  'analyse-sommeil-et-recuperation': Moon,
+  'analyse-digestion-et-microbiote': Activity,
+  'analyse-axes-hormonaux': Brain,
+  'protocole-matin-anti-cortisol': Sun,
+  'protocole-soir-verrouillage-sommeil': Moon,
+  'protocole-digestion-14-jours': Flame,
+  'protocole-bureau-anti-sedentarite': Activity,
+  'protocole-entrainement-personnalise': Dumbbell,
+  'plan-semaine-par-semaine-30-60-90': Calendar,
+  'kpi-et-tableau-de-bord': Target,
+  'stack-supplements-optimise': Pill,
+  'synthese-et-prochaines-etapes': Target
+};
+
+const resolveSectionIcon = (section: NarrativeSection): React.ElementType => {
+  const byId = SECTION_ICON_BY_ID[section.id];
+  if (byId) return byId;
+  const title = section.title.toLowerCase();
+  if (title.includes('postur') || title.includes('visuelle')) return Bone;
+  if (title.includes('biomecanique') || title.includes('mobilite')) return Bone;
+  if (title.includes('entrainement')) return Dumbbell;
+  if (title.includes('cardio')) return HeartPulse;
+  if (title.includes('metabolisme') || title.includes('nutrition')) return Flame;
+  if (title.includes('sommeil')) return Moon;
+  if (title.includes('digestion')) return Activity;
+  if (title.includes('hormon')) return Brain;
+  return Activity;
+};
+
+const isAnalysisSection = (section: NarrativeSection): boolean => /analyse/i.test(section.title);
+
+const getScoreStatus = (value: number, theme: Theme) => {
+  const base = {
+    backgroundColor: withAlpha(theme.colors.primary, 0.12),
+    color: theme.colors.primary,
+    borderColor: withAlpha(theme.colors.primary, 0.35)
+  };
+  if (value >= 80) return { label: 'EXCELLENT', style: base };
+  if (value >= 65) return { label: 'BON', style: base };
+  if (value >= 50) return { label: 'MOYEN', style: base };
+  return { label: 'CRITIQUE', style: base };
 };
 
 const UltimateScanReport: React.FC = () => {
@@ -258,6 +302,10 @@ const UltimateScanReport: React.FC = () => {
     return () => container?.removeEventListener('scroll', handleScroll);
   }, [report]);
 
+  const primary = currentTheme.colors.primary;
+  const primarySoft = withAlpha(primary, 0.12);
+  const primaryBorder = withAlpha(primary, 0.35);
+
   // Sidebar sections
   const sidebarSections: SectionContent[] = report?.sections.map(s => ({
     id: s.id,
@@ -266,22 +314,121 @@ const UltimateScanReport: React.FC = () => {
     content: s.introduction
   })) || [];
 
+  const renderCtaPanel = (text: string, badgeLabel: string) => {
+    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = parseCtaText(text);
+    const contactEmail = emailLine.replace(/^email\s*:\s*/i, "") || "coaching@achzodcoaching.com";
+    const contactSite = siteLine.replace(/^site\s*:\s*/i, "") || "achzodcoaching.com";
+
+    return (
+      <div
+        className="rounded-sm p-8"
+        style={{
+          background: `linear-gradient(135deg, ${primary}15 0%, ${currentTheme.colors.surface} 100%)`,
+          border: `1px solid ${primary}30`
+        }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <span
+            className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+            style={{ backgroundColor: primarySoft, color: primary }}
+          >
+            {badgeLabel}
+          </span>
+          <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+            Coaching Achzod
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {paragraphs.map((line, idx) => (
+            <p key={idx} className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+              {line}
+            </p>
+          ))}
+        </div>
+
+        {bullets.length > 0 && (
+          <ul className="mt-5 space-y-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+            {bullets.map((bullet, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span style={{ color: primary }}>•</span>
+                <span>{bullet}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {(promoLine || bonusLine) && (
+          <div className="mt-5 p-4 rounded-sm" style={{ backgroundColor: primarySoft, border: `1px solid ${primaryBorder}` }}>
+            {bonusLine && <p className="text-sm font-semibold mb-2" style={{ color: primary }}>{bonusLine}</p>}
+            {promoLine && <p className="text-sm font-semibold" style={{ color: currentTheme.colors.text }}>{promoLine}</p>}
+          </div>
+        )}
+
+        {(contactEmail || contactSite) && (
+          <div className="mt-5 p-4 rounded-sm" style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}>
+            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
+              Contact direct
+            </p>
+            {contactEmail && (
+              <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
+                {contactEmail}
+              </p>
+            )}
+            {contactSite && (
+              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                {contactSite}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const allSections: SectionContent[] = [
     { id: 'dashboard', title: 'Dashboard', subtitle: 'Vue globale', content: '' },
+    ...(report?.ctaDebut ? [{ id: 'cta-debut', title: 'Rappel Coaching', subtitle: 'Important', content: '' }] : []),
     { id: 'photo-analysis', title: 'Analyse Photo', subtitle: 'Visuelle', content: '' },
     ...sidebarSections,
     { id: 'supplements', title: 'Stack Supplements', subtitle: 'Protocole', content: '' },
     { id: 'plan', title: 'Plan 12 Semaines', subtitle: 'Action', content: '' },
+    ...(report?.ctaFin ? [{ id: 'cta-fin', title: 'Coaching', subtitle: 'Prochaine etape', content: '' }] : []),
     { id: 'review', title: 'Votre Avis', subtitle: 'Feedback', content: '' }
   ];
 
-  const metricsData: Metric[] = report?.sections.slice(0, 8).map(s => ({
-    label: s.title.split(' ')[0],
-    value: Math.round(s.score / 10),
+  const RADAR_LABELS: Record<string, string> = {
+    'analyse-visuelle-et-posturale-complete': 'Posture',
+    'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
+    'analyse-entrainement-et-periodisation': 'Training',
+    'analyse-systeme-cardiovasculaire': 'Cardio',
+    'analyse-metabolisme-et-nutrition': 'Metabo',
+    'analyse-sommeil-et-recuperation': 'Sommeil',
+    'analyse-digestion-et-microbiote': 'Digestion',
+    'analyse-axes-hormonaux': 'Hormones',
+    'analyse-energie-et-recuperation': 'Energie'
+  };
+
+  const shortLabelFromTitle = (title: string, fallback: string) => {
+    const cleaned = title
+      .replace(/^analyse\s+/i, "")
+      .replace(/^protocole\s+/i, "")
+      .replace(/^plan\s+/i, "")
+      .replace(/^synthese\s+/i, "")
+      .replace(/^kpi\s+et\s+tableau\s+de\s+bord\s*/i, "KPI ")
+      .trim();
+    const words = cleaned.split(/\s+/);
+    return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
+  };
+
+  const radarSections = report?.sections.filter(isAnalysisSection).slice(0, 8) || [];
+  const metricsData: Metric[] = radarSections.map(s => ({
+    label: RADAR_LABELS[s.id] || shortLabelFromTitle(s.title, s.title),
+    value: Math.round((s.score / 10) * 10) / 10,
     max: 10,
     description: s.title,
     key: s.id
-  })) || [];
+  }));
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -341,7 +488,7 @@ const UltimateScanReport: React.FC = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-amber-500 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
           <p className="text-white/70">Chargement du rapport Ultimate...</p>
         </div>
       </div>
@@ -352,10 +499,13 @@ const UltimateScanReport: React.FC = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
           <h2 className="text-xl font-bold text-white mb-2">{error || 'Rapport non disponible'}</h2>
           <Link href="/dashboard">
-            <button className="px-6 py-3 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition mt-6">
+            <button
+              className="px-6 py-3 font-bold rounded-lg transition mt-6"
+              style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
+            >
               Retour au dashboard
             </button>
           </Link>
@@ -400,12 +550,22 @@ const UltimateScanReport: React.FC = () => {
         <div className="max-w-4xl mx-auto px-6 py-12 lg:py-16">
           {/* Header Badge */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
-              <Zap size={14} className="text-amber-400" />
-              <span className="text-xs font-bold text-amber-400 tracking-wider">ULTIMATE SCAN</span>
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+              style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}
+            >
+              <Zap size={14} style={{ color: primary }} />
+              <span className="text-xs font-bold tracking-wider" style={{ color: primary }}>ULTIMATE SCAN</span>
             </div>
             <span className="text-xs text-[var(--color-text-muted)]">{report.sections.length} sections + Photo Analysis</span>
           </div>
+
+          {report.ctaDebut && (
+            <section id="cta-debut" className="mb-12">
+              <h3 className="text-lg font-bold mb-4" style={{ color: primary }}>Rappel Coaching</h3>
+              {renderCtaPanel(report.ctaDebut, "Important")}
+            </section>
+          )}
 
           {/* Dashboard */}
           <section id="dashboard" className="mb-16">
@@ -413,9 +573,14 @@ const UltimateScanReport: React.FC = () => {
               <div className="flex flex-col items-center justify-center p-8 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                 <RadialProgress score={globalScore} max={100} subLabel="SCORE GLOBAL" size={200} strokeWidth={6} color={currentTheme.colors.primary} />
                 <div className="mt-4 text-center">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getScoreStatus(globalScore).color}`}>
-                    {getScoreStatus(globalScore).label}
-                  </span>
+                  {(() => {
+                    const status = getScoreStatus(globalScore, currentTheme);
+                    return (
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold border" style={status.style}>
+                        {status.label}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -436,10 +601,10 @@ const UltimateScanReport: React.FC = () => {
             {/* Executive Summary */}
             <div className="p-6 rounded-sm border mb-8" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Target size={20} className="text-amber-400" />
+                <Target size={20} style={{ color: primary }} />
                 Synthese Executive Ultimate
               </h3>
-              <div className="prose prose-invert max-w-none">
+              <div className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}>
                 {report.heroSummary.split('\n').map((para, i) => (
                   para.trim() && <p key={i} className="text-[var(--color-text-muted)] leading-relaxed mb-3">{para}</p>
                 ))}
@@ -448,29 +613,29 @@ const UltimateScanReport: React.FC = () => {
 
             {/* Strengths & Weaknesses */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="p-6 rounded-sm border border-amber-500/20 bg-amber-500/5">
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-amber-400">
+              <div className="p-6 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
+                <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
                   <TrendingUp size={16} /> Points Forts
                 </h4>
                 <div className="space-y-2">
                   {report.sections.filter(s => s.score >= 70).slice(0, 3).map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-2 rounded bg-amber-500/10">
+                    <div key={s.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: primarySoft }}>
                       <span className="text-sm">{s.title}</span>
-                      <span className="text-xs font-bold text-amber-400">{s.score}%</span>
+                      <span className="text-xs font-bold" style={{ color: primary }}>{s.score}%</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="p-6 rounded-sm border border-red-500/20 bg-red-500/5">
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-red-400">
+              <div className="p-6 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
+                <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
                   <TrendingDown size={16} /> Axes d'Optimisation
                 </h4>
                 <div className="space-y-2">
                   {report.sections.filter(s => s.score < 60).slice(0, 3).map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-2 rounded bg-red-500/10">
+                    <div key={s.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: primarySoft }}>
                       <span className="text-sm">{s.title}</span>
-                      <span className="text-xs font-bold text-red-400">{s.score}%</span>
+                      <span className="text-xs font-bold" style={{ color: primary }}>{s.score}%</span>
                     </div>
                   ))}
                 </div>
@@ -494,9 +659,14 @@ const UltimateScanReport: React.FC = () => {
               <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-sm text-[var(--color-text-muted)]">Score visuel</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${getScoreStatus(report.photoAnalysis.score).color}`}>
-                    {report.photoAnalysis.score}%
-                  </span>
+                  {(() => {
+                    const status = getScoreStatus(report.photoAnalysis.score, currentTheme);
+                    return (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold border" style={status.style}>
+                        {report.photoAnalysis.score}%
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-6">
@@ -507,37 +677,37 @@ const UltimateScanReport: React.FC = () => {
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold text-amber-400 mb-2">Analyse Posturale</h4>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Analyse Posturale</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.postureAnalysis}</p>
                     </div>
                     <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold text-blue-400 mb-2">Analyse Musculaire</h4>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Analyse Musculaire</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.muscularAnalysis}</p>
                     </div>
                     <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold text-purple-400 mb-2">Analyse Adiposite</h4>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Analyse Adiposite</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.fatAnalysis}</p>
                     </div>
                     <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold text-emerald-400 mb-2">Recommandations</h4>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Recommandations</h4>
                       <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.recommendations}</p>
                     </div>
                   </div>
 
                   {report.photoAnalysis.correctiveProtocol && (
-                    <div className="p-4 rounded border border-amber-500/30 bg-amber-500/10">
-                      <h4 className="text-sm font-bold text-amber-400 mb-2">PROTOCOLE CORRECTIF</h4>
+                    <div className="p-4 rounded border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>PROTOCOLE CORRECTIF</h4>
                       <p className="text-[var(--color-text)] leading-relaxed">{report.photoAnalysis.correctiveProtocol}</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="p-6 rounded-sm border border-amber-500/30 bg-amber-500/5">
+              <div className="p-6 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="text-amber-400 shrink-0 mt-1" size={20} />
+                  <AlertTriangle className="shrink-0 mt-1" size={20} style={{ color: primary }} />
                   <div>
-                    <p className="font-bold text-amber-400">Photos non disponibles</p>
+                    <p className="font-bold" style={{ color: primary }}>Photos non disponibles</p>
                     <p className="text-sm text-[var(--color-text-muted)] mt-1">
                       Les photos n'ont pas ete soumises ou traitees. Pour une analyse visuelle complete,
                       soumets tes photos (face/profil/dos) lors de ton prochain audit.
@@ -550,8 +720,8 @@ const UltimateScanReport: React.FC = () => {
 
           {/* Detailed Sections */}
           {report.sections.map((section, idx) => {
-            const Icon = SECTION_ICONS[section.id] || Activity;
-            const status = getScoreStatus(section.score);
+            const Icon = resolveSectionIcon(section);
+            const status = getScoreStatus(section.score, currentTheme);
 
             return (
               <section key={section.id} id={section.id} className="mb-12 scroll-mt-24">
@@ -563,7 +733,7 @@ const UltimateScanReport: React.FC = () => {
                       <h2 className="text-xl font-bold">{section.title}</h2>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${status.color}`}>{section.score}%</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold border" style={status.style}>{section.score}%</span>
                       <span className="text-xs text-[var(--color-text-muted)]">{status.label}</span>
                     </div>
                   </div>
@@ -578,15 +748,15 @@ const UltimateScanReport: React.FC = () => {
                   )}
 
                   {section.whatIsWrong && (
-                    <div className="p-4 rounded bg-red-500/10 border border-red-500/20">
-                      <h4 className="text-sm font-bold text-red-400 mb-2">CE QUI NE VA PAS</h4>
+                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>CE QUI NE VA PAS</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.whatIsWrong}</p>
                     </div>
                   )}
 
                   {section.recommendations && (
-                    <div className="p-4 rounded bg-amber-500/10 border border-amber-500/20">
-                      <h4 className="text-sm font-bold text-amber-400 mb-2">RECOMMANDATIONS</h4>
+                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>RECOMMANDATIONS</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.recommendations}</p>
                     </div>
                   )}
@@ -599,8 +769,8 @@ const UltimateScanReport: React.FC = () => {
                   )}
 
                   {section.scienceDeepDive && (
-                    <div className="p-4 rounded bg-blue-500/10 border border-blue-500/20">
-                      <h4 className="text-sm font-bold text-blue-400 mb-2">SCIENCE DEEP DIVE</h4>
+                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>SCIENCE DEEP DIVE</h4>
                       <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line text-sm">{section.scienceDeepDive}</p>
                     </div>
                   )}
@@ -680,9 +850,16 @@ const UltimateScanReport: React.FC = () => {
               <h3 className="text-lg font-bold mb-4">Conclusion Ultimate</h3>
               <p className="text-[var(--color-text)] leading-relaxed">{report.conclusion}</p>
               <div className="mt-4 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-                <Zap size={16} className="text-amber-400" />
+                <Zap size={16} style={{ color: primary }} />
                 <span>Analyse realisee par <strong>ACHZOD</strong> - Expert Metabolisme</span>
               </div>
+            </section>
+          )}
+
+          {report.ctaFin && (
+            <section id="cta-fin" className="mb-12">
+              <h3 className="text-lg font-bold mb-4" style={{ color: primary }}>Coaching Personnalise</h3>
+              {renderCtaPanel(report.ctaFin, "Execution")}
             </section>
           )}
 
@@ -695,10 +872,10 @@ const UltimateScanReport: React.FC = () => {
               </h3>
 
               {reviewSubmitted ? (
-                <div className="flex items-center gap-3 p-4 rounded bg-amber-500/10 border border-amber-500/20">
-                  <CheckCircle2 className="text-amber-400" size={24} />
+                <div className="flex items-center gap-3 p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
+                  <CheckCircle2 size={24} style={{ color: primary }} />
                   <div>
-                    <p className="font-bold text-amber-400">Merci pour ton avis Ultimate !</p>
+                    <p className="font-bold" style={{ color: primary }}>Merci pour ton avis Ultimate !</p>
                     <p className="text-sm text-[var(--color-text-muted)]">Ton feedback est precieux.</p>
                   </div>
                 </div>
@@ -709,7 +886,11 @@ const UltimateScanReport: React.FC = () => {
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map(star => (
                         <button key={star} type="button" onClick={() => setReviewRating(star)} className="transition-transform hover:scale-110">
-                          <Star size={32} className={star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-[var(--color-text-muted)]/30'} />
+                          <Star
+                            size={32}
+                            className={star <= reviewRating ? 'fill-current' : 'text-[var(--color-text-muted)]/30'}
+                            style={star <= reviewRating ? { color: primary } : undefined}
+                          />
                         </button>
                       ))}
                     </div>

@@ -181,15 +181,18 @@ function getMaxTokensForSection(section: SectionName, tier: AuditTier = 'PREMIUM
 function getMinCharsForSection(section: SectionName, tier: AuditTier = 'PREMIUM'): number {
   const s = String(section).toLowerCase();
   if (tier === 'GRATUIT') {
-    if (s.includes("executive summary")) return 2200;
-    if (s.includes("synthese") || s.includes("prochaines etapes")) return 2200;
-    return 2400;
+    if (s.includes("executive summary")) return 2600;
+    if (s.includes("synthese") || s.includes("prochaines etapes")) return 2600;
+    return 2800;
   }
-  if (s.includes("executive summary")) return 2800;
-  if (s.includes("kpi") || s.includes("tableau")) return 2400;
-  if (s.includes("stack") || s.includes("supplements")) return 1800;
-  if (s.includes("synthese") || s.includes("prochaines etapes")) return 2600;
-  return 3200;
+  if (s.includes("executive summary")) return 3600;
+  if (s.includes("kpi") || s.includes("tableau")) return 3200;
+  if (s.includes("stack") || s.includes("supplements")) return 3000;
+  if (s.includes("synthese") || s.includes("prochaines etapes")) return 3600;
+  if (s.includes("plan") && (s.includes("30") || s.includes("60") || s.includes("90"))) return 4500;
+  if (s.includes("protocole")) return 6000;
+  if (s.includes("analyse")) return 5200;
+  return 4200;
 }
 
 function degradedSectionText(section: SectionName): string {

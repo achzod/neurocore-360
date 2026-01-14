@@ -861,7 +861,7 @@ export default function BurnoutDetectionPage() {
                     Tu veux un accompagnement personnalise ?
                   </h3>
                   <p className="text-muted-foreground mb-6">
-                    Decouvre nos programmes de coaching pour sortir du burnout durablement.
+                    Decouvre mes programmes de coaching pour sortir du burnout durablement.
                   </p>
                   <Link href="/offers/ultimate-scan">
                     <Button size="lg" className="gap-2 bg-purple-500 hover:bg-purple-600">

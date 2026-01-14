@@ -138,9 +138,10 @@ export interface BlockageAnalysis {
 }
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_DISCOVERY_SECTION_CHARS = 2600;
-const MIN_DISCOVERY_SECTION_LINES = 28;
-const MIN_DISCOVERY_SECTION_WORDS = 380;
+const MIN_DISCOVERY_SECTION_CHARS = 3200;
+const MIN_DISCOVERY_SECTION_LINES = 32;
+const MIN_DISCOVERY_SECTION_WORDS = 450;
+const MIN_DISCOVERY_SECTION_PARAGRAPHS = 12;
 const SOURCE_MARKERS = [
   "huberman",
   "peter attia",
@@ -1021,10 +1022,15 @@ FORMAT OBLIGATOIRE:
 - JAMAIS d'emojis
 - JAMAIS de phrases meta comme "En tant qu'expert", "Je vais analyser", "Cette analyse montre", "Voici"
 - Prose fluide uniquement, paragraphes separes par lignes vides
+- Minimum ${MIN_DISCOVERY_SECTION_PARAGRAPHS} paragraphes, 3-5 phrases chacun
 - Ecris a la deuxieme personne du singulier, comme si TU parlais directement a ${prenom}`;
 
   const isValidContent = (text: string) => {
     const lines = text.split(/\n+/).filter(l => l.trim().length > 30);
+    const paragraphCount = text
+      .split(/\n\s*\n/)
+      .map(p => p.trim())
+      .filter(p => p.length > 80).length;
     const lineCount = lines.length;
     const charCount = text.length;
     const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
@@ -1037,9 +1043,11 @@ FORMAT OBLIGATOIRE:
       lineCount,
       charCount,
       wordCount,
+      paragraphCount,
       isValid:
         charCount >= MIN_CONTENT_LENGTH &&
         (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS) &&
+        paragraphCount >= MIN_DISCOVERY_SECTION_PARAGRAPHS &&
         !hasSources &&
         !hasClient &&
         !hasNous &&
@@ -1081,13 +1089,13 @@ FORMAT OBLIGATOIRE:
 
       const validation = isValidContent(rawText);
       console.log(
-        `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines`
+        `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs`
       );
 
       // VALIDATION: Check minimum length
       if (validation.isValid) {
         console.log(
-          `[Discovery] ✓ Section ${domain} VALIDATED (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+          `[Discovery] ✓ Section ${domain} VALIDATED (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs)`
         );
         return cleanMarkdownToHTML(rawText);
       }
@@ -1751,8 +1759,8 @@ export async function convertToNarrativeReport(
       let severityColor: string;
       let chips: string[] = [];
 
-      // Theme M1: All severity indicators use yellow (#FCDD00) for consistency
-      const primaryColor = '#FCDD00';
+      // Theme-aware primary color for severity indicators
+      const primaryColor = 'var(--color-primary)';
 
       if (domainBlocages.length > 0) {
         const maxSeverity = domainBlocages.some(b => b.severity === 'critique') ? 'critique' :

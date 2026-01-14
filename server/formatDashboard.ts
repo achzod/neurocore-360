@@ -261,6 +261,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   for (let i = 0; i < sectionMatches.length; i++) {
     const { title, startIndex, endIndex } = sectionMatches[i];
     const rawContent = txtContent.substring(startIndex, endIndex).trim();
+    const extractedScore = extractSectionScoreFromContent(rawContent);
     const content = cleanSectionContent(rawContent);
     
     const normalizedTitle = normalizeTitle(title);
@@ -276,7 +277,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     
     // Score: uniquement si explicitement formaté "Score : NN/100".
     // Pour éviter l'incohérence perçue: pas de score affiché sur Executive Summary / protocoles / supplements.
-    const extracted = extractSectionScoreFromContent(content);
+    const extracted = extractedScore ?? extractSectionScoreFromContent(content);
     const score = category === 'analysis' ? (extracted ?? 0) : 0;
     const finalScore = category === 'executive' ? 0 : score;
     
