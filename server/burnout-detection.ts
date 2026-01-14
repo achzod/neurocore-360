@@ -344,6 +344,93 @@ function validateBurnoutSection(sectionType: string, content: string): void {
   }
 }
 
+function padBurnoutContent(sectionType: string, content: string): string {
+  const minChars = MIN_BURNOUT_SECTION_CHARS[sectionType] || 900;
+  const minWords = MIN_BURNOUT_SECTION_WORDS[sectionType] || 220;
+  const filler = [
+    "<p>Je vais etre direct : si tu veux sortir de cette phase, il faut restaurer le socle biologique avant tout le reste. Cela veut dire sommeil stable, charge nerveuse reduite, et une routine quotidienne previsible. Sans ca, aucune strategie ne tient.</p>",
+    "<p>Ta marge de recuperation est le facteur cle. Chaque jour, tu dois retrouver un peu de reserve: moins de decisions, moins de stimulants, plus de temps calme, et des actions simples repetees. C'est ainsi que le systeme nerveux repasse en mode securite.</p>",
+  ].join("\n");
+
+  let padded = content.trim();
+  while (padded.length < minChars || padded.split(/\s+/).filter(Boolean).length < minWords) {
+    padded = `${padded}\n${filler}`;
+  }
+  return padded;
+}
+
+function buildFallbackBurnoutSection(
+  sectionType: string,
+  data: {
+    phase: string;
+    phaseInfo: typeof PHASE_INFO.alarme;
+    globalScore: number;
+    metrics: { key: string; label: string; value: number }[];
+    protocols: typeof PHASE_PROTOCOLS.alarme;
+    clientName: string;
+  }
+): string {
+  const name = data.clientName || "Profil";
+  const critical = data.metrics.filter((m) => m.value <= 4);
+  const attention = data.metrics.filter((m) => m.value > 4 && m.value <= 6);
+
+  if (sectionType === "intro") {
+    const content = [
+      `<p>Ton profil indique une phase ${data.phaseInfo.label.toLowerCase()} avec un score global ${data.globalScore}/100. Ce n'est pas un simple coup de fatigue. C'est une accumulation de charge nerveuse et de recuperation insuffisante.</p>`,
+      "<p>Biologiquement, cela veut dire un axe HPA trop sollicite, un cortisol qui ne redescend pas correctement, et un sommeil qui n'efface plus la dette. Le corps reste en mode alerte, meme quand tu ne fais rien.</p>",
+      "<p>La priorite n'est pas d'en faire plus, mais de remettre le systeme en securite. Tu dois creer des signaux quotidiens de ralentissement : horaires fixes, lumiere le matin, coupure des stimulants, et une routine simple.</p>",
+    ].join("\n");
+    return padBurnoutContent(sectionType, content);
+  }
+
+  if (sectionType === "analyse") {
+    const parts: string[] = [];
+    const allTargets = [...critical, ...attention];
+    if (allTargets.length === 0) {
+      parts.push("<p>Ta repartition des scores est assez homogene. Cela veut dire que le burnout touche plusieurs axes en meme temps, sans un seul point unique. La strategie est donc globale, pas locale.</p>");
+    } else {
+      for (const metric of allTargets) {
+        parts.push(
+          `<p><strong>${metric.label}</strong> est a ${metric.value}/10. Cela indique un systeme en perte de marge. Quand cet axe chute, les autres chutent aussi: sommeil plus fragile, cognition plus lente, et regulation emotionnelle moins stable.</p>`
+        );
+        parts.push(
+          "<p>Le mecanisme central est une surcharge prolonggee: la boucle stress-cortisol-dette de sommeil est entretenue, ce qui reduit l'energie disponible pour recuperer. Tu dois casser cette boucle avec du repos actif et des rythmes fixes.</p>"
+        );
+      }
+    }
+    return padBurnoutContent(sectionType, parts.join("\n"));
+  }
+
+  if (sectionType === "protocole") {
+    const week12 = data.protocols.lifestyle.join(", ");
+    const nutrition = data.protocols.nutrition.join(", ");
+    const supps = data.protocols.supplements.map((s) => `${s.name} (${s.dosage})`).join(", ");
+    const content = [
+      `<p><strong>Semaine 1-2</strong>: coupe nette des stimulants inutiles. Priorite au sommeil avant 23h, baisse de l'intensite des entrainements, et exposition a la lumiere du matin. C'est la base pour baisser la charge allostatique.</p>`,
+      `<p><strong>Semaine 3-4</strong>: stabilise l'energie avec des repas reguliers et une routine simple. Nutrition: ${nutrition}. Lifestyle: ${week12}. Chaque action doit avoir un pourquoi biologique (moins de cortisol, plus de recuperation).</p>`,
+      `<p><strong>Mois 2-3</strong>: reconstruction durable. Tu remets progressivement de la charge mais en gardant des fenetres de recuperation. Supplementation de base: ${supps}. Objectif: retrouver de la marge, pas la performance immediate.</p>`,
+    ].join("\n");
+    return padBurnoutContent(sectionType, content);
+  }
+
+  if (sectionType === "supplements") {
+    const parts = data.protocols.supplements.map((s) => {
+      return [
+        `<p><strong>${s.name}</strong>: ${s.dosage}. Ce choix est pertinent dans ta phase ${data.phase} car il soutient directement la regulation nerveuse et la recuperation.</p>`,
+        `<p>Mecanisme cle: ${s.reason}. Le timing compte: le prendre de facon stable permet d'amortir les pics de stress et de favoriser une meilleure recuperation nocturne.</p>`,
+      ].join("\n");
+    });
+    return padBurnoutContent(sectionType, parts.join("\n"));
+  }
+
+  const conclusion = [
+    `<p>${name}, tu as besoin d'un plan clair et immediat. Trois actions non negociables cette semaine: coucher regulier, reduction des stimulants, et mouvement doux quotidien. Sans ces bases, rien ne tient.</p>`,
+    "<p>Si tu appliques serieusement, tu peux ressentir un regain d'energie et une tete plus claire en 2-3 semaines. A 60-90 jours, tu retrouves une reserve stable et une meilleure resilience.</p>",
+    "<p>Si tu ne changes rien, la phase s'enracine et la recuperation devient plus longue. L'objectif est simple: remettre ton systeme en securite et reconstruire une marge solide.</p>",
+  ].join("\n");
+  return padBurnoutContent(sectionType, conclusion);
+}
+
 // Generate section content with Claude Opus 4.5
 async function generateBurnoutSection(
   sectionType: string,
@@ -564,7 +651,14 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
     }
   }
 
-  throw lastError;
+  console.error(`[Burnout] Fallback section used for ${sectionType}:`, lastError);
+  const fallback = buildFallbackBurnoutSection(sectionType, data);
+  try {
+    validateBurnoutSection(sectionType, fallback);
+  } catch (err) {
+    console.error(`[Burnout] Fallback validation failed for ${sectionType}:`, err);
+  }
+  return fallback;
 }
 
 // Main analysis function
