@@ -1792,7 +1792,7 @@ export async function generateAuditTxt(
       const generated = generateSupplementsSectionText({
         responses: clientData as any,
         globalScore: typeof scores?.global === "number" ? scores.global : undefined,
-        firstName: fullName.split(' ')[0] || 'Client',
+        firstName: fullName.split(' ')[0] || 'Profil',
       });
 
       cacheData.sections[section] = generated;

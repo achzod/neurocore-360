@@ -846,7 +846,7 @@ export function generateEnhancedSupplementsHTML(input: {
   firstName?: string;
 }): string {
   const responses = input.responses || {};
-  const firstName = input.firstName || "Client";
+  const firstName = input.firstName || "Profil";
   const meds = [
     ...toStringArray(responses["medicaments"]),
     ...toStringArray(responses["medications"]),
@@ -1071,7 +1071,7 @@ export function generateSupplementsSectionText(input: {
   firstName?: string;
 }): string {
   const responses = input.responses || {};
-  const firstName = input.firstName || "Client";
+  const firstName = input.firstName || "Profil";
   const meds = [
     ...toStringArray(responses["medicaments"]),
     ...toStringArray(responses["medications"]),

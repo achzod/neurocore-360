@@ -53,7 +53,7 @@ export function generatePremiumHTMLFromTxt(
   clientResponses?: Record<string, unknown>
 ): string {
   const dashboard = formatTxtToDashboard(txt);
-  const firstName = (dashboard.clientName || "Client").trim().split(/\s+/)[0] || "Client";
+  const firstName = (dashboard.clientName || "Profil").trim().split(/\s+/)[0] || "Profil";
   const globalScore = dashboard.global || 60;
 
   // Extract sections

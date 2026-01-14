@@ -264,7 +264,7 @@ export function generateExportHTMLFromTxt(
   clientResponses?: Record<string, unknown>
 ): string {
   const dashboard = formatTxtToDashboard(txt);
-  const firstName = (dashboard.clientName || "Client").trim().split(/\s+/)[0] || "Client";
+  const firstName = (dashboard.clientName || "Profil").trim().split(/\s+/)[0] || "Profil";
 
   // Store clientResponses for supplements generation
   (dashboard as any).clientResponses = clientResponses || {};
@@ -366,7 +366,7 @@ export function generateExportHTMLFromTxt(
       formattedContent = generateEnhancedSupplementsHTML({
         responses: (dashboard as any).clientResponses || {},
         globalScore: dashboard.global,
-        firstName: dashboard.clientName?.split(' ')[0] || 'Client',
+        firstName: dashboard.clientName?.split(' ')[0] || 'Profil',
       });
     } else {
       // Standard content formatting

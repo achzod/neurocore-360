@@ -26,7 +26,7 @@ function getFirstNameForReport(clientData: ClientData): string {
   const email = (clientData as any)?.email;
   if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
 
-  return "Client";
+  return "Profil";
 }
 
 // Cache system

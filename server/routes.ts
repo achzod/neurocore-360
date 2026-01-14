@@ -571,7 +571,7 @@ export async function registerRoutes(
           const globalScore = auditScores.global ?? dashboard.global ?? 76;
           const firstName =
             (audit.responses as any)?.prenom ||
-            (audit.email ? audit.email.split("@")[0] : "Client");
+            (audit.email ? audit.email.split("@")[0] : "Profil");
           const supplementStack = generateSupplementStack({
             responses: (audit.responses as any) || {},
             globalScore,
