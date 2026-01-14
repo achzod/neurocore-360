@@ -16,6 +16,7 @@ import { OPENAI_CONFIG } from './openaiConfig';
 import { searchArticles, searchFullText } from './knowledge/storage';
 import { ALLOWED_SOURCES } from './knowledge/search';
 import { normalizeResponses } from './responseNormalizer';
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from './textNormalization';
 
 // ============================================
 // TYPES
@@ -137,9 +138,9 @@ export interface BlockageAnalysis {
 }
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_DISCOVERY_SECTION_CHARS = 2000;
-const MIN_DISCOVERY_SECTION_LINES = 24;
-const MIN_DISCOVERY_SECTION_WORDS = 320;
+const MIN_DISCOVERY_SECTION_CHARS = 2600;
+const MIN_DISCOVERY_SECTION_LINES = 28;
+const MIN_DISCOVERY_SECTION_WORDS = 380;
 const SOURCE_MARKERS = [
   "huberman",
   "peter attia",
@@ -680,7 +681,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
       `TITRE: ${a.title}\nPOINTS CLES: ${a.content.substring(0, 500)}...`
     ).join('\n\n---\n\n');
 
-    return context;
+    return stripEnglishLines(context);
   } catch (error) {
     console.error('[Discovery] Knowledge search error:', error);
     return '';
@@ -724,7 +725,8 @@ REGLES ABSOLUES FORMAT:
 - Paragraphes separes par des lignes vides
 - Commence DIRECTEMENT par l'analyse
 - Ne cite JAMAIS de sources ni d'auteurs (pas de "Sources:", pas de noms propres).
-- Ne dis jamais "client", "nous", "notre" ou "on". Tu parles uniquement en "tu" et "je".`;
+- Ne dis jamais "client", "nous", "notre" ou "on". Tu parles uniquement en "tu" et "je".
+- Francais uniquement, aucun mot en anglais.`;
 
 // ============================================
 // SECTION-SPECIFIC AI GENERATION
@@ -764,7 +766,8 @@ FORMAT OBLIGATOIRE:
 - Commence DIRECTEMENT par l'analyse
 - Paragraphes separes par lignes vides
 - Ne cite JAMAIS de sources ni d'auteurs
-- Ne dis jamais "client", "nous", "notre" ou "on".`;
+- Ne dis jamais "client", "nous", "notre" ou "on".
+- Francais uniquement, aucun mot en anglais.`;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
   sommeil: `
@@ -1010,6 +1013,7 @@ REGLES ABSOLUES:
 7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
 8. Ne cite jamais de sources ni d'auteurs (pas de "Sources:", pas de noms propres)
 9. Ne dis jamais "client", "nous", "notre" ou "on"
+10. Francais uniquement. Aucun mot ou phrase en anglais.
 
 FORMAT OBLIGATOIRE:
 - JAMAIS de tiret long ou tiret cadratin (utilise : ou . a la place)
@@ -1028,6 +1032,7 @@ FORMAT OBLIGATOIRE:
     const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker));
     const hasClient = /\bclient\b/.test(lower);
     const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
+    const hasEnglish = hasEnglishMarkers(text, 4);
     return {
       lineCount,
       charCount,
@@ -1037,7 +1042,8 @@ FORMAT OBLIGATOIRE:
         (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS) &&
         !hasSources &&
         !hasClient &&
-        !hasNous,
+        !hasNous &&
+        !hasEnglish,
     };
   };
 
@@ -1067,6 +1073,11 @@ FORMAT OBLIGATOIRE:
         .replace(/^\s*[-*]\s+/gm, '')
         .replace(/^\s*\d+\.\s+/gm, '')
         .trim();
+
+      if (hasEnglishMarkers(rawText, 6)) {
+        rawText = stripEnglishLines(rawText);
+      }
+      rawText = normalizeSingleVoice(rawText);
 
       const validation = isValidContent(rawText);
       console.log(
@@ -1119,12 +1130,17 @@ FORMAT OBLIGATOIRE:
       if (!rawText.trim()) {
         continue;
       }
-      const validation = isValidContent(rawText);
+      let cleanedText = rawText;
+      if (hasEnglishMarkers(cleanedText, 6)) {
+        cleanedText = stripEnglishLines(cleanedText);
+      }
+      cleanedText = normalizeSingleVoice(cleanedText);
+      const validation = isValidContent(cleanedText);
       if (validation.isValid) {
         console.log(
           `[Discovery] ✓ OpenAI section ${domain} OK (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
         );
-        return cleanMarkdownToHTML(rawText);
+        return cleanMarkdownToHTML(cleanedText);
       }
       console.warn(
         `[Discovery] OpenAI section ${domain} too short (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
@@ -1220,17 +1236,19 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
       const ftArticles = await searchFullText(domain, 6);
       const filteredFt = ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any));
       if (filteredFt.length > 0) {
-        return filteredFt.map(a =>
+        const context = filteredFt.map(a =>
           `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
         ).join('\n\n---\n\n');
+        return stripEnglishLines(context);
       }
       return '';
     }
 
     // Return more content per article (800 chars instead of 400)
-    return articles.map(a =>
+    const context = articles.map(a =>
       `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
     ).join('\n\n---\n\n');
+    return stripEnglishLines(context);
   } catch (error) {
     console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
     return '';
@@ -1420,24 +1438,36 @@ RAPPELS CRITIQUES:
 - PAS d'emojis
 - PAS de recommandations ni solutions
 - Ne cite JAMAIS de sources ni d'auteurs
-- MINIMUM 1000 mots au total`;
+- MINIMUM 1000 mots au total
+- Francais uniquement, aucun mot en anglais`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: DISCOVERY_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }]
-    });
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: DISCOVERY_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userPrompt }]
+      });
 
-    const textContent = response.content.find(c => c.type === 'text');
-    let rawText = textContent?.text || '';
-    if (!rawText.trim()) {
-      throw new Error("[Discovery] Synthese vide");
+      const textContent = response.content.find(c => c.type === 'text');
+      let rawText = textContent?.text || '';
+      if (!rawText.trim()) {
+        throw new Error("[Discovery] Synthese vide");
+      }
+
+      if (hasEnglishMarkers(rawText, 6)) {
+        if (attempt < 2) {
+          console.warn("[Discovery] Synthese contient de l'anglais, retry...");
+          continue;
+        }
+        rawText = stripEnglishLines(rawText);
+      }
+
+      rawText = normalizeSingleVoice(rawText);
+      return cleanMarkdownToHTML(rawText);
     }
-
-    // Post-process: convert markdown to clean HTML and remove artifacts
-    return cleanMarkdownToHTML(rawText);
+    throw new Error("[Discovery] Synthese invalide apres retries");
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
 
@@ -1455,7 +1485,12 @@ RAPPELS CRITIQUES:
         });
         const text = response.choices[0]?.message?.content || '';
         if (text.trim()) {
-          return cleanMarkdownToHTML(text);
+          let cleaned = text;
+          if (hasEnglishMarkers(cleaned, 6)) {
+            cleaned = stripEnglishLines(cleaned);
+          }
+          cleaned = normalizeSingleVoice(cleaned);
+          return cleanMarkdownToHTML(cleaned);
         }
       } catch (fallbackError) {
         console.error('[Discovery] OpenAI synthesis fallback error:', fallbackError);
@@ -1468,7 +1503,7 @@ RAPPELS CRITIQUES:
 
 // Convert markdown artifacts to clean HTML - CRITICAL: Remove all em dashes
 function cleanMarkdownToHTML(text: string): string {
-  return text
+  let cleaned = text
     // Remove any explicit sources/references lines even if inline
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
@@ -1498,12 +1533,24 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
     // Remove any remaining markdown artifacts
     .replace(/`([^`]+)`/g, '$1')
-    // Strip inline color styles that can cause black-on-black
-    .replace(/\s*style=(\"|')[^\"']*color[^\"']*(\"|')/gi, '')
+    // Drop any lines that still contain "Sources:"
+    .split(/\n/)
+    .filter((line) => !/sources?\s*:/i.test(line))
+    .join('\n')
+    // Strip inline styles/colors that can cause black-on-black
+    .replace(/\s*style=(\"|')[^\"']*(\"|')/gi, '')
+    .replace(/\s*color=(\"|')[^\"']*(\"|')/gi, '')
+    .replace(/<\/?font[^>]*>/gi, '')
     // Final pass: remove any remaining em dashes that slipped through
     .replace(/—/g, ':')
     .replace(/–/g, '-')
     .trim();
+
+  if (hasEnglishMarkers(cleaned, 6)) {
+    cleaned = stripEnglishLines(cleaned);
+  }
+  cleaned = normalizeSingleVoice(cleaned);
+  return cleaned.trim();
 }
 
 // ============================================
@@ -1669,9 +1716,10 @@ export async function convertToNarrativeReport(
     id: "intro",
     title: "Message d'ouverture",
     subtitle: "Discovery Scan",
-    content: `<p>${prenom}, ton dossier est ouvert. Voici une analyse sans filtre de ce qui bloque réellement ta progression vers "${objectif}".</p>
-<p>Ce rapport decortique chaque systeme de ton corps : sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset. Et surtout comment ils s'influencent mutuellement.</p>
-<p>Ton score global de <strong>${result.globalScore}/100</strong> cache une réalité plus nuancée. ${result.blocages.length} blocages identifiés qui expliquent pourquoi tes efforts ne paient pas comme ils le devraient.</p>`,
+    content: `<p>${prenom}, j'ai ouvert ton dossier et chaque reponse compte. Ce Discovery Scan est une radiographie rapide mais precise de tes mecanismes : ce qui tourne bien, ce qui cale, et pourquoi.</p>
+<p>Je relie sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset. Rien n'est isole. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la duree.</p>
+<p>Ton score global de <strong>${result.globalScore}/100</strong> donne la facade, mais la realite est dans les details : ${result.blocages.length} blocages structurants, souvent invisibles a l'oeil nu, qui expliquent tes plateaux et tes efforts mal recompenses.</p>
+<p>Ici, je ne donne pas de solutions. Je montre la logique biologique, les cascades et les signaux. Tu vas comprendre ou se perd ton potentiel et pourquoi le corps resiste. Ensuite, tu choisiras si tu veux le plan complet.</p>`,
     chips: ["Analyse Complète", `${result.blocages.length} Blocages`]
   });
 

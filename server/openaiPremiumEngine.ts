@@ -14,6 +14,7 @@ import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
 // Réutiliser les sections et instructions de Gemini (exportées)
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier } from './geminiPremiumEngine';
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from './textNormalization';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -601,7 +602,7 @@ ${photoAnalysisStr}
         return { section, text: degraded, fromCache: false };
       }
 
-      const cleanedText = sectionText
+      let cleanedText = sectionText
         .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
         .replace(/Sources?\s*:.*$/gmi, "")
         .replace(SOURCE_NAME_REGEX, "")
@@ -611,6 +612,10 @@ ${photoAnalysisStr}
         .replace(/##/g, "")
         .replace(/__/g, "")
         .replace(/\*/g, "");
+      if (hasEnglishMarkers(cleanedText, 6)) {
+        cleanedText = stripEnglishLines(cleanedText);
+      }
+      cleanedText = normalizeSingleVoice(cleanedText);
 
       // Sauvegarde immédiate dans le cache
       cachedSections[section] = cleanedText;

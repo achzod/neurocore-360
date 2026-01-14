@@ -157,6 +157,15 @@ const DiscoveryScanReport: React.FC = () => {
     root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
     root.style.setProperty('--color-primary', currentTheme.colors.primary);
     root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--text', currentTheme.colors.text);
+    root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
+    root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--surface-1', currentTheme.colors.surface);
+    root.style.setProperty('--surface-2', currentTheme.colors.background);
+    root.style.setProperty('--border', currentTheme.colors.border);
+    root.style.setProperty('--primary', currentTheme.colors.primary);
+    root.style.setProperty('--accent-ok', currentTheme.colors.primary);
+    root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
   // Scroll handling
@@ -235,7 +244,10 @@ const DiscoveryScanReport: React.FC = () => {
       if (data.success) {
         setReviewSubmitted(true);
       } else {
-        setReviewError(data.error || 'Erreur lors de la soumission');
+        const detailMessages = Array.isArray(data.details)
+          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
+          : "";
+        setReviewError(detailMessages || data.error || 'Erreur lors de la soumission');
       }
     } catch (err) {
       setReviewError('Erreur de connexion au serveur');

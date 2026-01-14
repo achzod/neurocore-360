@@ -14,6 +14,7 @@ import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
 import { searchArticles } from "./knowledge/storage";
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from "./textNormalization";
 
 // =============================================================================
 // PREMIUM CONTENT VALIDATION - GARDE-FOUS
@@ -128,7 +129,7 @@ const SOURCE_NAME_REGEX = new RegExp(
 );
 
 function cleanPremiumContent(content: string): string {
-  return content
+  let cleaned = content
     // Remove meta phrases
     .replace(/^(En tant qu['']expert[^.]*\.?\s*)/gi, '')
     .replace(/^(Cette analyse (montre|revele|demontre)[^.]*\.?\s*)/gi, '')
@@ -166,6 +167,11 @@ function cleanPremiumContent(content: string): string {
     .replace(/-{4,}/g, '')
     .replace(/\*{4,}/g, '')
     .trim();
+  if (hasEnglishMarkers(cleaned, 6)) {
+    cleaned = stripEnglishLines(cleaned);
+  }
+  cleaned = normalizeSingleVoice(cleaned);
+  return cleaned;
 }
 
 // 

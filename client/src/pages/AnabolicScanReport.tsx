@@ -138,7 +138,7 @@ const AnabolicScanReport: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [clientName, setClientName] = useState<string>('Client');
+  const [clientName, setClientName] = useState<string>('Profil');
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Review form state
@@ -168,7 +168,7 @@ const AnabolicScanReport: React.FC = () => {
         }
         const auditData = await auditRes.json();
         const nameFromResponses = auditData.responses?.prenom;
-        setClientName(nameFromResponses || auditData.email?.split('@')[0] || 'Client');
+        setClientName(nameFromResponses || auditData.email?.split('@')[0] || 'Profil');
         setReviewEmail(auditData.email || '');
 
         // Check if report is ready
@@ -323,7 +323,10 @@ const AnabolicScanReport: React.FC = () => {
       if (data.success) {
         setReviewSubmitted(true);
       } else {
-        setReviewError(data.error || 'Erreur');
+        const detailMessages = Array.isArray(data.details)
+          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
+          : "";
+        setReviewError(detailMessages || data.error || 'Erreur');
       }
     } catch {
       setReviewError('Erreur de connexion');

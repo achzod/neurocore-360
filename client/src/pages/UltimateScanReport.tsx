@@ -156,7 +156,7 @@ const UltimateScanReport: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [clientName, setClientName] = useState<string>('Client');
+  const [clientName, setClientName] = useState<string>('Profil');
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Review state
@@ -184,7 +184,7 @@ const UltimateScanReport: React.FC = () => {
           return;
         }
         const auditData = await auditRes.json();
-        setClientName(auditData.email?.split('@')[0] || 'Client');
+        setClientName(auditData.email?.split('@')[0] || 'Profil');
         setReviewEmail(auditData.email || '');
 
         if (auditData.reportDeliveryStatus !== 'READY' && auditData.reportDeliveryStatus !== 'SENT') {
@@ -231,6 +231,15 @@ const UltimateScanReport: React.FC = () => {
     root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
     root.style.setProperty('--color-primary', currentTheme.colors.primary);
     root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--text', currentTheme.colors.text);
+    root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
+    root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--surface-1', currentTheme.colors.surface);
+    root.style.setProperty('--surface-2', currentTheme.colors.background);
+    root.style.setProperty('--border', currentTheme.colors.border);
+    root.style.setProperty('--primary', currentTheme.colors.primary);
+    root.style.setProperty('--accent-ok', currentTheme.colors.primary);
+    root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
   // Scroll
@@ -312,8 +321,14 @@ const UltimateScanReport: React.FC = () => {
       });
 
       const data = await response.json();
-      if (data.success) setReviewSubmitted(true);
-      else setReviewError(data.error || 'Erreur');
+      if (data.success) {
+        setReviewSubmitted(true);
+      } else {
+        const detailMessages = Array.isArray(data.details)
+          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
+          : "";
+        setReviewError(detailMessages || data.error || 'Erreur');
+      }
     } catch {
       setReviewError('Erreur de connexion');
     } finally {

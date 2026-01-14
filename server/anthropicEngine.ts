@@ -14,6 +14,7 @@ import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
 import { generateKnowledgeContext, searchForSection } from './knowledge';
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from './textNormalization';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -111,7 +112,7 @@ function extractSourceMentions(context: string): string[] {
 }
 
 function sanitizePremiumText(text: string): string {
-  return text
+  let cleaned = text
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
     .replace(/Sources?\s*:.*$/gmi, "")
     .replace(SOURCE_NAME_REGEX, "")
@@ -122,6 +123,11 @@ function sanitizePremiumText(text: string): string {
     .replace(/__/g, "")
     .replace(/\*/g, "")
     .trim();
+  if (hasEnglishMarkers(cleaned, 6)) {
+    cleaned = stripEnglishLines(cleaned);
+  }
+  cleaned = normalizeSingleVoice(cleaned);
+  return cleaned;
 }
 
 function hasForbiddenPhrases(text: string): boolean {

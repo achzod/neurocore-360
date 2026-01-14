@@ -15,6 +15,7 @@ import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { storage } from "./storage";
 import { sendReportReadyEmail, sendAdminEmailNewAudit } from "./emailService";
 import { getUncachableStripeClient } from "./stripeClient";
+import { normalizeSingleVoice } from "./textNormalization";
 
 // Initialize Anthropic client
 let anthropicClient: Anthropic | null = null;
@@ -618,6 +619,7 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
       }
 
       content = sanitizeBurnoutContent(content);
+      content = normalizeSingleVoice(content);
       validateBurnoutSection(sectionType, content);
       return content;
     } catch (error) {
@@ -641,7 +643,8 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
         });
         const raw = response.choices[0]?.message?.content || "";
         if (!raw.trim()) continue;
-        const cleaned = sanitizeBurnoutContent(raw);
+        let cleaned = sanitizeBurnoutContent(raw);
+        cleaned = normalizeSingleVoice(cleaned);
         validateBurnoutSection(sectionType, cleaned);
         return cleaned;
       } catch (fallbackError) {
@@ -652,7 +655,8 @@ Format: HTML (<p>, <strong>). Ton direct et motivant.`
   }
 
   console.error(`[Burnout] Fallback section used for ${sectionType}:`, lastError);
-  const fallback = buildFallbackBurnoutSection(sectionType, data);
+  let fallback = buildFallbackBurnoutSection(sectionType, data);
+  fallback = normalizeSingleVoice(fallback);
   try {
     validateBurnoutSection(sectionType, fallback);
   } catch (err) {

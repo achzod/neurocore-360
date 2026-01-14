@@ -186,8 +186,12 @@ const BurnoutEngineReport: React.FC = () => {
     root.style.setProperty('--primary', currentTheme.colors.primary);
     root.style.setProperty('--text', currentTheme.colors.text);
     root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
-    root.style.setProperty('--surface-2', currentTheme.colors.surface);
+    root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--surface-1', currentTheme.colors.surface);
+    root.style.setProperty('--surface-2', currentTheme.colors.background);
+    root.style.setProperty('--border', currentTheme.colors.border);
     root.style.setProperty('--accent-ok', currentTheme.colors.primary);
+    root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
   useEffect(() => {
@@ -250,11 +254,14 @@ const BurnoutEngineReport: React.FC = () => {
         })
       });
 
-      if (response.ok) {
+      const data = await response.json();
+      if (response.ok && data?.success !== false) {
         setReviewSubmitted(true);
       } else {
-        const data = await response.json();
-        setReviewError(data.error || 'Erreur lors de l\'envoi');
+        const detailMessages = Array.isArray(data?.details)
+          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
+          : "";
+        setReviewError(detailMessages || data?.error || "Erreur lors de l'envoi");
       }
     } catch (err) {
       setReviewError('Erreur de connexion');
@@ -319,7 +326,7 @@ const BurnoutEngineReport: React.FC = () => {
           themes={THEMES}
           currentTheme={currentTheme}
           onThemeChange={setCurrentTheme}
-          clientName={reportData.clientName || 'Client'}
+          clientName={reportData.clientName || 'Profil'}
           auditType="BURNOUT"
         />
       </aside>
