@@ -71,6 +71,13 @@ function loadFromCache(auditId: string): CacheData | null {
   return null;
 }
 
+export function deleteAnthropicCache(auditId: string): void {
+  const cachePath = getCachePath(auditId);
+  if (fs.existsSync(cachePath)) {
+    fs.unlinkSync(cachePath);
+  }
+}
+
 function generateAuditId(): string {
   return `anthropic-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }

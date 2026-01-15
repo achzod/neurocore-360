@@ -1,5 +1,5 @@
-import { generateAndConvertAudit } from "./geminiPremiumEngine";
-import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
+import { generateAndConvertAudit, deleteCache as deleteGeminiCache } from "./geminiPremiumEngine";
+import { generateAndConvertAuditWithClaude, deleteAnthropicCache } from "./anthropicEngine";
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
@@ -108,6 +108,8 @@ export async function getJobStatus(auditId: string): Promise<ReportJob | null> {
 }
 
 export async function forceRegenerate(auditId: string): Promise<void> {
+  deleteGeminiCache(auditId);
+  deleteAnthropicCache(auditId);
   await storage.deleteReportJob(auditId);
   console.log(`[ReportJobManager] Force deleted job for audit ${auditId}`);
 }
