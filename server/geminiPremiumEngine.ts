@@ -392,6 +392,7 @@ INTERDITS ABSOLUS (penalite SEVERE si non respecte) :
 - Ton robotique ou structure trop previsible
 - Exces de politesse ou de precautions ("je te suggererais peut-etre de considerer...")
 - Ne dis jamais "client", "nous", "notre" ou "on"
+- Ne parle pas d'offres, de coaching ou de codes promo (le CTA est ajoute apres)
 - Ne cite jamais de sources, d'auteurs, d'etudes ni de publications
 - AUCUNE liste a puces dans la sortie finale : transforme en narration fluide
 
@@ -1295,53 +1296,32 @@ x Fat burners (inutiles et dangereux)
   "Synthese et Prochaines Etapes": `
 INSTRUCTIONS POUR "SYNTHESE ET PROCHAINES ETAPES" :
 
-ATTENTION : Cette section est CRITIQUE. C'est la derniere impression. Elle doit etre PERCUTANTE, DIRECTE, et ACTIONNABLE.
+ATTENTION : Cette section est CRITIQUE. C'est la derniere impression. Elle doit etre PERCUTANTE, DIRECTE, et ACTIONNABLE, sans aucun format "liste" artificiel.
 
 INTERDITS ABSOLUS :
 - "Bonjour [Prenom]" ou formules de salutation (tu es DEJA en conversation)
 - "J'espere que..." ou formules polies generiques
 - "N'hesite pas a..." (trop mou)
-- Listes a puces generiques sans personnalisation
+- Listes a puces, numerotation, ou symboles de type "+" / "x" / "-" 
 - Resumer ce qui a deja ete dit (inutile)
 - Ton passif ou condescendant
+- Toute mention d'offre, coaching, promo, ou prochaine vente (le CTA arrive apres)
 
 TON OBLIGATOIRE :
 Tu es Achzod qui conclut un audit de 2h avec ce client. Tu le connais maintenant. Tu lui parles directement, sans filtre, avec respect mais sans politesse excessive. Tu le pousses a agir.
 
 FORMAT OBLIGATOIRE :
 
-SYNTHESE FINALE
+Ecris 6 a 8 paragraphes courts, avec des transitions naturelles.
 
-[Prenom], j'ai passe 2 heures sur ton profil. Voici ce que je retiens :
-
-TES ATOUTS (ce sur quoi je vais capitaliser) :
-+ [Atout 1 - specifique a LUI]
-+ [Atout 2 - specifique a LUI]
-+ [Atout 3 - specifique a LUI]
-
-CE QUI TE PLOMBE (la verite) :
-x [Blocage 1 - sans filtre]
-x [Blocage 2 - sans filtre]
-x [Blocage 3 - sans filtre]
-
-OU TU EN ES vs OU TU POURRAIS ETRE :
-Ton potentiel actuel : [X]/10 - [explication courte]
-Ton potentiel dans 90 jours : [Y]/10 - [ce qui aura change]
-
-TES 3 ACTIONS NON-NEGOCIABLES (a faire cette semaine) :
-1. [Action precise et concrete - pas vague]
-2. [Action precise et concrete - pas vague]
-3. [Action precise et concrete - pas vague]
-
-CE QUI SE PASSE SI TU NE FAIS RIEN :
-Dans 6 mois : [consequence realiste et specifique]
-Dans 1 an : [consequence realiste et specifique]
-
-CE QUI SE PASSE SI TU APPLIQUES :
-A 30 jours : [resultat mesurable]
-A 90 jours : [resultat mesurable]
-
-[Phrase finale directe et personnelle - pas de formule cliche comme "je crois en toi" mais quelque chose de specifique a sa situation]
+Structure narrative suggeree (sans titres visibles) :
+1) Une ouverture franche et personnelle (1 paragraphe).
+2) Trois atouts concrets integres dans un seul paragraphe (pas de liste).
+3) Trois blocages clairs integres dans un seul paragraphe (pas de liste).
+4) "Ou tu en es vs ou tu pourrais etre" en 2 paragraphes courts, chiffres simples.
+5) Les 3 actions non-negociables de cette semaine, integrees dans un paragraphe (ex: "d'abord..., ensuite..., enfin...").
+6) Deux paragraphes contrastes : si tu ne fais rien / si tu appliques.
+7) Une phrase finale directe, personnelle, non-clichee.
 
 `
 };
