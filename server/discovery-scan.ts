@@ -1734,7 +1734,7 @@ export async function convertToNarrativeReport(
     title: "Message d'ouverture",
     subtitle: "Discovery Scan",
     content: `<p>${prenom}, j'ai ouvert ton dossier et chaque reponse compte. Ce Discovery Scan est une radiographie rapide mais precise de tes mecanismes : ce qui tourne bien, ce qui cale, et pourquoi.</p>
-<p>Je relie sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset. Rien n'est isole. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la duree.</p>
+<p>Je relie sommeil, stress, energie, digestion, entrainement, nutrition, style de vie, mental. Rien n'est isole. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la duree.</p>
 <p>Ton score global de <strong>${globalScore10}/10</strong> donne la facade, mais la realite est dans les details : ${result.blocages.length} blocages structurants, souvent invisibles a l'oeil nu, qui expliquent tes plateaux et tes efforts mal recompenses.</p>
 <p>Ici, je ne donne pas de solutions. Je montre la logique biologique, les cascades et les signaux. Tu vas comprendre ou se perd ton potentiel et pourquoi le corps resiste. Ensuite, tu choisiras si tu veux le plan complet.</p>`,
     chips: ["Analyse Complète", `${result.blocages.length} Blocages`]
