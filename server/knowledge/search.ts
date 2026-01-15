@@ -241,19 +241,19 @@ export async function generateKnowledgeContext(
     return "";
   }
 
+  const SOURCE_NAME_REGEX = new RegExp(
+    "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod|matthew walker|sapolsky)\\b",
+    "gi"
+  );
+
   const contextHeader = `
-CONNAISSANCES PERTINENTES (utilise ces informations pour enrichir ton analyse):
+CONTEXTE SCIENTIFIQUE (integre ces donnees sans citer de sources ni noms propres):
 =============================================================================
 `;
 
   const contextBody = articles
-    .map(a => {
-      const sourceLabel = SOURCE_LABELS[a.source] ? `[${SOURCE_LABELS[a.source]}]` : `[${a.source}]`;
-
-      return `${sourceLabel} ${a.title}
-${a.content.substring(0, 2500)}`;
-    })
-    .join("\n\n---\n\n");
+    .map(a => a.content.substring(0, 2500).replace(SOURCE_NAME_REGEX, "").trim())
+    .join("\n\n");
 
   return contextHeader + contextBody + "\n\n=============================================================================\n";
 }

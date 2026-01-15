@@ -422,7 +422,10 @@ const BurnoutEngineReport: React.FC = () => {
           {reportData.sections.map((section, idx) => (
             <section key={section.id} id={section.id} className="mb-12 scroll-mt-24">
               <div className="flex items-center gap-4 mb-6">
-                <span className="text-4xl font-bold text-[var(--color-text-muted)]/20">
+                <span
+                  className="text-4xl font-bold"
+                  style={{ color: withAlpha(currentTheme.colors.textMuted, 0.2) }}
+                >
                   {String(idx + 1).padStart(2, '0')}
                 </span>
                 <div>
@@ -497,8 +500,8 @@ const BurnoutEngineReport: React.FC = () => {
                         >
                           <Star
                             size={32}
-                            className={star <= reviewRating ? 'fill-current' : 'text-[var(--color-text-muted)]/30'}
-                            style={star <= reviewRating ? { color: primary } : undefined}
+                            className={star <= reviewRating ? 'fill-current' : ''}
+                            style={star <= reviewRating ? { color: primary } : { color: withAlpha(currentTheme.colors.textMuted, 0.3) }}
                           />
                         </button>
                       ))}

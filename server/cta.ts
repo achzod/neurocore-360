@@ -35,20 +35,17 @@ Site: ${CONTACT.website}
   }
 
   const tierLabel = tier === 'ELITE' ? "Ultimate Scan" : "Anabolic Bioscan";
-  return `RAPPEL IMPORTANT
+  return `RAPPEL COACHING
 
 Tu consultes ton analyse ${tierLabel} APEXLABS complete.
+Le montant que tu as paye pour cette analyse (${amountPaid} EUR) sera DEDUIT A 100% du prix du coaching si tu decides d avancer avec moi.
 
-IMPORTANT : Si tu decides de prendre un coaching avec moi apres cette analyse, le montant que tu as paye pour cette analyse (${amountPaid}EUR) sera DEDUIT A 100% du prix du coaching.
+CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
 
-CODE PROMO COACHING : neurocore20 (-25% sur les suivis Essential Elite et Private Lab)
-
-Pour toute question ou pour discuter de ton accompagnement :
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
 
----
-`;
+---`;
 }
 
 export function getCTAFin(tier: AuditTier, amountPaid: number = PRICING.PREMIUM): string {
@@ -101,56 +98,21 @@ Rapport genere par ACHZOD - APEXLABS
 
   // PREMIUM / ELITE - CTA vers COACHING
   return `
+COACHING APEXLABS
 
-====================================================================
-TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION
-====================================================================
+Tu as la cartographie. Il manque l execution. Si tu veux des resultats rapides et propres, je prends le relais.
 
-Cette analyse t'a donne une cartographie precise de ton profil. Tu sais exactement ce qui bloque et ce qu'il faut corriger. Mais je vais etre direct avec toi :
++ Ajustements hebdo sur tes retours et tes contraintes reelles
++ Protocoles adaptes a ton quotidien, pas un plan generique
++ Suivi des KPIs et corrections de trajectoire
++ Acces direct pour accelerer les decisions
 
-L'INFORMATION SEULE NE CHANGE RIEN.
+BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est DEDUIT A 100% du prix du coaching.
 
-Ce qui change tout, c'est :
-1. L'execution disciplinee des protocoles
-2. Les ajustements en temps reel selon tes retours
-3. La responsabilite (quelqu'un qui te tient accountable)
-
-C'est exactement ce que je propose avec le COACHING PERSONNALISE.
-
-CE QUE TU OBTIENS AVEC UN COACHING :
-
-+ Appels reguliers pour ajuster en temps reel
-+ Acces direct par message (pas d'attente 48h)
-+ Protocols adaptes selon tes contraintes reelles
-+ Suivi de tes KPIs et corrections de trajectoire
-+ Mon expertise complete sur TON cas (pas un plan generique)
-
-BONUS EXCLUSIF :
-Le montant que tu as paye pour cette analyse (${amountPaid} EUR) est DEDUIT A 100% du prix du coaching.
-Tu ne paies pas deux fois.
-
-MES FORMULES :
-
-ESSENTIAL ELITE
-Suivi hebdomadaire, ajustements continus, acces messagerie
-Ideal si tu veux un cadre structure et un coach qui te pousse
-
-PRIVATE LAB
-Coaching intensif, analyses avancees, protocoles sur-mesure
-Pour ceux qui veulent des resultats acceleres
-
-CODE PROMO : neurocore20 (-25% sur Essential Elite et Private Lab)
-
-PROCHAINE ETAPE :
-
-Reponds a cet email ou contacte-moi directement pour echanger sur ta situation.
-Je te propose un call de 15min pour voir si c'est un bon fit.
-Pas de pression, pas de bullshit.
+CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
 
----
-Rapport genere par ACHZOD - APEXLABS
-`;
+---`;
 }

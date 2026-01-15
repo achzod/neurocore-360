@@ -70,7 +70,7 @@ const parseCtaText = (text?: string) => {
     .map(line => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim());
 
   const paragraphs = lines.filter(line => {
-    if (/^(rappel important|infos importantes)$/i.test(line)) return false;
+    if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs)$/i.test(line)) return false;
     if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
     return !/^(\+|\-|\d+\.)\s+/.test(line);
   });
@@ -303,82 +303,108 @@ const AnabolicScanReport: React.FC = () => {
     const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = parseCtaText(text);
     const contactEmail = emailLine.replace(/^email\s*:\s*/i, "") || "coaching@achzodcoaching.com";
     const contactSite = siteLine.replace(/^site\s*:\s*/i, "") || "achzodcoaching.com";
+    const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
 
     return (
       <div
-        className="rounded-sm p-8"
+        className="rounded-sm border p-6 md:p-8"
         style={{
-          background: `linear-gradient(135deg, ${primary}15 0%, ${currentTheme.colors.surface} 100%)`,
-          border: `1px solid ${primary}30`
+          background: `linear-gradient(135deg, ${primary}12 0%, ${currentTheme.colors.surface} 100%)`,
+          borderColor: primaryBorder
         }}
       >
-        <div className="flex items-center gap-3 mb-4">
-          <span
-            className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
-            style={{ backgroundColor: primarySoft, color: primary }}
-          >
-            {badgeLabel}
-          </span>
-          <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
-            Coaching Achzod
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <span
+              className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+              style={{ backgroundColor: primarySoft, color: primary }}
+            >
+              {badgeLabel}
+            </span>
+            <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+              Coaching Achzod
+            </span>
+          </div>
+          {bonusLine && (
+            <span className="text-xs font-semibold" style={{ color: primary }}>
+              {bonusLine}
+            </span>
+          )}
         </div>
 
-        <div className="space-y-3">
-          {paragraphs.map((line, idx) => (
-            <p key={idx} className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-              {line}
-            </p>
-          ))}
-        </div>
-
-        {bullets.length > 0 && (
-          <ul className="mt-5 space-y-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-            {bullets.map((bullet, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span style={{ color: primary }}>•</span>
-                <span>{bullet}</span>
-              </li>
+        <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">
+          <div className="space-y-4">
+            {paragraphs.map((line, idx) => (
+              <p key={idx} className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+                {line}
+              </p>
             ))}
-          </ul>
-        )}
 
-        {(promoLine || bonusLine) && (
-          <div className="mt-5 p-4 rounded-sm" style={{ backgroundColor: primarySoft, border: `1px solid ${primaryBorder}` }}>
-            {bonusLine && <p className="text-sm font-semibold mb-2" style={{ color: primary }}>{bonusLine}</p>}
-            {promoLine && <p className="text-sm font-semibold" style={{ color: currentTheme.colors.text }}>{promoLine}</p>}
+            {bullets.length > 0 && (
+              <ul className="mt-2 space-y-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                {bullets.map((bullet, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span style={{ color: primary }}>•</span>
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
 
-        {(contactEmail || contactSite) && (
-          <div className="mt-5 p-4 rounded-sm" style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}>
-            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
-              Contact direct
-            </p>
-            <p className="text-sm" style={{ color: currentTheme.colors.text }}>
-              Email : <strong>{contactEmail}</strong><br />
-              Site : <strong>{contactSite}</strong>
-            </p>
+          <div className="space-y-4">
+            {(promoLine || bonusLine) && (
+              <div className="p-4 rounded-sm" style={{ backgroundColor: primarySoft, border: `1px solid ${primaryBorder}` }}>
+                {promoLine && (
+                  <p className="text-sm font-semibold" style={{ color: currentTheme.colors.text }}>
+                    {promoLine}
+                  </p>
+                )}
+                {promoCode && (
+                  <span className="inline-block mt-2 px-2 py-1 text-[10px] font-mono rounded" style={{ backgroundColor: currentTheme.colors.surface, color: primary }}>
+                    {promoCode}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {(contactEmail || contactSite) && (
+              <div className="p-4 rounded-sm" style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}>
+                <p className="text-xs uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
+                  Contact direct
+                </p>
+                {contactEmail && (
+                  <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
+                    {contactEmail}
+                  </p>
+                )}
+                {contactSite && (
+                  <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                    {contactSite}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid gap-3">
+              <a
+                href={`mailto:${contactEmail}`}
+                className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+                style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
+              >
+                Ecrire a Achzod
+              </a>
+              <a
+                href={`https://${contactSite}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+                style={{ border: `1px solid ${primary}`, color: primary }}
+              >
+                Voir le coaching
+              </a>
+            </div>
           </div>
-        )}
-
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <a
-            href={`mailto:${contactEmail}`}
-            className="flex-1 px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
-            style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
-          >
-            Ecrire a Achzod
-          </a>
-          <a
-            href={`https://${contactSite}`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
-            style={{ border: `1px solid ${primary}`, color: primary }}
-          >
-            Voir le coaching
-          </a>
         </div>
       </div>
     );
@@ -737,7 +763,10 @@ const AnabolicScanReport: React.FC = () => {
             return (
               <section key={section.id} id={section.id} className="mb-12 scroll-mt-24">
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="text-5xl font-bold text-[var(--color-text-muted)]/20">
+                  <span
+                    className="text-5xl font-bold"
+                    style={{ color: withAlpha(currentTheme.colors.textMuted, 0.2) }}
+                  >
                     {String(idx + 1).padStart(2, '0')}
                   </span>
                   <div className="flex-1">
@@ -921,8 +950,8 @@ const AnabolicScanReport: React.FC = () => {
                         >
                           <Star
                             size={32}
-                            className={star <= reviewRating ? 'fill-current' : 'text-[var(--color-text-muted)]/30'}
-                            style={star <= reviewRating ? { color: primary } : undefined}
+                            className={star <= reviewRating ? 'fill-current' : ''}
+                            style={star <= reviewRating ? { color: primary } : { color: withAlpha(currentTheme.colors.textMuted, 0.3) }}
                           />
                         </button>
                       ))}

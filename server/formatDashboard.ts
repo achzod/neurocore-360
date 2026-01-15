@@ -96,9 +96,43 @@ function cleanSectionContent(content: string): string {
   return content
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
+    .replace(/^\s*score\s+global\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
+    .replace(/^\s*={3,}.*$/gm, '')
     .replace(SOURCE_NAME_REGEX, '')
     .trim();
+}
+
+function stripCtaFromContent(content: string): string {
+  const markers = [
+    "COACHING APEXLABS",
+    "TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION",
+    "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT"
+  ];
+  const lines = content.split("\n");
+  const cutIndex = lines.findIndex((line) =>
+    markers.some((marker) => line.trim().toLowerCase() === marker.toLowerCase())
+  );
+  if (cutIndex === -1) return content;
+  return lines.slice(0, cutIndex).join("\n").trim();
+}
+
+function findLastLineMarker(text: string, markers: string[]): { index: number; marker: string | null } {
+  let lastIndex = -1;
+  let lastMarker: string | null = null;
+  for (const marker of markers) {
+    const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`^\\s*${escaped}\\s*$`, 'gmi');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index >= lastIndex) {
+        lastIndex = match.index;
+        lastMarker = marker;
+      }
+    }
+  }
+  return { index: lastIndex, marker: lastMarker };
 }
 
 function extractClientName(txtContent: string): string {
@@ -142,30 +176,34 @@ function extractSectionScoreFromContent(content: string): number | null {
 function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefined {
   if (type === 'debut') {
     // Chercher "RAPPEL IMPORTANT" ou "INFOS IMPORTANTES"
-    const markers = ['RAPPEL IMPORTANT', 'INFOS IMPORTANTES'];
-    for (const marker of markers) {
-      const idx = txtContent.indexOf(marker);
-      if (idx !== -1) {
-        // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
-        const endMarkers = ['AUDIT COMPLET APEXLABS', 'AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
-        let endIdx = txtContent.length;
-        for (const endMarker of endMarkers) {
-          const endPos = txtContent.indexOf(endMarker, idx + marker.length);
-          if (endPos !== -1 && endPos < endIdx) {
-            endIdx = endPos;
+    const markers = ['RAPPEL COACHING', 'RAPPEL IMPORTANT', 'INFOS IMPORTANTES'];
+    const start = findLastLineMarker(txtContent, markers);
+    if (start.index !== -1) {
+      // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
+      const endMarkers = ['AUDIT COMPLET APEXLABS', 'AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
+      let endIdx = txtContent.length;
+      for (const marker of endMarkers) {
+        const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`^\\s*${escaped}\\s*$`, 'gmi');
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(txtContent)) !== null) {
+          if (match.index > start.index && match.index < endIdx) {
+            endIdx = match.index;
           }
         }
-        return txtContent.substring(idx, endIdx).trim();
       }
+      return txtContent.substring(start.index, endIdx).trim();
     }
   } else {
     // Chercher "PRET A TRANSFORMER" ou "PROCHAINES ETAPES"
-    const markers = ['PRET A TRANSFORMER CES INSIGHTS', 'PROCHAINES ETAPES', 'PROCHAINE ETAPE'];
-    for (const marker of markers) {
-      const idx = txtContent.lastIndexOf(marker);
-      if (idx !== -1) {
-        return txtContent.substring(idx).trim();
-      }
+    const markers = [
+      'COACHING APEXLABS',
+      'PRET A TRANSFORMER CES INSIGHTS',
+      'PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT'
+    ];
+    const start = findLastLineMarker(txtContent, markers);
+    if (start.index !== -1) {
+      return txtContent.substring(start.index).trim();
     }
   }
   return undefined;
@@ -176,6 +214,9 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   const clientName = extractClientName(txtContent);
   const generatedAt = extractGeneratedAt(txtContent);
   
+  const ctaDebut = extractCTA(txtContent, 'debut');
+  const ctaFin = extractCTA(txtContent, 'fin');
+
   // Nouveau délimiteur Elite V4 : Titres en MAJUSCULES seuls sur une ligne
   const sectionLines = txtContent.split('\n');
   const sectionMatches: { title: string; startIndex: number; endIndex: number }[] = [];
@@ -260,7 +301,11 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   
   for (let i = 0; i < sectionMatches.length; i++) {
     const { title, startIndex, endIndex } = sectionMatches[i];
-    const rawContent = txtContent.substring(startIndex, endIndex).trim();
+    let rawContent = txtContent.substring(startIndex, endIndex).trim();
+    if (ctaFin) {
+      rawContent = rawContent.replace(ctaFin, '').trim();
+    }
+    rawContent = stripCtaFromContent(rawContent);
     const extractedScore = extractSectionScoreFromContent(rawContent);
     const content = cleanSectionContent(rawContent);
     
@@ -308,8 +353,8 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     global,
     sections,
     resumeExecutif,
-    ctaDebut: extractCTA(txtContent, 'debut'),
-    ctaFin: extractCTA(txtContent, 'fin'),
+    ctaDebut,
+    ctaFin,
     metadata: {
       totalSections: sections.length,
       totalCharacters: txtContent.length

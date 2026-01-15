@@ -101,9 +101,9 @@ const AI_PATTERNS = [
 
 // Minimum section lengths (in characters)
 const MIN_SECTION_LENGTH_PREMIUM = 4200;
-const MIN_SECTION_LENGTH_GRATUIT = 2400;
+const MIN_SECTION_LENGTH_GRATUIT = 3400;
 const MIN_TOTAL_LENGTH_PREMIUM = 75000; // ~45-50 pages
-const MIN_TOTAL_LENGTH_GRATUIT = 18000; // ~12+ pages
+const MIN_TOTAL_LENGTH_GRATUIT = 20000; // ~12+ pages
 
 // Required CTA markers
 const CTA_MARKERS = [
@@ -145,7 +145,7 @@ const SOURCE_MARKERS = [
   "newsletter",
 ];
 
-const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client"];
+const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client", "on"];
 
 export function validateReport(
   reportTxt: string,
@@ -230,6 +230,10 @@ export function validateReport(
 
   // 4. Knowledge source visibility (should be absent in output)
   const sourcesFound = SOURCE_MARKERS.filter((marker) => txtLower.includes(marker));
+  const hasSourcesLine = /sources?\s*:/i.test(txtLower);
+  if (hasSourcesLine && !sourcesFound.includes("sources:")) {
+    sourcesFound.push("sources:");
+  }
   if (sourcesFound.length > 0) {
     errors.push(`Sources visibles dans le texte: ${sourcesFound.join(", ")}`);
   }

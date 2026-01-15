@@ -44,6 +44,14 @@ export function normalizeSingleVoice(text: string): string {
   if (!text) return text;
   let normalized = text
     .replace(/(['"“”])on(['"“”])/gi, "$1active$2")
+    .replace(/\bon va\b/gi, (match) => (match[0] === "O" ? "Je vais" : "je vais"))
+    .replace(/\bon doit\b/gi, (match) => (match[0] === "O" ? "Je dois" : "je dois"))
+    .replace(/\bon peut\b/gi, (match) => (match[0] === "O" ? "Je peux" : "je peux"))
+    .replace(/\bon veut\b/gi, (match) => (match[0] === "O" ? "Je veux" : "je veux"))
+    .replace(/\bon sait\b/gi, (match) => (match[0] === "O" ? "Je sais" : "je sais"))
+    .replace(/\bon voit\b/gi, (match) => (match[0] === "O" ? "Je vois" : "je vois"))
+    .replace(/\bon a\b/gi, (match) => (match[0] === "O" ? "J'ai" : "j'ai"))
+    .replace(/\bon est\b/gi, (match) => (match[0] === "O" ? "Je suis" : "je suis"))
     .replace(/\blorsqu[’']on\b/gi, "lorsque je")
     .replace(/\bpuisqu[’']on\b/gi, "puisque je")
     .replace(/\bqu[’']on\b/gi, "que je")

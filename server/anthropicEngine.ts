@@ -103,6 +103,7 @@ const FORBIDDEN_PATTERNS = [
   /\bclient\b/i,
   /\bnous\b/i,
   /\bnotre\b/i,
+  /\bon\b/i,
 ];
 
 function extractSourceMentions(context: string): string[] {
@@ -115,6 +116,8 @@ function sanitizePremiumText(text: string): string {
   let cleaned = text
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
     .replace(/Sources?\s*:.*$/gmi, "")
+    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, "")
+    .replace(/^\s*[-=]{3,}\s*$/gm, "")
     .replace(SOURCE_NAME_REGEX, "")
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
@@ -181,9 +184,9 @@ function getMaxTokensForSection(section: SectionName, tier: AuditTier = 'PREMIUM
 function getMinCharsForSection(section: SectionName, tier: AuditTier = 'PREMIUM'): number {
   const s = String(section).toLowerCase();
   if (tier === 'GRATUIT') {
-    if (s.includes("executive summary")) return 2600;
-    if (s.includes("synthese") || s.includes("prochaines etapes")) return 2600;
-    return 2800;
+    if (s.includes("executive summary")) return 3400;
+    if (s.includes("synthese") || s.includes("prochaines etapes")) return 3400;
+    return 3800;
   }
   if (s.includes("executive summary")) return 3600;
   if (s.includes("kpi") || s.includes("tableau")) return 3200;
@@ -539,12 +542,17 @@ ${PROMPT_SECTION.replace("{section}", section)
       const t0 = Date.now();
       const minChars = getMinCharsForSection(section as SectionName, tier);
       let cleanedText = "";
+      const needsScoreLine = (value: string) => {
+        const lower = String(section).toLowerCase();
+        if (!lower.includes("analyse")) return false;
+        return !/Score\s*:?\s*\d{1,3}\s*\/\s*100/i.test(value);
+      };
 
       for (let attempt = 1; attempt <= 2; attempt++) {
         const retryNote =
           attempt === 1
             ? ""
-            : `\nATTENTION: Ta reponse etait trop courte ou contenait des mots interdits. Tu dois fournir un texte plus long (min ${minChars} caracteres), sans "client", "nous", "notre" ni sources.\n`;
+            : `\nATTENTION: Ta reponse etait trop courte, sans ligne Score, ou contenait des mots interdits. Tu dois fournir un texte plus long (min ${minChars} caracteres), sans "client", "nous", "notre", "on" ni sources. Termine par "Score : NN/100".\n`;
         const prompt = `${claudePrompt}\n${retryNote}`;
 
         const sectionText = await callClaude(prompt, {
@@ -555,9 +563,10 @@ ${PROMPT_SECTION.replace("{section}", section)
         if (!sectionText) continue;
 
         const candidate = sanitizePremiumText(sectionText);
-        const forbidden = hasForbiddenPhrases(candidate);
+        const forbidden = hasForbiddenPhrases(sectionText) || hasForbiddenPhrases(candidate);
+        const missingScore = needsScoreLine(candidate);
 
-        if (!forbidden && candidate.length >= minChars) {
+        if (!forbidden && !missingScore && candidate.length >= minChars) {
           cleanedText = candidate;
           break;
         }
@@ -570,7 +579,7 @@ ${PROMPT_SECTION.replace("{section}", section)
       const dt = Date.now() - t0;
       console.log(`[Claude] Section "${section}" terminee en ${(dt / 1000).toFixed(1)}s`);
 
-      if (!cleanedText || cleanedText.length < minChars || hasForbiddenPhrases(cleanedText)) {
+      if (!cleanedText || cleanedText.length < minChars || hasForbiddenPhrases(cleanedText) || needsScoreLine(cleanedText)) {
         const degraded = degradedSectionText(section as SectionName);
         cachedSections[section] = degraded;
         saveToCache(auditId, {
@@ -617,6 +626,13 @@ ${PROMPT_SECTION.replace("{section}", section)
     }
   });
 
+  const hasGlobalScore = /SCORE\s+GLOBAL\s*:?\s*\d{1,3}\s*\/\s*100/i.test(auditParts.join("\n"));
+  const calcScores = calculateScoresFromResponses(clientData as any);
+  const globalScore = typeof calcScores?.global === "number" ? calcScores.global : 76;
+  if (!hasGlobalScore) {
+    auditParts.push(`\nSCORE GLOBAL : ${globalScore}/100\n`);
+  }
+
   const ctaFin = getCTAFin(tier, ctaAmount);
   auditParts.push('\n\n' + ctaFin);
 
@@ -655,7 +671,7 @@ export async function generateAndConvertAuditWithClaude(
   }
 
   // Validation: minimum 10000 chars for PREMIUM (at least 5-6 pages)
-  const minLength = tier === 'GRATUIT' ? 5000 : 10000;
+  const minLength = tier === 'GRATUIT' ? 16000 : 10000;
   if (txtContent.length < minLength) {
     console.error(`[Claude] TXT trop court pour ${clientName}: ${txtContent.length} chars (min: ${minLength})`);
     console.error(`[Claude] Première section générée: ${txtContent.substring(0, 500)}...`);
