@@ -436,9 +436,9 @@ const UltimateScanReport: React.FC = () => {
   const RADAR_LABELS: Record<string, string> = {
     'analyse-visuelle-et-posturale-complete': 'Posture',
     'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
-    'analyse-entrainement-et-periodisation': 'Training',
+    'analyse-entrainement-et-periodisation': 'Entrainement',
     'analyse-systeme-cardiovasculaire': 'Cardio',
-    'analyse-metabolisme-et-nutrition': 'Metabo',
+    'analyse-metabolisme-et-nutrition': 'Metabolisme',
     'analyse-sommeil-et-recuperation': 'Sommeil',
     'analyse-digestion-et-microbiote': 'Digestion',
     'analyse-axes-hormonaux': 'Hormones',

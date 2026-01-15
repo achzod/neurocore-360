@@ -633,7 +633,7 @@ export async function registerRoutes(
               const normalizedTitle = normalizeTitle(s.title);
               const isSynthesis = normalizedTitle.includes("synthese") || normalizedTitle.includes("executive");
               const scoreFromAudit = resolveScoreFromTitle(s.title);
-              const sectionScore = scoreFromAudit ?? (!isSynthesis && s.score > 0 ? s.score : globalScore);
+              const sectionScore = scoreFromAudit ?? globalScore;
               return {
                 id: s.id,
                 title: s.title,

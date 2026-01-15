@@ -101,8 +101,11 @@ function cleanSectionContent(content: string): string {
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
     .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
+    .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/^\s*={3,}.*$/gm, '')
+    .replace(/={3,}/g, '')
     .replace(/^.*\brapport\s+genere\b.*$/gmi, '')
+    .replace(/^\s*note\s*\(technique\).*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
     .trim();
 }
@@ -124,7 +127,7 @@ function stripCtaFromContent(content: string): string {
   const cutIndex = lines.findIndex((line) => {
     const trimmed = line.trim();
     if (!trimmed) return false;
-    if (markers.some((marker) => trimmed.toLowerCase() === marker.toLowerCase())) {
+    if (markers.some((marker) => trimmed.toLowerCase().includes(marker.toLowerCase()))) {
       return true;
     }
     return markerRegex.some((re) => re.test(trimmed));

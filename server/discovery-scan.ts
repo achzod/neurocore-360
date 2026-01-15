@@ -1425,10 +1425,10 @@ Sommeil: ${scores.sommeil}/100
 Stress: ${scores.stress}/100
 Energie: ${scores.energie}/100
 Digestion: ${scores.digestion}/100
-Training: ${scores.training}/100
+Entrainement: ${scores.training}/100
 Nutrition: ${scores.nutrition}/100
-Lifestyle: ${scores.lifestyle}/100
-Mindset: ${scores.mindset}/100
+Style de vie: ${scores.lifestyle}/100
+Mental: ${scores.mindset}/100
 
 BLOCAGES DETECTES:
 ${blocagesSummary}
@@ -1680,10 +1680,10 @@ const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   stress: { label: "Stress", description: "Système Nerveux" },
   energie: { label: "Énergie", description: "Vitalité" },
   digestion: { label: "Digestion", description: "Absorption" },
-  training: { label: "Training", description: "Performance" },
+  training: { label: "Entrainement", description: "Performance" },
   nutrition: { label: "Nutrition", description: "Métabolisme" },
-  lifestyle: { label: "Lifestyle", description: "Habitudes" },
-  mindset: { label: "Mindset", description: "Mental" }
+  lifestyle: { label: "Style de vie", description: "Habitudes" },
+  mindset: { label: "Mental", description: "Etat d'esprit" }
 };
 
 export async function convertToNarrativeReport(

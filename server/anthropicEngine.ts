@@ -14,7 +14,7 @@ import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
 import { generateKnowledgeContext, searchForSection } from './knowledge';
-import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from './textNormalization';
+import { normalizeSingleVoice } from './textNormalization';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -128,6 +128,7 @@ function sanitizePremiumText(text: string): string {
     .replace(/^\s*\d+\.\s+/gm, "")
     .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|tu as les cles).*$/gmi, "")
     .replace(/^\s*(code promo|email|site)\s*:.*$/gmi, "")
+    .replace(/^\s*note\s*\(technique\).*$/gmi, "")
     .replace(SOURCE_NAME_REGEX, "")
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
@@ -136,9 +137,6 @@ function sanitizePremiumText(text: string): string {
     .replace(/__/g, "")
     .replace(/\*/g, "")
     .trim();
-  if (hasEnglishMarkers(cleaned, 6)) {
-    cleaned = stripEnglishLines(cleaned);
-  }
   cleaned = normalizeSingleVoice(cleaned);
   return cleaned;
 }
@@ -212,9 +210,8 @@ function degradedSectionText(section: SectionName): string {
   return [
     `${String(section).toUpperCase()}`,
     ``,
-    `NOTE (TECHNIQUE)`,
-    `Je n'ai pas pu finaliser cette section a cause d'un incident temporaire.`,
-    `Je la regenere des que le service est stable (sans impacter le reste de ton rapport).`,
+    `Cette section est en cours de regeneration.`,
+    `Je la finalise des que le rendu est au niveau attendu.`,
   ].join("\n");
 }
 
@@ -560,7 +557,7 @@ ${PROMPT_SECTION.replace("{section}", section)
         return !/Score\s*:?\s*\d{1,3}\s*\/\s*100/i.test(value);
       };
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
         const retryNote =
           attempt === 1
             ? ""
@@ -575,7 +572,7 @@ ${PROMPT_SECTION.replace("{section}", section)
         if (!sectionText) continue;
 
         const candidate = sanitizePremiumText(sectionText);
-        const forbidden = hasForbiddenPhrases(sectionText) || hasForbiddenPhrases(candidate);
+        const forbidden = hasForbiddenPhrases(candidate);
         const missingScore = needsScoreLine(candidate);
 
         if (!forbidden && !missingScore && candidate.length >= minChars) {

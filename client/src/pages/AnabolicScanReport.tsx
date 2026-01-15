@@ -419,9 +419,9 @@ const AnabolicScanReport: React.FC = () => {
   ];
 
   const RADAR_LABELS: Record<string, string> = {
-    'analyse-entrainement-et-periodisation': 'Training',
+    'analyse-entrainement-et-periodisation': 'Entrainement',
     'analyse-systeme-cardiovasculaire': 'Cardio',
-    'analyse-metabolisme-et-nutrition': 'Metabo',
+    'analyse-metabolisme-et-nutrition': 'Metabolisme',
     'analyse-sommeil-et-recuperation': 'Sommeil',
     'analyse-digestion-et-microbiote': 'Digestion',
     'analyse-axes-hormonaux': 'Hormones',
@@ -431,16 +431,16 @@ const AnabolicScanReport: React.FC = () => {
     // Legacy ids (fallback)
     'profil-base': 'Profil',
     'composition-corporelle': 'Composition',
-    'metabolisme-energie': 'Metabo',
+    'metabolisme-energie': 'Metabolisme',
     'nutrition-tracking': 'Nutrition',
     'digestion-microbiome': 'Digestion',
-    'activite-performance': 'Training',
+    'activite-performance': 'Entrainement',
     'sommeil-recuperation': 'Sommeil',
     'hrv-cardiaque': 'HRV',
     'cardio-endurance': 'Cardio',
     'analyses-biomarqueurs': 'Bio',
     'hormones-stress': 'Hormones',
-    'lifestyle-substances': 'Lifestyle',
+    'lifestyle-substances': 'Style de vie',
     'biomecanique-mobilite': 'Mobilite',
     'psychologie-mental': 'Mental',
     'neurotransmetteurs': 'Neuro'
@@ -828,7 +828,17 @@ const AnabolicScanReport: React.FC = () => {
             <div className="p-6 rounded-sm border"
               style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               {report.supplementsHtml && (
-                <div className="mb-8" dangerouslySetInnerHTML={{ __html: report.supplementsHtml }} />
+                <div
+                  className={`mb-8 prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
+                  style={{
+                    color: 'var(--color-text)',
+                    '--tw-prose-body': 'var(--color-text)',
+                    '--tw-prose-headings': 'var(--color-text)',
+                    '--tw-prose-strong': 'var(--color-text)',
+                    '--tw-prose-bullets': 'var(--color-primary)'
+                  } as React.CSSProperties}
+                  dangerouslySetInnerHTML={{ __html: report.supplementsHtml }}
+                />
               )}
 
               {report.supplementStack?.length > 0 && (
