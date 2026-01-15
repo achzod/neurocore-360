@@ -965,6 +965,7 @@ async function generateSectionContentAI(
   const age = responses.age || 30;
   const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
   const contextForPrompt = knowledgeOk ? knowledgeContext : '';
+  const domainLabel = DOMAIN_CONFIG[domain]?.label || domain;
 
   if (!knowledgeOk) {
     console.warn(`[Discovery] Knowledge context manquant pour ${domain}. Generation en mode degrade.`);
@@ -979,14 +980,14 @@ async function generateSectionContentAI(
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
   const MAX_RETRIES = 5;
 
-  const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
+  const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domainLabel.toUpperCase()}
 
 PROFIL:
 Prenom: ${prenom}
 Sexe: ${sexe}
 Age: ${age} ans
 Objectif: ${objectif}
-Score ${domain}: ${score}/100
+Score ${domainLabel}: ${score}/100
 
 REPONSES QUESTIONNAIRE POUR CE DOMAINE:
 ${domainResponses}
@@ -999,7 +1000,7 @@ INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Decris
 
 ${instructions}
 
-MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 55-70 lignes pour la section ${domain.toUpperCase()}.
+MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 55-70 lignes pour la section ${domainLabel.toUpperCase()}.
 ${attempt > 1 ? `
 ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 55-70 lignes de texte dense et technique.
 ` : ''}
