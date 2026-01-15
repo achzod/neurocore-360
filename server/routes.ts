@@ -630,8 +630,10 @@ export async function registerRoutes(
           const mappedSections = dashboard.sections
             .filter(s => s.category !== 'executive' && s.category !== 'supplements')
             .map(s => {
+              const normalizedTitle = normalizeTitle(s.title);
+              const isSynthesis = normalizedTitle.includes("synthese") || normalizedTitle.includes("executive");
               const scoreFromAudit = resolveScoreFromTitle(s.title);
-              const sectionScore = s.score > 0 ? s.score : (scoreFromAudit ?? globalScore);
+              const sectionScore = scoreFromAudit ?? (!isSynthesis && s.score > 0 ? s.score : globalScore);
               return {
                 id: s.id,
                 title: s.title,

@@ -110,7 +110,6 @@ const FORBIDDEN_PATTERNS = [
   /\bclient\b/i,
   /\bnous\b/i,
   /\bnotre\b/i,
-  /\bon\b/i,
 ];
 
 function extractSourceMentions(context: string): string[] {
@@ -125,6 +124,10 @@ function sanitizePremiumText(text: string): string {
     .replace(/Sources?\s*:.*$/gmi, "")
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, "")
     .replace(/^\s*[-=]{3,}\s*$/gm, "")
+    .replace(/^\s*[-+•]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|tu as les cles).*$/gmi, "")
+    .replace(/^\s*(code promo|email|site)\s*:.*$/gmi, "")
     .replace(SOURCE_NAME_REGEX, "")
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
@@ -191,18 +194,18 @@ function getMaxTokensForSection(section: SectionName, tier: AuditTier = 'PREMIUM
 function getMinCharsForSection(section: SectionName, tier: AuditTier = 'PREMIUM'): number {
   const s = String(section).toLowerCase();
   if (tier === 'GRATUIT') {
-    if (s.includes("executive summary")) return 3400;
-    if (s.includes("synthese") || s.includes("prochaines etapes")) return 3400;
-    return 3800;
+    if (s.includes("executive summary")) return 4200;
+    if (s.includes("synthese") || s.includes("prochaines etapes")) return 4200;
+    return 4500;
   }
-  if (s.includes("executive summary")) return 3600;
-  if (s.includes("kpi") || s.includes("tableau")) return 3200;
-  if (s.includes("stack") || s.includes("supplements")) return 3000;
-  if (s.includes("synthese") || s.includes("prochaines etapes")) return 3600;
-  if (s.includes("plan") && (s.includes("30") || s.includes("60") || s.includes("90"))) return 4500;
-  if (s.includes("protocole")) return 6000;
-  if (s.includes("analyse")) return 5200;
-  return 4200;
+  if (s.includes("executive summary")) return 4200;
+  if (s.includes("kpi") || s.includes("tableau")) return 3800;
+  if (s.includes("stack") || s.includes("supplements")) return 3200;
+  if (s.includes("synthese") || s.includes("prochaines etapes")) return 4200;
+  if (s.includes("plan") && (s.includes("30") || s.includes("60") || s.includes("90"))) return 5200;
+  if (s.includes("protocole")) return 6500;
+  if (s.includes("analyse")) return 6500;
+  return 4800;
 }
 
 function degradedSectionText(section: SectionName): string {
@@ -531,6 +534,8 @@ INSTRUCTIONS IMPORTANTES:
 - N'utilise pas de markdown (pas de ** ou ##)
 - Integre la knowledge base sans citer de sources ni noms propres
 - Ne dis jamais "client", "nous", "notre" ou "on"
+- Parle a la premiere personne ("je") et tutoie ${firstName}
+- Ne mentionne aucune offre, coaching, promo, email, site ou call-to-action
 
 LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Cette section doit contenir ${targetChars}

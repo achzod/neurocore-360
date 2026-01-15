@@ -51,6 +51,7 @@ const SECTION_CATEGORIES: Record<string, DashboardSection['category']> = {
   'plan semaine par semaine 30-60-90': 'action',
   'kpi et tableau de bord': 'analysis',
   'stack supplements optimise': 'supplements',
+  'stack supplements personnalise': 'supplements',
   'synthese et prochaines etapes': 'analysis',
   // Garder les anciens pour compatibilité
   'resume executif': 'executive',
@@ -73,6 +74,7 @@ const SECTION_CATEGORIES: Record<string, DashboardSection['category']> = {
   'ce qui va changer si on travaille ensemble': 'transformation',
   'reassurance emotionnelle': 'transformation',
   'stack de supplements': 'supplements',
+  'stack de supplements personnalise': 'supplements',
   'protocole supplements personnalise': 'supplements',
   'synthese clinique globale et conclusion transformationnelle': 'executive'
 };
@@ -98,8 +100,9 @@ function cleanSectionContent(content: string): string {
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
-    .replace(/^\s*score\s+global\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
+    .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
     .replace(/^\s*={3,}.*$/gm, '')
+    .replace(/^.*\brapport\s+genere\b.*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
     .trim();
 }
@@ -110,10 +113,22 @@ function stripCtaFromContent(content: string): string {
     "TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION",
     "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT"
   ];
+  const markerRegex = [
+    /tu\s+as\s+les\s+cles/i,
+    /coaching/i,
+    /code\s+promo/i,
+    /^email\s*:/i,
+    /^site\s*:/i
+  ];
   const lines = content.split("\n");
-  const cutIndex = lines.findIndex((line) =>
-    markers.some((marker) => line.trim().toLowerCase() === marker.toLowerCase())
-  );
+  const cutIndex = lines.findIndex((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    if (markers.some((marker) => trimmed.toLowerCase() === marker.toLowerCase())) {
+      return true;
+    }
+    return markerRegex.some((re) => re.test(trimmed));
+  });
   if (cutIndex === -1) return content;
   return lines.slice(0, cutIndex).join("\n").trim();
 }
@@ -242,6 +257,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     "PLAN D'ACTION 30/60/90 JOURS",
     "KPI ET TABLEAU DE BORD",
     "STACK DE SUPPLEMENTS PERSONNALISE",
+    "STACK SUPPLEMENTS PERSONNALISE",
     "STACK SUPPLEMENTS OPTIMISE",
     "SYNTHESE CLINIQUE ET PROCHAINE ETAPE",
     "SYNTHESE ET PROCHAINES ETAPES",
@@ -310,7 +326,9 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     const content = cleanSectionContent(rawContent);
     
     const normalizedTitle = normalizeTitle(title);
-    const category = SECTION_CATEGORIES[normalizedTitle] || 'analysis';
+    const category =
+      SECTION_CATEGORIES[normalizedTitle] ||
+      (normalizedTitle.includes('supplement') ? 'supplements' : 'analysis');
     
     const sectionId = normalizedTitle
       .replace(/[^a-z0-9\s]/g, '')

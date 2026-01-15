@@ -19,8 +19,8 @@ export function getCTADebut(tier: AuditTier, amountPaid: number = PRICING.PREMIU
   if (tier === 'GRATUIT') {
     return `INFOS IMPORTANTES
 
-Tu consultes actuellement l'analyse GRATUITE de ton profil APEXLABS.
-Cette version te donne un apercu de tes domaines cles et identifie tes priorites d'optimisation.
+Tu consultes l'analyse GRATUITE de ton profil APEXLABS.
+Cette version donne un apercu de tes domaines cles et identifie tes priorites d'optimisation.
 
 Pour debloquer l'analyse COMPLETE avec tous les details, protocoles personnalises, stack de supplements detaillee et feuille de route precise, passe a l'Anabolic Bioscan.
 
@@ -38,7 +38,7 @@ Site: ${CONTACT.website}
   return `RAPPEL COACHING
 
 Tu consultes ton analyse ${tierLabel} APEXLABS complete.
-Le montant que tu as paye pour cette analyse (${amountPaid} EUR) sera DEDUIT A 100% du prix du coaching si tu decides d avancer avec moi.
+Si tu veux que je t'accompagne ensuite, le montant que tu as paye (${amountPaid} EUR) est DEDUIT A 100% du prix du coaching.
 
 CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
 

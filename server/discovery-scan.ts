@@ -138,10 +138,10 @@ export interface BlockageAnalysis {
 }
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_DISCOVERY_SECTION_CHARS = 3800;
-const MIN_DISCOVERY_SECTION_LINES = 40;
-const MIN_DISCOVERY_SECTION_WORDS = 500;
-const MIN_DISCOVERY_SECTION_PARAGRAPHS = 12;
+const MIN_DISCOVERY_SECTION_CHARS = 5200;
+const MIN_DISCOVERY_SECTION_LINES = 55;
+const MIN_DISCOVERY_SECTION_WORDS = 700;
+const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
 const SOURCE_MARKERS = [
   "huberman",
   "peter attia",
@@ -977,7 +977,7 @@ async function generateSectionContentAI(
   // GARDE-FOUS: Minimum 20 lines = ~1200 characters
   const MIN_CONTENT_LENGTH = MIN_DISCOVERY_SECTION_CHARS;
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
-  const MAX_RETRIES = 4;
+  const MAX_RETRIES = 5;
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
 
@@ -999,9 +999,9 @@ INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Decris
 
 ${instructions}
 
-MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 45-55 lignes pour la section ${domain.toUpperCase()}.
+MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 55-70 lignes pour la section ${domain.toUpperCase()}.
 ${attempt > 1 ? `
-ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 45-55 lignes de texte dense et technique.
+ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 55-70 lignes de texte dense et technique.
 ` : ''}
 
 REGLES ABSOLUES:
@@ -1059,7 +1059,7 @@ FORMAT OBLIGATOIRE:
     try {
       const response = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4200, // Longer content
+        max_tokens: 5000, // Longer content
         system: SECTION_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildPrompt(attempt) }]
       });
@@ -1245,18 +1245,26 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
       const filteredFt = ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any));
       if (filteredFt.length > 0) {
         const context = filteredFt.map(a =>
-          `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
+          `${a.title}:\n${a.content.substring(0, 800)}`
         ).join('\n\n---\n\n');
-        return stripEnglishLines(context);
+        const cleaned = context
+          .replace(/^\[[^\]]+\]\s*/gm, '')
+          .replace(SOURCE_NAME_REGEX, '')
+          .trim();
+        return stripEnglishLines(cleaned);
       }
       return '';
     }
 
     // Return more content per article (800 chars instead of 400)
     const context = articles.map(a =>
-      `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
+      `${a.title}:\n${a.content.substring(0, 800)}`
     ).join('\n\n---\n\n');
-    return stripEnglishLines(context);
+    const cleaned = context
+      .replace(/^\[[^\]]+\]\s*/gm, '')
+      .replace(SOURCE_NAME_REGEX, '')
+      .trim();
+    return stripEnglishLines(cleaned);
   } catch (error) {
     console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
     return '';

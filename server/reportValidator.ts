@@ -100,8 +100,8 @@ const AI_PATTERNS = [
 ];
 
 // Minimum section lengths (in characters)
-const MIN_SECTION_LENGTH_PREMIUM = 4200;
-const MIN_SECTION_LENGTH_GRATUIT = 3400;
+const MIN_SECTION_LENGTH_PREMIUM = 5000;
+const MIN_SECTION_LENGTH_GRATUIT = 4200;
 const MIN_TOTAL_LENGTH_PREMIUM = 75000; // ~45-50 pages
 const MIN_TOTAL_LENGTH_GRATUIT = 20000; // ~12+ pages
 

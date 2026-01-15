@@ -552,7 +552,7 @@ const DiscoveryScanReport: React.FC = () => {
                   {/* Section Content */}
                   <div className="flex-1 min-w-0">
                     <div
-                      className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}
+                      className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
                       style={{
                         '--tw-prose-body': 'var(--color-text)',
                         '--tw-prose-headings': 'var(--color-text)',

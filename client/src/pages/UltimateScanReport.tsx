@@ -321,6 +321,9 @@ const UltimateScanReport: React.FC = () => {
     const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
     const summary = paragraphs.join(" ");
     const isDebut = variant === 'debut';
+    const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
+    const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
+    const subline = isDebut ? "Deduction 100% sur ton coaching" : "Execution accompagnee";
 
     return (
       <div
@@ -334,122 +337,87 @@ const UltimateScanReport: React.FC = () => {
           <div className="flex items-center gap-3">
             <span
               className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
-              style={{ backgroundColor: primarySoft, color: primary }}
+              style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
             >
               {badgeLabel}
             </span>
             <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
-              Coaching Achzod
+              {subline}
             </span>
           </div>
-          {bonusLine && (
-            <span className="text-xs font-semibold" style={{ color: primary }}>
-              {bonusLine}
+          {promoCode && (
+            <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
+              {promoCode}
             </span>
           )}
         </div>
 
-        {isDebut ? (
+        <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">
           <div className="space-y-4">
+            <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
+              {headline}
+            </h4>
             {summary && (
               <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
                 {summary}
               </p>
             )}
-            <div className="flex flex-wrap gap-3">
-              {promoLine && (
-                <span className="px-2 py-1 text-[10px] uppercase tracking-widest rounded" style={{ backgroundColor: primarySoft, color: primary }}>
-                  {promoLine}
-                </span>
-              )}
-              {contactEmail && (
-                <span className="text-xs" style={{ color: currentTheme.colors.text }}>
-                  {contactEmail}
-                </span>
-              )}
-              {contactSite && (
-                <span className="text-xs" style={{ color: currentTheme.colors.textMuted }}>
-                  {contactSite}
-                </span>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">
-            <div className="space-y-4">
-              {paragraphs.map((line, idx) => (
-                <p key={idx} className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-                  {line}
-                </p>
-              ))}
-
-              {bullets.length > 0 && (
-                <ul className="mt-2 space-y-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                  {bullets.map((bullet, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span style={{ color: primary }}>•</span>
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              {(promoLine || bonusLine) && (
-                <div className="p-4 rounded-sm" style={{ backgroundColor: primarySoft, border: `1px solid ${primaryBorder}` }}>
-                  {promoLine && (
-                    <p className="text-sm font-semibold" style={{ color: currentTheme.colors.text }}>
-                      {promoLine}
-                    </p>
-                  )}
-                  {promoCode && (
-                    <span className="inline-block mt-2 px-2 py-1 text-[10px] font-mono rounded" style={{ backgroundColor: currentTheme.colors.surface, color: primary }}>
-                      {promoCode}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {(contactEmail || contactSite) && (
-                <div className="p-4 rounded-sm" style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}>
-                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
-                    Contact direct
-                  </p>
-                  {contactEmail && (
+            {bullets.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {bullets.map((bullet, idx) => (
+                  <div key={idx} className="p-3 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
                     <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
-                      {contactEmail}
+                      {bullet}
                     </p>
-                  )}
-                  {contactSite && (
-                    <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                      {contactSite}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="grid gap-3">
-                <a
-                  href={`mailto:${contactEmail}`}
-                  className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
-                  style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
-                >
-                  Ecrire a Achzod
-                </a>
-                <a
-                  href={`https://${contactSite}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
-                  style={{ border: `1px solid ${primary}`, color: primary }}
-                >
-                  Voir le coaching
-                </a>
+                  </div>
+                ))}
               </div>
+            )}
+            {bonusLine && (
+              <p className="text-xs uppercase tracking-widest" style={{ color: primary }}>
+                {bonusLine}
+              </p>
+            )}
+            {promoLine && (
+              <p className="text-xs" style={{ color: currentTheme.colors.textMuted }}>
+                {promoLine}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+              <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
+                Contact direct
+              </p>
+              <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
+                {contactEmail}
+              </p>
+              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                {contactSite}
+              </p>
+            </div>
+
+            <div className="grid gap-3">
+              <a
+                href={`mailto:${contactEmail}`}
+                className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+                style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
+              >
+                Ecrire a Achzod
+              </a>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+                style={{ border: `1px solid ${primary}`, color: primary }}
+              >
+                Voir le coaching
+              </a>
             </div>
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -490,13 +458,16 @@ const UltimateScanReport: React.FC = () => {
   };
 
   const radarSections = report?.sections.filter(isAnalysisSection).slice(0, 8) || [];
-  const metricsData: Metric[] = radarSections.map(s => ({
-    label: RADAR_LABELS[s.id] || shortLabelFromTitle(s.title, s.title),
-    value: Math.round((s.score / 10) * 10) / 10,
-    max: 10,
-    description: s.title,
-    key: s.id
-  }));
+  const metricsData: Metric[] = radarSections.map(s => {
+    const safeScore = s.score > 0 ? s.score : globalScore;
+    return {
+      label: RADAR_LABELS[s.id] || shortLabelFromTitle(s.title, s.title),
+      value: Math.round((safeScore / 10) * 10) / 10,
+      max: 10,
+      description: s.title,
+      key: s.id
+    };
+  });
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
