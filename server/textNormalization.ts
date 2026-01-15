@@ -61,5 +61,37 @@ export function normalizeSingleVoice(text: string): string {
     .replace(/\bon\b/gi, (match) => (match[0] === "O" ? "Je" : "je"))
     .replace(/\bJe\s+([aeiouh])/g, "J'$1")
     .replace(/\bje\s+([aeiouh])/g, "j'$1");
+  normalized = replaceEnglishArtifacts(normalized);
+  return normalized;
+}
+
+function replaceEnglishArtifacts(text: string): string {
+  if (!text) return text;
+  const replacements: Array<[RegExp, string]> = [
+    [/\bwhile\s+simultaneously\b/gi, "tout en"],
+    [/\bsimultaneously\b/gi, "en meme temps"],
+    [/\bwhile\b/gi, "alors que"],
+    [/\bwithout\b/gi, "sans"],
+    [/\bwith\b/gi, "avec"],
+    [/\bfrom\b/gi, "depuis"],
+    [/\binto\b/gi, "dans"],
+    [/\band\b/gi, "et"],
+    [/\bthis\b/gi, "ce"],
+    [/\bthat\b/gi, "cela"],
+    [/\bare\b/gi, "sont"],
+    [/\bis\b/gi, "est"],
+    [/\bwas\b/gi, "etait"],
+    [/\bwere\b/gi, "etaient"],
+    [/\boverall\b/gi, "globalement"],
+    [/\byour\b/gi, "ton"],
+    [/\byou\b/gi, "tu"],
+    [/\bbody\b/gi, "corps"],
+    [/\bsleep\b/gi, "sommeil"],
+    [/\bhealth\b/gi, "sante"],
+  ];
+  let normalized = text;
+  for (const [re, replacement] of replacements) {
+    normalized = normalized.replace(re, replacement);
+  }
   return normalized;
 }
