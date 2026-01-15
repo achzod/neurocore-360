@@ -2608,6 +2608,16 @@ export async function registerRoutes(
         return;
       }
 
+      // If a regeneration is in progress, avoid serving stale reports
+      if (audit.reportDeliveryStatus === "GENERATING") {
+        res.status(202).json({
+          success: true,
+          status: "generating",
+          message: "Rapport en cours de generation",
+        });
+        return;
+      }
+
       // If report already exists, return it immediately
       if (audit.narrativeReport) {
         res.json(audit.narrativeReport);
@@ -2669,6 +2679,13 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
         return;
       }
+
+      // Mark as generating and clear cached report to avoid stale content
+      await storage.updateAudit(audit.id, {
+        reportDeliveryStatus: "GENERATING",
+        narrativeReport: null,
+        reportGeneratedAt: null,
+      });
 
       // Fire-and-forget regeneration to avoid blocking the UI
       res.json({ success: true, auditId: audit.id, started: true });
