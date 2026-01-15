@@ -645,7 +645,8 @@ ${PROMPT_SECTION.replace("{section}", section)
   const ctaFin = getCTAFin(tier, ctaAmount);
   auditParts.push('\n\n' + ctaFin);
 
-  const fullAuditTxt = auditParts.join('\n');
+  let fullAuditTxt = auditParts.join('\n');
+  fullAuditTxt = normalizeSingleVoice(fullAuditTxt);
 
   const generationTime = Date.now() - startTime;
   console.log(
