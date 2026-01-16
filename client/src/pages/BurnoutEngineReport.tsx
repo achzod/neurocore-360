@@ -304,7 +304,7 @@ const BurnoutEngineReport: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="ultrahuman-report min-h-screen flex"
       style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       <div className="fixed top-0 left-0 right-0 h-1 bg-black/50 z-50">

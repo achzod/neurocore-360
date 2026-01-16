@@ -70,7 +70,7 @@ const parseCtaText = (text?: string) => {
     .map(line => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim());
 
   const paragraphs = lines.filter(line => {
-    if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs)$/i.test(line)) return false;
+    if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs|prochaines etapes|pret a transformer ces insights)$/i.test(line)) return false;
     if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
     return !/^(\+|\-|\d+\.)\s+/.test(line);
   });
@@ -304,11 +304,24 @@ const AnabolicScanReport: React.FC = () => {
     const contactEmail = emailLine.replace(/^email\s*:\s*/i, "") || "coaching@achzodcoaching.com";
     const contactSite = siteLine.replace(/^site\s*:\s*/i, "") || "achzodcoaching.com";
     const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
-    const summary = paragraphs.join(" ");
+    const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
+    const summaryTrimmed = summary.length > 420 ? `${summary.slice(0, 420).trim()}...` : summary;
     const isDebut = variant === 'debut';
     const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
     const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
     const subline = isDebut ? "Deduction 100% sur ton coaching" : "Execution accompagnee";
+    const fallbackBullets = isDebut
+      ? [
+          "Deduction 100% du scan si coaching",
+          "Ajustements hebdo personnalises",
+          "Acces direct pour accelerer les decisions",
+        ]
+      : [
+          "Pilotage des KPIs et corrections",
+          "Protocoles adaptes a ton quotidien",
+          "Suivi humain, pas un plan generique",
+        ];
+    const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
 
     return (
       <div
@@ -342,14 +355,14 @@ const AnabolicScanReport: React.FC = () => {
             <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
               {headline}
             </h4>
-            {summary && (
+            {summaryTrimmed && (
               <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-                {summary}
+                {summaryTrimmed}
               </p>
             )}
-            {bullets.length > 0 && (
+            {bulletsToRender.length > 0 && (
               <div className="grid gap-3 sm:grid-cols-2">
-                {bullets.map((bullet, idx) => (
+                {bulletsToRender.map((bullet, idx) => (
                   <div key={idx} className="p-3 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
                     <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
                       {bullet}
@@ -458,11 +471,29 @@ const AnabolicScanReport: React.FC = () => {
     return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
   };
 
-  const radarSections = report?.sections.filter(isAnalysisSection).slice(0, 8) || [];
+  const analysisSections = report?.sections.filter(isAnalysisSection) || [];
+  const radarSections = (analysisSections.length > 0 ? analysisSections : report?.sections || []).slice(0, 8);
+  const resolveRadarLabel = (section: NarrativeSection) => {
+    const byId = RADAR_LABELS[section.id];
+    if (byId) return byId;
+    const title = section.title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    if (title.includes("entrainement")) return "Entrainement";
+    if (title.includes("cardio") || title.includes("cardiovasculaire") || title.includes("hrv")) return "Cardio";
+    if (title.includes("metabolisme") || title.includes("nutrition")) return "Metabolisme";
+    if (title.includes("sommeil")) return "Sommeil";
+    if (title.includes("digestion")) return "Digestion";
+    if (title.includes("hormon")) return "Hormones";
+    if (title.includes("postur") || title.includes("biomecanique")) return "Posture";
+    if (title.includes("energie")) return "Energie";
+    return shortLabelFromTitle(section.title, section.title);
+  };
   const metricsData: Metric[] = radarSections.map(s => {
     const safeScore = s.score > 0 ? s.score : globalScore;
     return {
-      label: RADAR_LABELS[s.id] || shortLabelFromTitle(s.title, s.title),
+      label: resolveRadarLabel(s),
       value: Math.round((safeScore / 10) * 10) / 10,
       max: 10,
       description: s.title,
@@ -566,7 +597,7 @@ const AnabolicScanReport: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="ultrahuman-report min-h-screen flex"
       style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       {/* Progress Bar */}

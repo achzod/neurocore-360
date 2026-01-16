@@ -163,6 +163,27 @@ const SOURCE_NAME_REGEX = new RegExp(
   "gi"
 );
 
+function normalizeParagraphs(text: string): string {
+  if (!text) return text;
+  if (text.includes("\n\n")) return text;
+  const normalized = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+  const sentences = normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+  if (!sentences || sentences.length <= 1) return text;
+  const paragraphs: string[] = [];
+  let buffer: string[] = [];
+  sentences.forEach((sentence) => {
+    const trimmed = sentence.trim();
+    if (!trimmed) return;
+    buffer.push(trimmed);
+    if (buffer.length >= 3) {
+      paragraphs.push(buffer.join(" "));
+      buffer = [];
+    }
+  });
+  if (buffer.length) paragraphs.push(buffer.join(" "));
+  return paragraphs.join("\n\n");
+}
+
 function getDiscoveryFirstName(responses: DiscoveryResponses): string {
   const direct = responses.prenom;
   if (direct && String(direct).trim()) return String(direct).trim().split(/\s+/)[0];
@@ -1040,15 +1061,19 @@ FORMAT OBLIGATOIRE:
     const hasClient = /\bclient\b/.test(lower);
     const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
     const hasEnglish = hasEnglishMarkers(text, 4);
+    const meetsLength =
+      charCount >= MIN_CONTENT_LENGTH &&
+      (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS);
+    const meetsParagraphs =
+      paragraphCount >= MIN_DISCOVERY_SECTION_PARAGRAPHS || charCount >= MIN_CONTENT_LENGTH + 800;
     return {
       lineCount,
       charCount,
       wordCount,
       paragraphCount,
       isValid:
-        charCount >= MIN_CONTENT_LENGTH &&
-        (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS) &&
-        paragraphCount >= MIN_DISCOVERY_SECTION_PARAGRAPHS &&
+        meetsLength &&
+        meetsParagraphs &&
         !hasSources &&
         !hasClient &&
         !hasNous &&
@@ -1087,6 +1112,8 @@ FORMAT OBLIGATOIRE:
         rawText = stripEnglishLines(rawText);
       }
       rawText = normalizeSingleVoice(rawText);
+      rawText = normalizeParagraphs(rawText);
+      rawText = normalizeParagraphs(rawText);
 
       const validation = isValidContent(rawText);
       console.log(
@@ -1144,6 +1171,7 @@ FORMAT OBLIGATOIRE:
         cleanedText = stripEnglishLines(cleanedText);
       }
       cleanedText = normalizeSingleVoice(cleanedText);
+      cleanedText = normalizeParagraphs(cleanedText);
       const validation = isValidContent(cleanedText);
       if (validation.isValid) {
         console.log(
@@ -1567,6 +1595,7 @@ function cleanMarkdownToHTML(text: string): string {
     cleaned = stripEnglishLines(cleaned);
   }
   cleaned = normalizeSingleVoice(cleaned);
+  cleaned = normalizeParagraphs(cleaned);
   return cleaned.trim();
 }
 
@@ -1810,10 +1839,14 @@ export async function convertToNarrativeReport(
       }
 
       // Add AI-generated detailed analysis (40-50 lines)
-      if (aiContent && aiContent.length >= MIN_DISCOVERY_SECTION_CHARS) {
+      if (aiContent) {
         content += aiContent.split('\n\n').map(p => `<p>${p}</p>`).join('\n');
+        if (aiContent.length < MIN_DISCOVERY_SECTION_CHARS) {
+          // Complete with template if AI output is shorter than expected
+          content += generateDomainHTML(domain, score, responses);
+        }
       } else {
-        // Fallback to template if AI failed or too short
+        // Fallback to template if AI failed
         content += generateDomainHTML(domain, score, responses);
       }
 

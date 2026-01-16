@@ -19,18 +19,14 @@ export function getCTADebut(tier: AuditTier, amountPaid: number = PRICING.PREMIU
   if (tier === 'GRATUIT') {
     return `INFOS IMPORTANTES
 
-Tu consultes l'analyse GRATUITE de ton profil APEXLABS.
-Cette version donne un apercu de tes domaines cles et identifie tes priorites d'optimisation.
+Tu consultes l'analyse gratuite de ton profil APEXLABS.
+Cette version te donne la lecture des domaines cles et tes priorites d'optimisation.
 
-Pour debloquer l'analyse COMPLETE avec tous les details, protocoles personnalises, stack de supplements detaillee et feuille de route precise, passe a l'Anabolic Bioscan.
+Si tu veux l'analyse complete (details, protocoles, stack supplements, feuille de route), passe a l'Anabolic Bioscan.
+Si tu prends un coaching apres, le montant de ton scan est deduit a 100% du prix du coaching.
 
-Si tu decides de prendre un coaching avec moi apres ton Anabolic Bioscan, le montant que tu auras paye pour cette analyse sera DEDUIT A 100% du prix du coaching.
-
-Pour toute question ou pour passer en Anabolic Bioscan :
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
-
----
 `;
   }
 
@@ -38,61 +34,40 @@ Site: ${CONTACT.website}
   return `RAPPEL COACHING
 
 Tu consultes ton analyse ${tierLabel} APEXLABS complete.
-Si tu veux que je t'accompagne ensuite, le montant que tu as paye (${amountPaid} EUR) est DEDUIT A 100% du prix du coaching.
+Si tu veux que je t'accompagne ensuite, le montant que tu as paye (${amountPaid} EUR) est deduit a 100% du prix du coaching.
 
 CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
-
----`;
+`;
 }
 
 export function getCTAFin(tier: AuditTier, amountPaid: number = PRICING.PREMIUM): string {
   if (tier === 'GRATUIT') {
     return `
+PROCHAINES ETAPES
 
-====================================================================
-PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT
-====================================================================
+Tu as un apercu clair de tes priorites APEXLABS. Maintenant, voici les options pour aller plus loin.
 
-Tu as entre les mains un apercu de ton profil APEXLABS. Cette analyse gratuite t'a revele tes priorites. Maintenant, deux options :
+OPTION 1 : ANABOLIC BIOSCAN (59 EUR)
+- Analyse complete des domaines cles, pas un simple apercu
+- Protocoles fermes (matin anti-cortisol, soir sommeil, digestion 14 jours, bureau, entrainement)
+- Stack supplements personnalisee avec dosages et marques
+- Plan 30-60-90 jours + KPIs de suivi
 
-OPTION 1 : PASSE A L'ACTION AVEC ANABOLIC BIOSCAN (59 EUR)
+OPTION 2 : ULTIMATE SCAN (79 EUR) SI TU AS DES PHOTOS
+- Tout l'Anabolic Bioscan
+- Analyse photo posturale (face/profil/dos)
+- Diagnostic biomecanique + corrections de posture
 
-Ce que tu debloques :
-+ Analyse complete de tes 8 domaines (pas juste un apercu)
-+ 5 protocoles fermes : matin anti-cortisol, soir sommeil, digestion 14j, bureau, entrainement
-+ Stack supplements personnalisee avec dosages exacts et marques recommandees
-+ Plan semaine par semaine 30-60-90 jours
-+ KPIs de suivi pour mesurer ta progression
-
-IMPORTANT : Si tu prends un coaching apres, les 59 EUR sont DEDUITS A 100% du prix.
-C'est un investissement, pas une depense.
-
-OPTION 2 : ULTIMATE SCAN (79 EUR) - SI TU AS DES PHOTOS
-
-Tout ce qu'inclut Anabolic Bioscan PLUS :
-+ Analyse photo posturale complete (face/profil/dos)
-+ Diagnostic biomecanique et mobilite
-+ Estimation composition corporelle visuelle
-+ Corrections posturales personnalisees
-
-OPTION 3 : COACHING PERSONNALISE DIRECTEMENT
-
-Tu veux que je t'accompagne maintenant ? Je propose trois formules :
-- Essential Elite : suivi hebdomadaire, ajustements continus
-- Private Lab : coaching intensif, analyse avancee
-- Elite : accompagnement complet transformation
+OPTION 3 : COACHING PERSONNALISE DIRECT
+- Essential Elite, Private Lab, Elite
 
 CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
 
-Contacte-moi :
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
-
----
-Rapport genere par ACHZOD - APEXLABS
 `;
   }
 
@@ -100,19 +75,18 @@ Rapport genere par ACHZOD - APEXLABS
   return `
 COACHING APEXLABS
 
-Tu as la cartographie. Il manque l execution. Si tu veux des resultats rapides et propres, je prends le relais.
+Tu as la cartographie. Ce qui manque, c'est l'execution avec feedback.
+Je reprends ton dossier, j'ajuste les protocoles en direct et je pilote les KPIs.
 
-+ Ajustements hebdo sur tes retours et tes contraintes reelles
-+ Protocoles adaptes a ton quotidien, pas un plan generique
-+ Suivi des KPIs et corrections de trajectoire
-+ Acces direct pour accelerer les decisions
+- Ajustements hebdo sur tes retours et contraintes reelles
+- Protocoles adaptes a ton quotidien, pas un plan generique
+- Suivi des KPIs et corrections de trajectoire
+- Acces direct pour accelerer les decisions
 
-BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est DEDUIT A 100% du prix du coaching.
-
+BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est deduit a 100% du prix du coaching.
 CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
-
----`;
+`;
 }

@@ -542,7 +542,12 @@ export default function AuditDetail() {
           }
         }
 
-        if (!report && (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT")) {
+        if (
+          !report &&
+          (audit.reportDeliveryStatus === "READY" ||
+            audit.reportDeliveryStatus === "SENT" ||
+            audit.reportDeliveryStatus === "NEEDS_REVIEW")
+        ) {
           const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
           if (reportRes.ok) {
             const reportData = await reportRes.json();
@@ -639,7 +644,11 @@ export default function AuditDetail() {
     );
   }
 
-  if (auditData.reportDeliveryStatus !== "READY" && auditData.reportDeliveryStatus !== "SENT") {
+  if (
+    auditData.reportDeliveryStatus !== "READY" &&
+    auditData.reportDeliveryStatus !== "SENT" &&
+    auditData.reportDeliveryStatus !== "NEEDS_REVIEW"
+  ) {
     return (
       <div className="min-h-screen bg-background">
         <Header />

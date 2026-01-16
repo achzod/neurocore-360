@@ -100,10 +100,14 @@ function cleanSectionContent(content: string): string {
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
+    .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
     .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
+    .replace(/\bscore\s+global\b.*$/gmi, '')
     .replace(/^\s*={3,}.*$/gm, '')
     .replace(/={3,}/g, '')
+    .replace(/^\s*-{3,}.*$/gm, '')
+    .replace(/-{3,}/g, '')
     .replace(/^.*\brapport\s+genere\b.*$/gmi, '')
     .replace(/^\s*note\s*\(technique\).*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
@@ -113,15 +117,20 @@ function cleanSectionContent(content: string): string {
 function stripCtaFromContent(content: string): string {
   const markers = [
     "COACHING APEXLABS",
+    "RAPPEL COACHING",
     "TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION",
-    "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT"
+    "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT",
+    "PROCHAINES ETAPES",
+    "PRET A TRANSFORMER CES INSIGHTS"
   ];
   const markerRegex = [
     /tu\s+as\s+les\s+cles/i,
     /coaching/i,
     /code\s+promo/i,
+    /bonus\s+exclusif/i,
     /^email\s*:/i,
-    /^site\s*:/i
+    /^site\s*:/i,
+    /^\s*rapports?\s+genere/i
   ];
   const lines = content.split("\n");
   const cutIndex = lines.findIndex((line) => {

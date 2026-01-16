@@ -102,7 +102,7 @@ const DiscoveryScanReport: React.FC = () => {
           const nextAttempt = attempt + 1;
           setRegenAttempts(nextAttempt);
 
-          if (nextAttempt <= 30) {
+          if (nextAttempt <= 60) {
             regenTimer.current = window.setTimeout(() => fetchReport(nextAttempt), 3500);
           } else {
             setError("Regeneration en attente trop longue. Clique sur Recalculer ou reessaie plus tard.");
@@ -340,7 +340,7 @@ const DiscoveryScanReport: React.FC = () => {
 
   return (
     <div
-      className="flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
+      className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
       style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
     >
       {/* Progress Bar */}
