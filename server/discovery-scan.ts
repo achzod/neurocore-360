@@ -143,6 +143,12 @@ const MIN_DISCOVERY_SECTION_LINES = 55;
 const MIN_DISCOVERY_SECTION_WORDS = 700;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
 const SOURCE_MARKERS = [
+  "sources",
+  "source",
+  "references",
+  "reference",
+  "références",
+  "référence",
   "huberman",
   "andrew huberman",
   "huberman lab",
@@ -1071,6 +1077,7 @@ FORMAT OBLIGATOIRE:
     const charCount = text.length;
     const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
     const lower = text.toLowerCase();
+    const hasExplicitSources = /(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower);
     const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker));
     const hasClient = /\bclient\b/.test(lower);
     const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
@@ -1089,6 +1096,7 @@ FORMAT OBLIGATOIRE:
         meetsLength &&
         meetsParagraphs &&
         !hasSources &&
+        !hasExplicitSources &&
         !hasClient &&
         !hasNous &&
         !hasEnglish,
@@ -1928,36 +1936,11 @@ export async function convertToNarrativeReport(
 <div class="mt-8 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);">
   <p class="text-sm font-medium" style="color: var(--color-primary);">Deduit de ton coaching</p>
   <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres ton scan, le montant est deduit de ta formule.</p>
-  <table class="w-full mt-3 text-xs">
-    <thead>
-      <tr style="color: var(--color-text-muted);">
-        <th class="text-left py-1">Formule</th>
-        <th class="text-center py-1">4 sem.</th>
-        <th class="text-center py-1">8 sem.</th>
-        <th class="text-center py-1">12 sem.</th>
-      </tr>
-    </thead>
-    <tbody style="color: var(--color-text);">
-      <tr>
-        <td class="py-1">Essential</td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">249€</span> → <span style="color: var(--color-primary);">190€</span></td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">399€</span> → <span style="color: var(--color-primary);">340€</span></td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">549€</span> → <span style="color: var(--color-primary);">490€</span></td>
-      </tr>
-      <tr>
-        <td class="py-1">Elite</td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">399€</span> → <span style="color: var(--color-primary);">340€</span></td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">649€</span> → <span style="color: var(--color-primary);">590€</span></td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">899€</span> → <span style="color: var(--color-primary);">840€</span></td>
-      </tr>
-      <tr>
-        <td class="py-1">Private Lab</td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">499€</span> → <span style="color: var(--color-primary);">420€</span></td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">799€</span> → <span style="color: var(--color-primary);">720€</span></td>
-        <td class="text-center"><span style="color: var(--color-text-muted);">1199€</span> → <span style="color: var(--color-primary);">1120€</span></td>
-      </tr>
-    </tbody>
-  </table>
+  <ul class="mt-3 text-xs" style="color: var(--color-text);">
+    <li class="py-1">Starter : 97€ / 1 mois</li>
+    <li class="py-1">Transform : 247€ / 3 mois</li>
+    <li class="py-1">Elite : 497€ / 6 mois</li>
+  </ul>
 </div>`,
     chips: ["Protocoles", "Stack Supplements", "Plan 90 Jours"]
   });
@@ -1979,64 +1962,39 @@ export async function convertToNarrativeReport(
       <thead>
         <tr style="color: var(--color-text-muted);">
           <th class="text-left py-2 pr-4">Formule</th>
-          <th class="text-center py-2 px-2">4 semaines</th>
-          <th class="text-center py-2 px-2">8 semaines</th>
-          <th class="text-center py-2 px-2">12 semaines</th>
+          <th class="text-center py-2 px-2">Duree</th>
+          <th class="text-center py-2 px-2">Prix</th>
         </tr>
       </thead>
       <tbody>
         <tr style="border-top: 1px solid var(--color-border);">
           <td class="py-3 pr-4">
-            <div class="font-medium" style="color: var(--color-text);">Essential</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Fondations</div>
+            <div class="font-medium" style="color: var(--color-text);">Starter</div>
+            <div class="text-xs" style="color: var(--color-text-muted);">Plan sur-mesure</div>
           </td>
+          <td class="text-center py-3 px-2">1 mois</td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">249€</div>
-            <div class="font-bold" style="color: var(--color-primary);">199€</div>
+            <div class="font-bold" style="color: var(--color-primary);">97€</div>
           </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">399€</div>
-            <div class="font-bold" style="color: var(--color-primary);">319€</div>
+        </tr>
+        <tr style="border-top: 1px solid var(--color-border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium" style="color: var(--color-text);">Transform</div>
+            <div class="text-xs" style="color: var(--color-text-muted);">Suivi hebdo</div>
           </td>
+          <td class="text-center py-3 px-2">3 mois</td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">549€</div>
-            <div class="font-bold" style="color: var(--color-primary);">439€</div>
+            <div class="font-bold" style="color: var(--color-primary);">247€</div>
           </td>
         </tr>
         <tr style="border-top: 1px solid var(--color-border);">
           <td class="py-3 pr-4">
             <div class="font-medium" style="color: var(--color-text);">Elite</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Performance</div>
+            <div class="text-xs" style="color: var(--color-text-muted);">Coaching 1:1</div>
           </td>
+          <td class="text-center py-3 px-2">6 mois</td>
           <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">399€</div>
-            <div class="font-bold" style="color: var(--color-primary);">319€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">649€</div>
-            <div class="font-bold" style="color: var(--color-primary);">519€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">899€</div>
-            <div class="font-bold" style="color: var(--color-primary);">719€</div>
-          </td>
-        </tr>
-        <tr style="border-top: 1px solid var(--color-border);">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: var(--color-text);">Private Lab</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">VIP</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">499€</div>
-            <div class="font-bold" style="color: var(--color-primary);">399€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">799€</div>
-            <div class="font-bold" style="color: var(--color-primary);">639€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: var(--color-text-muted);">1199€</div>
-            <div class="font-bold" style="color: var(--color-primary);">959€</div>
+            <div class="font-bold" style="color: var(--color-primary);">497€</div>
           </td>
         </tr>
       </tbody>

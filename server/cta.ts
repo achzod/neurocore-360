@@ -36,7 +36,7 @@ Site: ${CONTACT.website}
 Tu consultes ton analyse ${tierLabel} APEXLABS complete.
 Si tu veux que je t'accompagne ensuite, le montant que tu as paye (${amountPaid} EUR) est deduit a 100% du prix du coaching.
 
-CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
+CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
@@ -62,9 +62,9 @@ OPTION 2 : ULTIMATE SCAN (79 EUR) SI TU AS DES PHOTOS
 - Diagnostic biomecanique + corrections de posture
 
 OPTION 3 : COACHING PERSONNALISE DIRECT
-- Essential Elite, Private Lab, Elite
+- Starter, Transform, Elite
 
-CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
+CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
@@ -84,7 +84,7 @@ Je reprends ton dossier, j'ajuste les protocoles en direct et je pilote les KPIs
 - Acces direct pour accelerer les decisions
 
 BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est deduit a 100% du prix du coaching.
-CODE PROMO COACHING : neurocore20 (-25% sur Essential Elite et Private Lab)
+CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}

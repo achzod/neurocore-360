@@ -119,12 +119,15 @@ function stripCtaFromContent(content: string): string {
     "COACHING APEXLABS",
     "RAPPEL COACHING",
     "TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION",
+    "TU AS LES CLÉS - MAINTENANT, PASSONS A L'EXECUTION",
     "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT",
+    "PROCHAINES ÉTAPES - CE QUE TU PEUX FAIRE MAINTENANT",
     "PROCHAINES ETAPES",
+    "PROCHAINES ÉTAPES",
     "PRET A TRANSFORMER CES INSIGHTS"
   ];
   const markerRegex = [
-    /tu\s+as\s+les\s+cles/i,
+    /tu\s+as\s+les\s+cl[eé]s/i,
     /coaching/i,
     /code\s+promo/i,
     /bonus\s+exclusif/i,
@@ -226,7 +229,10 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
     const markers = [
       'COACHING APEXLABS',
       'PRET A TRANSFORMER CES INSIGHTS',
-      'PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT'
+      'PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT',
+      'PROCHAINES ÉTAPES - CE QUE TU PEUX FAIRE MAINTENANT',
+      'PROCHAINES ETAPES',
+      'PROCHAINES ÉTAPES'
     ];
     const start = findLastLineMarker(txtContent, markers);
     if (start.index !== -1) {

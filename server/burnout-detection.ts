@@ -89,6 +89,12 @@ const MIN_BURNOUT_SECTION_WORDS: Record<string, number> = {
   conclusion: 220,
 };
 const SOURCE_MARKERS = [
+  "sources",
+  "source",
+  "references",
+  "reference",
+  "références",
+  "référence",
   "huberman",
   "andrew huberman",
   "huberman lab",
@@ -262,8 +268,9 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
     <div style="font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Option 2</div>
     <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 10px;">Coaching personnalise</h4>
     <ul style="margin: 0 0 14px; padding-left: 18px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
-      <li><strong>Essential Elite</strong> : suivi hebdomadaire, ajustements continus</li>
-      <li><strong>Private Lab</strong> : coaching intensif, analyses avancees</li>
+      <li><strong>Starter</strong> : plan sur-mesure, support email</li>
+      <li><strong>Transform</strong> : suivi hebdo, ajustements continus</li>
+      <li><strong>Elite</strong> : coaching 1:1, bilans mensuels</li>
     </ul>
     <a href="https://achzodcoaching.com" target="_blank" style="display: block; text-align: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; text-decoration: none;">
       Voir le coaching
@@ -277,7 +284,7 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
     Si tu prends un Anabolic Bioscan avant le coaching, les 59€ sont deduits a 100% du prix.
   </p>
   <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 0.95rem;">
-    CODE PROMO : <strong>neurocore20</strong> (-25% sur Essential Elite et Private Lab)
+    CODE PROMO : <strong>NEUROCORE20</strong> (-20% sur le coaching)
   </p>
 </div>
 
