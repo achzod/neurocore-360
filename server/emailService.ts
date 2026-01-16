@@ -151,7 +151,7 @@ function getReviewSection(dashboardLink: string): string {
       <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 20px; line-height: 1.6;">
         30 secondes pour noter ton experience.<br>Ton retour aide d'autres personnes a decouvrir APEXLABS.
       </p>
-      ${getPrimaryButton('Laisser mon avis', `${dashboardLink}#review`, COLORS.warning)}
+      ${getPrimaryButton('Laisser un avis', `${dashboardLink}#review`, COLORS.warning)}
     </div>
   `;
 }
@@ -170,7 +170,7 @@ function getCoachingSection(color: string = COLORS.purple): string {
         Pret a transformer ton corps ?
       </h3>
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-        Ce rapport t'a montre le chemin. Laisse-moi t'accompagner pour atteindre tes objectifs.
+        Ce rapport trace la trajectoire. Le suivi permet d'accelerer l'execution et d'eviter les erreurs.
       </p>
 
       <!-- Plans -->
@@ -277,7 +277,7 @@ export async function sendReportReadyEmail(
         Decouvre tes scores, recommandations personnalisees et protocoles.
       </p>
 
-      ${getPrimaryButton('Consulter mon rapport', reportLink)}
+      ${getPrimaryButton('Consulter le rapport', reportLink)}
 
       ${getReviewSection(reviewLink)}
 
@@ -343,7 +343,7 @@ export async function sendMagicLinkEmail(
         Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits ApexLabs.
       </p>
 
-      ${getPrimaryButton('Acceder a mon dashboard', magicLink)}
+      ${getPrimaryButton('Acceder au dashboard', magicLink)}
 
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
         Ce lien expire dans <strong style="color: ${COLORS.text};">1 heure</strong>. Si tu n'as pas demande cette connexion, ignore cet email.
@@ -622,30 +622,43 @@ export async function sendPremiumJ14Email(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        J'ai remarque que tu n'as pas vu mon dernier message...
+        Offre speciale sur les suivis
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Peut-etre que tu attends le bon moment pour te lancer ? Je comprends. Mais <strong style="color: ${COLORS.text};">le meilleur moment, c'est maintenant</strong>.
+        Analyse APEXLABS livree depuis 14 jours. Pour transformer les recommandations en execution, un suivi structure apporte cadence, ajustements et responsabilisation.
       </p>
 
       <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.warning}15 0%, ${COLORS.warning}05 100%); border-radius: 12px; border: 1px solid ${COLORS.warning}30;">
         <h3 style="color: ${COLORS.warning}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
-          Derniere opportunite : -20%
+          Code promo NEUROCORE20
         </h3>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-          Tu as fait ton analyse APEXLABS. Tu as les informations. Il ne te manque plus que <strong style="color: ${COLORS.text};">l'accompagnement</strong> pour passer a l'action.
+          Reduction de 20% valable 30 jours, utilisation unique.
         </p>
-        <div style="text-align: center; margin-bottom: 20px;">
-          <span style="display: inline-block; background: ${COLORS.warning}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
-            Code NEUROCORE20 = -20%
-          </span>
-        </div>
-        ${getPrimaryButton('Commencer maintenant', coachingLink, COLORS.warning)}
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
+              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ESSENTIAL</p>
+              <p style="color: ${COLORS.text}; font-size: 12px; margin: 0;">Suivi mensuel + ajustements</p>
+            </td>
+            <td style="width: 8px;"></td>
+            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
+              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ELITE</p>
+              <p style="color: ${COLORS.text}; font-size: 12px; margin: 0;">Coaching personalise + bilans</p>
+            </td>
+            <td style="width: 8px;"></td>
+            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
+              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">PRIVATE LAB</p>
+              <p style="color: ${COLORS.text}; font-size: 12px; margin: 0;">Acces prioritaire + consults</p>
+            </td>
+          </tr>
+        </table>
+        ${getPrimaryButton('Decouvrir les suivis', coachingLink, COLORS.warning)}
       </div>
 
       <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
-        Si tu ne souhaites plus recevoir ces emails, reponds simplement "STOP".
+        Pour arreter ces emails, reponds simplement "STOP".
       </p>
 
       <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
@@ -662,8 +675,8 @@ export async function sendPremiumJ14Email(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Derniere chance ! Tu n'as pas vu mon dernier message. -20% sur le coaching avec le code NEUROCORE20.`,
-          subject: "Derniere chance : -20% coaching (expire bientot)",
+          text: "Offre speciale sur les suivis. Code NEUROCORE20, reduction 20%, valable 30 jours.",
+          subject: "Offre speciale sur les suivis (-20%)",
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
         },
