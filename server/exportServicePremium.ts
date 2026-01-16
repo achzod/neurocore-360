@@ -564,7 +564,6 @@ export function generatePremiumHTMLFromTxt(
     <div class="container">
 
       <div style="background: linear-gradient(90deg, rgba(0,255,148,0.1), transparent); border: 1px solid var(--signal-green); padding: 16px; border-radius: 8px; display: flex; align-items: center; gap: 16px; margin-bottom: 60px;">
-        <span style="font-size: 24px;">🎁</span>
         <span style="font-family: var(--font-mono); font-size: 13px; color: var(--signal-green);">
           INVESTISSEMENT 100% DÉDUIT DE TON FUTUR COACHING.
         </span>
@@ -573,44 +572,44 @@ export function generatePremiumHTMLFromTxt(
       ${sectionsHTML}
 
       <section class="section" id="pricing" style="border-bottom:none;">
-        <span class="section-num">${String(sections.length + 1).padStart(2, '0')} // SYSTEM UPGRADE</span>
+        <span class="section-num">${String(sections.length + 1).padStart(2, '0')} // COACHING</span>
         <h2>Passe à l'action</h2>
         <p>Les plans génériques ne fonctionnent pas. Tu as besoin d'un système de pilotage complet.</p>
 
         <div class="pricing-grid">
           <div class="price-card">
             <span class="mini-score-label">STARTER</span>
-            <span class="price-tag">150€ <span style="font-size:14px; color:#666; font-weight:400;">/ 8 semaines</span></span>
-            <p style="font-size:13px; margin-bottom:24px;">Plan personnalisé livré. Autonomie totale. Pour les soldats disciplinés.</p>
+            <span class="price-tag">97€ <span style="font-size:14px; color:#666; font-weight:400;">/ 1 mois</span></span>
+            <p style="font-size:13px; margin-bottom:24px;">Plan personnalisé livré. Autonomie totale. Pour les profils disciplinés.</p>
             <ul class="tech-list" style="font-size:12px;">
-              <li>Plan 8 semaines sur-mesure</li>
-              <li>Bilan à 4 semaines</li>
-              <li>Livraison 48h</li>
+              <li>Plan sur-mesure</li>
+              <li>Support email</li>
+              <li>Livraison rapide</li>
             </ul>
             <a href="https://www.achzodcoaching.com/coaching-starter" class="btn-tech outline">Choisir Starter</a>
           </div>
 
           <div class="price-card featured">
-            <div style="position:absolute; top:-12px; right:20px; background:var(--signal-cyan); color:#000; font-size:10px; font-weight:700; padding:4px 8px; border-radius:4px;">RECOMMENDED</div>
-            <span class="mini-score-label" style="color:var(--signal-cyan)">ESSENTIAL</span>
-            <span class="price-tag">200€ <span style="font-size:14px; color:#666; font-weight:400;">/ 4 semaines</span></span>
-            <p style="font-size:13px; margin-bottom:24px;">Structure solide avec suivi hebdo. Ajustements constants.</p>
+            <div style="position:absolute; top:-12px; right:20px; background:var(--signal-cyan); color:#000; font-size:10px; font-weight:700; padding:4px 8px; border-radius:4px;">RECOMMANDE</div>
+            <span class="mini-score-label" style="color:var(--signal-cyan)">TRANSFORM</span>
+            <span class="price-tag">247€ <span style="font-size:14px; color:#666; font-weight:400;">/ 3 mois</span></span>
+            <p style="font-size:13px; margin-bottom:24px;">Suivi hebdo, ajustements et priorite.</p>
             <ul class="tech-list" style="font-size:12px;">
-              <li>Suivi WhatsApp 5j/7</li>
-              <li>Ajustements hebdos</li>
-              <li>Protocoles récupération</li>
+              <li>Suivi hebdo</li>
+              <li>Ajustements</li>
+              <li>Support prioritaire</li>
             </ul>
-            <a href="https://www.achzodcoaching.com/coaching-essential" class="btn-tech" style="background:var(--signal-cyan); border:none;">Choisir Essential</a>
+            <a href="https://www.achzodcoaching.com/coaching-essential" class="btn-tech" style="background:var(--signal-cyan); border:none;">Choisir Transform</a>
           </div>
 
           <div class="price-card">
              <span class="mini-score-label" style="color:var(--signal-orange)">ELITE</span>
-            <span class="price-tag">350€ <span style="font-size:14px; color:#666; font-weight:400;">/ 4 semaines</span></span>
-            <p style="font-size:13px; margin-bottom:24px;">Visio, corrections temps réel, biohacking avancé.</p>
+            <span class="price-tag">497€ <span style="font-size:14px; color:#666; font-weight:400;">/ 6 mois</span></span>
+            <p style="font-size:13px; margin-bottom:24px;">Coaching 1:1, bilans et suivi avance.</p>
             <ul class="tech-list" style="font-size:12px;">
-              <li>Calls visio hebdo</li>
-              <li>Support prioritaire 7j/7</li>
-              <li>Optimisation sommeil & stress</li>
+              <li>Coaching 1:1</li>
+              <li>Bilans mensuels</li>
+              <li>Acces VIP</li>
             </ul>
             <a href="https://www.achzodcoaching.com/coaching-elite" class="btn-tech outline">Decouvrir le coaching</a>
           </div>

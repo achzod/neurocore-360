@@ -622,11 +622,11 @@ export async function sendPremiumJ14Email(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Offre speciale sur les suivis
+        Offre speciale coaching
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Analyse APEXLABS livree depuis 14 jours. Pour transformer les recommandations en execution, un suivi structure apporte cadence, ajustements et responsabilisation.
+        Analyse APEXLABS livree depuis 14 jours. Pour transformer les recommandations en execution, un coaching structure apporte cadence, ajustements et responsabilisation.
       </p>
 
       <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.warning}15 0%, ${COLORS.warning}05 100%); border-radius: 12px; border: 1px solid ${COLORS.warning}30;">
@@ -639,22 +639,25 @@ export async function sendPremiumJ14Email(
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
           <tr>
             <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ESSENTIAL</p>
-              <p style="color: ${COLORS.text}; font-size: 12px; margin: 0;">Suivi mensuel + ajustements</p>
+              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">STARTER</p>
+              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">97€ / 1 mois</p>
+              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Plan perso + support email</p>
+            </td>
+            <td style="width: 8px;"></td>
+            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
+              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">TRANSFORM</p>
+              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">247€ / 3 mois</p>
+              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Suivi hebdo + ajustements</p>
             </td>
             <td style="width: 8px;"></td>
             <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
               <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ELITE</p>
-              <p style="color: ${COLORS.text}; font-size: 12px; margin: 0;">Coaching personalise + bilans</p>
-            </td>
-            <td style="width: 8px;"></td>
-            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">PRIVATE LAB</p>
-              <p style="color: ${COLORS.text}; font-size: 12px; margin: 0;">Acces prioritaire + consults</p>
+              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">497€ / 6 mois</p>
+              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Coaching 1:1 + bilans</p>
             </td>
           </tr>
         </table>
-        ${getPrimaryButton('Decouvrir les suivis', coachingLink, COLORS.warning)}
+        ${getPrimaryButton('Decouvrir le coaching', coachingLink, COLORS.warning)}
       </div>
 
       <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
@@ -675,8 +678,8 @@ export async function sendPremiumJ14Email(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: "Offre speciale sur les suivis. Code NEUROCORE20, reduction 20%, valable 30 jours.",
-          subject: "Offre speciale sur les suivis (-20%)",
+          text: "Offre speciale coaching. Code NEUROCORE20, reduction 20%, valable 30 jours.",
+          subject: "Offre speciale coaching (-20%)",
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
         },

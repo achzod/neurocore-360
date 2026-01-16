@@ -12,6 +12,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const API_BASE = "https://neurocore-360.onrender.com";
+const TEST_EMAIL = process.env.ULTIMATE_TEST_EMAIL || "achkou@gmail.com";
+const TEST_NAME = process.env.ULTIMATE_TEST_NAME || "Achkan";
 
 // Test photos
 const PHOTOS_DIR = path.join(__dirname, "test-data/photos");
@@ -27,12 +29,12 @@ function loadPhotoAsBase64(filename: string): string {
 const baseResponses = {
   // PROFIL BASE
   sexe: "homme",
-  prenom: "TestUltimate",
-  email: "test.ultimate@achzodcoaching.com",
+  prenom: TEST_NAME,
+  email: TEST_EMAIL,
   instagram: "@testultimate",
-  age: "26-35",
-  taille: "181-190",
-  poids: "81-90",
+  age: "32",
+  taille: "180",
+  poids: "80",
   objectif: "recomposition",
 
   // SANTÉ & HISTORIQUE
@@ -351,9 +353,10 @@ async function runTests() {
   console.log(`   ✅ Photos loaded (${Math.round(photoFront.length / 1024)}KB, ${Math.round(photoSide.length / 1024)}KB, ${Math.round(photoBack.length / 1024)}KB)`);
 
   // TEST 1: WITH WEARABLES
-  const testEmail1 = `test.ultimate.wearables.${Date.now()}@achzodcoaching.com`;
+  const testEmail1 = TEST_EMAIL;
   const responsesWithWearables = {
     ...baseResponses,
+    email: testEmail1,
     photoFront,
     photoSide,
     photoBack,
@@ -367,9 +370,10 @@ async function runTests() {
   );
 
   // TEST 2: WITHOUT WEARABLES
-  const testEmail2 = `test.ultimate.no.wearables.${Date.now()}@achzodcoaching.com`;
+  const testEmail2 = TEST_EMAIL;
   const responsesNoWearables = {
     ...baseResponses,
+    email: testEmail2,
     photoFront,
     photoSide,
     photoBack,
