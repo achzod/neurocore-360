@@ -20,7 +20,7 @@ import {
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
-import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
+import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from "./formatDashboard";
 import { ClientData, PhotoAnalysis } from "./types";
 import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
@@ -568,7 +568,10 @@ export async function registerRoutes(
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
           const auditScores = audit.scores || {};
-          const globalScore = auditScores.global ?? dashboard.global ?? 76;
+          const globalScore =
+            typeof auditScores.global === "number"
+              ? auditScores.global
+              : (dashboard.global ?? 76);
           const firstName =
             (audit.responses as any)?.prenom ||
             (audit.email ? audit.email.split("@")[0] : "Profil");
@@ -630,17 +633,16 @@ export async function registerRoutes(
           const mappedSections = dashboard.sections
             .filter(s => s.category !== 'executive' && s.category !== 'supplements')
             .map(s => {
-              const normalizedTitle = normalizeTitle(s.title);
-              const isSynthesis = normalizedTitle.includes("synthese") || normalizedTitle.includes("executive");
               const scoreFromAudit = resolveScoreFromTitle(s.title);
-              const sectionScore = scoreFromAudit ?? globalScore;
+              const sectionScore = scoreFromAudit ?? (s.score > 0 ? s.score : globalScore);
+              const sectionHtml = formatSectionToHTML(s);
               return {
                 id: s.id,
                 title: s.title,
                 score: sectionScore,
                 level: getLevel(sectionScore),
                 isPremium: true,
-                introduction: s.content,
+                introduction: sectionHtml,
                 whatIsWrong: "",
                 personalizedAnalysis: "",
                 recommendations: "",
@@ -650,6 +652,77 @@ export async function registerRoutes(
               };
             });
 
+          const analysisSectionIds = new Set(
+            dashboard.sections.filter(s => s.category === "analysis").map(s => s.id)
+          );
+          const analysisSections = mappedSections.filter(s => analysisSectionIds.has(s.id));
+
+          const RADAR_LABELS: Record<string, string> = {
+            'analyse-entrainement-et-periodisation': 'Entrainement',
+            'analyse-systeme-cardiovasculaire': 'Cardio',
+            'analyse-metabolisme-et-nutrition': 'Metabolisme',
+            'analyse-sommeil-et-recuperation': 'Sommeil',
+            'analyse-digestion-et-microbiote': 'Digestion',
+            'analyse-axes-hormonaux': 'Hormones',
+            'analyse-visuelle-et-posturale-complete': 'Posture',
+            'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
+            'analyse-energie-et-recuperation': 'Energie',
+          };
+
+          const resolveRadarLabel = (section: { id: string; title: string }) => {
+            const byId = RADAR_LABELS[section.id];
+            if (byId) return byId;
+            const title = normalizeTitle(section.title);
+            if (title.includes("entrainement")) return "Entrainement";
+            if (title.includes("cardio") || title.includes("cardiovasculaire") || title.includes("hrv")) return "Cardio";
+            if (title.includes("metabolisme") || title.includes("nutrition")) return "Metabolisme";
+            if (title.includes("sommeil")) return "Sommeil";
+            if (title.includes("digestion")) return "Digestion";
+            if (title.includes("hormon")) return "Hormones";
+            if (title.includes("postur") || title.includes("biomecanique")) return "Posture";
+            if (title.includes("energie")) return "Energie";
+            const words = section.title.trim().split(/\s+/);
+            return words.length > 1 ? words.slice(0, 2).join(" ") : section.title;
+          };
+
+          const toRadarValue = (score: number | null | undefined) => {
+            if (typeof score !== "number" || Number.isNaN(score)) return null;
+            return Math.round((score / 10) * 10) / 10;
+          };
+
+          const radarFromScores = [
+            { label: "Entrainement", score: auditScores.activiteperformance },
+            { label: "Cardio", score: averageScores([auditScores.hrvcardiaque, auditScores.cardioendurance]) },
+            { label: "Metabolisme", score: averageScores([auditScores.metabolismeenergie, auditScores.nutritiontracking]) },
+            { label: "Sommeil", score: auditScores.sommeilrecuperation },
+            { label: "Digestion", score: auditScores.digestionmicrobiome },
+            { label: "Hormones", score: auditScores.hormonesstress },
+            { label: "Posture", score: auditScores.biomecaniquemobilite },
+            { label: "Mental", score: auditScores.psychologiemental }
+          ]
+            .map(item => ({
+              label: item.label,
+              score: typeof item.score === "number" ? item.score : null
+            }))
+            .filter(item => typeof item.score === "number");
+
+          const radarMetrics =
+            radarFromScores.length >= 4
+              ? radarFromScores.slice(0, 8).map(item => ({
+                  label: item.label,
+                  value: toRadarValue(item.score) || Math.round((globalScore / 10) * 10) / 10,
+                  max: 10,
+                  description: item.label,
+                  key: item.label.toLowerCase().replace(/\s+/g, '-')
+                }))
+              : analysisSections.slice(0, 8).map(section => ({
+                  label: resolveRadarLabel(section),
+                  value: toRadarValue(section.score) || Math.round((globalScore / 10) * 10) / 10,
+                  max: 10,
+                  description: section.title,
+                  key: section.id
+                }));
+
           const mappedReport = {
             global: globalScore,
             heroSummary: dashboard.resumeExecutif || "",
@@ -658,6 +731,7 @@ export async function registerRoutes(
             sections: mappedSections,
             prioritySections: [] as string[],
             strengthSections: [] as string[],
+            radarMetrics,
             supplementStack: supplementStack,
             supplementsHtml,
             ctaDebut: dashboard.ctaDebut,
@@ -675,11 +749,6 @@ export async function registerRoutes(
             generatedAt: dashboard.generatedAt,
             photoAnalysis: report.photoAnalysis || null
           };
-
-          const analysisSectionIds = new Set(
-            dashboard.sections.filter(s => s.category === "analysis").map(s => s.id)
-          );
-          const analysisSections = mappedSections.filter(s => analysisSectionIds.has(s.id));
 
           mappedReport.prioritySections = analysisSections
             .filter(s => s.score < 60)

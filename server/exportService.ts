@@ -1296,7 +1296,7 @@ export function generateExportHTMLFromTxt(
     <!-- Section Avis - Demande de review -->
     <div style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 20px; padding: 40px; margin: 48px auto; max-width: 700px; text-align: center;">
       <div style="margin-bottom: 20px;">
-        <span style="font-size: 2.5rem;">⭐</span>
+        <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--text-muted);">Avis</span>
       </div>
       <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 12px;">
         Ton avis compte enormement
@@ -1393,7 +1393,7 @@ export function generateExportHTMLFromTxt(
             <li style="margin-bottom: 8px; padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Ajustements continus</li>
             <li style="padding-left: 20px; position: relative;"><span style="position: absolute; left: 0; color: var(--primary);">+</span> Support prioritaire</li>
           </ul>
-          <a href="https://www.achzodcoaching.com/coaching-essential" target="_blank" style="display: block; text-align: center; padding: 14px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 12px; color: #0B0B0F; font-weight: 800; text-decoration: none;">Choisir Transform</a>
+          <a href="https://www.achzodcoaching.com/coaching-transform" target="_blank" style="display: block; text-align: center; padding: 14px; background: linear-gradient(90deg, var(--primary), #34d399); border-radius: 12px; color: #0B0B0F; font-weight: 800; text-decoration: none;">Choisir Transform</a>
         </div>
 
         <!-- ELITE -->

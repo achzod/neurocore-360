@@ -134,18 +134,33 @@ const REVIEW_MARKERS = [
 // Knowledge base source markers (should NOT appear in final text)
 const SOURCE_MARKERS = [
   "huberman",
+  "andrew huberman",
+  "huberman lab",
   "peter attia",
   "attia",
   "applied metabolics",
   "stronger by science",
   "sbs",
   "examine",
+  "examine.com",
   "renaissance periodization",
   "mpmd",
   "newsletter",
+  "layne norton",
+  "ben bikman",
+  "rhonda patrick",
+  "robert lustig",
+  "matthew walker",
+  "sapolsky",
+  "andy galpin",
+  "brad schoenfeld",
+  "mike israetel",
+  "justin sonnenburg",
+  "chris kresser",
 ];
 
 const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client", "on"];
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
 
 export function validateReport(
   reportTxt: string,
@@ -236,6 +251,19 @@ export function validateReport(
   }
   if (sourcesFound.length > 0) {
     errors.push(`Sources visibles dans le texte: ${sourcesFound.join(", ")}`);
+  }
+
+  // 5. Single-author voice only
+  const multiPersonFound = MULTI_PERSON_MARKERS.filter((marker) =>
+    new RegExp(`\\b${marker}\\b`, "i").test(txtLower)
+  );
+  if (multiPersonFound.length > 0) {
+    errors.push(`Forme plurielle detectee: ${multiPersonFound.join(", ")}`);
+  }
+
+  // 6. No emoji
+  if (EMOJI_REGEX.test(reportTxt)) {
+    errors.push("Emojis detectes dans le texte");
   }
 
   // 4b. Single-author voice (no "nous"/"client")

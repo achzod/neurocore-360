@@ -62,7 +62,9 @@ OPTION 2 : ULTIMATE SCAN (79 EUR) SI TU AS DES PHOTOS
 - Diagnostic biomecanique + corrections de posture
 
 OPTION 3 : COACHING PERSONNALISE DIRECT
-- Starter, Transform, Elite
+- Starter : 97€ / 1 mois
+- Transform : 247€ / 3 mois
+- Elite : 497€ / 6 mois
 
 CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
 
@@ -82,6 +84,11 @@ Je reprends ton dossier, j'ajuste les protocoles en direct et je pilote les KPIs
 - Protocoles adaptes a ton quotidien, pas un plan generique
 - Suivi des KPIs et corrections de trajectoire
 - Acces direct pour accelerer les decisions
+
+FORMULES DISPONIBLES
+- Starter : 97€ / 1 mois
+- Transform : 247€ / 3 mois
+- Elite : 497€ / 6 mois
 
 BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est deduit a 100% du prix du coaching.
 CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)

@@ -40,6 +40,44 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
+type CoachingPlan = {
+  name: string;
+  duration: string;
+  price: string;
+  description: string;
+  href: string;
+  highlight?: boolean;
+  accent?: string;
+};
+
+const COACHING_PLANS: CoachingPlan[] = [
+  {
+    name: "Starter",
+    duration: "1 mois",
+    price: "97€",
+    description: "Plan sur-mesure, autonomie guidee.",
+    href: "https://www.achzodcoaching.com/coaching-starter",
+    accent: "var(--color-text)"
+  },
+  {
+    name: "Transform",
+    duration: "3 mois",
+    price: "247€",
+    description: "Suivi hebdo, ajustements continus.",
+    href: "https://www.achzodcoaching.com/coaching-transform",
+    highlight: true,
+    accent: "var(--color-primary)"
+  },
+  {
+    name: "Elite",
+    duration: "6 mois",
+    price: "497€",
+    description: "Coaching 1:1, bilans et priorite.",
+    href: "https://www.achzodcoaching.com/coaching-elite",
+    accent: "#f59e0b"
+  }
+];
+
 const withAlpha = (hex: string, alpha: number): string => {
   const normalized = hex.replace('#', '');
   if (normalized.length !== 6) return hex;
@@ -51,7 +89,7 @@ const withAlpha = (hex: string, alpha: number): string => {
 
 const parseCtaText = (text?: string) => {
   if (!text) {
-    return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
+    return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "", plans: [] as CoachingPlan[] };
   }
   const lines = text
     .split('\n')
@@ -69,13 +107,32 @@ const parseCtaText = (text?: string) => {
     .filter(line => /^(\+|\-|\d+\.)\s+/.test(line))
     .map(line => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim());
 
+  const plans = lines
+    .map((line) => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim())
+    .map((line) => {
+      const match = line.match(/^(starter|transform|elite)\s*[:\-]\s*([0-9]+€)\s*\/\s*([0-9]+\s*mois)/i);
+      if (!match) return null;
+      const name = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      const fallback = COACHING_PLANS.find((plan) => plan.name.toLowerCase() === name.toLowerCase());
+      return {
+        name,
+        duration: match[3],
+        price: match[2],
+        description: fallback?.description || "",
+        href: fallback?.href || "https://www.achzodcoaching.com",
+        highlight: fallback?.highlight,
+        accent: fallback?.accent
+      } as CoachingPlan;
+    })
+    .filter((plan): plan is CoachingPlan => Boolean(plan));
+
   const paragraphs = lines.filter(line => {
     if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs|prochaines etapes|pret a transformer ces insights)$/i.test(line)) return false;
     if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
     return !/^(\+|\-|\d+\.)\s+/.test(line);
   });
 
-  return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine };
+  return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine, plans };
 };
 
 // Narrative Report types from API
@@ -112,6 +169,7 @@ interface NarrativeReport {
   sections: NarrativeSection[];
   prioritySections: string[];
   strengthSections: string[];
+  radarMetrics?: Metric[];
   supplementStack: SupplementProtocol[];
   supplementsHtml?: string;
   ctaDebut?: string;
@@ -300,16 +358,16 @@ const AnabolicScanReport: React.FC = () => {
   })) || [];
 
   const renderCtaPanel = (text: string, badgeLabel: string, variant: 'debut' | 'fin') => {
-    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = parseCtaText(text);
-    const contactEmail = emailLine.replace(/^email\s*:\s*/i, "") || "coaching@achzodcoaching.com";
-    const contactSite = siteLine.replace(/^site\s*:\s*/i, "") || "achzodcoaching.com";
+    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine, plans } = parseCtaText(text);
+    const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
+    const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
     const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
     const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
-    const summaryTrimmed = summary.length > 360 ? `${summary.slice(0, 360).trim()}...` : summary;
-    const isDebut = variant === 'debut';
+    const summaryTrimmed = summary.length > 380 ? `${summary.slice(0, 380).trim()}...` : summary;
     const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
-    const headline = isDebut ? "Rappel coaching" : "Execution accompagnee";
-    const subline = isDebut ? "Deduction 100% du scan" : "Suivi humain + ajustements";
+    const isDebut = variant === 'debut';
+    const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
+    const subline = isDebut ? "Deduction 100% du scan" : "Execution + ajustements";
     const fallbackBullets = isDebut
       ? [
           "Deduction 100% du scan si coaching",
@@ -322,6 +380,105 @@ const AnabolicScanReport: React.FC = () => {
           "Suivi humain, pas un plan generique",
         ];
     const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
+    const plansToRender = (plans.length > 0 ? plans : COACHING_PLANS).map((plan) => {
+      const fallback = COACHING_PLANS.find((item) => item.name.toLowerCase() === plan.name.toLowerCase());
+      return fallback ? { ...fallback, ...plan } : plan;
+    });
+
+    if (!isDebut) {
+      return (
+        <div
+          className="rounded-xl border p-6 md:p-8"
+          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <span
+                  className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+                  style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
+                >
+                  {badgeLabel}
+                </span>
+                <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+                  {subline}
+                </span>
+              </div>
+              <h4 className="text-2xl font-bold mb-2" style={{ color: currentTheme.colors.text }}>
+                {headline}
+              </h4>
+              <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+                {summaryTrimmed || "Tu as la cartographie. Ce qui manque, c'est l'execution avec feedback et ajustements continus."}
+              </p>
+            </div>
+            {promoCode && (
+              <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
+                {promoCode}
+              </span>
+            )}
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4 mt-6">
+            {plansToRender.map((plan) => (
+              <div
+                key={plan.name}
+                className="p-4 rounded-lg border flex flex-col"
+                style={{
+                  backgroundColor: plan.highlight ? primarySoft : currentTheme.colors.background,
+                  borderColor: plan.highlight ? primaryBorder : currentTheme.colors.border
+                }}
+              >
+                <div className="text-xs uppercase tracking-widest mb-2" style={{ color: plan.accent || currentTheme.colors.textMuted }}>
+                  {plan.name}
+                </div>
+                <div className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
+                  {plan.price}
+                  <span className="text-xs ml-2" style={{ color: currentTheme.colors.textMuted }}>
+                    / {plan.duration}
+                  </span>
+                </div>
+                <p className="text-xs mt-2" style={{ color: currentTheme.colors.textMuted }}>
+                  {plan.description}
+                </p>
+                <a
+                  href={plan.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 block w-full py-2 rounded text-center text-xs font-bold transition-all hover:opacity-90"
+                  style={{
+                    backgroundColor: plan.highlight ? primary : currentTheme.colors.surface,
+                    color: plan.highlight ? 'var(--color-on-primary)' : currentTheme.colors.text,
+                    border: plan.highlight ? `1px solid ${primary}` : `1px solid ${currentTheme.colors.border}`
+                  }}
+                >
+                  Choisir {plan.name}
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="mt-6 p-4 rounded-lg"
+            style={{
+              background: withAlpha(primary, 0.08),
+              border: `1px solid ${primaryBorder}`
+            }}
+          >
+            <p className="text-sm font-medium" style={{ color: primary }}>
+              Deduction 100% du scan sur le coaching
+            </p>
+            <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
+              {promoCode ? `Code promo : ${promoCode}.` : "Code promo disponible apres validation."} Pour toute question, ecris-moi.
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+            <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
+            <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -360,78 +517,24 @@ const AnabolicScanReport: React.FC = () => {
           )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
-              <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: primary }}>
-                Ce que tu obtiens
-              </p>
-              <ul className="space-y-2">
-                {bulletsToRender.map((bullet, idx) => (
-                  <li key={idx} className="text-sm" style={{ color: currentTheme.colors.text }}>
-                    {bullet}
-                  </li>
-                ))}
-              </ul>
+        <div className="grid sm:grid-cols-2 gap-3 mb-6">
+          {bulletsToRender.map((bullet, idx) => (
+            <div key={idx} className="flex items-start gap-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+              <span style={{ color: primary }}>-</span>
+              <span>{bullet}</span>
             </div>
-
-            {(bonusLine || promoLine) && (
-              <div className="p-4 rounded-lg border" style={{ borderColor: currentTheme.colors.border, backgroundColor: primaryFaint }}>
-                {bonusLine && (
-                  <p className="text-xs uppercase tracking-widest mb-1" style={{ color: primary }}>
-                    {bonusLine}
-                  </p>
-                )}
-                {promoLine && (
-                  <p className="text-xs" style={{ color: currentTheme.colors.textMuted }}>
-                    {promoLine}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-              <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
-                Contact direct
-              </p>
-              <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
-                {contactEmail}
-              </p>
-              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                {contactSite}
-              </p>
-            </div>
-
-            <div className="grid gap-3">
-              <a
-                href={`mailto:${contactEmail}`}
-                className="px-4 py-3 rounded-lg text-center text-sm font-semibold transition-all"
-                style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
-              >
-                Ecrire a Achzod
-              </a>
-              <a
-                href={siteUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-3 rounded-lg text-center text-sm font-semibold transition-all"
-                style={{ border: `1px solid ${primary}`, color: primary }}
-              >
-                Voir le coaching
-              </a>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: primaryFaint, border: `1px solid ${primaryBorder}` }}>
-          <p className="text-sm font-semibold" style={{ color: primary }}>
-            Deduction 100% du scan sur le coaching
-          </p>
-          <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
-            Le montant de ton Anabolic Bioscan est deduit si tu passes sur un suivi.
-          </p>
+        {bonusLine && (
+          <div className="text-xs uppercase tracking-widest mb-4" style={{ color: primary }}>
+            {bonusLine}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+          <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
+          <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
         </div>
       </div>
     );
@@ -517,6 +620,7 @@ const AnabolicScanReport: React.FC = () => {
       key: s.id
     };
   });
+  const radarMetrics = report?.radarMetrics?.length ? report.radarMetrics : metricsData;
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -611,6 +715,16 @@ const AnabolicScanReport: React.FC = () => {
   const primarySoft = withAlpha(primary, 0.12);
   const primaryBorder = withAlpha(primary, 0.25);
   const primaryFaint = withAlpha(primary, 0.08);
+  const toHtml = (value: string) => {
+    if (!value) return "";
+    if (/<[a-z][\s\S]*>/i.test(value)) return value;
+    return value
+      .split(/\n\s*\n/)
+      .map(p => p.trim())
+      .filter(Boolean)
+      .map(p => `<p>${p}</p>`)
+      .join("");
+  };
 
   return (
     <div
@@ -723,7 +837,7 @@ const AnabolicScanReport: React.FC = () => {
                   Radar Performance
                 </h3>
                 <MetricsRadar
-                  data={metricsData}
+                  data={radarMetrics}
                   color={currentTheme.colors.primary}
                   gridColor={currentTheme.colors.grid}
                   labelColor={currentTheme.colors.textMuted}
@@ -837,28 +951,50 @@ const AnabolicScanReport: React.FC = () => {
                   {section.introduction && (
                     <div>
                       <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">ANALYSE</h4>
-                      <p className="text-[var(--color-text)] leading-relaxed whitespace-pre-line">{section.introduction}</p>
+                      <div
+                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
+                        style={{
+                          color: 'var(--color-text)',
+                          '--tw-prose-body': 'var(--color-text)',
+                          '--tw-prose-headings': 'var(--color-text)',
+                          '--tw-prose-strong': 'var(--color-text)',
+                          '--tw-prose-bullets': 'var(--color-primary)'
+                        } as React.CSSProperties}
+                        dangerouslySetInnerHTML={{ __html: toHtml(section.introduction) }}
+                      />
                     </div>
                   )}
 
                   {section.whatIsWrong && (
                     <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
                       <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>CE QUI NE VA PAS</h4>
-                      <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.whatIsWrong}</p>
+                      <div
+                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
+                        style={{ color: 'var(--color-text)' } as React.CSSProperties}
+                        dangerouslySetInnerHTML={{ __html: toHtml(section.whatIsWrong) }}
+                      />
                     </div>
                   )}
 
                   {section.recommendations && (
                     <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
                       <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>RECOMMANDATIONS</h4>
-                      <p className="text-[var(--color-text-muted)] leading-relaxed whitespace-pre-line">{section.recommendations}</p>
+                      <div
+                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
+                        style={{ color: 'var(--color-text)' } as React.CSSProperties}
+                        dangerouslySetInnerHTML={{ __html: toHtml(section.recommendations) }}
+                      />
                     </div>
                   )}
 
                   {section.actionPlan && (
                     <div>
                       <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">PLAN D'ACTION</h4>
-                      <p className="text-[var(--color-text)] leading-relaxed whitespace-pre-line">{section.actionPlan}</p>
+                      <div
+                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-strong:text-[var(--color-text)]`}
+                        style={{ color: 'var(--color-text)' } as React.CSSProperties}
+                        dangerouslySetInnerHTML={{ __html: toHtml(section.actionPlan) }}
+                      />
                     </div>
                   )}
                 </div>

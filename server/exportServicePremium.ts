@@ -599,7 +599,7 @@ export function generatePremiumHTMLFromTxt(
               <li>Ajustements</li>
               <li>Support prioritaire</li>
             </ul>
-            <a href="https://www.achzodcoaching.com/coaching-essential" class="btn-tech" style="background:var(--signal-cyan); border:none;">Choisir Transform</a>
+            <a href="https://www.achzodcoaching.com/coaching-transform" class="btn-tech" style="background:var(--signal-cyan); border:none;">Choisir Transform</a>
           </div>
 
           <div class="price-card">

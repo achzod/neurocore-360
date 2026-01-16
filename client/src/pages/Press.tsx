@@ -322,7 +322,7 @@ export default function Press() {
               </div>
               <h2 className="text-3xl font-bold text-white">+ 300 autres médias</h2>
               <p className="mt-2 text-white/50">
-                Notre communiqué de presse a été repris par plus de 300 médias
+                Communique de presse repris par plus de 300 medias
               </p>
             </div>
 

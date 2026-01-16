@@ -122,6 +122,8 @@ const SOURCE_NAME_REGEX = new RegExp(
   "gi"
 );
 
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
 const FORBIDDEN_PATTERNS = [
   /\bclient\b/i,
   /\bnous\b/i,
@@ -145,6 +147,9 @@ function sanitizePremiumText(text: string): string {
     .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|tu as les cles).*$/gmi, "")
     .replace(/^\s*(code promo|email|site)\s*:.*$/gmi, "")
     .replace(/^\s*note\s*\(technique\).*$/gmi, "")
+    .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, "")
+    .replace(/score\s+global\b.*$/gmi, "")
+    .replace(EMOJI_REGEX, "")
     .replace(SOURCE_NAME_REGEX, "")
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")

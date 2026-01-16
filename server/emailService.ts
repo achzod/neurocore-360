@@ -146,7 +146,7 @@ function getPrimaryButton(text: string, href: string, color: string = COLORS.pri
 function getReviewSection(dashboardLink: string): string {
   return `
     <div style="margin: 32px 0; padding: 28px; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.2); text-align: center;">
-      <div style="font-size: 32px; margin-bottom: 16px; letter-spacing: 4px;">★★★★★</div>
+      <div style="font-size: 11px; margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; color: ${COLORS.textMuted};">Note sur 5</div>
       <h3 style="color: ${COLORS.warning}; font-size: 18px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px;">Ton avis compte !</h3>
       <p style="color: ${COLORS.textMuted}; font-size: 14px; margin: 0 0 20px; line-height: 1.6;">
         30 secondes pour noter ton experience.<br>Ton retour aide d'autres personnes a decouvrir APEXLABS.
@@ -417,7 +417,7 @@ export async function sendAdminEmailNewAudit(
 
       <div style="background: ${COLORS.background}; border-radius: 8px; padding: 20px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
-          <strong style="color: ${COLORS.text};">Client:</strong> ${clientName}
+          <strong style="color: ${COLORS.text};">Profil:</strong> ${clientName}
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
           <strong style="color: ${COLORS.text};">Email:</strong> ${clientEmail}
@@ -431,7 +431,7 @@ export async function sendAdminEmailNewAudit(
       </div>
 
       <p style="color: ${COLORS.primary}; font-size: 14px; line-height: 1.7; margin: 24px 0 0; text-align: center; font-weight: 500;">
-        L'email a ete envoye au client.
+        L'email a ete envoye au contact.
       </p>
     `;
 
@@ -499,10 +499,10 @@ export async function sendGratuitUpsellEmail(
           Tu as eu un apercu de ton profil. Avec l'<strong style="color: ${COLORS.text};">Anabolic Bioscan</strong>, decouvre :
         </p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Analyse approfondie sur 16 domaines</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocole de supplements personnalise</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Protocoles nutrition et entrainement</td></tr>
-          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">✓ Plan d'action 30/60/90 jours</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Analyse approfondie sur 16 domaines</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Protocole de supplements personnalise</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Protocoles nutrition et entrainement</td></tr>
+          <tr><td style="padding: 8px 0; color: ${COLORS.textMuted}; font-size: 14px;">- Plan d'action 30/60/90 jours</td></tr>
         </table>
         <div style="text-align: center; margin-bottom: 20px;">
           <span style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.background}; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
@@ -622,11 +622,11 @@ export async function sendPremiumJ14Email(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Offre speciale coaching
+        Coaching Achzod -20%
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Analyse APEXLABS livree depuis 14 jours. Pour transformer les recommandations en execution, un coaching structure apporte cadence, ajustements et responsabilisation.
+        Ton audit APEXLABS est livre. Si tu veux passer a l'execution, je peux prendre le relais avec un suivi structure et des ajustements continus.
       </p>
 
       <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.warning}15 0%, ${COLORS.warning}05 100%); border-radius: 12px; border: 1px solid ${COLORS.warning}30;">
@@ -641,7 +641,7 @@ export async function sendPremiumJ14Email(
             <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
               <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">STARTER</p>
               <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">97€ / 1 mois</p>
-              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Plan perso + support email</p>
+              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Plan sur-mesure</p>
             </td>
             <td style="width: 8px;"></td>
             <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
@@ -678,8 +678,8 @@ export async function sendPremiumJ14Email(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: "Offre speciale coaching. Code NEUROCORE20, reduction 20%, valable 30 jours.",
-          subject: "Offre speciale coaching (-20%)",
+          text: "Coaching Achzod -20%. Code NEUROCORE20, reduction 20%, valable 30 jours.",
+          subject: "Coaching Achzod -20% (code NEUROCORE20)",
           from: { name: SENDER_NAME, email: SENDER_EMAIL },
           to: [{ email }],
         },
@@ -834,22 +834,22 @@ export async function sendAdminReviewNotification(
   try {
     const adminEmail = "achzodyt@gmail.com";
     const token = await getAccessToken();
-    const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+    const ratingLabel = `${rating}/5`;
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 24px; font-size: 24px; font-weight: 700;">
-        Nouvel avis client a valider
+        Nouvel avis a valider
       </h2>
 
       <div style="background: ${COLORS.background}; border-radius: 8px; padding: 20px; border: 1px solid ${COLORS.border};">
-        <p style="color: ${COLORS.primary}; font-size: 24px; letter-spacing: 2px; margin: 0 0 16px;">
-          ${stars}
+        <p style="color: ${COLORS.primary}; font-size: 18px; letter-spacing: 1px; margin: 0 0 16px; font-weight: 700;">
+          Note: ${ratingLabel}
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
           <strong style="color: ${COLORS.text};">Type d'audit:</strong> ${auditType}
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
-          <strong style="color: ${COLORS.text};">Email client:</strong> ${reviewerEmail || "Non fourni"}
+          <strong style="color: ${COLORS.text};">Email:</strong> ${reviewerEmail || "Non fourni"}
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8; margin: 0 0 8px;">
           <strong style="color: ${COLORS.text};">Audit ID:</strong> <code style="background: ${COLORS.border}; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${auditId}</code>

@@ -268,9 +268,9 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
     <div style="font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Option 2</div>
     <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 10px;">Coaching personnalise</h4>
     <ul style="margin: 0 0 14px; padding-left: 18px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
-      <li><strong>Starter</strong> : plan sur-mesure, support email</li>
-      <li><strong>Transform</strong> : suivi hebdo, ajustements continus</li>
-      <li><strong>Elite</strong> : coaching 1:1, bilans mensuels</li>
+      <li><strong>Starter</strong> : 97€ / 1 mois, plan sur-mesure</li>
+      <li><strong>Transform</strong> : 247€ / 3 mois, suivi hebdo</li>
+      <li><strong>Elite</strong> : 497€ / 6 mois, coaching 1:1</li>
     </ul>
     <a href="https://achzodcoaching.com" target="_blank" style="display: block; text-align: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; text-decoration: none;">
       Voir le coaching
@@ -291,7 +291,7 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
 <div style="background: var(--surface-2); border-radius: 12px; padding: 18px; margin-top: 20px; border: 1px solid var(--border);">
   <p style="font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 8px;">Prochaine etape :</p>
   <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 12px;">
-    Reponds a cet email ou contacte-moi directement. Call de 15 min pour voir si c'est un bon fit.
+    Reponds a cet email ou contacte-moi directement. Echange de 15 min pour voir si c'est pertinent.
   </p>
   <p style="font-size: 0.95rem; color: var(--primary); margin: 0;">
     <strong>Email</strong> : coaching@achzodcoaching.com<br/>
@@ -331,6 +331,8 @@ function normalizeSourceMarker(value: string): string {
   return value.toLowerCase().replace(/[_\s]+/g, "");
 }
 
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
 function findSourcesInText(text: string): string[] {
   const lower = text.toLowerCase();
   return SOURCE_MARKERS.filter((marker) => lower.includes(marker)).map(normalizeSourceMarker);
@@ -342,6 +344,7 @@ function sanitizeBurnoutContent(content: string): string {
     .replace(/Sources?\s*:.*$/gmi, "")
     .replace(/^\s*Source\s*:.*$/gmi, "")
     .replace(/\b(huberman|andrew\s+huberman|huberman\s+lab|peter\s+attia|attia|applied\s+metabolics|stronger\s+by\s+science|sbs|examine(?:\.com)?|renaissance\s+periodization|mpmd|more\s+plates|moreplates|newsletter|achzod|matthew\s+walker|sapolsky|layne\s+norton|ben\s+bikman|rhonda\s+patrick|robert\s+lustig|andy\s+galpin|brad\s+schoenfeld|mike\s+israetel|justin\s+sonnenburg|chris\s+kresser)\b/gi, "")
+    .replace(EMOJI_REGEX, "")
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
     .replace(/\bnous\b/gi, "je")

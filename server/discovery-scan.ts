@@ -182,6 +182,7 @@ const SOURCE_NAME_REGEX = new RegExp(
   "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
   "gi"
 );
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
 
 function normalizeParagraphs(text: string): string {
   if (!text) return text;
@@ -1145,7 +1146,7 @@ FORMAT OBLIGATOIRE:
       // VALIDATION: Check minimum length
       if (validation.isValid) {
         console.log(
-          `[Discovery] ✓ Section ${domain} VALIDATED (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs)`
+          `[Discovery] OK Section ${domain} VALIDATED (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs)`
         );
         return cleanMarkdownToHTML(rawText);
       }
@@ -1197,7 +1198,7 @@ FORMAT OBLIGATOIRE:
       const validation = isValidContent(cleanedText);
       if (validation.isValid) {
         console.log(
-          `[Discovery] ✓ OpenAI section ${domain} OK (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+          `[Discovery] OK OpenAI section ${domain} (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
         );
         return cleanMarkdownToHTML(cleanedText);
       }
@@ -1431,21 +1432,12 @@ CONTENU OBLIGATOIRE A COUVRIR:
 - Impact cardiovasculaire et inflammation (CRP, cytokines)
 - Donnees chiffrees (pourcentages, durees, seuils)
 
-SOURCES A INTEGRER NATURELLEMENT:
-- Andrew Huberman (neurosciences, protocoles)
-- Peter Attia (longevite, metabolisme)
-- Matthew Walker (sommeil)
-- Robert Sapolsky (stress, cortisol)
-- Ben Bikman (insuline, metabolisme)
-- Robert Lustig (sucre, metabolisme)
-- Stronger by Science (entrainement)
-
 STYLE:
 - Medecin specialiste expliquant a un patient intelligent
 - Chaque phrase apporte une donnee concrete et chiffree
 - Tutoiement direct, sans condescendance
 - Ton grave mais pas alarmiste
-- References scientifiques integrees dans le texte`;
+- Interdit de citer des sources, auteurs ou publications`;
 
 async function generateAISynthesis(
   responses: DiscoveryResponses,
@@ -1523,12 +1515,26 @@ RAPPELS CRITIQUES:
         throw new Error("[Discovery] Synthese vide");
       }
 
+      const lower = rawText.toLowerCase();
+      const hasForbiddenSources =
+        /sources?\s*:/i.test(lower) || SOURCE_MARKERS.some((marker) => lower.includes(marker));
+
       if (hasEnglishMarkers(rawText, 6)) {
         if (attempt < 2) {
           console.warn("[Discovery] Synthese contient de l'anglais, retry...");
           continue;
         }
         rawText = stripEnglishLines(rawText);
+      }
+
+      if (hasForbiddenSources) {
+        if (attempt < 2) {
+          console.warn("[Discovery] Synthese contient des sources, retry...");
+          continue;
+        }
+        rawText = rawText
+          .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+          .replace(SOURCE_NAME_REGEX, '');
       }
 
       rawText = normalizeSingleVoice(rawText);
@@ -1574,8 +1580,10 @@ function cleanMarkdownToHTML(text: string): string {
     // Remove any explicit sources/references lines even if inline
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/<p[^>]*>[^<]*(Sources?|References?|Références?)\b[^<]*<\/p>/gi, '')
     // Remove any explicit source names
     .replace(SOURCE_NAME_REGEX, "")
+    .replace(EMOJI_REGEX, "")
     // Remove "client" language (single-author voice)
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
@@ -1905,11 +1913,11 @@ export async function convertToNarrativeReport(
     <h4 class="text-xl font-bold mb-2" style="color: var(--color-text);">Anabolic Bioscan</h4>
     <div class="text-3xl font-bold mb-4" style="color: var(--color-primary);">59<span class="text-lg">€</span></div>
     <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
-      <li>✓ 15 analyses approfondies</li>
-      <li>✓ Analyse photos (posture, composition)</li>
-      <li>✓ Protocole nutrition detaille</li>
-      <li>✓ Stack supplements personnalise</li>
-      <li>✓ Feuille de route 90 jours</li>
+      <li>- 15 analyses approfondies</li>
+      <li>- Analyse photos (posture, composition)</li>
+      <li>- Protocole nutrition detaille</li>
+      <li>- Stack supplements personnalise</li>
+      <li>- Feuille de route 90 jours</li>
     </ul>
     <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
       Choisir Anabolic Bioscan
@@ -1921,11 +1929,11 @@ export async function convertToNarrativeReport(
     <h4 class="text-xl font-bold mb-2" style="color: var(--color-text);">Ultimate Scan</h4>
     <div class="text-3xl font-bold mb-4" style="color: var(--color-text);">79<span class="text-lg">€</span></div>
     <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
-      <li>✓ Tout l'Anabolic Bioscan inclus</li>
-      <li>✓ Sync wearables (Oura, Whoop, Garmin)</li>
-      <li>✓ Analyse HRV avancee</li>
-      <li>✓ Questions blessures & douleurs</li>
-      <li>✓ Protocole rehabilitation</li>
+      <li>- Tout l'Anabolic Bioscan inclus</li>
+      <li>- Sync wearables (Oura, Whoop, Garmin)</li>
+      <li>- Analyse HRV avancee</li>
+      <li>- Questions blessures & douleurs</li>
+      <li>- Protocole rehabilitation</li>
     </ul>
     <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid var(--color-primary); color: var(--color-primary);">
       Choisir Ultimate Scan

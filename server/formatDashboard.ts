@@ -84,9 +84,46 @@ function normalizeTitle(title: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/&/g, '')
+    .replace(/&/g, ' et ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
+const TITLE_KEYWORDS = [
+  'executive',
+  'resume',
+  'analyse',
+  'protocole',
+  'plan',
+  'kpi',
+  'stack',
+  'synthese',
+  'diagnostic',
+  'biomecanique',
+  'postur',
+  'biomarque',
+  'entrainement',
+  'metabolisme',
+  'nutrition',
+  'sommeil',
+  'digestion',
+  'hormonal',
+  'cardio',
+];
+
+const CTA_TITLE_MARKERS = [
+  'rappel coaching',
+  'rappel important',
+  'infos importantes',
+  'coaching apexlabs',
+  'prochaines etapes',
+  'pret a transformer',
+];
+
+function stripEmoji(text: string): string {
+  return text.replace(EMOJI_REGEX, '');
 }
 
 const SOURCE_NAME_REGEX = new RegExp(
@@ -95,7 +132,7 @@ const SOURCE_NAME_REGEX = new RegExp(
 );
 
 function cleanSectionContent(content: string): string {
-  return content
+  return stripEmoji(content)
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
@@ -103,12 +140,15 @@ function cleanSectionContent(content: string): string {
     .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
     .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
+    .replace(/score\s+global\s*[:\-–—]\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/\bscore\s+global\b.*$/gmi, '')
     .replace(/^\s*={3,}.*$/gm, '')
     .replace(/={3,}/g, '')
     .replace(/^\s*-{3,}.*$/gm, '')
     .replace(/-{3,}/g, '')
     .replace(/^.*\brapport\s+genere\b.*$/gmi, '')
+    .replace(/\bclients\b/gi, 'profils')
+    .replace(/\bclient\b/gi, 'profil')
     .replace(/^\s*note\s*\(technique\).*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
     .trim();
@@ -118,16 +158,23 @@ function stripCtaFromContent(content: string): string {
   const markers = [
     "COACHING APEXLABS",
     "RAPPEL COACHING",
+    "RAPPEL IMPORTANT",
+    "INFOS IMPORTANTES",
     "TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION",
     "TU AS LES CLÉS - MAINTENANT, PASSONS A L'EXECUTION",
     "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT",
     "PROCHAINES ÉTAPES - CE QUE TU PEUX FAIRE MAINTENANT",
     "PROCHAINES ETAPES",
     "PROCHAINES ÉTAPES",
-    "PRET A TRANSFORMER CES INSIGHTS"
+    "PRET A TRANSFORMER CES INSIGHTS",
+    "CODE PROMO",
+    "OPTION 1",
+    "OPTION 2",
+    "OPTION 3"
   ];
   const markerRegex = [
     /tu\s+as\s+les\s+cl[eé]s/i,
+    /ce\s+que\s+tu\s+obtiens/i,
     /coaching/i,
     /code\s+promo/i,
     /bonus\s+exclusif/i,
@@ -135,11 +182,13 @@ function stripCtaFromContent(content: string): string {
     /^site\s*:/i,
     /^\s*rapports?\s+genere/i
   ];
+  const normalizedMarkers = markers.map((marker) => normalizeTitle(marker));
   const lines = content.split("\n");
   const cutIndex = lines.findIndex((line) => {
     const trimmed = line.trim();
     if (!trimmed) return false;
-    if (markers.some((marker) => trimmed.toLowerCase().includes(marker.toLowerCase()))) {
+    const normalizedLine = normalizeTitle(trimmed);
+    if (normalizedMarkers.some((marker) => normalizedLine.includes(marker))) {
       return true;
     }
     return markerRegex.some((re) => re.test(trimmed));
@@ -297,17 +346,28 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
       continue;
     }
     
-    // Ne garder QUE les titres connus de la liste VALID_TITLES (normalisés)
-    const matchedTitle = normalizedTitles.get(normalizeTitle(line));
+    const normalizedLine = normalizeTitle(line);
+    const matchedTitle = normalizedTitles.get(normalizedLine);
+    const isLikelyTitle = (() => {
+      if (!line) return false;
+      if (CTA_TITLE_MARKERS.some(marker => normalizedLine.includes(marker))) return false;
+      if (normalizedLine.includes('score global')) return false;
+      if (normalizedLine.split(/\s+/).length < 2) return false;
+      const isUppercase = line === line.toUpperCase();
+      if (!isUppercase) return false;
+      if (line.length < 6 || line.length > 120) return false;
+      return TITLE_KEYWORDS.some(keyword => normalizedLine.includes(keyword));
+    })();
     
-    if (matchedTitle) {
+    if (matchedTitle || isLikelyTitle) {
+      const resolvedTitle = matchedTitle || line;
       // Vérifier qu'on n'a pas déjà cette section (éviter les doublons)
       const alreadyExists = sectionMatches.some(s => 
-        s.title.toUpperCase().replace(/[^A-Z]/g, '') === matchedTitle.toUpperCase().replace(/[^A-Z]/g, '')
+        s.title.toUpperCase().replace(/[^A-Z]/g, '') === resolvedTitle.toUpperCase().replace(/[^A-Z]/g, '')
       );
       
       if (!alreadyExists) {
-        const title = line;
+        const title = resolvedTitle;
         const startIndex = txtContent.indexOf(lineFull, currentPos) + lineFull.length;
         
         if (sectionMatches.length > 0) {

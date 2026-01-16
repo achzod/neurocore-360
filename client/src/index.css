@@ -572,6 +572,13 @@
 .ultrahuman-report .prose {
   color: var(--color-text) !important;
 }
+.ultrahuman-report .prose * {
+  color: inherit !important;
+}
+
+.ultrahuman-report {
+  color: var(--color-text);
+}
 .ultrahuman-report .prose p,
 .ultrahuman-report .prose li,
 .ultrahuman-report .prose strong {
@@ -589,7 +596,4 @@
   background: var(--color-border);
   padding: 0 0.25rem;
   border-radius: 0.25rem;
-}
-.ultrahuman-report .prose * {
-  color: inherit;
 }
