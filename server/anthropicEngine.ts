@@ -89,20 +89,36 @@ function sleep(ms: number) {
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
 const KNOWN_SOURCES = [
   "Huberman",
+  "Andrew Huberman",
+  "Huberman Lab",
   "Peter Attia",
   "Attia",
   "Applied Metabolics",
   "Stronger By Science",
   "SBS",
   "Examine",
+  "Examine.com",
   "Renaissance Periodization",
   "MPMD",
+  "More Plates",
+  "Moreplates",
   "Newsletter",
   "ACHZOD",
+  "Matthew Walker",
+  "Sapolsky",
+  "Layne Norton",
+  "Ben Bikman",
+  "Rhonda Patrick",
+  "Robert Lustig",
+  "Andy Galpin",
+  "Brad Schoenfeld",
+  "Mike Israetel",
+  "Justin Sonnenburg",
+  "Chris Kresser",
 ];
 
 const SOURCE_NAME_REGEX = new RegExp(
-  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod)\\b",
+  "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
   "gi"
 );
 

@@ -90,6 +90,8 @@ const MIN_BURNOUT_SECTION_WORDS: Record<string, number> = {
 };
 const SOURCE_MARKERS = [
   "huberman",
+  "andrew huberman",
+  "huberman lab",
   "peter attia",
   "peter_attia",
   "applied metabolics",
@@ -97,13 +99,25 @@ const SOURCE_MARKERS = [
   "stronger by science",
   "sbs",
   "examine",
+  "examine.com",
   "renaissance periodization",
   "renaissance_periodization",
   "mpmd",
+  "more plates",
+  "moreplates",
   "newsletter",
   "achzod",
   "matthew walker",
   "sapolsky",
+  "layne norton",
+  "ben bikman",
+  "rhonda patrick",
+  "robert lustig",
+  "andy galpin",
+  "brad schoenfeld",
+  "mike israetel",
+  "justin sonnenburg",
+  "chris kresser",
 ];
 
 const FALLBACK_BURNOUT_CONTEXT = [
@@ -320,7 +334,7 @@ function sanitizeBurnoutContent(content: string): string {
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
     .replace(/Sources?\s*:.*$/gmi, "")
     .replace(/^\s*Source\s*:.*$/gmi, "")
-    .replace(/\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod|matthew walker|sapolsky)\b/gi, "")
+    .replace(/\b(huberman|andrew\s+huberman|huberman\s+lab|peter\s+attia|attia|applied\s+metabolics|stronger\s+by\s+science|sbs|examine(?:\.com)?|renaissance\s+periodization|mpmd|more\s+plates|moreplates|newsletter|achzod|matthew\s+walker|sapolsky|layne\s+norton|ben\s+bikman|rhonda\s+patrick|robert\s+lustig|andy\s+galpin|brad\s+schoenfeld|mike\s+israetel|justin\s+sonnenburg|chris\s+kresser)\b/gi, "")
     .replace(/\bclients\b/gi, "profils")
     .replace(/\bclient\b/gi, "profil")
     .replace(/\bnous\b/gi, "je")

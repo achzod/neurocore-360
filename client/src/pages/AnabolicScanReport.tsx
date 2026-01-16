@@ -305,11 +305,11 @@ const AnabolicScanReport: React.FC = () => {
     const contactSite = siteLine.replace(/^site\s*:\s*/i, "") || "achzodcoaching.com";
     const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
     const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
-    const summaryTrimmed = summary.length > 420 ? `${summary.slice(0, 420).trim()}...` : summary;
+    const summaryTrimmed = summary.length > 360 ? `${summary.slice(0, 360).trim()}...` : summary;
     const isDebut = variant === 'debut';
     const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
-    const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
-    const subline = isDebut ? "Deduction 100% sur ton coaching" : "Execution accompagnee";
+    const headline = isDebut ? "Rappel coaching" : "Execution accompagnee";
+    const subline = isDebut ? "Deduction 100% du scan" : "Suivi humain + ajustements";
     const fallbackBullets = isDebut
       ? [
           "Deduction 100% du scan si coaching",
@@ -325,33 +325,25 @@ const AnabolicScanReport: React.FC = () => {
 
     return (
       <div
-        className="rounded-sm border p-6 md:p-8"
+        className="rounded-xl border p-6 md:p-8"
         style={{
           background: `linear-gradient(135deg, ${primary}12 0%, ${currentTheme.colors.surface} 100%)`,
           borderColor: primaryBorder
         }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <span
-              className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
-              style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
-            >
-              {badgeLabel}
-            </span>
-            <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
-              {subline}
-            </span>
-          </div>
-          {promoCode && (
-            <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
-              {promoCode}
-            </span>
-          )}
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-[1.6fr_1fr]">
-          <div className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+                style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
+              >
+                {badgeLabel}
+              </span>
+              <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+                {subline}
+              </span>
+            </div>
             <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
               {headline}
             </h4>
@@ -360,31 +352,47 @@ const AnabolicScanReport: React.FC = () => {
                 {summaryTrimmed}
               </p>
             )}
-            {bulletsToRender.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2">
+          </div>
+          {promoCode && (
+            <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
+              {promoCode}
+            </span>
+          )}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
+              <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: primary }}>
+                Ce que tu obtiens
+              </p>
+              <ul className="space-y-2">
                 {bulletsToRender.map((bullet, idx) => (
-                  <div key={idx} className="p-3 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
-                    <p className="text-sm font-medium" style={{ color: currentTheme.colors.text }}>
-                      {bullet}
-                    </p>
-                  </div>
+                  <li key={idx} className="text-sm" style={{ color: currentTheme.colors.text }}>
+                    {bullet}
+                  </li>
                 ))}
+              </ul>
+            </div>
+
+            {(bonusLine || promoLine) && (
+              <div className="p-4 rounded-lg border" style={{ borderColor: currentTheme.colors.border, backgroundColor: primaryFaint }}>
+                {bonusLine && (
+                  <p className="text-xs uppercase tracking-widest mb-1" style={{ color: primary }}>
+                    {bonusLine}
+                  </p>
+                )}
+                {promoLine && (
+                  <p className="text-xs" style={{ color: currentTheme.colors.textMuted }}>
+                    {promoLine}
+                  </p>
+                )}
               </div>
-            )}
-            {bonusLine && (
-              <p className="text-xs uppercase tracking-widest" style={{ color: primary }}>
-                {bonusLine}
-              </p>
-            )}
-            {promoLine && (
-              <p className="text-xs" style={{ color: currentTheme.colors.textMuted }}>
-                {promoLine}
-              </p>
             )}
           </div>
 
           <div className="space-y-4">
-            <div className="p-4 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
+            <div className="p-4 rounded-lg border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
               <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: currentTheme.colors.textMuted }}>
                 Contact direct
               </p>
@@ -399,7 +407,7 @@ const AnabolicScanReport: React.FC = () => {
             <div className="grid gap-3">
               <a
                 href={`mailto:${contactEmail}`}
-                className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+                className="px-4 py-3 rounded-lg text-center text-sm font-semibold transition-all"
                 style={{ backgroundColor: primary, color: 'var(--color-on-primary)' }}
               >
                 Ecrire a Achzod
@@ -408,13 +416,22 @@ const AnabolicScanReport: React.FC = () => {
                 href={siteUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-3 rounded-sm text-center text-sm font-semibold transition-all"
+                className="px-4 py-3 rounded-lg text-center text-sm font-semibold transition-all"
                 style={{ border: `1px solid ${primary}`, color: primary }}
               >
                 Voir le coaching
               </a>
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: primaryFaint, border: `1px solid ${primaryBorder}` }}>
+          <p className="text-sm font-semibold" style={{ color: primary }}>
+            Deduction 100% du scan sur le coaching
+          </p>
+          <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
+            Le montant de ton Anabolic Bioscan est deduit si tu passes sur un suivi.
+          </p>
         </div>
       </div>
     );

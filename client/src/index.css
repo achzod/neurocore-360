@@ -570,23 +570,26 @@
 
 /* Ultrahuman reports: enforce readable text across themes */
 .ultrahuman-report .prose {
-  color: var(--color-text);
+  color: var(--color-text) !important;
 }
 .ultrahuman-report .prose p,
 .ultrahuman-report .prose li,
 .ultrahuman-report .prose strong {
-  color: var(--color-text);
+  color: var(--color-text) !important;
 }
 .ultrahuman-report .prose em,
 .ultrahuman-report .prose small {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted) !important;
 }
 .ultrahuman-report .prose a {
-  color: var(--color-primary);
+  color: var(--color-primary) !important;
 }
 .ultrahuman-report .prose code {
-  color: var(--color-primary);
+  color: var(--color-primary) !important;
   background: var(--color-border);
   padding: 0 0.25rem;
   border-radius: 0.25rem;
+}
+.ultrahuman-report .prose * {
+  color: inherit;
 }

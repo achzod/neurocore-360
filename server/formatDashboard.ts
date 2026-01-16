@@ -90,7 +90,7 @@ function normalizeTitle(title: string): string {
 }
 
 const SOURCE_NAME_REGEX = new RegExp(
-  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod)\\b",
+  "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
   "gi"
 );
 

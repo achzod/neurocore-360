@@ -1449,6 +1449,11 @@ class PgReviewStorage implements IReviewStorage {
 
   private async ensureReviewsTable(): Promise<void> {
     if (this.ensuredReviewsTable) return;
+    try {
+      await pool.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+    } catch (error) {
+      console.warn("[Reviews] Unable to ensure pgcrypto extension:", error);
+    }
     await pool.query(
       `CREATE TABLE IF NOT EXISTS reviews (
         id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),

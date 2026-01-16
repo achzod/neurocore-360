@@ -144,22 +144,36 @@ const MIN_DISCOVERY_SECTION_WORDS = 700;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
 const SOURCE_MARKERS = [
   "huberman",
+  "andrew huberman",
+  "huberman lab",
   "peter attia",
   "attia",
   "applied metabolics",
   "stronger by science",
   "sbs",
   "examine",
+  "examine.com",
   "renaissance periodization",
   "mpmd",
+  "more plates",
+  "moreplates",
   "newsletter",
   "achzod",
   "matthew walker",
   "sapolsky",
+  "layne norton",
+  "ben bikman",
+  "rhonda patrick",
+  "robert lustig",
+  "andy galpin",
+  "brad schoenfeld",
+  "mike israetel",
+  "justin sonnenburg",
+  "chris kresser",
 ];
 
 const SOURCE_NAME_REGEX = new RegExp(
-  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod|matthew walker|sapolsky)\\b",
+  "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
   "gi"
 );
 
@@ -1585,6 +1599,7 @@ function cleanMarkdownToHTML(text: string): string {
     // Strip inline styles/colors that can cause black-on-black
     .replace(/\s*style=(\"|')[^\"']*(\"|')/gi, '')
     .replace(/\s*color=(\"|')[^\"']*(\"|')/gi, '')
+    .replace(/\s*class=(\"|')[^\"']*(\"|')/gi, '')
     .replace(/<\/?font[^>]*>/gi, '')
     // Final pass: remove any remaining em dashes that slipped through
     .replace(/—/g, ':')
@@ -1724,6 +1739,8 @@ export async function convertToNarrativeReport(
   const prenom = getDiscoveryFirstName(normalized);
   const objectif = normalized.objectif || 'tes objectifs';
   const globalScore10 = Math.round((result.globalScore / 10) * 10) / 10;
+  const stripHtmlTags = (html: string) =>
+    html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
 
@@ -1830,6 +1847,7 @@ export async function convertToNarrativeReport(
 
       // Build content with header + AI content
       let content = `<p><strong>Score: ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
+      let appendedFallback = false;
 
       // Add blocage info if exists
       if (domainBlocages.length > 0) {
@@ -1844,9 +1862,16 @@ export async function convertToNarrativeReport(
         if (aiContent.length < MIN_DISCOVERY_SECTION_CHARS) {
           // Complete with template if AI output is shorter than expected
           content += generateDomainHTML(domain, score, responses);
+          appendedFallback = true;
         }
       } else {
         // Fallback to template if AI failed
+        content += generateDomainHTML(domain, score, responses);
+        appendedFallback = true;
+      }
+
+      const finalTextLength = stripHtmlTags(content).length;
+      if (finalTextLength < MIN_DISCOVERY_SECTION_CHARS && !appendedFallback) {
         content += generateDomainHTML(domain, score, responses);
       }
 
