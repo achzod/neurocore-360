@@ -9,6 +9,8 @@
  * 2. formatTxtToDashboard() → Format dashboard (séparé, flexible)
  */
 
+import { normalizeSingleVoice } from "./textNormalization";
+
 export interface DashboardSection {
   id: string;
   title: string;
@@ -111,6 +113,7 @@ const TITLE_KEYWORDS = [
   'digestion',
   'hormonal',
   'cardio',
+  'audit complet',
 ];
 
 const CTA_TITLE_MARKERS = [
@@ -132,9 +135,10 @@ const SOURCE_NAME_REGEX = new RegExp(
 );
 
 function cleanSectionContent(content: string): string {
-  return stripEmoji(content)
+  const cleaned = stripEmoji(content)
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
     .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
@@ -142,6 +146,10 @@ function cleanSectionContent(content: string): string {
     .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/score\s+global\s*[:\-–—]\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/\bscore\s+global\b.*$/gmi, '')
+    .replace(/^\s*code\s+promo.*$/gmi, '')
+    .replace(/^\s*formules?\s+disponibles.*$/gmi, '')
+    .replace(/^\s*bonus\s+exclusif.*$/gmi, '')
+    .replace(/^\s*mes\s+formules.*$/gmi, '')
     .replace(/^\s*={3,}.*$/gm, '')
     .replace(/={3,}/g, '')
     .replace(/^\s*-{3,}.*$/gm, '')
@@ -152,6 +160,7 @@ function cleanSectionContent(content: string): string {
     .replace(/^\s*note\s*\(technique\).*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
     .trim();
+  return normalizeSingleVoice(cleaned).trim();
 }
 
 function stripCtaFromContent(content: string): string {
@@ -167,6 +176,8 @@ function stripCtaFromContent(content: string): string {
     "PROCHAINES ETAPES",
     "PROCHAINES ÉTAPES",
     "PRET A TRANSFORMER CES INSIGHTS",
+    "FORMULES DISPONIBLES",
+    "MES FORMULES",
     "CODE PROMO",
     "OPTION 1",
     "OPTION 2",
@@ -175,9 +186,10 @@ function stripCtaFromContent(content: string): string {
   const markerRegex = [
     /tu\s+as\s+les\s+cl[eé]s/i,
     /ce\s+que\s+tu\s+obtiens/i,
-    /coaching/i,
     /code\s+promo/i,
     /bonus\s+exclusif/i,
+    /^coaching\b/i,
+    /^formules?\b/i,
     /^email\s*:/i,
     /^site\s*:/i,
     /^\s*rapports?\s+genere/i
@@ -200,18 +212,40 @@ function stripCtaFromContent(content: string): string {
 function findLastLineMarker(text: string, markers: string[]): { index: number; marker: string | null } {
   let lastIndex = -1;
   let lastMarker: string | null = null;
-  for (const marker of markers) {
-    const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`^\\s*${escaped}\\s*$`, 'gmi');
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index >= lastIndex) {
-        lastIndex = match.index;
-        lastMarker = marker;
+  const normalizedMarkers = markers.map((marker) => normalizeTitle(marker));
+  const lines = text.split('\n');
+  let offset = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const normalizedLine = normalizeTitle(trimmed);
+    if (normalizedLine) {
+      for (const marker of normalizedMarkers) {
+        if (marker && normalizedLine.includes(marker)) {
+          if (offset >= lastIndex) {
+            lastIndex = offset;
+            lastMarker = marker;
+          }
+          break;
+        }
       }
     }
+    offset += line.length + 1;
   }
   return { index: lastIndex, marker: lastMarker };
+}
+
+function isLikelySectionTitle(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('#') || trimmed.startsWith('===') || trimmed.startsWith('---')) return false;
+  const normalizedLine = normalizeTitle(trimmed);
+  if (CTA_TITLE_MARKERS.some(marker => normalizedLine.includes(marker))) return false;
+  if (normalizedLine.includes('score global')) return false;
+  if (normalizedLine.split(/\s+/).length < 2) return false;
+  const isUppercase = trimmed === trimmed.toUpperCase();
+  if (!isUppercase) return false;
+  if (trimmed.length < 6 || trimmed.length > 120) return false;
+  return TITLE_KEYWORDS.some(keyword => normalizedLine.includes(keyword));
 }
 
 function extractClientName(txtContent: string): string {
@@ -242,12 +276,15 @@ function extractGlobalScoreFromTxt(txtContent: string): number | null {
 }
 
 function extractSectionScoreFromContent(content: string): number | null {
-  const re = /Score\s*:?\s*(\d{1,3})\s*\/\s*100/gi;
-  let m: RegExpExecArray | null = null;
+  const lines = content.split('\n');
   let last: number | null = null;
-  while ((m = re.exec(content)) !== null) {
-    const n = Number(m[1]);
-    if (Number.isFinite(n)) last = Math.max(0, Math.min(100, Math.round(n)));
+  for (const line of lines) {
+    if (/score\s+global/i.test(line)) continue;
+    const match = line.match(/score\s*:?\s*(\d{1,3})\s*\/\s*100/i);
+    if (match) {
+      const n = Number(match[1]);
+      if (Number.isFinite(n)) last = Math.max(0, Math.min(100, Math.round(n)));
+    }
   }
   return last;
 }
@@ -269,6 +306,18 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
           if (match.index > start.index && match.index < endIdx) {
             endIdx = match.index;
           }
+        }
+      }
+      if (endIdx === txtContent.length) {
+        const remaining = txtContent.slice(start.index);
+        const remainingLines = remaining.split('\n');
+        let offset = start.index;
+        for (const line of remainingLines) {
+          if (offset > start.index && isLikelySectionTitle(line)) {
+            endIdx = offset;
+            break;
+          }
+          offset += line.length + 1;
         }
       }
       return txtContent.substring(start.index, endIdx).trim();
@@ -348,16 +397,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     
     const normalizedLine = normalizeTitle(line);
     const matchedTitle = normalizedTitles.get(normalizedLine);
-    const isLikelyTitle = (() => {
-      if (!line) return false;
-      if (CTA_TITLE_MARKERS.some(marker => normalizedLine.includes(marker))) return false;
-      if (normalizedLine.includes('score global')) return false;
-      if (normalizedLine.split(/\s+/).length < 2) return false;
-      const isUppercase = line === line.toUpperCase();
-      if (!isUppercase) return false;
-      if (line.length < 6 || line.length > 120) return false;
-      return TITLE_KEYWORDS.some(keyword => normalizedLine.includes(keyword));
-    })();
+    const isLikelyTitle = isLikelySectionTitle(line);
     
     if (matchedTitle || isLikelyTitle) {
       const resolvedTitle = matchedTitle || line;

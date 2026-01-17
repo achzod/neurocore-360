@@ -629,12 +629,19 @@ export async function registerRoutes(
             return null;
           };
 
+          const resolveScoreFromSection = (section: { id: string; title: string }): number | null => {
+            const combined = `${section.title} ${section.id}`;
+            return resolveScoreFromTitle(combined);
+          };
+
           // On mappe le format dashboard vers le format attendu par AuditDetail.tsx
           const mappedSections = dashboard.sections
             .filter(s => s.category !== 'executive' && s.category !== 'supplements')
             .map(s => {
-              const scoreFromAudit = resolveScoreFromTitle(s.title);
-              const sectionScore = scoreFromAudit ?? (s.score > 0 ? s.score : globalScore);
+              const scoreFromAudit = resolveScoreFromSection(s);
+              const sectionScore =
+                scoreFromAudit ??
+                (s.score > 0 && s.score <= 100 ? s.score : globalScore);
               const sectionHtml = formatSectionToHTML(s);
               return {
                 id: s.id,
@@ -656,6 +663,7 @@ export async function registerRoutes(
             dashboard.sections.filter(s => s.category === "analysis").map(s => s.id)
           );
           const analysisSections = mappedSections.filter(s => analysisSectionIds.has(s.id));
+          const radarFallbackSections = analysisSections.length > 0 ? analysisSections : mappedSections;
 
           const RADAR_LABELS: Record<string, string> = {
             'analyse-entrainement-et-periodisation': 'Entrainement',
@@ -672,7 +680,7 @@ export async function registerRoutes(
           const resolveRadarLabel = (section: { id: string; title: string }) => {
             const byId = RADAR_LABELS[section.id];
             if (byId) return byId;
-            const title = normalizeTitle(section.title);
+            const title = normalizeTitle(`${section.title} ${section.id}`);
             if (title.includes("entrainement")) return "Entrainement";
             if (title.includes("cardio") || title.includes("cardiovasculaire") || title.includes("hrv")) return "Cardio";
             if (title.includes("metabolisme") || title.includes("nutrition")) return "Metabolisme";
@@ -715,7 +723,7 @@ export async function registerRoutes(
                   description: item.label,
                   key: item.label.toLowerCase().replace(/\s+/g, '-')
                 }))
-              : analysisSections.slice(0, 8).map(section => ({
+              : radarFallbackSections.slice(0, 8).map(section => ({
                   label: resolveRadarLabel(section),
                   value: toRadarValue(section.score) || Math.round((globalScore / 10) * 10) / 10,
                   max: 10,

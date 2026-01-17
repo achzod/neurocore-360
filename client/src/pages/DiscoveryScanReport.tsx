@@ -337,11 +337,30 @@ const DiscoveryScanReport: React.FC = () => {
   const sortedMetrics = [...reportData.metrics].sort((a, b) => a.value - b.value);
   const worstMetric = sortedMetrics[0];
   const bestMetric = sortedMetrics[sortedMetrics.length - 1];
+  const themeVars = {
+    '--color-bg': currentTheme.colors.background,
+    '--color-surface': currentTheme.colors.surface,
+    '--color-border': currentTheme.colors.border,
+    '--color-text': currentTheme.colors.text,
+    '--color-text-muted': currentTheme.colors.textMuted,
+    '--color-primary': currentTheme.colors.primary,
+    '--color-grid': currentTheme.colors.grid,
+    '--color-on-primary': currentTheme.type === 'dark' ? '#000' : '#fff',
+    '--text': currentTheme.colors.text,
+    '--text-secondary': currentTheme.colors.textMuted,
+    '--text-muted': currentTheme.colors.textMuted,
+    '--surface-1': currentTheme.colors.surface,
+    '--surface-2': currentTheme.colors.background,
+    '--border': currentTheme.colors.border,
+    '--primary': currentTheme.colors.primary,
+    '--accent-ok': currentTheme.colors.primary,
+    '--accent-warning': currentTheme.colors.primary,
+  } as React.CSSProperties;
 
   return (
     <div
       className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
-      style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
@@ -554,11 +573,11 @@ const DiscoveryScanReport: React.FC = () => {
                     <div
                       className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
                       style={{
-                        '--tw-prose-body': 'var(--color-text)',
-                        '--tw-prose-headings': 'var(--color-text)',
-                        '--tw-prose-strong': 'var(--color-text)',
-                        '--tw-prose-bullets': 'var(--color-primary)',
-                        color: 'var(--color-text)'
+                        color: currentTheme.colors.text,
+                        '--tw-prose-body': currentTheme.colors.text,
+                        '--tw-prose-headings': currentTheme.colors.text,
+                        '--tw-prose-strong': currentTheme.colors.text,
+                        '--tw-prose-bullets': currentTheme.colors.primary,
                       } as React.CSSProperties}
                       dangerouslySetInnerHTML={{ __html: section.content }}
                     />

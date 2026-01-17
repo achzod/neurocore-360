@@ -1439,6 +1439,44 @@ STYLE:
 - Ton grave mais pas alarmiste
 - Interdit de citer des sources, auteurs ou publications`;
 
+function stripHtmlTags(text: string): string {
+  return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function buildSynthesisFallback(
+  responses: DiscoveryResponses,
+  scores: DiscoveryAnalysisResult['scoresByDomain'],
+  blocages: BlockageAnalysis[]
+): string {
+  const prenom = responses.prenom || 'toi';
+  const objectif = responses.objectif || 'tes objectifs';
+  const sorted = Object.entries(scores).sort((a, b) => a[1] - b[1]);
+  const [worst1, worst2] = sorted;
+  const worstLabel1 = DOMAIN_CONFIG[worst1?.[0]]?.label || worst1?.[0] || 'profil';
+  const worstLabel2 = DOMAIN_CONFIG[worst2?.[0]]?.label || worst2?.[0] || 'equilibre';
+  const blocageCount = blocages.length;
+
+  const para1 = `${prenom}, le coeur de ton profil se situe autour de ${worstLabel1} et ${worstLabel2}. Quand ces deux axes sont bas, le corps compense en mode survie : plus de cortisol, moins de recuperation, et un metabolisme qui se protege. Ce n'est pas un detail, c'est un verrou central. Une baisse de 15 a 25% sur ces systemes suffit a perturber la regulation de l'insuline, la production de GH nocturne, et la stabilite de l'energie en journee.`;
+  const para2 = `Les blocages detectes (${blocageCount}) ne sont pas isoles. Un sommeil fragmente augmente la reactivite au stress, le stress deteriore la digestion, et une digestion instable perturbe l'absorption des micronutriments. Cette cascade cree un bruit physiologique permanent. Le resultat : fluctuations d'humeur, entrainements moins efficaces, et signaux hormonaux brouilles, meme si tes efforts sont solides sur le papier.`;
+  const para3 = `Metaboliquement, ce profil favorise les pics glycemiques suivis de chutes, une sensibilite a l'insuline moins efficace, et une mobilisation des graisses plus lente. Le ratio cortisol/testosterone se degrade, la leptine perd en signal de satiete, et la thyroidie peut ralentir. Chaque petit desequilibre ajoute une couche de resistance, jusqu'a rendre les approches classiques inefficaces.`;
+  const para4 = `Si ton objectif est ${objectif}, tu as besoin d'un systeme qui coopere, pas d'un systeme qui se defend. Aujourd'hui, ton corps se defend. Ce rapport montre la logique de ces blocages, pas des recettes rapides. Comprendre ces mecanismes, c'est recuperer le controle et transformer tes efforts en resultats mesurables.`;
+
+  return [para1, para2, para3, para4].join("\n\n");
+}
+
+function ensureSynthesisLength(
+  text: string,
+  responses: DiscoveryResponses,
+  scores: DiscoveryAnalysisResult['scoresByDomain'],
+  blocages: BlockageAnalysis[]
+): string {
+  const plain = stripHtmlTags(text);
+  const wordCount = plain.split(/\s+/).filter(Boolean).length;
+  if (wordCount >= 650) return text;
+  const fallback = buildSynthesisFallback(responses, scores, blocages);
+  return `${text}\n\n${fallback}`.trim();
+}
+
 async function generateAISynthesis(
   responses: DiscoveryResponses,
   scores: DiscoveryAnalysisResult['scoresByDomain'],
@@ -1538,6 +1576,7 @@ RAPPELS CRITIQUES:
       }
 
       rawText = normalizeSingleVoice(rawText);
+      rawText = ensureSynthesisLength(rawText, responses, scores, blocages);
       return cleanMarkdownToHTML(rawText);
     }
     throw new Error("[Discovery] Synthese invalide apres retries");
@@ -1563,6 +1602,7 @@ RAPPELS CRITIQUES:
             cleaned = stripEnglishLines(cleaned);
           }
           cleaned = normalizeSingleVoice(cleaned);
+          cleaned = ensureSynthesisLength(cleaned, responses, scores, blocages);
           return cleanMarkdownToHTML(cleaned);
         }
       } catch (fallbackError) {
@@ -1570,7 +1610,14 @@ RAPPELS CRITIQUES:
       }
     }
 
-    return `Analyse détectée: ${blocages.length} blocages identifiés affectant ton objectif "${responses.objectif}".`;
+    return cleanMarkdownToHTML(
+      ensureSynthesisLength(
+        buildSynthesisFallback(responses, scores, blocages),
+        responses,
+        scores,
+        blocages
+      )
+    );
   }
 }
 
@@ -1580,6 +1627,7 @@ function cleanMarkdownToHTML(text: string): string {
     // Remove any explicit sources/references lines even if inline
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
     .replace(/<p[^>]*>[^<]*(Sources?|References?|Références?)\b[^<]*<\/p>/gi, '')
     // Remove any explicit source names
     .replace(SOURCE_NAME_REGEX, "")
@@ -2031,11 +2079,57 @@ export async function convertToNarrativeReport(
   };
 }
 
+function getDomainExpansion(
+  domain: string,
+  score: number,
+  responses: DiscoveryResponses,
+  prenom: string,
+  objectif: string
+): string {
+  switch (domain) {
+    case 'sommeil':
+      return `
+<p>Ton horloge circadienne n'est pas negociable. Si l'heure de coucher varie de plus d'une heure, la melatonine se decale et le pic de cortisol du matin s'aplatit. Tu te leves deja en dette, meme si tu passes assez de temps au lit. La lumiere matinale (10-20 minutes dans les 2 heures apres le reveil) recalibre ce rythme et conditionne la qualite du sommeil suivant.</p>
+<p>Sur le plan metabolique, une nuit courte augmente la resistance a l'insuline d'environ 20-30% en 24 a 48h, baisse la leptine et augmente la ghreline. Resultat : plus de faim, moins de controle, et un stockage abdominal facilite. Si ton objectif est ${objectif}, ce point seul suffit a freiner la progression.</p>`;
+    case 'stress':
+      return `
+<p>Le stress laisse une signature mesurable : HRV qui chute, tension qui monte, digestion qui se fige, concentration qui se fragmente. Un cortisol eleve le soir retarde l'endormissement et entretient un sommeil leger. Tu dors, mais tu ne recuperes pas. C'est exactement le type de fatigue qui donne l'impression de faire des efforts sans retour.</p>
+<p>Quand la charge allostatique s'accumule, les catecholamines (adrenaline, noradrenaline) deviennent dominantes. Tu peux etre "actif" mentalement, mais vide physiologiquement. Pour ${prenom}, ce desalignement entre cerveau et corps cree un bruit de fond qui sabote la constance et donc les resultats.</p>`;
+    case 'energie':
+      return `
+<p>Ton energie depend de la densite mitochondriale, de la fonction thyroidienne (T3) et de la disponibilite en micronutriments (fer, B12, magnesium). Un simple deficit peut diviser la production d'ATP, et donc la motivation. Si tu as des coups de barre, c'est souvent un signal de carburant mal gere, pas un manque de volonte.</p>
+<p>Le profil glycemique joue un role majeur. Un repas trop riche en glucides rapides sans fibres ni proteines declenche un pic d'insuline, puis une hypoglycemie reactive 90 a 120 minutes plus tard. Cette oscillation cree le fameux "crash" et te pousse a compenser avec cafeine ou sucre.</p>`;
+    case 'digestion':
+      return `
+<p>Une digestion irreguliere augmente la permeabilite intestinale et laisse passer des endotoxines (LPS) qui activent l'inflammation systemique. Cette inflammation eleve le cortisol, perturbe l'insuline et peut diminuer la conversion T4 -> T3. Le probleme n'est plus seulement digestif, il devient hormonal et metabolique.</p>
+<p>La qualite du microbiote depend aussi du timing et de la composition : 25-35g de fibres par jour, hydratation suffisante et un rythme de repas stable. Sans ces bases, meme une alimentation "propre" peut etre mal absorbee, et l'objectif ${objectif} se retrouve freine.</p>`;
+    case 'training':
+      return `
+<p>Le corps repond au signal qu'il comprend : surcharge progressive, volume coherent, et recuperation reelle. Sans deload periodique, le systeme nerveux central sature et la performance stagne. Le stress de l'entrainement devient alors un stress de plus, pas un stimulus adaptatif.</p>
+<p>Le cardio de base (zone 2) n'est pas optionnel. 120 a 180 minutes par semaine augmentent la capacite mitochondriale, ameliorent la sensibilite a l'insuline et accelerent la recuperation musculaire. C'est un levier direct pour ${objectif}.</p>`;
+    case 'nutrition':
+      return `
+<p>Pour construire ou maintenir du muscle, le seuil de leucine par repas est critique : environ 2-3g, soit 25-35g de proteines completes. Repartir cela sur 3-4 repas stabilise la MPS. En dessous, tu restes en mode entretien et tu perds ton avantage anabolique.</p>
+<p>Le timing compte aussi. Un apport proteique au petit-dejeuner reduit les fringales de 20-30% sur la journee, et une fibre suffisante (25-35g) lisse la glycemie. L'hydratation joue sur la performance et la digestion, souvent plus que tu le penses.</p>`;
+    case 'lifestyle':
+      return `
+<p>Le NEAT fait souvent la difference. 8 a 12 000 pas par jour peuvent representer 200-600 calories de depense quotidienne, soit l'equivalent d'un entrainement complet. Si tu es sedentaire 9-10h par jour, tu peux perdre ce levier sans t'en rendre compte.</p>
+<p>La cafeine a une demi-vie de 5-6h. Un cafe a 15h laisse encore 25-30% d'effet a 21h. Ajoute l'alcool qui coupe le REM, et tu obtiens un sommeil pauvre, donc un cortisol plus haut et une recuperation plus lente. Ce sont des details qui deviennent des freins majeurs.</p>`;
+    case 'mindset':
+      return `
+<p>Le mental suit la physiologie. Quand le sommeil est mauvais et que le stress est haut, la dopamine chute et la motivation devient fragile. Ce n'est pas un probleme de caractere, c'est un probleme de signal interne. Reparer ces signaux rend l'execution plus naturelle.</p>
+<p>La discipline vient surtout de l'environnement : frictions basses pour les bonnes habitudes, frictions hautes pour les tentations. Si ton objectif est ${objectif}, il faut que chaque choix devienne automatique. C'est la regularite qui transforme, pas les pics d'intensite.</p>`;
+    default:
+      return '';
+  }
+}
+
 // Generate DETAILED domain-specific HTML based on responses - RICH CONTENT for each section
 function generateDomainHTML(domain: string, score: number, responses: DiscoveryResponses): string {
   const prenom = responses.prenom || 'Tu';
   const objectif = responses.objectif || 'tes objectifs';
   const scoreLabel = score >= 80 ? 'excellent' : score >= 60 ? 'correct mais sous-optimal' : score >= 40 ? 'insuffisant' : 'critique';
+  const expansion = getDomainExpansion(domain, score, responses, prenom, objectif);
 
   switch (domain) {
     case 'sommeil': {
@@ -2057,7 +2151,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${reveils === 'chaque-nuit' || reveils === 'souvent' ? 'Tes reveils nocturnes frequents fragmentent tes cycles de 90 minutes. Chaque reveil te ramene en sommeil leger, t\'empechant d\'accumuler le temps necessaire en sommeil profond et paradoxal (REM). Cela peut etre lie a des variations glycemiques nocturnes, de l\'apnee du sommeil, ou un desequilibre cortisol/melatonine.' : 'L\'absence de reveils nocturnes frequents est un atout majeur pour ta recuperation.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton deficit de sommeil compromet directement ta capacite a perdre du gras et construire du muscle. La resistance a l\'insuline induite par le manque de sommeil favorise le stockage abdominal, tandis que la GH effondree limite ta synthese proteique de 18-25%.' : 'Ton sommeil est une base solide, mais des optimisations circadiennes pourraient encore ameliorer ta production de GH et ta sensibilite a l\'insuline.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton deficit de sommeil compromet directement ta capacite a perdre du gras et construire du muscle. La resistance a l\'insuline induite par le manque de sommeil favorise le stockage abdominal, tandis que la GH effondree limite ta synthese proteique de 18-25%.' : 'Ton sommeil est une base solide, mais des optimisations circadiennes pourraient encore ameliorer ta production de GH et ta sensibilite a l\'insuline.'}</p>
+${expansion}`;
     }
 
     case 'stress': {
@@ -2079,7 +2174,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${hasNoStressManagement ? 'L\'absence de techniques de gestion du stress (meditation, respiration, marche en nature) laisse ton systeme nerveux sans outil de regulation. Ton nerf vague, qui activerait le mode parasympathique "repos et digestion", reste sous-stimule.' : 'Tes techniques de gestion du stress actuelles aident a activer ton systeme parasympathique, ce qui est un point positif pour contrebalancer le cortisol.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Le cortisol chronique bloque la lipolyse en inhibant la lipase hormono-sensible. Il favorise le stockage visceral via les recepteurs cortisol des adipocytes abdominaux. Simultanement, il inhibe la production de testosterone au niveau des cellules de Leydig, sabotant ta capacite anabolique.' : 'Ton stress est gerable, mais surveille les periodes d\'intensification qui pourraient faire basculer ton metabolisme en mode catabolique.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Le cortisol chronique bloque la lipolyse en inhibant la lipase hormono-sensible. Il favorise le stockage visceral via les recepteurs cortisol des adipocytes abdominaux. Simultanement, il inhibe la production de testosterone au niveau des cellules de Leydig, sabotant ta capacite anabolique.' : 'Ton stress est gerable, mais surveille les periodes d\'intensification qui pourraient faire basculer ton metabolisme en mode catabolique.'}</p>
+${expansion}`;
     }
 
     case 'energie': {
@@ -2101,7 +2197,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${thermogenese === 'toujours' || thermogenese === 'souvent' ? 'Ta frilosite chronique est un marqueur important. Elle peut indiquer une hypothyroidie subclinique (T3 libre basse), un metabolisme de base abaisse par restriction calorique chronique, ou une thermogenese adaptative reduite. Ton corps economise l\'energie au lieu de la dissiper en chaleur.' : 'Ta thermogenese normale suggere une fonction thyroidienne et un metabolisme de base corrects.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton inflexibilite metabolique t\'empeche de bruler efficacement les graisses, meme en deficit calorique. Les mitochondries dysfonctionnelles produisent moins d\'ATP et plus de radicaux libres, creant un environnement inflammatoire qui freine encore plus ta progression.' : 'Ton energie est un atout, mais des ajustements sur le timing nutritionnel et l\'exposition au froid pourraient encore optimiser ta flexibilite metabolique.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton inflexibilite metabolique t\'empeche de bruler efficacement les graisses, meme en deficit calorique. Les mitochondries dysfonctionnelles produisent moins d\'ATP et plus de radicaux libres, creant un environnement inflammatoire qui freine encore plus ta progression.' : 'Ton energie est un atout, mais des ajustements sur le timing nutritionnel et l\'exposition au froid pourraient encore optimiser ta flexibilite metabolique.'}</p>
+${expansion}`;
     }
 
     case 'digestion': {
@@ -2123,7 +2220,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${energiePostRepas === 'crash' || energiePostRepas === 'somnolence' ? 'Ta fatigue post-prandiale n\'est pas normale. Elle peut indiquer une reponse insulinique excessive, une permeabilite intestinale (leaky gut) qui laisse passer des molecules pro-inflammatoires, ou une sensibilite alimentaire declenchant une reponse immunitaire energivore.' : 'Ton energie stable apres les repas indique une bonne tolerance alimentaire et une glycemie controlee.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Une digestion compromise limite l\'absorption des proteines necessaires a la synthese musculaire et des micronutriments (zinc, magnesium, B12) essentiels a ton metabolisme energetique. L\'inflammation intestinale chronique cree une resistance a l\'insuline et favorise le stockage graisseux.' : 'Ta digestion solide est un atout majeur pour l\'absorption des nutriments et le maintien d\'un environnement hormonal favorable.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Une digestion compromise limite l\'absorption des proteines necessaires a la synthese musculaire et des micronutriments (zinc, magnesium, B12) essentiels a ton metabolisme energetique. L\'inflammation intestinale chronique cree une resistance a l\'insuline et favorise le stockage graisseux.' : 'Ta digestion solide est un atout majeur pour l\'absorption des nutriments et le maintien d\'un environnement hormonal favorable.'}</p>
+${expansion}`;
     }
 
     case 'training': {
@@ -2145,7 +2243,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${evolution === 'regression' ? 'Ta regression de performance est un signal d\'alarme. Elle indique soit un surentrainement (HRV basse, cortisol eleve, testosterone en chute), soit un deficit energetique trop important, soit une accumulation de stress non-entrainement qui depasse ta capacite adaptative totale.' : evolution === 'stagnation' ? 'Ta stagnation n\'est pas due a un manque d\'effort. Elle revele souvent un plafond impose par tes facteurs limitants : sommeil, stress, nutrition, ou environnement hormonal. Pousser plus fort sans corriger ces facteurs est contre-productif.' : 'Ta progression continue est excellente et indique un bon equilibre stimulus-adaptation.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton desequilibre entrainement-recuperation cree un ratio testosterone/cortisol defavorable. En mode catabolique, tu perds du muscle et stockes du gras, l\'inverse de ton objectif. La MPS (synthese proteique musculaire) est bloquee quand le cortisol domine.' : 'Ton entrainement est bien structure. L\'optimisation des facteurs de recuperation pourrait debloquer de nouveaux gains.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton desequilibre entrainement-recuperation cree un ratio testosterone/cortisol defavorable. En mode catabolique, tu perds du muscle et stockes du gras, l\'inverse de ton objectif. La MPS (synthese proteique musculaire) est bloquee quand le cortisol domine.' : 'Ton entrainement est bien structure. L\'optimisation des facteurs de recuperation pourrait debloquer de nouveaux gains.'}</p>
+${expansion}`;
     }
 
     case 'nutrition': {
@@ -2169,7 +2268,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${sucres === 'eleve' ? 'Ta consommation elevee de sucres ajoutes maintient ton insuline chroniquement elevee, bloquant la lipolyse et favorisant le stockage. Les pics glycemiques repetitifs creent une inflammation systemique et accelerent la resistance a l\'insuline.' : ''} ${alcool === '8+' || alcool === '4-7' ? 'Ta consommation d\'alcool est problematique. L\'ethanol est metabolise en priorite par le foie, mettant en pause l\'oxidation des graisses. Il perturbe le sommeil profond, reduit la testosterone de 20-30%, et apporte des calories vides. Chaque verre est un frein direct a ta progression.' : 'Ta consommation d\'alcool limitee preserve ton metabolisme hepatique et ta qualite de sommeil.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton alimentation actuelle cree un environnement inflammatoire et insulino-resistant qui bloque la perte de gras malgre un eventuel deficit calorique. Les carences en micronutriments (magnesium, zinc, D3) amplifient ces dysfonctionnements.' : 'Ta nutrition est une base solide. Des ajustements sur le timing proteique et la densite nutritionnelle pourraient optimiser ta recomposition.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton alimentation actuelle cree un environnement inflammatoire et insulino-resistant qui bloque la perte de gras malgre un eventuel deficit calorique. Les carences en micronutriments (magnesium, zinc, D3) amplifient ces dysfonctionnements.' : 'Ta nutrition est une base solide. Des ajustements sur le timing proteique et la densite nutritionnelle pourraient optimiser ta recomposition.'}</p>
+${expansion}`;
     }
 
     case 'lifestyle': {
@@ -2191,7 +2291,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${cafe === '5+' ? 'Ta consommation excessive de cafe (5+/jour) cree une tolerance a l\'adenosine qui t\'oblige a augmenter les doses pour le meme effet. Le cafe apres 14h bloque ta melatonine le soir, fragmentant ton sommeil. L\'exces de cafeine peut aussi epuiser tes surrenales et amplifier ton anxiete.' : cafe === '3-4' ? 'Ta consommation de cafe moderee est acceptable si tu stoppes avant 14h pour preserver ton sommeil.' : 'Ta consommation de cafe limitee preserve ta sensibilite a la cafeine et ton sommeil.'} ${tabac === 'quotidien' ? 'Le tabac quotidien est le facteur lifestyle le plus deletere : inflammation systemique, vasoconstriction reduisant l\'apport d\'oxygene aux muscles, acceleration du vieillissement cellulaire, et interference avec pratiquement tous tes systemes hormonaux.' : ''}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton mode de vie actuel cree un environnement anti-physiologique : rythmes circadiens perturbes, NEAT effondree, inflammation chronique. Ces facteurs invisibles sabotent tes efforts conscients en entrainement et nutrition.' : 'Ton lifestyle est globalement sain. Des ajustements sur l\'exposition lumineuse et le mouvement quotidien pourraient encore optimiser ton metabolisme.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton mode de vie actuel cree un environnement anti-physiologique : rythmes circadiens perturbes, NEAT effondree, inflammation chronique. Ces facteurs invisibles sabotent tes efforts conscients en entrainement et nutrition.' : 'Ton lifestyle est globalement sain. Des ajustements sur l\'exposition lumineuse et le mouvement quotidien pourraient encore optimiser ton metabolisme.'}</p>
+${expansion}`;
     }
 
     case 'mindset': {
@@ -2214,7 +2315,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${consignes === 'oui' ? 'Ta capacite a suivre des consignes strictes est un atout majeur pour la transformation. L\'adherence est le facteur numero un de succes : un protocole mediocre suivi a 100% bat un protocole parfait suivi a 50%.' : 'Ta difficulte avec les consignes strictes n\'est pas un defaut : elle indique qu\'une approche flexible et adaptee a ton style de vie sera plus efficace qu\'un plan rigide que tu ne tiendras pas.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score >= 80 ? 'Ton mindset est ton plus grand atout. Le probleme n\'est pas ton engagement mais les blocages physiologiques (sommeil, stress, hormones) qui empechent ton corps de repondre a tes efforts. Une fois ces facteurs corriges, ta determination fera la difference.' : 'Optimiser tes neurotransmetteurs via le sommeil, la nutrition, et l\'activite physique améliorera naturellement ta motivation et ta perseverance. Le mindset suit souvent l\'etat physiologique.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score >= 80 ? 'Ton mindset est ton plus grand atout. Le probleme n\'est pas ton engagement mais les blocages physiologiques (sommeil, stress, hormones) qui empechent ton corps de repondre a tes efforts. Une fois ces facteurs corriges, ta determination fera la difference.' : 'Optimiser tes neurotransmetteurs via le sommeil, la nutrition, et l\'activite physique ameliorera naturellement ta motivation et ta perseverance. Le mindset suit souvent l\'etat physiologique.'}</p>
+${expansion}`;
     }
 
     default:

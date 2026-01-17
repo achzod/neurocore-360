@@ -301,11 +301,30 @@ const BurnoutEngineReport: React.FC = () => {
   const primarySoft = withAlpha(primary, 0.12);
   const primaryBorder = withAlpha(primary, 0.3);
   const PhaseIcon = phaseConfig.icon;
+  const themeVars = {
+    '--color-bg': currentTheme.colors.background,
+    '--color-surface': currentTheme.colors.surface,
+    '--color-border': currentTheme.colors.border,
+    '--color-text': currentTheme.colors.text,
+    '--color-text-muted': currentTheme.colors.textMuted,
+    '--color-primary': currentTheme.colors.primary,
+    '--color-grid': currentTheme.colors.grid,
+    '--color-on-primary': currentTheme.type === 'dark' ? '#000' : '#fff',
+    '--text': currentTheme.colors.text,
+    '--text-secondary': currentTheme.colors.textMuted,
+    '--text-muted': currentTheme.colors.textMuted,
+    '--surface-1': currentTheme.colors.surface,
+    '--surface-2': currentTheme.colors.background,
+    '--border': currentTheme.colors.border,
+    '--primary': currentTheme.colors.primary,
+    '--accent-ok': currentTheme.colors.primary,
+    '--accent-warning': currentTheme.colors.primary,
+  } as React.CSSProperties;
 
   return (
     <div
       className="ultrahuman-report min-h-screen flex"
-      style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       <div className="fixed top-0 left-0 right-0 h-1 bg-black/50 z-50">
         <div

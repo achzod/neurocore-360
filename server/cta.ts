@@ -23,7 +23,7 @@ Tu consultes l'analyse gratuite de ton profil APEXLABS.
 Cette version te donne la lecture des domaines cles et tes priorites d'optimisation.
 
 Si tu veux l'analyse complete (details, protocoles, stack supplements, feuille de route), passe a l'Anabolic Bioscan.
-Si tu prends un coaching apres, le montant de ton scan est deduit a 100% du prix du coaching.
+Si tu veux que je prenne le relais ensuite, le montant de ton scan est deduit a 100% du coaching.
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
@@ -34,7 +34,7 @@ Site: ${CONTACT.website}
   return `RAPPEL COACHING
 
 Tu consultes ton analyse ${tierLabel} APEXLABS complete.
-Si tu veux que je t'accompagne ensuite, le montant que tu as paye (${amountPaid} EUR) est deduit a 100% du prix du coaching.
+Si tu veux que je prenne le relais, le montant que tu as paye (${amountPaid} EUR) est deduit a 100% du coaching.
 
 CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
 
@@ -48,7 +48,7 @@ export function getCTAFin(tier: AuditTier, amountPaid: number = PRICING.PREMIUM)
     return `
 PROCHAINES ETAPES
 
-Tu as un apercu clair de tes priorites APEXLABS. Maintenant, voici les options pour aller plus loin.
+Tu as un apercu clair de tes priorites APEXLABS. Voici les options pour aller plus loin.
 
 OPTION 1 : ANABOLIC BIOSCAN (59 EUR)
 - Analyse complete des domaines cles, pas un simple apercu

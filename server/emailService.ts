@@ -170,7 +170,7 @@ function getCoachingSection(color: string = COLORS.purple): string {
         Pret a transformer ton corps ?
       </h3>
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-        Ce rapport trace la trajectoire. Le suivi permet d'accelerer l'execution et d'eviter les erreurs.
+        Ce rapport trace la trajectoire. Mon suivi permet d'accelerer l'execution et d'eviter les erreurs.
       </p>
 
       <!-- Plans -->

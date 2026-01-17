@@ -128,6 +128,7 @@ const parseCtaText = (text?: string) => {
 
   const paragraphs = lines.filter(line => {
     if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs|prochaines etapes|pret a transformer ces insights)$/i.test(line)) return false;
+    if (/^(formules?\s+disponibles|mes\s+formules)$/i.test(line)) return false;
     if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
     return !/^(\+|\-|\d+\.)\s+/.test(line);
   });
@@ -620,7 +621,11 @@ const AnabolicScanReport: React.FC = () => {
       key: s.id
     };
   });
-  const radarMetrics = report?.radarMetrics?.length ? report.radarMetrics : metricsData;
+  const reportRadar = report?.radarMetrics || [];
+  const reportRadarLabels = reportRadar.map((m) => (m.label || '').toLowerCase());
+  const hasUsableReportRadar =
+    reportRadar.length >= 4 && reportRadarLabels.some(label => label && !label.includes('analyse'));
+  const radarMetrics = hasUsableReportRadar ? reportRadar : metricsData;
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -715,6 +720,25 @@ const AnabolicScanReport: React.FC = () => {
   const primarySoft = withAlpha(primary, 0.12);
   const primaryBorder = withAlpha(primary, 0.25);
   const primaryFaint = withAlpha(primary, 0.08);
+  const themeVars = {
+    '--color-bg': currentTheme.colors.background,
+    '--color-surface': currentTheme.colors.surface,
+    '--color-border': currentTheme.colors.border,
+    '--color-text': currentTheme.colors.text,
+    '--color-text-muted': currentTheme.colors.textMuted,
+    '--color-primary': currentTheme.colors.primary,
+    '--color-grid': currentTheme.colors.grid,
+    '--color-on-primary': currentTheme.type === 'dark' ? '#000' : '#fff',
+    '--text': currentTheme.colors.text,
+    '--text-secondary': currentTheme.colors.textMuted,
+    '--text-muted': currentTheme.colors.textMuted,
+    '--surface-1': currentTheme.colors.surface,
+    '--surface-2': currentTheme.colors.background,
+    '--border': currentTheme.colors.border,
+    '--primary': currentTheme.colors.primary,
+    '--accent-ok': currentTheme.colors.primary,
+    '--accent-warning': currentTheme.colors.primary,
+  } as React.CSSProperties;
   const toHtml = (value: string) => {
     if (!value) return "";
     if (/<[a-z][\s\S]*>/i.test(value)) return value;
@@ -729,7 +753,7 @@ const AnabolicScanReport: React.FC = () => {
   return (
     <div
       className="ultrahuman-report min-h-screen flex"
-      style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-black/50 z-50">
@@ -954,11 +978,11 @@ const AnabolicScanReport: React.FC = () => {
                       <div
                         className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
                         style={{
-                          color: 'var(--color-text)',
-                          '--tw-prose-body': 'var(--color-text)',
-                          '--tw-prose-headings': 'var(--color-text)',
-                          '--tw-prose-strong': 'var(--color-text)',
-                          '--tw-prose-bullets': 'var(--color-primary)'
+                          color: currentTheme.colors.text,
+                          '--tw-prose-body': currentTheme.colors.text,
+                          '--tw-prose-headings': currentTheme.colors.text,
+                          '--tw-prose-strong': currentTheme.colors.text,
+                          '--tw-prose-bullets': currentTheme.colors.primary
                         } as React.CSSProperties}
                         dangerouslySetInnerHTML={{ __html: toHtml(section.introduction) }}
                       />
@@ -970,7 +994,7 @@ const AnabolicScanReport: React.FC = () => {
                       <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>CE QUI NE VA PAS</h4>
                       <div
                         className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
-                        style={{ color: 'var(--color-text)' } as React.CSSProperties}
+                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
                         dangerouslySetInnerHTML={{ __html: toHtml(section.whatIsWrong) }}
                       />
                     </div>
@@ -981,7 +1005,7 @@ const AnabolicScanReport: React.FC = () => {
                       <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>RECOMMANDATIONS</h4>
                       <div
                         className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
-                        style={{ color: 'var(--color-text)' } as React.CSSProperties}
+                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
                         dangerouslySetInnerHTML={{ __html: toHtml(section.recommendations) }}
                       />
                     </div>
@@ -992,7 +1016,7 @@ const AnabolicScanReport: React.FC = () => {
                       <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">PLAN D'ACTION</h4>
                       <div
                         className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-strong:text-[var(--color-text)]`}
-                        style={{ color: 'var(--color-text)' } as React.CSSProperties}
+                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
                         dangerouslySetInnerHTML={{ __html: toHtml(section.actionPlan) }}
                       />
                     </div>
@@ -1015,11 +1039,11 @@ const AnabolicScanReport: React.FC = () => {
                 <div
                   className={`mb-8 prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
                   style={{
-                    color: 'var(--color-text)',
-                    '--tw-prose-body': 'var(--color-text)',
-                    '--tw-prose-headings': 'var(--color-text)',
-                    '--tw-prose-strong': 'var(--color-text)',
-                    '--tw-prose-bullets': 'var(--color-primary)'
+                    color: currentTheme.colors.text,
+                    '--tw-prose-body': currentTheme.colors.text,
+                    '--tw-prose-headings': currentTheme.colors.text,
+                    '--tw-prose-strong': currentTheme.colors.text,
+                    '--tw-prose-bullets': currentTheme.colors.primary
                   } as React.CSSProperties}
                   dangerouslySetInnerHTML={{ __html: report.supplementsHtml }}
                 />
