@@ -2403,7 +2403,7 @@ export async function registerRoutes(
               if (!trackingTypes.includes("PREMIUM_J7")) {
                 const hasReview = await storage.hasUserLeftReview(audit.id);
                 const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J7");
-                const sent = await sendPremiumJ7Email(audit.email, audit.id, baseUrl, tracking.id, hasReview);
+                const sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, tracking.id, hasReview);
                 if (sent) results.premiumJ7++;
                 else results.errors++;
               }
@@ -2417,7 +2417,7 @@ export async function registerRoutes(
               // Only send J+14 if J+7 was sent but NOT opened
               if (j7Email && !j7Email.openedAt && !j14Sent) {
                 const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J14");
-                const sent = await sendPremiumJ14Email(audit.email, audit.id, baseUrl, tracking.id);
+                const sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, tracking.id);
                 if (sent) results.premiumJ14++;
                 else results.errors++;
               }
@@ -2559,10 +2559,10 @@ export async function registerRoutes(
           break;
         case "PREMIUM_J7":
           const hasReview = await storage.hasUserLeftReview(audit.id);
-          sent = await sendPremiumJ7Email(audit.email, audit.id, baseUrl, tracking.id, hasReview);
+          sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, tracking.id, hasReview);
           break;
         case "PREMIUM_J14":
-          sent = await sendPremiumJ14Email(audit.email, audit.id, baseUrl, tracking.id);
+          sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, tracking.id);
           break;
         default:
           res.status(400).json({ success: false, error: "Type d'email invalide" });

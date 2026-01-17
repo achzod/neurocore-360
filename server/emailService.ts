@@ -18,6 +18,71 @@ const COLORS = {
   purple: '#8b5cf6',
 };
 
+type CoachingOfferTier = {
+  label: string;
+  href: string;
+  offers: Array<{
+    duration: string;
+    price: number;
+  }>;
+};
+
+const COACHING_OFFER_TIERS: CoachingOfferTier[] = [
+  {
+    label: "Starter",
+    href: "https://www.achzodcoaching.com/coaching-starter",
+    offers: [{ duration: "8 semaines", price: 199 }],
+  },
+  {
+    label: "Essential",
+    href: "https://www.achzodcoaching.com/coaching-essential",
+    offers: [
+      { duration: "4 semaines", price: 249 },
+      { duration: "8 semaines", price: 399 },
+      { duration: "12 semaines", price: 549 },
+    ],
+  },
+  {
+    label: "Elite",
+    href: "https://www.achzodcoaching.com/coaching-elite",
+    offers: [
+      { duration: "4 semaines", price: 399 },
+      { duration: "8 semaines", price: 649 },
+      { duration: "12 semaines", price: 899 },
+    ],
+  },
+  {
+    label: "Private Lab",
+    href: "https://www.achzodcoaching.com/coaching-achzod-private-lab",
+    offers: [
+      { duration: "4 semaines", price: 499 },
+      { duration: "8 semaines", price: 799 },
+      { duration: "12 semaines", price: 1199 },
+    ],
+  },
+];
+
+const DEDUCTION_BY_AUDIT_TYPE: Record<string, number> = {
+  GRATUIT: 0,
+  DISCOVERY: 0,
+  PREMIUM: 59,
+  ANABOLIC_BIOSCAN: 59,
+  ELITE: 79,
+  ULTIMATE_SCAN: 79,
+  BLOOD_ANALYSIS: 99,
+  BURNOUT: 39,
+};
+
+const formatEuro = (value: number): string => {
+  const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
+  return `${formatted}€`;
+};
+
+const getDeductionAmount = (auditType?: string): number => {
+  if (!auditType) return 0;
+  return DEDUCTION_BY_AUDIT_TYPE[auditType] ?? 0;
+};
+
 let accessToken: string | null = null;
 let tokenExpiry: number = 0;
 
@@ -56,6 +121,72 @@ async function getAccessToken(): Promise<string> {
 
 function encodeBase64(str: string): string {
   return Buffer.from(str).toString("base64");
+}
+
+function renderCoachingOffersTable(deductionAmount: number, accentColor: string): string {
+  const hasDeduction = deductionAmount > 0;
+  const headerNote = hasDeduction
+    ? `Deduction appliquee : -${formatEuro(deductionAmount)}`
+    : "Aucune deduction appliquee sur ce rapport";
+  const rowBorder = `1px solid ${COLORS.border}`;
+  const rows = COACHING_OFFER_TIERS.flatMap((tier) =>
+    tier.offers.map((offer) => {
+      const after = Math.max(0, offer.price - deductionAmount);
+      return `
+        <tr>
+          <td style="padding: 10px 12px; border-top: ${rowBorder}; font-weight: 600;">
+            <a href="${tier.href}" style="color: ${COLORS.text}; text-decoration: none;">${tier.label}</a>
+          </td>
+          <td style="padding: 10px 12px; border-top: ${rowBorder}; color: ${COLORS.textMuted};">
+            ${offer.duration}
+          </td>
+          <td style="padding: 10px 12px; border-top: ${rowBorder}; text-align: right; color: ${COLORS.textMuted};">
+            <span${hasDeduction ? ' style="text-decoration: line-through;"' : ""}>${formatEuro(offer.price)}</span>
+          </td>
+          <td style="padding: 10px 12px; border-top: ${rowBorder}; text-align: right; color: ${accentColor}; font-weight: 700;">
+            ${formatEuro(after)}
+          </td>
+        </tr>
+      `;
+    })
+  ).join("");
+
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border: ${rowBorder}; border-radius: 12px; overflow: hidden; margin-top: 20px;">
+      <tr>
+        <td style="padding: 12px 16px; background: ${accentColor}15; border-bottom: ${rowBorder};">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+              <td style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: ${accentColor};">
+                Formules coaching
+              </td>
+              <td style="font-size: 11px; text-align: right; color: ${COLORS.textMuted};">
+                ${headerNote}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 0;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+              <th style="padding: 10px 12px; text-align: left; font-size: 11px; color: ${COLORS.textMuted};">Offre</th>
+              <th style="padding: 10px 12px; text-align: left; font-size: 11px; color: ${COLORS.textMuted};">Duree</th>
+              <th style="padding: 10px 12px; text-align: right; font-size: 11px; color: ${COLORS.textMuted};">Prix standard</th>
+              <th style="padding: 10px 12px; text-align: right; font-size: 11px; color: ${COLORS.textMuted};">Prix apres deduction</th>
+            </tr>
+            ${rows}
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 12px 16px; font-size: 11px; color: ${COLORS.textMuted}; background: ${COLORS.surface}; border-top: ${rowBorder};">
+          La deduction du scan s'applique sur chaque formule.
+        </td>
+      </tr>
+    </table>
+  `;
 }
 
 // Reusable email wrapper with ApexLabs design
@@ -157,8 +288,9 @@ function getReviewSection(dashboardLink: string): string {
 }
 
 // Coaching CTA Section
-function getCoachingSection(color: string = COLORS.purple): string {
-  const coachingLink = "https://achzodcoaching.com";
+function getCoachingSection(auditType: string, color: string = COLORS.purple): string {
+  const coachingLink = "https://www.achzodcoaching.com/formules-coaching";
+  const deductionAmount = getDeductionAmount(auditType);
   return `
     <div style="padding: 28px; background: linear-gradient(135deg, ${color}15 0%, ${color}08 100%); border-radius: 12px; border: 1px solid ${color}30;">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -167,34 +299,13 @@ function getCoachingSection(color: string = COLORS.purple): string {
         </span>
       </div>
       <h3 style="color: ${color}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
-        Pret a transformer ton corps ?
+        Execution structuree
       </h3>
       <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-        Ce rapport trace la trajectoire. Mon suivi permet d'accelerer l'execution et d'eviter les erreurs.
+        Ce rapport trace la trajectoire. L'accompagnement Achzod accelere l'execution et les ajustements.
       </p>
 
-      <!-- Plans -->
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
-        <tr>
-          <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">STARTER</p>
-            <p style="color: ${COLORS.text}; font-size: 20px; margin: 0; font-weight: 700;">97€</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 4px 0 0;">/1 mois</p>
-          </td>
-          <td style="width: 8px;"></td>
-          <td style="padding: 12px; background: ${color}; border-radius: 8px; text-align: center; width: 33%;">
-            <p style="color: rgba(255,255,255,0.8); font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">TRANSFORM</p>
-            <p style="color: #fff; font-size: 20px; margin: 0; font-weight: 700;">247€</p>
-            <p style="color: rgba(255,255,255,0.7); font-size: 10px; margin: 4px 0 0;">/3 mois</p>
-          </td>
-          <td style="width: 8px;"></td>
-          <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ELITE</p>
-            <p style="color: ${COLORS.text}; font-size: 20px; margin: 0; font-weight: 700;">497€</p>
-            <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 4px 0 0;">/6 mois</p>
-          </td>
-        </tr>
-      </table>
+      ${renderCoachingOffersTable(deductionAmount, color)}
 
       ${getPrimaryButton('Decouvrir les formules', coachingLink, color)}
     </div>
@@ -547,6 +658,7 @@ export async function sendGratuitUpsellEmail(
 export async function sendPremiumJ7Email(
   email: string,
   auditId: string,
+  auditType: string,
   baseUrl: string,
   trackingId: string,
   hasLeftReview: boolean
@@ -569,7 +681,7 @@ export async function sendPremiumJ7Email(
 
       ${reviewSection}
 
-      ${getCoachingSection(COLORS.purple)}
+      ${getCoachingSection(auditType, COLORS.purple)}
 
       <div style="text-align: center; margin-top: 24px;">
         <span style="display: inline-block; background: ${COLORS.purple}; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
@@ -612,12 +724,12 @@ export async function sendPremiumJ7Email(
 export async function sendPremiumJ14Email(
   email: string,
   auditId: string,
+  auditType: string,
   baseUrl: string,
   trackingId: string
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
-    const coachingLink = "https://achzodcoaching.com";
     const trackingPixel = `${baseUrl}/api/track/email/${trackingId}/open.gif`;
 
     const content = `
@@ -626,38 +738,15 @@ export async function sendPremiumJ14Email(
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 28px; text-align: center;">
-        Ton audit APEXLABS est livre. Si tu veux passer a l'execution, je peux prendre le relais avec un suivi structure et des ajustements continus.
+        Ton audit APEXLABS est livre. L'accompagnement Achzod prend le relais pour l'execution et les ajustements continus.
       </p>
 
-      <div style="padding: 28px; background: linear-gradient(135deg, ${COLORS.warning}15 0%, ${COLORS.warning}05 100%); border-radius: 12px; border: 1px solid ${COLORS.warning}30;">
-        <h3 style="color: ${COLORS.warning}; font-size: 22px; font-weight: 700; margin: 0 0 12px; text-align: center; letter-spacing: -0.5px;">
-          Code promo NEUROCORE20
-        </h3>
-        <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.7; margin: 0 0 20px; text-align: center;">
-          Reduction de 20% valable 30 jours, utilisation unique.
-        </p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
-          <tr>
-            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">STARTER</p>
-              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">97€ / 1 mois</p>
-              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Plan sur-mesure</p>
-            </td>
-            <td style="width: 8px;"></td>
-            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">TRANSFORM</p>
-              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">247€ / 3 mois</p>
-              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Suivi hebdo + ajustements</p>
-            </td>
-            <td style="width: 8px;"></td>
-            <td style="padding: 12px; background: ${COLORS.background}; border-radius: 8px; text-align: center; width: 33%;">
-              <p style="color: ${COLORS.textMuted}; font-size: 10px; margin: 0 0 4px; font-weight: 600; letter-spacing: 1px;">ELITE</p>
-              <p style="color: ${COLORS.text}; font-size: 13px; margin: 0;">497€ / 6 mois</p>
-              <p style="color: ${COLORS.textMuted}; font-size: 11px; margin: 4px 0 0;">Coaching 1:1 + bilans</p>
-            </td>
-          </tr>
-        </table>
-        ${getPrimaryButton('Decouvrir le coaching', coachingLink, COLORS.warning)}
+      ${getCoachingSection(auditType, COLORS.warning)}
+
+      <div style="text-align: center; margin-top: 24px;">
+        <span style="display: inline-block; background: ${COLORS.warning}; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 700;">
+          -20% avec le code NEUROCORE20
+        </span>
       </div>
 
       <p style="color: #525252; font-size: 12px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
