@@ -10,6 +10,7 @@ import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
 import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, SectionContent, Metric } from '@/components/ultrahuman/types';
+import { COACHING_OFFER_TIERS, formatEuro, getDeductionAmount } from '@/components/ultrahuman/coachingOffers';
 import {
   Menu,
   ArrowUp,
@@ -40,44 +41,6 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
-type CoachingPlan = {
-  name: string;
-  duration: string;
-  price: string;
-  description: string;
-  href: string;
-  highlight?: boolean;
-  accent?: string;
-};
-
-const COACHING_PLANS: CoachingPlan[] = [
-  {
-    name: "Starter",
-    duration: "1 mois",
-    price: "97€",
-    description: "Plan sur-mesure, autonomie guidee.",
-    href: "https://www.achzodcoaching.com/coaching-starter",
-    accent: "var(--color-text)"
-  },
-  {
-    name: "Transform",
-    duration: "3 mois",
-    price: "247€",
-    description: "Suivi hebdo, ajustements continus.",
-    href: "https://www.achzodcoaching.com/coaching-transform",
-    highlight: true,
-    accent: "var(--color-primary)"
-  },
-  {
-    name: "Elite",
-    duration: "6 mois",
-    price: "497€",
-    description: "Coaching 1:1, bilans et priorite.",
-    href: "https://www.achzodcoaching.com/coaching-elite",
-    accent: "#f59e0b"
-  }
-];
-
 const withAlpha = (hex: string, alpha: number): string => {
   const normalized = hex.replace('#', '');
   if (normalized.length !== 6) return hex;
@@ -89,7 +52,7 @@ const withAlpha = (hex: string, alpha: number): string => {
 
 const parseCtaText = (text?: string) => {
   if (!text) {
-    return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "", plans: [] as CoachingPlan[] };
+    return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
   }
   const lines = text
     .split('\n')
@@ -107,25 +70,6 @@ const parseCtaText = (text?: string) => {
     .filter(line => /^(\+|\-|\d+\.)\s+/.test(line))
     .map(line => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim());
 
-  const plans = lines
-    .map((line) => line.replace(/^(\+|\-|\d+\.)\s+/, "").trim())
-    .map((line) => {
-      const match = line.match(/^(starter|transform|elite)\s*[:\-]\s*([0-9]+€)\s*\/\s*([0-9]+\s*mois)/i);
-      if (!match) return null;
-      const name = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
-      const fallback = COACHING_PLANS.find((plan) => plan.name.toLowerCase() === name.toLowerCase());
-      return {
-        name,
-        duration: match[3],
-        price: match[2],
-        description: fallback?.description || "",
-        href: fallback?.href || "https://www.achzodcoaching.com",
-        highlight: fallback?.highlight,
-        accent: fallback?.accent
-      } as CoachingPlan;
-    })
-    .filter((plan): plan is CoachingPlan => Boolean(plan));
-
   const paragraphs = lines.filter(line => {
     if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs|prochaines etapes|pret a transformer ces insights)$/i.test(line)) return false;
     if (/^(formules?\s+disponibles|mes\s+formules)$/i.test(line)) return false;
@@ -133,7 +77,7 @@ const parseCtaText = (text?: string) => {
     return !/^(\+|\-|\d+\.)\s+/.test(line);
   });
 
-  return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine, plans };
+  return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine };
 };
 
 // Narrative Report types from API
@@ -183,7 +127,7 @@ interface NarrativeReport {
     months2_3: string;
   };
   conclusion: string;
-  auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE';
+  auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE' | 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'BURNOUT';
 }
 
 const SECTION_ICON_BY_ID: Record<string, React.ElementType> = {
@@ -358,8 +302,85 @@ const AnabolicScanReport: React.FC = () => {
     content: s.introduction
   })) || [];
 
+  const renderOffersTable = (deductionAmount: number) => {
+    const hasDeduction = deductionAmount > 0;
+    return (
+      <div className="mt-6 rounded-xl border overflow-hidden" style={{ borderColor: currentTheme.colors.border }}>
+        <div
+          className="px-4 py-3 flex flex-wrap items-center justify-between gap-2"
+          style={{ backgroundColor: primarySoft, borderBottom: `1px solid ${primaryBorder}` }}
+        >
+          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: primary }}>
+            Formules coaching
+          </span>
+          <span className="text-xs" style={{ color: currentTheme.colors.textMuted }}>
+            {hasDeduction
+              ? `Deduction appliquee : -${formatEuro(deductionAmount)}`
+              : "Aucune deduction appliquee sur ce rapport"}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ color: currentTheme.colors.textMuted }}>
+                <th className="text-left font-semibold px-4 py-3">Offre</th>
+                <th className="text-left font-semibold px-4 py-3">Duree</th>
+                <th className="text-right font-semibold px-4 py-3">Prix standard</th>
+                <th className="text-right font-semibold px-4 py-3">Prix apres deduction</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COACHING_OFFER_TIERS.map((tier) => (
+                <React.Fragment key={tier.id}>
+                  <tr>
+                    <td colSpan={4} className="px-4 pt-4 pb-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+                          {tier.label}
+                        </span>
+                        <a
+                          href={tier.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold"
+                          style={{ color: primary }}
+                        >
+                          Voir {tier.label}
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                  {tier.offers.map((offer, idx) => {
+                    const after = Math.max(0, offer.price - deductionAmount);
+                    return (
+                      <tr key={`${tier.id}-${idx}`} style={{ borderBottom: `1px solid ${currentTheme.colors.border}` }}>
+                        <td className="px-4 py-3">{tier.label}</td>
+                        <td className="px-4 py-3">{offer.duration}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: currentTheme.colors.textMuted }}>
+                          <span style={hasDeduction ? { textDecoration: "line-through" } : undefined}>
+                            {formatEuro(offer.price)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold" style={{ color: primary }}>
+                          {formatEuro(after)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-4 py-3 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+          Le montant de ton scan est deduit a 100% sur chaque formule. Tu gardes la meme qualite de suivi, simplement moins cher.
+        </div>
+      </div>
+    );
+  };
+
   const renderCtaPanel = (text: string, badgeLabel: string, variant: 'debut' | 'fin') => {
-    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine, plans } = parseCtaText(text);
+    const { paragraphs, bullets, promoLine, emailLine, siteLine } = parseCtaText(text);
     const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
     const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
     const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
@@ -369,6 +390,7 @@ const AnabolicScanReport: React.FC = () => {
     const isDebut = variant === 'debut';
     const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
     const subline = isDebut ? "Deduction 100% du scan" : "Execution + ajustements";
+    const deductionAmount = getDeductionAmount(report?.auditType);
     const fallbackBullets = isDebut
       ? [
           "Deduction 100% du scan si coaching",
@@ -381,10 +403,6 @@ const AnabolicScanReport: React.FC = () => {
           "Suivi humain, pas un plan generique",
         ];
     const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
-    const plansToRender = (plans.length > 0 ? plans : COACHING_PLANS).map((plan) => {
-      const fallback = COACHING_PLANS.find((item) => item.name.toLowerCase() === plan.name.toLowerCase());
-      return fallback ? { ...fallback, ...plan } : plan;
-    });
 
     if (!isDebut) {
       return (
@@ -419,44 +437,7 @@ const AnabolicScanReport: React.FC = () => {
             )}
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 mt-6">
-            {plansToRender.map((plan) => (
-              <div
-                key={plan.name}
-                className="p-4 rounded-lg border flex flex-col"
-                style={{
-                  backgroundColor: plan.highlight ? primarySoft : currentTheme.colors.background,
-                  borderColor: plan.highlight ? primaryBorder : currentTheme.colors.border
-                }}
-              >
-                <div className="text-xs uppercase tracking-widest mb-2" style={{ color: plan.accent || currentTheme.colors.textMuted }}>
-                  {plan.name}
-                </div>
-                <div className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
-                  {plan.price}
-                  <span className="text-xs ml-2" style={{ color: currentTheme.colors.textMuted }}>
-                    / {plan.duration}
-                  </span>
-                </div>
-                <p className="text-xs mt-2" style={{ color: currentTheme.colors.textMuted }}>
-                  {plan.description}
-                </p>
-                <a
-                  href={plan.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 block w-full py-2 rounded text-center text-xs font-bold transition-all hover:opacity-90"
-                  style={{
-                    backgroundColor: plan.highlight ? primary : currentTheme.colors.surface,
-                    color: plan.highlight ? 'var(--color-on-primary)' : currentTheme.colors.text,
-                    border: plan.highlight ? `1px solid ${primary}` : `1px solid ${currentTheme.colors.border}`
-                  }}
-                >
-                  Choisir {plan.name}
-                </a>
-              </div>
-            ))}
-          </div>
+          {renderOffersTable(deductionAmount)}
 
           <div
             className="mt-6 p-4 rounded-lg"

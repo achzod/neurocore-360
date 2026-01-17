@@ -48,23 +48,11 @@ export function getCTAFin(tier: AuditTier, amountPaid: number = PRICING.PREMIUM)
     return `
 PROCHAINES ETAPES
 
-Tu as un apercu clair de tes priorites APEXLABS. Voici les options pour aller plus loin.
+Tu as un apercu clair de tes priorites APEXLABS. Pour aller plus loin, tu as trois chemins.
 
-OPTION 1 : ANABOLIC BIOSCAN (59 EUR)
-- Analyse complete des domaines cles, pas un simple apercu
-- Protocoles fermes (matin anti-cortisol, soir sommeil, digestion 14 jours, bureau, entrainement)
-- Stack supplements personnalisee avec dosages et marques
-- Plan 30-60-90 jours + KPIs de suivi
-
-OPTION 2 : ULTIMATE SCAN (79 EUR) SI TU AS DES PHOTOS
-- Tout l'Anabolic Bioscan
-- Analyse photo posturale (face/profil/dos)
-- Diagnostic biomecanique + corrections de posture
-
-OPTION 3 : COACHING PERSONNALISE DIRECT
-- Starter : 97€ / 1 mois
-- Transform : 247€ / 3 mois
-- Elite : 497€ / 6 mois
+- Passer a l'Anabolic Bioscan pour l'analyse complete et les protocoles detailles.
+- Passer a l'Ultimate Scan si tu as des photos pour la partie posturale et biomecanique.
+- Prendre un coaching personnalise directement, avec deduction du scan.
 
 CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
 
@@ -84,11 +72,6 @@ Je reprends ton dossier, j'ajuste les protocoles en direct et je pilote les KPIs
 - Protocoles adaptes a ton quotidien, pas un plan generique
 - Suivi des KPIs et corrections de trajectoire
 - Acces direct pour accelerer les decisions
-
-FORMULES DISPONIBLES
-- Starter : 97€ / 1 mois
-- Transform : 247€ / 3 mois
-- Elite : 497€ / 6 mois
 
 BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est deduit a 100% du prix du coaching.
 CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
