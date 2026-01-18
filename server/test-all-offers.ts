@@ -363,7 +363,7 @@ async function testBurnoutEngine(): Promise<{ id: string; url: string } | null> 
     const res = await fetch(`${API_BASE}/api/burnout-detection/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(burnoutResponses),
+      body: JSON.stringify({ responses: burnoutResponses, email }),
     });
 
     if (!res.ok) {
@@ -376,24 +376,73 @@ async function testBurnoutEngine(): Promise<{ id: string; url: string } | null> 
     console.log(`✅ Analyse Burnout générée`);
 
     // Le burnout engine retourne directement l'analyse, pas un audit ID
-    if (result.auditId) {
-      console.log(`   Audit ID: ${result.auditId}`);
-      console.log(`   URL: ${API_BASE}/audit/${result.auditId}`);
-      return { id: result.auditId, url: `${API_BASE}/audit/${result.auditId}` };
-    } else {
-      console.log(`   Phase détectée: ${result.phase || "N/A"}`);
-      console.log(`   Score global: ${result.globalScore || "N/A"}`);
-      // Sauvegarder le résultat pour analyse
-      fs.writeFileSync(
-        path.join(__dirname, `test-burnout-result-${Date.now()}.json`),
-        JSON.stringify(result, null, 2)
-      );
-      return { id: "burnout-direct", url: "voir fichier JSON" };
+    if (result.id) {
+      console.log(`   Audit ID: ${result.id}`);
+      console.log(`   URL: ${API_BASE}/burnout/${result.id}`);
+      return { id: result.id, url: `${API_BASE}/burnout/${result.id}` };
     }
+
+    console.log(`   Phase détectée: ${result.phase || "N/A"}`);
+    console.log(`   Score global: ${result.globalScore || "N/A"}`);
+    // Sauvegarder le résultat pour analyse
+    fs.writeFileSync(
+      path.join(__dirname, `test-burnout-result-${Date.now()}.json`),
+      JSON.stringify(result, null, 2)
+    );
+    return { id: "burnout-direct", url: "voir fichier JSON" };
   } catch (e) {
     console.error(`❌ Erreur réseau:`, e);
     return null;
   }
+}
+
+async function waitForDiscoveryCompletion(auditId: string, maxWaitMinutes: number = 15): Promise<boolean> {
+  console.log(`\n⏳ Attente génération rapport Discovery ${auditId}...`);
+  const maxWait = maxWaitMinutes * 60 * 1000;
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWait) {
+    try {
+      const res = await fetch(`${API_BASE}/api/discovery-scan/${auditId}`);
+      if (res.status === 202) {
+        const status = await res.json();
+        process.stdout.write(`\r   ${status.message || "Generation en cours"}...`);
+      } else if (res.ok) {
+        const data = await res.json();
+        if (data?.sections?.length) {
+          console.log(`\n✅ Rapport Discovery terminé!`);
+          return true;
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    await new Promise(r => setTimeout(r, 8000));
+  }
+
+  console.log(`\n⚠️ Timeout après ${maxWaitMinutes} minutes`);
+  return false;
+}
+
+async function analyzeBurnoutReport(id: string): Promise<{ ok: boolean; issues: string[] }> {
+  const issues: string[] = [];
+  try {
+    const res = await fetch(`${API_BASE}/api/burnout-detection/${id}`);
+    if (!res.ok) {
+      issues.push(`❌ Fetch burnout ${res.status}`);
+      return { ok: false, issues };
+    }
+    const report = await res.json();
+    if (!report?.phase) issues.push("⚠️ Phase manquante");
+    if (typeof report?.globalScore !== "number") issues.push("⚠️ Score global manquant");
+    if (!report?.sections?.length && !report?.recommendations?.length) {
+      issues.push("⚠️ Sections ou recommandations absentes");
+    }
+  } catch (e) {
+    issues.push(`❌ Erreur analyse burnout: ${e}`);
+  }
+  return { ok: issues.length === 0, issues };
 }
 
 async function waitForCompletion(auditId: string, maxWaitMinutes: number = 15): Promise<boolean> {
@@ -570,9 +619,28 @@ async function main() {
   console.log("=".repeat(70));
 
   for (const r of results) {
-    if (r.id === "burnout-direct") continue; // Burnout analysé différemment
+    if (r.offer === "Burnout Engine") {
+      if (r.id !== "burnout-direct") {
+        const burnoutAnalysis = await analyzeBurnoutReport(r.id);
+        r.status = burnoutAnalysis.ok ? "success" : "failed";
+        if (burnoutAnalysis.issues.length > 0) {
+          r.analysis = {
+            hasAIPatterns: false,
+            aiPatterns: [],
+            hasNutritionAnalysis: false,
+            hasExpertSupplements: false,
+            hasCTA: false,
+            issues: burnoutAnalysis.issues,
+          };
+        }
+      }
+      continue;
+    }
 
-    const completed = await waitForCompletion(r.id);
+    const completed =
+      r.offer === "Discovery Scan"
+        ? await waitForDiscoveryCompletion(r.id)
+        : await waitForCompletion(r.id);
     r.status = completed ? "success" : "failed";
 
     if (completed) {

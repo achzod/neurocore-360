@@ -22,6 +22,7 @@ const ENGLISH_MARKERS: RegExp[] = [
   /\bexercise\b/gi,
   /\bbody\b/gi,
   /\bsleep\b/gi,
+  /\bhonestly\b/gi,
 ];
 
 export function countEnglishMarkers(text: string): number {
@@ -88,6 +89,7 @@ function replaceEnglishArtifacts(text: string): string {
     [/\bbody\b/gi, "corps"],
     [/\bsleep\b/gi, "sommeil"],
     [/\bhealth\b/gi, "sante"],
+    [/\bhonestly\b/gi, "honnêtement"],
   ];
   let normalized = text;
   for (const [re, replacement] of replacements) {

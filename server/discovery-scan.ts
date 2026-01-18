@@ -142,6 +142,84 @@ const MIN_DISCOVERY_SECTION_CHARS = 5200;
 const MIN_DISCOVERY_SECTION_LINES = 55;
 const MIN_DISCOVERY_SECTION_WORDS = 700;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
+const COACHING_OFFER_TIERS = [
+  {
+    label: "Starter",
+    href: "https://www.achzodcoaching.com/coaching-starter",
+    offers: [{ duration: "8 semaines", price: 199 }],
+  },
+  {
+    label: "Essential",
+    href: "https://www.achzodcoaching.com/coaching-essential",
+    offers: [
+      { duration: "4 semaines", price: 249 },
+      { duration: "8 semaines", price: 399 },
+      { duration: "12 semaines", price: 549 },
+    ],
+  },
+  {
+    label: "Elite",
+    href: "https://www.achzodcoaching.com/coaching-elite",
+    offers: [
+      { duration: "4 semaines", price: 399 },
+      { duration: "8 semaines", price: 649 },
+      { duration: "12 semaines", price: 899 },
+    ],
+  },
+  {
+    label: "Private Lab",
+    href: "https://www.achzodcoaching.com/coaching-achzod-private-lab",
+    offers: [
+      { duration: "4 semaines", price: 499 },
+      { duration: "8 semaines", price: 799 },
+      { duration: "12 semaines", price: 1199 },
+    ],
+  },
+];
+const formatEuro = (value: number): string => {
+  const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
+  return `${formatted}€`;
+};
+const renderCoachingOffersTable = (discountPercent: number) => {
+  const hasDiscount = discountPercent > 0;
+  const rows = COACHING_OFFER_TIERS.flatMap((tier) =>
+    tier.offers.map((offer) => {
+      const after = hasDiscount ? Math.max(0, Math.round(offer.price * (1 - discountPercent / 100))) : offer.price;
+      return `
+        <tr style="border-top: 1px solid var(--color-border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium" style="color: var(--color-text);">${tier.label}</div>
+          </td>
+          <td class="text-center py-3 px-2">${offer.duration}</td>
+          <td class="text-center py-3 px-2">
+            <span style="color: var(--color-text-muted);${hasDiscount ? " text-decoration: line-through;" : ""}">${formatEuro(offer.price)}</span>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="font-bold" style="color: var(--color-primary);">${formatEuro(after)}</div>
+          </td>
+        </tr>
+      `;
+    })
+  ).join("");
+
+  return `
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr style="color: var(--color-text-muted);">
+          <th class="text-left py-2 pr-4">Formule</th>
+          <th class="text-center py-2 px-2">Duree</th>
+          <th class="text-center py-2 px-2">Prix standard</th>
+          <th class="text-center py-2 px-2">Prix apres reduction</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  </div>
+  `;
+};
 const SOURCE_MARKERS = [
   "sources",
   "source",
@@ -1961,11 +2039,11 @@ export async function convertToNarrativeReport(
     <h4 class="text-xl font-bold mb-2" style="color: var(--color-text);">Anabolic Bioscan</h4>
     <div class="text-3xl font-bold mb-4" style="color: var(--color-primary);">59<span class="text-lg">€</span></div>
     <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
-      <li>- 15 analyses approfondies</li>
-      <li>- Analyse photos (posture, composition)</li>
-      <li>- Protocole nutrition detaille</li>
+      <li>- 16 analyses approfondies</li>
+      <li>- Axes cliniques + hormones</li>
+      <li>- Protocoles 90 jours detailles</li>
       <li>- Stack supplements personnalise</li>
-      <li>- Feuille de route 90 jours</li>
+      <li>- Plan d'action semaine par semaine</li>
     </ul>
     <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
       Choisir Anabolic Bioscan
@@ -1978,10 +2056,10 @@ export async function convertToNarrativeReport(
     <div class="text-3xl font-bold mb-4" style="color: var(--color-text);">79<span class="text-lg">€</span></div>
     <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
       <li>- Tout l'Anabolic Bioscan inclus</li>
-      <li>- Sync wearables (Oura, Whoop, Garmin)</li>
-      <li>- Analyse HRV avancee</li>
-      <li>- Questions blessures & douleurs</li>
-      <li>- Protocole rehabilitation</li>
+      <li>- Analyse photo posturale (face/profil/dos)</li>
+      <li>- Diagnostic biomecanique + correctifs</li>
+      <li>- Wearables & HRV avancee</li>
+      <li>- Protocoles rehab + performance</li>
     </ul>
     <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid var(--color-primary); color: var(--color-primary);">
       Choisir Ultimate Scan
@@ -1990,13 +2068,8 @@ export async function convertToNarrativeReport(
 </div>
 
 <div class="mt-8 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);">
-  <p class="text-sm font-medium" style="color: var(--color-primary);">Deduit de ton coaching</p>
-  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres ton scan, le montant est deduit de ta formule.</p>
-  <ul class="mt-3 text-xs" style="color: var(--color-text);">
-    <li class="py-1">Starter : 97€ / 1 mois</li>
-    <li class="py-1">Transform : 247€ / 3 mois</li>
-    <li class="py-1">Elite : 497€ / 6 mois</li>
-  </ul>
+  <p class="text-sm font-medium" style="color: var(--color-primary);">Deduction coaching</p>
+  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres un scan, le montant du scan est deduit a 100%.</p>
 </div>`,
     chips: ["Protocoles", "Stack Supplements", "Plan 90 Jours"]
   });
@@ -2013,57 +2086,15 @@ export async function convertToNarrativeReport(
 <div class="mt-8 p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
   <h4 class="text-lg font-bold mb-4" style="color: var(--color-text);">Coaching Achzod - Formules</h4>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr style="color: var(--color-text-muted);">
-          <th class="text-left py-2 pr-4">Formule</th>
-          <th class="text-center py-2 px-2">Duree</th>
-          <th class="text-center py-2 px-2">Prix</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-top: 1px solid var(--color-border);">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: var(--color-text);">Starter</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Plan sur-mesure</div>
-          </td>
-          <td class="text-center py-3 px-2">1 mois</td>
-          <td class="text-center py-3 px-2">
-            <div class="font-bold" style="color: var(--color-primary);">97€</div>
-          </td>
-        </tr>
-        <tr style="border-top: 1px solid var(--color-border);">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: var(--color-text);">Transform</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Suivi hebdo</div>
-          </td>
-          <td class="text-center py-3 px-2">3 mois</td>
-          <td class="text-center py-3 px-2">
-            <div class="font-bold" style="color: var(--color-primary);">247€</div>
-          </td>
-        </tr>
-        <tr style="border-top: 1px solid var(--color-border);">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: var(--color-text);">Elite</div>
-            <div class="text-xs" style="color: var(--color-text-muted);">Coaching 1:1</div>
-          </td>
-          <td class="text-center py-3 px-2">6 mois</td>
-          <td class="text-center py-3 px-2">
-            <div class="font-bold" style="color: var(--color-primary);">497€</div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  ${renderCoachingOffersTable(20)}
 
   <div class="mt-6 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);">
     <p class="text-sm" style="color: var(--color-text);"><strong style="color: var(--color-primary);">Comment obtenir le code -20% ?</strong></p>
     <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-border); color: var(--color-primary);">DISCOVERY20</code> par email.</p>
   </div>
 
-  <a href="https://achzodcoaching.com" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
-    Voir les formules sur achzodcoaching.com
+  <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
+    Voir toutes les formules
   </a>
 </div>`,
     chips: ["-20% Coaching", "Code Promo", "Avis"]
