@@ -88,6 +88,86 @@ const MIN_BURNOUT_SECTION_WORDS: Record<string, number> = {
   supplements: 320,
   conclusion: 220,
 };
+const COACHING_OFFER_TIERS = [
+  {
+    label: "Starter",
+    href: "https://www.achzodcoaching.com/coaching-starter",
+    offers: [{ duration: "8 semaines", price: 199 }],
+  },
+  {
+    label: "Essential",
+    href: "https://www.achzodcoaching.com/coaching-essential",
+    offers: [
+      { duration: "4 semaines", price: 249 },
+      { duration: "8 semaines", price: 399 },
+      { duration: "12 semaines", price: 549 },
+    ],
+  },
+  {
+    label: "Elite",
+    href: "https://www.achzodcoaching.com/coaching-elite",
+    offers: [
+      { duration: "4 semaines", price: 399 },
+      { duration: "8 semaines", price: 649 },
+      { duration: "12 semaines", price: 899 },
+    ],
+  },
+  {
+    label: "Private Lab",
+    href: "https://www.achzodcoaching.com/coaching-achzod-private-lab",
+    offers: [
+      { duration: "4 semaines", price: 499 },
+      { duration: "8 semaines", price: 799 },
+      { duration: "12 semaines", price: 1199 },
+    ],
+  },
+];
+
+const formatEuro = (value: number): string => {
+  const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
+  return `${formatted}€`;
+};
+
+const renderCoachingOffersTable = (deductionAmount: number) => {
+  const hasDeduction = deductionAmount > 0;
+  const rows = COACHING_OFFER_TIERS.flatMap((tier) =>
+    tier.offers.map((offer) => {
+      const after = Math.max(0, offer.price - deductionAmount);
+      return `
+        <tr style="border-top: 1px solid var(--border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium" style="color: var(--text);">${tier.label}</div>
+          </td>
+          <td class="text-center py-3 px-2">${offer.duration}</td>
+          <td class="text-center py-3 px-2">
+            <span style="color: var(--text-secondary);${hasDeduction ? " text-decoration: line-through;" : ""}">${formatEuro(offer.price)}</span>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="font-bold" style="color: var(--primary);">${formatEuro(after)}</div>
+          </td>
+        </tr>
+      `;
+    })
+  ).join("");
+
+  return `
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr style="color: var(--text-secondary);">
+          <th class="text-left py-2 pr-4">Formule</th>
+          <th class="text-center py-2 px-2">Duree</th>
+          <th class="text-center py-2 px-2">Prix standard</th>
+          <th class="text-center py-2 px-2">Prix apres deduction</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  </div>
+  `;
+};
 const SOURCE_MARKERS = [
   "sources",
   "source",
@@ -248,7 +328,7 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
 </div>
 
 <p style="font-size: 1rem; color: var(--text); line-height: 1.7; margin-bottom: 20px;">
-  Cette analyse t'a donne une cartographie claire. Mais l'information seule ne change rien.
+  Cette analyse t'a donne une cartographie claire. L'information seule ne change rien.
   Ce qui fait la difference, c'est l'execution et l'accompagnement.
 </p>
 
@@ -267,24 +347,23 @@ function generateBurnoutCTA(phase: "alarme" | "resistance" | "epuisement", globa
   <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 20px;">
     <div style="font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Option 2</div>
     <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin: 0 0 10px;">Coaching personnalise</h4>
-    <ul style="margin: 0 0 14px; padding-left: 18px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
-      <li><strong>Starter</strong> : 97€ / 1 mois, plan sur-mesure</li>
-      <li><strong>Transform</strong> : 247€ / 3 mois, suivi hebdo</li>
-      <li><strong>Elite</strong> : 497€ / 6 mois, coaching 1:1</li>
-    </ul>
-    <a href="https://achzodcoaching.com" target="_blank" style="display: block; text-align: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; text-decoration: none;">
-      Voir le coaching
+    <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+      Je prends le relais sur l'execution, les ajustements et le suivi des KPIs.
+    </p>
+    ${renderCoachingOffersTable(39)}
+    <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" style="display: block; text-align: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; text-decoration: none; margin-top: 14px;">
+      Voir les formules
     </a>
   </div>
 </div>
 
 <div style="margin-top: 20px; padding: 16px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);">
-  <p style="margin: 0 0 8px; color: var(--primary); font-weight: 700;">BONUS</p>
+  <p style="margin: 0 0 8px; color: var(--primary); font-weight: 700;">Deduction coaching</p>
   <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">
-    Si tu prends un Anabolic Bioscan avant le coaching, les 59€ sont deduits a 100% du prix.
+    Le montant du Burnout Engine (39€) est deduit a 100% sur chaque formule.
   </p>
   <p style="margin: 8px 0 0; color: var(--text-secondary); font-size: 0.95rem;">
-    CODE PROMO : <strong>NEUROCORE20</strong> (-20% sur le coaching)
+    Code promo : <strong>NEUROCORE20</strong> (-20% sur le coaching)
   </p>
 </div>
 

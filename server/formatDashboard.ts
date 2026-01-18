@@ -123,6 +123,13 @@ const CTA_TITLE_MARKERS = [
   'coaching apexlabs',
   'prochaines etapes',
   'pret a transformer',
+  'tu as les cles',
+  'ce que tu obtiens',
+  'bonus exclusif',
+  'mes formules',
+  'formules disponibles',
+  'code promo',
+  'rapport genere',
 ];
 
 function stripEmoji(text: string): string {
@@ -140,6 +147,7 @@ function cleanSectionContent(content: string): string {
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
+    .replace(/^.*\b(Sources?|References?|Références?)\b.*$/gmi, '')
     .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
     .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
     .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
@@ -241,11 +249,13 @@ function isLikelySectionTitle(line: string): boolean {
   const normalizedLine = normalizeTitle(trimmed);
   if (CTA_TITLE_MARKERS.some(marker => normalizedLine.includes(marker))) return false;
   if (normalizedLine.includes('score global')) return false;
-  if (normalizedLine.split(/\s+/).length < 2) return false;
+  const wordCount = normalizedLine.split(/\s+/).length;
+  if (wordCount < 3) return false;
   const isUppercase = trimmed === trimmed.toUpperCase();
   if (!isUppercase) return false;
   if (trimmed.length < 6 || trimmed.length > 120) return false;
-  return TITLE_KEYWORDS.some(keyword => normalizedLine.includes(keyword));
+  const keywordHits = TITLE_KEYWORDS.filter((keyword) => normalizedLine.includes(keyword)).length;
+  return keywordHits >= 2;
 }
 
 function extractClientName(txtContent: string): string {
@@ -360,11 +370,21 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     "ANALYSE BIOMECANIQUE ET SANGLE PROFONDE",
     "ANALYSE ENTRAINEMENT ET PERIODISATION",
     "ANALYSE SYSTEME CARDIOVASCULAIRE",
+    "ANALYSE CARDIOVASCULAIRE",
+    "ANALYSE CARDIO",
     "ANALYSE ENERGIE ET RECUPERATION",
+    "ANALYSE ENERGIE",
+    "ANALYSE RECUPERATION",
     "ANALYSE METABOLISME ET NUTRITION",
+    "ANALYSE METABOLISME",
+    "ANALYSE NUTRITION",
     "ANALYSE SOMMEIL ET RECUPERATION",
+    "ANALYSE SOMMEIL",
     "ANALYSE DIGESTION ET MICROBIOTE",
+    "ANALYSE DIGESTION",
     "ANALYSE AXES HORMONAUX",
+    "ANALYSE HORMONES",
+    "ANALYSE HORMONALE",
     "PROTOCOLE MATIN ANTI-CORTISOL",
     "PROTOCOLE SOIR VERROUILLAGE SOMMEIL",
     "PROTOCOLE DIGESTION 14 JOURS",

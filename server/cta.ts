@@ -20,10 +20,10 @@ export function getCTADebut(tier: AuditTier, amountPaid: number = PRICING.PREMIU
     return `INFOS IMPORTANTES
 
 Tu consultes l'analyse gratuite de ton profil APEXLABS.
-Cette version te donne la lecture des domaines cles et tes priorites d'optimisation.
+Cette version donne la lecture des domaines cles et tes priorites d'optimisation.
 
-Si tu veux l'analyse complete (details, protocoles, stack supplements, feuille de route), passe a l'Anabolic Bioscan.
-Si tu veux que je prenne le relais ensuite, le montant de ton scan est deduit a 100% du coaching.
+Pour l'analyse complete (details, protocoles, stack supplements, feuille de route), passe a l'Anabolic Bioscan.
+Si tu veux que je prenne le relais, le montant du scan est deduit a 100% du coaching.
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
@@ -34,9 +34,14 @@ Site: ${CONTACT.website}
   return `RAPPEL COACHING
 
 Tu consultes ton analyse ${tierLabel} APEXLABS complete.
-Si tu veux que je prenne le relais, le montant que tu as paye (${amountPaid} EUR) est deduit a 100% du coaching.
+Si tu veux que je prenne le relais, le montant paye (${amountPaid} EUR) est deduit a 100% du coaching.
 
-CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
+- Ajustements hebdo sur tes retours
+- Protocoles adaptes a ton contexte
+- Suivi des KPIs et corrections de trajectoire
+- Acces direct pour accelerer les decisions
+
+Code promo : NEUROCORE20 (-20% sur le coaching)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}
@@ -73,8 +78,8 @@ Je reprends ton dossier, j'ajuste les protocoles en direct et je pilote les KPIs
 - Suivi des KPIs et corrections de trajectoire
 - Acces direct pour accelerer les decisions
 
-BONUS EXCLUSIF : le montant de ton scan (${amountPaid} EUR) est deduit a 100% du prix du coaching.
-CODE PROMO COACHING : NEUROCORE20 (-20% sur le coaching)
+Bonus exclusif : le montant de ton scan (${amountPaid} EUR) est deduit a 100% du prix du coaching.
+Code promo : NEUROCORE20 (-20% sur le coaching)
 
 Email: ${CONTACT.email}
 Site: ${CONTACT.website}

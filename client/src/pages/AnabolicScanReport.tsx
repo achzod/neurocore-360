@@ -508,6 +508,8 @@ const AnabolicScanReport: React.FC = () => {
           ))}
         </div>
 
+        {renderOffersTable(deductionAmount)}
+
         {bonusLine && (
           <div className="text-xs uppercase tracking-widest mb-4" style={{ color: primary }}>
             {bonusLine}

@@ -142,6 +142,19 @@ const MIN_DISCOVERY_SECTION_CHARS = 5200;
 const MIN_DISCOVERY_SECTION_LINES = 55;
 const MIN_DISCOVERY_SECTION_WORDS = 700;
 const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
+const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "90000");
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`[Discovery] ${label} timeout after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
 const COACHING_OFFER_TIERS = [
   {
     label: "Starter",
@@ -1099,6 +1112,8 @@ async function generateSectionContentAI(
   const MIN_CONTENT_LENGTH = MIN_DISCOVERY_SECTION_CHARS;
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
   const MAX_RETRIES = 5;
+  let bestCandidate = "";
+  let bestValidation = { charCount: 0, wordCount: 0, lineCount: 0, paragraphCount: 0 };
 
   const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domainLabel.toUpperCase()}
 
@@ -1184,12 +1199,16 @@ FORMAT OBLIGATOIRE:
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 5000, // Longer content
-        system: SECTION_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildPrompt(attempt) }]
-      });
+      const response = await withTimeout(
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 5000, // Longer content
+          system: SECTION_SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: buildPrompt(attempt) }]
+        }),
+        DISCOVERY_AI_TIMEOUT_MS,
+        `Claude section ${domain}`
+      );
 
       const textContent = response.content.find(c => c.type === 'text');
       let rawText = textContent?.text || '';
@@ -1221,6 +1240,11 @@ FORMAT OBLIGATOIRE:
         `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs`
       );
 
+      if (validation.charCount > bestValidation.charCount) {
+        bestCandidate = rawText;
+        bestValidation = validation;
+      }
+
       // VALIDATION: Check minimum length
       if (validation.isValid) {
         console.log(
@@ -1231,9 +1255,10 @@ FORMAT OBLIGATOIRE:
 
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
-        throw new Error(
+        console.warn(
           `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
         );
+        break;
       }
 
       console.log(
@@ -1254,15 +1279,19 @@ FORMAT OBLIGATOIRE:
   console.warn(`[Discovery] Fallback OpenAI pour section ${domain}`);
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const response = await openai.chat.completions.create({
-        model: OPENAI_CONFIG.OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: SECTION_SYSTEM_PROMPT },
-          { role: 'user', content: buildPrompt(attempt) }
-        ],
-        temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
-        max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
-      });
+      const response = await withTimeout(
+        openai.chat.completions.create({
+          model: OPENAI_CONFIG.OPENAI_MODEL,
+          messages: [
+            { role: 'system', content: SECTION_SYSTEM_PROMPT },
+            { role: 'user', content: buildPrompt(attempt) }
+          ],
+          temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+          max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+        }),
+        DISCOVERY_AI_TIMEOUT_MS,
+        `OpenAI section ${domain}`
+      );
       const rawText = response.choices[0]?.message?.content || '';
       if (!rawText.trim()) {
         continue;
@@ -1274,6 +1303,10 @@ FORMAT OBLIGATOIRE:
       cleanedText = normalizeSingleVoice(cleanedText);
       cleanedText = normalizeParagraphs(cleanedText);
       const validation = isValidContent(cleanedText);
+      if (validation.charCount > bestValidation.charCount) {
+        bestCandidate = cleanedText;
+        bestValidation = validation;
+      }
       if (validation.isValid) {
         console.log(
           `[Discovery] OK OpenAI section ${domain} (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
@@ -1286,6 +1319,13 @@ FORMAT OBLIGATOIRE:
     } catch (error) {
       console.error(`[Discovery] OpenAI section ${domain} error:`, error);
     }
+  }
+
+  if (bestCandidate) {
+    console.warn(
+      `[Discovery] Section ${domain} fallback to best candidate (${bestValidation.charCount} chars, ${bestValidation.wordCount} words)`
+    );
+    return cleanMarkdownToHTML(bestCandidate);
   }
 
   return '';
@@ -1618,12 +1658,16 @@ RAPPELS CRITIQUES:
 
   try {
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        system: DISCOVERY_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }]
-      });
+      const response = await withTimeout(
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: DISCOVERY_SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userPrompt }]
+        }),
+        DISCOVERY_AI_TIMEOUT_MS,
+        "Claude synthesis"
+      );
 
       const textContent = response.content.find(c => c.type === 'text');
       let rawText = textContent?.text || '';
@@ -1664,15 +1708,19 @@ RAPPELS CRITIQUES:
     if (openai) {
       try {
         console.warn('[Discovery] Fallback OpenAI pour synthese globale');
-        const response = await openai.chat.completions.create({
-          model: OPENAI_CONFIG.OPENAI_MODEL,
-          messages: [
-            { role: 'system', content: DISCOVERY_SYSTEM_PROMPT },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
-          max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
-        });
+        const response = await withTimeout(
+          openai.chat.completions.create({
+            model: OPENAI_CONFIG.OPENAI_MODEL,
+            messages: [
+              { role: 'system', content: DISCOVERY_SYSTEM_PROMPT },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+            max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+          }),
+          DISCOVERY_AI_TIMEOUT_MS,
+          "OpenAI synthesis"
+        );
         const text = response.choices[0]?.message?.content || '';
         if (text.trim()) {
           let cleaned = text;
@@ -1707,6 +1755,7 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
     .replace(/<p[^>]*>[^<]*(Sources?|References?|Références?)\b[^<]*<\/p>/gi, '')
+    .replace(/^.*\b(Sources?|References?|Références?)\b.*$/gmi, '')
     // Remove any explicit source names
     .replace(SOURCE_NAME_REGEX, "")
     .replace(EMOJI_REGEX, "")
@@ -1895,7 +1944,15 @@ export async function convertToNarrativeReport(
     return { domain, content };
   });
 
-  const aiContents = await Promise.all(aiContentPromises);
+  const aiResults = await Promise.allSettled(aiContentPromises);
+  const aiContents = aiResults.map((result, idx) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+    const domain = domains[idx];
+    console.warn(`[Discovery] Section ${domain} failed to generate:`, result.reason);
+    return { domain, content: "" };
+  });
   const invalidSections = aiContents.filter(({ content }) => !content || content.length < MIN_DISCOVERY_SECTION_CHARS);
   if (invalidSections.length > 0) {
     const names = invalidSections.map(s => s.domain).join(", ");

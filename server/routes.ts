@@ -634,13 +634,41 @@ export async function registerRoutes(
             return resolveScoreFromTitle(combined);
           };
 
+          const scoreCardio = averageScores([auditScores.hrvcardiaque, auditScores.cardioendurance]);
+          const scoreMetabo = averageScores([auditScores.metabolismeenergie, auditScores.nutritiontracking]);
+          const isElite = audit.type === "ELITE";
+          const analysisScoreFallbackOrder: Array<number | null> = isElite
+            ? [
+                auditScores.biomecaniquemobilite ?? null,
+                auditScores.biomecaniquemobilite ?? null,
+                auditScores.activiteperformance ?? null,
+                scoreCardio,
+                scoreMetabo,
+                auditScores.sommeilrecuperation ?? null,
+                auditScores.digestionmicrobiome ?? null,
+                auditScores.hormonesstress ?? null,
+              ]
+            : [
+                auditScores.activiteperformance ?? null,
+                scoreCardio,
+                scoreMetabo,
+                auditScores.sommeilrecuperation ?? null,
+                auditScores.digestionmicrobiome ?? null,
+                auditScores.hormonesstress ?? null,
+              ];
+          let analysisIndex = 0;
+
           // On mappe le format dashboard vers le format attendu par AuditDetail.tsx
           const mappedSections = dashboard.sections
             .filter(s => s.category !== 'executive' && s.category !== 'supplements')
             .map(s => {
               const scoreFromAudit = resolveScoreFromSection(s);
+              const fallbackScore =
+                s.category === "analysis" ? analysisScoreFallbackOrder[analysisIndex] ?? null : null;
+              if (s.category === "analysis") analysisIndex += 1;
               const sectionScore =
                 scoreFromAudit ??
+                fallbackScore ??
                 (s.score > 0 && s.score <= 100 ? s.score : globalScore);
               const sectionHtml = formatSectionToHTML(s);
               return {
@@ -700,8 +728,8 @@ export async function registerRoutes(
 
           const radarFromScores = [
             { label: "Entrainement", score: auditScores.activiteperformance },
-            { label: "Cardio", score: averageScores([auditScores.hrvcardiaque, auditScores.cardioendurance]) },
-            { label: "Metabolisme", score: averageScores([auditScores.metabolismeenergie, auditScores.nutritiontracking]) },
+            { label: "Cardio", score: scoreCardio },
+            { label: "Metabolisme", score: scoreMetabo },
             { label: "Sommeil", score: auditScores.sommeilrecuperation },
             { label: "Digestion", score: auditScores.digestionmicrobiome },
             { label: "Hormones", score: auditScores.hormonesstress },
@@ -736,6 +764,7 @@ export async function registerRoutes(
             heroSummary: dashboard.resumeExecutif || "",
             executiveNarrative: dashboard.resumeExecutif || "",
             globalDiagnosis: "",
+            auditType: audit.type,
             sections: mappedSections,
             prioritySections: [] as string[],
             strengthSections: [] as string[],
@@ -771,7 +800,7 @@ export async function registerRoutes(
           return;
         }
         
-        res.json(audit.narrativeReport);
+        res.json({ ...(audit.narrativeReport as any), auditType: (audit as any).type });
         return;
       }
       
