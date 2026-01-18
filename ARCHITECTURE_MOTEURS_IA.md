@@ -96,64 +96,69 @@ photo:     { minChars: 7000, minLines: 85,  maxRetries: 3 }
 
 ---
 
-## 2️⃣ SYSTÈME BURNOUT ENGINE (Standalone)
+## 2️⃣ SYSTÈME PEPTIDES ENGINE (Standalone)
 
 ### Fichier
-- **burnout-detection.ts** (609 lignes) - 100% autonome
+- **peptides-engine.ts** (autonome) - moteur dedie peptides
 
 ### Architecture
 ```typescript
-// burnout-detection.ts ligne 9-11
+// peptides-engine.ts
 import Anthropic from "@anthropic-ai/sdk";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
-import { searchArticles } from "./knowledge/storage";
+import { searchArticles, searchFullText } from "./knowledge/storage";
 ```
 
-**N'importe PAS de geminiPremiumEngine** - système complètement indépendant
+**N'importe PAS de geminiPremiumEngine** - systeme completement independant
 
 ### Modèle IA
 ```typescript
-// Ligne 373
-model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL  // claude-sonnet-4-5-20250929
+model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL  // claude-opus-4-5-20251101
 ```
 
 ### Sections Générées
-5 sections fixes:
-1. Introduction
-2. Analyse de ton état
-3. Ton protocole de récupération
-4. Supplémentation ciblée
-5. Conclusion
+6 sections fixes:
+1. Intro (profil peptides)
+2. Diagnostic de depart
+3. Peptides recommandes
+4. Protocoles & timing
+5. Stack supplements
+6. Execution + CTA coaching
 
 ### Prompts Spécifiques
 ```typescript
-// Ligne 261: const prompts: Record<string, string>
+// const prompts: Record<string, string>
 {
-  intro: "Tu es Achzod, expert en burnout... [prompt intro]",
-  analyse: "Tu es Achzod. Tu analyses les SCORES... [prompt analyse]",
-  protocole: "Tu es Achzod. PROTOCOLE de récupération phase X... [prompt protocole]",
-  supplements: "Tu es Achzod. SUPPLEMENTATION pour burnout... [prompt supps]",
-  conclusion: "Tu es Achzod. CONCLUSION du rapport... [prompt conclusion]"
+  intro: "Tu es Achzod, expert peptides... [prompt intro]",
+  diagnostic: "Tu es Achzod. Diagnostic detaille... [prompt diagnostic]",
+  peptides: "Tu es Achzod. Peptides recommandes... [prompt peptides]",
+  protocoles: "Tu es Achzod. Protocoles detaillees... [prompt protocoles]",
+  stack: "Tu es Achzod. Stack supplements... [prompt stack]",
+  execution: "Tu es Achzod. Plan d'execution + CTA... [prompt execution]"
 }
 ```
 
 ### Validations
-Pas de validations strictes comme Premium/Elite
+Validations strictes:
+- Minimum lignes / mots par section
+- Suppression mentions de sources et de marques
+- Sanitization "je" (pas de "nous/on")
 
 ### Knowledge Base
 ```typescript
-// Ligne 202-211: getBurnoutKnowledge()
+// getPeptidesKnowledge()
 const articles = await searchArticles(keywords, 6);
+const full = await searchFullText(keywords);
 ```
-- 6 articles par section
-- Mêmes sources que Premium/Elite
+- 6 articles + fallback interne si contexte trop court
+- Mêmes sources autorisées que Premium/Elite
 
 ### Anti-IA Rules
 ```typescript
-// Ligne 241-259: antiAIRules (intégré dans chaque prompt)
-- ZERO liste à puces
-- ZERO phrases clichés IA
-- TON: Direct, empathique, cash
+// sanitizePeptidesContent()
+- Retire emojis
+- Retire "Sources" / "References"
+- Interdit citations directes
 ```
 
 ---
@@ -237,18 +242,18 @@ const aiContentPromises = domains.map(async (domain) => {
 
 ## 📊 COMPARAISON DES 3 SYSTÈMES
 
-| Critère | Premium/Elite | Burnout | Discovery |
+| Critère | Premium/Elite | Peptides | Discovery |
 |---------|--------------|---------|-----------|
-| **Fichier moteur** | anthropicEngine.ts | burnout-detection.ts | discovery-scan.ts |
+| **Fichier moteur** | anthropicEngine.ts | peptides-engine.ts | discovery-scan.ts |
 | **Bibliothèque prompts** | geminiPremiumEngine.ts | Interne | Interne |
-| **Modèle** | ANTHROPIC_CONFIG (Sonnet) | ANTHROPIC_CONFIG (Sonnet) | Hardcodé Sonnet |
-| **Sections** | 16-18 | 5 | 10 |
-| **Validation chars** | 5000-9000 | Aucune | Aucune stricte |
-| **Validation lignes** | 60-120 | Aucune | 20 min |
+| **Modèle** | ANTHROPIC_CONFIG (Sonnet) | ANTHROPIC_CONFIG (Opus) | Hardcode Sonnet |
+| **Sections** | 16-18 | 6 | 10 |
+| **Validation chars** | 5000-9000 | 2200-3000 | Aucune stricte |
+| **Validation lignes** | 60-120 | 18 min | 20 min |
 | **KB articles/section** | 10 (1200 chars) | 6 | 6 |
-| **Retries** | 3 max | ? | Retry si court |
-| **cleanPremiumContent()** | ✅ Oui | ❌ Non | ❌ Non |
-| **Indépendant** | ❌ Dépend geminiPremiumEngine | ✅ 100% autonome | ✅ 100% autonome |
+| **Retries** | 3 max | 2 + fallback | Retry si court |
+| **cleanPremiumContent()** | ✅ Oui | ✅ sanitizePeptidesContent() | ❌ Non |
+| **Indépendant** | ❌ Dependance geminiPremiumEngine | ✅ 100% autonome | ✅ 100% autonome |
 
 ---
 
@@ -278,7 +283,7 @@ export async function searchArticles(
 
 ### Utilisé par
 - ✅ anthropicEngine.ts (via getKnowledgeContextForSection)
-- ✅ burnout-detection.ts (via getBurnoutKnowledge)
+- ✅ peptides-engine.ts (via getPeptidesKnowledge)
 - ✅ discovery-scan.ts (via getKnowledgeContextForDomain)
 
 ---
@@ -293,17 +298,17 @@ export async function searchArticles(
 
 ### 2. Modèles différents
 - Premium/Elite: Via config (Sonnet primary, Opus fallback)
-- Burnout: Via config (Sonnet primary, Opus fallback)
+- Peptides: Via config (Opus primary, OpenAI fallback)
 - Discovery: **Hardcodé** Sonnet (pas de fallback)
 
 ### 3. Validations absentes
 - Discovery: Seulement 20 lignes min
-- Burnout: Aucune validation stricte
+- Peptides: Validations min chars/mots + sanitize
 - → Seul Premium/Elite a validations 5000-9000 chars
 
 ### 4. Nettoyage IA
 - Premium/Elite: `cleanPremiumContent()` retire tirets et marques IA
-- Burnout: Aucun nettoyage post-génération
+- Peptides: Nettoyage post-generation (sanitizePeptidesContent)
 - Discovery: Aucun nettoyage post-génération
 
 ---
@@ -319,8 +324,8 @@ NEUROCORE 360
 │   ├── Validations: 5000-9000 chars, 60-120 lignes
 │   └── KB: 10 articles/section, 1200 chars
 │
-├── Burnout Engine (Standalone)
-│   ├── burnout-detection.ts (100% autonome)
+├── Peptides Engine (Standalone)
+│   ├── peptides-engine.ts (100% autonome)
 │   ├── Modèle: ANTHROPIC_CONFIG (Sonnet → Opus fallback)
 │   ├── Validations: Aucune
 │   └── KB: 6 articles/section

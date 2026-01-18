@@ -94,7 +94,7 @@ const getAuditReportUrl = (audit: Audit) => {
   if (audit.type === "GRATUIT") return `/scan/${audit.id}`;
   if (audit.type === "PREMIUM") return `/anabolic/${audit.id}`;
   if (audit.type === "ELITE") return `/ultimate/${audit.id}`;
-  if (audit.type === "BURNOUT") return `/burnout/${audit.id}`;
+  if (audit.type === "PEPTIDES") return `/peptides/${audit.id}`;
   return `/dashboard/${audit.id}`;
 };
 

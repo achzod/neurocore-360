@@ -71,8 +71,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/offers/burnout-detection" className="hover:text-white transition-colors">
-                  Burnout Engine
+                <Link href="/offers/peptides-engine" className="hover:text-white transition-colors">
+                  Peptides Engine
                 </Link>
               </li>
             </ul>

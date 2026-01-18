@@ -70,7 +70,7 @@ const DEDUCTION_BY_AUDIT_TYPE: Record<string, number> = {
   ELITE: 79,
   ULTIMATE_SCAN: 79,
   BLOOD_ANALYSIS: 99,
-  BURNOUT: 39,
+  PEPTIDES: 99,
 };
 
 const formatEuro = (value: number): string => {
@@ -327,8 +327,8 @@ export async function sendReportReadyEmail(
         ? `/anabolic/${auditId}`
         : auditType === "ELITE"
         ? `/ultimate/${auditId}`
-        : auditType === "BURNOUT"
-        ? `/burnout/${auditId}`
+        : auditType === "PEPTIDES"
+        ? `/peptides/${auditId}`
         : `/ultimate/${auditId}`;
     const reportLink = `${baseUrl}${reportPath}`;
     const reviewLink = `${reportLink}#review`;
@@ -339,11 +339,11 @@ export async function sendReportReadyEmail(
         ? "Anabolic Bioscan"
         : auditType === "ELITE"
         ? "Ultimate Scan"
-        : auditType === "BURNOUT"
-        ? "Burnout Engine"
+        : auditType === "PEPTIDES"
+        ? "Peptides Engine"
         : "Ultimate Scan";
     const planColor =
-      auditType === "BURNOUT"
+      auditType === "PEPTIDES"
         ? COLORS.warning
         : auditType === "ELITE"
         ? COLORS.purple
@@ -360,7 +360,7 @@ export async function sendReportReadyEmail(
         ? "16 Domaines d'Analyse"
         : auditType === "ELITE"
         ? "18 Domaines d'Analyse"
-        : "Burnout • 6 dimensions";
+        : "Peptides • protocole sur mesure";
     const domainsCount =
       auditType === "GRATUIT"
         ? "5 piliers de santé"
@@ -368,7 +368,7 @@ export async function sendReportReadyEmail(
         ? "16 domaines de santé"
         : auditType === "ELITE"
         ? "18 domaines de santé"
-        : "6 dimensions de burnout";
+        : "protocole peptides personalise";
 
     const content = `
       <div style="text-align: center; margin-bottom: 28px;">
@@ -517,8 +517,8 @@ export async function sendAdminEmailNewAudit(
         ? "Anabolic Bioscan"
         : auditType === "ELITE"
         ? "Ultimate Scan"
-        : auditType === "BURNOUT"
-        ? "Burnout Engine"
+        : auditType === "PEPTIDES"
+        ? "Peptides Engine"
         : "Ultimate Scan";
 
     const content = `
@@ -820,12 +820,12 @@ const PROMO_EMAIL_CONFIG: Record<string, {
     discount: "-99€ sur le coaching",
     gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
   },
-  BURNOUT: {
-    title: "39€ déduits du coaching",
-    subtitle: "Merci pour ton avis sur le Burnout Engine",
-    description: "Le montant de ton Burnout Engine (39€) est intégralement déduit si tu passes au coaching Achzod.",
-    discount: "-39€ sur le coaching",
-    gradient: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)",
+  PEPTIDES: {
+    title: "99€ déduits du coaching",
+    subtitle: "Merci pour ton avis sur le Peptides Engine",
+    description: "Le montant de ton Peptides Engine (99€) est intégralement déduit si tu passes au coaching Achzod.",
+    discount: "-99€ sur le coaching",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
   },
 };
 
@@ -1055,7 +1055,7 @@ export async function sendApexLabsWelcomeEmail(email: string): Promise<boolean> 
                     <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Blood Analysis — 50+ biomarqueurs
                   </td></tr>
                   <tr><td style="padding: 10px 0; color: ${APEX_COLORS.textMuted}; font-size: 15px;">
-                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Burnout Engine — Détection précoce burnout
+                    <span style="color: ${APEX_COLORS.primary}; margin-right: 12px;">→</span> Peptides Engine — Protocoles peptides sur mesure
                   </td></tr>
                 </table>
               </div>

@@ -37,7 +37,7 @@ import {
 } from "./terraService";
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
-import { registerBurnoutRoutes } from "./burnout-detection";
+import { registerPeptidesRoutes } from "./peptides-engine";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import {
   scrapeArticleFromUrl,
@@ -781,7 +781,6 @@ export async function registerRoutes(
               months2_3: "Maintenance et cycles de progression avancee"
             },
             conclusion: "Ce rapport constitue une feuille de route personnalisee basee sur ton profil unique. Applique ces recommandations de maniere progressive et constante pour des resultats durables.",
-            auditType: audit.type,
             clientName: dashboard.clientName,
             generatedAt: dashboard.generatedAt,
             photoAnalysis: report.photoAnalysis || null
@@ -1742,11 +1741,11 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const allAudits = await storage.getAllAudits();
-      const burnoutReports = await storage.getAllBurnoutReports();
-      const mappedBurnout = burnoutReports.map((report) => ({
+      const peptidesReports = await storage.getAllPeptidesReports();
+      const mappedPeptides = peptidesReports.map((report) => ({
         id: report.id,
         email: report.email,
-        type: "BURNOUT",
+        type: "PEPTIDES",
         status: "COMPLETED",
         reportDeliveryStatus: "SENT",
         reportSentAt: report.createdAt,
@@ -1754,7 +1753,7 @@ export async function registerRoutes(
         completedAt: report.createdAt,
       }));
 
-      const audits = [...mappedBurnout, ...allAudits].sort((a: any, b: any) => {
+      const audits = [...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
         return dateB - dateA;
@@ -2129,7 +2128,7 @@ export async function registerRoutes(
           last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
 
-        `CREATE TABLE IF NOT EXISTS burnout_progress (
+        `CREATE TABLE IF NOT EXISTS peptides_progress (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
           email VARCHAR(255) NOT NULL UNIQUE,
           current_section TEXT NOT NULL DEFAULT '0',
@@ -2141,7 +2140,7 @@ export async function registerRoutes(
           last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
 
-        `CREATE TABLE IF NOT EXISTS burnout_reports (
+        `CREATE TABLE IF NOT EXISTS peptides_reports (
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
           email VARCHAR(255) NOT NULL,
           responses JSONB NOT NULL DEFAULT '{}',
@@ -2241,9 +2240,9 @@ export async function registerRoutes(
         `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`,
         `CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`,
         `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`,
-        `CREATE INDEX IF NOT EXISTS idx_burnout_progress_email ON burnout_progress(email)`,
-        `CREATE INDEX IF NOT EXISTS idx_burnout_reports_email ON burnout_reports(email)`,
-        `CREATE INDEX IF NOT EXISTS idx_burnout_reports_created_at ON burnout_reports(created_at)`
+        `CREATE INDEX IF NOT EXISTS idx_peptides_progress_email ON peptides_progress(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_peptides_reports_email ON peptides_reports(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_peptides_reports_created_at ON peptides_reports(created_at)`
       ];
       
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
@@ -3211,8 +3210,8 @@ export async function registerRoutes(
   // ==================== BLOOD ANALYSIS ROUTES ====================
   registerBloodAnalysisRoutes(app);
 
-  // ==================== BURNOUT DETECTION ROUTES ====================
-  registerBurnoutRoutes(app);
+  // ==================== PEPTIDES ENGINE ROUTES ====================
+  registerPeptidesRoutes(app);
 
   return httpServer;
 }

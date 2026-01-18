@@ -63,13 +63,13 @@ Règles absolues :
   - Anabolic Bioscan (59€) - 150 questions, rapport 25 pages
   - Ultimate Scan (79€) - 210 questions, 45 pages, photos
   - Blood Analysis (99€) - Analyse bilan sanguin, 50+ biomarqueurs
-  - Burnout Engine (39€) - 80 questions, détection burnout
+  - Peptides Engine (99€) - Questionnaire peptides, protocole sur mesure
 
 ---
 
 ## 4) CONTRAINTES MÉTIER (Achzod / audits)
 - Ne JAMAIS inventer des chiffres, claims marketing, ou fonctionnalités non existantes
-- Les prix sont FIXES : Discovery=Gratuit, Anabolic=59€, Ultimate=79€, Blood=99€, Burnout=39€
+- Les prix sont FIXES : Discovery=Gratuit, Anabolic=59€, Ultimate=79€, Blood=99€, Peptides=99€
 - Tutoiement obligatoire dans les communications (pas de "vous")
 - Pas de tirets longs IA "—" dans le contenu
 - Pas de claims "500+ clients" ou chiffres inventés
@@ -169,7 +169,7 @@ Règles absolues :
 - `Dashboard.tsx` - Dashboard utilisateur
 - `DiscoveryScanReport.tsx` - Rapport Discovery Scan
 - `AnabolicScanReport.tsx` - Rapport Anabolic Bioscan
-- `BurnoutEngineReport.tsx` - Rapport Burnout Engine
+- `PeptidesEngineReport.tsx` - Rapport Peptides Engine
 - `BloodAnalysis.tsx` - Page Blood Analysis
 - `AdminDashboard.tsx` - Dashboard admin
 - `AdminReviews.tsx` - Gestion avis admin
@@ -183,7 +183,7 @@ Règles absolues :
 - `emailService.ts` - Templates email + SendPulse API
 - `analysisEngine.ts` - Moteur d'analyse IA (112KB)
 - `discovery-scan.ts` - Logique Discovery Scan
-- `burnout-detection.ts` - Logique Burnout Engine
+- `peptides-engine.ts` - Logique Peptides Engine
 - `anthropicEngine.ts` - Intégration Claude
 - `expertProtocols.ts` - Protocoles experts
 

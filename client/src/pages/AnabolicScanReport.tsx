@@ -127,7 +127,7 @@ interface NarrativeReport {
     months2_3: string;
   };
   conclusion: string;
-  auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE' | 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'BURNOUT';
+  auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE' | 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'PEPTIDES';
 }
 
 const SECTION_ICON_BY_ID: Record<string, React.ElementType> = {

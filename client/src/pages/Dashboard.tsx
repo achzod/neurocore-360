@@ -82,7 +82,7 @@ function getReportPath(type: string, id: string) {
   if (type === "GRATUIT") return `/scan/${id}`;
   if (type === "PREMIUM") return `/anabolic/${id}`;
   if (type === "ELITE") return `/ultimate/${id}`;
-  if (type === "BURNOUT") return `/burnout/${id}`;
+  if (type === "PEPTIDES") return `/peptides/${id}`;
   return `/dashboard/${id}`;
 }
 

@@ -13,7 +13,7 @@ SESSION_SECRET = (n'importe quelle string random, ex: abc123xyz789secret)
 SMTP_USER = (ton email SendPulse)
 
 SMTP_PASS = (ton mot de passe SendPulse)
-STRIPE_BURNOUT_PRICE_ID = (price_id Stripe Burnout Engine)
+STRIPE_PEPTIDES_PRICE_ID = (price_id Stripe Peptides Engine)
 
 ═══════════════════════════════════════════════════════════
 Les autres variables sont déjà dans render.yaml

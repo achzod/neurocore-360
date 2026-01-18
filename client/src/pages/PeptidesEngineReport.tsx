@@ -7,7 +7,6 @@ import { SectionContent, Theme, Metric } from '@/components/ultrahuman/types';
 import {
   Activity,
   AlertCircle,
-  AlertTriangle,
   ArrowDown,
   ArrowUp,
   Brain,
@@ -18,10 +17,10 @@ import {
   Menu,
   Send,
   Star,
-  Target,
-  Users,
   Zap,
-  Moon
+  Moon,
+  Shield,
+  FlaskConical
 } from 'lucide-react';
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
@@ -35,54 +34,33 @@ const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-interface BurnoutReportData {
+interface PeptidesReportData {
   globalScore: number;
-  phase: 'alarme' | 'resistance' | 'epuisement';
-  phaseLabel: string;
-  phaseDescription?: string;
   clientName: string;
   generatedAt: string;
   metrics: Metric[];
   sections: SectionContent[];
   email?: string;
+  profile?: {
+    primaryGoal?: string;
+    secondaryGoals?: string[];
+    experience?: string;
+    tolerance?: string;
+    budget?: string;
+    timeline?: string;
+  };
 }
 
 const METRIC_ICONS: Record<string, React.ElementType> = {
-  energie: Zap,
+  recovery: Zap,
   sommeil: Moon,
-  cognitif: Brain,
-  emotionnel: Heart,
-  physique: Activity,
-  social: Users
-};
-
-const PHASE_LABELS = {
-  alarme: { label: 'Phase d\'Alarme', icon: AlertTriangle },
-  resistance: { label: 'Phase de Resistance', icon: Target },
-  epuisement: { label: 'Phase d\'Epuisement', icon: Flame }
-};
-
-const getPhaseConfig = (phase: 'alarme' | 'resistance' | 'epuisement', theme: Theme) => {
-  const base = PHASE_LABELS[phase];
-  return {
-    label: base.label,
-    icon: base.icon,
-    color: theme.colors.primary,
-    bgColor: withAlpha(theme.colors.primary, 0.12),
-  };
-};
-
-const getLevelStatus = (level: 'optimal' | 'attention' | 'critique', theme: Theme) => {
-  const primary = theme.colors.primary;
-  const soft = withAlpha(primary, 0.12);
-  switch (level) {
-    case 'optimal':
-      return { label: 'OPTIMAL', style: { color: primary, backgroundColor: soft }, barColor: primary };
-    case 'attention':
-      return { label: 'ATTENTION', style: { color: primary, backgroundColor: soft }, barColor: primary };
-    case 'critique':
-      return { label: 'CRITIQUE', style: { color: primary, backgroundColor: soft }, barColor: primary };
-  }
+  cognition: Brain,
+  libido: Heart,
+  performance: Activity,
+  composition: Flame,
+  tendons: Shield,
+  skin: Star,
+  peptides: FlaskConical,
 };
 
 const getMetricLevel = (value: number): 'optimal' | 'attention' | 'critique' => {
@@ -91,9 +69,9 @@ const getMetricLevel = (value: number): 'optimal' | 'attention' | 'critique' => 
   return 'critique';
 };
 
-const BurnoutEngineReport: React.FC = () => {
+const PeptidesEngineReport: React.FC = () => {
   const { auditId } = useParams();
-  const [reportData, setReportData] = useState<BurnoutReportData | null>(null);
+  const [reportData, setReportData] = useState<PeptidesReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('dashboard');
@@ -112,12 +90,12 @@ const BurnoutEngineReport: React.FC = () => {
 
   const navigationSections = useMemo<SectionContent[]>(() => {
     const base: SectionContent[] = [
-      { id: 'dashboard', title: 'Vue d\'ensemble', content: '' }
+      { id: 'dashboard', title: "Vue d'ensemble", content: '' }
     ];
     if (reportData?.sections?.length) {
       base.push(...reportData.sections);
     }
-    base.push({ id: 'review', title: 'Votre Avis', content: '' });
+    base.push({ id: 'review', title: 'Ton Avis', content: '' });
     return base;
   }, [reportData]);
 
@@ -130,7 +108,7 @@ const BurnoutEngineReport: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`/api/burnout-detection/${auditId}`);
+        const response = await fetch(`/api/peptides-engine/${auditId}`);
         const data = await response.json();
 
         if (data.error) {
@@ -139,7 +117,7 @@ const BurnoutEngineReport: React.FC = () => {
           return;
         }
 
-        if (typeof data.globalScore !== 'number' || !data.phase || !Array.isArray(data.sections)) {
+        if (typeof data.globalScore !== 'number' || !Array.isArray(data.sections)) {
           setError('Format de rapport invalide');
           setLoading(false);
           return;
@@ -251,7 +229,7 @@ const BurnoutEngineReport: React.FC = () => {
           rating: reviewRating,
           comment: reviewComment,
           email: reviewEmail,
-          auditType: 'BURNOUT'
+          auditType: 'PEPTIDES'
         })
       });
 
@@ -275,8 +253,8 @@ const BurnoutEngineReport: React.FC = () => {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-red-400 animate-spin mx-auto mb-4" />
-          <p className="text-white/60">Chargement de votre analyse...</p>
+          <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto mb-4" />
+          <p className="text-white/60">Chargement de ton protocole...</p>
         </div>
       </div>
     );
@@ -296,11 +274,9 @@ const BurnoutEngineReport: React.FC = () => {
 
   if (!reportData) return null;
 
-  const phaseConfig = getPhaseConfig(reportData.phase, currentTheme);
   const primary = currentTheme.colors.primary;
   const primarySoft = withAlpha(primary, 0.12);
   const primaryBorder = withAlpha(primary, 0.3);
-  const PhaseIcon = phaseConfig.icon;
   const themeVars = {
     '--color-bg': currentTheme.colors.background,
     '--color-surface': currentTheme.colors.surface,
@@ -320,6 +296,15 @@ const BurnoutEngineReport: React.FC = () => {
     '--accent-ok': currentTheme.colors.primary,
     '--accent-warning': currentTheme.colors.primary,
   } as React.CSSProperties;
+
+  const profileItems = [
+    { label: 'Objectif principal', value: reportData.profile?.primaryGoal },
+    { label: 'Objectifs secondaires', value: reportData.profile?.secondaryGoals?.join(', ') },
+    { label: 'Experience', value: reportData.profile?.experience },
+    { label: 'Tolerance', value: reportData.profile?.tolerance },
+    { label: 'Budget', value: reportData.profile?.budget },
+    { label: 'Timeline', value: reportData.profile?.timeline },
+  ].filter(item => item.value);
 
   return (
     <div
@@ -347,7 +332,7 @@ const BurnoutEngineReport: React.FC = () => {
           currentTheme={currentTheme}
           onThemeChange={setCurrentTheme}
           clientName={reportData.clientName || 'Profil'}
-          auditType="BURNOUT"
+          auditType="PEPTIDES"
         />
       </aside>
 
@@ -382,6 +367,9 @@ const BurnoutEngineReport: React.FC = () => {
                   strokeWidth={6}
                   color={currentTheme.colors.primary}
                 />
+                <p className="text-xs mt-4" style={{ color: currentTheme.colors.textMuted }}>
+                  Analyse generee le {new Date(reportData.generatedAt).toLocaleDateString('fr-FR')}.
+                </p>
               </div>
 
               <div
@@ -389,24 +377,30 @@ const BurnoutEngineReport: React.FC = () => {
                 style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <PhaseIcon className="w-6 h-6" style={{ color: phaseConfig.color }} />
-                  <h2 className="text-xl font-semibold">{phaseConfig.label}</h2>
+                  <FlaskConical className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
+                  <h2 className="text-xl font-semibold">Profil peptides</h2>
                 </div>
-                <div className="p-4 rounded" style={{ backgroundColor: phaseConfig.bgColor }}>
-                  <p className="text-sm leading-relaxed">
-                    {reportData.phaseDescription || reportData.phaseLabel}
+                {profileItems.length > 0 ? (
+                  <div className="space-y-3">
+                    {profileItems.map((item) => (
+                      <div key={item.label} className="text-sm">
+                        <span style={{ color: currentTheme.colors.textMuted }}>{item.label}:</span>{' '}
+                        <span>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                    Profil en cours de consolidation.
                   </p>
-                </div>
-                <p className="text-sm mt-4" style={{ color: currentTheme.colors.textMuted }}>
-                  Analyse generee le {new Date(reportData.generatedAt).toLocaleDateString('fr-FR')}.
-                </p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {reportData.metrics.map((metric) => {
                 const level = getMetricLevel(metric.value);
-                const status = getLevelStatus(level, currentTheme);
+                const statusLabel = level === 'optimal' ? 'OPTIMAL' : level === 'attention' ? 'ATTENTION' : 'CRITIQUE';
                 const Icon = METRIC_ICONS[metric.key] || Activity;
                 const percent = Math.round((metric.value / metric.max) * 100);
 
@@ -417,9 +411,9 @@ const BurnoutEngineReport: React.FC = () => {
                     style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <Icon className="w-5 h-5" style={{ color: status.barColor }} />
-                      <span className="text-xs px-2 py-1 rounded-full" style={status.style}>
-                        {status.label}
+                      <Icon className="w-5 h-5" style={{ color: primary }} />
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ color: primary, backgroundColor: primarySoft }}>
+                        {statusLabel}
                       </span>
                     </div>
                     <div className="text-2xl font-bold mb-1">{percent}%</div>
@@ -429,7 +423,7 @@ const BurnoutEngineReport: React.FC = () => {
                     <div className="mt-3 h-1.5 rounded-full bg-white/10">
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${percent}%`, backgroundColor: status.barColor }}
+                        style={{ width: `${percent}%`, backgroundColor: primary }}
                       />
                     </div>
                   </div>
@@ -532,7 +526,7 @@ const BurnoutEngineReport: React.FC = () => {
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="Qu'as-tu pense de ton rapport ?"
+                      placeholder="Qu'as-tu pense de ton protocole ?"
                       className="w-full p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
                       rows={3}
                     />
@@ -592,4 +586,4 @@ const BurnoutEngineReport: React.FC = () => {
   );
 };
 
-export default BurnoutEngineReport;
+export default PeptidesEngineReport;

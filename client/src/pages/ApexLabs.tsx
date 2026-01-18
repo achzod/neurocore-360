@@ -66,12 +66,12 @@ const OFFERS: Offer[] = [
     reverse: true
   },
   {
-    id: 'burnout-detection',
-    title: "BURNOUT DETECTION",
-    subtitle: "Détection Précoce",
-    description: "Épuisé. Irritable. Déconnecté. Si tu te reconnais, ce scan est pour toi. Questionnaire spécialisé de 80+ questions pour détecter les signes précoces du burnout AVANT qu'il soit trop tard. Tu reçois un score de risque sur 100, l'identification de ta phase actuelle (alarme, résistance ou épuisement), une analyse de ton système nerveux et un protocole de récupération structuré sur 4 semaines. Plus tu détectes tôt, plus tu récupères vite.",
-    features: ["Score de risque burnout", "Analyse système nerveux", "Qualité du sommeil", "Protocole récupération 4 semaines"],
-    price: "39€",
+    id: 'peptides-engine',
+    title: "PEPTIDES ENGINE",
+    subtitle: "Protocoles peptides",
+    description: "Un questionnaire pointu pour definir les peptides adaptes a tes objectifs. Tu reçois un plan de dosage, un timing clair, un protocole semaine par semaine et des sources fiables. Bonus: ebook peptides offert.",
+    features: ["Protocoles peptides sur mesure", "Dosages + timing", "Sources fiables", "Ebook peptides offert"],
+    price: "99€",
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
     reverse: false
   }
@@ -446,7 +446,7 @@ function Hero() {
     "Prise de muscle",
     "Performance sportive",
     "Optimisation santé",
-    "Détection burnout",
+    "Peptides Engine",
     "Bilan complet"
   ];
 

@@ -54,7 +54,7 @@ const DEDUCTION_BY_AUDIT_TYPE: Record<string, number> = {
   PREMIUM: 59,
   ULTIMATE_SCAN: 79,
   ELITE: 79,
-  BURNOUT: 39,
+  PEPTIDES: 99,
   BLOOD_ANALYSIS: 99,
 };
 
