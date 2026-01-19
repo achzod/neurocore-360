@@ -1741,7 +1741,7 @@ class PgReviewStorage implements IReviewStorage {
     }
     await pool.query(
       `CREATE TABLE IF NOT EXISTS reviews (
-        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        id VARCHAR(36) PRIMARY KEY,
         audit_id VARCHAR(36) NOT NULL,
         user_id VARCHAR(36),
         email VARCHAR(255) NOT NULL,
@@ -1757,6 +1757,7 @@ class PgReviewStorage implements IReviewStorage {
         reviewed_by VARCHAR(255)
       )`
     );
+    await pool.query(`ALTER TABLE IF EXISTS reviews ALTER COLUMN id DROP DEFAULT`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`);
     this.ensuredReviewsTable = true;

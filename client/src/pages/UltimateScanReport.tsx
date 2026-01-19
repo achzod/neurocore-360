@@ -11,6 +11,7 @@ import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
 import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, SectionContent, Metric } from '@/components/ultrahuman/types';
 import { COACHING_OFFER_TIERS, formatEuro, getDeductionAmount } from '@/components/ultrahuman/coachingOffers';
+import { ReportErrorBoundary } from '@/components/ultrahuman/ReportErrorBoundary';
 import {
   Menu,
   ArrowUp,
@@ -139,11 +140,27 @@ const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const normalizeTextInput = (value?: unknown): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value.map(item => normalizeTextInput(item)).filter(Boolean).join("\n\n");
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>)
+      .map(item => normalizeTextInput(item))
+      .filter(Boolean)
+      .join("\n\n");
+  }
+  return String(value);
+};
+
 const parseCtaText = (text?: string) => {
-  if (!text) {
+  const safeText = normalizeTextInput(text);
+  if (!safeText) {
     return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
   }
-  const lines = text
+  const lines = safeText
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
@@ -320,10 +337,11 @@ const UltimateScanReport: React.FC = () => {
     root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
-  const toHtml = (value: string) => {
-    if (!value) return "";
-    if (hasHtml(value)) return value;
-    return value
+  const toHtml = (value: unknown) => {
+    const safeValue = normalizeTextInput(value);
+    if (!safeValue) return "";
+    if (hasHtml(safeValue)) return safeValue;
+    return safeValue
       .split(/\n\s*\n/)
       .map(p => p.trim())
       .filter(Boolean)
@@ -332,14 +350,14 @@ const UltimateScanReport: React.FC = () => {
   };
 
   const buildSectionHtml = (section: NarrativeSection) => {
-    const intro = section.introduction?.trim() || "";
+    const intro = normalizeTextInput(section.introduction).trim();
     const blocks = [
       { label: "Analyse", text: intro },
-      { label: "Ce qui bloque", text: section.whatIsWrong },
-      { label: "Analyse personnalisee", text: section.personalizedAnalysis },
-      { label: "Recommandations", text: section.recommendations },
-      { label: "Plan d'action", text: section.actionPlan },
-      { label: "Science", text: section.scienceDeepDive },
+      { label: "Ce qui bloque", text: normalizeTextInput(section.whatIsWrong) },
+      { label: "Analyse personnalisee", text: normalizeTextInput(section.personalizedAnalysis) },
+      { label: "Recommandations", text: normalizeTextInput(section.recommendations) },
+      { label: "Plan d'action", text: normalizeTextInput(section.actionPlan) },
+      { label: "Science", text: normalizeTextInput(section.scienceDeepDive) },
     ].filter((block) => block.text && block.text.trim().length > 0);
 
     if (intro && hasHtml(intro) && blocks.length === 1) {
@@ -979,7 +997,7 @@ const UltimateScanReport: React.FC = () => {
     }
 
     if (section.id === 'photo-analysis') {
-      if (!report.photoAnalysis) {
+      if (!report.photoAnalysis || typeof report.photoAnalysis !== "object") {
         return (
           <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
             <div className="flex items-center gap-3 mb-3">
@@ -993,7 +1011,20 @@ const UltimateScanReport: React.FC = () => {
         );
       }
 
-      const photoScore = typeof report.photoAnalysis.score === 'number' ? report.photoAnalysis.score : Math.round(globalScore);
+      const rawPhoto = report.photoAnalysis as Record<string, unknown>;
+      const normalizedPhoto = {
+        summary: normalizeTextInput(rawPhoto.summary) || normalizeTextInput(rawPhoto.medicalObservations),
+        posture: normalizeTextInput(rawPhoto.postureAnalysis) || normalizeTextInput(rawPhoto.posture),
+        muscular: normalizeTextInput(rawPhoto.muscularAnalysis) || normalizeTextInput(rawPhoto.muscularBalance),
+        fat: normalizeTextInput(rawPhoto.fatAnalysis) || normalizeTextInput(rawPhoto.fatDistribution),
+        recommendations:
+          normalizeTextInput(rawPhoto.correctiveProtocol) ||
+          normalizeTextInput(rawPhoto.recommendations) ||
+          normalizeTextInput(rawPhoto.medicalObservations),
+        score: typeof rawPhoto.score === "number" ? rawPhoto.score : undefined,
+      };
+      const photoScore =
+        typeof normalizedPhoto.score === 'number' ? normalizedPhoto.score : Math.round(globalScore);
 
       return (
         <div className="space-y-6">
@@ -1012,22 +1043,26 @@ const UltimateScanReport: React.FC = () => {
                   color={currentTheme.colors.primary}
                 />
               </div>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{report.photoAnalysis.summary}</p>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                {normalizedPhoto.summary || "Analyse photo en cours de synthese."}
+              </p>
             </div>
 
             <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
               <h4 className="text-sm font-bold mb-3" style={{ color: currentTheme.colors.primary }}>Observations cles</h4>
               <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                <p><strong style={{ color: currentTheme.colors.text }}>Posture:</strong> {report.photoAnalysis.postureAnalysis}</p>
-                <p><strong style={{ color: currentTheme.colors.text }}>Musculature:</strong> {report.photoAnalysis.muscularAnalysis}</p>
-                <p><strong style={{ color: currentTheme.colors.text }}>Graisse:</strong> {report.photoAnalysis.fatAnalysis}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Posture:</strong> {normalizedPhoto.posture || "Analyse en attente."}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Musculature:</strong> {normalizedPhoto.muscular || "Analyse en attente."}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Graisse:</strong> {normalizedPhoto.fat || "Analyse en attente."}</p>
               </div>
             </div>
           </div>
 
           <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
             <h4 className="text-sm font-bold mb-3" style={{ color: currentTheme.colors.primary }}>Correctifs prioritaires</h4>
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{report.photoAnalysis.correctiveProtocol || report.photoAnalysis.recommendations}</p>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {normalizedPhoto.recommendations || "Protocoles correctifs en cours de consolidation."}
+            </p>
           </div>
         </div>
       );
@@ -1130,219 +1165,232 @@ const UltimateScanReport: React.FC = () => {
     );
   };
 
+  const handleBoundaryRetry = () => {
+    if (!auditId) return;
+    fetch(`/api/audit/${auditId}/regenerate`, { method: 'POST' })
+      .catch(() => {})
+      .finally(() => {
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
+      });
+  };
+
   return (
-    <div
-      className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
-      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
-    >
-      <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
-        <div
-          className="h-full transition-all duration-150 ease-out"
-          style={{ width: `${scrollProgress}%`, backgroundColor: currentTheme.colors.primary }}
-        />
-      </div>
-
+    <ReportErrorBoundary onRetry={handleBoundaryRetry}>
       <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(to right, ${currentTheme.colors.grid} 1px, transparent 1px), linear-gradient(to bottom, ${currentTheme.colors.grid} 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
+        className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
+        style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+      >
+        <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
+          <div
+            className="h-full transition-all duration-150 ease-out"
+            style={{ width: `${scrollProgress}%`, backgroundColor: currentTheme.colors.primary }}
+          />
+        </div>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} border-r flex flex-col`}
-        style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
-        <Sidebar
-          sections={navigationSections}
-          activeSection={activeSection}
-          onNavigate={scrollToSection}
-          themes={THEMES}
-          currentTheme={currentTheme}
-          onThemeChange={setCurrentTheme}
-          clientName={displayName}
-          auditType="ULTIMATE_SCAN"
-        />
-      </aside>
-
-      {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `linear-gradient(to right, ${currentTheme.colors.grid} 1px, transparent 1px), linear-gradient(to bottom, ${currentTheme.colors.grid} 1px, transparent 1px)`,
+            backgroundSize: '60px 60px'
+          }}
         />
-      )}
 
-      <main ref={mainContentRef} className="flex-1 overflow-y-auto relative z-10 scroll-smooth">
-        <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-2">
-          <button
-            onClick={() => scrollToSection('dashboard')}
-            className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-xl"
-            style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}
-          >
-            <ArrowUp size={16} />
-          </button>
-          <div className="flex flex-col rounded-full shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-            <button onClick={() => navigateChapter('prev')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-colors" style={{ color: 'var(--color-text)' }}>
+        <aside className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} border-r flex flex-col`}
+          style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+          <Sidebar
+            sections={navigationSections}
+            activeSection={activeSection}
+            onNavigate={scrollToSection}
+            themes={THEMES}
+            currentTheme={currentTheme}
+            onThemeChange={setCurrentTheme}
+            clientName={displayName}
+            auditType="ULTIMATE_SCAN"
+          />
+        </aside>
+
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto relative z-10 scroll-smooth">
+          <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-2">
+            <button
+              onClick={() => scrollToSection('dashboard')}
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-xl"
+              style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}
+            >
               <ArrowUp size={16} />
             </button>
-            <div className="h-[1px] w-full" style={{ backgroundColor: 'var(--color-border)' }}></div>
-            <button onClick={() => navigateChapter('next')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-colors" style={{ color: 'var(--color-text)' }}>
-              <ArrowDown size={16} />
-            </button>
+            <div className="flex flex-col rounded-full shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <button onClick={() => navigateChapter('prev')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-colors" style={{ color: 'var(--color-text)' }}>
+                <ArrowUp size={16} />
+              </button>
+              <div className="h-[1px] w-full" style={{ backgroundColor: 'var(--color-border)' }}></div>
+              <button onClick={() => navigateChapter('next')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-colors" style={{ color: 'var(--color-text)' }}>
+                <ArrowDown size={16} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="lg:hidden sticky top-0 z-40 backdrop-blur-md px-4 py-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-bg)', borderBottom: `1px solid var(--color-border)` }}>
-          <span className="font-bold text-sm tracking-widest uppercase">{displayName}</span>
-          <button onClick={() => setMobileMenuOpen(true)}><Menu size={20} /></button>
-        </div>
+          <div className="lg:hidden sticky top-0 z-40 backdrop-blur-md px-4 py-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-bg)', borderBottom: `1px solid var(--color-border)` }}>
+            <span className="font-bold text-sm tracking-widest uppercase">{displayName}</span>
+            <button onClick={() => setMobileMenuOpen(true)}><Menu size={20} /></button>
+          </div>
 
-        <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
-          <div id="dashboard" className="pt-8 lg:pt-12">
-            <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
-              <div className="space-y-6 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full" style={{ border: `1px solid var(--color-border)`, backgroundColor: 'var(--color-surface)' }}>
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-green-500"></span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Ultimate Scan</span>
-                </div>
-                <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
-                  {displayName}, <br />
-                  <span style={{ color: currentTheme.colors.textMuted }}>voici ton ultimate scan.</span>
-                </h1>
-                <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                  {Math.round(globalScore)}/100 — {scoreSummary}
-                </p>
-              </div>
-
-              <div className="flex gap-4 items-end">
-                <div className="text-right hidden md:block">
-                  <div className="text-3xl font-bold font-mono">{Math.round(globalScore)}<span className="text-lg opacity-50">/100</span></div>
-                  <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
-                </div>
-              </div>
-            </header>
-
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="lg:col-span-1 lg:row-span-2 rounded-sm p-8 flex flex-col justify-between relative overflow-hidden group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-                  <Activity size={80} />
-                </div>
-                <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
-                <div className="flex items-center justify-center py-8">
-                  <RadialProgress
-                    score={Math.round(globalScore)}
-                    max={100}
-                    size={180}
-                    strokeWidth={4}
-                    color={currentTheme.colors.primary}
-                  />
-                </div>
-                <div className="flex items-center justify-center">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${getMetricStatus(globalScore10).color}`}>
-                    {getMetricStatus(globalScore10).label}
-                  </span>
-                </div>
-              </div>
-
-              <div className="lg:col-span-2 lg:row-span-2 rounded-sm p-1 relative group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-                <div className="absolute top-6 left-6 z-10">
-                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Balance Systemique</h3>
-                </div>
-                <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
-                  <MetricsRadar
-                    data={finalRadarMetrics}
-                    color={currentTheme.colors.primary}
-                    gridColor={currentTheme.colors.grid}
-                    labelColor={currentTheme.colors.textMuted}
-                    tooltipBg={currentTheme.colors.surface}
-                    tooltipBorder={currentTheme.colors.border}
-                    tooltipText={currentTheme.colors.text}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-                <div className="flex justify-between items-start">
-                  {React.createElement(METRIC_ICONS[worstMetric?.key || "stress"] || Brain, { size: 20, style: { color: 'var(--color-text-muted)' } })}
-                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getMetricStatus(worstMetric?.value || 0).color}`}>
-                    {getMetricStatus(worstMetric?.value || 0).label}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-2xl font-medium mt-4">{worstMetric?.value ?? globalScore10}<span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>/10</span></div>
-                  <div className="text-xs font-mono uppercase mt-1" style={{ color: 'var(--color-text-muted)' }}>{worstMetric?.label || 'Priorite'}</div>
-                </div>
-              </div>
-
-              <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-                <div className="flex justify-between items-start">
-                  {React.createElement(METRIC_ICONS[bestMetric?.key || "energie"] || Zap, { size: 20, style: { color: 'var(--color-text-muted)' } })}
-                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getMetricStatus(bestMetric?.value || 0).color}`}>
-                    {getMetricStatus(bestMetric?.value || 0).label}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-2xl font-medium mt-4">{bestMetric?.value ?? globalScore10}<span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>/10</span></div>
-                  <div className="text-xs font-mono uppercase mt-1" style={{ color: 'var(--color-text-muted)' }}>{bestMetric?.label || 'Point fort'}</div>
-                </div>
-              </div>
-
-              <div className="lg:col-span-4 rounded-sm p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-                <div className="w-full md:w-1/3">
-                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--color-primary)' }}>
-                    <Zap size={16} /> Potentiel
-                  </h3>
-                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    En debloquant tes systemes prioritaires, projection d'amelioration sur 90 jours.
+          <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
+            <div id="dashboard" className="pt-8 lg:pt-12">
+              <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+                <div className="space-y-6 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full" style={{ border: `1px solid var(--color-border)`, backgroundColor: 'var(--color-surface)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-green-500"></span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Ultimate Scan</span>
+                  </div>
+                  <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
+                    {displayName}, <br />
+                    <span style={{ color: currentTheme.colors.textMuted }}>voici ton ultimate scan.</span>
+                  </h1>
+                  <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
+                    {Math.round(globalScore)}/100 — {scoreSummary}
                   </p>
                 </div>
-                <div className="w-full md:w-2/3 h-[150px]">
-                  <ProjectionChart color={currentTheme.colors.primary} currentScore={globalScore10} />
-                </div>
-              </div>
-            </section>
-          </div>
 
-          <div className="space-y-0 relative">
-            <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
-
-            {contentSections.map((section, idx) => (
-              <section key={section.id} id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
-                <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
-                  <div className="lg:w-[240px] flex-shrink-0">
-                    <div className="sticky top-24 pr-8 lg:text-right">
-                      <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
-                        {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                      </span>
-                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
-                        {section.title}
-                      </h2>
-                      {section.subtitle && (
-                        <p className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: currentTheme.colors.primary }}>
-                          {section.subtitle}
-                        </p>
-                      )}
-                      {section.chips && section.chips.length > 0 && (
-                        <div className="flex flex-wrap lg:justify-end gap-2 mt-4">
-                          {section.chips.map(chip => (
-                            <span key={chip} className="px-2 py-1 text-[9px] font-mono uppercase rounded" style={{ border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}>
-                              {chip}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                <div className="flex gap-4 items-end">
+                  <div className="text-right hidden md:block">
+                    <div className="text-3xl font-bold font-mono">{Math.round(globalScore)}<span className="text-lg opacity-50">/100</span></div>
+                    <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
                   </div>
+                </div>
+              </header>
 
-                  <div className="flex-1 min-w-0">
-                    {renderSectionBody(section)}
+              <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-1 lg:row-span-2 rounded-sm p-8 flex flex-col justify-between relative overflow-hidden group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                    <Activity size={80} />
+                  </div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
+                  <div className="flex items-center justify-center py-8">
+                    <RadialProgress
+                      score={Math.round(globalScore)}
+                      max={100}
+                      size={180}
+                      strokeWidth={4}
+                      color={currentTheme.colors.primary}
+                    />
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${getMetricStatus(globalScore10).color}`}>
+                      {getMetricStatus(globalScore10).label}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 lg:row-span-2 rounded-sm p-1 relative group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  <div className="absolute top-6 left-6 z-10">
+                    <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Balance Systemique</h3>
+                  </div>
+                  <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
+                    <MetricsRadar
+                      data={finalRadarMetrics}
+                      color={currentTheme.colors.primary}
+                      gridColor={currentTheme.colors.grid}
+                      labelColor={currentTheme.colors.textMuted}
+                      tooltipBg={currentTheme.colors.surface}
+                      tooltipBorder={currentTheme.colors.border}
+                      tooltipText={currentTheme.colors.text}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  <div className="flex justify-between items-start">
+                    {React.createElement(METRIC_ICONS[worstMetric?.key || "stress"] || Brain, { size: 20, style: { color: 'var(--color-text-muted)' } })}
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getMetricStatus(worstMetric?.value || 0).color}`}>
+                      {getMetricStatus(worstMetric?.value || 0).label}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-medium mt-4">{worstMetric?.value ?? globalScore10}<span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>/10</span></div>
+                    <div className="text-xs font-mono uppercase mt-1" style={{ color: 'var(--color-text-muted)' }}>{worstMetric?.label || 'Priorite'}</div>
+                  </div>
+                </div>
+
+                <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  <div className="flex justify-between items-start">
+                    {React.createElement(METRIC_ICONS[bestMetric?.key || "energie"] || Zap, { size: 20, style: { color: 'var(--color-text-muted)' } })}
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getMetricStatus(bestMetric?.value || 0).color}`}>
+                      {getMetricStatus(bestMetric?.value || 0).label}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-medium mt-4">{bestMetric?.value ?? globalScore10}<span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>/10</span></div>
+                    <div className="text-xs font-mono uppercase mt-1" style={{ color: 'var(--color-text-muted)' }}>{bestMetric?.label || 'Point fort'}</div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-4 rounded-sm p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                  <div className="w-full md:w-1/3">
+                    <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--color-primary)' }}>
+                      <Zap size={16} /> Potentiel
+                    </h3>
+                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                      En debloquant tes systemes prioritaires, projection d'amelioration sur 90 jours.
+                    </p>
+                  </div>
+                  <div className="w-full md:w-2/3 h-[150px]">
+                    <ProjectionChart color={currentTheme.colors.primary} currentScore={globalScore10} />
                   </div>
                 </div>
               </section>
-            ))}
+            </div>
+
+            <div className="space-y-0 relative">
+              <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
+
+              {contentSections.map((section, idx) => (
+                <section key={section.id} id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
+                  <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
+                    <div className="lg:w-[240px] flex-shrink-0">
+                      <div className="sticky top-24 pr-8 lg:text-right">
+                        <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
+                          {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
+                        </span>
+                        <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
+                          {section.title}
+                        </h2>
+                        {section.subtitle && (
+                          <p className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: currentTheme.colors.primary }}>
+                            {section.subtitle}
+                          </p>
+                        )}
+                        {section.chips && section.chips.length > 0 && (
+                          <div className="flex flex-wrap lg:justify-end gap-2 mt-4">
+                            {section.chips.map(chip => (
+                              <span key={chip} className="px-2 py-1 text-[9px] font-mono uppercase rounded" style={{ border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}>
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {renderSectionBody(section)}
+                    </div>
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </ReportErrorBoundary>
   );
 };
 

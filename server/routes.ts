@@ -2168,7 +2168,7 @@ export async function registerRoutes(
         )`,
         
         `CREATE TABLE IF NOT EXISTS reviews (
-          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          id VARCHAR(36) PRIMARY KEY,
           audit_id VARCHAR(36) NOT NULL,
           user_id VARCHAR(36),
           email VARCHAR(255) NOT NULL,

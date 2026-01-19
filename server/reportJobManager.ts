@@ -1,11 +1,10 @@
-import { generateAndConvertAudit, deleteCache as deleteGeminiCache } from "./geminiPremiumEngine";
+import { generateAndConvertAudit, deleteCache as deleteGeminiCache, getSectionsForTier } from "./geminiPremiumEngine";
 import { generateAndConvertAuditWithClaude, deleteAnthropicCache } from "./anthropicEngine";
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
-import { getSectionsForTier } from "./geminiPremiumEngine";
 import { normalizeResponses } from "./responseNormalizer";
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
