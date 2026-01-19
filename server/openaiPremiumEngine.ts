@@ -14,7 +14,7 @@ import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
 // Réutiliser les sections et instructions de Gemini (exportées)
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier } from './geminiPremiumEngine';
-import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from './textNormalization';
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines, stripInlineHtml } from './textNormalization';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -602,9 +602,10 @@ ${photoAnalysisStr}
         return { section, text: degraded, fromCache: false };
       }
 
-      let cleanedText = sectionText
+      let cleanedText = stripInlineHtml(sectionText)
         .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
         .replace(/Sources?\s*:.*$/gmi, "")
+        .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|prochaine etape|tu as les cl(?:e|\u00e9)s).*$/gmi, "")
         .replace(SOURCE_NAME_REGEX, "")
         .replace(/\bclients\b/gi, "profils")
         .replace(/\bclient\b/gi, "profil")

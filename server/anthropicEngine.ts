@@ -14,7 +14,7 @@ import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
 import { generateKnowledgeContext, searchForSection } from './knowledge';
-import { normalizeSingleVoice } from './textNormalization';
+import { normalizeSingleVoice, stripInlineHtml } from './textNormalization';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -137,14 +137,14 @@ function extractSourceMentions(context: string): string[] {
 }
 
 function sanitizePremiumText(text: string): string {
-  let cleaned = text
+  let cleaned = stripInlineHtml(text)
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
     .replace(/Sources?\s*:.*$/gmi, "")
     .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, "")
     .replace(/^\s*[-=]{3,}\s*$/gm, "")
     .replace(/^\s*[-+•]\s+/gm, "")
     .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|tu as les cles).*$/gmi, "")
+    .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|prochaine etape|tu as les cl(?:e|\u00e9)s).*$/gmi, "")
     .replace(/^\s*(code promo|email|site)\s*:.*$/gmi, "")
     .replace(/^\s*note\s*\(technique\).*$/gmi, "")
     .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, "")

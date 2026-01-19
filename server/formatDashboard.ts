@@ -9,7 +9,7 @@
  * 2. formatTxtToDashboard() → Format dashboard (séparé, flexible)
  */
 
-import { normalizeSingleVoice } from "./textNormalization";
+import { normalizeSingleVoice, stripInlineHtml } from "./textNormalization";
 
 export interface DashboardSection {
   id: string;
@@ -142,7 +142,7 @@ const SOURCE_NAME_REGEX = new RegExp(
 );
 
 function cleanSectionContent(content: string): string {
-  const cleaned = stripEmoji(content)
+  const cleaned = stripEmoji(stripInlineHtml(content))
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
@@ -158,6 +158,8 @@ function cleanSectionContent(content: string): string {
     .replace(/^\s*formules?\s+disponibles.*$/gmi, '')
     .replace(/^\s*bonus\s+exclusif.*$/gmi, '')
     .replace(/^\s*mes\s+formules.*$/gmi, '')
+    .replace(/^\s*tu\s+as\s+les\s+cl[eé]s.*$/gmi, '')
+    .replace(/^\s*prochaines?\s+etapes?.*$/gmi, '')
     .replace(/^\s*={3,}.*$/gm, '')
     .replace(/={3,}/g, '')
     .replace(/^\s*-{3,}.*$/gm, '')
@@ -172,6 +174,7 @@ function cleanSectionContent(content: string): string {
 }
 
 function stripCtaFromContent(content: string): string {
+  const normalizedContent = stripInlineHtml(content);
   const markers = [
     "COACHING APEXLABS",
     "RAPPEL COACHING",
@@ -203,7 +206,7 @@ function stripCtaFromContent(content: string): string {
     /^\s*rapports?\s+genere/i
   ];
   const normalizedMarkers = markers.map((marker) => normalizeTitle(marker));
-  const lines = content.split("\n");
+  const lines = normalizedContent.split("\n");
   const cutIndex = lines.findIndex((line) => {
     const trimmed = line.trim();
     if (!trimmed) return false;
@@ -213,7 +216,7 @@ function stripCtaFromContent(content: string): string {
     }
     return markerRegex.some((re) => re.test(trimmed));
   });
-  if (cutIndex === -1) return content;
+  if (cutIndex === -1) return normalizedContent;
   return lines.slice(0, cutIndex).join("\n").trim();
 }
 
@@ -336,6 +339,7 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
     // Chercher "PRET A TRANSFORMER" ou "PROCHAINES ETAPES"
     const markers = [
       'COACHING APEXLABS',
+      'TU AS LES CLES',
       'PRET A TRANSFORMER CES INSIGHTS',
       'PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT',
       'PROCHAINES ÉTAPES - CE QUE TU PEUX FAIRE MAINTENANT',
@@ -417,10 +421,10 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     
     const normalizedLine = normalizeTitle(line);
     const matchedTitle = normalizedTitles.get(normalizedLine);
-    const isLikelyTitle = isLikelySectionTitle(line);
+    const isKnownTitle = Boolean(matchedTitle);
     
-    if (matchedTitle || isLikelyTitle) {
-      const resolvedTitle = matchedTitle || line;
+    if (isKnownTitle) {
+      const resolvedTitle = matchedTitle as string;
       // Vérifier qu'on n'a pas déjà cette section (éviter les doublons)
       const alreadyExists = sectionMatches.some(s => 
         s.title.toUpperCase().replace(/[^A-Z]/g, '') === resolvedTitle.toUpperCase().replace(/[^A-Z]/g, '')

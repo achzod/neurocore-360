@@ -29,6 +29,15 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
+const formatName = (value?: string) => {
+  if (!value) return "Profil";
+  return value
+    .trim()
+    .split(/\s+/)
+    .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(" ");
+};
+
 // Icon mapping for metrics
 const METRIC_ICONS: Record<string, React.ElementType> = {
   sommeil: Moon,
@@ -63,6 +72,13 @@ const DiscoveryScanReport: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const regenTimer = useRef<number | null>(null);
+  const displayName = reportData ? formatName(reportData.clientName) : "Profil";
+  const displayMetrics = reportData
+    ? reportData.metrics.map(metric => ({
+        ...metric,
+        value: Math.max(1, metric.value)
+      }))
+    : [];
   const displayGlobalScore = reportData
     ? reportData.globalScore > 10
       ? Math.round(reportData.globalScore) / 10
@@ -334,7 +350,7 @@ const DiscoveryScanReport: React.FC = () => {
   }
 
   // Get worst metrics for KPI cards
-  const sortedMetrics = [...reportData.metrics].sort((a, b) => a.value - b.value);
+  const sortedMetrics = [...displayMetrics].sort((a, b) => a.value - b.value);
   const worstMetric = sortedMetrics[0];
   const bestMetric = sortedMetrics[sortedMetrics.length - 1];
   const themeVars = {
@@ -389,7 +405,7 @@ const DiscoveryScanReport: React.FC = () => {
           themes={THEMES}
           currentTheme={currentTheme}
           onThemeChange={setCurrentTheme}
-          clientName={reportData.clientName}
+          clientName={displayName}
           auditType={reportData.auditType}
         />
       </aside>
@@ -418,7 +434,7 @@ const DiscoveryScanReport: React.FC = () => {
 
         {/* Mobile Header */}
         <div className="lg:hidden sticky top-0 z-40 backdrop-blur-md px-4 py-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-bg)', borderBottom: `1px solid var(--color-border)` }}>
-          <span className="font-bold text-sm tracking-widest uppercase">{reportData.clientName}</span>
+          <span className="font-bold text-sm tracking-widest uppercase">{displayName}</span>
           <button onClick={() => setMobileMenuOpen(true)}><Menu size={20} /></button>
         </div>
 
@@ -432,7 +448,7 @@ const DiscoveryScanReport: React.FC = () => {
                   <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Discovery Scan</span>
                 </div>
                 <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
-                  {reportData.clientName}, <br />
+                  {displayName}, <br />
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton scan.</span>
                 </h1>
                 <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
@@ -479,7 +495,7 @@ const DiscoveryScanReport: React.FC = () => {
                 </div>
                 <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
                   <MetricsRadar
-                    data={reportData.metrics}
+                    data={displayMetrics}
                     color={currentTheme.colors.primary}
                     gridColor={currentTheme.colors.grid}
                     labelColor={currentTheme.colors.textMuted}

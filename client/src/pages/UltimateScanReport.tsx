@@ -45,6 +45,15 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
+const formatName = (value?: string) => {
+  if (!value) return "Profil";
+  return value
+    .trim()
+    .split(/\s+/)
+    .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(" ");
+};
+
 // Types
 interface SupplementProtocol {
   name: string;
@@ -124,7 +133,9 @@ const parseCtaText = (text?: string) => {
     .map(line => line.trim())
     .filter(Boolean)
     .filter(line => !/^[-=]{3,}$/.test(line))
-    .filter(line => !/rapport genere/i.test(line));
+    .filter(line => !/rapport genere/i.test(line))
+    .filter(line => !/^tu\s+as\s+les\s+cl(?:e|\u00e9)s/i.test(line))
+    .filter(line => !/^prochaines?\s+etapes?/i.test(line));
 
   const promoLine = lines.find(line => /code promo/i.test(line)) || "";
   const bonusLine = lines.find(line => /bonus/i.test(line)) || "";
@@ -137,6 +148,8 @@ const parseCtaText = (text?: string) => {
 
   const paragraphs = lines.filter(line => {
     if (/^(rappel coaching|rappel important|infos importantes|coaching apexlabs|prochaines etapes|pret a transformer ces insights)$/i.test(line)) return false;
+    if (/^tu\s+as\s+les\s+cl(?:e|\u00e9)s/i.test(line)) return false;
+    if (/^prochaines?\s+etapes?/i.test(line)) return false;
     if (/^(formules?\s+disponibles|mes\s+formules)$/i.test(line)) return false;
     if (line === promoLine || line === bonusLine || line === emailLine || line === siteLine) return false;
     return !/^(\+|\-|\d+\.)\s+/.test(line);
@@ -205,6 +218,10 @@ const UltimateScanReport: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [clientName, setClientName] = useState<string>('Profil');
+  const [generationStatus, setGenerationStatus] = useState<string>("");
+  const [generationProgress, setGenerationProgress] = useState<number>(0);
+  const [generationSection, setGenerationSection] = useState<string>("");
+  const pollTimer = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   // Review state
@@ -217,6 +234,56 @@ const UltimateScanReport: React.FC = () => {
 
   // Fetch report
   useEffect(() => {
+    let cancelled = false;
+
+    const loadNarrativeReport = async () => {
+      const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
+      if (!reportRes.ok) {
+        throw new Error('Erreur chargement rapport');
+      }
+      const reportData = await reportRes.json();
+      if (reportData.error || reportData.message) {
+        throw new Error(reportData.error || reportData.message);
+      }
+      setReport(reportData);
+      if (reportData.sections?.length > 0) {
+        setActiveSection(reportData.sections[0].id);
+      }
+    };
+
+    const pollNarrativeStatus = async (attempt: number = 0) => {
+      if (cancelled) return;
+      try {
+        const statusRes = await fetch(`/api/audits/${auditId}/narrative-status`);
+        const statusData = await statusRes.json();
+        setGenerationStatus(statusData.status || "");
+        setGenerationProgress(statusData.progress ?? 0);
+        setGenerationSection(statusData.currentSection || "");
+
+        if (statusData.status === "completed") {
+          await loadNarrativeReport();
+          setLoading(false);
+          return;
+        }
+        if (statusData.status === "failed") {
+          setError(statusData.error || "Generation echouee. Reessaie dans quelques minutes.");
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        setError('Erreur de connexion');
+        setLoading(false);
+        return;
+      }
+
+      if (attempt < 120) {
+        pollTimer.current = window.setTimeout(() => pollNarrativeStatus(attempt + 1), 5000);
+      } else {
+        setError('Generation trop longue. Reviens plus tard.');
+        setLoading(false);
+      }
+    };
+
     const fetchReport = async () => {
       if (!auditId) {
         setError('ID audit manquant');
@@ -232,33 +299,19 @@ const UltimateScanReport: React.FC = () => {
           return;
         }
         const auditData = await auditRes.json();
-        setClientName(auditData.email?.split('@')[0] || 'Profil');
+        setClientName(formatName(auditData.responses?.prenom || auditData.email?.split('@')[0] || 'Profil'));
         setReviewEmail(auditData.email || '');
 
         if (auditData.reportDeliveryStatus !== 'READY' && auditData.reportDeliveryStatus !== 'SENT') {
-          setError('Rapport en cours de generation...');
-          setLoading(false);
+          setGenerationStatus("generating");
+          setGenerationProgress(0);
+          setGenerationSection("Initialisation...");
+          await fetch(`/api/audits/${auditId}/generate-narrative`, { method: 'POST' });
+          await pollNarrativeStatus(0);
           return;
         }
 
-        const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
-        if (!reportRes.ok) {
-          setError('Erreur chargement rapport');
-          setLoading(false);
-          return;
-        }
-
-        const reportData = await reportRes.json();
-        if (reportData.error || reportData.message) {
-          setError(reportData.error || reportData.message);
-          setLoading(false);
-          return;
-        }
-
-        setReport(reportData);
-        if (reportData.sections?.length > 0) {
-          setActiveSection(reportData.sections[0].id);
-        }
+        await loadNarrativeReport();
       } catch {
         setError('Erreur de connexion');
       } finally {
@@ -266,7 +319,16 @@ const UltimateScanReport: React.FC = () => {
       }
     };
 
+    setLoading(true);
+    setError(null);
     fetchReport();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer.current) {
+        clearTimeout(pollTimer.current);
+      }
+    };
   }, [auditId]);
 
   // Theme CSS
@@ -695,10 +757,22 @@ const UltimateScanReport: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
+        <div className="text-center max-w-md px-6">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
-          <p className="text-white/70">Chargement du rapport Ultimate...</p>
+          <p className="font-semibold mb-2">Preparation du rapport Ultimate...</p>
+          {generationStatus && (
+            <>
+              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>{generationSection || 'Analyse en cours'}</p>
+              <div className="mt-4 h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: currentTheme.colors.surface }}>
+                <div
+                  className="h-full transition-all duration-300"
+                  style={{ width: `${generationProgress}%`, backgroundColor: currentTheme.colors.primary }}
+                />
+              </div>
+              <p className="text-xs mt-2" style={{ color: currentTheme.colors.textMuted }}>{generationProgress}%</p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -706,13 +780,14 @@ const UltimateScanReport: React.FC = () => {
 
   if (error || !report) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
         <div className="text-center max-w-md mx-auto px-4">
           <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
-          <h2 className="text-xl font-bold text-white mb-2">{error || 'Rapport non disponible'}</h2>
+          <h2 className="text-xl font-bold mb-2">{error || 'Rapport non disponible'}</h2>
+          <p className="text-sm mb-6" style={{ color: currentTheme.colors.textMuted }}>Le rapport n'est pas encore accessible. Reessaie dans quelques minutes.</p>
           <Link href="/dashboard">
             <button
-              className="px-6 py-3 font-bold rounded-lg transition mt-6"
+              className="px-6 py-3 font-bold rounded-lg transition"
               style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
             >
               Retour au dashboard

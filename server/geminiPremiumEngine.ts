@@ -14,7 +14,7 @@ import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
 import { searchArticles } from "./knowledge/storage";
-import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from "./textNormalization";
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines, stripInlineHtml } from "./textNormalization";
 
 // =============================================================================
 // PREMIUM CONTENT VALIDATION - GARDE-FOUS
@@ -129,7 +129,7 @@ const SOURCE_NAME_REGEX = new RegExp(
 );
 
 function cleanPremiumContent(content: string): string {
-  let cleaned = content
+  let cleaned = stripInlineHtml(content)
     // Remove meta phrases
     .replace(/^(En tant qu['']expert[^.]*\.?\s*)/gi, '')
     .replace(/^(Cette analyse (montre|revele|demontre)[^.]*\.?\s*)/gi, '')
@@ -141,6 +141,7 @@ function cleanPremiumContent(content: string): string {
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(SOURCE_NAME_REGEX, '')
+    .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|prochaine etape|tu as les cl(?:e|\u00e9)s).*$/gmi, "")
     .replace(/\bclients\b/gi, 'profils')
     .replace(/\bclient\b/gi, 'profil')
     // Remove em dashes and special characters

@@ -41,6 +41,30 @@ export function stripEnglishLines(text: string, minHitsPerLine: number = 2): str
   return filtered.join("\n").trim();
 }
 
+export function stripInlineHtml(text: string): string {
+  if (!text) return text;
+  let cleaned = text
+    .replace(/\r\n/g, "\n")
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*p\s*>/gi, "\n")
+    .replace(/<\s*p[^>]*>/gi, "")
+    .replace(/<\/\s*li\s*>/gi, "\n")
+    .replace(/<\s*li[^>]*>/gi, "- ")
+    .replace(/<\/\s*h[1-6]\s*>/gi, "\n")
+    .replace(/<\s*h[1-6][^>]*>/gi, "")
+    .replace(/<\/\s*div\s*>/gi, "\n")
+    .replace(/<\s*div[^>]*>/gi, "")
+    .replace(/<\/?\s*span[^>]*>/gi, "")
+    .replace(/<\/?\s*font[^>]*>/gi, "")
+    .replace(/<\/?\s*strong[^>]*>/gi, "")
+    .replace(/<\/?\s*em[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return cleaned;
+}
+
 export function normalizeSingleVoice(text: string): string {
   if (!text) return text;
   let normalized = text

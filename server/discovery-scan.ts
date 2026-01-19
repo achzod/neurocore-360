@@ -16,7 +16,7 @@ import { OPENAI_CONFIG } from './openaiConfig';
 import { searchArticles, searchFullText } from './knowledge/storage';
 import { ALLOWED_SOURCES } from './knowledge/search';
 import { normalizeResponses } from './responseNormalizer';
-import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines } from './textNormalization';
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines, stripInlineHtml } from './textNormalization';
 
 // ============================================
 // TYPES
@@ -296,12 +296,21 @@ function normalizeParagraphs(text: string): string {
   return paragraphs.join("\n\n");
 }
 
+function formatFirstName(raw: string): string {
+  const cleaned = raw.trim().replace(/[^a-zA-ZÀ-ÿ' -]/g, "");
+  if (!cleaned) return "toi";
+  return cleaned
+    .split(/\s+/)
+    .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(" ");
+}
+
 function getDiscoveryFirstName(responses: DiscoveryResponses): string {
   const direct = responses.prenom;
-  if (direct && String(direct).trim()) return String(direct).trim().split(/\s+/)[0];
+  if (direct && String(direct).trim()) return formatFirstName(String(direct));
   const email = responses.email;
   if (email && typeof email === "string" && email.includes("@")) {
-    return email.split("@")[0].trim();
+    return formatFirstName(email.split("@")[0]);
   }
   return "toi";
 }
@@ -537,6 +546,12 @@ function scoreMindset(responses: DiscoveryResponses): number {
   }
 
   return Math.max(0, score);
+}
+
+function clampDiscoveryScore(value: number): number {
+  if (!Number.isFinite(value)) return 50;
+  const rounded = Math.round(value);
+  return Math.min(95, Math.max(20, rounded));
 }
 
 // ============================================
@@ -1228,6 +1243,7 @@ FORMAT OBLIGATOIRE:
         .replace(/^\s*\d+\.\s+/gm, '')
         .trim();
 
+      rawText = stripInlineHtml(rawText);
       if (hasEnglishMarkers(rawText, 6)) {
         rawText = stripEnglishLines(rawText);
       }
@@ -1296,7 +1312,7 @@ FORMAT OBLIGATOIRE:
       if (!rawText.trim()) {
         continue;
       }
-      let cleanedText = rawText;
+      let cleanedText = stripInlineHtml(rawText);
       if (hasEnglishMarkers(cleanedText, 6)) {
         cleanedText = stripEnglishLines(cleanedText);
       }
@@ -1749,7 +1765,7 @@ RAPPELS CRITIQUES:
 
 // Convert markdown artifacts to clean HTML - CRITICAL: Remove all em dashes
 function cleanMarkdownToHTML(text: string): string {
-  let cleaned = text
+  let cleaned = stripInlineHtml(text)
     // Remove any explicit sources/references lines even if inline
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
@@ -1814,7 +1830,7 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
   console.log(`[Discovery] Analyzing scan for ${getDiscoveryFirstName(normalized)}...`);
 
   // Calculate scores for each domain
-  const scoresByDomain = {
+  const rawScoresByDomain = {
     sommeil: scoreSommeil(normalized),
     stress: scoreStress(normalized),
     energie: scoreEnergie(normalized),
@@ -1824,6 +1840,9 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
     lifestyle: scoreLifestyle(normalized),
     mindset: scoreMindset(normalized)
   };
+  const scoresByDomain = Object.fromEntries(
+    Object.entries(rawScoresByDomain).map(([key, value]) => [key, clampDiscoveryScore(value)])
+  ) as DiscoveryAnalysisResult['scoresByDomain'];
 
   // Calculate global score (weighted average)
   const weights = {
@@ -1837,11 +1856,11 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
     mindset: 0.09
   };
 
-  const globalScore = Math.round(
+  const globalScore = clampDiscoveryScore(Math.round(
     Object.entries(scoresByDomain).reduce((acc, [key, value]) => {
       return acc + value * (weights[key as keyof typeof weights] || 0.1);
     }, 0)
-  );
+  ));
 
   // Detect blocages
   const blocages = detectBlocages(normalized, scoresByDomain);

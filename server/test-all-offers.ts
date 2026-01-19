@@ -17,6 +17,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const API_BASE = "https://neurocore-360.onrender.com";
+const TEST_EMAIL = process.env.TEST_EMAIL?.trim() || "";
+const TEST_NAME = process.env.TEST_NAME?.trim() || "";
+const SKIP_PEPTIDES = /^(1|true|yes)$/i.test(process.env.SKIP_PEPTIDES || "");
+
+const buildTestEmail = (prefix: string): string => {
+  if (TEST_EMAIL) return TEST_EMAIL;
+  return `test.${prefix}.${Date.now()}@achzodcoaching.com`;
+};
+
+const resolveTestName = (): string => {
+  return TEST_NAME || "Julien";
+};
 
 // ============================================================================
 // DONNÉES TEST RÉALISTES - Profil type "cadre stressé 35 ans"
@@ -25,7 +37,7 @@ const API_BASE = "https://neurocore-360.onrender.com";
 const PROFIL_CADRE_STRESSE = {
   // PROFIL BASE
   sexe: "homme",
-  prenom: "Julien",
+  prenom: resolveTestName(),
   email: "", // Sera rempli dynamiquement
   instagram: "@julien_fitness",
   age: "36-45",
@@ -194,7 +206,7 @@ async function testDiscoveryScan(): Promise<{ id: string; url: string } | null> 
   console.log("🧪 TEST 1: DISCOVERY SCAN (GRATUIT)");
   console.log("=".repeat(70));
 
-  const email = `test.discovery.${Date.now()}@achzodcoaching.com`;
+  const email = buildTestEmail("discovery");
 
   const responses = {
     ...PROFIL_CADRE_STRESSE,
@@ -237,7 +249,7 @@ async function testAnabolicBioscan(): Promise<{ id: string; url: string } | null
   console.log("🧪 TEST 2: ANABOLIC BIOSCAN (PREMIUM)");
   console.log("=".repeat(70));
 
-  const email = `test.anabolic.${Date.now()}@achzodcoaching.com`;
+  const email = buildTestEmail("anabolic");
 
   // Load test photos
   const PHOTOS_DIR = path.join(__dirname, "test-data/photos");
@@ -604,10 +616,14 @@ async function main() {
     results.push({ offer: "Anabolic Bioscan", ...anabolic, status: "pending" });
   }
 
-  // Test 3: Peptides Engine
-  const peptides = await testPeptidesEngine();
-  if (peptides) {
-    results.push({ offer: "Peptides Engine", ...peptides, status: "pending" });
+  // Test 3: Peptides Engine (optionnel)
+  if (!SKIP_PEPTIDES) {
+    const peptides = await testPeptidesEngine();
+    if (peptides) {
+      results.push({ offer: "Peptides Engine", ...peptides, status: "pending" });
+    }
+  } else {
+    console.log("⏭️  Peptides Engine saute (SKIP_PEPTIDES=1)");
   }
 
   // Attendre génération et analyser
