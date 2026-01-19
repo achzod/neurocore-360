@@ -73,16 +73,28 @@ const DiscoveryScanReport: React.FC = () => {
   const mainContentRef = useRef<HTMLDivElement>(null);
   const regenTimer = useRef<number | null>(null);
   const displayName = reportData ? formatName(reportData.clientName) : "Profil";
-  const displayMetrics = reportData
-    ? reportData.metrics.map(metric => ({
-        ...metric,
-        value: Math.max(1, metric.value)
-      }))
-    : [];
+  const rawMetrics = reportData?.metrics ?? [];
+  const displayMetrics = rawMetrics.map(metric => ({
+    ...metric,
+    value: Math.max(1, Math.min(10, Number.isFinite(metric.value) ? metric.value : 0))
+  }));
+  const metricsAverage =
+    displayMetrics.length > 0
+      ? displayMetrics.reduce((acc, metric) => acc + metric.value, 0) / displayMetrics.length
+      : null;
+  const rawGlobalScore = reportData?.globalScore;
+  const normalizedGlobalScore = (() => {
+    if (!Number.isFinite(rawGlobalScore)) {
+      return metricsAverage ?? 0;
+    }
+    const score10 = rawGlobalScore > 10 ? rawGlobalScore / 10 : rawGlobalScore;
+    if (metricsAverage !== null && Math.abs(score10 - metricsAverage) >= 2) {
+      return metricsAverage;
+    }
+    return score10;
+  })();
   const displayGlobalScore = reportData
-    ? reportData.globalScore > 10
-      ? Math.round(reportData.globalScore) / 10
-      : reportData.globalScore
+    ? Math.round(Math.max(1, Math.min(10, normalizedGlobalScore)) * 10) / 10
     : 0;
 
   // Review form state
@@ -136,7 +148,7 @@ const DiscoveryScanReport: React.FC = () => {
         }
 
         // API returns ReportData directly (not wrapped)
-        if (!data.globalScore || !data.sections) {
+        if (typeof data.globalScore !== "number" || !Array.isArray(data.sections)) {
           setError('Format de rapport invalide');
           setIsRegenerating(false);
           setLoading(false);

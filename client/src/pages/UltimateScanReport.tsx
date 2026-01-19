@@ -3,7 +3,7 @@
  * Style Ultrahuman - Dashboard Ultimate avec analyse photo et biomecanique
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'wouter';
 import { Sidebar } from '@/components/ultrahuman/Sidebar';
 import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
@@ -30,17 +30,8 @@ import {
   Star,
   CheckCircle2,
   Send,
-  Download,
-  Pill,
-  Calendar,
-  Target,
-  TrendingUp,
-  TrendingDown,
-  Crown,
   Camera,
-  AlertTriangle,
-  Bone,
-  HeartPulse
+  AlertTriangle
 } from 'lucide-react';
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
@@ -53,6 +44,30 @@ const formatName = (value?: string) => {
     .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
     .join(" ");
 };
+
+const METRIC_ICONS: Record<string, React.ElementType> = {
+  sommeil: Moon,
+  stress: Brain,
+  energie: Zap,
+  digestion: Flame,
+  training: Dumbbell,
+  nutrition: Apple,
+  lifestyle: Sun,
+  mindset: Lightbulb,
+  entrainement: Dumbbell,
+  cardio: Heart,
+  metabolisme: Flame,
+  hormones: Brain,
+};
+
+const getMetricStatus = (value: number) => {
+  if (value >= 8) return { label: 'FORT', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  if (value >= 6) return { label: 'MOYEN', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  if (value >= 4) return { label: 'FAIBLE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+  return { label: 'CRITIQUE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
+};
+
+const hasHtml = (value: string) => /<\s*[a-z][\s\S]*>/i.test(value);
 
 // Types
 interface SupplementProtocol {
@@ -158,55 +173,7 @@ const parseCtaText = (text?: string) => {
   return { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine };
 };
 
-const SECTION_ICON_BY_ID: Record<string, React.ElementType> = {
-  'executive-summary': Target,
-  'analyse-visuelle-et-posturale-complete': Bone,
-  'analyse-biomecanique-et-sangle-profonde': Bone,
-  'analyse-entrainement-et-periodisation': Dumbbell,
-  'analyse-systeme-cardiovasculaire': HeartPulse,
-  'analyse-metabolisme-et-nutrition': Flame,
-  'analyse-sommeil-et-recuperation': Moon,
-  'analyse-digestion-et-microbiote': Activity,
-  'analyse-axes-hormonaux': Brain,
-  'protocole-matin-anti-cortisol': Sun,
-  'protocole-soir-verrouillage-sommeil': Moon,
-  'protocole-digestion-14-jours': Flame,
-  'protocole-bureau-anti-sedentarite': Activity,
-  'protocole-entrainement-personnalise': Dumbbell,
-  'plan-semaine-par-semaine-30-60-90': Calendar,
-  'kpi-et-tableau-de-bord': Target,
-  'stack-supplements-optimise': Pill,
-  'synthese-et-prochaines-etapes': Target
-};
-
-const resolveSectionIcon = (section: NarrativeSection): React.ElementType => {
-  const byId = SECTION_ICON_BY_ID[section.id];
-  if (byId) return byId;
-  const title = section.title.toLowerCase();
-  if (title.includes('postur') || title.includes('visuelle')) return Bone;
-  if (title.includes('biomecanique') || title.includes('mobilite')) return Bone;
-  if (title.includes('entrainement')) return Dumbbell;
-  if (title.includes('cardio')) return HeartPulse;
-  if (title.includes('metabolisme') || title.includes('nutrition')) return Flame;
-  if (title.includes('sommeil')) return Moon;
-  if (title.includes('digestion')) return Activity;
-  if (title.includes('hormon')) return Brain;
-  return Activity;
-};
-
 const isAnalysisSection = (section: NarrativeSection): boolean => /analyse/i.test(section.title);
-
-const getScoreStatus = (value: number, theme: Theme) => {
-  const base = {
-    backgroundColor: withAlpha(theme.colors.primary, 0.12),
-    color: theme.colors.primary,
-    borderColor: withAlpha(theme.colors.primary, 0.35)
-  };
-  if (value >= 80) return { label: 'EXCELLENT', style: base };
-  if (value >= 65) return { label: 'BON', style: base };
-  if (value >= 50) return { label: 'MOYEN', style: base };
-  return { label: 'CRITIQUE', style: base };
-};
 
 const UltimateScanReport: React.FC = () => {
   const { auditId } = useParams();
@@ -353,24 +320,303 @@ const UltimateScanReport: React.FC = () => {
     root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
-  // Scroll
+  const toHtml = (value: string) => {
+    if (!value) return "";
+    if (hasHtml(value)) return value;
+    return value
+      .split(/\n\s*\n/)
+      .map(p => p.trim())
+      .filter(Boolean)
+      .map(p => `<p>${p}</p>`)
+      .join("");
+  };
+
+  const buildSectionHtml = (section: NarrativeSection) => {
+    const intro = section.introduction?.trim() || "";
+    const blocks = [
+      { label: "Analyse", text: intro },
+      { label: "Ce qui bloque", text: section.whatIsWrong },
+      { label: "Analyse personnalisee", text: section.personalizedAnalysis },
+      { label: "Recommandations", text: section.recommendations },
+      { label: "Plan d'action", text: section.actionPlan },
+      { label: "Science", text: section.scienceDeepDive },
+    ].filter((block) => block.text && block.text.trim().length > 0);
+
+    if (intro && hasHtml(intro) && blocks.length === 1) {
+      return intro;
+    }
+
+    return blocks
+      .map((block) => `<h4>${block.label}</h4>${toHtml(block.text || "")}`)
+      .join("");
+  };
+
+  const safeSections = Array.isArray(report?.sections) ? report.sections : [];
+  const safeSupplementStack = Array.isArray(report?.supplementStack) ? report.supplementStack : [];
+  const safeRadarMetrics = Array.isArray(report?.radarMetrics) ? report.radarMetrics : [];
+
+  const navigationSections = useMemo<SectionContent[]>(() => {
+    if (!report) return [];
+    const narrativeSections: SectionContent[] = safeSections.map((section) => {
+      const scoreLabel = section.score > 0 ? `Score ${Math.round(section.score)}%` : section.level ? section.level.toUpperCase() : "";
+      return {
+        id: section.id,
+        title: section.title,
+        subtitle: scoreLabel,
+        content: buildSectionHtml(section),
+      };
+    });
+
+    const hasSupplements = Boolean(report.supplementsHtml || safeSupplementStack.length > 0);
+    const hasPlan = Boolean(report.weeklyPlan?.week1 || report.weeklyPlan?.week2 || report.weeklyPlan?.weeks3_4 || report.weeklyPlan?.months2_3);
+    const hasPhoto = Boolean(report.photoAnalysis);
+
+    return [
+      { id: 'dashboard', title: 'Dashboard', subtitle: 'Vue globale', content: '' },
+      ...(report.ctaDebut ? [{ id: 'cta-debut', title: 'Rappel Coaching', subtitle: 'Important', content: '' }] : []),
+      ...narrativeSections,
+      ...(hasPhoto ? [{ id: 'photo-analysis', title: 'Analyse Photo', subtitle: 'Visuelle', content: '' }] : []),
+      ...(hasSupplements ? [{ id: 'supplements', title: 'Stack Supplements', subtitle: 'Protocole', content: '' }] : []),
+      ...(hasPlan ? [{ id: 'plan', title: "Plan 12 Semaines", subtitle: 'Action', content: '' }] : []),
+      ...(report.ctaFin ? [{ id: 'cta-fin', title: 'Coaching', subtitle: 'Prochaine etape', content: '' }] : []),
+      { id: 'review', title: 'Ton Avis', subtitle: 'Feedback', content: '' },
+    ];
+  }, [report]);
+
+  // Scroll handling
   useEffect(() => {
     const handleScroll = () => {
-      if (!mainContentRef.current || !report) return;
+      if (!mainContentRef.current || navigationSections.length === 0) return;
       const container = mainContentRef.current;
       const totalHeight = container.scrollHeight - container.clientHeight;
       const progress = totalHeight > 0 ? (container.scrollTop / totalHeight) * 100 : 0;
       setScrollProgress(progress);
+
+      const headings = navigationSections.map(s => document.getElementById(s.id));
+      const scrollPos = container.scrollTop + 300;
+      for (let i = headings.length - 1; i >= 0; i--) {
+        const heading = headings[i];
+        if (heading && heading.offsetTop <= scrollPos) {
+          setActiveSection(navigationSections[i].id);
+          break;
+        }
+      }
     };
 
     const container = mainContentRef.current;
-    if (container) container.addEventListener('scroll', handleScroll);
-    return () => container?.removeEventListener('scroll', handleScroll);
-  }, [report]);
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      handleScroll();
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [navigationSections]);
+
+  useEffect(() => {
+    if (navigationSections.length > 0) {
+      setActiveSection(navigationSections[0].id);
+    }
+  }, [navigationSections]);
+
+  const displayName = formatName(clientName);
+  const sectionScores = safeSections
+    .map((section) => section.score)
+    .filter((score): score is number => Number.isFinite(score));
+  const derivedGlobalScore =
+    sectionScores.length > 0
+      ? Math.round(sectionScores.reduce((acc, score) => acc + score, 0) / sectionScores.length)
+      : 0;
+  const rawGlobalScore = Number.isFinite(report?.global) ? report.global : derivedGlobalScore;
+  const globalScore =
+    rawGlobalScore <= 10 && derivedGlobalScore >= 20 ? derivedGlobalScore : rawGlobalScore;
+  const globalScore10 = Math.round((globalScore / 10) * 10) / 10;
 
   const primary = currentTheme.colors.primary;
   const primarySoft = withAlpha(primary, 0.12);
   const primaryBorder = withAlpha(primary, 0.35);
+
+  const RADAR_LABELS: Record<string, string> = {
+    'analyse-visuelle-et-posturale-complete': 'Posture',
+    'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
+    'analyse-entrainement-et-periodisation': 'Entrainement',
+    'analyse-systeme-cardiovasculaire': 'Cardio',
+    'analyse-metabolisme-et-nutrition': 'Metabolisme',
+    'analyse-sommeil-et-recuperation': 'Sommeil',
+    'analyse-digestion-et-microbiote': 'Digestion',
+    'analyse-axes-hormonaux': 'Hormones',
+    'analyse-energie-et-recuperation': 'Energie'
+  };
+
+  const shortLabelFromTitle = (title: string, fallback: string) => {
+    const cleaned = title
+      .replace(/^analyse\s+/i, "")
+      .replace(/^protocole\s+/i, "")
+      .replace(/^plan\s+/i, "")
+      .replace(/^synthese\s+/i, "")
+      .replace(/^kpi\s+et\s+tableau\s+de\s+bord\s*/i, "KPI ")
+      .trim();
+    const words = cleaned.split(/\s+/);
+    return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
+  };
+
+  const analysisSections = safeSections.filter(isAnalysisSection);
+  const radarSections = (analysisSections.length > 0 ? analysisSections : safeSections).slice(0, 8);
+  const resolveRadarLabel = (section: NarrativeSection) => {
+    const byId = RADAR_LABELS[section.id];
+    if (byId) return byId;
+    const title = section.title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
+    if (title.includes("entrainement")) return "Entrainement";
+    if (title.includes("cardio") || title.includes("cardiovasculaire") || title.includes("hrv")) return "Cardio";
+    if (title.includes("metabolisme") || title.includes("nutrition")) return "Metabolisme";
+    if (title.includes("sommeil")) return "Sommeil";
+    if (title.includes("digestion")) return "Digestion";
+    if (title.includes("hormon")) return "Hormones";
+    if (title.includes("postur") || title.includes("biomecanique")) return "Posture";
+    if (title.includes("energie")) return "Energie";
+    return shortLabelFromTitle(section.title, section.title);
+  };
+
+  const metricsData: Metric[] = radarSections.map(s => {
+    const safeScore = s.score > 0 ? s.score : globalScore;
+    return {
+      label: resolveRadarLabel(s),
+      value: Math.round((safeScore / 10) * 10) / 10,
+      max: 10,
+      description: s.title,
+      key: s.id
+    };
+  });
+
+  const reportRadar = safeRadarMetrics;
+  const reportRadarLabels = reportRadar.map((m) => (m.label || '').toLowerCase());
+  const hasUsableReportRadar =
+    reportRadar.length >= 4 && reportRadarLabels.some(label => label && !label.includes('analyse'));
+  const radarMetrics = hasUsableReportRadar ? reportRadar : metricsData;
+  const fallbackMetricValue = globalScore10 > 0 ? globalScore10 : 6.5;
+  const fallbackRadarMetrics: Metric[] = [
+    { label: "Entrainement", value: fallbackMetricValue, max: 10, description: "Entrainement", key: "entrainement" },
+    { label: "Cardio", value: fallbackMetricValue, max: 10, description: "Cardio", key: "cardio" },
+    { label: "Metabolisme", value: fallbackMetricValue, max: 10, description: "Metabolisme", key: "metabolisme" },
+    { label: "Sommeil", value: fallbackMetricValue, max: 10, description: "Sommeil", key: "sommeil" },
+    { label: "Digestion", value: fallbackMetricValue, max: 10, description: "Digestion", key: "digestion" },
+    { label: "Hormones", value: fallbackMetricValue, max: 10, description: "Hormones", key: "hormones" },
+  ];
+
+  const displayRadarMetrics = (radarMetrics.length ? radarMetrics : fallbackRadarMetrics)
+    .map(metric => {
+      const rawValue = typeof metric.value === "number" && !Number.isNaN(metric.value) ? metric.value : fallbackMetricValue;
+      return {
+        ...metric,
+        value: Math.max(1, Math.min(10, rawValue)),
+        max: 10,
+      };
+    })
+    .filter(metric => typeof metric.value === "number");
+  const finalRadarMetrics = displayRadarMetrics.length >= 4 ? displayRadarMetrics : fallbackRadarMetrics;
+  const sortedMetrics = [...finalRadarMetrics].sort((a, b) => a.value - b.value);
+  const worstMetric = sortedMetrics[0];
+  const bestMetric = sortedMetrics[sortedMetrics.length - 1];
+  const contentSections = navigationSections.filter(section => section.id !== 'dashboard');
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el && mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+    }
+    setActiveSection(id);
+    setMobileMenuOpen(false);
+  };
+
+  const navigateChapter = (direction: 'next' | 'prev') => {
+    if (!report) return;
+    const currentIndex = navigationSections.findIndex(s => s.id === activeSection);
+    let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    nextIndex = Math.max(0, Math.min(nextIndex, navigationSections.length - 1));
+    scrollToSection(navigationSections[nextIndex].id);
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
+      setReviewError('Veuillez remplir tous les champs (commentaire 10 caracteres minimum)');
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      const response = await fetch('/api/submit-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditId,
+          email: reviewEmail,
+          auditType: 'ULTIMATE_SCAN',
+          rating: reviewRating,
+          comment: reviewComment
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setReviewSubmitted(true);
+      } else {
+        const detailMessages = Array.isArray(data.details)
+          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
+          : "";
+        setReviewError(detailMessages || data.error || 'Erreur');
+      }
+    } catch {
+      setReviewError('Erreur de connexion');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
+        <div className="text-center max-w-md px-6">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
+          <p className="font-semibold mb-2">Preparation du rapport Ultimate...</p>
+          {generationStatus && (
+            <>
+              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>{generationSection || 'Analyse en cours'}</p>
+              <div className="mt-4 h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: currentTheme.colors.surface }}>
+                <div
+                  className="h-full transition-all duration-300"
+                  style={{ width: `${generationProgress}%`, backgroundColor: currentTheme.colors.primary }}
+                />
+              </div>
+              <p className="text-xs mt-2" style={{ color: currentTheme.colors.textMuted }}>{generationProgress}%</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
+        <div className="text-center max-w-md mx-auto px-4">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
+          <h2 className="text-xl font-bold mb-2">{error || 'Rapport non disponible'}</h2>
+          <p className="text-sm mb-6" style={{ color: currentTheme.colors.textMuted }}>Le rapport n'est pas encore accessible. Reessaie dans quelques minutes.</p>
+          <Link href="/dashboard">
+            <button
+              className="px-6 py-3 font-bold rounded-lg transition"
+              style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
+            >
+              Retour au dashboard
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const themeVars = {
     '--color-bg': currentTheme.colors.background,
     '--color-surface': currentTheme.colors.surface,
@@ -390,24 +636,6 @@ const UltimateScanReport: React.FC = () => {
     '--accent-ok': currentTheme.colors.primary,
     '--accent-warning': currentTheme.colors.primary,
   } as React.CSSProperties;
-  const toHtml = (value: string) => {
-    if (!value) return "";
-    if (/<[a-z][\s\S]*>/i.test(value)) return value;
-    return value
-      .split(/\n\s*\n/)
-      .map(p => p.trim())
-      .filter(Boolean)
-      .map(p => `<p>${p}</p>`)
-      .join("");
-  };
-
-  // Sidebar sections
-  const sidebarSections: SectionContent[] = report?.sections.map(s => ({
-    id: s.id,
-    title: s.title,
-    subtitle: `Score: ${s.score}%`,
-    content: s.introduction
-  })) || [];
 
   const renderOffersTable = (deductionAmount: number) => {
     const hasDeduction = deductionAmount > 0;
@@ -593,11 +821,9 @@ const UltimateScanReport: React.FC = () => {
             <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
               {headline}
             </h4>
-            {summaryTrimmed && (
-              <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-                {summaryTrimmed}
-              </p>
-            )}
+            <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+              {summaryTrimmed || "Tu as la cartographie. Maintenant, il faut executer avec methode."}
+            </p>
           </div>
           {promoCode && (
             <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
@@ -617,12 +843,6 @@ const UltimateScanReport: React.FC = () => {
 
         {renderOffersTable(deductionAmount)}
 
-        {bonusLine && (
-          <div className="text-xs uppercase tracking-widest mb-4" style={{ color: primary }}>
-            {bonusLine}
-          </div>
-        )}
-
         <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
           <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
           <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
@@ -630,683 +850,498 @@ const UltimateScanReport: React.FC = () => {
       </div>
     );
   };
+  const scoreSummary =
+    globalScore >= 75
+      ? 'Une base solide.'
+      : globalScore >= 60
+      ? "Des axes d'optimisation identifies."
+      : 'Plusieurs blocages a debloquer.';
 
-  const allSections: SectionContent[] = [
-    { id: 'dashboard', title: 'Dashboard', subtitle: 'Vue globale', content: '' },
-    ...(report?.ctaDebut ? [{ id: 'cta-debut', title: 'Rappel Coaching', subtitle: 'Important', content: '' }] : []),
-    { id: 'photo-analysis', title: 'Analyse Photo', subtitle: 'Visuelle', content: '' },
-    ...sidebarSections,
-    { id: 'supplements', title: 'Stack Supplements', subtitle: 'Protocole', content: '' },
-    { id: 'plan', title: 'Plan 12 Semaines', subtitle: 'Action', content: '' },
-    ...(report?.ctaFin ? [{ id: 'cta-fin', title: 'Coaching', subtitle: 'Prochaine etape', content: '' }] : []),
-    { id: 'review', title: 'Votre Avis', subtitle: 'Feedback', content: '' }
-  ];
+  const renderReviewSection = () => (
+    <div className="max-w-2xl mx-auto">
+      <div className="text-center mb-8">
+        <Star className="w-10 h-10 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
+        <h3 className="text-2xl font-bold mb-2">Ton avis compte</h3>
+        <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          Laisse un avis et recois ton code promo <strong>-20%</strong> sur le coaching Achzod par email.
+        </p>
+      </div>
 
-  const RADAR_LABELS: Record<string, string> = {
-    'analyse-visuelle-et-posturale-complete': 'Posture',
-    'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
-    'analyse-entrainement-et-periodisation': 'Entrainement',
-    'analyse-systeme-cardiovasculaire': 'Cardio',
-    'analyse-metabolisme-et-nutrition': 'Metabolisme',
-    'analyse-sommeil-et-recuperation': 'Sommeil',
-    'analyse-digestion-et-microbiote': 'Digestion',
-    'analyse-axes-hormonaux': 'Hormones',
-    'analyse-energie-et-recuperation': 'Energie'
-  };
+      {reviewSubmitted ? (
+        <div className="text-center p-8 rounded-sm" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+          <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
+          <h4 className="text-xl font-bold mb-2">Merci pour ton avis !</h4>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Ton retour m'aide a livrer des analyses encore plus precises.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmitReview} className="space-y-6 p-8 rounded-sm" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+          <div className="text-center">
+            <label className="text-sm font-medium block mb-3" style={{ color: 'var(--color-text-muted)' }}>
+              Ta note
+            </label>
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setReviewRating(star)}
+                  className="p-1 transition-transform hover:scale-110"
+                >
+                  <Star
+                    size={32}
+                    className={star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
 
-  const shortLabelFromTitle = (title: string, fallback: string) => {
-    const cleaned = title
-      .replace(/^analyse\s+/i, "")
-      .replace(/^protocole\s+/i, "")
-      .replace(/^plan\s+/i, "")
-      .replace(/^synthese\s+/i, "")
-      .replace(/^kpi\s+et\s+tableau\s+de\s+bord\s*/i, "KPI ")
-      .trim();
-    const words = cleaned.split(/\s+/);
-    return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
-  };
+          <div>
+            <label className="text-sm font-medium block mb-2" style={{ color: 'var(--color-text-muted)' }}>
+              Ton email (pour recevoir le code promo)
+            </label>
+            <input
+              type="email"
+              value={reviewEmail}
+              onChange={(e) => setReviewEmail(e.target.value)}
+              placeholder="ton@email.com"
+              required
+              className="w-full px-4 py-3 rounded text-sm focus:outline-none focus:ring-2 transition-all"
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                border: `1px solid var(--color-border)`,
+                color: 'var(--color-text)'
+              }}
+            />
+          </div>
 
-  const analysisSections = report?.sections.filter(isAnalysisSection) || [];
-  const radarSections = (analysisSections.length > 0 ? analysisSections : report?.sections || []).slice(0, 8);
-  const resolveRadarLabel = (section: NarrativeSection) => {
-    const byId = RADAR_LABELS[section.id];
-    if (byId) return byId;
-    const title = section.title
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-    if (title.includes("entrainement")) return "Entrainement";
-    if (title.includes("cardio") || title.includes("cardiovasculaire") || title.includes("hrv")) return "Cardio";
-    if (title.includes("metabolisme") || title.includes("nutrition")) return "Metabolisme";
-    if (title.includes("sommeil")) return "Sommeil";
-    if (title.includes("digestion")) return "Digestion";
-    if (title.includes("hormon")) return "Hormones";
-    if (title.includes("postur") || title.includes("biomecanique")) return "Posture";
-    if (title.includes("energie")) return "Energie";
-    return shortLabelFromTitle(section.title, section.title);
-  };
-  const metricsData: Metric[] = radarSections.map(s => {
-    const safeScore = s.score > 0 ? s.score : globalScore;
-    return {
-      label: resolveRadarLabel(s),
-      value: Math.round((safeScore / 10) * 10) / 10,
-      max: 10,
-      description: s.title,
-      key: s.id
-    };
-  });
-  const reportRadar = report?.radarMetrics || [];
-  const reportRadarLabels = reportRadar.map((m) => (m.label || '').toLowerCase());
-  const hasUsableReportRadar =
-    reportRadar.length >= 4 && reportRadarLabels.some(label => label && !label.includes('analyse'));
-  const radarMetrics = hasUsableReportRadar ? reportRadar : metricsData;
+          <div>
+            <label className="text-sm font-medium block mb-2" style={{ color: 'var(--color-text-muted)' }}>
+              Ton commentaire (min. 10 caracteres)
+            </label>
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              placeholder="Ton retour sur l'Ultimate Scan..."
+              rows={4}
+              required
+              minLength={10}
+              className="w-full px-4 py-3 rounded text-sm focus:outline-none focus:ring-2 transition-all resize-none"
+              style={{
+                backgroundColor: 'var(--color-bg)',
+                border: `1px solid var(--color-border)`,
+                color: 'var(--color-text)'
+              }}
+            />
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+              {reviewComment.length}/10 caracteres minimum
+            </p>
+          </div>
 
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el && mainContentRef.current) {
-      mainContentRef.current.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+          {reviewError && (
+            <div className="text-red-500 text-sm text-center p-3 rounded-lg bg-red-500/10">
+              {reviewError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={reviewSubmitting}
+            className="w-full py-3 rounded font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
+          >
+            {reviewSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Envoi...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <Send className="w-4 h-4" />
+                Envoyer mon avis
+              </span>
+            )}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+
+  const renderSectionBody = (section: SectionContent) => {
+    if (section.id === 'cta-debut' && report.ctaDebut) {
+      return renderCtaPanel(report.ctaDebut, "Rappel", "debut");
     }
-    setActiveSection(id);
-    setMobileMenuOpen(false);
-  };
 
-  const navigateChapter = (direction: 'next' | 'prev') => {
-    if (!report) return;
-    const currentIndex = allSections.findIndex(s => s.id === activeSection);
-    let nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
-    nextIndex = Math.max(0, Math.min(nextIndex, allSections.length - 1));
-    scrollToSection(allSections[nextIndex].id);
-  };
-
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!auditId || reviewRating === 0 || reviewComment.length < 10 || !reviewEmail) {
-      setReviewError('Veuillez remplir tous les champs (commentaire 10 caracteres minimum)');
-      return;
+    if (section.id === 'cta-fin' && report.ctaFin) {
+      return renderCtaPanel(report.ctaFin, "Execution", "fin");
     }
 
-    setReviewSubmitting(true);
-    try {
-      const response = await fetch('/api/submit-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          auditId,
-          email: reviewEmail,
-          auditType: 'ULTIMATE_SCAN',
-          rating: reviewRating,
-          comment: reviewComment
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setReviewSubmitted(true);
-      } else {
-        const detailMessages = Array.isArray(data.details)
-          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
-          : "";
-        setReviewError(detailMessages || data.error || 'Erreur');
+    if (section.id === 'photo-analysis') {
+      if (!report.photoAnalysis) {
+        return (
+          <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+            <div className="flex items-center gap-3 mb-3">
+              <AlertTriangle className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
+              <p className="font-semibold">Photos non disponibles</p>
+            </div>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              Les photos n'ont pas ete soumises ou traitees. Ajoute les photos (face/profil/dos) pour activer l'analyse complete.
+            </p>
+          </div>
+        );
       }
-    } catch {
-      setReviewError('Erreur de connexion');
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
-        <div className="text-center max-w-md px-6">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
-          <p className="font-semibold mb-2">Preparation du rapport Ultimate...</p>
-          {generationStatus && (
-            <>
-              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>{generationSection || 'Analyse en cours'}</p>
-              <div className="mt-4 h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: currentTheme.colors.surface }}>
-                <div
-                  className="h-full transition-all duration-300"
-                  style={{ width: `${generationProgress}%`, backgroundColor: currentTheme.colors.primary }}
+      const photoScore = typeof report.photoAnalysis.score === 'number' ? report.photoAnalysis.score : Math.round(globalScore);
+
+      return (
+        <div className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <div className="flex items-center gap-2 mb-4" style={{ color: currentTheme.colors.primary }}>
+                <Camera size={18} />
+                <span className="text-sm font-semibold uppercase tracking-widest">Synthese visuelle</span>
+              </div>
+              <div className="flex items-center justify-center mb-4">
+                <RadialProgress
+                  score={Math.round(photoScore)}
+                  max={100}
+                  size={160}
+                  strokeWidth={4}
+                  color={currentTheme.colors.primary}
                 />
               </div>
-              <p className="text-xs mt-2" style={{ color: currentTheme.colors.textMuted }}>{generationProgress}%</p>
-            </>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{report.photoAnalysis.summary}</p>
+            </div>
+
+            <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+              <h4 className="text-sm font-bold mb-3" style={{ color: currentTheme.colors.primary }}>Observations cles</h4>
+              <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                <p><strong style={{ color: currentTheme.colors.text }}>Posture:</strong> {report.photoAnalysis.postureAnalysis}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Musculature:</strong> {report.photoAnalysis.muscularAnalysis}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Graisse:</strong> {report.photoAnalysis.fatAnalysis}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+            <h4 className="text-sm font-bold mb-3" style={{ color: currentTheme.colors.primary }}>Correctifs prioritaires</h4>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{report.photoAnalysis.correctiveProtocol || report.photoAnalysis.recommendations}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (section.id === 'supplements') {
+      return (
+        <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+          {report.supplementsHtml && (
+            <div
+              className={`mb-8 prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}
+              style={{
+                color: currentTheme.colors.text,
+                '--tw-prose-body': currentTheme.colors.text,
+                '--tw-prose-headings': currentTheme.colors.text,
+                '--tw-prose-strong': currentTheme.colors.text,
+                '--tw-prose-bullets': currentTheme.colors.primary
+              } as React.CSSProperties}
+              dangerouslySetInnerHTML={{ __html: report.supplementsHtml }}
+            />
+          )}
+
+          {safeSupplementStack.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)]">
+                    <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Supplement</th>
+                    <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Dosage</th>
+                    <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Timing</th>
+                    <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold hidden md:table-cell">Duree</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {safeSupplementStack.slice(0, 10).map((supp, idx) => (
+                    <tr key={idx} className="border-b border-[var(--color-border)]/50">
+                      <td className="py-3 px-2">
+                        <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{supp.name}</span>
+                        {supp.brands?.length > 0 && (
+                          <div className="text-xs text-[var(--color-text-muted)]">{supp.brands[0]}</div>
+                        )}
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{supp.dosage}</span>
+                      </td>
+                      <td className="py-3 px-2 text-[var(--color-text-muted)]">{supp.timing}</td>
+                      <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{supp.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error || !report) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
-        <div className="text-center max-w-md mx-auto px-4">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
-          <h2 className="text-xl font-bold mb-2">{error || 'Rapport non disponible'}</h2>
-          <p className="text-sm mb-6" style={{ color: currentTheme.colors.textMuted }}>Le rapport n'est pas encore accessible. Reessaie dans quelques minutes.</p>
-          <Link href="/dashboard">
-            <button
-              className="px-6 py-3 font-bold rounded-lg transition"
-              style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
-            >
-              Retour au dashboard
-            </button>
-          </Link>
+    if (section.id === 'plan') {
+      return (
+        <div className="space-y-4">
+          {[
+            { title: 'Semaine 1', subtitle: 'Fondations', content: report.weeklyPlan?.week1, alpha: 0.7 },
+            { title: 'Semaine 2', subtitle: 'Consolidation', content: report.weeklyPlan?.week2, alpha: 0.55 },
+            { title: 'Semaines 3-4', subtitle: 'Optimisation', content: report.weeklyPlan?.weeks3_4, alpha: 0.45 },
+            { title: 'Mois 2-3', subtitle: 'Maintenance', content: report.weeklyPlan?.months2_3, alpha: 0.35 }
+          ].map((phase, idx) => (
+            <div key={idx} className="flex gap-4">
+              <div className="w-1 rounded-full" style={{ backgroundColor: withAlpha(primary, phase.alpha) }} />
+              <div className="flex-1 p-4 rounded border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <h4 className="font-bold">{phase.title}</h4>
+                  <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-bg)] text-[var(--color-text-muted)]">
+                    {phase.subtitle}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{phase.content}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  const globalScore = report.global;
+    if (section.id === 'review') {
+      return renderReviewSection();
+    }
+
+    return (
+      <div
+        className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)]`}
+        style={{
+          color: currentTheme.colors.text,
+          '--tw-prose-body': currentTheme.colors.text,
+          '--tw-prose-headings': currentTheme.colors.text,
+          '--tw-prose-strong': currentTheme.colors.text,
+          '--tw-prose-bullets': currentTheme.colors.primary
+        } as React.CSSProperties}
+        dangerouslySetInnerHTML={{ __html: section.content }}
+      />
+    );
+  };
 
   return (
-    <div className="ultrahuman-report min-h-screen flex" style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-black/50 z-50">
-        <div className="h-full transition-all duration-300" style={{ width: `${scrollProgress}%`, backgroundColor: currentTheme.colors.primary }} />
+    <div
+      className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+    >
+      <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
+        <div
+          className="h-full transition-all duration-150 ease-out"
+          style={{ width: `${scrollProgress}%`, backgroundColor: currentTheme.colors.primary }}
+        />
       </div>
 
-      {/* Mobile Menu */}
-      <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg" style={{ backgroundColor: currentTheme.colors.surface }}>
-        <Menu size={24} />
-      </button>
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(to right, ${currentTheme.colors.grid} 1px, transparent 1px), linear-gradient(to bottom, ${currentTheme.colors.grid} 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }}
+      />
 
-      {/* Sidebar */}
-      <aside className={`fixed lg:sticky top-0 left-0 h-screen w-72 border-r z-40 transition-transform lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} border-r flex flex-col`}
+        style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
         <Sidebar
-          sections={allSections}
+          sections={navigationSections}
           activeSection={activeSection}
           onNavigate={scrollToSection}
           themes={THEMES}
           currentTheme={currentTheme}
           onThemeChange={setCurrentTheme}
-          clientName={clientName}
+          clientName={displayName}
           auditType="ULTIMATE_SCAN"
         />
       </aside>
 
-      {mobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileMenuOpen(false)} />}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* Main Content */}
-      <main ref={mainContentRef} className="flex-1 overflow-y-auto h-screen" style={{ backgroundColor: currentTheme.colors.background }}>
-        <div className="max-w-4xl mx-auto px-6 py-12 lg:py-16">
-          {/* Header Badge */}
-          <div className="flex items-center gap-3 mb-8">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
-              style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}
-            >
-              <Zap size={14} style={{ color: primary }} />
-              <span className="text-xs font-bold tracking-wider" style={{ color: primary }}>ULTIMATE SCAN</span>
-            </div>
-            <span className="text-xs text-[var(--color-text-muted)]">{report.sections.length} sections + Photo Analysis</span>
+      <main ref={mainContentRef} className="flex-1 overflow-y-auto relative z-10 scroll-smooth">
+        <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-2">
+          <button
+            onClick={() => scrollToSection('dashboard')}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-xl"
+            style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}
+          >
+            <ArrowUp size={16} />
+          </button>
+          <div className="flex flex-col rounded-full shadow-xl overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+            <button onClick={() => navigateChapter('prev')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-colors" style={{ color: 'var(--color-text)' }}>
+              <ArrowUp size={16} />
+            </button>
+            <div className="h-[1px] w-full" style={{ backgroundColor: 'var(--color-border)' }}></div>
+            <button onClick={() => navigateChapter('next')} className="w-10 h-10 flex items-center justify-center hover:opacity-70 transition-colors" style={{ color: 'var(--color-text)' }}>
+              <ArrowDown size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="lg:hidden sticky top-0 z-40 backdrop-blur-md px-4 py-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-bg)', borderBottom: `1px solid var(--color-border)` }}>
+          <span className="font-bold text-sm tracking-widest uppercase">{displayName}</span>
+          <button onClick={() => setMobileMenuOpen(true)}><Menu size={20} /></button>
+        </div>
+
+        <div className="max-w-[1200px] mx-auto p-6 lg:p-12 space-y-12 lg:space-y-32">
+          <div id="dashboard" className="pt-8 lg:pt-12">
+            <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+              <div className="space-y-6 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full" style={{ border: `1px solid var(--color-border)`, backgroundColor: 'var(--color-surface)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-green-500"></span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Ultimate Scan</span>
+                </div>
+                <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
+                  {displayName}, <br />
+                  <span style={{ color: currentTheme.colors.textMuted }}>voici ton ultimate scan.</span>
+                </h1>
+                <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
+                  {Math.round(globalScore)}/100 — {scoreSummary}
+                </p>
+              </div>
+
+              <div className="flex gap-4 items-end">
+                <div className="text-right hidden md:block">
+                  <div className="text-3xl font-bold font-mono">{Math.round(globalScore)}<span className="text-lg opacity-50">/100</span></div>
+                  <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
+                </div>
+              </div>
+            </header>
+
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="lg:col-span-1 lg:row-span-2 rounded-sm p-8 flex flex-col justify-between relative overflow-hidden group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
+                  <Activity size={80} />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
+                <div className="flex items-center justify-center py-8">
+                  <RadialProgress
+                    score={Math.round(globalScore)}
+                    max={100}
+                    size={180}
+                    strokeWidth={4}
+                    color={currentTheme.colors.primary}
+                  />
+                </div>
+                <div className="flex items-center justify-center">
+                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${getMetricStatus(globalScore10).color}`}>
+                    {getMetricStatus(globalScore10).label}
+                  </span>
+                </div>
+              </div>
+
+              <div className="lg:col-span-2 lg:row-span-2 rounded-sm p-1 relative group" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <div className="absolute top-6 left-6 z-10">
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Balance Systemique</h3>
+                </div>
+                <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
+                  <MetricsRadar
+                    data={finalRadarMetrics}
+                    color={currentTheme.colors.primary}
+                    gridColor={currentTheme.colors.grid}
+                    labelColor={currentTheme.colors.textMuted}
+                    tooltipBg={currentTheme.colors.surface}
+                    tooltipBorder={currentTheme.colors.border}
+                    tooltipText={currentTheme.colors.text}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <div className="flex justify-between items-start">
+                  {React.createElement(METRIC_ICONS[worstMetric?.key || "stress"] || Brain, { size: 20, style: { color: 'var(--color-text-muted)' } })}
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getMetricStatus(worstMetric?.value || 0).color}`}>
+                    {getMetricStatus(worstMetric?.value || 0).label}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-2xl font-medium mt-4">{worstMetric?.value ?? globalScore10}<span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>/10</span></div>
+                  <div className="text-xs font-mono uppercase mt-1" style={{ color: 'var(--color-text-muted)' }}>{worstMetric?.label || 'Priorite'}</div>
+                </div>
+              </div>
+
+              <div className="rounded-sm p-6 flex flex-col justify-between hover:opacity-90 transition-colors cursor-default" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <div className="flex justify-between items-start">
+                  {React.createElement(METRIC_ICONS[bestMetric?.key || "energie"] || Zap, { size: 20, style: { color: 'var(--color-text-muted)' } })}
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${getMetricStatus(bestMetric?.value || 0).color}`}>
+                    {getMetricStatus(bestMetric?.value || 0).label}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-2xl font-medium mt-4">{bestMetric?.value ?? globalScore10}<span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>/10</span></div>
+                  <div className="text-xs font-mono uppercase mt-1" style={{ color: 'var(--color-text-muted)' }}>{bestMetric?.label || 'Point fort'}</div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 rounded-sm p-6 relative overflow-hidden flex flex-col md:flex-row gap-8 items-center" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
+                <div className="w-full md:w-1/3">
+                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--color-primary)' }}>
+                    <Zap size={16} /> Potentiel
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    En debloquant tes systemes prioritaires, projection d'amelioration sur 90 jours.
+                  </p>
+                </div>
+                <div className="w-full md:w-2/3 h-[150px]">
+                  <ProjectionChart color={currentTheme.colors.primary} currentScore={globalScore10} />
+                </div>
+              </div>
+            </section>
           </div>
 
-          {report.ctaDebut && (
-            <section id="cta-debut" className="mb-12">
-              <h3 className="text-lg font-bold mb-4" style={{ color: primary }}>Rappel Coaching</h3>
-              {renderCtaPanel(report.ctaDebut, "Rappel", "debut")}
-            </section>
-          )}
+          <div className="space-y-0 relative">
+            <div className="absolute left-0 lg:left-[240px] top-0 bottom-0 w-[1px] hidden lg:block" style={{ backgroundColor: 'var(--color-border)' }}></div>
 
-          {/* Dashboard */}
-          <section id="dashboard" className="mb-16">
-            <div className="grid lg:grid-cols-2 gap-8 mb-12">
-              <div className="flex flex-col items-center justify-center p-8 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-                <RadialProgress score={globalScore} max={100} subLabel="SCORE GLOBAL" size={200} strokeWidth={6} color={currentTheme.colors.primary} />
-                <div className="mt-4 text-center">
-                  {(() => {
-                    const status = getScoreStatus(globalScore, currentTheme);
-                    return (
-                      <span className="inline-block px-3 py-1 rounded-full text-xs font-bold border" style={status.style}>
-                        {status.label}
+            {contentSections.map((section, idx) => (
+              <section key={section.id} id={section.id} className="scroll-mt-32 group relative pb-24 lg:pb-32">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-24">
+                  <div className="lg:w-[240px] flex-shrink-0">
+                    <div className="sticky top-24 pr-8 lg:text-right">
+                      <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
+                        {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                       </span>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-                <h3 className="text-sm font-bold mb-4 uppercase tracking-wider text-[var(--color-text-muted)]">Radar Performance</h3>
-                <MetricsRadar
-                  data={radarMetrics}
-                  color={currentTheme.colors.primary}
-                  gridColor={currentTheme.colors.grid}
-                  labelColor={currentTheme.colors.textMuted}
-                  tooltipBg={currentTheme.colors.surface}
-                  tooltipBorder={currentTheme.colors.border}
-                  tooltipText={currentTheme.colors.text}
-                />
-              </div>
-            </div>
-
-            {/* Executive Summary */}
-            <div className="p-6 rounded-sm border mb-8" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Target size={20} style={{ color: primary }} />
-                Synthese Executive Ultimate
-              </h3>
-              <div className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}>
-                {report.heroSummary.split('\n').map((para, i) => (
-                  para.trim() && <p key={i} className="text-[var(--color-text-muted)] leading-relaxed mb-3">{para}</p>
-                ))}
-              </div>
-            </div>
-
-            {/* Strengths & Weaknesses */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="p-6 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
-                  <TrendingUp size={16} /> Points Forts
-                </h4>
-                <div className="space-y-2">
-                  {report.sections.filter(s => s.score >= 70).slice(0, 3).map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: primarySoft }}>
-                      <span className="text-sm">{s.title}</span>
-                      <span className="text-xs font-bold" style={{ color: primary }}>{s.score}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-6 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
-                <h4 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: primary }}>
-                  <TrendingDown size={16} /> Axes d'Optimisation
-                </h4>
-                <div className="space-y-2">
-                  {report.sections.filter(s => s.score < 60).slice(0, 3).map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-2 rounded" style={{ backgroundColor: primarySoft }}>
-                      <span className="text-sm">{s.title}</span>
-                      <span className="text-xs font-bold" style={{ color: primary }}>{s.score}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-              <h3 className="text-sm font-bold mb-4 uppercase tracking-wider text-[var(--color-text-muted)]">Projection 90 Jours</h3>
-              <ProjectionChart color={currentTheme.colors.primary} currentScore={globalScore / 10} />
-            </div>
-          </section>
-
-          {/* Photo Analysis Section - ELITE ONLY */}
-          <section id="photo-analysis" className="mb-12 scroll-mt-24">
-            <div className="flex items-center gap-4 mb-6">
-              <Camera size={24} style={{ color: currentTheme.colors.primary }} />
-              <h2 className="text-xl font-bold">Analyse Visuelle & Posturale</h2>
-            </div>
-
-            {report.photoAnalysis ? (
-              <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-sm text-[var(--color-text-muted)]">Score visuel</span>
-                  {(() => {
-                    const status = getScoreStatus(report.photoAnalysis.score, currentTheme);
-                    return (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold border" style={status.style}>
-                        {report.photoAnalysis.score}%
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">SYNTHESE</h4>
-                    <p className="text-[var(--color-text)] leading-relaxed">{report.photoAnalysis.summary}</p>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Analyse Posturale</h4>
-                      <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.postureAnalysis}</p>
-                    </div>
-                    <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Analyse Musculaire</h4>
-                      <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.muscularAnalysis}</p>
-                    </div>
-                    <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Analyse Adiposite</h4>
-                      <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.fatAnalysis}</p>
-                    </div>
-                    <div className="p-4 rounded bg-[var(--color-bg)]">
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>Recommandations</h4>
-                      <p className="text-sm text-[var(--color-text-muted)]">{report.photoAnalysis.recommendations}</p>
+                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
+                        {section.title}
+                      </h2>
+                      {section.subtitle && (
+                        <p className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: currentTheme.colors.primary }}>
+                          {section.subtitle}
+                        </p>
+                      )}
+                      {section.chips && section.chips.length > 0 && (
+                        <div className="flex flex-wrap lg:justify-end gap-2 mt-4">
+                          {section.chips.map(chip => (
+                            <span key={chip} className="px-2 py-1 text-[9px] font-mono uppercase rounded" style={{ border: `1px solid var(--color-border)`, color: 'var(--color-text-muted)' }}>
+                              {chip}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {report.photoAnalysis.correctiveProtocol && (
-                    <div className="p-4 rounded border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>PROTOCOLE CORRECTIF</h4>
-                      <p className="text-[var(--color-text)] leading-relaxed">{report.photoAnalysis.correctiveProtocol}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 rounded-sm border" style={{ borderColor: primaryBorder, backgroundColor: primarySoft }}>
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="shrink-0 mt-1" size={20} style={{ color: primary }} />
-                  <div>
-                    <p className="font-bold" style={{ color: primary }}>Photos non disponibles</p>
-                    <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                      Les photos n'ont pas ete soumises ou traitees. Pour une analyse visuelle complete,
-                      soumets tes photos (face/profil/dos) lors de ton prochain audit.
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    {renderSectionBody(section)}
                   </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Detailed Sections */}
-          {report.sections.map((section, idx) => {
-            const Icon = resolveSectionIcon(section);
-            const status = getScoreStatus(section.score, currentTheme);
-
-            return (
-              <section key={section.id} id={section.id} className="mb-12 scroll-mt-24">
-                <div className="flex items-center gap-4 mb-6">
-                  <span
-                    className="text-5xl font-bold"
-                    style={{ color: withAlpha(currentTheme.colors.textMuted, 0.2) }}
-                  >
-                    {String(idx + 1).padStart(2, '0')}
-                  </span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <Icon size={20} style={{ color: currentTheme.colors.primary }} />
-                      <h2 className="text-xl font-bold">{section.title}</h2>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="px-2 py-0.5 rounded text-xs font-bold border" style={status.style}>{section.score}%</span>
-                      <span className="text-xs text-[var(--color-text-muted)]">{status.label}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-sm border space-y-6" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-                  {section.introduction && (
-                    <div>
-                      <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">ANALYSE</h4>
-                      <div
-                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
-                        style={{
-                          color: currentTheme.colors.text,
-                          '--tw-prose-body': currentTheme.colors.text,
-                          '--tw-prose-headings': currentTheme.colors.text,
-                          '--tw-prose-strong': currentTheme.colors.text,
-                          '--tw-prose-bullets': currentTheme.colors.primary
-                        } as React.CSSProperties}
-                        dangerouslySetInnerHTML={{ __html: toHtml(section.introduction) }}
-                      />
-                    </div>
-                  )}
-
-                  {section.whatIsWrong && (
-                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>CE QUI NE VA PAS</h4>
-                      <div
-                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
-                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
-                        dangerouslySetInnerHTML={{ __html: toHtml(section.whatIsWrong) }}
-                      />
-                    </div>
-                  )}
-
-                  {section.recommendations && (
-                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>RECOMMANDATIONS</h4>
-                      <div
-                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
-                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
-                        dangerouslySetInnerHTML={{ __html: toHtml(section.recommendations) }}
-                      />
-                    </div>
-                  )}
-
-                  {section.actionPlan && (
-                    <div>
-                      <h4 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">PLAN D'ACTION</h4>
-                      <div
-                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-strong:text-[var(--color-text)]`}
-                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
-                        dangerouslySetInnerHTML={{ __html: toHtml(section.actionPlan) }}
-                      />
-                    </div>
-                  )}
-
-                  {section.scienceDeepDive && (
-                    <div className="p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
-                      <h4 className="text-sm font-bold mb-2" style={{ color: primary }}>SCIENCE DEEP DIVE</h4>
-                      <div
-                        className={`prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
-                        style={{ color: currentTheme.colors.text } as React.CSSProperties}
-                        dangerouslySetInnerHTML={{ __html: toHtml(section.scienceDeepDive) }}
-                      />
-                    </div>
-                  )}
                 </div>
               </section>
-            );
-          })}
-
-          {/* Supplements */}
-          <section id="supplements" className="mb-12 scroll-mt-24">
-            <div className="flex items-center gap-4 mb-6">
-              <Pill size={24} style={{ color: currentTheme.colors.primary }} />
-              <h2 className="text-xl font-bold">Stack Supplements Ultimate</h2>
-            </div>
-
-            <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-              {report.supplementsHtml && (
-                <div
-                  className={`mb-8 prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text-muted)] prose-strong:text-[var(--color-text)]`}
-                  style={{
-                    color: currentTheme.colors.text,
-                    '--tw-prose-body': currentTheme.colors.text,
-                    '--tw-prose-headings': currentTheme.colors.text,
-                    '--tw-prose-strong': currentTheme.colors.text,
-                    '--tw-prose-bullets': currentTheme.colors.primary
-                  } as React.CSSProperties}
-                  dangerouslySetInnerHTML={{ __html: report.supplementsHtml }}
-                />
-              )}
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border)]">
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Supplement</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Dosage</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold">Timing</th>
-                      <th className="text-left py-3 px-2 text-[var(--color-text-muted)] font-bold hidden md:table-cell">Pourquoi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.supplementStack?.map((supp, idx) => (
-                      <tr key={idx} className="border-b border-[var(--color-border)]/50">
-                        <td className="py-3 px-2">
-                          <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{supp.name}</span>
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{supp.dosage}</span>
-                        </td>
-                        <td className="py-3 px-2 text-[var(--color-text-muted)]">{supp.timing}</td>
-                        <td className="py-3 px-2 text-[var(--color-text-muted)] text-xs hidden md:table-cell">{supp.why}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          {/* Plan */}
-          <section id="plan" className="mb-12 scroll-mt-24">
-            <div className="flex items-center gap-4 mb-6">
-              <Calendar size={24} style={{ color: currentTheme.colors.primary }} />
-              <h2 className="text-xl font-bold">Plan d'Action Ultimate 12 Semaines</h2>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { title: 'Semaine 1', subtitle: 'Fondations', content: report.weeklyPlan?.week1 },
-                { title: 'Semaine 2', subtitle: 'Consolidation', content: report.weeklyPlan?.week2 },
-                { title: 'Semaines 3-4', subtitle: 'Optimisation', content: report.weeklyPlan?.weeks3_4 },
-                { title: 'Mois 2-3', subtitle: 'Maintenance', content: report.weeklyPlan?.months2_3 }
-              ].map((phase, idx) => (
-                <div key={idx} className="flex gap-4">
-                  <div className="w-1 rounded-full" style={{ backgroundColor: currentTheme.colors.primary }} />
-                  <div className="flex-1 p-4 rounded border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-bold">{phase.title}</h4>
-                      <span className="px-2 py-0.5 rounded text-xs bg-[var(--color-bg)] text-[var(--color-text-muted)]">{phase.subtitle}</span>
-                    </div>
-                    <p className="text-sm text-[var(--color-text-muted)] leading-relaxed">{phase.content}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Conclusion */}
-          {report.conclusion && (
-            <section className="mb-12 p-6 rounded-sm border-2" style={{ borderColor: currentTheme.colors.primary, backgroundColor: `${currentTheme.colors.primary}10` }}>
-              <h3 className="text-lg font-bold mb-4">Conclusion Ultimate</h3>
-              <p className="text-[var(--color-text)] leading-relaxed">{report.conclusion}</p>
-              <div className="mt-4 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-                <Zap size={16} style={{ color: primary }} />
-                <span>Analyse realisee par <strong>ACHZOD</strong> - Expert Metabolisme</span>
-              </div>
-            </section>
-          )}
-
-          {report.ctaFin && (
-            <section id="cta-fin" className="mb-12">
-              <h3 className="text-lg font-bold mb-4" style={{ color: primary }}>Coaching Personnalise</h3>
-              {renderCtaPanel(report.ctaFin, "Execution", "fin")}
-            </section>
-          )}
-
-          {/* Review */}
-          <section id="review" className="mb-12 scroll-mt-24">
-            <div className="p-6 rounded-sm border" style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}>
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Star size={20} style={{ color: currentTheme.colors.primary }} />
-                Ton Avis Ultimate
-              </h3>
-
-              {reviewSubmitted ? (
-                <div className="flex items-center gap-3 p-4 rounded border" style={{ backgroundColor: primarySoft, borderColor: primaryBorder }}>
-                  <CheckCircle2 size={24} style={{ color: primary }} />
-                  <div>
-                    <p className="font-bold" style={{ color: primary }}>Merci pour ton avis Ultimate !</p>
-                    <p className="text-sm text-[var(--color-text-muted)]">Ton feedback est precieux.</p>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitReview} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Note</label>
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button key={star} type="button" onClick={() => setReviewRating(star)} className="transition-transform hover:scale-110">
-                          <Star
-                            size={32}
-                            className={star <= reviewRating ? 'fill-current' : ''}
-                            style={star <= reviewRating ? { color: primary } : { color: withAlpha(currentTheme.colors.textMuted, 0.3) }}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Commentaire</label>
-                    <textarea
-                      value={reviewComment}
-                      onChange={e => setReviewComment(e.target.value)}
-                      placeholder="Qu'as-tu pense de ton rapport Ultimate ?"
-                      className="w-full p-3 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
-                      rows={3}
-                    />
-                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                      {reviewComment.length}/10 caracteres minimum
-                    </p>
-                  </div>
-
-                  {reviewError && <p className="text-red-400 text-sm">{reviewError}</p>}
-
-                  <button type="submit" disabled={reviewSubmitting} className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold transition-all disabled:opacity-50"
-                    style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}>
-                    {reviewSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    Envoyer
-                  </button>
-                </form>
-              )}
-            </div>
-          </section>
-
-          {/* CTA Coaching */}
-          <section className="mb-16">
-            <div
-              className="rounded-sm p-8 text-center"
-              style={{
-                background: `linear-gradient(135deg, ${currentTheme.colors.primary}15 0%, ${currentTheme.colors.surface} 100%)`,
-                border: `1px solid ${currentTheme.colors.primary}30`
-              }}
-            >
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Zap className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
-                <span className="text-sm font-medium uppercase tracking-wider" style={{ color: currentTheme.colors.primary }}>
-                  Accompagnement Ultimate
-                </span>
-              </div>
-              <h2 className="text-2xl font-bold mb-4">Coaching 1:1 avec Achzod</h2>
-              <p className="mb-6 max-w-xl mx-auto" style={{ color: currentTheme.colors.textMuted }}>
-                Tu as maintenant ta feuille de route complete. Pour aller encore plus vite et eviter les erreurs, travaille directement avec moi. Suivi personnalise, ajustements en temps reel, resultats acceleres.
-              </p>
-              <a
-                href="https://calendly.com/achzodcoaching/discovery"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded font-semibold text-lg transition-all hover:scale-105"
-                style={{
-                  backgroundColor: currentTheme.colors.primary,
-                  color: currentTheme.type === 'dark' ? '#000' : '#FFF'
-                }}
-              >
-                <Calendar className="w-5 h-5" />
-                Reserver un appel gratuit
-              </a>
-              <p className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                30 min - Sans engagement
-              </p>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer className="py-12 text-center" style={{ borderTop: `1px solid ${currentTheme.colors.border}` }}>
-            <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-              Ultimate Scan - ApexLabs by Achzod
-            </p>
-          </footer>
+            ))}
+          </div>
         </div>
       </main>
-
-      {/* Floating Nav */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-40">
-        <button onClick={() => navigateChapter('prev')} className="p-3 rounded-full shadow-lg transition-all hover:scale-105" style={{ backgroundColor: currentTheme.colors.surface }}>
-          <ArrowUp size={20} />
-        </button>
-        <button onClick={() => navigateChapter('next')} className="p-3 rounded-full shadow-lg transition-all hover:scale-105"
-          style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}>
-          <ArrowDown size={20} />
-        </button>
-      </div>
     </div>
   );
 };
