@@ -18,12 +18,12 @@ interface PricingTier {
 
 const tiers: PricingTier[] = [
   {
-    name: "Gratuit",
+    name: "Discovery Scan",
     price: "0",
     period: "",
-    description: "Découvre ton profil de base avec 50 questions - Dashboard interactif",
+    description: "Diagnostic gratuit ~66 questions - dashboard interactif",
     features: [
-      { text: "50 questions essentielles", included: true },
+      { text: "66 questions essentielles", included: true },
       { text: "Dashboard interactif", included: true },
       { text: "Scores des 5 domaines", included: true },
       { text: "Radar de performance", included: true },
@@ -33,22 +33,22 @@ const tiers: PricingTier[] = [
       { text: "Sync wearables", included: false },
       { text: "Analyse photo", included: false },
     ],
-    cta: "Commencer gratuitement",
-    href: "/audit-complet/questionnaire?plan=free",
+    cta: "Commencer le Discovery Scan",
+    href: "/audit-complet/questionnaire?plan=gratuit",
     icon: <Zap className="w-5 h-5" />,
     gradient: "from-gray-500 to-gray-600",
   },
   {
     name: "Anabolic Bioscan",
-    price: "49",
+    price: "59",
     period: "one-time",
-    description: "L'audit complet: rapport ~25 pages (17 sections) + protocoles 90j",
+    description: "L'audit complet: rapport ~25 pages (16 sections) + protocoles 90j",
     badge: "POPULAIRE",
     popular: true,
     features: [
-      { text: "150 questions approfondies", included: true },
+      { text: "137 questions approfondies", included: true },
       { text: "Dashboard interactif", included: true },
-      { text: "Rapport 17 sections", included: true },
+      { text: "Rapport 16 sections", included: true },
       { text: "Questions genre-spécifiques", included: true },
       { text: "Axes cliniques (thyroïde, SII...)", included: true },
       { text: "Stack suppléments personnalisé", included: true },
@@ -57,20 +57,20 @@ const tiers: PricingTier[] = [
       { text: "Analyse photo", included: false },
     ],
     cta: "Obtenir Anabolic",
-    href: "/audit-complet/questionnaire?plan=essential",
+    href: "/audit-complet/questionnaire?plan=anabolic",
     icon: <Sparkles className="w-5 h-5" />,
     gradient: "from-primary to-emerald-400",
   },
   {
-    name: "Pro Panel 360",
-    price: "99",
+    name: "Ultimate Scan",
+    price: "79",
     period: "one-time",
-    description: "Rapport ~45 pages (25+ sections) + wearables + analyse photo",
+    description: "Rapport ~45 pages (18 sections) + wearables + analyse photo",
     badge: "COMPLET",
     features: [
-      { text: "210 questions ultra-détaillées", included: true },
+      { text: "183 questions ultra-détaillées", included: true },
       { text: "Dashboard avancé temps réel", included: true },
-      { text: "Rapport premium 25+ sections", included: true },
+      { text: "Rapport complet 18 sections", included: true },
       { text: "Sync Apple Watch, Oura, Garmin...", included: true },
       { text: "Analyse photo (posture, composition)", included: true },
       { text: "Nutrition timing avancé", included: true },
@@ -78,8 +78,8 @@ const tiers: PricingTier[] = [
       { text: "Psychologie & blocages mentaux", included: true },
       { text: "Support prioritaire", included: true },
     ],
-    cta: "Passer Pro Panel",
-    href: "/audit-complet/questionnaire?plan=elite",
+    cta: "Passer Ultimate",
+    href: "/audit-complet/questionnaire?plan=ultimate",
     icon: <Crown className="w-5 h-5" />,
     gradient: "from-violet-500 to-purple-500",
   },
@@ -197,7 +197,7 @@ export function Pricing() {
                   className={`w-full py-4 rounded font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
                     tier.popular
                       ? "bg-primary text-black hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
-                      : tier.name === "Pro Panel 360"
+                      : tier.name === "Ultimate Scan"
                       ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:opacity-90"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}

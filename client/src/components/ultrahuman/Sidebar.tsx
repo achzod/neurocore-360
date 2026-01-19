@@ -34,9 +34,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   }, [sections, searchTerm]);
 
-  const auditLabel = auditType === 'DISCOVERY_SCAN' ? 'Discovery Scan' :
-                     auditType === 'ANABOLIC_BIOSCAN' ? 'Anabolic Bioscan' :
-                     auditType === 'ULTIMATE_SCAN' ? 'Ultimate Scan' : 'Audit';
+  const auditLabel =
+    auditType === 'GRATUIT' || auditType === 'DISCOVERY'
+      ? 'Discovery Scan'
+      : auditType === 'PREMIUM' || auditType === 'ANABOLIC_BIOSCAN'
+      ? 'Anabolic Bioscan'
+      : auditType === 'ELITE' || auditType === 'ULTIMATE_SCAN'
+      ? 'Ultimate Scan'
+      : auditType === 'PEPTIDES'
+      ? 'Peptides Engine'
+      : auditType === 'BLOOD_ANALYSIS'
+      ? 'Blood Analysis'
+      : 'Audit';
 
   return (
     <nav className="h-full flex flex-col">
@@ -44,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-6 pb-4">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentTheme.colors.primary }}></div>
-          <span className="text-xs font-bold tracking-widest uppercase">Neurocore 360</span>
+          <span className="text-xs font-bold tracking-widest uppercase">APEXLABS • ACHZOD</span>
         </div>
         <h1 className="text-xl font-bold tracking-tight">{clientName}</h1>
         <div className="text-[10px] text-[var(--color-text-muted)] mt-1 font-mono uppercase">

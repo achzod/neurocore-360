@@ -739,6 +739,7 @@ function uniqueByName(list: SupplementProtocolAdvanced[]): SupplementProtocolAdv
  * IMPORTANT : retourne du texte brut (pas de markdown).
  */
 import { IHERB_PRODUCTS, getIHerbLink, type IHerbProduct } from "./iherbProducts";
+import { normalizeSingleVoice } from "./textNormalization";
 
 // Mapping ingredient_id vers iHerb product database key
 const INGREDIENT_TO_IHERB_KEY: Record<string, string> = {
@@ -846,7 +847,7 @@ export function generateEnhancedSupplementsHTML(input: {
   firstName?: string;
 }): string {
   const responses = input.responses || {};
-  const firstName = input.firstName || "Client";
+  const firstName = input.firstName || "Profil";
   const meds = [
     ...toStringArray(responses["medicaments"]),
     ...toStringArray(responses["medications"]),
@@ -879,7 +880,7 @@ export function generateEnhancedSupplementsHTML(input: {
         <p style="font-size: 1rem; color: var(--text-secondary); line-height: 1.7;">
           Concentre-toi sur les fondations pendant les 14 prochains jours : sommeil de qualite (7-8h),
           apport proteique adequat (1.6-2g/kg), hydratation optimale (35ml/kg), et entrainement regulier.
-          Une fois ces bases solides, on reevaluera ensemble ta stack.
+          Une fois ces bases solides, je reevaluerai ta stack.
         </p>
       </div>
     `;
@@ -1071,7 +1072,7 @@ export function generateSupplementsSectionText(input: {
   firstName?: string;
 }): string {
   const responses = input.responses || {};
-  const firstName = input.firstName || "Client";
+  const firstName = input.firstName || "Profil";
   const meds = [
     ...toStringArray(responses["medicaments"]),
     ...toStringArray(responses["medications"]),
@@ -1095,178 +1096,108 @@ export function generateSupplementsSectionText(input: {
   const all = domains.flatMap((domain) => selectSupplementsForDomain(domain, baseScore, responses, meds));
   const picked = uniqueByName(all);
 
-  const lines: string[] = [];
+  const paragraphs: string[] = [];
 
-  // =============================================================================
-  // INTRO - COMMENT LIRE CETTE SECTION
-  // =============================================================================
-  lines.push(`${firstName}, cette section est differente des autres. Ici, je ne te donne pas des noms de produits a acheter comme un robot. Je vais t'expliquer POURQUOI chaque supplement, COMMENT il fonctionne dans ton corps, et surtout COMMENT choisir un produit de qualite parmi les centaines disponibles.`);
-  lines.push("");
-  lines.push("La supplementation intelligente repose sur trois piliers :");
-  lines.push("1. COMPRENDRE ce que tu prends et pourquoi");
-  lines.push("2. SAVOIR LIRE les etiquettes pour eviter les arnaques");
-  lines.push("3. INTRODUIRE progressivement pour identifier ce qui marche pour TOI");
-  lines.push("");
+  paragraphs.push(
+    `${firstName}, cette section est differente des autres. Ici, je ne te balance pas une liste de produits. Je veux que tu comprennes pourquoi chaque supplement est la, comment il agit dans ton corps, et comment choisir une qualite reelle parmi les centaines d options.`
+  );
+  paragraphs.push(
+    "La supplementation intelligente repose sur trois choses simples: comprendre le role de chaque produit, savoir lire une etiquette, et introduire progressivement pour isoler ce qui fonctionne vraiment pour toi."
+  );
+  paragraphs.push(
+    "Je veux que tu introduises les supplements progressivement. Commence par un seul pendant 7 a 10 jours, observe ton energie, ton sommeil et ta digestion, puis ajoute le suivant si tout est stable. Cette methode te donne un feedback clair et evite les reactions difficiles a attribuer."
+  );
 
-  // =============================================================================
-  // PROTOCOLE D'INTRODUCTION
-  // =============================================================================
-  lines.push("PROTOCOLE D'INTRODUCTION (NON NEGOCIABLE) :");
-  lines.push("");
-  lines.push("N'introduis JAMAIS tous les supplements en meme temps. Si tu as une reaction, tu ne sauras pas lequel est en cause.");
-  lines.push("");
-  lines.push("Semaine 1-2 : UN SEUL supplement (commence par magnesium ou vitamine D)");
-  lines.push("Jour 5-7 : Si tolere, ajoute le deuxieme");
-  lines.push("Jour 10-14 : Si tolere, ajoute le troisieme");
-  lines.push("Ainsi de suite...");
-  lines.push("");
-  lines.push("Tiens un journal simple : energie (1-10), sommeil (1-10), digestion (OK/moyen/mauvais)");
-  lines.push("A 6 semaines : elimine ce qui n'apporte rien de perceptible");
-  lines.push("");
-
-  // =============================================================================
-  // SECURITE - MEDICAMENTS
-  // =============================================================================
   if (meds.length > 0) {
-    lines.push("ALERTE SECURITE - MEDICAMENTS DECLARES :");
-    lines.push(`Tes medicaments : ${meds.join(", ")}`);
-    lines.push("");
-    lines.push("J'ai filtre les supplements qui pourraient interagir avec tes traitements.");
-    lines.push("MAIS : consulte TOUJOURS ton medecin ou pharmacien avant d'ajouter un nouveau supplement.");
-    lines.push("Certaines interactions ne sont pas documentees ou dependent de ton dosage exact.");
-    lines.push("");
+    paragraphs.push(
+      `Tu as indique des traitements en cours (${meds.join(", ")}). J'ai filtre les interactions evidentes, mais je veux une validation par ton medecin ou pharmacien avant toute introduction. Certaines interactions dependent du dosage exact.`
+    );
   }
-
-  // =============================================================================
-  // STACK PERSONNALISEE
-  // =============================================================================
-  lines.push("TA STACK PERSONNALISEE :");
-  lines.push("");
 
   if (picked.length === 0) {
-    lines.push(`${firstName}, ton profil actuel ne necessite pas de stack avancee.`);
-    lines.push("");
-    lines.push("Concentre-toi sur les fondations pendant les 14 prochains jours :");
-    lines.push("- Sommeil de qualite : 7-8h, regulier, obscurite totale");
-    lines.push("- Apport proteique : 1.6-2g par kg de poids de corps");
-    lines.push("- Hydratation : 35ml par kg de poids de corps");
-    lines.push("- Entrainement regulier et progressif");
-    lines.push("");
-    lines.push("Une fois ces bases solides, on reevaluera ta stack.");
-    return lines.join("\n");
+    paragraphs.push(
+      `${firstName}, ton profil actuel ne necessite pas de stack avancee. Concentre-toi d abord sur les fondations pendant 14 jours: sommeil regulier, apport proteique solide, hydratation stable, et entrainement progressif. Une fois ces bases stabilisees, je reevaluerai la stack.`
+    );
+    return normalizeSingleVoice(paragraphs.join("\n\n"));
   }
 
-  picked.slice(0, 6).forEach((supp, idx) => {
+  picked.slice(0, 6).forEach((supp) => {
     const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
     const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
     const explanation = HUMAN_EXPLANATIONS[iherbKey];
-    const products = IHERB_PRODUCTS[iherbKey] || [];
 
-    lines.push("---");
-    lines.push("");
-    lines.push(`#${idx + 1} - ${supp.ingredient.toUpperCase()}`);
-    lines.push(`Forme recommandee : ${supp.form}`);
-    lines.push(`Grade evidence : ${supp.evidence_grade} (${supp.citations.join(", ")})`);
-    lines.push("");
+    const intro = explanation?.intro || `Je selectionne ${supp.ingredient} pour son impact direct sur tes priorites.`;
+    const whyYou = explanation?.whyYou ? `Pour toi, ${explanation.whyYou}` : "";
+    const mechanism = explanation?.howItWorks || supp.mechanism;
+    const protocol = explanation?.protocol || "";
+    const labelTips =
+      explanation?.labelTips ||
+      "Je veux un produit transparent sur le dosage elementaire et la forme exacte, sans melange proprietaire flou.";
+    const checks = supp.label_checks?.length ? `Points a verifier sur l etiquette: ${supp.label_checks.join(", ")}.` : "";
+    const risks = supp.risks?.length && supp.risks[0] !== "Aucun notable"
+      ? `Precautions importantes: ${supp.risks.join("; ")}.`
+      : "";
+    const synergies = supp.synergies?.length ? `Synergies utiles: ${supp.synergies.join(", ")}.` : "";
 
-    // POURQUOI CE SUPPLEMENT (intro generale)
-    if (explanation?.intro) {
-      lines.push("POURQUOI CE SUPPLEMENT :");
-      lines.push(explanation.intro);
-      lines.push("");
-    }
-
-    // POURQUOI POUR TOI SPECIFIQUEMENT
-    if (explanation?.whyYou) {
-      lines.push(`POURQUOI POUR TOI, ${firstName.toUpperCase()} :`);
-      lines.push(explanation.whyYou);
-      lines.push("");
-    }
-
-    // COMMENT CA FONCTIONNE (mecanismes)
-    if (explanation?.howItWorks) {
-      lines.push("COMMENT CA FONCTIONNE DANS TON CORPS :");
-      lines.push(explanation.howItWorks);
-      lines.push("");
-    } else {
-      lines.push("MECANISME D'ACTION :");
-      lines.push(supp.mechanism);
-      lines.push("");
-    }
-
-    // PROTOCOLE DETAILLE
-    lines.push("TON PROTOCOLE :");
-    if (explanation?.protocol) {
-      lines.push(explanation.protocol);
-    }
-    lines.push(`- Dosage : ${supp.dose.daily_amount} ${supp.dose.units}`);
-    lines.push(`- Timing : ${supp.timing}`);
-    lines.push(`- Prise : ${supp.dose.split}`);
-    lines.push(`- Cycle : ${supp.cycle}`);
-    if (supp.dose.scaling_note) {
-      lines.push(`- Ajustement : ${supp.dose.scaling_note}`);
-    }
-    lines.push("");
-
-    // COMMENT LIRE L'ETIQUETTE ET CHOISIR
-    lines.push("COMMENT CHOISIR ET LIRE L'ETIQUETTE :");
-    if (explanation?.labelTips) {
-      lines.push(explanation.labelTips);
-    }
-    lines.push("Criteres qualite a verifier :");
-    supp.label_checks.forEach(check => {
-      lines.push(`  + ${check}`);
-    });
-    lines.push("");
-
-    // SYNERGIES ET PRECAUTIONS
-    if (supp.synergies.length > 0) {
-      lines.push(`SYNERGIES : ${supp.synergies.join(", ")}`);
-    }
-    if (supp.risks.length > 0 && supp.risks[0] !== "Aucun notable") {
-      lines.push(`PRECAUTIONS : ${supp.risks.join(" | ")}`);
-    }
-    lines.push("");
-
-    // PRODUITS RECOMMANDES
-    if (products.length > 0) {
-      lines.push("MES RECOMMANDATIONS PRODUITS :");
-      products.slice(0, 2).forEach((product, pIdx) => {
-        const label = pIdx === 0 ? "MON CHOIX" : "ALTERNATIVE";
-        lines.push(`[${label}] ${product.brand} - ${product.name}`);
-        lines.push(`  Dosage : ${product.dose} | ${product.count}`);
-        lines.push(`  Prix : ${product.priceRange}`);
-        lines.push(`  Pourquoi : ${product.whyThisOne}`);
-      });
-      lines.push("");
-    } else if (supp.iherb_search_query) {
-      lines.push(`RECHERCHE IHERB : "${supp.iherb_search_query}"`);
-      lines.push("");
-    }
+    paragraphs.push(
+      `Pour ${supp.ingredient}, je vise la forme ${supp.form}. ${intro} ${whyYou}`.trim()
+    );
+    paragraphs.push(
+      `Mecanisme cle: ${mechanism}`
+    );
+    paragraphs.push(
+      `Protocole concret: ${protocol ? `${protocol} ` : ""}Dose ${supp.dose.daily_amount} ${supp.dose.units} par jour, ${supp.dose.split}. Prends le ${supp.timing}. Cycle ${supp.cycle}. ${supp.dose.scaling_note ? `${supp.dose.scaling_note}.` : ""}`.trim()
+    );
+    paragraphs.push(
+      `Qualite du produit: ${labelTips} ${checks} ${synergies} ${risks}`.trim()
+    );
   });
 
-  // =============================================================================
-  // CE QU'IL NE FAUT PAS FAIRE
-  // =============================================================================
-  lines.push("---");
-  lines.push("");
-  lines.push("CE QU'IL NE FAUT PAS FAIRE :");
-  lines.push("");
-  lines.push("x EMPILER 10 produits d'un coup - Tu ne sauras jamais ce qui marche");
-  lines.push("x ACHETER des 'proprietary blends' - Les dosages caches = arnaques");
-  lines.push("x CONFONDRE mg du sel et mg elementaire - Tu risques de sous-doser");
-  lines.push("x PRENDRE des stimulants le soir - Meme si le label dit 'energy'");
-  lines.push("x FAIRE CONFIANCE aux vendeurs - Lis les etiquettes toi-meme");
-  lines.push("");
-
-  // =============================================================================
-  // BUDGET
-  // =============================================================================
-  lines.push("BUDGET ESTIME :");
   const budgetLow = picked.length * 15;
   const budgetHigh = picked.length * 35;
-  lines.push(`Stack de ${picked.length} supplements : ${budgetLow}-${budgetHigh} EUR/mois`);
-  lines.push("Astuce : achete en gros formats (90-180 gelules) pour reduire le cout par dose.");
+  paragraphs.push(
+    `Pour le budget, vise une fourchette d environ ${budgetLow} a ${budgetHigh} EUR par mois pour ${picked.length} supplements. Acheter des formats 90 a 180 gelules reduit le cout par dose sans baisser la qualite.`
+  );
 
-  return lines.join("\n");
+  return normalizeSingleVoice(paragraphs.join("\n\n"));
+}
+
+export function generateSupplementStack(input: {
+  responses: Record<string, unknown>;
+  globalScore?: number;
+}): Array<{
+  name: string;
+  dosage: string;
+  timing: string;
+  duration: string;
+  why: string;
+  brands: string[];
+  warnings: string;
+  evidence: string;
+}> {
+  const responses = input.responses || {};
+  const meds = [
+    ...toStringArray(responses["medicaments"]),
+    ...toStringArray(responses["medications"]),
+  ];
+
+  const baseScore =
+    typeof input.globalScore === "number" && Number.isFinite(input.globalScore)
+      ? Math.max(30, Math.min(90, input.globalScore))
+      : 55;
+
+  const domains = [
+    "sleep",
+    "cortisol_stress",
+    "performance",
+    "cardiovascular",
+    "neurotransmitters",
+    "testosterone",
+    "joints",
+  ];
+
+  const all = domains.flatMap((domain) => selectSupplementsForDomain(domain, baseScore, responses, meds));
+  const picked = uniqueByName(all);
+
+  return picked.slice(0, 6).map(formatSupplementForReport);
 }

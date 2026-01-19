@@ -20,8 +20,9 @@ import {
 } from "./emailService";
 import { generateExportHTML, generateExportPDF } from "./exportService";
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
-import { formatTxtToDashboard, getSectionsByCategory } from "./formatDashboard";
+import { formatTxtToDashboard, formatSectionToHTML, getSectionsByCategory } from "./formatDashboard";
 import { ClientData, PhotoAnalysis } from "./types";
+import { generateEnhancedSupplementsHTML, generateSupplementStack } from "./supplementEngine";
 import { streamAuditZip } from "./exportZipService";
 import { isAnthropicAvailable } from "./anthropicEngine";
 import { validateAnthropicConfig, ANTHROPIC_CONFIG } from "./anthropicConfig";
@@ -36,7 +37,7 @@ import {
 } from "./terraService";
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
-import { registerBurnoutRoutes } from "./burnout-detection";
+import { registerPeptidesRoutes } from "./peptides-engine";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import {
   scrapeArticleFromUrl,
@@ -72,6 +73,23 @@ export async function registerRoutes(
     }
   }
 
+  const PHOTO_FIELD_VARIANTS: string[][] = [
+    ["photoFront", "photo-front"],
+    ["photoSide", "photo-side"],
+    ["photoBack", "photo-back"],
+  ];
+
+  function extractPhotoValue(source: Record<string, unknown> | null | undefined, keys: string[]): string | null {
+    if (!source) return null;
+    for (const key of keys) {
+      const value = (source as any)?.[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value;
+      }
+    }
+    return null;
+  }
+
   function extractPhotosFromAudit(audit: any): string[] {
     const out: string[] = [];
     // 1) audit.photos (si jamais on a un tableau)
@@ -80,11 +98,15 @@ export async function registerRoutes(
     }
     // 2) audit.responses (flux principal)
     const r = audit?.responses || {};
-    const maybe = [r.photoFront, r.photoSide, r.photoBack].filter((p: any) => typeof p === "string" && p.trim().length > 0);
-    out.push(...(maybe as string[]));
+    const responsePhotos = PHOTO_FIELD_VARIANTS
+      .map((keys) => extractPhotoValue(r, keys))
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+    out.push(...responsePhotos);
     // 3) legacy champs directs
-    const legacy = [audit?.photoFront, audit?.photoSide, audit?.photoBack].filter((p: any) => typeof p === "string" && p.trim().length > 0);
-    out.push(...(legacy as string[]));
+    const legacy = PHOTO_FIELD_VARIANTS
+      .map((keys) => extractPhotoValue(audit, keys))
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+    out.push(...legacy);
 
     // Nettoyage: éviter les doublons
     const uniq = Array.from(new Set(out));
@@ -158,13 +180,10 @@ export async function registerRoutes(
   });
 
   const hasThreePhotos = (responses: Record<string, unknown>): boolean => {
-    const pics = [
-      (responses as any)?.photoFront,
-      (responses as any)?.photoSide,
-      (responses as any)?.photoBack,
-    ];
-    const valid = pics.filter((p) => typeof p === "string" && p.trim().length > 100);
-    return valid.length === 3;
+    const pics = PHOTO_FIELD_VARIANTS
+      .map((keys) => extractPhotoValue(responses, keys))
+      .filter((p): p is string => typeof p === "string" && p.trim().length > 100);
+    return pics.length === 3;
   };
 
   // Test endpoint for Claude API
@@ -227,9 +246,45 @@ export async function registerRoutes(
   app.post("/api/audit/create", async (req, res) => {
     try {
       const data = createAuditBodySchema.parse(req.body);
-      // P0: Exiger 3 photos pour PREMIUM/ELITE
-      if (data.type !== "GRATUIT" && !hasThreePhotos(data.responses)) {
-        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires (face, profil, dos)" });
+      if (data.type === "GRATUIT") {
+        const audit = await storage.createAudit({
+          userId: "",
+          type: data.type,
+          email: data.email,
+          responses: data.responses,
+        });
+
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+        res.json(audit);
+
+        (async () => {
+          try {
+            const result = await analyzeDiscoveryScan(data.responses as any);
+            const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
+
+            await storage.updateAudit(audit.id, {
+              narrativeReport,
+              reportDeliveryStatus: "READY",
+            });
+
+            const baseUrl = getBaseUrl();
+            const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
+            if (emailSent) {
+              await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+              const clientName = (data.responses as any)?.prenom || data.email.split("@")[0];
+              await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
+            }
+          } catch (error) {
+            console.error("[Discovery Scan] Generation error:", error);
+            await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          }
+        })();
+
+        return;
+      }
+      // Photos obligatoires UNIQUEMENT pour Ultimate Scan (ELITE)
+      if (data.type === "ELITE" && !hasThreePhotos(data.responses)) {
+        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
         return;
       }
       const audit = await storage.createAudit({
@@ -512,8 +567,23 @@ export async function registerRoutes(
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
-          const supplementStack = parseSupplementsFromTxt(report.txt);
-
+          const auditScores = audit.scores || {};
+          const globalScore =
+            typeof auditScores.global === "number"
+              ? auditScores.global
+              : (dashboard.global ?? 76);
+          const firstName =
+            (audit.responses as any)?.prenom ||
+            (audit.email ? audit.email.split("@")[0] : "Profil");
+          const supplementStack = generateSupplementStack({
+            responses: (audit.responses as any) || {},
+            globalScore,
+          });
+          const supplementsHtml = generateEnhancedSupplementsHTML({
+            responses: (audit.responses as any) || {},
+            globalScore,
+            firstName,
+          });
           // Helper pour calculer le level
           const getLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
             if (score >= 80) return "excellent";
@@ -522,21 +592,92 @@ export async function registerRoutes(
             return "faible";
           };
 
+          const normalizeTitle = (value: string) =>
+            value
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]+/g, ' ')
+              .trim();
+
+          const averageScores = (values: Array<number | undefined>): number | null => {
+            const usable = values.filter((v): v is number => typeof v === "number" && !Number.isNaN(v));
+            if (usable.length === 0) return null;
+            const sum = usable.reduce((acc, val) => acc + val, 0);
+            return Math.round(sum / usable.length);
+          };
+
+          const resolveScoreFromTitle = (title: string): number | null => {
+            const t = normalizeTitle(title);
+
+            if (t.includes("metabolisme") && t.includes("nutrition")) {
+              return averageScores([auditScores.metabolismeenergie, auditScores.nutritiontracking]);
+            }
+            if (t.includes("nutrition")) return auditScores.nutritiontracking ?? null;
+            if (t.includes("metabolisme") || t.includes("energie")) return auditScores.metabolismeenergie ?? null;
+            if (t.includes("sommeil") || t.includes("recuperation")) return auditScores.sommeilrecuperation ?? null;
+            if (t.includes("digestion") || t.includes("microbiote")) return auditScores.digestionmicrobiome ?? null;
+            if (t.includes("cardio") || t.includes("hrv") || t.includes("cardiovasculaire")) return auditScores.hrvcardiaque ?? null;
+            if (t.includes("entrainement") || t.includes("performance") || t.includes("activite")) return auditScores.activiteperformance ?? null;
+            if (t.includes("hormon")) return auditScores.hormonesstress ?? null;
+            if (t.includes("biomarque")) return auditScores.analysesbiomarqueurs ?? null;
+            if (t.includes("lifestyle") || t.includes("substances") || t.includes("mode de vie")) return auditScores.lifestylesubstances ?? null;
+            if (t.includes("biomecanique") || t.includes("mobilite") || t.includes("postur")) return auditScores.biomecaniquemobilite ?? null;
+            if (t.includes("composition")) return auditScores.compositioncorporelle ?? null;
+            if (t.includes("profil")) return auditScores.profilbase ?? null;
+            if (t.includes("neurotransmetteurs")) return auditScores.neurotransmetteurs ?? null;
+            return null;
+          };
+
+          const resolveScoreFromSection = (section: { id: string; title: string }): number | null => {
+            const combined = `${section.title} ${section.id}`;
+            return resolveScoreFromTitle(combined);
+          };
+
+          const scoreCardio = averageScores([auditScores.hrvcardiaque, auditScores.cardioendurance]);
+          const scoreMetabo = averageScores([auditScores.metabolismeenergie, auditScores.nutritiontracking]);
+          const isElite = audit.type === "ELITE";
+          const analysisScoreFallbackOrder: Array<number | null> = isElite
+            ? [
+                auditScores.biomecaniquemobilite ?? null,
+                auditScores.biomecaniquemobilite ?? null,
+                auditScores.activiteperformance ?? null,
+                scoreCardio,
+                scoreMetabo,
+                auditScores.sommeilrecuperation ?? null,
+                auditScores.digestionmicrobiome ?? null,
+                auditScores.hormonesstress ?? null,
+              ]
+            : [
+                auditScores.activiteperformance ?? null,
+                scoreCardio,
+                scoreMetabo,
+                auditScores.sommeilrecuperation ?? null,
+                auditScores.digestionmicrobiome ?? null,
+                auditScores.hormonesstress ?? null,
+              ];
+          let analysisIndex = 0;
+
           // On mappe le format dashboard vers le format attendu par AuditDetail.tsx
-          const globalScore = audit.scores?.global || 76;
           const mappedSections = dashboard.sections
-            .filter(s => s.category !== 'executive')
+            .filter(s => s.category !== 'executive' && s.category !== 'supplements')
             .map(s => {
-              // Extraire le score de la section depuis le contenu si disponible
-              const scoreMatch = s.content.match(/Score\s*:\s*(\d+)/i);
-              const sectionScore = scoreMatch ? parseInt(scoreMatch[1]) : 70;
+              const scoreFromAudit = resolveScoreFromSection(s);
+              const fallbackScore =
+                s.category === "analysis" ? analysisScoreFallbackOrder[analysisIndex] ?? null : null;
+              if (s.category === "analysis") analysisIndex += 1;
+              const sectionScore =
+                scoreFromAudit ??
+                fallbackScore ??
+                (s.score > 0 && s.score <= 100 ? s.score : globalScore);
+              const sectionHtml = formatSectionToHTML(s);
               return {
                 id: s.id,
                 title: s.title,
                 score: sectionScore,
                 level: getLevel(sectionScore),
                 isPremium: true,
-                introduction: s.content,
+                introduction: sectionHtml,
                 whatIsWrong: "",
                 personalizedAnalysis: "",
                 recommendations: "",
@@ -546,15 +687,92 @@ export async function registerRoutes(
               };
             });
 
+          const analysisSectionIds = new Set(
+            dashboard.sections.filter(s => s.category === "analysis").map(s => s.id)
+          );
+          const analysisSections = mappedSections.filter(s => analysisSectionIds.has(s.id));
+          const radarFallbackSections = analysisSections.length > 0 ? analysisSections : mappedSections;
+
+          const RADAR_LABELS: Record<string, string> = {
+            'analyse-entrainement-et-periodisation': 'Entrainement',
+            'analyse-systeme-cardiovasculaire': 'Cardio',
+            'analyse-metabolisme-et-nutrition': 'Metabolisme',
+            'analyse-sommeil-et-recuperation': 'Sommeil',
+            'analyse-digestion-et-microbiote': 'Digestion',
+            'analyse-axes-hormonaux': 'Hormones',
+            'analyse-visuelle-et-posturale-complete': 'Posture',
+            'analyse-biomecanique-et-sangle-profonde': 'Biomeca',
+            'analyse-energie-et-recuperation': 'Energie',
+          };
+
+          const resolveRadarLabel = (section: { id: string; title: string }) => {
+            const byId = RADAR_LABELS[section.id];
+            if (byId) return byId;
+            const title = normalizeTitle(`${section.title} ${section.id}`);
+            if (title.includes("entrainement")) return "Entrainement";
+            if (title.includes("cardio") || title.includes("cardiovasculaire") || title.includes("hrv")) return "Cardio";
+            if (title.includes("metabolisme") || title.includes("nutrition")) return "Metabolisme";
+            if (title.includes("sommeil")) return "Sommeil";
+            if (title.includes("digestion")) return "Digestion";
+            if (title.includes("hormon")) return "Hormones";
+            if (title.includes("postur") || title.includes("biomecanique")) return "Posture";
+            if (title.includes("energie")) return "Energie";
+            const words = section.title.trim().split(/\s+/);
+            return words.length > 1 ? words.slice(0, 2).join(" ") : section.title;
+          };
+
+          const toRadarValue = (score: number | null | undefined) => {
+            if (typeof score !== "number" || Number.isNaN(score)) return null;
+            return Math.round((score / 10) * 10) / 10;
+          };
+
+          const radarFromScores = [
+            { label: "Entrainement", score: auditScores.activiteperformance },
+            { label: "Cardio", score: scoreCardio },
+            { label: "Metabolisme", score: scoreMetabo },
+            { label: "Sommeil", score: auditScores.sommeilrecuperation },
+            { label: "Digestion", score: auditScores.digestionmicrobiome },
+            { label: "Hormones", score: auditScores.hormonesstress },
+            { label: "Posture", score: auditScores.biomecaniquemobilite },
+            { label: "Mental", score: auditScores.psychologiemental }
+          ]
+            .map(item => ({
+              label: item.label,
+              score: typeof item.score === "number" ? item.score : null
+            }))
+            .filter(item => typeof item.score === "number");
+
+          const radarMetrics =
+            radarFromScores.length >= 4
+              ? radarFromScores.slice(0, 8).map(item => ({
+                  label: item.label,
+                  value: toRadarValue(item.score) || Math.round((globalScore / 10) * 10) / 10,
+                  max: 10,
+                  description: item.label,
+                  key: item.label.toLowerCase().replace(/\s+/g, '-')
+                }))
+              : radarFallbackSections.slice(0, 8).map(section => ({
+                  label: resolveRadarLabel(section),
+                  value: toRadarValue(section.score) || Math.round((globalScore / 10) * 10) / 10,
+                  max: 10,
+                  description: section.title,
+                  key: section.id
+                }));
+
           const mappedReport = {
             global: globalScore,
             heroSummary: dashboard.resumeExecutif || "",
             executiveNarrative: dashboard.resumeExecutif || "",
             globalDiagnosis: "",
+            auditType: audit.type,
             sections: mappedSections,
-            prioritySections: mappedSections.filter(s => s.score < 60).slice(0, 3).map(s => s.id),
-            strengthSections: mappedSections.filter(s => s.score >= 70).slice(0, 3).map(s => s.id),
+            prioritySections: [] as string[],
+            strengthSections: [] as string[],
+            radarMetrics,
             supplementStack: supplementStack,
+            supplementsHtml,
+            ctaDebut: dashboard.ctaDebut,
+            ctaFin: dashboard.ctaFin,
             lifestyleProtocol: "",
             weeklyPlan: {
               week1: "Mise en place des fondations: posture, respiration, activation neuromusculaire",
@@ -563,17 +781,25 @@ export async function registerRoutes(
               months2_3: "Maintenance et cycles de progression avancee"
             },
             conclusion: "Ce rapport constitue une feuille de route personnalisee basee sur ton profil unique. Applique ces recommandations de maniere progressive et constante pour des resultats durables.",
-            auditType: audit.type,
             clientName: dashboard.clientName,
             generatedAt: dashboard.generatedAt,
             photoAnalysis: report.photoAnalysis || null
           };
 
+          mappedReport.prioritySections = analysisSections
+            .filter(s => s.score < 60)
+            .slice(0, 3)
+            .map(s => s.id);
+          mappedReport.strengthSections = analysisSections
+            .filter(s => s.score >= 70)
+            .slice(0, 3)
+            .map(s => s.id);
+
           res.json(mappedReport);
           return;
         }
         
-        res.json(audit.narrativeReport);
+        res.json({ ...(audit.narrativeReport as any), auditType: (audit as any).type });
         return;
       }
       
@@ -935,9 +1161,24 @@ export async function registerRoutes(
   // Get mapped Terra answers for questionnaire pre-fill
   app.get("/api/terra/answers/:email", async (req, res) => {
     try {
-      const records = await storage.getTerraDataByEmail(req.params.email);
+      const referenceId = typeof req.query.referenceId === "string" ? req.query.referenceId : "";
+      const sinceMs = typeof req.query.since === "string" ? Number(req.query.since) : null;
 
-      if (!records || records.length === 0) {
+      if (!referenceId) {
+        res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [], reason: "REFERENCE_REQUIRED" });
+        return;
+      }
+
+      const records = await storage.getTerraDataByReference(referenceId);
+
+      const filteredRecords = sinceMs
+        ? records.filter((record) => {
+            const createdAt = record.createdAt ? new Date(record.createdAt).getTime() : 0;
+            return createdAt >= sinceMs;
+          })
+        : records;
+
+      if (!filteredRecords || filteredRecords.length === 0) {
         res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [] });
         return;
       }
@@ -952,7 +1193,7 @@ export async function registerRoutes(
         calories: {},
       };
 
-      for (const record of records) {
+      for (const record of filteredRecords) {
         const data = record.data?.data?.[0] || record.data?.data || {};
 
         // HRV
@@ -1005,11 +1246,28 @@ export async function registerRoutes(
 
       // Map to questionnaire answers
       const mapped = mapTerraDataToAnswers(aggregated as any);
+      if (Object.keys(mapped.answers).length === 0) {
+        res.json({ success: true, hasData: false, answers: {}, skippedQuestions: [] });
+        return;
+      }
+
+      const providerKey = String(filteredRecords[0]?.provider || "").toLowerCase();
+      const providerAnswers: Record<string, string> = {
+        apple: "apple",
+        garmin: "garmin",
+        oura: "oura",
+        whoop: "whoop",
+      };
+      const providerAnswer = providerKey ? (providerAnswers[providerKey] || "autre") : "";
+      if (providerAnswer && Object.keys(mapped.answers).length > 0 && !mapped.answers["montre-connectee"]) {
+        mapped.answers["montre-connectee"] = providerAnswer;
+        mapped.skippedQuestionIds = Array.from(new Set([...mapped.skippedQuestionIds, "montre-connectee"]));
+      }
 
       res.json({
         success: true,
         hasData: true,
-        provider: records[0]?.provider || "WEARABLE",
+        provider: filteredRecords[0]?.provider || "WEARABLE",
         answers: mapped.answers,
         skippedQuestions: mapped.skippedQuestionIds,
         summary: mapped.summary,
@@ -1067,23 +1325,29 @@ export async function registerRoutes(
 
         await storage.updateAudit(auditId, { reportDeliveryStatus: "GENERATING" });
 
-        // Generate new Discovery Scan report with AI content
-        const result = await analyzeDiscoveryScan(audit.responses as any);
-        const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+        try {
+          // Generate new Discovery Scan report with AI content
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
 
-        await storage.updateAudit(auditId, {
-          narrativeReport,
-          reportDeliveryStatus: "READY"
-        });
+          await storage.updateAudit(auditId, {
+            narrativeReport,
+            reportDeliveryStatus: "READY"
+          });
 
-        console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
+          console.log(`[Regenerate] Discovery Scan ${auditId} regenerated successfully`);
 
-        res.json({
-          success: true,
-          message: "Discovery Scan regenere",
-          auditId,
-          narrativeReport
-        });
+          res.json({
+            success: true,
+            message: "Discovery Scan regenere",
+            auditId,
+            narrativeReport
+          });
+        } catch (genError) {
+          console.error("[Regenerate] Discovery Scan generation error:", genError);
+          await storage.updateAudit(auditId, { reportDeliveryStatus: "NEEDS_REVIEW" });
+          res.status(500).json({ error: "Rapport en révision. Réessaie plus tard." });
+        }
         return;
       }
 
@@ -1351,8 +1615,8 @@ export async function registerRoutes(
             quantity: 1,
           },
         ],
-        mode: planType === 'ELITE' ? 'subscription' : 'payment',
-        success_url: `${baseUrl}/dashboard?email=${encodeURIComponent(email)}&success=true`,
+        mode: 'payment',
+        success_url: `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/audit-complet/checkout?cancelled=true`,
         customer_email: email,
         metadata: {
@@ -1382,13 +1646,120 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/stripe/confirm-session", async (req, res) => {
+    try {
+      const sessionId = req.body?.sessionId || req.query?.session_id;
+      if (!sessionId || typeof sessionId !== "string") {
+        res.status(400).json({ error: "sessionId requis" });
+        return;
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
+
+      const isPaid = session.payment_status === "paid" || session.status === "complete";
+      if (!isPaid) {
+        res.status(202).json({ success: false, status: session.payment_status || session.status });
+        return;
+      }
+
+      const email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        session.metadata?.email ||
+        "";
+      const planType = session.metadata?.planType;
+
+      if (!email || !planType) {
+        res.status(400).json({ error: "Metadata Stripe manquante" });
+        return;
+      }
+
+      if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE") {
+        res.status(400).json({ error: "PLAN_INVALID" });
+        return;
+      }
+
+      const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
+
+      const existingAudits = await storage.getAuditsByEmail(email);
+      const sessionCreatedAt = session.created ? session.created * 1000 : Date.now();
+      const recentAudit = existingAudits.find((audit) => {
+        if (audit.type !== normalizedPlanType) return false;
+        const createdAt = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
+        return createdAt >= sessionCreatedAt - 6 * 60 * 60 * 1000;
+      });
+
+      if (recentAudit) {
+        res.json({ success: true, auditId: recentAudit.id, auditType: recentAudit.type, existing: true });
+        return;
+      }
+
+      const progress = await storage.getProgress(email);
+      let responses = progress?.responses as Record<string, unknown> | string | undefined;
+      if (typeof responses === "string") {
+        try {
+          responses = JSON.parse(responses);
+        } catch {
+          responses = undefined;
+        }
+      }
+
+      if (!responses || Object.keys(responses).length === 0) {
+        res.status(400).json({ error: "QUESTIONNAIRE_MISSING" });
+        return;
+      }
+
+      if (normalizedPlanType === "ELITE" && !hasThreePhotos(responses as Record<string, unknown>)) {
+        res.status(400).json({ error: "NEED_PHOTOS", message: "3 photos obligatoires pour Ultimate Scan (face, profil, dos)" });
+        return;
+      }
+
+      const audit = await storage.createAudit({
+        userId: "",
+        type: normalizedPlanType,
+        email,
+        responses: responses as Record<string, unknown>,
+      });
+
+      await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+      await startReportGeneration(audit.id, audit.responses, audit.scores || {}, normalizedPlanType);
+      processReportAndSendEmail(audit.id, audit.email, normalizedPlanType);
+
+      res.json({ success: true, auditId: audit.id, auditType: audit.type });
+    } catch (error: any) {
+      console.error("Stripe confirmation error:", error);
+      res.status(500).json({ error: error.message || "Erreur confirmation paiement" });
+    }
+  });
+
   // ==================== ADMIN ENDPOINTS ====================
 
   app.get("/api/admin/audits", async (req, res) => {
     if (!requireAdminAuth(req, res)) return;
     try {
       const allAudits = await storage.getAllAudits();
-      res.json({ success: true, audits: allAudits });
+      const peptidesReports = await storage.getAllPeptidesReports();
+      const mappedPeptides = peptidesReports.map((report) => ({
+        id: report.id,
+        email: report.email,
+        type: "PEPTIDES",
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: report.createdAt,
+        createdAt: report.createdAt,
+        completedAt: report.createdAt,
+      }));
+
+      const audits = [...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
+      res.json({ success: true, audits });
     } catch (error) {
       console.error("[Admin Audits] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -1498,7 +1869,7 @@ export async function registerRoutes(
       const review = await reviewStorage.createReview(data as any);
 
       // Notify admin of new review to validate
-      const auditType = (audit.planType as string) || "DISCOVERY";
+      const auditType = parsed.auditType || "DISCOVERY";
       sendAdminReviewNotification(
         data.email,
         auditType,
@@ -1756,6 +2127,26 @@ export async function registerRoutes(
           started_at TIMESTAMP DEFAULT NOW() NOT NULL,
           last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
+
+        `CREATE TABLE IF NOT EXISTS peptides_progress (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL UNIQUE,
+          current_section TEXT NOT NULL DEFAULT '0',
+          total_sections TEXT NOT NULL DEFAULT '6',
+          percent_complete TEXT NOT NULL DEFAULT '0',
+          responses JSONB NOT NULL DEFAULT '{}',
+          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
+
+        `CREATE TABLE IF NOT EXISTS peptides_reports (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          email VARCHAR(255) NOT NULL,
+          responses JSONB NOT NULL DEFAULT '{}',
+          report JSONB NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )`,
         
         `CREATE TABLE IF NOT EXISTS magic_tokens (
           token VARCHAR(255) PRIMARY KEY,
@@ -1780,9 +2171,14 @@ export async function registerRoutes(
           id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
           audit_id VARCHAR(36) NOT NULL,
           user_id VARCHAR(36),
+          email VARCHAR(255) NOT NULL,
+          audit_type VARCHAR(50) NOT NULL,
           rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
           comment TEXT NOT NULL,
           status VARCHAR(20) NOT NULL DEFAULT 'pending',
+          promo_code VARCHAR(50),
+          promo_code_sent_at TIMESTAMP,
+          admin_notes TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           reviewed_at TIMESTAMP,
           reviewed_by VARCHAR(255)
@@ -1827,7 +2223,7 @@ export async function registerRoutes(
 
         // Default promo codes
         `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-         VALUES ('ANALYSE20', 20, 'Code promo 20% sur analyse Premium', 'PREMIUM')
+         VALUES ('ANALYSE20', 20, 'Code promo 20% sur Anabolic Bioscan', 'PREMIUM')
          ON CONFLICT (code) DO NOTHING`,
         `INSERT INTO promo_codes (code, discount_percent, description, valid_for)
          VALUES ('NEUROCORE20', 20, 'Code promo 20% coaching Achzod', 'ALL')
@@ -1843,7 +2239,10 @@ export async function registerRoutes(
         `CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id)`,
         `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`,
         `CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`,
-        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`
+        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_peptides_progress_email ON peptides_progress(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_peptides_reports_email ON peptides_reports(email)`,
+        `CREATE INDEX IF NOT EXISTS idx_peptides_reports_created_at ON peptides_reports(created_at)`
       ];
       
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
@@ -2032,7 +2431,7 @@ export async function registerRoutes(
               if (!trackingTypes.includes("PREMIUM_J7")) {
                 const hasReview = await storage.hasUserLeftReview(audit.id);
                 const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J7");
-                const sent = await sendPremiumJ7Email(audit.email, audit.id, baseUrl, tracking.id, hasReview);
+                const sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, tracking.id, hasReview);
                 if (sent) results.premiumJ7++;
                 else results.errors++;
               }
@@ -2046,7 +2445,7 @@ export async function registerRoutes(
               // Only send J+14 if J+7 was sent but NOT opened
               if (j7Email && !j7Email.openedAt && !j14Sent) {
                 const tracking = await storage.createEmailTracking(audit.id, "PREMIUM_J14");
-                const sent = await sendPremiumJ14Email(audit.email, audit.id, baseUrl, tracking.id);
+                const sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, tracking.id);
                 if (sent) results.premiumJ14++;
                 else results.errors++;
               }
@@ -2188,10 +2587,10 @@ export async function registerRoutes(
           break;
         case "PREMIUM_J7":
           const hasReview = await storage.hasUserLeftReview(audit.id);
-          sent = await sendPremiumJ7Email(audit.email, audit.id, baseUrl, tracking.id, hasReview);
+          sent = await sendPremiumJ7Email(audit.email, audit.id, audit.type, baseUrl, tracking.id, hasReview);
           break;
         case "PREMIUM_J14":
-          sent = await sendPremiumJ14Email(audit.email, audit.id, baseUrl, tracking.id);
+          sent = await sendPremiumJ14Email(audit.email, audit.id, audit.type, baseUrl, tracking.id);
           break;
         default:
           res.status(400).json({ success: false, error: "Type d'email invalide" });
@@ -2258,23 +2657,37 @@ export async function registerRoutes(
         responses,
       });
 
-      // Generate analysis and convert to NarrativeReport format with AI content
-      const result = await analyzeDiscoveryScan(responses);
-      const narrativeReport = await convertToNarrativeReport(result, responses);
+      try {
+        // Generate analysis and convert to NarrativeReport format with AI content
+        const result = await analyzeDiscoveryScan(responses);
+        const narrativeReport = await convertToNarrativeReport(result, responses);
 
-      // Update audit with report (same format as PREMIUM/ELITE)
-      await storage.updateAudit(audit.id, {
-        narrativeReport,
-        reportDeliveryStatus: "READY"
-      });
+        // Update audit with report (same format as PREMIUM/ELITE)
+        await storage.updateAudit(audit.id, {
+          narrativeReport,
+          reportDeliveryStatus: "READY"
+        });
 
-      console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
+        console.log(`[Discovery Scan] Audit ${audit.id} created for ${email}`);
 
-      res.json({
-        success: true,
-        auditId: audit.id,
-        narrativeReport
-      });
+        const baseUrl = getBaseUrl();
+        const emailSent = await sendReportReadyEmail(email, audit.id, audit.type, baseUrl);
+        if (emailSent) {
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
+          const clientName = (responses as any)?.prenom || email.split("@")[0];
+          await sendAdminEmailNewAudit(email, clientName, audit.type, audit.id);
+        }
+
+        res.json({
+          success: true,
+          auditId: audit.id,
+          narrativeReport
+        });
+      } catch (error) {
+        console.error("[Discovery Scan] Create error (generation):", error);
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        res.status(500).json({ success: false, error: "Rapport en révision. Réessaie plus tard." });
+      }
     } catch (error: any) {
       console.error("[Discovery Scan] Create error:", error);
       res.status(500).json({
@@ -2300,14 +2713,116 @@ export async function registerRoutes(
         return;
       }
 
-      // Return narrativeReport in same format dashboard expects
-      res.json(audit.narrativeReport);
+      // If a regeneration is in progress, avoid serving stale reports
+      if (audit.reportDeliveryStatus === "GENERATING") {
+        res.status(202).json({
+          success: true,
+          status: "generating",
+          message: "Rapport en cours de generation",
+        });
+        return;
+      }
+
+      const existingReport = audit.narrativeReport as any;
+      const hasInvalidScore =
+        existingReport &&
+        (typeof existingReport.globalScore !== "number" || existingReport.globalScore <= 2);
+      const metricsEmpty =
+        existingReport &&
+        Array.isArray(existingReport.metrics) &&
+        existingReport.metrics.length > 0 &&
+        existingReport.metrics.every((metric: any) => !metric?.value || metric.value <= 0);
+      const invalidReport = Boolean(hasInvalidScore || metricsEmpty);
+
+      // If report already exists and is valid, return it immediately
+      if (existingReport && !invalidReport) {
+        res.json(existingReport);
+        return;
+      }
+
+      // No report stored -> trigger a fresh generation in background
+      // to avoid users getting stuck on "Analyse en cours".
+      const shouldRegenerate = audit.reportDeliveryStatus !== "GENERATING";
+      if (shouldRegenerate) {
+        await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
+      }
+
+      res.status(202).json({
+        success: true,
+        status: shouldRegenerate ? "regenerating" : "generating",
+        message: shouldRegenerate ? "Recalcul du rapport lance" : "Generation en cours",
+      });
+
+      if (!shouldRegenerate) {
+        return;
+      }
+
+      (async () => {
+        try {
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await storage.updateAudit(audit.id, {
+            narrativeReport,
+            reportDeliveryStatus: "READY",
+          });
+          console.log(`[Discovery Fetch] Report regenerated for ${audit.id}`);
+        } catch (err) {
+          console.error("[Discovery Fetch] Regeneration error:", err);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        }
+      })();
     } catch (error: any) {
       console.error("[Discovery Scan] Fetch error:", error);
       res.status(500).json({
         success: false,
         error: error.message || "Erreur récupération Discovery Scan"
       });
+    }
+  });
+
+  // Force regenerate a Discovery Scan if stuck
+  app.post("/api/discovery-scan/:auditId/regenerate", async (req, res) => {
+    try {
+      const { auditId } = req.params;
+      const audit = await storage.getAudit(auditId);
+
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+
+      if (audit.type !== "GRATUIT") {
+        res.status(400).json({ success: false, error: "Ce n'est pas un Discovery Scan" });
+        return;
+      }
+
+      // Mark as generating and clear cached report to avoid stale content
+      await storage.updateAudit(audit.id, {
+        reportDeliveryStatus: "GENERATING",
+        narrativeReport: null,
+        reportGeneratedAt: null,
+      });
+
+      // Fire-and-forget regeneration to avoid blocking the UI
+      res.json({ success: true, auditId: audit.id, started: true });
+
+      (async () => {
+        try {
+          const result = await analyzeDiscoveryScan(audit.responses as any);
+          const narrativeReport = await convertToNarrativeReport(result, audit.responses as any);
+          await storage.updateAudit(audit.id, {
+            narrativeReport,
+            reportDeliveryStatus: "READY",
+          });
+          console.log(`[Discovery Regenerate] Success for ${audit.id}`);
+        } catch (err) {
+          console.error("[Discovery Regenerate] Error:", err);
+          await storage.updateAudit(audit.id, { reportDeliveryStatus: "NEEDS_REVIEW" });
+        }
+      })();
+    } catch (error) {
+      console.error("[Discovery Scan] Regeneration error:", error);
+      res.status(500).json({ success: false, error: "Erreur regénération" });
     }
   });
 
@@ -2706,8 +3221,8 @@ export async function registerRoutes(
   // ==================== BLOOD ANALYSIS ROUTES ====================
   registerBloodAnalysisRoutes(app);
 
-  // ==================== BURNOUT DETECTION ROUTES ====================
-  registerBurnoutRoutes(app);
+  // ==================== PEPTIDES ENGINE ROUTES ====================
+  registerPeptidesRoutes(app);
 
   return httpServer;
 }

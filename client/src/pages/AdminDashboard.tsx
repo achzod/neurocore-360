@@ -88,12 +88,22 @@ interface PromoCode {
 }
 
 const ADMIN_PASSWORD = "badboy007";
+const ADMIN_ENV_KEY = import.meta.env.VITE_ADMIN_KEY || "";
+
+const getAuditReportUrl = (audit: Audit) => {
+  if (audit.type === "GRATUIT") return `/scan/${audit.id}`;
+  if (audit.type === "PREMIUM") return `/anabolic/${audit.id}`;
+  if (audit.type === "ELITE") return `/ultimate/${audit.id}`;
+  if (audit.type === "PEPTIDES") return `/peptides/${audit.id}`;
+  return `/dashboard/${audit.id}`;
+};
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem("admin_auth") === "true";
   });
   const [password, setPassword] = useState("");
+  const [adminKey, setAdminKey] = useState<string | null>(() => sessionStorage.getItem("admin_key"));
   const [passwordError, setPasswordError] = useState(false);
   const [activeTab, setActiveTab] = useState("relances");
   const [audits, setAudits] = useState<Audit[]>([]);
@@ -115,9 +125,12 @@ export default function AdminDashboard() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    const valid = ADMIN_ENV_KEY ? password === ADMIN_ENV_KEY : password === ADMIN_PASSWORD;
+    if (valid) {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
+      sessionStorage.setItem("admin_key", password);
+      setAdminKey(password);
       setPasswordError(false);
     } else {
       setPasswordError(true);
@@ -131,9 +144,12 @@ export default function AdminDashboard() {
   const { toast } = useToast();
 
   const fetchAudits = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/audits");
+      const response = await fetch("/api/admin/audits", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setAudits(data.audits);
@@ -150,9 +166,12 @@ export default function AdminDashboard() {
   };
 
   const fetchPendingReviews = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/reviews/pending");
+      const response = await fetch("/api/admin/reviews/pending", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setReviews(data.reviews);
@@ -169,9 +188,12 @@ export default function AdminDashboard() {
   };
 
   const fetchIncompleteQuestionnaires = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/incomplete-questionnaires");
+      const response = await fetch("/api/admin/incomplete-questionnaires", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setIncompleteQuestionnaires(data.questionnaires);
@@ -188,9 +210,12 @@ export default function AdminDashboard() {
   };
 
   const fetchPromoCodes = async () => {
+    if (!adminKey) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/promo-codes");
+      const response = await fetch("/api/admin/promo-codes", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setPromoCodes(data.codes);
@@ -207,6 +232,15 @@ export default function AdminDashboard() {
   };
 
   const handleCreatePromo = async () => {
+    if (!adminKey) {
+      toast({
+        title: "Clé admin manquante",
+        description: "Reconnecte-toi avec la clé admin pour gérer les codes promo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!newPromo.code || !newPromo.discountPercent) {
       toast({
         title: "Erreur",
@@ -219,7 +253,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch("/api/admin/promo-codes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({
           code: newPromo.code.toUpperCase(),
           discountPercent: newPromo.discountPercent,
@@ -255,10 +289,11 @@ export default function AdminDashboard() {
   };
 
   const handleTogglePromo = async (promo: PromoCode) => {
+    if (!adminKey) return;
     try {
       const response = await fetch(`/api/admin/promo-codes/${promo.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ isActive: !promo.isActive }),
       });
       const data = await response.json();
@@ -279,11 +314,12 @@ export default function AdminDashboard() {
   };
 
   const sendSequenceEmail = async (auditId: string, emailType: string, emailLabel: string) => {
+    if (!adminKey) return;
     setSendingEmailId(`${auditId}-${emailType}`);
     try {
       const response = await fetch("/api/admin/send-sequence-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ auditId, emailType }),
       });
       const data = await response.json();
@@ -326,7 +362,7 @@ export default function AdminDashboard() {
       fetchIncompleteQuestionnaires();
       fetchPromoCodes();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, adminKey]);
 
   // Refresh current tab data when switching
   useEffect(() => {
@@ -340,14 +376,15 @@ export default function AdminDashboard() {
     } else if (activeTab === "promo") {
       fetchPromoCodes();
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, adminKey]);
 
   const handleApprove = async (reviewId: string) => {
+    if (!adminKey) return;
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ reviewedBy: "admin" }),
       });
       const data = await response.json();
@@ -370,11 +407,12 @@ export default function AdminDashboard() {
   };
 
   const handleReject = async (reviewId: string) => {
+    if (!adminKey) return;
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ reviewedBy: "admin" }),
       });
       const data = await response.json();
@@ -397,6 +435,14 @@ export default function AdminDashboard() {
   };
 
   const handleSendCTA = async () => {
+    if (!adminKey) {
+      toast({
+        title: "Clé admin manquante",
+        description: "Reconnecte-toi pour envoyer un message.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!selectedAuditId || !ctaSubject || !ctaMessage) {
       toast({
         title: "Erreur",
@@ -409,7 +455,7 @@ export default function AdminDashboard() {
     try {
       const response = await fetch("/api/admin/send-cta", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey || "" },
         body: JSON.stringify({
           auditId: selectedAuditId,
           subject: ctaSubject,
@@ -578,7 +624,7 @@ export default function AdminDashboard() {
                             onClick={() => {
                               setSelectedAuditId(q.id);
                               setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                              setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Anabolic !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                               setShowCtaModal(true);
                             }}
                           >
@@ -592,7 +638,7 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* Section: GRATUIT - Upsell Premium */}
+              {/* Section: GRATUIT - Upsell Anabolic */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-green-500/10">
@@ -600,7 +646,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">Analyses GRATUITES</h3>
-                    <p className="text-sm text-muted-foreground">Upsell Premium avec code ANALYSE20 (-20%)</p>
+                    <p className="text-sm text-muted-foreground">Upsell Anabolic avec code ANALYSE20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => a.type === "GRATUIT" && a.reportDeliveryStatus === "SENT").length}
@@ -666,7 +712,7 @@ export default function AdminDashboard() {
                     getDaysSinceSent(a.reportSentAt)! >= 7
                   );
                   return j7Audits.length === 0 ? (
-                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Premium/Elite de +7 jours</CardContent></Card>
+                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Anabolic/Ultimate de +7 jours</CardContent></Card>
                   ) : (
                     <div className="grid gap-3">
                       {j7Audits.slice(0, 5).map((audit) => {
@@ -733,7 +779,7 @@ export default function AdminDashboard() {
                     getDaysSinceSent(a.reportSentAt)! >= 14
                   );
                   return j14Audits.length === 0 ? (
-                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Premium/Elite de +14 jours</CardContent></Card>
+                    <Card><CardContent className="py-8 text-center text-muted-foreground">Aucun audit Anabolic/Ultimate de +14 jours</CardContent></Card>
                   ) : (
                     <div className="grid gap-3">
                       {j14Audits.slice(0, 5).map((audit) => {
@@ -860,7 +906,7 @@ export default function AdminDashboard() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(`/dashboard/${audit.id}`, "_blank")}
+                            onClick={() => window.open(getAuditReportUrl(audit), "_blank")}
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             Voir le rapport
@@ -1069,7 +1115,7 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setSelectedAuditId(q.id);
                                 setCtaSubject("Ton audit APEXLABS t'attend + Code -20% !");
-                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Premium !\n\nClique ici pour reprendre où tu en étais : https://neurocore-360.onrender.com/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
+                                setCtaMessage(`Salut !\n\nJ'ai vu que tu avais commencé ton questionnaire APEXLABS mais que tu ne l'as pas terminé.\n\nTu en étais à ${q.percentComplete}% - plus que quelques questions et tu auras accès à ton analyse personnalisée complète !\n\nEn bonus, utilise le code ANALYSE20 pour -20% sur l'analyse Anabolic !\n\nClique ici pour reprendre où tu en étais : ${window.location.origin}/audit-complet/questionnaire\n\nÀ très vite,\nAchzod`);
                                 setShowCtaModal(true);
                               }}
                             >
@@ -1242,8 +1288,8 @@ export default function AdminDashboard() {
                     onChange={(e) => setNewPromo({ ...newPromo, validFor: e.target.value })}
                   >
                     <option value="ALL">Tous les audits</option>
-                    <option value="PREMIUM">Premium uniquement</option>
-                    <option value="ELITE">Elite uniquement</option>
+                    <option value="PREMIUM">Anabolic uniquement</option>
+                    <option value="ELITE">Ultimate uniquement</option>
                   </select>
                 </div>
               </div>
@@ -1335,4 +1381,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-

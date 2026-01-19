@@ -36,7 +36,7 @@ export default function CheckEmail() {
               </motion.div>
               <CardTitle className="text-2xl">Vérifie ta boîte mail</CardTitle>
               <p className="mt-2 text-muted-foreground">
-                Nous avons envoyé un lien de connexion à{" "}
+                Je viens d'envoyer un lien de connexion à{" "}
                 <span className="font-medium text-foreground">{email || "ton email"}</span>
               </p>
             </CardHeader>

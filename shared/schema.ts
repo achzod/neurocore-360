@@ -38,6 +38,8 @@ export const ReportDeliveryStatus = {
   READY: "READY",
   SENT: "SENT",
   FAILED: "FAILED",
+  NEEDS_REVIEW: "NEEDS_REVIEW",
+  NEED_PHOTOS: "NEED_PHOTOS",
 } as const;
 
 export type ReportDeliveryStatusEnum = (typeof ReportDeliveryStatus)[keyof typeof ReportDeliveryStatus];
@@ -127,7 +129,8 @@ export interface QuestionnaireProgress {
 
 export const saveProgressSchema = z.object({
   email: z.string().email(),
-  currentSection: z.number().min(0).max(14),
+  currentSection: z.number().min(0).max(50),
+  totalSections: z.number().min(1).max(50).optional(),
   responses: z.record(z.unknown()),
 });
 
@@ -256,14 +259,14 @@ export interface Question {
 export const PRICING_PLANS = [
   {
     id: "gratuit",
-    name: "Audit Découverte",
+    name: "Discovery Scan",
     price: 0,
     priceLabel: "Gratuit",
     subtitle: "Pour tester",
-    description: "Questionnaire 180 questions + rapport decouverte",
+    description: "Questionnaire 66 questions + rapport decouverte",
     icon: "Star",
     color: "slate",
-    href: "/offers/audit-gratuit",
+    href: "/offers/discovery-scan",
     features: [
       "Résumé Exécutif",
       "Analyse Anthropométrique",
@@ -275,19 +278,18 @@ export const PRICING_PLANS = [
     cta: "Commencer gratuitement",
   },
   {
-    id: "premium",
+    id: "anabolic",
     name: "Anabolic Bioscan",
-    price: 79,
-    priceLabel: "79€",
+    price: 59,
+    priceLabel: "59€",
     subtitle: "Paiement unique",
-    description: "Analyse complete 15 domaines + photos + protocoles",
+    description: "Analyse complete 16 domaines + protocoles personnalises",
     icon: "Crown",
     color: "emerald",
-    href: "/offers/audit-premium",
+    href: "/offers/anabolic-bioscan",
     coachingNote: "Deduit de ton coaching",
     features: [
-      "15 sections d'analyse completes",
-      "Analyse photos (posture, composition)",
+      "16 sections d'analyse completes",
       "Profil Hormonal complet",
       "Digestion & Microbiome",
       "Protocole Nutrition detaille",
@@ -321,15 +323,15 @@ export const PRICING_PLANS = [
     cta: "Analyser mon sang",
   },
   {
-    id: "propanel",
+    id: "ultimate",
     name: "Ultimate Scan",
-    price: 149,
-    priceLabel: "149€",
+    price: 79,
+    priceLabel: "79€",
     subtitle: "Paiement unique",
     description: "Anabolic Bioscan + wearables + blessures",
     icon: "Zap",
     color: "cyan",
-    href: "/offers/pro-panel",
+    href: "/offers/ultimate-scan",
     coachingNote: "Deduit de ton coaching Private Lab",
     features: [
       "Tout l'Anabolic Bioscan inclus",
@@ -344,26 +346,26 @@ export const PRICING_PLANS = [
     cta: "Choisir Ultimate Scan",
   },
   {
-    id: "burnout",
-    name: "Burnout Detection",
-    price: 49,
-    priceLabel: "49€",
+    id: "peptides",
+    name: "Peptides Engine",
+    price: 99,
+    priceLabel: "99€",
     subtitle: "Paiement unique",
-    description: "Détecte le burnout avant la crise",
-    icon: "Brain",
-    color: "purple",
-    href: "/offers/burnout-detection",
+    description: "Questionnaire peptides + protocole sur mesure",
+    icon: "FlaskConical",
+    color: "amber",
+    href: "/offers/peptides-engine",
     features: [
-      "Questionnaire neuro-endocrinien",
-      "Profil hormonal estimé",
-      "Score de risque burnout",
-      "Protocole sortie 4 semaines",
-      "Dashboard temps réel",
-      "Rapport PDF 18 pages",
+      "Questionnaire precis 6 sections",
+      "Protocoles peptides sur mesure",
+      "Dosages + timing + durees",
+      "Sources fiables + controle qualite",
+      "Stack supplements synergique",
+      "Ebook peptides offert",
     ],
     lockedFeatures: [],
     popular: false,
-    cta: "Détecter mon risque",
+    cta: "Lancer Peptides Engine",
   },
 ] as const;
 
@@ -381,7 +383,7 @@ export const ReviewAuditType = {
   ANABOLIC_BIOSCAN: "ANABOLIC_BIOSCAN",
   ULTIMATE_SCAN: "ULTIMATE_SCAN",
   BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
-  BURNOUT: "BURNOUT",
+  PEPTIDES: "PEPTIDES",
 } as const;
 
 export type ReviewAuditTypeEnum = (typeof ReviewAuditType)[keyof typeof ReviewAuditType];
@@ -407,7 +409,7 @@ export const insertReviewSchema = z.object({
   auditId: z.string(),
   userId: z.string().optional(),
   email: z.string().email("Email invalide"),
-  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS", "BURNOUT"]),
+  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS", "PEPTIDES"]),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, "Le commentaire doit contenir au moins 10 caractères"),
 });

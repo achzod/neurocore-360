@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
-import { PRICING_PLANS } from "@shared/schema";
 import {
   Check,
   Lock,
@@ -24,10 +23,94 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+type PlanId = "gratuit" | "anabolic" | "ultimate";
+type PricingPlan = {
+  id: PlanId;
+  name: string;
+  subtitle: string;
+  priceLabel: string;
+  features: string[];
+  lockedFeatures: string[];
+  popular?: boolean;
+  coachingNote?: string;
+};
+
+const PRICING_PLANS: PricingPlan[] = [
+  {
+    id: "gratuit",
+    name: "Discovery Scan",
+    subtitle: "Diagnostic gratuit et rapide",
+    priceLabel: "0€",
+    features: [
+      "66 questions essentielles",
+      "Dashboard interactif",
+      "Scores des domaines clés",
+      "Radar de performance",
+    ],
+    lockedFeatures: [
+      "Rapport complet 16 sections",
+      "Protocoles 90 jours",
+      "Stack suppléments",
+      "Wearables & analyse photo",
+    ],
+  },
+  {
+    id: "anabolic",
+    name: "Anabolic Bioscan",
+    subtitle: "Audit complet sur-mesure",
+    priceLabel: "59€",
+    popular: true,
+    coachingNote: "Le meilleur équilibre profondeur / prix",
+    features: [
+      "137 questions approfondies",
+      "Rapport 16 sections",
+      "Axes cliniques + hormones",
+      "Protocoles 90 jours détaillés",
+      "Stack suppléments personnalisé",
+    ],
+    lockedFeatures: [
+      "Wearables & analyse photo",
+      "Nutrition timing avancé",
+      "HRV & performance cardio",
+    ],
+  },
+  {
+    id: "ultimate",
+    name: "Ultimate Scan",
+    subtitle: "Le scan le plus complet",
+    priceLabel: "79€",
+    features: [
+      "183 questions ultra-détaillées",
+      "Rapport 18 sections",
+      "Wearables (Oura, Whoop, Garmin...)",
+      "Analyse photo posturale",
+      "Nutrition timing + cardio avancé",
+      "HRV & performance",
+    ],
+    lockedFeatures: [],
+  },
+];
+
+const PLAN_ID_TO_AUDIT_TYPE: Record<PlanId, "GRATUIT" | "PREMIUM" | "ELITE"> = {
+  gratuit: "GRATUIT",
+  anabolic: "PREMIUM",
+  ultimate: "ELITE",
+};
+
+const normalizePlan = (plan: string | null | undefined): PlanId | null => {
+  if (!plan) return null;
+  const normalized = plan.toLowerCase();
+  if (normalized === "gratuit" || normalized === "discovery" || normalized === "free") return "gratuit";
+  if (normalized === "anabolic" || normalized === "premium" || normalized === "essential") return "anabolic";
+  if (normalized === "ultimate" || normalized === "elite") return "ultimate";
+  return null;
+};
+
 export default function Checkout() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
+  const [lockedPlan, setLockedPlan] = useState<PlanId | null>(null);
   const [email, setEmail] = useState("");
   const [responses, setResponses] = useState<Record<string, unknown>>({});
   const [promoCode, setPromoCode] = useState("");
@@ -38,9 +121,20 @@ export default function Checkout() {
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
     const savedResponses = localStorage.getItem("neurocore_responses");
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPlan = normalizePlan(urlParams.get("plan"));
+    const storedPlan = normalizePlan(localStorage.getItem("neurocore_plan"));
+    const plan = urlPlan ?? storedPlan;
+
+    if (plan) {
+      localStorage.setItem("neurocore_plan", plan);
+      setSelectedPlan(plan);
+      setLockedPlan(plan);
+    }
 
     if (!savedEmail || !savedResponses) {
-      navigate("/audit-complet/questionnaire");
+      const targetPlan = plan ? `?plan=${plan}` : "";
+      navigate(`/audit-complet/questionnaire${targetPlan}`);
       return;
     }
 
@@ -60,7 +154,7 @@ export default function Checkout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: promoCode.trim(),
-          auditType: selectedPlan?.toUpperCase() || "ALL",
+          auditType: selectedPlan ? PLAN_ID_TO_AUDIT_TYPE[selectedPlan] : "ALL",
         }),
       });
       const data = await response.json();
@@ -96,14 +190,14 @@ export default function Checkout() {
     }
   }, [selectedPlan]);
 
-  const STRIPE_PRICE_IDS: Record<string, string> = {
-    premium: "price_1SisNBRDE5WXnLZXF6QIJuh4",
-    elite: "price_1SisNCRDE5WXnLZXTk4obahF",
-  };
+const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
+  anabolic: import.meta.env.VITE_STRIPE_PRICE_ANABOLIC || "price_1SisNBRDE5WXnLZXF6QIJuh4",
+  ultimate: import.meta.env.VITE_STRIPE_PRICE_ULTIMATE || "price_1SisNCRDE5WXnLZXTk4obahF",
+};
 
   const createAuditMutation = useMutation({
-    mutationFn: async (planId: string) => {
-      const type = planId.toUpperCase() as "GRATUIT" | "PREMIUM" | "ELITE";
+    mutationFn: async (planId: PlanId) => {
+      const type = PLAN_ID_TO_AUDIT_TYPE[planId];
 
       if (planId === "gratuit") {
         return apiRequest("POST", "/api/audit/create", {
@@ -144,7 +238,8 @@ export default function Checkout() {
     },
   });
 
-  const handleSelectPlan = (planId: string) => {
+  const handleSelectPlan = (planId: PlanId) => {
+    if (lockedPlan && planId !== lockedPlan) return;
     setSelectedPlan(planId);
   };
 
@@ -153,6 +248,10 @@ export default function Checkout() {
       createAuditMutation.mutate(selectedPlan);
     }
   };
+
+  const visiblePlans = lockedPlan
+    ? PRICING_PLANS.filter((plan) => plan.id === lockedPlan)
+    : PRICING_PLANS;
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,13 +271,13 @@ export default function Checkout() {
             Choisis ton niveau d'analyse
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            Felicitations ! Tu as repondu aux 180 questions. Selectionne maintenant le niveau
+            Felicitations ! Tu as termine le questionnaire. Selectionne maintenant le niveau
             d'analyse qui te convient.
           </p>
         </motion.div>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2 items-stretch max-w-4xl mx-auto">
-          {PRICING_PLANS.map((plan, index) => (
+          {visiblePlans.map((plan, index) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 30 }}

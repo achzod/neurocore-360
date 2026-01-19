@@ -48,7 +48,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00]">Nos Offres</h4>
+            <h4 className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-[#FCDD00]">Offres</h4>
             <ul className="space-y-3 text-sm text-[#9CA3AF]">
               <li>
                 <Link href="/offers/discovery-scan" className="hover:text-white transition-colors">
@@ -71,8 +71,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/offers/burnout-detection" className="hover:text-white transition-colors">
-                  Burnout Engine
+                <Link href="/offers/peptides-engine" className="hover:text-white transition-colors">
+                  Peptides Engine
                 </Link>
               </li>
             </ul>

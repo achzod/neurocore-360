@@ -38,6 +38,28 @@ CREATE TABLE IF NOT EXISTS questionnaire_progress (
   last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+-- Table: peptides_progress
+CREATE TABLE IF NOT EXISTS peptides_progress (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  current_section TEXT NOT NULL DEFAULT '0',
+  total_sections TEXT NOT NULL DEFAULT '6',
+  percent_complete TEXT NOT NULL DEFAULT '0',
+  responses JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+  started_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: peptides_reports
+CREATE TABLE IF NOT EXISTS peptides_reports (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL,
+  responses JSONB NOT NULL DEFAULT '{}',
+  report JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
 -- Table: magic_tokens
 CREATE TABLE IF NOT EXISTS magic_tokens (
   token VARCHAR(255) PRIMARY KEY,
@@ -65,7 +87,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   audit_id VARCHAR(36) NOT NULL,
   user_id VARCHAR(36),
   email VARCHAR(255) NOT NULL,
-  audit_type VARCHAR(50) NOT NULL, -- DISCOVERY, ANABOLIC_BIOSCAN, ULTIMATE_SCAN, BLOOD_ANALYSIS, BURNOUT
+  audit_type VARCHAR(50) NOT NULL, -- DISCOVERY, ANABOLIC_BIOSCAN, ULTIMATE_SCAN, BLOOD_ANALYSIS, PEPTIDES
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
   comment TEXT NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, approved, rejected
@@ -117,7 +139,7 @@ CREATE TABLE IF NOT EXISTS email_tracking (
 
 -- Insert default promo codes
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-VALUES ('ANALYSE20', 20, 'Code promo 20% sur analyse Premium', 'PREMIUM')
+VALUES ('ANALYSE20', 20, 'Code promo 20% sur Anabolic Bioscan', 'PREMIUM')
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
@@ -142,7 +164,7 @@ VALUES ('BLOOD', 0, 'Code Blood Analysis - 99€ déduits du coaching', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
 INSERT INTO promo_codes (code, discount_percent, description, valid_for)
-VALUES ('BURNOUT', 0, 'Code Burnout Engine - 39€ déduits du coaching', 'ALL')
+VALUES ('PEPTIDES', 0, 'Code Peptides Engine - 99€ déduits du coaching', 'ALL')
 ON CONFLICT (code) DO NOTHING;
 
 -- Index pour améliorer les performances
@@ -154,7 +176,9 @@ CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
 CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id);
 CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_peptides_progress_email ON peptides_progress(email);
+CREATE INDEX IF NOT EXISTS idx_peptides_reports_email ON peptides_reports(email);
+CREATE INDEX IF NOT EXISTS idx_peptides_reports_created_at ON peptides_reports(created_at);
 
 -- Note: Si certaines tables existent déjà, certaines erreurs peuvent apparaître.
 -- C'est normal, le script utilise CREATE TABLE IF NOT EXISTS pour éviter les doublons.
-

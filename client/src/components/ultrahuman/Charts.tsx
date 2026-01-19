@@ -18,16 +18,35 @@ import { Metric } from './types';
 interface RadarProps {
   data: Metric[];
   color: string;
+  gridColor?: string;
+  labelColor?: string;
+  tooltipBg?: string;
+  tooltipBorder?: string;
+  tooltipText?: string;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  tooltipBg,
+  tooltipBorder,
+  tooltipText,
+  tooltipMuted
+}: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#09090B] border border-white/10 p-4 rounded shadow-2xl backdrop-blur-md min-w-[120px] z-50">
-        <p className="text-neutral-400 text-[10px] uppercase tracking-widest font-bold mb-1">{payload[0].payload.subject}</p>
+      <div
+        className="p-4 rounded shadow-2xl backdrop-blur-md min-w-[120px] z-50"
+        style={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}` }}
+      >
+        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: tooltipMuted }}>
+          {payload[0].payload.subject}
+        </p>
         <div className="flex items-end gap-1">
-          <span className="text-3xl font-bold text-white leading-none">{payload[0].value}</span>
-          <span className="text-sm text-neutral-600 font-medium mb-0.5">/10</span>
+          <span className="text-3xl font-bold leading-none" style={{ color: tooltipText }}>
+            {payload[0].value}
+          </span>
+          <span className="text-sm font-medium mb-0.5" style={{ color: tooltipMuted }}>/10</span>
         </div>
       </div>
     );
@@ -35,7 +54,16 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export const MetricsRadar: React.FC<RadarProps> = ({ data, color }) => {
+export const MetricsRadar: React.FC<RadarProps> = ({
+  data,
+  color,
+  gridColor = 'var(--color-grid)',
+  labelColor = 'var(--color-text-muted)',
+  tooltipBg = 'var(--color-surface)',
+  tooltipBorder = 'var(--color-border)',
+  tooltipText = 'var(--color-text)'
+}) => {
+  const tooltipMuted = labelColor;
   const chartData = data.map(m => ({
     subject: m.label,
     A: m.value,
@@ -46,15 +74,15 @@ export const MetricsRadar: React.FC<RadarProps> = ({ data, color }) => {
     <div className="w-full h-[320px] relative group cursor-crosshair">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
-          <PolarGrid stroke="rgba(255,255,255,0.05)" />
+          <PolarGrid stroke={gridColor} />
           <PolarAngleAxis
             dataKey="subject"
-            tick={{ fill: '#A1A1AA', fontSize: 11, fontWeight: 600 }}
+            tick={{ fill: labelColor, fontSize: 11, fontWeight: 600 }}
           />
           <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
           <Tooltip
-            content={<CustomTooltip />}
-            cursor={{ strokeOpacity: 0.2 }}
+            content={<CustomTooltip tooltipBg={tooltipBg} tooltipBorder={tooltipBorder} tooltipText={tooltipText} tooltipMuted={tooltipMuted} />}
+            cursor={{ stroke: gridColor, strokeOpacity: 0.4 }}
             allowEscapeViewBox={{ x: true, y: true }}
             wrapperStyle={{ zIndex: 100 }}
           />
@@ -101,18 +129,18 @@ export const ProjectionChart: React.FC<ProjectionProps> = ({ color, currentScore
           </defs>
           <XAxis
             dataKey="name"
-            stroke="#52525B"
+            stroke="var(--color-text-muted)"
             fontSize={10}
             tickLine={false}
             axisLine={false}
-            tick={{ fill: '#52525B' }}
+            tick={{ fill: 'var(--color-text-muted)' }}
           />
           <YAxis hide domain={[0, 100]} />
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-grid)" vertical={false} />
           <Tooltip
-            contentStyle={{ backgroundColor: '#09090B', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-            itemStyle={{ color: '#E4E4E7' }}
-            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
+            contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+            itemStyle={{ color: 'var(--color-text)' }}
+            cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }}
           />
           <Area
             type="monotone"

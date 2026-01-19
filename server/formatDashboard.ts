@@ -9,6 +9,8 @@
  * 2. formatTxtToDashboard() → Format dashboard (séparé, flexible)
  */
 
+import { normalizeSingleVoice, stripInlineHtml } from "./textNormalization";
+
 export interface DashboardSection {
   id: string;
   title: string;
@@ -39,6 +41,7 @@ const SECTION_CATEGORIES: Record<string, DashboardSection['category']> = {
   'analyse entrainement et periodisation': 'analysis',
   'analyse systeme cardiovasculaire': 'analysis',
   'analyse metabolisme et nutrition': 'analysis',
+  'analyse energie et recuperation': 'analysis',
   'analyse sommeil et recuperation': 'analysis',
   'analyse digestion et microbiote': 'analysis',
   'analyse axes hormonaux': 'analysis',
@@ -50,6 +53,7 @@ const SECTION_CATEGORIES: Record<string, DashboardSection['category']> = {
   'plan semaine par semaine 30-60-90': 'action',
   'kpi et tableau de bord': 'analysis',
   'stack supplements optimise': 'supplements',
+  'stack supplements personnalise': 'supplements',
   'synthese et prochaines etapes': 'analysis',
   // Garder les anciens pour compatibilité
   'resume executif': 'executive',
@@ -72,6 +76,7 @@ const SECTION_CATEGORIES: Record<string, DashboardSection['category']> = {
   'ce qui va changer si on travaille ensemble': 'transformation',
   'reassurance emotionnelle': 'transformation',
   'stack de supplements': 'supplements',
+  'stack de supplements personnalise': 'supplements',
   'protocole supplements personnalise': 'supplements',
   'synthese clinique globale et conclusion transformationnelle': 'executive'
 };
@@ -81,17 +86,187 @@ function normalizeTitle(title: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/&/g, '')
+    .replace(/&/g, ' et ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
+const TITLE_KEYWORDS = [
+  'executive',
+  'resume',
+  'analyse',
+  'protocole',
+  'plan',
+  'kpi',
+  'stack',
+  'synthese',
+  'diagnostic',
+  'biomecanique',
+  'postur',
+  'biomarque',
+  'entrainement',
+  'metabolisme',
+  'nutrition',
+  'sommeil',
+  'digestion',
+  'hormonal',
+  'cardio',
+  'audit complet',
+];
+
+const CTA_TITLE_MARKERS = [
+  'rappel coaching',
+  'rappel important',
+  'infos importantes',
+  'coaching apexlabs',
+  'prochaines etapes',
+  'pret a transformer',
+  'tu as les cles',
+  'ce que tu obtiens',
+  'bonus exclusif',
+  'mes formules',
+  'formules disponibles',
+  'code promo',
+  'rapport genere',
+];
+
+function stripEmoji(text: string): string {
+  return text.replace(EMOJI_REGEX, '');
+}
+
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
+  "gi"
+);
+
+function cleanSectionContent(content: string): string {
+  const cleaned = stripEmoji(stripInlineHtml(content))
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+    .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
+    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, '')
+    .replace(/^.*\b(Sources?|References?|Références?)\b.*$/gmi, '')
+    .replace(/^\s*score\s*:?\s*\d{1,3}\s*\/\s*100\s*$/gmi, '')
+    .replace(/score\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
+    .replace(/^\s*score\s+global\s*:?.*$/gmi, '')
+    .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, '')
+    .replace(/score\s+global\s*[:\-–—]\s*\d{1,3}\s*\/\s*100/gi, '')
+    .replace(/\bscore\s+global\b.*$/gmi, '')
+    .replace(/^\s*code\s+promo.*$/gmi, '')
+    .replace(/^\s*formules?\s+disponibles.*$/gmi, '')
+    .replace(/^\s*bonus\s+exclusif.*$/gmi, '')
+    .replace(/^\s*mes\s+formules.*$/gmi, '')
+    .replace(/^\s*tu\s+as\s+les\s+cl[eé]s.*$/gmi, '')
+    .replace(/^\s*prochaines?\s+etapes?.*$/gmi, '')
+    .replace(/^\s*={3,}.*$/gm, '')
+    .replace(/={3,}/g, '')
+    .replace(/^\s*-{3,}.*$/gm, '')
+    .replace(/-{3,}/g, '')
+    .replace(/^.*\brapport\s+genere\b.*$/gmi, '')
+    .replace(/\bclients\b/gi, 'profils')
+    .replace(/\bclient\b/gi, 'profil')
+    .replace(/^\s*note\s*\(technique\).*$/gmi, '')
+    .replace(SOURCE_NAME_REGEX, '')
+    .trim();
+  return normalizeSingleVoice(cleaned).trim();
+}
+
+function stripCtaFromContent(content: string): string {
+  const normalizedContent = stripInlineHtml(content);
+  const markers = [
+    "COACHING APEXLABS",
+    "RAPPEL COACHING",
+    "RAPPEL IMPORTANT",
+    "INFOS IMPORTANTES",
+    "TU AS LES CLES - MAINTENANT, PASSONS A L'EXECUTION",
+    "TU AS LES CLÉS - MAINTENANT, PASSONS A L'EXECUTION",
+    "PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT",
+    "PROCHAINES ÉTAPES - CE QUE TU PEUX FAIRE MAINTENANT",
+    "PROCHAINES ETAPES",
+    "PROCHAINES ÉTAPES",
+    "PRET A TRANSFORMER CES INSIGHTS",
+    "FORMULES DISPONIBLES",
+    "MES FORMULES",
+    "CODE PROMO",
+    "OPTION 1",
+    "OPTION 2",
+    "OPTION 3"
+  ];
+  const markerRegex = [
+    /tu\s+as\s+les\s+cl[eé]s/i,
+    /ce\s+que\s+tu\s+obtiens/i,
+    /code\s+promo/i,
+    /bonus\s+exclusif/i,
+    /^coaching\b/i,
+    /^formules?\b/i,
+    /^email\s*:/i,
+    /^site\s*:/i,
+    /^\s*rapports?\s+genere/i
+  ];
+  const normalizedMarkers = markers.map((marker) => normalizeTitle(marker));
+  const lines = normalizedContent.split("\n");
+  const cutIndex = lines.findIndex((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    const normalizedLine = normalizeTitle(trimmed);
+    if (normalizedMarkers.some((marker) => normalizedLine.includes(marker))) {
+      return true;
+    }
+    return markerRegex.some((re) => re.test(trimmed));
+  });
+  if (cutIndex === -1) return normalizedContent;
+  return lines.slice(0, cutIndex).join("\n").trim();
+}
+
+function findLastLineMarker(text: string, markers: string[]): { index: number; marker: string | null } {
+  let lastIndex = -1;
+  let lastMarker: string | null = null;
+  const normalizedMarkers = markers.map((marker) => normalizeTitle(marker));
+  const lines = text.split('\n');
+  let offset = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const normalizedLine = normalizeTitle(trimmed);
+    if (normalizedLine) {
+      for (const marker of normalizedMarkers) {
+        if (marker && normalizedLine.includes(marker)) {
+          if (offset >= lastIndex) {
+            lastIndex = offset;
+            lastMarker = marker;
+          }
+          break;
+        }
+      }
+    }
+    offset += line.length + 1;
+  }
+  return { index: lastIndex, marker: lastMarker };
+}
+
+function isLikelySectionTitle(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('#') || trimmed.startsWith('===') || trimmed.startsWith('---')) return false;
+  const normalizedLine = normalizeTitle(trimmed);
+  if (CTA_TITLE_MARKERS.some(marker => normalizedLine.includes(marker))) return false;
+  if (normalizedLine.includes('score global')) return false;
+  const wordCount = normalizedLine.split(/\s+/).length;
+  if (wordCount < 3) return false;
+  const isUppercase = trimmed === trimmed.toUpperCase();
+  if (!isUppercase) return false;
+  if (trimmed.length < 6 || trimmed.length > 120) return false;
+  const keywordHits = TITLE_KEYWORDS.filter((keyword) => normalizedLine.includes(keyword)).length;
+  return keywordHits >= 2;
+}
+
 function extractClientName(txtContent: string): string {
-  const match = txtContent.match(/AUDIT COMPLET NEUROCORE 360 - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
+  const match = txtContent.match(/AUDIT COMPLET (?:NEUROCORE 360|APEXLABS) - (.+?)(?:\s*={3,}|\s*[\r\n])/i);
   if (match) {
     return match[1].trim();
   }
-  return 'Client';
+  return 'Profil';
 }
 
 function extractGeneratedAt(txtContent: string): string {
@@ -114,12 +289,15 @@ function extractGlobalScoreFromTxt(txtContent: string): number | null {
 }
 
 function extractSectionScoreFromContent(content: string): number | null {
-  const re = /Score\s*:?\s*(\d{1,3})\s*\/\s*100/gi;
-  let m: RegExpExecArray | null = null;
+  const lines = content.split('\n');
   let last: number | null = null;
-  while ((m = re.exec(content)) !== null) {
-    const n = Number(m[1]);
-    if (Number.isFinite(n)) last = Math.max(0, Math.min(100, Math.round(n)));
+  for (const line of lines) {
+    if (/score\s+global/i.test(line)) continue;
+    const match = line.match(/score\s*:?\s*(\d{1,3})\s*\/\s*100/i);
+    if (match) {
+      const n = Number(match[1]);
+      if (Number.isFinite(n)) last = Math.max(0, Math.min(100, Math.round(n)));
+    }
   }
   return last;
 }
@@ -127,30 +305,50 @@ function extractSectionScoreFromContent(content: string): number | null {
 function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefined {
   if (type === 'debut') {
     // Chercher "RAPPEL IMPORTANT" ou "INFOS IMPORTANTES"
-    const markers = ['RAPPEL IMPORTANT', 'INFOS IMPORTANTES'];
-    for (const marker of markers) {
-      const idx = txtContent.indexOf(marker);
-      if (idx !== -1) {
-        // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
-        const endMarkers = ['AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
-        let endIdx = txtContent.length;
-        for (const endMarker of endMarkers) {
-          const endPos = txtContent.indexOf(endMarker, idx + marker.length);
-          if (endPos !== -1 && endPos < endIdx) {
-            endIdx = endPos;
+    const markers = ['RAPPEL COACHING', 'RAPPEL IMPORTANT', 'INFOS IMPORTANTES'];
+    const start = findLastLineMarker(txtContent, markers);
+    if (start.index !== -1) {
+      // Trouver la fin du CTA (avant la première section principale ou avant "AUDIT COMPLET")
+      const endMarkers = ['AUDIT COMPLET APEXLABS', 'AUDIT COMPLET NEUROCORE 360', 'EXECUTIVE SUMMARY', '---'];
+      let endIdx = txtContent.length;
+      for (const marker of endMarkers) {
+        const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`^\\s*${escaped}\\s*$`, 'gmi');
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(txtContent)) !== null) {
+          if (match.index > start.index && match.index < endIdx) {
+            endIdx = match.index;
           }
         }
-        return txtContent.substring(idx, endIdx).trim();
       }
+      if (endIdx === txtContent.length) {
+        const remaining = txtContent.slice(start.index);
+        const remainingLines = remaining.split('\n');
+        let offset = start.index;
+        for (const line of remainingLines) {
+          if (offset > start.index && isLikelySectionTitle(line)) {
+            endIdx = offset;
+            break;
+          }
+          offset += line.length + 1;
+        }
+      }
+      return txtContent.substring(start.index, endIdx).trim();
     }
   } else {
     // Chercher "PRET A TRANSFORMER" ou "PROCHAINES ETAPES"
-    const markers = ['PRET A TRANSFORMER CES INSIGHTS', 'PROCHAINES ETAPES', 'PROCHAINE ETAPE'];
-    for (const marker of markers) {
-      const idx = txtContent.lastIndexOf(marker);
-      if (idx !== -1) {
-        return txtContent.substring(idx).trim();
-      }
+    const markers = [
+      'COACHING APEXLABS',
+      'TU AS LES CLES',
+      'PRET A TRANSFORMER CES INSIGHTS',
+      'PROCHAINES ETAPES - CE QUE TU PEUX FAIRE MAINTENANT',
+      'PROCHAINES ÉTAPES - CE QUE TU PEUX FAIRE MAINTENANT',
+      'PROCHAINES ETAPES',
+      'PROCHAINES ÉTAPES'
+    ];
+    const start = findLastLineMarker(txtContent, markers);
+    if (start.index !== -1) {
+      return txtContent.substring(start.index).trim();
     }
   }
   return undefined;
@@ -161,6 +359,9 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   const clientName = extractClientName(txtContent);
   const generatedAt = extractGeneratedAt(txtContent);
   
+  const ctaDebut = extractCTA(txtContent, 'debut');
+  const ctaFin = extractCTA(txtContent, 'fin');
+
   // Nouveau délimiteur Elite V4 : Titres en MAJUSCULES seuls sur une ligne
   const sectionLines = txtContent.split('\n');
   const sectionMatches: { title: string; startIndex: number; endIndex: number }[] = [];
@@ -173,10 +374,21 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     "ANALYSE BIOMECANIQUE ET SANGLE PROFONDE",
     "ANALYSE ENTRAINEMENT ET PERIODISATION",
     "ANALYSE SYSTEME CARDIOVASCULAIRE",
+    "ANALYSE CARDIOVASCULAIRE",
+    "ANALYSE CARDIO",
+    "ANALYSE ENERGIE ET RECUPERATION",
+    "ANALYSE ENERGIE",
+    "ANALYSE RECUPERATION",
     "ANALYSE METABOLISME ET NUTRITION",
+    "ANALYSE METABOLISME",
+    "ANALYSE NUTRITION",
     "ANALYSE SOMMEIL ET RECUPERATION",
+    "ANALYSE SOMMEIL",
     "ANALYSE DIGESTION ET MICROBIOTE",
+    "ANALYSE DIGESTION",
     "ANALYSE AXES HORMONAUX",
+    "ANALYSE HORMONES",
+    "ANALYSE HORMONALE",
     "PROTOCOLE MATIN ANTI-CORTISOL",
     "PROTOCOLE SOIR VERROUILLAGE SOMMEIL",
     "PROTOCOLE DIGESTION 14 JOURS",
@@ -185,12 +397,17 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     "PLAN D'ACTION 30/60/90 JOURS",
     "KPI ET TABLEAU DE BORD",
     "STACK DE SUPPLEMENTS PERSONNALISE",
+    "STACK SUPPLEMENTS PERSONNALISE",
     "STACK SUPPLEMENTS OPTIMISE",
     "SYNTHESE CLINIQUE ET PROCHAINE ETAPE",
     "SYNTHESE ET PROCHAINES ETAPES",
     "PLAN SEMAINE PAR SEMAINE 30-60-90",
     "ANALYSE D'EXPERT", // Parfois généré
   ];
+
+  const normalizedTitles = new Map(
+    VALID_TITLES.map(title => [normalizeTitle(title), title])
+  );
 
   let currentPos = 0;
   for (let i = 0; i < sectionLines.length; i++) {
@@ -202,17 +419,19 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
       continue;
     }
     
-    // Ne garder QUE les titres connus de la liste VALID_TITLES
-    const matchedTitle = VALID_TITLES.find(t => line.toUpperCase() === t.toUpperCase());
+    const normalizedLine = normalizeTitle(line);
+    const matchedTitle = normalizedTitles.get(normalizedLine);
+    const isKnownTitle = Boolean(matchedTitle);
     
-    if (matchedTitle) {
+    if (isKnownTitle) {
+      const resolvedTitle = matchedTitle as string;
       // Vérifier qu'on n'a pas déjà cette section (éviter les doublons)
       const alreadyExists = sectionMatches.some(s => 
-        s.title.toUpperCase().replace(/[^A-Z]/g, '') === matchedTitle.toUpperCase().replace(/[^A-Z]/g, '')
+        s.title.toUpperCase().replace(/[^A-Z]/g, '') === resolvedTitle.toUpperCase().replace(/[^A-Z]/g, '')
       );
       
       if (!alreadyExists) {
-        const title = line;
+        const title = resolvedTitle;
         const startIndex = txtContent.indexOf(lineFull, currentPos) + lineFull.length;
         
         if (sectionMatches.length > 0) {
@@ -240,10 +459,18 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
   
   for (let i = 0; i < sectionMatches.length; i++) {
     const { title, startIndex, endIndex } = sectionMatches[i];
-    const content = txtContent.substring(startIndex, endIndex).trim();
+    let rawContent = txtContent.substring(startIndex, endIndex).trim();
+    if (ctaFin) {
+      rawContent = rawContent.replace(ctaFin, '').trim();
+    }
+    rawContent = stripCtaFromContent(rawContent);
+    const extractedScore = extractSectionScoreFromContent(rawContent);
+    const content = cleanSectionContent(rawContent);
     
     const normalizedTitle = normalizeTitle(title);
-    const category = SECTION_CATEGORIES[normalizedTitle] || 'analysis';
+    const category =
+      SECTION_CATEGORIES[normalizedTitle] ||
+      (normalizedTitle.includes('supplement') ? 'supplements' : 'analysis');
     
     const sectionId = normalizedTitle
       .replace(/[^a-z0-9\s]/g, '')
@@ -255,7 +482,7 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     
     // Score: uniquement si explicitement formaté "Score : NN/100".
     // Pour éviter l'incohérence perçue: pas de score affiché sur Executive Summary / protocoles / supplements.
-    const extracted = extractSectionScoreFromContent(content);
+    const extracted = extractedScore ?? extractSectionScoreFromContent(content);
     const score = category === 'analysis' ? (extracted ?? 0) : 0;
     const finalScore = category === 'executive' ? 0 : score;
     
@@ -286,8 +513,8 @@ export function formatTxtToDashboard(txtContent: string): AuditDashboardFormat {
     global,
     sections,
     resumeExecutif,
-    ctaDebut: extractCTA(txtContent, 'debut'),
-    ctaFin: extractCTA(txtContent, 'fin'),
+    ctaDebut,
+    ctaFin,
     metadata: {
       totalSections: sections.length,
       totalCharacters: txtContent.length

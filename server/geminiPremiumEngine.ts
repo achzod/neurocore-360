@@ -14,6 +14,7 @@ import { formatPhotoAnalysisForReport } from './photoAnalysisAI';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText } from "./supplementEngine";
 import { searchArticles } from "./knowledge/storage";
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines, stripInlineHtml } from "./textNormalization";
 
 // =============================================================================
 // PREMIUM CONTENT VALIDATION - GARDE-FOUS
@@ -122,8 +123,13 @@ async function getKnowledgeContextForSection(section: string): Promise<string> {
 }
 
 // Clean AI markers and formatting issues from generated content
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod)\\b",
+  "gi"
+);
+
 function cleanPremiumContent(content: string): string {
-  return content
+  let cleaned = stripInlineHtml(content)
     // Remove meta phrases
     .replace(/^(En tant qu['']expert[^.]*\.?\s*)/gi, '')
     .replace(/^(Cette analyse (montre|revele|demontre)[^.]*\.?\s*)/gi, '')
@@ -131,6 +137,13 @@ function cleanPremiumContent(content: string): string {
     .replace(/^(Voici (mon analyse|l['']analyse|une analyse)[^.]*\.?\s*)/gi, '')
     .replace(/^(Analyse de la section[^.]*\.?\s*)/gi, '')
     .replace(/^(Permettez-moi|Laisse-moi|Laissez-moi)[^.]*\.?\s*/gi, '')
+    // Remove sources lines/names
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+    .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(SOURCE_NAME_REGEX, '')
+    .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|prochaine etape|tu as les cl(?:e|\u00e9)s).*$/gmi, "")
+    .replace(/\bclients\b/gi, 'profils')
+    .replace(/\bclient\b/gi, 'profil')
     // Remove em dashes and special characters
     .replace(/—/g, ':')
     .replace(/–/g, '-')
@@ -155,6 +168,11 @@ function cleanPremiumContent(content: string): string {
     .replace(/-{4,}/g, '')
     .replace(/\*{4,}/g, '')
     .trim();
+  if (hasEnglishMarkers(cleaned, 6)) {
+    cleaned = stripEnglishLines(cleaned);
+  }
+  cleaned = normalizeSingleVoice(cleaned);
+  return cleaned;
 }
 
 // 
@@ -346,9 +364,23 @@ export function getSectionsForTier(tier: AuditTier): SectionName[] {
   }
 }
 
-const PROMPT_SECTION = `Tu es Achzod, coach sportif d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
+function getFirstNameForReport(clientData: ClientData): string {
+  const direct =
+    (clientData as any)?.prenom ??
+    (clientData as any)?.firstName ??
+    (clientData as any)?.firstname ??
+    (clientData as any)?.name;
+  if (typeof direct === "string" && direct.trim()) return direct.trim().split(/\s+/)[0];
 
-Tu rediges un AUDIT 360 premium (ton direct, incarné, humain) : le client doit sentir que TU as passe des heures sur son dossier.
+  const email = (clientData as any)?.email;
+  if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
+
+  return "toi";
+}
+
+const PROMPT_SECTION = `Tu es Achzod, coach sportif expert avec 11 certifications internationales, specialiste en biomecanique, nutrition, hormones, preparation physique et biohacking.
+
+Tu rediges un audit APEXLABS by Achzod (Anabolic Bioscan ou Ultimate Scan) avec un ton direct, incarne, humain : la personne doit sentir que TU as passe des heures sur son dossier.
 
 ANTI-IA : TON TEXTE DOIT ETRE 100% INDETECTABLE COMME ECRIT PAR UNE IA
 INTERDITS ABSOLUS (penalite SEVERE si non respecte) :
@@ -360,6 +392,10 @@ INTERDITS ABSOLUS (penalite SEVERE si non respecte) :
 - Phrases de transition inutiles comme "Passons maintenant a..."
 - Ton robotique ou structure trop previsible
 - Exces de politesse ou de precautions ("je te suggererais peut-etre de considerer...")
+- Ne dis jamais "client", "nous", "notre" ou "on"
+- Ne parle pas d'offres, de coaching ou de codes promo (le CTA est ajoute apres)
+- Ne cite jamais de sources, d'auteurs, d'etudes ni de publications
+- AUCUNE liste a puces dans la sortie finale : transforme en narration fluide
 
 CE QUI REND TON TEXTE HUMAIN :
 - Commence DIRECTEMENT par l'analyse, pas par une intro
@@ -374,7 +410,8 @@ PHILOSOPHIE : STORYTELLING CLINIQUE (humain + scientifique)
 - Style vivant : alternance phrases courtes/longues, pauses, aside, images concretes. Jamais scolaire.
 - Analyse chirurgicale mais accessible : tu expliques les mecanismes (hormones, enzymes, neuro, bio-meca) SANS jargon gratuit.
 - Connecte TOUT : sommeil ↔ stress ↔ appetit ↔ entrainement ↔ digestion ↔ energie ↔ posture. Cause -> mecanisme -> consequence -> prescription.
-- Zero blabla generique : chaque phrase doit etre specifique au client OU explicitement marque comme hypothese.
+- Zero blabla generique : chaque phrase doit etre specifique a la personne OU explicitement marque comme hypothese.
+- Interdit d'utiliser les mots "client" ou "utilisateur" dans ta reponse : parle a "tu".
 
 Section a rediger : {section}
 
@@ -417,14 +454,14 @@ LONGUEUR DE SECTION (OBLIGATOIRE POUR RAPPORT PREMIUM)
 
 KNOWLEDGE BASE OBLIGATOIRE (100% BASE SCIENTIFIQUE)
 - Tu DOIS te baser a 100% sur les donnees scientifiques fournies dans la knowledge base
-- Cite les sources : Huberman, Attia, Examine, Applied Metabolics, ACHZOD, newsletters
-- Donne des PROTOCOLES PRECIS avec dosages, timing, duree (comme dans la bibli)
+- INTERDICTION de citer des sources, auteurs, publications ou noms propres
+- Integre les mecanismes et protocoles PRECIS (dosages, timing, duree) comme dans la bibli
 - INTERDICTION de donner des conseils generiques sans base scientifique
 - Pour chaque recommandation, explique le POURQUOI biochimique/physiologique
 
 {section_specific_instructions}
 
-Donnees du client :
+Donnees du profil :
 {data}
 `;
 
@@ -855,7 +892,7 @@ REGLES D'OR :
 
 PHASE 2 : REPARATION (Jour 8 a 14)
 
-On continue l'elimination + on ajoute :
+Je continue l'elimination + j'ajoute :
 + Glutamine : 5g matin a jeun
 + Probiotiques : [souche recommandee]
 + Bouillon d'os : 1 tasse/jour (collagene pour la paroi)
@@ -872,7 +909,7 @@ RESTAURANT / REPAS EXTERIEURS (regles) :
 - Demander : cuisson a l'huile d'olive
 - Boire : eau plate
 
-Ce protocole est STRICT mais TEMPORAIRE (14 jours). Apres, on assouplit.
+Ce protocole est STRICT mais TEMPORAIRE (14 jours). Apres, j'assouplis.
 `,
 
   "Protocole Bureau Anti-Sedentarite": `
@@ -1260,53 +1297,32 @@ x Fat burners (inutiles et dangereux)
   "Synthese et Prochaines Etapes": `
 INSTRUCTIONS POUR "SYNTHESE ET PROCHAINES ETAPES" :
 
-ATTENTION : Cette section est CRITIQUE. C'est la derniere impression. Elle doit etre PERCUTANTE, DIRECTE, et ACTIONNABLE.
+ATTENTION : Cette section est CRITIQUE. C'est la derniere impression. Elle doit etre PERCUTANTE, DIRECTE, et ACTIONNABLE, sans aucun format "liste" artificiel.
 
 INTERDITS ABSOLUS :
 - "Bonjour [Prenom]" ou formules de salutation (tu es DEJA en conversation)
 - "J'espere que..." ou formules polies generiques
 - "N'hesite pas a..." (trop mou)
-- Listes a puces generiques sans personnalisation
+- Listes a puces, numerotation, ou symboles de type "+" / "x" / "-" 
 - Resumer ce qui a deja ete dit (inutile)
 - Ton passif ou condescendant
+- Toute mention d'offre, coaching, promo, ou prochaine vente (le CTA arrive apres)
 
 TON OBLIGATOIRE :
 Tu es Achzod qui conclut un audit de 2h avec ce client. Tu le connais maintenant. Tu lui parles directement, sans filtre, avec respect mais sans politesse excessive. Tu le pousses a agir.
 
 FORMAT OBLIGATOIRE :
 
-SYNTHESE FINALE
+Ecris 6 a 8 paragraphes courts, avec des transitions naturelles.
 
-[Prenom], on a passe 2 heures ensemble sur ton profil. Voici ce que je retiens :
-
-TES ATOUTS (ce sur quoi on va capitaliser) :
-+ [Atout 1 - specifique a LUI]
-+ [Atout 2 - specifique a LUI]
-+ [Atout 3 - specifique a LUI]
-
-CE QUI TE PLOMBE (la verite) :
-x [Blocage 1 - sans filtre]
-x [Blocage 2 - sans filtre]
-x [Blocage 3 - sans filtre]
-
-OU TU EN ES vs OU TU POURRAIS ETRE :
-Ton potentiel actuel : [X]/10 - [explication courte]
-Ton potentiel dans 90 jours : [Y]/10 - [ce qui aura change]
-
-TES 3 ACTIONS NON-NEGOCIABLES (a faire cette semaine) :
-1. [Action precise et concrete - pas vague]
-2. [Action precise et concrete - pas vague]
-3. [Action precise et concrete - pas vague]
-
-CE QUI SE PASSE SI TU NE FAIS RIEN :
-Dans 6 mois : [consequence realiste et specifique]
-Dans 1 an : [consequence realiste et specifique]
-
-CE QUI SE PASSE SI TU APPLIQUES :
-A 30 jours : [resultat mesurable]
-A 90 jours : [resultat mesurable]
-
-[Phrase finale directe et personnelle - pas de formule cliche comme "je crois en toi" mais quelque chose de specifique a sa situation]
+Structure narrative suggeree (sans titres visibles) :
+1) Une ouverture franche et personnelle (1 paragraphe).
+2) Trois atouts concrets integres dans un seul paragraphe (pas de liste).
+3) Trois blocages clairs integres dans un seul paragraphe (pas de liste).
+4) "Ou tu en es vs ou tu pourrais etre" en 2 paragraphes courts, chiffres simples.
+5) Les 3 actions non-negociables de cette semaine, integrees dans un paragraphe (ex: "d'abord..., ensuite..., enfin...").
+6) Deux paragraphes contrastes : si tu ne fais rien / si tu appliques.
+7) Une phrase finale directe, personnelle, non-clichee.
 
 `
 };
@@ -1360,7 +1376,7 @@ export function getSectionInstructionsForTier(section: SectionName, tier: AuditT
 MODE DISCOVERY SCAN - EXECUTIVE SUMMARY (5-7 PAGES TOTAL)
 LONGUEUR : 3500-4500 caracteres max (90-120 lignes). Court mais PERCUTANT.
 
-CONTEXTE : C'est son PREMIER contact avec NEUROCORE. Tu dois le scotcher en 60 secondes.
+CONTEXTE : C'est son PREMIER contact avec APEXLABS. Tu dois le scotcher en 60 secondes.
 
 DONNÉES DISPONIBLES (exploite-les au maximum) :
 - Profil (age, sexe, poids, taille, objectif)
@@ -1491,10 +1507,10 @@ OBJECTIF : Clore le rapport avec impact + upsell naturel vers Anabolic Bioscan.
 STRUCTURE EN 4 BLOCS :
 
 1. TON BILAN EN 60 SECONDES (1000 chars) :
-Resume percutant de ce qu'on a decouvert :
+Resume percutant de ce que j'ai decouvert :
 - Ton score global : X/100 (base sur energie, metabolisme, lifestyle)
 - Les 3 forces qui jouent en ta faveur
-- Les 3 blocages qu'on a identifies
+- Les 3 blocages que j'ai identifies
 Style : comme si tu resumais un dossier medical a un collegue.
 
 2. TON PLAN D'ACTION 14 JOURS (1500 chars) :
@@ -1522,7 +1538,7 @@ ANABOLIC BIOSCAN (niveau intermediaire) :
 - Plan nutrition et entrainement adapte a ton profil hormonal
 - Roadmap 30-60-90 jours avec checkpoints
 
-ULTIMATE SCAN - PRO PANEL 360 (niveau expert) :
+ULTIMATE SCAN (niveau expert) :
 Tout l'Anabolic Bioscan + :
 - Analyse photo posturale et composition corporelle
 - Analyse biomecanique complete (psoas, diaphragme, sangle profonde)
@@ -1581,7 +1597,7 @@ async function callGemini(prompt: string): Promise<string> {
 // =============================================================================
 
 async function generateValidatedPremiumSection(
-  section: string,
+  section: SectionName,
   tier: AuditTier,
   fullDataStr: string,
   clientName: string
@@ -1599,7 +1615,7 @@ async function generateValidatedPremiumSection(
 
   const buildPrompt = (attempt: number) => {
     const retryWarning = attempt > 1
-      ? `\n\nATTENTION CRITIQUE: Ta reponse precedente etait BEAUCOUP TROP COURTE. Tu DOIS ecrire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres). Developpe CHAQUE mecanisme en detail. Donne des exemples concrets. Explique les cascades physiologiques. C'est un rapport PREMIUM que le client a PAYE.\n`
+      ? `\n\nATTENTION CRITIQUE: Ta reponse precedente etait BEAUCOUP TROP COURTE. Tu DOIS ecrire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres). Developpe CHAQUE mecanisme en detail. Donne des exemples concrets. Explique les cascades physiologiques. C'est un rapport PREMIUM exigeant.\n`
       : '';
 
     const knowledgeInsert = hasKnowledge
@@ -1608,11 +1624,11 @@ ${knowledgeContext}
 
 INSTRUCTION CRITIQUE ABSOLUE:
 1. Tu DOIS te baser a 100% sur ces donnees scientifiques pour ton analyse
-2. Cite les sources explicitement : "Selon Huberman...", "D'apres les etudes citees par Attia...", "La recherche d'Examine montre..."
+2. INTERDICTION de citer des sources, auteurs, publications ou noms propres
 3. Reprends les PROTOCOLES PRECIS mentionnes dans les articles (dosages, timing, duree)
 4. Explique les MECANISMES BIOLOGIQUES (enzymes, hormones, voies metaboliques) exactement comme dans les sources
 5. Si un protocole correctif est mentionne (ex: pronation pour espace sous-acromial, DIM pour dominance estrogene), tu DOIS l'inclure
-6. ZERO conseil generique - tout doit etre source et precis
+6. ZERO conseil generique - tout doit etre precis et mecanistique
 7. Pour les recommandations d'entrainement : inclus les corrections biomecaniques si pertinentes (rotation externe, position de la scapula, etc.)
 \n`
       : '';
@@ -1625,14 +1641,14 @@ INSTRUCTION CRITIQUE ABSOLUE:
 ${knowledgeInsert}
 ${retryWarning}
 
-RAPPEL LONGUEUR OBLIGATOIRE (RAPPORT PREMIUM PAYANT):
+RAPPEL LONGUEUR OBLIGATOIRE (RAPPORT PREMIUM):
 - Cette section DOIT faire MINIMUM ${validation.minLines} lignes (~${validation.minChars} caracteres) = 20-25 LIGNES SUBSTANTIELLES minimum
 - Developpe en profondeur, pas de listes telegraphiques
 - Explique les MECANISMES BIOLOGIQUES derriere chaque point (enzymes, hormones, cascades)
 - Donne des EXEMPLES CONCRETS personnalises pour ${clientName}
 - Pour les protocoles: minute par minute, variantes, erreurs a eviter, DOSAGES PRECIS
 - BASE TOI A 100% SUR LA KNOWLEDGE BASE fournie ci-dessus - ZERO conseil generique
-- Cite les sources (Huberman, Attia, Examine, ACHZOD, etc.) naturellement dans le texte
+- INTERDICTION de citer des sources ou noms propres
 - Inclus les PROTOCOLES CORRECTIFS specifiques (biomeca, hormones, nutrition) quand pertinents`;
   };
 
@@ -1692,7 +1708,7 @@ export async function generateAuditTxt(
 ): Promise<string | null> {
   const startTime = Date.now();
   
-  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -1727,7 +1743,7 @@ export async function generateAuditTxt(
   
   const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
   auditParts.push(ctaDebut);
-  auditParts.push(`\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`);
+  auditParts.push(`\n AUDIT COMPLET APEXLABS - ${fullName.toUpperCase()} \n`);
   auditParts.push(`Genere le ${new Date().toLocaleString('fr-FR')}\n`);
 
   const cacheData: CacheData = {
@@ -1763,7 +1779,7 @@ export async function generateAuditTxt(
       const generated = generateSupplementsSectionText({
         responses: clientData as any,
         globalScore: typeof scores?.global === "number" ? scores.global : undefined,
-        firstName: fullName.split(' ')[0] || 'Client',
+        firstName: fullName.split(' ')[0] || 'Profil',
       });
 
       cacheData.sections[section] = generated;
@@ -1831,17 +1847,7 @@ export async function generateAndConvertAudit(
 ): Promise<AuditResult> {
   const startTime = Date.now();
   
-  const firstName = (() => {
-    const direct =
-      (clientData as any)?.prenom ??
-      (clientData as any)?.firstName ??
-      (clientData as any)?.firstname ??
-      (clientData as any)?.name;
-    if (typeof direct === "string" && direct.trim()) return direct.trim().split(/\s+/)[0];
-    const email = (clientData as any)?.email;
-    if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
-    return "Client";
-  })();
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const clientName = `${firstName} ${lastName}`.trim();
 

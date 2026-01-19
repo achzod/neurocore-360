@@ -5,7 +5,8 @@ import { ultrahuman_ARTICLES } from "./ultrahumanArticles";
 import { ACHZOD_ARTICLES as MUSCLEPHD_ARTICLES } from "./musclephdArticles";
 import { ACHZODArticles as YAMAMOTO_ARTICLES } from "./yamamotoArticles";
 
-export interface BlogArticle {  id: string;
+export interface BlogArticle {
+  id: string;
   slug: string;
   title: string;
   excerpt: string;
@@ -13,9 +14,11 @@ export interface BlogArticle {  id: string;
   category: string;
   author: string;
   date: string;
-  readTime: string;
-  image: string;
+  readTime?: string;
+  image?: string;
   featured?: boolean;
+  priority?: number;
+  imageUrl?: string;
 }
 
 export const BLOG_CATEGORIES = [
@@ -272,7 +275,7 @@ Votre système nerveux vous parlera si vous prenez le temps de l'écouter.
 
 ---
 
-**Vous voulez aller plus loin ?** Découvrez votre niveau de stress et de récupération avec notre [Burnout Engine](/offers/burnout-detection) ou réservez un [coaching personnalisé](https://www.achzodcoaching.com) pour optimiser votre gestion du stress et obtenir un plan d'action sur mesure basé sur vos données de HRV.
+**Vous voulez aller plus loin ?** Découvre ton niveau de stress et de récupération avec le [Discovery Scan](/offers/discovery-scan) ou réserve un [coaching personnalisé](https://www.achzodcoaching.com) pour optimiser ta gestion du stress et obtenir un plan d'action sur mesure basé sur tes données de HRV.
 
 ---
 
@@ -1339,7 +1342,7 @@ La bonne nouvelle ? Ces changements ne prennent pas des mois. Une semaine de rou
 
 ---
 
-**Votre système nerveux est-il en équilibre ?** Notre [Burnout Engine](/offers/burnout-detection) détecte les déséquilibres avant qu'ils ne deviennent problématiques. Pour un accompagnement complet, découvrez mon [coaching personnalisé](https://www.achzodcoaching.com).
+**Ton système nerveux est-il en équilibre ?** Le [Discovery Scan](/offers/discovery-scan) détecte les déséquilibres avant qu'ils ne deviennent problématiques. Pour un accompagnement complet, découvre mon [coaching personnalisé](https://www.achzodcoaching.com).
 
 ---
 
@@ -14361,7 +14364,7 @@ La discipline, ce n'est pas s'entraîner coûte que coûte. C'est être honnête
 
 ---
 
-**Distinguez vraie fatigue et excuses.** L'[Burnout Engine](/offers/burnout-detection) analyse objectivement votre état physiologique (HRV, fréquence cardiaque au repos, patterns de sommeil) pour vous aider à prendre les bonnes décisions. Pour une gestion optimale de votre récupération basée sur des données, réservez un [coaching personnalisé](https://www.achzodcoaching.com).
+**Distingue vraie fatigue et excuses.** Le [Discovery Scan](/offers/discovery-scan) analyse ton etat physiologique (HRV, frequence cardiaque au repos, patterns de sommeil) pour t'aider a prendre les bonnes decisions. Pour une gestion optimale de ta recuperation basee sur des donnees, reserve un [coaching personnalisé](https://www.achzodcoaching.com).
 
 ---
 

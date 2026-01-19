@@ -1,8 +1,8 @@
 /**
  * E2E Test Script for Neurocore 360 Report Generation
  * Tests:
- * 1. Pro Panel report with Apple wearable data
- * 2. Pro Panel report with Ultrahuman wearable data
+ * 1. Ultimate Scan report with Apple wearable data
+ * 2. Ultimate Scan report with Ultrahuman wearable data
  * 3. Anabolic report without wearable data
  */
 
@@ -340,7 +340,7 @@ async function verifyAuditEmail(auditId: string) {
 
 async function runTest1_AppleWearable() {
   console.log('\n' + '='.repeat(60));
-  console.log('TEST 1: Pro Panel with Apple Wearable Data');
+  console.log('TEST 1: Ultimate Scan with Apple Wearable Data');
   console.log('='.repeat(60));
 
   // Load photos
@@ -382,7 +382,7 @@ async function runTest1_AppleWearable() {
 
 async function runTest2_UltrahumanWearable() {
   console.log('\n' + '='.repeat(60));
-  console.log('TEST 2: Pro Panel with Ultrahuman Wearable Data');
+  console.log('TEST 2: Ultimate Scan with Ultrahuman Wearable Data');
   console.log('='.repeat(60));
 
   // Load photos
@@ -507,10 +507,10 @@ async function main() {
   // Run Test 1: Apple Wearable
   try {
     const test1 = await runTest1_AppleWearable();
-    results.push({ test: 'Pro Panel + Apple', ...test1 });
+    results.push({ test: 'Ultimate Scan + Apple', ...test1 });
   } catch (error) {
     console.error('Test 1 failed with error:', error);
-    results.push({ test: 'Pro Panel + Apple', success: false, auditId: '' });
+    results.push({ test: 'Ultimate Scan + Apple', success: false, auditId: '' });
   }
 
   // Wait between tests
@@ -519,10 +519,10 @@ async function main() {
   // Run Test 2: Ultrahuman Wearable
   try {
     const test2 = await runTest2_UltrahumanWearable();
-    results.push({ test: 'Pro Panel + Ultrahuman', ...test2 });
+    results.push({ test: 'Ultimate Scan + Ultrahuman', ...test2 });
   } catch (error) {
     console.error('Test 2 failed with error:', error);
-    results.push({ test: 'Pro Panel + Ultrahuman', success: false, auditId: '' });
+    results.push({ test: 'Ultimate Scan + Ultrahuman', success: false, auditId: '' });
   }
 
   // Wait between tests

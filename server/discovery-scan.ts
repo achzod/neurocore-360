@@ -11,7 +11,12 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+import { OPENAI_CONFIG } from './openaiConfig';
 import { searchArticles, searchFullText } from './knowledge/storage';
+import { ALLOWED_SOURCES } from './knowledge/search';
+import { normalizeResponses } from './responseNormalizer';
+import { normalizeSingleVoice, hasEnglishMarkers, stripEnglishLines, stripInlineHtml } from './textNormalization';
 
 // ============================================
 // TYPES
@@ -131,6 +136,188 @@ export interface BlockageAnalysis {
   consequences: string[]; // Métabo, hormonal, psycho, etc.
   sources: string[]; // Huberman, Attia, etc.
 }
+
+const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
+const MIN_DISCOVERY_SECTION_CHARS = 5200;
+const MIN_DISCOVERY_SECTION_LINES = 55;
+const MIN_DISCOVERY_SECTION_WORDS = 700;
+const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
+const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "90000");
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`[Discovery] ${label} timeout after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+const COACHING_OFFER_TIERS = [
+  {
+    label: "Starter",
+    href: "https://www.achzodcoaching.com/coaching-starter",
+    offers: [{ duration: "8 semaines", price: 199 }],
+  },
+  {
+    label: "Essential",
+    href: "https://www.achzodcoaching.com/coaching-essential",
+    offers: [
+      { duration: "4 semaines", price: 249 },
+      { duration: "8 semaines", price: 399 },
+      { duration: "12 semaines", price: 549 },
+    ],
+  },
+  {
+    label: "Elite",
+    href: "https://www.achzodcoaching.com/coaching-elite",
+    offers: [
+      { duration: "4 semaines", price: 399 },
+      { duration: "8 semaines", price: 649 },
+      { duration: "12 semaines", price: 899 },
+    ],
+  },
+  {
+    label: "Private Lab",
+    href: "https://www.achzodcoaching.com/coaching-achzod-private-lab",
+    offers: [
+      { duration: "4 semaines", price: 499 },
+      { duration: "8 semaines", price: 799 },
+      { duration: "12 semaines", price: 1199 },
+    ],
+  },
+];
+const formatEuro = (value: number): string => {
+  const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
+  return `${formatted}€`;
+};
+const renderCoachingOffersTable = (discountPercent: number) => {
+  const hasDiscount = discountPercent > 0;
+  const rows = COACHING_OFFER_TIERS.flatMap((tier) =>
+    tier.offers.map((offer) => {
+      const after = hasDiscount ? Math.max(0, Math.round(offer.price * (1 - discountPercent / 100))) : offer.price;
+      return `
+        <tr style="border-top: 1px solid var(--color-border);">
+          <td class="py-3 pr-4">
+            <div class="font-medium" style="color: var(--color-text);">${tier.label}</div>
+          </td>
+          <td class="text-center py-3 px-2">${offer.duration}</td>
+          <td class="text-center py-3 px-2">
+            <span style="color: var(--color-text-muted);${hasDiscount ? " text-decoration: line-through;" : ""}">${formatEuro(offer.price)}</span>
+          </td>
+          <td class="text-center py-3 px-2">
+            <div class="font-bold" style="color: var(--color-primary);">${formatEuro(after)}</div>
+          </td>
+        </tr>
+      `;
+    })
+  ).join("");
+
+  return `
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr style="color: var(--color-text-muted);">
+          <th class="text-left py-2 pr-4">Formule</th>
+          <th class="text-center py-2 px-2">Duree</th>
+          <th class="text-center py-2 px-2">Prix standard</th>
+          <th class="text-center py-2 px-2">Prix apres reduction</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  </div>
+  `;
+};
+const SOURCE_MARKERS = [
+  "sources",
+  "source",
+  "references",
+  "reference",
+  "références",
+  "référence",
+  "huberman",
+  "andrew huberman",
+  "huberman lab",
+  "peter attia",
+  "attia",
+  "applied metabolics",
+  "stronger by science",
+  "sbs",
+  "examine",
+  "examine.com",
+  "renaissance periodization",
+  "mpmd",
+  "more plates",
+  "moreplates",
+  "newsletter",
+  "achzod",
+  "matthew walker",
+  "sapolsky",
+  "layne norton",
+  "ben bikman",
+  "rhonda patrick",
+  "robert lustig",
+  "andy galpin",
+  "brad schoenfeld",
+  "mike israetel",
+  "justin sonnenburg",
+  "chris kresser",
+];
+
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
+  "gi"
+);
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
+function normalizeParagraphs(text: string): string {
+  if (!text) return text;
+  if (text.includes("\n\n")) return text;
+  const normalized = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+  const sentences = normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+  if (!sentences || sentences.length <= 1) return text;
+  const paragraphs: string[] = [];
+  let buffer: string[] = [];
+  sentences.forEach((sentence) => {
+    const trimmed = sentence.trim();
+    if (!trimmed) return;
+    buffer.push(trimmed);
+    if (buffer.length >= 3) {
+      paragraphs.push(buffer.join(" "));
+      buffer = [];
+    }
+  });
+  if (buffer.length) paragraphs.push(buffer.join(" "));
+  return paragraphs.join("\n\n");
+}
+
+function formatFirstName(raw: string): string {
+  const cleaned = raw.trim().replace(/[^a-zA-ZÀ-ÿ' -]/g, "");
+  if (!cleaned) return "toi";
+  return cleaned
+    .split(/\s+/)
+    .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(" ");
+}
+
+function getDiscoveryFirstName(responses: DiscoveryResponses): string {
+  const direct = responses.prenom;
+  if (direct && String(direct).trim()) return formatFirstName(String(direct));
+  const email = responses.email;
+  if (email && typeof email === "string" && email.includes("@")) {
+    return formatFirstName(email.split("@")[0]);
+  }
+  return "toi";
+}
+
+const openai = OPENAI_CONFIG.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY })
+  : null;
 
 // ============================================
 // SCORING FUNCTIONS
@@ -359,6 +546,12 @@ function scoreMindset(responses: DiscoveryResponses): number {
   }
 
   return Math.max(0, score);
+}
+
+function clampDiscoveryScore(value: number): number {
+  if (!Number.isFinite(value)) return 50;
+  const rounded = Math.round(value);
+  return Math.min(95, Math.max(20, rounded));
 }
 
 // ============================================
@@ -620,9 +813,13 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 
   try {
     // Search in knowledge base
-    const articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, [
-      'huberman', 'peter_attia', 'examine', 'marek_health', 'chris_masterjohn', 'rp'
-    ]);
+    let articles = await searchArticles(uniqueKeywords.slice(0, 5), 5, ALLOWED_SOURCES as unknown as string[]);
+
+    if (articles.length === 0) {
+      const fallbackQuery = uniqueKeywords.slice(0, 6).join(" ");
+      const ft = await searchFullText(fallbackQuery, 6);
+      articles = ft.filter(a => (ALLOWED_SOURCES as unknown as string[]).includes(a.source as string));
+    }
 
     if (articles.length === 0) {
       return '';
@@ -630,10 +827,10 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 
     // Build context from relevant articles
     const context = articles.map(a =>
-      `[${a.source}] ${a.title}\nKey points: ${a.content.substring(0, 500)}...`
+      `TITRE: ${a.title}\nPOINTS CLES: ${a.content.substring(0, 500)}...`
     ).join('\n\n---\n\n');
 
-    return context;
+    return stripEnglishLines(context);
   } catch (error) {
     console.error('[Discovery] Knowledge search error:', error);
     return '';
@@ -645,7 +842,7 @@ async function getKnowledgeContextForBlocages(blocages: BlockageAnalysis[]): Pro
 // ============================================
 
 // System prompt pour la synthèse globale
-const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach d'elite avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
+const DISCOVERY_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 11 certifications internationales, expert en biomecanique, nutrition, hormones, preparation physique et biohacking.
 
 Tu rediges un audit expert 100% personnalise, profondement humain, indetectable comme IA, avec un ton direct, precis, incarne, analytique et ultra vivant.
 
@@ -659,7 +856,7 @@ REGLES ABSOLUES STYLE:
 - Images concretes, pas de jargon inutile
 
 REGLES ABSOLUES CONTENU:
-- NE JAMAIS INVENTER : analyse uniquement ce que le client a vraiment dit
+- NE JAMAIS INVENTER : analyse uniquement ce que la personne a vraiment dit
 - Connecte TOUT : sommeil - cortisol - entrainement - plateaux - digestion - energie - stress - hormones
 - Explique SCIENTIFIQUEMENT ET EN PROFONDEUR :
   * Mecanismes physiologiques precis (hormones, enzymes, neurotransmetteurs, cascades metaboliques)
@@ -676,18 +873,15 @@ REGLES ABSOLUES FORMAT:
 - JAMAIS d'emojis
 - Paragraphes separes par des lignes vides
 - Commence DIRECTEMENT par l'analyse
-
-SOURCES A INTEGRER NATURELLEMENT:
-- Newsletters ACHZOD, Applied Metabolics
-- Andrew Huberman, Peter Attia, Matthew Walker
-- Robert Sapolsky, Ben Bikman, Stronger By Science
-- Renaissance Periodization, Examine, Marek Health`;
+- Ne cite JAMAIS de sources ni d'auteurs (pas de "Sources:", pas de noms propres).
+- Ne dis jamais "client", "nous", "notre" ou "on". Tu parles uniquement en "tu" et "je".
+- Francais uniquement, aucun mot en anglais.`;
 
 // ============================================
 // SECTION-SPECIFIC AI GENERATION
 // ============================================
 
-const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach d'elite avec 11 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
+const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach expert avec 11 certifications internationales. Tu rediges une section d'audit expert, profondement humain, indetectable comme IA.
 
 INTERDITS ABSOLUS (penalite SEVERE si non respecte):
 - "Bonjour [Prenom]" ou toute formule de salutation
@@ -714,12 +908,15 @@ STYLE OBLIGATOIRE:
 - Analyse chirurgicale mais accessible
 
 FORMAT OBLIGATOIRE:
-- MINIMUM 40-50 lignes (1500+ caracteres)
+- MINIMUM 45-55 lignes (2000+ caracteres)
 - Texte brut fluide, PAS de markdown
 - JAMAIS de tiret long (—), JAMAIS d'emojis
 - NE JAMAIS repeter le titre de la section
 - Commence DIRECTEMENT par l'analyse
-- Paragraphes separes par lignes vides`;
+- Paragraphes separes par lignes vides
+- Ne cite JAMAIS de sources ni d'auteurs
+- Ne dis jamais "client", "nous", "notre" ou "on".
+- Francais uniquement, aucun mot en anglais.`;
 
 const SECTION_INSTRUCTIONS: Record<string, string> = {
   sommeil: `
@@ -734,7 +931,6 @@ INSTRUCTIONS SPECIFIQUES POUR "SOMMEIL":
 - ADENOSINE et pression de sommeil, CHRONOTYPE
 - Sommeil et TESTOSTERONE : chaque heure en moins = -10-15% de T
 - Sommeil et RECUPERATION : synthese proteique reduite de 18-25%
-- Cite Huberman (Sleep Toolkit), Walker (Why We Sleep), Attia
 - MINIMUM 45-50 lignes tres detaillees
 `,
 
@@ -756,7 +952,6 @@ INSTRUCTIONS SPECIFIQUES POUR "STRESS":
 - METHODES de gestion actuelles ou leur absence
 - NERF VAGUE et balance sympathique/parasympathique
 - Stress et INFLAMMATION : CRP, IL-6, TNF-alpha
-- Cite Sapolsky, Huberman, Applied Metabolics
 - MINIMUM 45-50 lignes
 `,
 
@@ -778,7 +973,6 @@ INSTRUCTIONS SPECIFIQUES POUR "ENERGIE":
   * Dysfonction = moins ATP + plus de ROS
 - THERMOGENESE : frilosite = metabolisme ralenti, possible hypothyroidie subclinique
 - Energie et THYROIDE : T3 libre, conversion T4-T3, rT3
-- Cite Bikman (Why We Get Sick), Attia, Applied Metabolics
 - MINIMUM 45-50 lignes
 `,
 
@@ -799,7 +993,6 @@ INSTRUCTIONS SPECIFIQUES POUR "DIGESTION":
 - PERMEABILITE INTESTINALE : zonuline, tight junctions, inflammation systemique
 - Digestion et ABSORPTION : manger parfait mais mal absorber
 - Fatigue post-repas : reponse insulinique excessive, leaky gut
-- Cite Masterjohn pour micronutriments
 - MINIMUM 40-45 lignes
 `,
 
@@ -824,7 +1017,6 @@ INSTRUCTIONS SPECIFIQUES POUR "TRAINING":
 - PERIODISATION : lineaire, ondulee, en blocs
 - DELOAD et supercompensation
 - Recuperation mauvaise : HRV basse, cortisol chronique, deficit calorique trop agressif
-- Cite SBS, Renaissance Periodization, Applied Metabolics
 - MINIMUM 45-50 lignes techniques
 `,
 
@@ -853,7 +1045,6 @@ INSTRUCTIONS SPECIFIQUES POUR "NUTRITION":
   * Impact sommeil (supprime REM)
   * Impact testosterone (-20-30%)
 - ALIMENTS TRANSFORMES : huiles vegetales, additifs, sucres caches
-- Cite Examine, Bikman, SBS, Applied Metabolics
 - MINIMUM 50-55 lignes avec chiffres
 `,
 
@@ -878,7 +1069,6 @@ INSTRUCTIONS SPECIFIQUES POUR "LIFESTYLE":
 - MOUVEMENT QUOTIDIEN : marche, escaliers, micro-mouvements
 - ENVIRONNEMENT TRAVAIL : stress, horaires, charge mentale
 - Lifestyle et RYTHME CIRCADIEN : alignement ou desalignement
-- Cite Huberman (lumiere, dopamine), Attia (NEAT, longevite)
 - MINIMUM 40-45 lignes
 `,
 
@@ -904,13 +1094,12 @@ INSTRUCTIONS SPECIFIQUES POUR "MINDSET":
   * Cortisol haut - anxiete - decisions impulsives
 - Valorise ses EFFORTS passes meme si resultats absents
 - Probleme souvent pas le mindset mais blocages physiologiques
-- Cite Huberman (dopamine), Sapolsky (stress et comportement)
 - MINIMUM 40-45 lignes
 `
 };
 
 // Function to generate AI content for a specific section
-// WITH VALIDATION: Minimum 20 lines, retry if too short, must use knowledge base
+// WITH VALIDATION: Minimum 24 lines, retry if too short
 async function generateSectionContentAI(
   domain: string,
   score: number,
@@ -918,53 +1107,65 @@ async function generateSectionContentAI(
   knowledgeContext: string
 ): Promise<string> {
   const anthropic = new Anthropic();
-  const prenom = responses.prenom || 'Client';
+  const prenom = getDiscoveryFirstName(responses);
   const objectif = responses.objectif || 'tes objectifs';
   const sexe = responses.sexe || 'homme';
   const age = responses.age || 30;
+  const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
+  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
+  const domainLabel = DOMAIN_CONFIG[domain]?.label || domain;
+
+  if (!knowledgeOk) {
+    console.warn(`[Discovery] Knowledge context manquant pour ${domain}. Generation en mode degrade.`);
+  }
 
   // Extract relevant responses for this domain
   const domainResponses = extractDomainResponses(domain, responses);
   const instructions = SECTION_INSTRUCTIONS[domain] || '';
 
   // GARDE-FOUS: Minimum 20 lines = ~1200 characters
-  const MIN_CONTENT_LENGTH = 1200;
-  const MIN_LINE_COUNT = 18;
-  const MAX_RETRIES = 3;
+  const MIN_CONTENT_LENGTH = MIN_DISCOVERY_SECTION_CHARS;
+  const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
+  const MAX_RETRIES = 5;
+  let bestCandidate = "";
+  let bestValidation = { charCount: 0, wordCount: 0, lineCount: 0, paragraphCount: 0 };
 
-  const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domain.toUpperCase()}
+  const buildPrompt = (attempt: number) => `SECTION A REDIGER: ${domainLabel.toUpperCase()}
 
-PROFIL CLIENT:
+PROFIL:
 Prenom: ${prenom}
 Sexe: ${sexe}
 Age: ${age} ans
 Objectif: ${objectif}
-Score ${domain}: ${score}/100
+Score ${domainLabel}: ${score}/100
 
 REPONSES QUESTIONNAIRE POUR CE DOMAINE:
 ${domainResponses}
 
-${knowledgeContext ? `DONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
-${knowledgeContext}
+${contextForPrompt ? `DONNEES SCIENTIFIQUES DE REFERENCE (OBLIGATOIRE A INTEGRER):
+${contextForPrompt}
 
-INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Cite les mecanismes, les protocoles, les chiffres mentionnes. Ne fais pas une analyse generique.
+INSTRUCTION: Tu DOIS integrer ces donnees scientifiques dans ton analyse. Decris les mecanismes, les protocoles, les chiffres mentionnes. Ne fais pas une analyse generique.
 ` : ''}
 
 ${instructions}
 
-MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 40-50 lignes pour la section ${domain.toUpperCase()}.
+MISSION CRITIQUE: Redige une analyse TRES COMPLETE de MINIMUM 55-70 lignes pour la section ${domainLabel.toUpperCase()}.
 ${attempt > 1 ? `
-ATTENTION: Ta reponse precedente etait TROP COURTE (moins de 20 lignes). Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 40-50 lignes de texte dense et technique.
+ATTENTION: Ta reponse precedente etait TROP COURTE. Tu DOIS ecrire BEAUCOUP PLUS LONG. Developpe chaque mecanisme en detail. Minimum 55-70 lignes de texte dense et technique.
 ` : ''}
 
 REGLES ABSOLUES:
-1. Commence DIRECTEMENT par l'analyse du client, jamais par un titre ou une intro generique
+1. Commence DIRECTEMENT par l'analyse du profil, jamais par un titre ou une intro generique
 2. Tutoie ${prenom} tout au long du texte (tu, ton, tes)
 3. Explique les MECANISMES biochimiques en detail (hormones, enzymes, recepteurs, cascades)
 4. Cite des CHIFFRES precis (pourcentages, durees, seuils, dosages)
 5. Connecte avec les autres systemes corporels (ex: cortisol affecte testosterone, sommeil affecte GH)
 6. Integre les donnees scientifiques de la knowledge base ci-dessus
 7. Ton direct, expert, sans complaisance, comme un coach qui dit la verite
+8. Ne cite jamais de sources ni d'auteurs (pas de "Sources:", pas de noms propres)
+9. Ne dis jamais "client", "nous", "notre" ou "on"
+10. Francais uniquement. Aucun mot ou phrase en anglais.
 
 FORMAT OBLIGATOIRE:
 - JAMAIS de tiret long ou tiret cadratin (utilise : ou . a la place)
@@ -972,16 +1173,57 @@ FORMAT OBLIGATOIRE:
 - JAMAIS d'emojis
 - JAMAIS de phrases meta comme "En tant qu'expert", "Je vais analyser", "Cette analyse montre", "Voici"
 - Prose fluide uniquement, paragraphes separes par lignes vides
+- Minimum ${MIN_DISCOVERY_SECTION_PARAGRAPHS} paragraphes, 3-5 phrases chacun
 - Ecris a la deuxieme personne du singulier, comme si TU parlais directement a ${prenom}`;
+
+  const isValidContent = (text: string) => {
+    const lines = text.split(/\n+/).filter(l => l.trim().length > 30);
+    const paragraphCount = text
+      .split(/\n\s*\n/)
+      .map(p => p.trim())
+      .filter(p => p.length > 80).length;
+    const lineCount = lines.length;
+    const charCount = text.length;
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const lower = text.toLowerCase();
+    const hasExplicitSources = /(?:^|\b)(sources?|references?|références?)(?:\b|:)/i.test(lower);
+    const hasSources = SOURCE_MARKERS.some((marker) => lower.includes(marker));
+    const hasClient = /\bclient\b/.test(lower);
+    const hasNous = /\bnous\b/.test(lower) || /\bnotre\b/.test(lower);
+    const hasEnglish = hasEnglishMarkers(text, 4);
+    const meetsLength =
+      charCount >= MIN_CONTENT_LENGTH &&
+      (lineCount >= MIN_LINE_COUNT || wordCount >= MIN_DISCOVERY_SECTION_WORDS);
+    const meetsParagraphs =
+      paragraphCount >= MIN_DISCOVERY_SECTION_PARAGRAPHS || charCount >= MIN_CONTENT_LENGTH + 800;
+    return {
+      lineCount,
+      charCount,
+      wordCount,
+      paragraphCount,
+      isValid:
+        meetsLength &&
+        meetsParagraphs &&
+        !hasSources &&
+        !hasExplicitSources &&
+        !hasClient &&
+        !hasNous &&
+        !hasEnglish,
+    };
+  };
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3500, // Increased for longer content
-        system: SECTION_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildPrompt(attempt) }]
-      });
+      const response = await withTimeout(
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 5000, // Longer content
+          system: SECTION_SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: buildPrompt(attempt) }]
+        }),
+        DISCOVERY_AI_TIMEOUT_MS,
+        `Claude section ${domain}`
+      );
 
       const textContent = response.content.find(c => c.type === 'text');
       let rawText = textContent?.text || '';
@@ -1001,32 +1243,105 @@ FORMAT OBLIGATOIRE:
         .replace(/^\s*\d+\.\s+/gm, '')
         .trim();
 
-      // Count meaningful lines
-      const lines = rawText.split(/\n+/).filter(l => l.trim().length > 30);
-      const lineCount = lines.length;
-      const charCount = rawText.length;
+      rawText = stripInlineHtml(rawText);
+      if (hasEnglishMarkers(rawText, 6)) {
+        rawText = stripEnglishLines(rawText);
+      }
+      rawText = normalizeSingleVoice(rawText);
+      rawText = normalizeParagraphs(rawText);
+      rawText = normalizeParagraphs(rawText);
 
-      console.log(`[Discovery] Section ${domain} attempt ${attempt}: ${charCount} chars, ${lineCount} lines`);
+      const validation = isValidContent(rawText);
+      console.log(
+        `[Discovery] Section ${domain} attempt ${attempt}: ${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs`
+      );
+
+      if (validation.charCount > bestValidation.charCount) {
+        bestCandidate = rawText;
+        bestValidation = validation;
+      }
 
       // VALIDATION: Check minimum length
-      if (charCount >= MIN_CONTENT_LENGTH && lineCount >= MIN_LINE_COUNT) {
-        console.log(`[Discovery] ✓ Section ${domain} VALIDATED (${charCount} chars, ${lineCount} lines)`);
+      if (validation.isValid) {
+        console.log(
+          `[Discovery] OK Section ${domain} VALIDATED (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines, ${validation.paragraphCount} paragraphs)`
+        );
         return cleanMarkdownToHTML(rawText);
       }
 
       // If last attempt, use what we have but log warning
       if (attempt === MAX_RETRIES) {
-        console.warn(`[Discovery] ⚠️ Section ${domain} still short after ${MAX_RETRIES} attempts (${charCount} chars, ${lineCount} lines). Using anyway.`);
-        return cleanMarkdownToHTML(rawText);
+        console.warn(
+          `[Discovery] Section ${domain} invalide apres ${MAX_RETRIES} tentatives (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+        );
+        break;
       }
 
-      console.log(`[Discovery] ✗ Section ${domain} TOO SHORT (${charCount} chars, ${lineCount} lines < ${MIN_LINE_COUNT}). Retrying...`);
+      console.log(
+        `[Discovery] ✗ Section ${domain} TOO SHORT (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines). Retrying...`
+      );
     } catch (error) {
       console.error(`[Discovery] AI section ${domain} error (attempt ${attempt}):`, error);
       if (attempt === MAX_RETRIES) {
-        return '';
+        break;
       }
     }
+  }
+
+  if (!openai) {
+    return '';
+  }
+
+  console.warn(`[Discovery] Fallback OpenAI pour section ${domain}`);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await withTimeout(
+        openai.chat.completions.create({
+          model: OPENAI_CONFIG.OPENAI_MODEL,
+          messages: [
+            { role: 'system', content: SECTION_SYSTEM_PROMPT },
+            { role: 'user', content: buildPrompt(attempt) }
+          ],
+          temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+          max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+        }),
+        DISCOVERY_AI_TIMEOUT_MS,
+        `OpenAI section ${domain}`
+      );
+      const rawText = response.choices[0]?.message?.content || '';
+      if (!rawText.trim()) {
+        continue;
+      }
+      let cleanedText = stripInlineHtml(rawText);
+      if (hasEnglishMarkers(cleanedText, 6)) {
+        cleanedText = stripEnglishLines(cleanedText);
+      }
+      cleanedText = normalizeSingleVoice(cleanedText);
+      cleanedText = normalizeParagraphs(cleanedText);
+      const validation = isValidContent(cleanedText);
+      if (validation.charCount > bestValidation.charCount) {
+        bestCandidate = cleanedText;
+        bestValidation = validation;
+      }
+      if (validation.isValid) {
+        console.log(
+          `[Discovery] OK OpenAI section ${domain} (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+        );
+        return cleanMarkdownToHTML(cleanedText);
+      }
+      console.warn(
+        `[Discovery] OpenAI section ${domain} too short (${validation.charCount} chars, ${validation.wordCount} words, ${validation.lineCount} lines)`
+      );
+    } catch (error) {
+      console.error(`[Discovery] OpenAI section ${domain} error:`, error);
+    }
+  }
+
+  if (bestCandidate) {
+    console.warn(
+      `[Discovery] Section ${domain} fallback to best candidate (${bestValidation.charCount} chars, ${bestValidation.wordCount} words)`
+    );
+    return cleanMarkdownToHTML(bestCandidate);
   }
 
   return '';
@@ -1108,23 +1423,34 @@ async function getKnowledgeContextForDomain(domain: string): Promise<string> {
 
   try {
     // Search with more keywords and get more articles
-    const articles = await searchArticles(keywords.slice(0, 5), 6);
+    const articles = await searchArticles(keywords.slice(0, 5), 6, ALLOWED_SOURCES as unknown as string[]);
 
     if (articles.length === 0) {
       // Try full-text search as fallback
-      const ftArticles = await searchFullText(domain, 4);
-      if (ftArticles.length > 0) {
-        return ftArticles.map(a =>
-          `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
+      const ftArticles = await searchFullText(domain, 6);
+      const filteredFt = ftArticles.filter(a => ALLOWED_SOURCES.includes(a.source as any));
+      if (filteredFt.length > 0) {
+        const context = filteredFt.map(a =>
+          `${a.title}:\n${a.content.substring(0, 800)}`
         ).join('\n\n---\n\n');
+        const cleaned = context
+          .replace(/^\[[^\]]+\]\s*/gm, '')
+          .replace(SOURCE_NAME_REGEX, '')
+          .trim();
+        return stripEnglishLines(cleaned);
       }
       return '';
     }
 
     // Return more content per article (800 chars instead of 400)
-    return articles.map(a =>
-      `[${a.source.toUpperCase()}] ${a.title}:\n${a.content.substring(0, 800)}`
+    const context = articles.map(a =>
+      `${a.title}:\n${a.content.substring(0, 800)}`
     ).join('\n\n---\n\n');
+    const cleaned = context
+      .replace(/^\[[^\]]+\]\s*/gm, '')
+      .replace(SOURCE_NAME_REGEX, '')
+      .trim();
+    return stripEnglishLines(cleaned);
   } catch (error) {
     console.error(`[Discovery] Knowledge search error for ${domain}:`, error);
     return '';
@@ -1216,7 +1542,7 @@ function extractDomainResponses(domain: string, responses: DiscoveryResponses): 
 }
 
 // Original system prompt for global synthesis (kept for backward compatibility)
-const DISCOVERY_GLOBAL_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des clients qui veulent comprendre POURQUOI leur corps dysfonctionne.
+const DISCOVERY_GLOBAL_PROMPT = `Tu es un expert en physiologie, endocrinologie et performance humaine de niveau doctoral. Tu rediges des rapports medicaux detailles pour des personnes qui veulent comprendre POURQUOI leur corps dysfonctionne.
 
 MISSION: Rediger une analyse clinique TRES LONGUE et TRES DETAILLEE (minimum 800 mots) des dysfonctionnements detectes. EXPLIQUER les mecanismes, PAS donner de solutions.
 
@@ -1240,21 +1566,50 @@ CONTENU OBLIGATOIRE A COUVRIR:
 - Impact cardiovasculaire et inflammation (CRP, cytokines)
 - Donnees chiffrees (pourcentages, durees, seuils)
 
-SOURCES A INTEGRER NATURELLEMENT:
-- Andrew Huberman (neurosciences, protocoles)
-- Peter Attia (longevite, metabolisme)
-- Matthew Walker (sommeil)
-- Robert Sapolsky (stress, cortisol)
-- Ben Bikman (insuline, metabolisme)
-- Robert Lustig (sucre, metabolisme)
-- Stronger by Science (entrainement)
-
 STYLE:
 - Medecin specialiste expliquant a un patient intelligent
 - Chaque phrase apporte une donnee concrete et chiffree
 - Tutoiement direct, sans condescendance
 - Ton grave mais pas alarmiste
-- References scientifiques integrees dans le texte`;
+- Interdit de citer des sources, auteurs ou publications`;
+
+function stripHtmlTags(text: string): string {
+  return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function buildSynthesisFallback(
+  responses: DiscoveryResponses,
+  scores: DiscoveryAnalysisResult['scoresByDomain'],
+  blocages: BlockageAnalysis[]
+): string {
+  const prenom = responses.prenom || 'toi';
+  const objectif = responses.objectif || 'tes objectifs';
+  const sorted = Object.entries(scores).sort((a, b) => a[1] - b[1]);
+  const [worst1, worst2] = sorted;
+  const worstLabel1 = DOMAIN_CONFIG[worst1?.[0]]?.label || worst1?.[0] || 'profil';
+  const worstLabel2 = DOMAIN_CONFIG[worst2?.[0]]?.label || worst2?.[0] || 'equilibre';
+  const blocageCount = blocages.length;
+
+  const para1 = `${prenom}, le coeur de ton profil se situe autour de ${worstLabel1} et ${worstLabel2}. Quand ces deux axes sont bas, le corps compense en mode survie : plus de cortisol, moins de recuperation, et un metabolisme qui se protege. Ce n'est pas un detail, c'est un verrou central. Une baisse de 15 a 25% sur ces systemes suffit a perturber la regulation de l'insuline, la production de GH nocturne, et la stabilite de l'energie en journee.`;
+  const para2 = `Les blocages detectes (${blocageCount}) ne sont pas isoles. Un sommeil fragmente augmente la reactivite au stress, le stress deteriore la digestion, et une digestion instable perturbe l'absorption des micronutriments. Cette cascade cree un bruit physiologique permanent. Le resultat : fluctuations d'humeur, entrainements moins efficaces, et signaux hormonaux brouilles, meme si tes efforts sont solides sur le papier.`;
+  const para3 = `Metaboliquement, ce profil favorise les pics glycemiques suivis de chutes, une sensibilite a l'insuline moins efficace, et une mobilisation des graisses plus lente. Le ratio cortisol/testosterone se degrade, la leptine perd en signal de satiete, et la thyroidie peut ralentir. Chaque petit desequilibre ajoute une couche de resistance, jusqu'a rendre les approches classiques inefficaces.`;
+  const para4 = `Si ton objectif est ${objectif}, tu as besoin d'un systeme qui coopere, pas d'un systeme qui se defend. Aujourd'hui, ton corps se defend. Ce rapport montre la logique de ces blocages, pas des recettes rapides. Comprendre ces mecanismes, c'est recuperer le controle et transformer tes efforts en resultats mesurables.`;
+
+  return [para1, para2, para3, para4].join("\n\n");
+}
+
+function ensureSynthesisLength(
+  text: string,
+  responses: DiscoveryResponses,
+  scores: DiscoveryAnalysisResult['scoresByDomain'],
+  blocages: BlockageAnalysis[]
+): string {
+  const plain = stripHtmlTags(text);
+  const wordCount = plain.split(/\s+/).filter(Boolean).length;
+  if (wordCount >= 650) return text;
+  const fallback = buildSynthesisFallback(responses, scores, blocages);
+  return `${text}\n\n${fallback}`.trim();
+}
 
 async function generateAISynthesis(
   responses: DiscoveryResponses,
@@ -1262,13 +1617,19 @@ async function generateAISynthesis(
   blocages: BlockageAnalysis[],
   knowledgeContext: string
 ): Promise<string> {
+  const knowledgeOk = !!knowledgeContext && knowledgeContext.length >= MIN_KNOWLEDGE_CONTEXT_CHARS;
+  const contextForPrompt = knowledgeOk ? knowledgeContext : '';
+  if (!knowledgeOk) {
+    console.warn("[Discovery] Knowledge context manquant pour la synthese. Generation en mode degrade.");
+  }
+
   const anthropic = new Anthropic();
 
   const blocagesSummary = blocages.map(b =>
     `[${b.severity.toUpperCase()}] ${b.domain}: ${b.title}\n${b.mechanism}`
   ).join('\n\n');
 
-  const userPrompt = `PROFIL CLIENT:
+  const userPrompt = `PROFIL:
 Prenom: ${responses.prenom}
 Sexe: ${responses.sexe}
 Age: ${responses.age} ans
@@ -1279,23 +1640,23 @@ Sommeil: ${scores.sommeil}/100
 Stress: ${scores.stress}/100
 Energie: ${scores.energie}/100
 Digestion: ${scores.digestion}/100
-Training: ${scores.training}/100
+Entrainement: ${scores.training}/100
 Nutrition: ${scores.nutrition}/100
-Lifestyle: ${scores.lifestyle}/100
-Mindset: ${scores.mindset}/100
+Style de vie: ${scores.lifestyle}/100
+Mental: ${scores.mindset}/100
 
 BLOCAGES DETECTES:
 ${blocagesSummary}
 
-${knowledgeContext ? `DONNEES SCIENTIFIQUES PERTINENTES:\n${knowledgeContext}` : ''}
+${contextForPrompt ? `DONNEES SCIENTIFIQUES PERTINENTES:\n${contextForPrompt}` : ''}
 
 MISSION: Redige une analyse TRES LONGUE et TRES DETAILLEE en 4 paragraphes de prose fluide. MINIMUM 1000 mots au total.
 
 STRUCTURE OBLIGATOIRE:
 
-PARAGRAPHE 1 (minimum 250 mots): Le dysfonctionnement central. Explique le mecanisme biochimique precis du blocage principal. Cite les enzymes, recepteurs, hormones impliques. Donne des chiffres (pourcentages, durees, seuils). Explique la physiopathologie sans donner de solution.
+PARAGRAPHE 1 (minimum 250 mots): Le dysfonctionnement central. Explique le mecanisme biochimique precis du blocage principal. Decris les enzymes, recepteurs, hormones impliques. Donne des chiffres (pourcentages, durees, seuils). Explique la physiopathologie sans donner de solution.
 
-PARAGRAPHE 2 (minimum 250 mots): La cascade systemique. Decris comment ce dysfonctionnement affecte les autres systemes de ${responses.prenom}. Explique les interactions sommeil/cortisol/insuline/testosterone. Cite les boucles de retroaction. Integre des donnees de Huberman, Attia, Walker.
+PARAGRAPHE 2 (minimum 250 mots): La cascade systemique. Decris comment ce dysfonctionnement affecte les autres systemes de ${responses.prenom}. Explique les interactions sommeil/cortisol/insuline/testosterone. Decris les boucles de retroaction.
 
 PARAGRAPHE 3 (minimum 250 mots): L'impact metabolique complet. Detail les consequences sur le metabolisme energetique, la thyroide, les mitochondries, la sensibilite a l'insuline. Explique pourquoi la perte de gras est bloquee ou pourquoi la prise de muscle est compromise. Chiffres et mecanismes.
 
@@ -1307,30 +1668,116 @@ RAPPELS CRITIQUES:
 - PAS de markdown (##, **, -, *)
 - PAS d'emojis
 - PAS de recommandations ni solutions
-- MINIMUM 1000 mots au total`;
+- Ne cite JAMAIS de sources ni d'auteurs
+- MINIMUM 1000 mots au total
+- Francais uniquement, aucun mot en anglais`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: DISCOVERY_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }]
-    });
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const response = await withTimeout(
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: DISCOVERY_SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userPrompt }]
+        }),
+        DISCOVERY_AI_TIMEOUT_MS,
+        "Claude synthesis"
+      );
 
-    const textContent = response.content.find(c => c.type === 'text');
-    const rawText = textContent?.text || '';
+      const textContent = response.content.find(c => c.type === 'text');
+      let rawText = textContent?.text || '';
+      if (!rawText.trim()) {
+        throw new Error("[Discovery] Synthese vide");
+      }
 
-    // Post-process: convert markdown to clean HTML and remove artifacts
-    return cleanMarkdownToHTML(rawText);
+      const lower = rawText.toLowerCase();
+      const hasForbiddenSources =
+        /sources?\s*:/i.test(lower) || SOURCE_MARKERS.some((marker) => lower.includes(marker));
+
+      if (hasEnglishMarkers(rawText, 6)) {
+        if (attempt < 2) {
+          console.warn("[Discovery] Synthese contient de l'anglais, retry...");
+          continue;
+        }
+        rawText = stripEnglishLines(rawText);
+      }
+
+      if (hasForbiddenSources) {
+        if (attempt < 2) {
+          console.warn("[Discovery] Synthese contient des sources, retry...");
+          continue;
+        }
+        rawText = rawText
+          .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+          .replace(SOURCE_NAME_REGEX, '');
+      }
+
+      rawText = normalizeSingleVoice(rawText);
+      rawText = ensureSynthesisLength(rawText, responses, scores, blocages);
+      return cleanMarkdownToHTML(rawText);
+    }
+    throw new Error("[Discovery] Synthese invalide apres retries");
   } catch (error) {
     console.error('[Discovery] AI synthesis error:', error);
-    return `Analyse détectée: ${blocages.length} blocages identifiés affectant ton objectif "${responses.objectif}".`;
+
+    if (openai) {
+      try {
+        console.warn('[Discovery] Fallback OpenAI pour synthese globale');
+        const response = await withTimeout(
+          openai.chat.completions.create({
+            model: OPENAI_CONFIG.OPENAI_MODEL,
+            messages: [
+              { role: 'system', content: DISCOVERY_SYSTEM_PROMPT },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: OPENAI_CONFIG.OPENAI_TEMPERATURE,
+            max_tokens: OPENAI_CONFIG.OPENAI_MAX_TOKENS,
+          }),
+          DISCOVERY_AI_TIMEOUT_MS,
+          "OpenAI synthesis"
+        );
+        const text = response.choices[0]?.message?.content || '';
+        if (text.trim()) {
+          let cleaned = text;
+          if (hasEnglishMarkers(cleaned, 6)) {
+            cleaned = stripEnglishLines(cleaned);
+          }
+          cleaned = normalizeSingleVoice(cleaned);
+          cleaned = ensureSynthesisLength(cleaned, responses, scores, blocages);
+          return cleanMarkdownToHTML(cleaned);
+        }
+      } catch (fallbackError) {
+        console.error('[Discovery] OpenAI synthesis fallback error:', fallbackError);
+      }
+    }
+
+    return cleanMarkdownToHTML(
+      ensureSynthesisLength(
+        buildSynthesisFallback(responses, scores, blocages),
+        responses,
+        scores,
+        blocages
+      )
+    );
   }
 }
 
 // Convert markdown artifacts to clean HTML - CRITICAL: Remove all em dashes
 function cleanMarkdownToHTML(text: string): string {
-  return text
+  let cleaned = stripInlineHtml(text)
+    // Remove any explicit sources/references lines even if inline
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
+    .replace(/Sources?\s*:.*$/gmi, '')
+    .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')
+    .replace(/<p[^>]*>[^<]*(Sources?|References?|Références?)\b[^<]*<\/p>/gi, '')
+    .replace(/^.*\b(Sources?|References?|Références?)\b.*$/gmi, '')
+    // Remove any explicit source names
+    .replace(SOURCE_NAME_REGEX, "")
+    .replace(EMOJI_REGEX, "")
+    // Remove "client" language (single-author voice)
+    .replace(/\bclients\b/gi, "profils")
+    .replace(/\bclient\b/gi, "profil")
     // CRITICAL: Remove ALL em dashes (—) and en dashes (–) FIRST
     .replace(/—/g, ':')
     .replace(/–/g, '-')
@@ -1338,6 +1785,8 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\u2013/g, '-')  // Unicode en dash
     // Remove markdown headers (## Title -> Title)
     .replace(/^#{1,4}\s+(.+)$/gm, '$1')
+    // Remove any source lines (client should never see sources in Discovery)
+    .replace(/^\s*Sources?:.*$/gmi, '')
     // Convert **bold** to <strong>
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     // Convert *italic* to <em>
@@ -1350,10 +1799,26 @@ function cleanMarkdownToHTML(text: string): string {
     .replace(/\n{3,}/g, '\n\n')
     // Remove any remaining markdown artifacts
     .replace(/`([^`]+)`/g, '$1')
+    // Drop any lines that still contain "Sources:"
+    .split(/\n/)
+    .filter((line) => !/sources?\s*:/i.test(line))
+    .join('\n')
+    // Strip inline styles/colors that can cause black-on-black
+    .replace(/\s*style=(\"|')[^\"']*(\"|')/gi, '')
+    .replace(/\s*color=(\"|')[^\"']*(\"|')/gi, '')
+    .replace(/\s*class=(\"|')[^\"']*(\"|')/gi, '')
+    .replace(/<\/?font[^>]*>/gi, '')
     // Final pass: remove any remaining em dashes that slipped through
     .replace(/—/g, ':')
     .replace(/–/g, '-')
     .trim();
+
+  if (hasEnglishMarkers(cleaned, 6)) {
+    cleaned = stripEnglishLines(cleaned);
+  }
+  cleaned = normalizeSingleVoice(cleaned);
+  cleaned = normalizeParagraphs(cleaned);
+  return cleaned.trim();
 }
 
 // ============================================
@@ -1361,19 +1826,23 @@ function cleanMarkdownToHTML(text: string): string {
 // ============================================
 
 export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promise<DiscoveryAnalysisResult> {
-  console.log(`[Discovery] Analyzing scan for ${responses.prenom || 'Client'}...`);
+  const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
+  console.log(`[Discovery] Analyzing scan for ${getDiscoveryFirstName(normalized)}...`);
 
   // Calculate scores for each domain
-  const scoresByDomain = {
-    sommeil: scoreSommeil(responses),
-    stress: scoreStress(responses),
-    energie: scoreEnergie(responses),
-    digestion: scoreDigestion(responses),
-    training: scoreTraining(responses),
-    nutrition: scoreNutrition(responses),
-    lifestyle: scoreLifestyle(responses),
-    mindset: scoreMindset(responses)
+  const rawScoresByDomain = {
+    sommeil: scoreSommeil(normalized),
+    stress: scoreStress(normalized),
+    energie: scoreEnergie(normalized),
+    digestion: scoreDigestion(normalized),
+    training: scoreTraining(normalized),
+    nutrition: scoreNutrition(normalized),
+    lifestyle: scoreLifestyle(normalized),
+    mindset: scoreMindset(normalized)
   };
+  const scoresByDomain = Object.fromEntries(
+    Object.entries(rawScoresByDomain).map(([key, value]) => [key, clampDiscoveryScore(value)])
+  ) as DiscoveryAnalysisResult['scoresByDomain'];
 
   // Calculate global score (weighted average)
   const weights = {
@@ -1387,25 +1856,25 @@ export async function analyzeDiscoveryScan(responses: DiscoveryResponses): Promi
     mindset: 0.09
   };
 
-  const globalScore = Math.round(
+  const globalScore = clampDiscoveryScore(Math.round(
     Object.entries(scoresByDomain).reduce((acc, [key, value]) => {
       return acc + value * (weights[key as keyof typeof weights] || 0.1);
     }, 0)
-  );
+  ));
 
   // Detect blocages
-  const blocages = detectBlocages(responses, scoresByDomain);
+  const blocages = detectBlocages(normalized, scoresByDomain);
 
   // Get knowledge context
   const knowledgeContext = await getKnowledgeContextForBlocages(blocages);
 
   // Generate AI synthesis
-  const synthese = await generateAISynthesis(responses, scoresByDomain, blocages, knowledgeContext);
+  const synthese = await generateAISynthesis(normalized, scoresByDomain, blocages, knowledgeContext);
 
   // Generate CTA message based on blocages
   let ctaMessage: string;
   const criticalCount = blocages.filter(b => b.severity === 'critique').length;
-  const objectif = responses.objectif || 'tes objectifs';
+  const objectif = normalized.objectif || 'tes objectifs';
 
   if (criticalCount >= 2) {
     ctaMessage = `${criticalCount} blocages critiques identifiés. Ces dysfonctionnements sabotent directement ton objectif de ${objectif}.
@@ -1466,18 +1935,22 @@ const DOMAIN_CONFIG: Record<string, { label: string; description: string }> = {
   stress: { label: "Stress", description: "Système Nerveux" },
   energie: { label: "Énergie", description: "Vitalité" },
   digestion: { label: "Digestion", description: "Absorption" },
-  training: { label: "Training", description: "Performance" },
+  training: { label: "Entrainement", description: "Performance" },
   nutrition: { label: "Nutrition", description: "Métabolisme" },
-  lifestyle: { label: "Lifestyle", description: "Habitudes" },
-  mindset: { label: "Mindset", description: "Mental" }
+  lifestyle: { label: "Style de vie", description: "Habitudes" },
+  mindset: { label: "Mental", description: "Etat d'esprit" }
 };
 
 export async function convertToNarrativeReport(
   result: DiscoveryAnalysisResult,
   responses: DiscoveryResponses
 ): Promise<ReportData> {
-  const prenom = responses.prenom || 'Client';
-  const objectif = responses.objectif || 'tes objectifs';
+  const normalized = normalizeResponses(responses as Record<string, unknown>, { mode: "discovery" }) as DiscoveryResponses;
+  const prenom = getDiscoveryFirstName(normalized);
+  const objectif = normalized.objectif || 'tes objectifs';
+  const globalScore10 = Math.round((result.globalScore / 10) * 10) / 10;
+  const stripHtmlTags = (html: string) =>
+    html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
   console.log(`[Discovery] Generating AI content for 8 sections...`);
 
@@ -1486,11 +1959,24 @@ export async function convertToNarrativeReport(
   const aiContentPromises = domains.map(async (domain) => {
     const score = result.scoresByDomain[domain as keyof typeof result.scoresByDomain];
     const knowledgeContext = await getKnowledgeContextForDomain(domain);
-    const content = await generateSectionContentAI(domain, score, responses, knowledgeContext);
+    const content = await generateSectionContentAI(domain, score, normalized, knowledgeContext);
     return { domain, content };
   });
 
-  const aiContents = await Promise.all(aiContentPromises);
+  const aiResults = await Promise.allSettled(aiContentPromises);
+  const aiContents = aiResults.map((result, idx) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+    const domain = domains[idx];
+    console.warn(`[Discovery] Section ${domain} failed to generate:`, result.reason);
+    return { domain, content: "" };
+  });
+  const invalidSections = aiContents.filter(({ content }) => !content || content.length < MIN_DISCOVERY_SECTION_CHARS);
+  if (invalidSections.length > 0) {
+    const names = invalidSections.map(s => s.domain).join(", ");
+    console.warn(`[Discovery] Sections invalides ou vides (fallback template): ${names}`);
+  }
   const aiContentMap = new Map(aiContents.map(({ domain, content }) => [domain, content]));
 
   console.log(`[Discovery] AI content generated for all sections`);
@@ -1512,9 +1998,10 @@ export async function convertToNarrativeReport(
     id: "intro",
     title: "Message d'ouverture",
     subtitle: "Discovery Scan",
-    content: `<p>${prenom}, ton dossier est ouvert. Voici une analyse sans filtre de ce qui bloque réellement ta progression vers "${objectif}".</p>
-<p>Ce rapport decortique chaque systeme de ton corps : sommeil, stress, energie, digestion, entrainement, nutrition, lifestyle, mindset. Et surtout comment ils s'influencent mutuellement.</p>
-<p>Ton score global de <strong>${result.globalScore}/100</strong> cache une réalité plus nuancée. ${result.blocages.length} blocages identifiés qui expliquent pourquoi tes efforts ne paient pas comme ils le devraient.</p>`,
+    content: `<p>${prenom}, j'ai ouvert ton dossier et chaque reponse compte. Ce Discovery Scan est une radiographie rapide mais precise de tes mecanismes : ce qui tourne bien, ce qui cale, et pourquoi.</p>
+<p>Je relie sommeil, stress, energie, digestion, entrainement, nutrition, style de vie, mental. Rien n'est isole. Un axe faible tire les autres vers le bas, un axe solide compense mais fatigue sur la duree.</p>
+<p>Ton score global de <strong>${globalScore10}/10</strong> donne la facade, mais la realite est dans les details : ${result.blocages.length} blocages structurants, souvent invisibles a l'oeil nu, qui expliquent tes plateaux et tes efforts mal recompenses.</p>
+<p>Ici, je ne donne pas de solutions. Je montre la logique biologique, les cascades et les signaux. Tu vas comprendre ou se perd ton potentiel et pourquoi le corps resiste. Ensuite, tu choisiras si tu veux le plan complet.</p>`,
     chips: ["Analyse Complète", `${result.blocages.length} Blocages`]
   });
 
@@ -1545,8 +2032,8 @@ export async function convertToNarrativeReport(
       let severityColor: string;
       let chips: string[] = [];
 
-      // Theme M1: All severity indicators use yellow (#FCDD00) for consistency
-      const primaryColor = '#FCDD00';
+      // Theme-aware primary color for severity indicators
+      const primaryColor = 'var(--color-primary)';
 
       if (domainBlocages.length > 0) {
         const maxSeverity = domainBlocages.some(b => b.severity === 'critique') ? 'critique' :
@@ -1578,20 +2065,31 @@ export async function convertToNarrativeReport(
 
       // Build content with header + AI content
       let content = `<p><strong>Score: ${score}/100</strong> <span style="color: ${severityColor}; font-weight: bold;">[${severityLabel}]</span></p>\n\n`;
+      let appendedFallback = false;
 
       // Add blocage info if exists
       if (domainBlocages.length > 0) {
         domainBlocages.forEach(b => {
           content += `<p><strong>${b.title}</strong></p>`;
-          content += `<p class="text-sm italic" style="color: #a1a1aa;">Sources: ${b.sources.join(' | ')}</p>\n`;
         });
       }
 
       // Add AI-generated detailed analysis (40-50 lines)
       if (aiContent) {
         content += aiContent.split('\n\n').map(p => `<p>${p}</p>`).join('\n');
+        if (aiContent.length < MIN_DISCOVERY_SECTION_CHARS) {
+          // Complete with template if AI output is shorter than expected
+          content += generateDomainHTML(domain, score, responses);
+          appendedFallback = true;
+        }
       } else {
         // Fallback to template if AI failed
+        content += generateDomainHTML(domain, score, responses);
+        appendedFallback = true;
+      }
+
+      const finalTextLength = stripHtmlTags(content).length;
+      if (finalTextLength < MIN_DISCOVERY_SECTION_CHARS && !appendedFallback) {
         content += generateDomainHTML(domain, score, responses);
       }
 
@@ -1612,72 +2110,42 @@ export async function convertToNarrativeReport(
     content: `<p>${result.ctaMessage.replace(/\n/g, '</p><p>')}</p>
 
 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div class="p-6 rounded-xl" style="background: #1a1a1a; border: 2px solid #FCDD00;">
-    <div class="text-xs uppercase tracking-widest mb-2" style="color: #FCDD00;">Recommande</div>
-    <h4 class="text-xl font-bold mb-2" style="color: #fff;">Anabolic Bioscan</h4>
-    <div class="text-3xl font-bold mb-4" style="color: #FCDD00;">59<span class="text-lg">€</span></div>
-    <ul class="space-y-2 text-sm mb-6" style="color: #a1a1aa;">
-      <li>✓ 15 analyses approfondies</li>
-      <li>✓ Analyse photos (posture, composition)</li>
-      <li>✓ Protocole nutrition detaille</li>
-      <li>✓ Stack supplements personnalise</li>
-      <li>✓ Feuille de route 90 jours</li>
+  <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 2px solid var(--color-primary);">
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-primary);">Recommande</div>
+    <h4 class="text-xl font-bold mb-2" style="color: var(--color-text);">Anabolic Bioscan</h4>
+    <div class="text-3xl font-bold mb-4" style="color: var(--color-primary);">59<span class="text-lg">€</span></div>
+    <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
+      <li>- 16 analyses approfondies</li>
+      <li>- Axes cliniques + hormones</li>
+      <li>- Protocoles 90 jours detailles</li>
+      <li>- Stack supplements personnalise</li>
+      <li>- Plan d'action semaine par semaine</li>
     </ul>
-    <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: #FCDD00; color: #000;">
+    <a href="/offers/anabolic-bioscan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
       Choisir Anabolic Bioscan
     </a>
   </div>
 
-  <div class="p-6 rounded-xl" style="background: #1a1a1a; border: 1px solid #333;">
-    <div class="text-xs uppercase tracking-widest mb-2" style="color: #a1a1aa;">Complet</div>
-    <h4 class="text-xl font-bold mb-2" style="color: #fff;">Ultimate Scan</h4>
-    <div class="text-3xl font-bold mb-4" style="color: #fff;">79<span class="text-lg">€</span></div>
-    <ul class="space-y-2 text-sm mb-6" style="color: #a1a1aa;">
-      <li>✓ Tout l'Anabolic Bioscan inclus</li>
-      <li>✓ Sync wearables (Oura, Whoop, Garmin)</li>
-      <li>✓ Analyse HRV avancee</li>
-      <li>✓ Questions blessures & douleurs</li>
-      <li>✓ Protocole rehabilitation</li>
+  <div class="p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+    <div class="text-xs uppercase tracking-widest mb-2" style="color: var(--color-text-muted);">Complet</div>
+    <h4 class="text-xl font-bold mb-2" style="color: var(--color-text);">Ultimate Scan</h4>
+    <div class="text-3xl font-bold mb-4" style="color: var(--color-text);">79<span class="text-lg">€</span></div>
+    <ul class="space-y-2 text-sm mb-6" style="color: var(--color-text-muted);">
+      <li>- Tout l'Anabolic Bioscan inclus</li>
+      <li>- Analyse photo posturale (face/profil/dos)</li>
+      <li>- Diagnostic biomecanique + correctifs</li>
+      <li>- Wearables & HRV avancee</li>
+      <li>- Protocoles rehab + performance</li>
     </ul>
-    <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid #FCDD00; color: #FCDD00;">
+    <a href="/offers/ultimate-scan" class="block w-full py-3 rounded-lg text-center font-bold transition-all hover:bg-white/10" style="border: 1px solid var(--color-primary); color: var(--color-primary);">
       Choisir Ultimate Scan
     </a>
   </div>
 </div>
 
-<div class="mt-8 p-4 rounded-lg" style="background: rgba(252, 221, 0, 0.1); border: 1px solid rgba(252, 221, 0, 0.3);">
-  <p class="text-sm font-medium" style="color: #FCDD00;">Deduit de ton coaching</p>
-  <p class="text-xs mt-1" style="color: #a1a1aa;">Si tu passes en coaching apres ton scan, le montant est deduit de ta formule.</p>
-  <table class="w-full mt-3 text-xs">
-    <thead>
-      <tr style="color: #a1a1aa;">
-        <th class="text-left py-1">Formule</th>
-        <th class="text-center py-1">4 sem.</th>
-        <th class="text-center py-1">8 sem.</th>
-        <th class="text-center py-1">12 sem.</th>
-      </tr>
-    </thead>
-    <tbody style="color: #fff;">
-      <tr>
-        <td class="py-1">Essential</td>
-        <td class="text-center"><span style="color:#666;">249€</span> → <span style="color:#FCDD00;">190€</span></td>
-        <td class="text-center"><span style="color:#666;">399€</span> → <span style="color:#FCDD00;">340€</span></td>
-        <td class="text-center"><span style="color:#666;">549€</span> → <span style="color:#FCDD00;">490€</span></td>
-      </tr>
-      <tr>
-        <td class="py-1">Elite</td>
-        <td class="text-center"><span style="color:#666;">399€</span> → <span style="color:#FCDD00;">340€</span></td>
-        <td class="text-center"><span style="color:#666;">649€</span> → <span style="color:#FCDD00;">590€</span></td>
-        <td class="text-center"><span style="color:#666;">899€</span> → <span style="color:#FCDD00;">840€</span></td>
-      </tr>
-      <tr>
-        <td class="py-1">Private Lab</td>
-        <td class="text-center"><span style="color:#666;">499€</span> → <span style="color:#FCDD00;">420€</span></td>
-        <td class="text-center"><span style="color:#666;">799€</span> → <span style="color:#FCDD00;">720€</span></td>
-        <td class="text-center"><span style="color:#666;">1199€</span> → <span style="color:#FCDD00;">1120€</span></td>
-      </tr>
-    </tbody>
-  </table>
+<div class="mt-8 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);">
+  <p class="text-sm font-medium" style="color: var(--color-primary);">Deduction coaching</p>
+  <p class="text-xs mt-1" style="color: var(--color-text-muted);">Si tu passes en coaching apres un scan, le montant du scan est deduit a 100%.</p>
 </div>`,
     chips: ["Protocoles", "Stack Supplements", "Plan 90 Jours"]
   });
@@ -1689,100 +2157,78 @@ export async function convertToNarrativeReport(
     subtitle: "Sans scan supplementaire",
     content: `<p>Tu n'as pas envie ou besoin de faire un autre scan ? Je te propose une alternative directe.</p>
 
-<p>Avec ton Discovery Scan tu as deja une vue d'ensemble de tes blocages. Si tu veux passer a l'action maintenant, je t'offre <strong style="color: #FCDD00;">-20% sur le coaching Achzod</strong> avec le code que tu recevras apres avoir laisse ton avis.</p>
+<p>Avec ton Discovery Scan tu as deja une vue d'ensemble de tes blocages. Si tu veux passer a l'action maintenant, je t'offre <strong style="color: var(--color-primary);">-20% sur le coaching Achzod</strong> avec le code que tu recevras apres avoir laisse ton avis.</p>
 
-<div class="mt-8 p-6 rounded-xl" style="background: #1a1a1a; border: 1px solid #333;">
-  <h4 class="text-lg font-bold mb-4" style="color: #fff;">Coaching Achzod - Formules</h4>
+<div class="mt-8 p-6 rounded-xl" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+  <h4 class="text-lg font-bold mb-4" style="color: var(--color-text);">Coaching Achzod - Formules</h4>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr style="color: #a1a1aa;">
-          <th class="text-left py-2 pr-4">Formule</th>
-          <th class="text-center py-2 px-2">4 semaines</th>
-          <th class="text-center py-2 px-2">8 semaines</th>
-          <th class="text-center py-2 px-2">12 semaines</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-top: 1px solid #333;">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: #fff;">Essential</div>
-            <div class="text-xs" style="color: #666;">Fondations</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">249€</div>
-            <div class="font-bold" style="color: #FCDD00;">199€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">399€</div>
-            <div class="font-bold" style="color: #FCDD00;">319€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">549€</div>
-            <div class="font-bold" style="color: #FCDD00;">439€</div>
-          </td>
-        </tr>
-        <tr style="border-top: 1px solid #333;">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: #fff;">Elite</div>
-            <div class="text-xs" style="color: #666;">Performance</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">399€</div>
-            <div class="font-bold" style="color: #FCDD00;">319€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">649€</div>
-            <div class="font-bold" style="color: #FCDD00;">519€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">899€</div>
-            <div class="font-bold" style="color: #FCDD00;">719€</div>
-          </td>
-        </tr>
-        <tr style="border-top: 1px solid #333;">
-          <td class="py-3 pr-4">
-            <div class="font-medium" style="color: #fff;">Private Lab</div>
-            <div class="text-xs" style="color: #666;">VIP</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">499€</div>
-            <div class="font-bold" style="color: #FCDD00;">399€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">799€</div>
-            <div class="font-bold" style="color: #FCDD00;">639€</div>
-          </td>
-          <td class="text-center py-3 px-2">
-            <div class="line-through text-xs" style="color: #666;">1199€</div>
-            <div class="font-bold" style="color: #FCDD00;">959€</div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  ${renderCoachingOffersTable(20)}
+
+  <div class="mt-6 p-4 rounded-lg" style="background: color-mix(in srgb, var(--color-primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);">
+    <p class="text-sm" style="color: var(--color-text);"><strong style="color: var(--color-primary);">Comment obtenir le code -20% ?</strong></p>
+    <p class="text-xs mt-1" style="color: var(--color-text-muted);">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: var(--color-border); color: var(--color-primary);">DISCOVERY20</code> par email.</p>
   </div>
 
-  <div class="mt-6 p-4 rounded-lg" style="background: rgba(252, 221, 0, 0.1); border: 1px solid rgba(252, 221, 0, 0.2);">
-    <p class="text-sm" style="color: #fff;"><strong style="color: #FCDD00;">Comment obtenir le code -20% ?</strong></p>
-    <p class="text-xs mt-1" style="color: #a1a1aa;">Laisse un avis sur ton Discovery Scan ci-dessous. Apres validation, tu recevras ton code promo <code class="px-1 py-0.5 rounded" style="background: #333; color: #FCDD00;">DISCOVERY20</code> par email.</p>
-  </div>
-
-  <a href="https://achzodcoaching.com" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: #FCDD00; color: #000;">
-    Voir les formules sur achzodcoaching.com
+  <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
+    Voir toutes les formules
   </a>
 </div>`,
     chips: ["-20% Coaching", "Code Promo", "Avis"]
   });
 
   return {
-    globalScore: Math.round(result.globalScore / 10 * 10) / 10, // Convert to 0-10 scale
+    globalScore: globalScore10,
     metrics,
     sections,
     clientName: prenom,
     generatedAt: new Date().toISOString(),
-    auditType: "DISCOVERY_SCAN"
+    auditType: "GRATUIT"
   };
+}
+
+function getDomainExpansion(
+  domain: string,
+  score: number,
+  responses: DiscoveryResponses,
+  prenom: string,
+  objectif: string
+): string {
+  switch (domain) {
+    case 'sommeil':
+      return `
+<p>Ton horloge circadienne n'est pas negociable. Si l'heure de coucher varie de plus d'une heure, la melatonine se decale et le pic de cortisol du matin s'aplatit. Tu te leves deja en dette, meme si tu passes assez de temps au lit. La lumiere matinale (10-20 minutes dans les 2 heures apres le reveil) recalibre ce rythme et conditionne la qualite du sommeil suivant.</p>
+<p>Sur le plan metabolique, une nuit courte augmente la resistance a l'insuline d'environ 20-30% en 24 a 48h, baisse la leptine et augmente la ghreline. Resultat : plus de faim, moins de controle, et un stockage abdominal facilite. Si ton objectif est ${objectif}, ce point seul suffit a freiner la progression.</p>`;
+    case 'stress':
+      return `
+<p>Le stress laisse une signature mesurable : HRV qui chute, tension qui monte, digestion qui se fige, concentration qui se fragmente. Un cortisol eleve le soir retarde l'endormissement et entretient un sommeil leger. Tu dors, mais tu ne recuperes pas. C'est exactement le type de fatigue qui donne l'impression de faire des efforts sans retour.</p>
+<p>Quand la charge allostatique s'accumule, les catecholamines (adrenaline, noradrenaline) deviennent dominantes. Tu peux etre "actif" mentalement, mais vide physiologiquement. Pour ${prenom}, ce desalignement entre cerveau et corps cree un bruit de fond qui sabote la constance et donc les resultats.</p>`;
+    case 'energie':
+      return `
+<p>Ton energie depend de la densite mitochondriale, de la fonction thyroidienne (T3) et de la disponibilite en micronutriments (fer, B12, magnesium). Un simple deficit peut diviser la production d'ATP, et donc la motivation. Si tu as des coups de barre, c'est souvent un signal de carburant mal gere, pas un manque de volonte.</p>
+<p>Le profil glycemique joue un role majeur. Un repas trop riche en glucides rapides sans fibres ni proteines declenche un pic d'insuline, puis une hypoglycemie reactive 90 a 120 minutes plus tard. Cette oscillation cree le fameux "crash" et te pousse a compenser avec cafeine ou sucre.</p>`;
+    case 'digestion':
+      return `
+<p>Une digestion irreguliere augmente la permeabilite intestinale et laisse passer des endotoxines (LPS) qui activent l'inflammation systemique. Cette inflammation eleve le cortisol, perturbe l'insuline et peut diminuer la conversion T4 -> T3. Le probleme n'est plus seulement digestif, il devient hormonal et metabolique.</p>
+<p>La qualite du microbiote depend aussi du timing et de la composition : 25-35g de fibres par jour, hydratation suffisante et un rythme de repas stable. Sans ces bases, meme une alimentation "propre" peut etre mal absorbee, et l'objectif ${objectif} se retrouve freine.</p>`;
+    case 'training':
+      return `
+<p>Le corps repond au signal qu'il comprend : surcharge progressive, volume coherent, et recuperation reelle. Sans deload periodique, le systeme nerveux central sature et la performance stagne. Le stress de l'entrainement devient alors un stress de plus, pas un stimulus adaptatif.</p>
+<p>Le cardio de base (zone 2) n'est pas optionnel. 120 a 180 minutes par semaine augmentent la capacite mitochondriale, ameliorent la sensibilite a l'insuline et accelerent la recuperation musculaire. C'est un levier direct pour ${objectif}.</p>`;
+    case 'nutrition':
+      return `
+<p>Pour construire ou maintenir du muscle, le seuil de leucine par repas est critique : environ 2-3g, soit 25-35g de proteines completes. Repartir cela sur 3-4 repas stabilise la MPS. En dessous, tu restes en mode entretien et tu perds ton avantage anabolique.</p>
+<p>Le timing compte aussi. Un apport proteique au petit-dejeuner reduit les fringales de 20-30% sur la journee, et une fibre suffisante (25-35g) lisse la glycemie. L'hydratation joue sur la performance et la digestion, souvent plus que tu le penses.</p>`;
+    case 'lifestyle':
+      return `
+<p>Le NEAT fait souvent la difference. 8 a 12 000 pas par jour peuvent representer 200-600 calories de depense quotidienne, soit l'equivalent d'un entrainement complet. Si tu es sedentaire 9-10h par jour, tu peux perdre ce levier sans t'en rendre compte.</p>
+<p>La cafeine a une demi-vie de 5-6h. Un cafe a 15h laisse encore 25-30% d'effet a 21h. Ajoute l'alcool qui coupe le REM, et tu obtiens un sommeil pauvre, donc un cortisol plus haut et une recuperation plus lente. Ce sont des details qui deviennent des freins majeurs.</p>`;
+    case 'mindset':
+      return `
+<p>Le mental suit la physiologie. Quand le sommeil est mauvais et que le stress est haut, la dopamine chute et la motivation devient fragile. Ce n'est pas un probleme de caractere, c'est un probleme de signal interne. Reparer ces signaux rend l'execution plus naturelle.</p>
+<p>La discipline vient surtout de l'environnement : frictions basses pour les bonnes habitudes, frictions hautes pour les tentations. Si ton objectif est ${objectif}, il faut que chaque choix devienne automatique. C'est la regularite qui transforme, pas les pics d'intensite.</p>`;
+    default:
+      return '';
+  }
 }
 
 // Generate DETAILED domain-specific HTML based on responses - RICH CONTENT for each section
@@ -1790,6 +2236,7 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
   const prenom = responses.prenom || 'Tu';
   const objectif = responses.objectif || 'tes objectifs';
   const scoreLabel = score >= 80 ? 'excellent' : score >= 60 ? 'correct mais sous-optimal' : score >= 40 ? 'insuffisant' : 'critique';
+  const expansion = getDomainExpansion(domain, score, responses, prenom, objectif);
 
   switch (domain) {
     case 'sommeil': {
@@ -1811,7 +2258,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${reveils === 'chaque-nuit' || reveils === 'souvent' ? 'Tes reveils nocturnes frequents fragmentent tes cycles de 90 minutes. Chaque reveil te ramene en sommeil leger, t\'empechant d\'accumuler le temps necessaire en sommeil profond et paradoxal (REM). Cela peut etre lie a des variations glycemiques nocturnes, de l\'apnee du sommeil, ou un desequilibre cortisol/melatonine.' : 'L\'absence de reveils nocturnes frequents est un atout majeur pour ta recuperation.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton deficit de sommeil compromet directement ta capacite a perdre du gras et construire du muscle. La resistance a l\'insuline induite par le manque de sommeil favorise le stockage abdominal, tandis que la GH effondree limite ta synthese proteique de 18-25%.' : 'Ton sommeil est une base solide, mais des optimisations circadiennes pourraient encore ameliorer ta production de GH et ta sensibilite a l\'insuline.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton deficit de sommeil compromet directement ta capacite a perdre du gras et construire du muscle. La resistance a l\'insuline induite par le manque de sommeil favorise le stockage abdominal, tandis que la GH effondree limite ta synthese proteique de 18-25%.' : 'Ton sommeil est une base solide, mais des optimisations circadiennes pourraient encore ameliorer ta production de GH et ta sensibilite a l\'insuline.'}</p>
+${expansion}`;
     }
 
     case 'stress': {
@@ -1833,7 +2281,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${hasNoStressManagement ? 'L\'absence de techniques de gestion du stress (meditation, respiration, marche en nature) laisse ton systeme nerveux sans outil de regulation. Ton nerf vague, qui activerait le mode parasympathique "repos et digestion", reste sous-stimule.' : 'Tes techniques de gestion du stress actuelles aident a activer ton systeme parasympathique, ce qui est un point positif pour contrebalancer le cortisol.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Le cortisol chronique bloque la lipolyse en inhibant la lipase hormono-sensible. Il favorise le stockage visceral via les recepteurs cortisol des adipocytes abdominaux. Simultanement, il inhibe la production de testosterone au niveau des cellules de Leydig, sabotant ta capacite anabolique.' : 'Ton stress est gerable, mais surveille les periodes d\'intensification qui pourraient faire basculer ton metabolisme en mode catabolique.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Le cortisol chronique bloque la lipolyse en inhibant la lipase hormono-sensible. Il favorise le stockage visceral via les recepteurs cortisol des adipocytes abdominaux. Simultanement, il inhibe la production de testosterone au niveau des cellules de Leydig, sabotant ta capacite anabolique.' : 'Ton stress est gerable, mais surveille les periodes d\'intensification qui pourraient faire basculer ton metabolisme en mode catabolique.'}</p>
+${expansion}`;
     }
 
     case 'energie': {
@@ -1855,7 +2304,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${thermogenese === 'toujours' || thermogenese === 'souvent' ? 'Ta frilosite chronique est un marqueur important. Elle peut indiquer une hypothyroidie subclinique (T3 libre basse), un metabolisme de base abaisse par restriction calorique chronique, ou une thermogenese adaptative reduite. Ton corps economise l\'energie au lieu de la dissiper en chaleur.' : 'Ta thermogenese normale suggere une fonction thyroidienne et un metabolisme de base corrects.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton inflexibilite metabolique t\'empeche de bruler efficacement les graisses, meme en deficit calorique. Les mitochondries dysfonctionnelles produisent moins d\'ATP et plus de radicaux libres, creant un environnement inflammatoire qui freine encore plus ta progression.' : 'Ton energie est un atout, mais des ajustements sur le timing nutritionnel et l\'exposition au froid pourraient encore optimiser ta flexibilite metabolique.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton inflexibilite metabolique t\'empeche de bruler efficacement les graisses, meme en deficit calorique. Les mitochondries dysfonctionnelles produisent moins d\'ATP et plus de radicaux libres, creant un environnement inflammatoire qui freine encore plus ta progression.' : 'Ton energie est un atout, mais des ajustements sur le timing nutritionnel et l\'exposition au froid pourraient encore optimiser ta flexibilite metabolique.'}</p>
+${expansion}`;
     }
 
     case 'digestion': {
@@ -1877,7 +2327,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${energiePostRepas === 'crash' || energiePostRepas === 'somnolence' ? 'Ta fatigue post-prandiale n\'est pas normale. Elle peut indiquer une reponse insulinique excessive, une permeabilite intestinale (leaky gut) qui laisse passer des molecules pro-inflammatoires, ou une sensibilite alimentaire declenchant une reponse immunitaire energivore.' : 'Ton energie stable apres les repas indique une bonne tolerance alimentaire et une glycemie controlee.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Une digestion compromise limite l\'absorption des proteines necessaires a la synthese musculaire et des micronutriments (zinc, magnesium, B12) essentiels a ton metabolisme energetique. L\'inflammation intestinale chronique cree une resistance a l\'insuline et favorise le stockage graisseux.' : 'Ta digestion solide est un atout majeur pour l\'absorption des nutriments et le maintien d\'un environnement hormonal favorable.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Une digestion compromise limite l\'absorption des proteines necessaires a la synthese musculaire et des micronutriments (zinc, magnesium, B12) essentiels a ton metabolisme energetique. L\'inflammation intestinale chronique cree une resistance a l\'insuline et favorise le stockage graisseux.' : 'Ta digestion solide est un atout majeur pour l\'absorption des nutriments et le maintien d\'un environnement hormonal favorable.'}</p>
+${expansion}`;
     }
 
     case 'training': {
@@ -1899,7 +2350,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${evolution === 'regression' ? 'Ta regression de performance est un signal d\'alarme. Elle indique soit un surentrainement (HRV basse, cortisol eleve, testosterone en chute), soit un deficit energetique trop important, soit une accumulation de stress non-entrainement qui depasse ta capacite adaptative totale.' : evolution === 'stagnation' ? 'Ta stagnation n\'est pas due a un manque d\'effort. Elle revele souvent un plafond impose par tes facteurs limitants : sommeil, stress, nutrition, ou environnement hormonal. Pousser plus fort sans corriger ces facteurs est contre-productif.' : 'Ta progression continue est excellente et indique un bon equilibre stimulus-adaptation.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton desequilibre entrainement-recuperation cree un ratio testosterone/cortisol defavorable. En mode catabolique, tu perds du muscle et stockes du gras, l\'inverse de ton objectif. La MPS (synthese proteique musculaire) est bloquee quand le cortisol domine.' : 'Ton entrainement est bien structure. L\'optimisation des facteurs de recuperation pourrait debloquer de nouveaux gains.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton desequilibre entrainement-recuperation cree un ratio testosterone/cortisol defavorable. En mode catabolique, tu perds du muscle et stockes du gras, l\'inverse de ton objectif. La MPS (synthese proteique musculaire) est bloquee quand le cortisol domine.' : 'Ton entrainement est bien structure. L\'optimisation des facteurs de recuperation pourrait debloquer de nouveaux gains.'}</p>
+${expansion}`;
     }
 
     case 'nutrition': {
@@ -1923,7 +2375,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${sucres === 'eleve' ? 'Ta consommation elevee de sucres ajoutes maintient ton insuline chroniquement elevee, bloquant la lipolyse et favorisant le stockage. Les pics glycemiques repetitifs creent une inflammation systemique et accelerent la resistance a l\'insuline.' : ''} ${alcool === '8+' || alcool === '4-7' ? 'Ta consommation d\'alcool est problematique. L\'ethanol est metabolise en priorite par le foie, mettant en pause l\'oxidation des graisses. Il perturbe le sommeil profond, reduit la testosterone de 20-30%, et apporte des calories vides. Chaque verre est un frein direct a ta progression.' : 'Ta consommation d\'alcool limitee preserve ton metabolisme hepatique et ta qualite de sommeil.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton alimentation actuelle cree un environnement inflammatoire et insulino-resistant qui bloque la perte de gras malgre un eventuel deficit calorique. Les carences en micronutriments (magnesium, zinc, D3) amplifient ces dysfonctionnements.' : 'Ta nutrition est une base solide. Des ajustements sur le timing proteique et la densite nutritionnelle pourraient optimiser ta recomposition.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton alimentation actuelle cree un environnement inflammatoire et insulino-resistant qui bloque la perte de gras malgre un eventuel deficit calorique. Les carences en micronutriments (magnesium, zinc, D3) amplifient ces dysfonctionnements.' : 'Ta nutrition est une base solide. Des ajustements sur le timing proteique et la densite nutritionnelle pourraient optimiser ta recomposition.'}</p>
+${expansion}`;
     }
 
     case 'lifestyle': {
@@ -1945,7 +2398,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${cafe === '5+' ? 'Ta consommation excessive de cafe (5+/jour) cree une tolerance a l\'adenosine qui t\'oblige a augmenter les doses pour le meme effet. Le cafe apres 14h bloque ta melatonine le soir, fragmentant ton sommeil. L\'exces de cafeine peut aussi epuiser tes surrenales et amplifier ton anxiete.' : cafe === '3-4' ? 'Ta consommation de cafe moderee est acceptable si tu stoppes avant 14h pour preserver ton sommeil.' : 'Ta consommation de cafe limitee preserve ta sensibilite a la cafeine et ton sommeil.'} ${tabac === 'quotidien' ? 'Le tabac quotidien est le facteur lifestyle le plus deletere : inflammation systemique, vasoconstriction reduisant l\'apport d\'oxygene aux muscles, acceleration du vieillissement cellulaire, et interference avec pratiquement tous tes systemes hormonaux.' : ''}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton mode de vie actuel cree un environnement anti-physiologique : rythmes circadiens perturbes, NEAT effondree, inflammation chronique. Ces facteurs invisibles sabotent tes efforts conscients en entrainement et nutrition.' : 'Ton lifestyle est globalement sain. Des ajustements sur l\'exposition lumineuse et le mouvement quotidien pourraient encore optimiser ton metabolisme.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score < 60 ? 'Ton mode de vie actuel cree un environnement anti-physiologique : rythmes circadiens perturbes, NEAT effondree, inflammation chronique. Ces facteurs invisibles sabotent tes efforts conscients en entrainement et nutrition.' : 'Ton lifestyle est globalement sain. Des ajustements sur l\'exposition lumineuse et le mouvement quotidien pourraient encore optimiser ton metabolisme.'}</p>
+${expansion}`;
     }
 
     case 'mindset': {
@@ -1968,7 +2422,8 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 
 <p>${consignes === 'oui' ? 'Ta capacite a suivre des consignes strictes est un atout majeur pour la transformation. L\'adherence est le facteur numero un de succes : un protocole mediocre suivi a 100% bat un protocole parfait suivi a 50%.' : 'Ta difficulte avec les consignes strictes n\'est pas un defaut : elle indique qu\'une approche flexible et adaptee a ton style de vie sera plus efficace qu\'un plan rigide que tu ne tiendras pas.'}</p>
 
-<p><strong>Impact sur ${objectif} :</strong> ${score >= 80 ? 'Ton mindset est ton plus grand atout. Le probleme n\'est pas ton engagement mais les blocages physiologiques (sommeil, stress, hormones) qui empechent ton corps de repondre a tes efforts. Une fois ces facteurs corriges, ta determination fera la difference.' : 'Optimiser tes neurotransmetteurs via le sommeil, la nutrition, et l\'activite physique améliorera naturellement ta motivation et ta perseverance. Le mindset suit souvent l\'etat physiologique.'}</p>`;
+<p><strong>Impact sur ${objectif} :</strong> ${score >= 80 ? 'Ton mindset est ton plus grand atout. Le probleme n\'est pas ton engagement mais les blocages physiologiques (sommeil, stress, hormones) qui empechent ton corps de repondre a tes efforts. Une fois ces facteurs corriges, ta determination fera la difference.' : 'Optimiser tes neurotransmetteurs via le sommeil, la nutrition, et l\'activite physique ameliorera naturellement ta motivation et ta perseverance. Le mindset suit souvent l\'etat physiologique.'}</p>
+${expansion}`;
     }
 
     default:
@@ -1981,7 +2436,7 @@ function generateDomainHTML(domain: string, score: number, responses: DiscoveryR
 // ============================================
 
 export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses: DiscoveryResponses): string {
-  const prenom = responses.prenom || 'Client';
+  const prenom = getDiscoveryFirstName(responses);
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const scoreColor = (score: number) => {
@@ -2017,9 +2472,6 @@ export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses
           ${blocage.consequences.map(c => `<li>${c}</li>`).join('')}
         </ul>
       </div>
-      <div class="sources">
-        Sources: ${blocage.sources.join(' | ')}
-      </div>
     </div>
   `).join('');
 
@@ -2028,7 +2480,7 @@ export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Discovery Scan - ${prenom} | NEUROCORE 360</title>
+  <title>Discovery Scan - ${prenom} | APEXLABS</title>
   <style>
     :root {
       --bg: #0A0A0A;
@@ -2211,13 +2663,6 @@ export function generateDiscoveryHTML(result: DiscoveryAnalysisResult, responses
       position: absolute;
       left: 0;
       color: var(--primary);
-    }
-
-    .sources {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      opacity: 0.7;
-      font-style: italic;
     }
 
     .synthese {

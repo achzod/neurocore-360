@@ -49,14 +49,14 @@ Parce que je veux te prouver que mon système marche AVANT que tu sortes ta cart
 
 ---
 
-## 2. ANABOLIC BIOSCAN - 49€ (MON BEST-SELLER)
+## 2. ANABOLIC BIOSCAN - 59€ (MON BEST-SELLER)
 
 ### C'EST QUOI ?
 L'audit métabolique complet - celui que je faisais en coaching one-to-one à 300€/mois. Tu reçois un rapport de ~25 pages avec des protocoles que j'ai testés sur des centaines de clients. C'est comme avoir mon cerveau de coach dans un PDF.
 
 ### LES ÉTAPES EXACTES:
 1. **Tu choisis Anabolic Bioscan** (depuis le dashboard ou la landing page)
-2. **Tu paies 49€** via Stripe (carte ou Apple/Google Pay, 30 secondes)
+2. **Tu paies 59€** via Stripe (carte ou Apple/Google Pay, 30 secondes)
 3. **Tu déverrouilles 100 questions supplémentaires** (total = 150 questions, 35-40 minutes)
    - Questions genre-spécifiques (hommes: testostérone, libido, érections | femmes: cycle, SOPK, thyroïde)
    - Axes cliniques approfondis (thyroïde T3/T4, SII, SIBO, candidose, adrenal fatigue)
@@ -183,7 +183,7 @@ L'audit métabolique complet - celui que je faisais en coaching one-to-one à 30
 - **Questionnaire terminé → Rapport reçu** : 24h max (souvent 12h)
 - **Support email si questions** : Réponse sous 48h
 
-### CE QUE TU NE REÇOIS PAS (réservé au Pro Panel 360):
+### CE QUE TU NE REÇOIS PAS (réservé à l'Ultimate Scan):
 ❌ Analyse photo (posture, composition corporelle)
 ❌ Sync wearables en temps réel
 ❌ Dashboard avancé avec tracking continu
@@ -199,14 +199,14 @@ L'audit métabolique complet - celui que je faisais en coaching one-to-one à 30
 
 ---
 
-## 3. PRO PANEL 360 - 99€ (L'ANALYSE ULTIME)
+## 3. ULTIMATE SCAN - 79€ (L'ANALYSE ULTIME)
 
 ### C'EST QUOI ?
-L'audit le plus complet du marché francophone. Ce que les cliniques d'optimisation humaine aux USA facturent $500-1000, je te le donne à 99€. Tu reçois un rapport de ~45 pages + analyse photo + sync wearables + dashboard temps réel. C'est comme avoir une équipe médicale qui t'analyse pendant 1 mois.
+L'audit le plus complet du marché francophone. Ce que les cliniques d'optimisation humaine aux USA facturent $500-1000, je te le donne à 79€. Tu reçois un rapport de ~45 pages + analyse photo + sync wearables + dashboard temps réel. C'est comme avoir une équipe médicale qui t'analyse pendant 1 mois.
 
 ### LES ÉTAPES EXACTES:
-1. **Tu choisis Pro Panel 360**
-2. **Tu paies 99€** via Stripe
+1. **Tu choisis Ultimate Scan**
+2. **Tu paies 79€** via Stripe
 3. **Tu déverrouilles TOUT le questionnaire** (210 questions, 45-60 minutes)
    - Tout l'Anabolic Bioscan +
    - Questions HRV & variabilité cardiaque avancées
@@ -393,84 +393,63 @@ J'analyse ton bilan sanguin avec des ranges optimaux de performance - pas les ra
 
 ---
 
-## 5. BURNOUT ENGINE - 39€ (DÉTECTION PRÉCOCE BURNOUT)
+## 5. PEPTIDES ENGINE - 99€ (PROTOCOLES PEPTIDES)
 
 ### C'EST QUOI ?
-Un questionnaire spécialisé de 80 questions pour détecter ton risque de burnout AVANT qu'il soit trop tard. Tu reçois un score de risque (0-100) + un protocole de récupération de 4 semaines si tu es en zone rouge/orange.
+Un questionnaire specialise pour definir les peptides adaptes a tes objectifs. Tu recois un protocole clair, des dosages, un timing et des sources fiables. Bonus: ebook "Anabolic Code" offert.
 
-### LES ÉTAPES EXACTES:
-1. **Tu choisis Burnout Engine**
-2. **Tu paies 39€**
-3. **Tu réponds à 80 questions ciblées** (20-25 minutes)
-   - Charge de travail & temps de travail réel
-   - Qualité de sommeil & récupération
-   - Symptômes physiques (palpitations, tension, migraines)
-   - Symptômes psychologiques (cynisme, détachement, irritabilité)
-   - Relations sociales & isolement
-   - Sens du travail & motivation
-   - Capacité de concentration & performance cognitive
-4. **Tu soumets** - génération automatique
-5. **Tu reçois ton rapport Burnout** (8-10 pages)
+### LES ETAPES EXACTES:
+1. **Tu choisis Peptides Engine**
+2. **Tu paies 99€**
+3. **Tu reponds au questionnaire** (6 sections, 15-20 minutes)
+   - Profil & objectifs
+   - Contexte sante
+   - Performance & composition
+   - Objectifs peptides
+   - Biomarqueurs
+   - Contraintes & attentes
+4. **Tu soumets** - generation automatique
+5. **Tu recois ton rapport Peptides Engine** (12-16 pages)
 
 ### CE QUE JE FAIS (EN COULISSES):
-- **Scoring validé** : Basé sur le Maslach Burnout Inventory (MBI) + mes ajustements terrain
-- **Détection précoce** : Je détecte les signaux 3-6 mois AVANT le crash
-- **Profil de burnout** : Tu es en phase 1, 2, 3, 4 ou 5 (du "fatigué" au "cassé complet")
+- Analyse objectifs, contraintes, tolerance injectables, budget
+- Scoring 8 axes + priorisation des peptides
+- Synthese basee sur la knowledge base (sans citer les sources)
 
-### CE QUE TU REÇOIS:
-📄 **RAPPORT BURNOUT ENGINE (8-10 PAGES):**
+### CE QUE TU RECOIS:
+📄 **RAPPORT PEPTIDES ENGINE (12-16 PAGES):**
 
-1. **Score de Risque Global** (1 page)
-   - Score sur 100 (0-30 = Vert, 30-60 = Orange, 60-100 = Rouge)
-   - Phase de burnout détectée (1 à 5)
-   - Probabilité de crash dans les 3 mois (%)
+1. **Diagnostic de depart** (1-2 pages)
+   - Profil peptides, objectifs, priorites
+   - Points d'attention (recuperation, sommeil, tendons, cognition)
 
-2. **Analyse des 3 Dimensions du Burnout** (2 pages)
-   - **Épuisement émotionnel** (score + interprétation)
-   - **Dépersonnalisation/Cynisme** (score + interprétation)
-   - **Accomplissement personnel réduit** (score + interprétation)
+2. **Peptides recommandes** (3-4 pages)
+   - 3 a 5 peptides max
+   - Pour chaque peptide: objectif, dosage, timing, duree, precautions
 
-3. **Symptômes Détectés** (1 page)
-   - Physiques (troubles du sommeil, tensions, palpitations, etc.)
-   - Psychologiques (irritabilité, anxiété, déconnexion, etc.)
-   - Cognitifs (concentration, mémoire, décision)
-   - Sociaux (isolement, conflits, retrait)
+3. **Protocoles semaine par semaine** (3-4 pages)
+   - Plan d'execution clair
+   - Ajustements selon tolerance
 
-4. **Causes Racines Identifiées** (1 page)
-   - Charge de travail excessive
-   - Manque de contrôle/autonomie
-   - Récompenses insuffisantes (financières, reconnaissance)
-   - Relations sociales dégradées
-   - Injustice perçue
-   - Conflits de valeurs
+4. **Stack supplements & lifestyle** (2-3 pages)
+   - Synergies utiles
+   - Habitudes a verrouiller
 
-5. **Protocole Récupération 4 Semaines** (3-4 pages)
-   - **Semaine 1: STOP** (arrêt, repos, boundaries strictes)
-   - **Semaine 2: REPAIR** (sommeil, nutrition, supps anti-stress)
-   - **Semaine 3: REBUILD** (réintroduction activité, gestion charge)
-   - **Semaine 4: PROTECT** (nouvelles routines, prévention rechute)
-   - Protocole anti-cortisol (matin & soir)
-   - Stack suppléments adaptogènes (ashwagandha, rhodiola, magnésium, etc.)
-   - Techniques de décompression (respiration, méditation, marche)
-
-6. **Plan de Prévention Long-Terme** (1 page)
-   - Signaux d'alerte à monitorer
-   - Routines non-négociables (sommeil, off-time, exercice)
-   - Boundaries au travail (dire non, déléguer, automatiser)
-   - Support social (qui appeler si ça re-dérape)
+5. **Plan d'execution + coaching** (1-2 pages)
+   - Deduction 99€ sur coaching
+   - CTA vers les formules
 
 ### TIMELINE:
-- **Questionnaire terminé → Rapport reçu** : 24h max
+- **Questionnaire termine → Rapport recu** : 24h max
 
 ### PARFAIT POUR:
-✅ Entrepreneurs qui travaillent 70h/semaine
-✅ Cadres en open-space qui n'arrivent plus à déconnecter
-✅ Freelances qui ont 0 boundaries clients
-✅ Parents qui cumulent job + enfants + charge mentale
-✅ Toute personne qui sent "je suis au bout mais je peux pas m'arrêter"
+✅ Athletes ou pratiquants avances
+✅ Objectifs recuperation / tendons / performance
+✅ Besoin d'un protocole clair et securise
+✅ Envie d'eviter les erreurs couteuses
 
-### POURQUOI 39€ SEULEMENT ?
-Parce que les gens en burnout n'ont souvent plus de budget ou d'énergie pour dépenser 100€. Je veux que ce soit accessible. Si t'es en burnout, tu dois agir NOW, pas attendre d'avoir les moyens.
+### POURQUOI 99€ ?
+Parce que le plan est hautement personnalise et inclut un ebook complet + une selection de sources fiables. Ce montant est deduit si tu passes ensuite au coaching.
 
 ---
 
@@ -479,10 +458,10 @@ Parce que les gens en burnout n'ont souvent plus de budget ou d'énergie pour d�
 | Offre | Prix | Questions | Rapport | Temps | Parfait pour |
 |-------|------|-----------|---------|-------|-------------|
 | **Discovery Scan** | 0€ | 50 | Dashboard interactif | 15 min | Découvrir le système |
-| **Anabolic Bioscan** | 49€ | 150 | 25 pages (17 sections) | 35 min | Optimisation complète |
-| **Pro Panel 360** | 99€ | 210 | 45 pages (25+ sections) + photos + wearables | 45 min | Performance ultime |
+| **Anabolic Bioscan** | 59€ | 150 | 25 pages (17 sections) | 35 min | Optimisation complète |
+| **Ultimate Scan** | 79€ | 210 | 45 pages (25+ sections) + photos + wearables | 45 min | Performance ultime |
 | **Blood Analysis** | 99€ | 0 (upload bilan) | 10-15 pages | 5 min upload | Optimisation sur data objectives |
-| **Burnout Engine** | 39€ | 80 | 8-10 pages | 20 min | Prévention/récupération burnout |
+| **Peptides Engine** | 99€ | 45 | 12-16 pages | 20 min | Protocoles peptides ciblés |
 
 ---
 
@@ -501,7 +480,7 @@ OUI. Chiffrement SSL/TLS, serveurs EU (RGPD), je ne vends JAMAIS tes données. T
 À VIE. Tu gardes l'accès pour toujours. Tu peux refaire les questionnaires plus tard pour comparer.
 
 **"Je peux upgrader plus tard ?"**
-OUI. Tu commences par le Discovery Scan gratuit, puis tu upgrades vers Anabolic ou Pro Panel. Tu ne paies que la différence.
+OUI. Tu commences par le Discovery Scan gratuit, puis tu upgrades vers Anabolic ou Ultimate Scan. Tu ne paies que la différence.
 
 ---
 

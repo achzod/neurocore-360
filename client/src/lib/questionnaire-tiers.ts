@@ -1,18 +1,18 @@
 /**
  * NEUROCORE 360 - Système de Questionnaire 3 Tiers
  *
- * GRATUIT (0€): ~50 questions - Dashboard basique
- * ANABOLIC BIOSCAN (49€): ~150 questions - Rapport Achzod 18 sections
- * PRO PANEL 360 (99€): ~210 questions - Rapport premium 25 sections + Terra Wearables + Analyse Photo
+ * GRATUIT (Discovery Scan, 0€): ~66 questions - Dashboard basique
+ * ANABOLIC BIOSCAN (59€): ~137 questions - Rapport Achzod 16 sections
+ * ULTIMATE SCAN (79€): ~183 questions - Rapport 18 sections + Wearables + Analyse Photo
  *
  * Chaque question a un champ `tier`:
  * - "free" = disponible pour tous
- * - "essential" = ANABOLIC BIOSCAN (49€)
- * - "elite" = PRO PANEL 360 (99€)
+ * - "essential" = ANABOLIC BIOSCAN (59€)
+ * - "elite" = ULTIMATE SCAN (79€)
  */
 
 export type QuestionTier = "free" | "essential" | "elite";
-export type QuestionType = "text" | "number" | "email" | "select" | "radio" | "checkbox" | "textarea" | "photo";
+export type QuestionType = "text" | "number" | "email" | "select" | "radio" | "checkbox" | "textarea" | "photo" | "scale";
 
 export interface QuestionOption {
   value: string;
@@ -27,6 +27,10 @@ export interface Question {
   tier: QuestionTier;
   options?: QuestionOption[];
   placeholder?: string;
+  helpText?: string;
+  min?: number;
+  max?: number;
+  unit?: string;
   required?: boolean;
   showFor?: "homme" | "femme"; // Genre-specific questions
   conditionalOn?: string; // Show only if this question has a certain answer
@@ -46,7 +50,7 @@ export interface Section {
 // ============================================================================
 
 export const SECTIONS: Section[] = [
-  // FREE SECTIONS (9)
+  // FREE SECTIONS (10)
   { id: "profil-base", title: "Profil de Base", subtitle: "Informations générales", icon: "User", tier: "free", order: 1 },
   { id: "sante-historique", title: "Santé & Historique", subtitle: "Antécédents et blocages", icon: "Stethoscope", tier: "free", order: 2 },
   { id: "sommeil", title: "Sommeil", subtitle: "Qualité et habitudes", icon: "Moon", tier: "free", order: 3 },
@@ -67,7 +71,7 @@ export const SECTIONS: Section[] = [
   { id: "biomarqueurs", title: "Biomarqueurs", subtitle: "Analyses sanguines", icon: "TestTube", tier: "essential", order: 16 },
   { id: "composition-corporelle", title: "Composition Corporelle", subtitle: "Morphologie détaillée", icon: "Scale", tier: "essential", order: 17 },
 
-  // PRO PANEL 360 SECTIONS (+6)
+  // ULTIMATE SCAN SECTIONS (+6)
   { id: "nutrition-timing", title: "Nutrition Timing", subtitle: "Timing pré/intra/post workout", icon: "Clock", tier: "elite", order: 17 },
   { id: "cardio-performance", title: "Cardio & Performance", subtitle: "Zone 2, VO2max, seuils", icon: "Heart", tier: "elite", order: 18 },
   { id: "hrv-cardiaque", title: "HRV & Cardiaque", subtitle: "Variabilité cardiaque", icon: "HeartPulse", tier: "elite", order: 19 },
@@ -77,7 +81,7 @@ export const SECTIONS: Section[] = [
 ];
 
 // ============================================================================
-// QUESTIONS - FREE TIER (~50 questions)
+// QUESTIONS - FREE TIER (~66 questions)
 // ============================================================================
 
 export const QUESTIONS_FREE: Question[] = [
@@ -86,9 +90,9 @@ export const QUESTIONS_FREE: Question[] = [
   { id: "prenom", sectionId: "profil-base", type: "text", label: "Ton prénom ?", tier: "free", placeholder: "Ex: Marc, Sophie...", required: true },
   { id: "email", sectionId: "profil-base", type: "email", label: "Ton email ?", tier: "free", placeholder: "pour recevoir ton rapport", required: true },
   { id: "instagram", sectionId: "profil-base", type: "text", label: "Ton Instagram ? (optionnel)", tier: "free", placeholder: "@ton_pseudo" },
-  { id: "age", sectionId: "profil-base", type: "select", label: "Ton âge ?", tier: "free", options: [{ value: "18-25", label: "18-25 ans" }, { value: "26-35", label: "26-35 ans" }, { value: "36-45", label: "36-45 ans" }, { value: "46-55", label: "46-55 ans" }, { value: "56+", label: "56+ ans" }], required: true },
-  { id: "taille", sectionId: "profil-base", type: "select", label: "Ta taille ?", tier: "free", options: [{ value: "150-160", label: "150-160 cm" }, { value: "161-170", label: "161-170 cm" }, { value: "171-180", label: "171-180 cm" }, { value: "181-190", label: "181-190 cm" }, { value: "191+", label: "190+ cm" }], required: true },
-  { id: "poids", sectionId: "profil-base", type: "select", label: "Ton poids ?", tier: "free", options: [{ value: "50-60", label: "50-60 kg" }, { value: "61-70", label: "61-70 kg" }, { value: "71-80", label: "71-80 kg" }, { value: "81-90", label: "81-90 kg" }, { value: "91-100", label: "91-100 kg" }, { value: "100+", label: "100+ kg" }], required: true },
+  { id: "age", sectionId: "profil-base", type: "number", label: "Ton âge ?", tier: "free", min: 18, max: 100, unit: "ans", placeholder: "Ex: 29", required: true },
+  { id: "taille", sectionId: "profil-base", type: "number", label: "Ta taille ?", tier: "free", min: 140, max: 220, unit: "cm", placeholder: "Ex: 178", required: true },
+  { id: "poids", sectionId: "profil-base", type: "number", label: "Ton poids ?", tier: "free", min: 40, max: 200, unit: "kg", placeholder: "Ex: 72", required: true },
   { id: "objectif", sectionId: "profil-base", type: "select", label: "Ton objectif principal ?", tier: "free", options: [{ value: "perte-graisse", label: "Perte de graisse" }, { value: "prise-muscle", label: "Prise de muscle" }, { value: "recomposition", label: "Recomposition" }, { value: "performance", label: "Performance" }, { value: "sante", label: "Santé générale" }, { value: "energie", label: "Plus d'énergie" }], required: true },
 
   // SANTÉ & HISTORIQUE (6 questions)
@@ -265,7 +269,7 @@ export const QUESTIONS_ESSENTIAL: Question[] = [
 ];
 
 // ============================================================================
-// QUESTIONS - PRO PANEL 360 (ajoutées aux ANABOLIC BIOSCAN)
+// QUESTIONS - ULTIMATE SCAN (ajoutées aux ANABOLIC BIOSCAN)
 // ============================================================================
 
 export const QUESTIONS_ELITE: Question[] = [
@@ -381,4 +385,4 @@ export function getQuestionCounts(): { free: number; essential: number; elite: n
 
 // Export counts for display
 export const TIER_QUESTION_COUNTS = getQuestionCounts();
-// Result: { free: ~50, essential: ~150, elite: ~210 }
+// Result: { free: 66, essential: 137, elite: 183 }

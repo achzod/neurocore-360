@@ -152,104 +152,6 @@ export const TERRA_PROVIDERS = [
 
 export type TerraProvider = typeof TERRA_PROVIDERS[number]["id"];
 
-// Data mapping from Terra to questionnaire questions - EXPANDED VERSION
-export const TERRA_DATA_MAPPING = {
-  // HRV data -> skip HRV questions
-  hrv: {
-    questionIds: ["hrv-actuelle", "hrv-moyenne", "variabilite-cardiaque", "hrv-sdnn", "hrv-rmssd"],
-    dataPath: "hrv",
-    unit: "ms",
-  },
-  // Sleep data -> skip sleep questions
-  sleep: {
-    questionIds: [
-      "duree-sommeil",
-      "sommeil-profond",
-      "sommeil-leger",
-      "sommeil-rem",
-      "reveils-nocturnes",
-      "latence-endormissement",
-      "qualite-sommeil",
-      "efficacite-sommeil",
-      "heure-coucher",
-      "heure-lever",
-    ],
-    dataPath: "sleep",
-  },
-  // Heart rate data -> skip HR questions
-  heartRate: {
-    questionIds: ["fc-repos", "fc-max", "fc-moyenne", "frequence-cardiaque-repos", "fc-min"],
-    dataPath: "heart_rate",
-  },
-  // Activity & Steps data
-  activity: {
-    questionIds: [
-      "pas-quotidiens",
-      "nombre-pas",
-      "activite-physique-quotidienne",
-      "distance-parcourue",
-      "etages-montes",
-      "temps-actif",
-      "temps-sedentaire",
-    ],
-    dataPath: "activity",
-  },
-  // Calories & Metabolism
-  calories: {
-    questionIds: [
-      "calories-brulees",
-      "calories-totales",
-      "calories-actives",
-      "calories-repos",
-      "metabolisme-basal",
-      "bmr",
-      "tdee",
-      "depense-energetique",
-    ],
-    dataPath: "calories",
-  },
-  // SpO2 data
-  spo2: {
-    questionIds: ["saturation-oxygene", "spo2", "oxygene-sang"],
-    dataPath: "oxygen",
-    unit: "%",
-  },
-  // Body temperature
-  temperature: {
-    questionIds: ["temperature-corporelle", "temp-basale", "temperature-peau"],
-    dataPath: "temperature",
-    unit: "°C",
-  },
-  // Stress & Recovery
-  stress: {
-    questionIds: ["niveau-stress", "score-stress", "score-recuperation", "recovery-score"],
-    dataPath: "stress",
-  },
-  // Body composition
-  body: {
-    questionIds: [
-      "poids",
-      "masse-grasse",
-      "masse-musculaire",
-      "eau-corporelle",
-      "masse-osseuse",
-      "imc",
-      "graisse-viscerale",
-    ],
-    dataPath: "body",
-  },
-  // Respiratory
-  respiratory: {
-    questionIds: ["frequence-respiratoire", "respiration-moyenne"],
-    dataPath: "respiratory",
-  },
-  // VO2 Max
-  vo2max: {
-    questionIds: ["vo2max", "vo2-max", "capacite-aerobique"],
-    dataPath: "vo2max",
-  },
-};
-
 interface TerraUser {
   userId: string;
   provider: TerraProvider;
@@ -387,7 +289,7 @@ export async function generateTerraWidget(
   // Créer le reference_id avec le prefix du site pour le dispatcher
   // IMPORTANT: sanitize le userId pour éviter les caractères spéciaux qui cassent l'URL
   const sanitizedUserId = userId.replace(/[^a-zA-Z0-9-_]/g, '_');
-  const referenceId = `${sitePrefix}_${sanitizedUserId}`;
+  const referenceId = `${sitePrefix}_${sanitizedUserId}_${Date.now()}`;
 
   try {
     const response = await fetch(`${TERRA_CONFIG.BASE_URL}/auth/generateWidgetSession`, {
@@ -405,8 +307,8 @@ export async function generateTerraWidget(
         // L'app est déjà sur l'App Store, l'user la télécharge et autorise Apple Health
         // Les données sont ensuite envoyées automatiquement à notre webhook
         use_terra_avengers_app: useAppleHealth,
-        auth_success_redirect_url: redirectUrl || `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_success=true`,
-        auth_failure_redirect_url: `${process.env.BASE_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_error=true`,
+        auth_success_redirect_url: redirectUrl || `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_success=true`,
+        auth_failure_redirect_url: `${process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || "https://neurocore-360.onrender.com"}/audit-complet/questionnaire?terra_error=true`,
       }),
     });
 
@@ -487,303 +389,148 @@ export function mapTerraDataToAnswers(terraData: TerraData): {
   const skippedQuestionIds: string[] = [];
   const summary: Record<string, unknown> = {};
 
+  const pushAnswer = (id: string, value: unknown) => {
+    if (value === undefined || value === null || value === "") return;
+    answers[id] = value;
+    skippedQuestionIds.push(id);
+  };
+
+  const mapHrvRange = (value: number): string => {
+    if (value < 30) return "moins-30";
+    if (value < 50) return "30-50";
+    if (value < 70) return "50-70";
+    return "70+";
+  };
+
+  const mapRestingHrRange = (value: number): string => {
+    if (value < 50) return "moins-50";
+    if (value < 60) return "50-60";
+    if (value < 70) return "60-70";
+    if (value < 80) return "70-80";
+    return "80+";
+  };
+
+  const mapSleepHoursRange = (hours: number): string => {
+    if (hours < 5) return "moins-5";
+    if (hours < 6) return "5-6";
+    if (hours < 7) return "6-7";
+    if (hours < 8) return "7-8";
+    return "8+";
+  };
+
+  const mapSleepQuality = (efficiency?: number): string | null => {
+    if (efficiency === undefined || efficiency === null) return null;
+    const percent = efficiency <= 1 ? efficiency * 100 : efficiency;
+    if (percent >= 85) return "excellente";
+    if (percent >= 75) return "bonne";
+    if (percent >= 65) return "moyenne";
+    return "mauvaise";
+  };
+
+  const mapSleepLatency = (minutes: number): string => {
+    if (minutes <= 15) return "jamais";
+    if (minutes <= 30) return "parfois";
+    if (minutes <= 60) return "souvent";
+    return "toujours";
+  };
+
+  const mapAwakenings = (count: number): string => {
+    if (count <= 0) return "jamais";
+    if (count <= 2) return "parfois";
+    if (count <= 4) return "souvent";
+    return "chaque-nuit";
+  };
+
+  const mapBedtime = (value: string): string | null => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const hour = date.getHours();
+    if (hour < 22) return "avant-22h";
+    if (hour < 23) return "22h-23h";
+    if (hour < 24) return "23h-00h";
+    return "apres-00h";
+  };
+
   // ========== HRV ==========
   if (terraData.hrv) {
     const hrv = terraData.hrv;
+    const hrvValue = hrv.avg_hrv_sdnn ?? hrv.avg_hrv_rmssd;
+    if (hrvValue) {
+      pushAnswer("hrv-mesure", "regulierement");
+      pushAnswer("hrv-valeur", mapHrvRange(hrvValue));
+      summary["hrv_ms"] = hrvValue;
+    }
     if (hrv.avg_hrv_sdnn) {
-      answers["hrv-actuelle"] = hrv.avg_hrv_sdnn;
-      answers["hrv-moyenne"] = hrv.avg_hrv_sdnn;
-      answers["hrv-sdnn"] = hrv.avg_hrv_sdnn;
       summary["hrv_sdnn_ms"] = hrv.avg_hrv_sdnn;
     }
     if (hrv.avg_hrv_rmssd) {
-      answers["hrv-rmssd"] = hrv.avg_hrv_rmssd;
       summary["hrv_rmssd_ms"] = hrv.avg_hrv_rmssd;
     }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.hrv.questionIds);
   }
 
   // ========== SLEEP ==========
   if (terraData.sleep) {
     const sleep = terraData.sleep;
+    const totalSleepSeconds =
+      sleep.duration_in_bed_seconds ||
+      sleep.duration_asleep_seconds ||
+      (sleep.duration_deep_sleep_state_seconds &&
+      sleep.duration_light_sleep_state_seconds &&
+      sleep.duration_rem_sleep_state_seconds
+        ? sleep.duration_deep_sleep_state_seconds +
+          sleep.duration_light_sleep_state_seconds +
+          sleep.duration_rem_sleep_state_seconds
+        : null);
 
-    // Durée totale
-    if (sleep.duration_in_bed_seconds) {
-      const hours = Math.round(sleep.duration_in_bed_seconds / 3600 * 10) / 10;
-      answers["duree-sommeil"] = hours;
+    if (totalSleepSeconds) {
+      const hours = Math.round((totalSleepSeconds / 3600) * 10) / 10;
+      pushAnswer("heures-sommeil", mapSleepHoursRange(hours));
       summary["sleep_duration_hours"] = hours;
     }
 
-    // Sommeil profond
-    if (sleep.duration_deep_sleep_state_seconds) {
-      const mins = Math.round(sleep.duration_deep_sleep_state_seconds / 60);
-      answers["sommeil-profond"] = mins;
-      summary["deep_sleep_minutes"] = mins;
+    const efficiency = sleep.sleep_efficiency ?? sleep.sleep_score;
+    const quality = mapSleepQuality(efficiency);
+    if (quality) {
+      pushAnswer("qualite-sommeil", quality);
+      summary["sleep_quality_score"] = efficiency;
     }
 
-    // Sommeil léger
-    if (sleep.duration_light_sleep_state_seconds) {
-      const mins = Math.round(sleep.duration_light_sleep_state_seconds / 60);
-      answers["sommeil-leger"] = mins;
-      summary["light_sleep_minutes"] = mins;
-    }
-
-    // Sommeil REM
-    if (sleep.duration_rem_sleep_state_seconds) {
-      const mins = Math.round(sleep.duration_rem_sleep_state_seconds / 60);
-      answers["sommeil-rem"] = mins;
-      summary["rem_sleep_minutes"] = mins;
-    }
-
-    // Réveils
-    if (sleep.num_awakenings !== undefined) {
-      answers["reveils-nocturnes"] = sleep.num_awakenings;
-      summary["awakenings"] = sleep.num_awakenings;
-    }
-
-    // Latence
-    if (sleep.sleep_latency_seconds) {
+    if (sleep.sleep_latency_seconds !== undefined) {
       const mins = Math.round(sleep.sleep_latency_seconds / 60);
-      answers["latence-endormissement"] = mins;
+      pushAnswer("endormissement", mapSleepLatency(mins));
       summary["sleep_latency_minutes"] = mins;
     }
 
-    // Efficacité
-    if (sleep.sleep_efficiency) {
-      answers["efficacite-sommeil"] = sleep.sleep_efficiency;
-      answers["qualite-sommeil"] = sleep.sleep_efficiency >= 85 ? "excellent" :
-                                   sleep.sleep_efficiency >= 75 ? "bon" :
-                                   sleep.sleep_efficiency >= 65 ? "moyen" : "mauvais";
-      summary["sleep_efficiency_percent"] = sleep.sleep_efficiency;
+    if (sleep.num_awakenings !== undefined) {
+      pushAnswer("reveils-nocturnes", mapAwakenings(sleep.num_awakenings));
+      summary["awakenings"] = sleep.num_awakenings;
     }
 
-    // Score sommeil
-    if (sleep.sleep_score) {
-      summary["sleep_score"] = sleep.sleep_score;
-    }
-
-    // Heures coucher/lever
     if (sleep.bedtime_start) {
-      answers["heure-coucher"] = sleep.bedtime_start;
-      summary["bedtime"] = sleep.bedtime_start;
+      const bedtimeBucket = mapBedtime(sleep.bedtime_start);
+      if (bedtimeBucket) {
+        pushAnswer("heure-coucher", bedtimeBucket);
+        summary["bedtime"] = sleep.bedtime_start;
+      }
     }
-    if (sleep.bedtime_end) {
-      answers["heure-lever"] = sleep.bedtime_end;
-      summary["wake_time"] = sleep.bedtime_end;
-    }
-
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.sleep.questionIds);
   }
 
   // ========== HEART RATE ==========
   if (terraData.heart_rate) {
     const hr = terraData.heart_rate;
     if (hr.hr_resting) {
-      answers["fc-repos"] = hr.hr_resting;
-      answers["frequence-cardiaque-repos"] = hr.hr_resting;
+      pushAnswer("fc-repos", mapRestingHrRange(hr.hr_resting));
       summary["resting_hr_bpm"] = hr.hr_resting;
     }
     if (hr.hr_avg) {
-      answers["fc-moyenne"] = hr.hr_avg;
       summary["avg_hr_bpm"] = hr.hr_avg;
     }
     if (hr.hr_max) {
-      answers["fc-max"] = hr.hr_max;
       summary["max_hr_bpm"] = hr.hr_max;
     }
     if (hr.hr_min) {
-      answers["fc-min"] = hr.hr_min;
       summary["min_hr_bpm"] = hr.hr_min;
     }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.heartRate.questionIds);
-  }
-
-  // ========== ACTIVITY & STEPS ==========
-  if (terraData.activity) {
-    const act = terraData.activity;
-
-    // Pas
-    if (act.steps) {
-      answers["pas-quotidiens"] = act.steps;
-      answers["nombre-pas"] = act.steps;
-      summary["daily_steps"] = act.steps;
-    }
-
-    // Distance
-    if (act.distance_meters) {
-      const km = Math.round(act.distance_meters / 100) / 10;
-      answers["distance-parcourue"] = km;
-      summary["distance_km"] = km;
-    }
-
-    // Étages
-    if (act.floors_climbed) {
-      answers["etages-montes"] = act.floors_climbed;
-      summary["floors_climbed"] = act.floors_climbed;
-    }
-
-    // Temps actif
-    if (act.active_duration_seconds) {
-      const mins = Math.round(act.active_duration_seconds / 60);
-      answers["temps-actif"] = mins;
-      summary["active_minutes"] = mins;
-    }
-
-    // Temps sédentaire
-    if (act.sedentary_seconds) {
-      const mins = Math.round(act.sedentary_seconds / 60);
-      answers["temps-sedentaire"] = mins;
-      summary["sedentary_minutes"] = mins;
-    }
-
-    // Calories totales
-    if (act.calories_total) {
-      answers["calories-totales"] = act.calories_total;
-      answers["calories-brulees"] = act.calories_total;
-      summary["calories_total"] = act.calories_total;
-    }
-
-    // Calories actives
-    if (act.calories_active) {
-      answers["calories-actives"] = act.calories_active;
-      summary["calories_active"] = act.calories_active;
-    }
-
-    // Score activité
-    if (act.activity_score) {
-      summary["activity_score"] = act.activity_score;
-    }
-
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.activity.questionIds);
-  }
-
-  // ========== CALORIES & METABOLISM ==========
-  if (terraData.calories) {
-    const cal = terraData.calories;
-
-    if (cal.calories_bmr) {
-      answers["metabolisme-basal"] = cal.calories_bmr;
-      answers["bmr"] = cal.calories_bmr;
-      answers["calories-repos"] = cal.calories_bmr;
-      summary["bmr_calories"] = cal.calories_bmr;
-    }
-
-    if (cal.calories_total) {
-      answers["tdee"] = cal.calories_total;
-      answers["depense-energetique"] = cal.calories_total;
-      summary["tdee_calories"] = cal.calories_total;
-    }
-
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.calories.questionIds);
-  }
-
-  // ========== SpO2 ==========
-  if (terraData.oxygen) {
-    const ox = terraData.oxygen;
-    if (ox.avg_saturation_percentage) {
-      answers["saturation-oxygene"] = ox.avg_saturation_percentage;
-      answers["spo2"] = ox.avg_saturation_percentage;
-      summary["spo2_avg_percent"] = ox.avg_saturation_percentage;
-    }
-    if (ox.min_saturation_percentage) {
-      summary["spo2_min_percent"] = ox.min_saturation_percentage;
-    }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.spo2.questionIds);
-  }
-
-  // ========== TEMPERATURE ==========
-  if (terraData.temperature) {
-    const temp = terraData.temperature;
-    if (temp.body_temperature_celsius) {
-      answers["temperature-corporelle"] = temp.body_temperature_celsius;
-      summary["body_temp_celsius"] = temp.body_temperature_celsius;
-    }
-    if (temp.skin_temperature_celsius) {
-      answers["temperature-peau"] = temp.skin_temperature_celsius;
-      summary["skin_temp_celsius"] = temp.skin_temperature_celsius;
-    }
-    if (temp.deviation_from_baseline) {
-      summary["temp_deviation"] = temp.deviation_from_baseline;
-    }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.temperature.questionIds);
-  }
-
-  // ========== STRESS & RECOVERY ==========
-  if (terraData.stress) {
-    const stress = terraData.stress;
-    if (stress.stress_level !== undefined) {
-      answers["niveau-stress"] = stress.stress_level;
-      answers["score-stress"] = stress.stress_level;
-      summary["stress_level"] = stress.stress_level;
-    }
-    if (stress.recovery_score) {
-      answers["score-recuperation"] = stress.recovery_score;
-      answers["recovery-score"] = stress.recovery_score;
-      summary["recovery_score"] = stress.recovery_score;
-    }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.stress.questionIds);
-  }
-
-  // ========== BODY COMPOSITION ==========
-  if (terraData.body) {
-    const body = terraData.body;
-    if (body.weight_kg) {
-      answers["poids"] = body.weight_kg;
-      summary["weight_kg"] = body.weight_kg;
-    }
-    if (body.body_fat_percentage) {
-      answers["masse-grasse"] = body.body_fat_percentage;
-      summary["body_fat_percent"] = body.body_fat_percentage;
-    }
-    if (body.muscle_mass_kg) {
-      answers["masse-musculaire"] = body.muscle_mass_kg;
-      summary["muscle_mass_kg"] = body.muscle_mass_kg;
-    }
-    if (body.water_percentage) {
-      answers["eau-corporelle"] = body.water_percentage;
-      summary["water_percent"] = body.water_percentage;
-    }
-    if (body.bone_mass_kg) {
-      answers["masse-osseuse"] = body.bone_mass_kg;
-      summary["bone_mass_kg"] = body.bone_mass_kg;
-    }
-    if (body.bmi) {
-      answers["imc"] = body.bmi;
-      summary["bmi"] = body.bmi;
-    }
-    if (body.visceral_fat) {
-      answers["graisse-viscerale"] = body.visceral_fat;
-      summary["visceral_fat"] = body.visceral_fat;
-    }
-    if (body.metabolic_age) {
-      summary["metabolic_age"] = body.metabolic_age;
-    }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.body.questionIds);
-  }
-
-  // ========== RESPIRATORY ==========
-  if (terraData.respiratory) {
-    const resp = terraData.respiratory;
-    if (resp.breaths_per_minute_avg) {
-      answers["frequence-respiratoire"] = resp.breaths_per_minute_avg;
-      answers["respiration-moyenne"] = resp.breaths_per_minute_avg;
-      summary["respiratory_rate"] = resp.breaths_per_minute_avg;
-    }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.respiratory.questionIds);
-  }
-
-  // ========== VO2 MAX ==========
-  if (terraData.vo2max) {
-    if (terraData.vo2max.vo2_max) {
-      answers["vo2max"] = terraData.vo2max.vo2_max;
-      answers["vo2-max"] = terraData.vo2max.vo2_max;
-      answers["capacite-aerobique"] = terraData.vo2max.vo2_max;
-      summary["vo2_max"] = terraData.vo2max.vo2_max;
-    }
-    if (terraData.vo2max.fitness_age) {
-      summary["fitness_age"] = terraData.vo2max.fitness_age;
-    }
-    skippedQuestionIds.push(...TERRA_DATA_MAPPING.vo2max.questionIds);
   }
 
   return {

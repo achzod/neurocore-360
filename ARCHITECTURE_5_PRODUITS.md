@@ -1,7 +1,7 @@
 # ARCHITECTURE COMPLETE - LES 5 PRODUITS NEUROCORE 360
 
 **Date:** 2026-01-10
-**Status:** Documentation complète après migration Burnout Engine vers Claude Opus 4.5
+**Status:** Documentation complète après migration Peptides Engine vers Claude Opus 4.5
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Produit | Tier | Prix | Questions | Engine | API Endpoint | Report Page | Design |
 |---------|------|------|-----------|--------|--------------|-------------|--------|
-| **Discovery Scan** | GRATUIT | 0€ | ~50 | Claude Opus 4.5 | `/api/discovery-scan/:id` | `DiscoveryScanReport.tsx` | Ultrahuman jaune |
-| **Anabolic Bioscan** | PREMIUM | 197€ | ~150 | Claude Opus 4.5 | `/api/audits/:id/narrative` | `AnabolicScanReport.tsx` | Ultrahuman émeraude |
-| **Ultimate Scan** | ELITE | 497€ | ~210 + photos | Claude Opus 4.5 | `/api/audits/:id/narrative` | `UltimateScanReport.tsx` | Ultrahuman or |
-| **Burnout Engine** | STANDALONE | 0€ | ~30 | Claude Opus 4.5 ✅ | `/api/burnout-detection/:id` | `BurnoutEngineReport.tsx` | Ultrahuman coral |
-| **Blood Analysis** | STANDALONE | 79€ | 39 biomarqueurs | Claude Sonnet 4.5 | `/api/blood-analysis/*` | `BloodDashboard.tsx` | Design unique |
+| **Discovery Scan** | GRATUIT | 0€ | ~66 | Claude Opus 4.5 | `/api/discovery-scan/:id` | `DiscoveryScanReport.tsx` | Ultrahuman jaune |
+| **Anabolic Bioscan** | PREMIUM | 59€ | ~137 | Claude Opus 4.5 | `/api/audits/:id/narrative` | `AnabolicScanReport.tsx` | Ultrahuman émeraude |
+| **Ultimate Scan** | ELITE | 79€ | ~183 + photos | Claude Opus 4.5 | `/api/audits/:id/narrative` | `UltimateScanReport.tsx` | Ultrahuman or |
+| **Peptides Engine** | STANDALONE | 99€ | ~45 | Claude Opus 4.5 ✅ | `/api/peptides-engine/:id` | `PeptidesEngineReport.tsx` | Ultrahuman amber |
+| **Blood Analysis** | STANDALONE | 99€ | 39 biomarqueurs | Claude Sonnet 4.5 | `/api/blood-analysis/*` | `BloodDashboard.tsx` | Ultrahuman beta |
 
 ✅ = Récemment migré de Gemini 2.0 → Claude Opus 4.5
 
@@ -97,14 +97,14 @@ interface SectionContent {
 - **Thème primaire:** `#FCDD00` (jaune/gold)
 - **Composants:** Sidebar, RadialProgress, MetricsRadar, Charts
 - **Features:**
-  - 4 thèmes au choix (M1 Black, Ice Blue, Titanium, Sand Stone)
+  - 4 thèmes au choix (M1 Black, Claude Creme, Titanium, Sand Stone)
   - Review system avec rating
   - CTA upgrade vers Anabolic
   - Export: Pas de PDF (gratuit)
 
 ---
 
-## 2️⃣ ANABOLIC BIOSCAN (PREMIUM - 197€)
+## 2️⃣ ANABOLIC BIOSCAN (PREMIUM - 59€)
 
 ### 📝 Questionnaire
 **Fichier:** `client/src/lib/questionnaire-tiers.ts`
@@ -203,7 +203,7 @@ interface AuditResult {
 
 ---
 
-## 3️⃣ ULTIMATE SCAN (ELITE - 497€)
+## 3️⃣ ULTIMATE SCAN (ELITE - 79€)
 
 ### 📝 Questionnaire
 **Fichier:** `client/src/lib/questionnaire-tiers.ts`
@@ -286,98 +286,90 @@ interface PhotoAnalysis {
 
 ---
 
-## 4️⃣ BURNOUT ENGINE (STANDALONE)
+## 4️⃣ PEPTIDES ENGINE (STANDALONE - 99€)
 
 ### 📝 Questionnaire
-**Fichier:** Questionnaire intégré dans `server/burnout-detection.ts`
+**Fichier:** `client/src/pages/PeptidesEnginePage.tsx`
 
-**Questions:** ~30 spécifiques burnout
-- Échelle 0-4 pour chaque question
-- 6 catégories: Énergie, Sommeil, Cognitif, Émotionnel, Physique, Social
-
-**Scoring:**
-```javascript
-Score total → Stress percentage (0-100%)
-Health score = 100 - stress%
-
-Phase:
-- 0-40%: Alarme (vert)
-- 41-70%: Résistance (orange)
-- 71-100%: Épuisement (rouge)
-```
+**Questions:** ~45 (6 sections)
+- Profil & objectifs
+- Contexte sante
+- Performance & composition
+- Objectifs peptides
+- Biomarqueurs
+- Contraintes & attentes
 
 ### 🔧 Engine de Génération
-**Fichier:** `server/burnout-detection.ts`
+**Fichier:** `server/peptides-engine.ts`
 
 **Process:**
-1. `analyzeBurnout(responses)` → Calcule score + phase
-2. `generateBurnoutSection()` → Génère 6 sections avec Claude
-3. Génération parallèle: Promise.all()
-4. Retour: `BurnoutReportData`
+1. `computeMetrics(responses)` → 8 axes (recuperation, sommeil, cognition, libido, performance, composition, tendons, peau)
+2. `getPeptidesKnowledge(responses)` → contexte connaissances + fallback interne
+3. `generatePeptidesSection()` → 6 sections en parallele
+4. Retour: `PeptidesReportData`
 
-**AI Model:** ✅ `claude-opus-4-5-20251101` (migré le 2026-01-10)
+**AI Model:** ✅ `claude-opus-4-5-20251101` (via ANTHROPIC_CONFIG)
 
 **Sections (6):**
 ```typescript
 sections = [
-  { id: "intro", title: "Diagnostic Burnout" },
-  { id: "analyse", title: "Analyse par Catégorie" },
-  { id: "protocole", title: "Protocole de Récupération" },
-  { id: "supplements", title: "Stack Suppléments" },
-  { id: "conclusion", title: "Prochaines Étapes" },
-  { id: "cta", title: "Aller Plus Loin" }
+  { id: "intro", title: "Profil peptides" },
+  { id: "diagnostic", title: "Diagnostic de depart" },
+  { id: "peptides", title: "Peptides recommandes" },
+  { id: "protocoles", title: "Protocoles & timing" },
+  { id: "stack", title: "Stack supplements" },
+  { id: "execution", title: "Plan d'execution + coaching" }
 ]
 ```
 
 ### 🌐 API Endpoints
 ```javascript
-POST /api/burnout-detection/analyze
-// Input: { responses: BurnoutResponse, email: string }
-// Output: { success, id, globalScore, phase, sections, ... }
-
-GET /api/burnout-detection/:id
-// Output: BurnoutReportData
-
-POST /api/burnout-detection/create-test
-// Crée un test de démonstration
+POST /api/peptides-engine/analyze
+POST /api/peptides-engine/create-checkout-session
+POST /api/peptides-engine/confirm-session
+POST /api/peptides-engine/save-progress
+GET /api/peptides-engine/progress/:email
+GET /api/peptides-engine/:id
+POST /api/peptides-engine/regenerate
 ```
 
 ### 📦 Format des Données
 ```typescript
-interface BurnoutReportData {
-  globalScore: number;                    // 0-100 (santé)
-  phase: "alarme" | "resistance" | "epuisement";
-  phaseLabel: string;
+interface PeptidesReportData {
+  globalScore: number;                    // 0-100
   clientName: string;
   generatedAt: string;
   metrics: {
-    key: string;                          // ex: "energie"
-    label: string;                        // ex: "Energie"
+    key: string;                          // ex: "recovery"
+    label: string;                        // ex: "Recuperation"
     value: number;                        // 1-10
     max: number;                          // 10
     description: string;
   }[];
   sections: SectionContent[];
+  profile?: {
+    primaryGoal?: string;
+    secondaryGoals?: string[];
+    experience?: string;
+    tolerance?: string;
+    budget?: string;
+    timeline?: string;
+  };
 }
 ```
 
 ### 🎨 Page de Rapport
-**Fichier:** `client/src/pages/BurnoutEngineReport.tsx`
+**Fichier:** `client/src/pages/PeptidesEngineReport.tsx`
 
-**Design:** Ultrahuman style avec code couleur phase
-- **Alarme:** `#22C55E` (vert)
-- **Résistance:** `#F59E0B` (orange)
-- **Épuisement:** `#EF4444` (rouge)
-
-**Features:**
-- Affichage phase avec couleur dynamique
-- Protocoles phase-specific
-- Stack suppléments adapté
-- CTA coaching/Anabolic
+**Design:** Ultrahuman style
+- Themes: M1 Black, Claude Creme, Titanium, Sand Stone
+- Dashboard + radar + scores par axe
+- CTA coaching avec 10 offres (avant/apres deduction)
+- Review system
 
 ---
 
-## 5️⃣ BLOOD ANALYSIS (STANDALONE - 79€)
+## 5️⃣ BLOOD ANALYSIS (STANDALONE - 99€)
 
 ### 📝 Input Data
 **Fichier:** `client/src/lib/blood-questionnaire.ts`
@@ -472,11 +464,11 @@ interface BiomarkerRange {
 ### 🎨 Page de Rapport
 **Fichier:** `client/src/pages/BloodDashboard.tsx`
 
-**Design:** ⚠️ **Design UNIQUE** (pas Ultrahuman)
-- Style laboratoire/medical
-- Radar charts pour 5 panels
-- Biomarker cards avec status (Critical/Suboptimal/Optimal)
-- Tabs: Overview, Hormonal, Metabolic, Inflammation
+**Design:** Ultrahuman style (beta)
+- Style Ultrahuman unifie (M1/Claude/Titanium/Sand)
+- Radar charts pour panels
+- Biomarker cards avec status
+- Navigation par sections
 
 **Features:**
 - Upload PDF bilan sanguin
@@ -490,11 +482,12 @@ interface BiomarkerRange {
 
 ### Design Pattern Actuel
 
-**4 produits utilisent le style Ultrahuman:**
+**5 produits utilisent le style Ultrahuman:**
 1. Discovery Scan → Ultrahuman jaune (`#FCDD00`)
 2. Anabolic Bioscan → Ultrahuman émeraude (`#10B981`)
 3. Ultimate Scan → Ultrahuman or (`#F59E0B`)
-4. Burnout Engine → Ultrahuman coral (`#FF6B6B`)
+4. Peptides Engine → Ultrahuman amber (`#F59E0B`)
+5. Blood Analysis → Ultrahuman beta (`#F4EDE3`)
 
 **Composants communs:**
 - `Sidebar` avec navigation sections
@@ -503,8 +496,8 @@ interface BiomarkerRange {
 - `Charts` (ProjectionChart, BarChart, Timeline)
 - Theme switcher (4 thèmes disponibles)
 
-**1 produit design unique:**
-5. Blood Analysis → Design medical/laboratoire propre
+**Design unifie:**
+- Blood Analysis passe sur le meme layout Ultrahuman (beta, data statique pour le moment)
 
 ### ⚠️ PROBLÈME IDENTIFIÉ
 
@@ -527,7 +520,7 @@ export function FullReport({ reportData, initialTheme }: FullReportProps)
 - ⏳ DiscoveryScanReport → wrapper qui fetch + passe à FullReport
 - ⏳ AnabolicScanReport → wrapper qui fetch + passe à FullReport
 - ⏳ UltimateScanReport → wrapper qui fetch + passe à FullReport
-- ⏳ BurnoutEngineReport → wrapper qui fetch + passe à FullReport
+- ⏳ PeptidesEngineReport → wrapper qui fetch + passe à FullReport
 - ❌ BloodDashboard → garde son design unique
 
 ---
@@ -600,7 +593,7 @@ Questionnaire.tsx (client, tier=PREMIUM)
 - ✅ Discovery Scan
 - ✅ Anabolic Bioscan
 - ✅ Ultimate Scan
-- ✅ Burnout Engine
+- ✅ Peptides Engine
 - ✅ Blood Analysis
 
 **Sources (8 au total):**
@@ -638,20 +631,20 @@ const prompt = `${basePrompt}\n\n${knowledgeContext}`;
 | Produit | Prix | Commission Stripe | Net |
 |---------|------|-------------------|-----|
 | Discovery Scan | 0€ | - | Lead magnet |
-| Anabolic Bioscan | 197€ | ~6€ | ~191€ |
-| Ultimate Scan | 497€ | ~15€ | ~482€ |
-| Burnout Engine | 0€ | - | Lead magnet |
-| Blood Analysis | 79€ | ~3€ | ~76€ |
+| Anabolic Bioscan | 59€ | ~2€ | ~57€ |
+| Ultimate Scan | 79€ | ~3€ | ~76€ |
+| Peptides Engine | 99€ | ~3€ | ~96€ |
+| Blood Analysis | 99€ | ~3€ | ~96€ |
 
 **Upsell Path:**
 ```
 Discovery (gratuit)
   ↓ CTA upgrade
-Anabolic (197€)
+Anabolic (59€)
   ↓ CTA upgrade
-Ultimate (497€)
+Ultimate (79€)
   ↓ CTA coaching
-Coaching Essential Elite ou Private Lab
+Coaching Starter / Essential / Elite / Private Lab
 ```
 
 ---
@@ -659,7 +652,7 @@ Coaching Essential Elite ou Private Lab
 ## 🚀 NEXT STEPS
 
 ### Priorité HAUTE
-1. ✅ Migrer Burnout Engine vers Claude Opus 4.5 (FAIT 2026-01-10)
+1. ✅ Migrer Peptides Engine vers Claude Opus 4.5 (FAIT 2026-01-10)
 2. ⏳ Migrer les 4 pages report vers FullReport.tsx (EN COURS)
 3. ⏳ Tester chaque produit end-to-end
 4. ⏳ Vérifier format données API ↔ FullReport
@@ -677,6 +670,5 @@ Coaching Essential Elite ou Private Lab
 ---
 
 **Document créé le:** 2026-01-10
-**Dernière mise à jour:** 2026-01-10 après migration Burnout Engine
+**Dernière mise à jour:** 2026-01-10 après migration Peptides Engine
 **Auteur:** Claude Sonnet 4.5
-

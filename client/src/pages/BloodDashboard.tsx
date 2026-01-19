@@ -1,191 +1,365 @@
-import { useState } from "react";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "wouter";
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { Sidebar } from '@/components/ultrahuman/Sidebar';
+import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
+import { MetricsRadar } from '@/components/ultrahuman/Charts';
+import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
+import { SectionContent, Theme, Metric } from '@/components/ultrahuman/types';
+import { SCIENCE_DATA, CATEGORY_SCORES } from '@/data/blood-analysis-data';
 import {
-    Dna,
-    Activity,
-    Brain,
-    Heart,
-    Zap,
-    Pill,
-    Clock,
-    ArrowRight
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { BloodRadar } from "@/components/blood/BloodRadar";
-import { BiomarkerCard } from "@/components/blood/BiomarkerCard";
-import { SCIENCE_DATA, PROTOCOLS } from "@/data/blood-analysis-data";
+  Activity,
+  ArrowDown,
+  ArrowUp,
+  Beaker,
+  Heart,
+  Menu,
+  Shield,
+  TrendingUp
+} from 'lucide-react';
+
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+
+type CategoryKey = keyof typeof CATEGORY_SCORES;
+
+const CATEGORY_ICONS: Record<CategoryKey, React.ElementType> = {
+  Hormonal: TrendingUp,
+  Metabolic: Activity,
+  Inflammation: Shield,
+  Liver: Beaker,
+  Kidney: Beaker,
+  Blood: Heart,
+};
+
+const withAlpha = (hex: string, alpha: number): string => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const formatMarkerStatus = (status: string): string => {
+  switch (status) {
+    case 'Optimal':
+      return 'Optimal';
+    case 'Normal':
+      return 'Normal';
+    case 'Suboptimal':
+      return 'Suboptimal';
+    case 'Critical':
+      return 'Critique';
+    default:
+      return status;
+  }
+};
+
+const buildCategoryContent = (category: CategoryKey): string => {
+  const markers = Object.values(SCIENCE_DATA).filter((m) => m.category === category);
+  if (markers.length === 0) {
+    return '<p>Aucun marqueur disponible pour cette categorie.</p>';
+  }
+
+  const rows = markers
+    .map(
+      (marker) => `
+      <div style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; background: var(--surface-2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="color: var(--text);">${marker.name}</strong>
+          <span style="color: var(--text-secondary); font-size: 12px;">${formatMarkerStatus(marker.status)}</span>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">
+          <span>${marker.value} ${marker.unit}</span>
+          <span>Optimal: ${marker.optimalRange[0]}-${marker.optimalRange[1]}</span>
+          <span>Normal: ${marker.normalRange[0]}-${marker.normalRange[1]}</span>
+        </div>
+        <p style="margin: 0 0 8px;">${marker.definition}</p>
+        <p style="margin: 0 0 8px;">${marker.whyItMatters}</p>
+        ${marker.recommendation ? `<p style="margin: 0;"><strong>Action:</strong> ${marker.recommendation}</p>` : ''}
+      </div>
+    `
+    )
+    .join('');
+
+  return rows;
+};
 
 export default function BloodDashboard() {
-    const [activeTab, setActiveTab] = useState("overview");
+  const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
+  const [activeSection, setActiveSection] = useState<string>('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const mainContentRef = useRef<HTMLDivElement>(null);
 
-    return (
-        <div className="min-h-screen bg-background text-foreground">
-            <Header />
+  const metrics: Metric[] = useMemo(() => {
+    return (Object.keys(CATEGORY_SCORES) as CategoryKey[]).map((category) => ({
+      key: category.toLowerCase(),
+      label: category,
+      value: Math.round((CATEGORY_SCORES[category] / 100) * 10),
+      max: 10,
+      description: category,
+    }));
+  }, []);
 
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:py-12">
+  const sections: SectionContent[] = useMemo(() => {
+    return (Object.keys(CATEGORY_SCORES) as CategoryKey[]).map((category) => {
+      const markers = Object.values(SCIENCE_DATA).filter((m) => m.category === category);
+      const suboptimal = markers.filter((m) => m.status === 'Suboptimal' || m.status === 'Critical').length;
+      const chips = [
+        `${markers.length} marqueurs`,
+        `${suboptimal} a corriger`,
+      ];
+      return {
+        id: `category-${category.toLowerCase()}`,
+        title: category,
+        subtitle: 'Lecture par biomarqueur',
+        chips,
+        content: buildCategoryContent(category),
+      };
+    });
+  }, []);
 
-                {/* Header Section */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-12"
-                >
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
-                        <div>
-                            <Badge variant="outline" className="mb-2 border-primary/50 text-primary">Beta Intelligence V2.0</Badge>
-                            <h1 className="text-4xl font-extrabold tracking-tight flex items-center gap-3">
-                                <Dna className="h-10 w-10 text-primary" />
-                                Biological Command Center
-                            </h1>
-                            <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
-                                Analyse système de vos biomarqueurs, corrélations métaboliques et protocoles d'optimisation basés sur la science.
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <Link href="/blood-analysis">
-                                <Button size="lg" className="shadow-lg shadow-primary/20">
-                                    Nouvelle Analyse
-                                </Button>
-                            </Link>
-                        </div>
+  const navigationSections: SectionContent[] = useMemo(() => {
+    return [{ id: 'dashboard', title: "Vue d'ensemble", content: '' }, ...sections];
+  }, [sections]);
+
+  const globalScore = useMemo(() => {
+    const values = Object.values(CATEGORY_SCORES);
+    const avg = values.reduce((acc, v) => acc + v, 0) / values.length;
+    return Math.round(avg);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--color-bg', currentTheme.colors.background);
+    root.style.setProperty('--color-surface', currentTheme.colors.surface);
+    root.style.setProperty('--color-border', currentTheme.colors.border);
+    root.style.setProperty('--color-text', currentTheme.colors.text);
+    root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--color-primary', currentTheme.colors.primary);
+    root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--color-on-primary', currentTheme.type === 'dark' ? '#000' : '#fff');
+    root.style.setProperty('--primary', currentTheme.colors.primary);
+    root.style.setProperty('--text', currentTheme.colors.text);
+    root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
+    root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--surface-1', currentTheme.colors.surface);
+    root.style.setProperty('--surface-2', currentTheme.colors.background);
+    root.style.setProperty('--border', currentTheme.colors.border);
+    root.style.setProperty('--accent-ok', currentTheme.colors.primary);
+    root.style.setProperty('--accent-warning', currentTheme.colors.primary);
+  }, [currentTheme]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!mainContentRef.current) return;
+      const container = mainContentRef.current;
+      const totalScroll = container.scrollTop;
+      const windowHeight = container.clientHeight;
+      const totalHeight = container.scrollHeight - windowHeight;
+      const progress = totalHeight > 0 ? (totalScroll / totalHeight) * 100 : 0;
+      setScrollProgress(progress);
+
+      const sectionsList = navigationSections.map(s => document.getElementById(s.id));
+      const scrollPos = container.scrollTop + 200;
+      for (let i = sectionsList.length - 1; i >= 0; i--) {
+        const section = sectionsList[i];
+        if (section && section.offsetTop <= scrollPos) {
+          setActiveSection(navigationSections[i].id);
+          break;
+        }
+      }
+    };
+
+    const container = mainContentRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      handleScroll();
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [navigationSections]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el && mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+    }
+    setActiveSection(id);
+    setMobileMenuOpen(false);
+  };
+
+  const primary = currentTheme.colors.primary;
+  const primarySoft = withAlpha(primary, 0.12);
+
+  return (
+    <div
+      className="ultrahuman-report min-h-screen flex"
+      style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+    >
+      <div className="fixed top-0 left-0 right-0 h-1 bg-black/50 z-50">
+        <div
+          className="h-full transition-all duration-300"
+          style={{ width: `${scrollProgress}%`, backgroundColor: currentTheme.colors.primary }}
+        />
+      </div>
+
+      <aside
+        className={`fixed lg:sticky top-0 left-0 h-screen w-72 border-r z-40 transition-transform lg:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }}
+      >
+        <Sidebar
+          sections={navigationSections}
+          activeSection={activeSection}
+          onNavigate={scrollToSection}
+          themes={THEMES}
+          currentTheme={currentTheme}
+          onThemeChange={setCurrentTheme}
+          clientName="Profil"
+          auditType="BLOOD_ANALYSIS"
+        />
+      </aside>
+
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      <main ref={mainContentRef} className="flex-1 overflow-y-auto h-screen">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg"
+          style={{ backgroundColor: currentTheme.colors.surface }}
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <section id="dashboard" className="mb-16 scroll-mt-24">
+            <div className="grid lg:grid-cols-2 gap-8 mb-10">
+              <div
+                className="flex flex-col items-center justify-center p-8 rounded-sm border"
+                style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+              >
+                <RadialProgress
+                  score={globalScore}
+                  max={100}
+                  subLabel="SCORE GLOBAL"
+                  size={200}
+                  strokeWidth={6}
+                  color={currentTheme.colors.primary}
+                />
+                <p className="text-xs mt-4" style={{ color: currentTheme.colors.textMuted }}>
+                  Version beta - dashboard en construction.
+                </p>
+              </div>
+
+              <div
+                className="p-6 rounded-sm border"
+                style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <Beaker className="w-6 h-6" style={{ color: currentTheme.colors.primary }} />
+                  <h2 className="text-xl font-semibold">Radar systemique</h2>
+                </div>
+                <MetricsRadar data={metrics} color={currentTheme.colors.primary} />
+                <div className="mt-4 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                  Lecture rapide des 6 panels clefs.
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {(Object.keys(CATEGORY_SCORES) as CategoryKey[]).map((category) => {
+                const score = CATEGORY_SCORES[category];
+                const Icon = CATEGORY_ICONS[category];
+                const statusLabel = score >= 80 ? 'FORT' : score >= 65 ? 'MOYEN' : 'A AMELIORER';
+
+                return (
+                  <div
+                    key={category}
+                    className="rounded p-4"
+                    style={{ backgroundColor: currentTheme.colors.surface, border: `1px solid ${currentTheme.colors.border}` }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <Icon className="w-5 h-5" style={{ color: primary }} />
+                      <span className="text-xs px-2 py-1 rounded-full" style={{ color: primary, backgroundColor: primarySoft }}>
+                        {statusLabel}
+                      </span>
                     </div>
-                </motion.div>
+                    <div className="text-2xl font-bold mb-1">{score}%</div>
+                    <div className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                      {category}
+                    </div>
+                    <div className="mt-3 h-1.5 rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${score}%`, backgroundColor: primary }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
-                {/* Hero Section: Radar + Priorities */}
-                <div className="grid lg:grid-cols-3 gap-8 mb-16">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="lg:col-span-1"
+          {sections.map((section, idx) => (
+            <section key={section.id} id={section.id} className="mb-12 scroll-mt-24">
+              <div className="flex items-center gap-4 mb-6">
+                <span
+                  className="text-4xl font-bold"
+                  style={{ color: withAlpha(currentTheme.colors.textMuted, 0.2) }}
+                >
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <h2 className="text-2xl font-bold">{section.title}</h2>
+                  {section.subtitle && (
+                    <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                      {section.subtitle}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {section.chips && section.chips.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {section.chips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="px-3 py-1 rounded-full text-xs"
+                      style={{ backgroundColor: `${currentTheme.colors.primary}20`, color: currentTheme.colors.primary }}
                     >
-                        <Card className="h-full bg-gradient-to-b from-muted/50 to-background border-primary/10">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-primary" />
-                                    Systèmes Biologiques
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <BloodRadar />
-                                <div className="text-center mt-4">
-                                    <span className="text-4xl font-bold">72</span>
-                                    <span className="text-muted-foreground ml-2">/ 100</span>
-                                    <p className="text-sm text-muted-foreground mt-1">Score Santé Global</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-                    <div className="lg:col-span-2 space-y-6">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                        >
-                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Zap className="h-5 w-5 text-amber-500" />
-                                Priorités d'Intervention
-                            </h2>
-                            <div className="grid md:grid-cols-2 gap-4">
-                                {/* Only showing suboptimal/critical metrics here */}
-                                {Object.values(SCIENCE_DATA)
-                                    .filter(m => m.status === 'Suboptimal' || m.status === 'Critical')
-                                    .slice(0, 4)
-                                    .map((marker) => (
-                                        <BiomarkerCard key={marker.id} data={marker} />
-                                    ))}
-                            </div>
-                        </motion.div>
-                    </div>
+                      {chip}
+                    </span>
+                  ))}
                 </div>
+              )}
 
-                {/* Deep Dive Tabs */}
-                <div className="mb-16">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold flex items-center gap-2">
-                                <Brain className="h-6 w-6 text-primary" />
-                                Deep Dive Analytics
-                            </h2>
-                            <TabsList>
-                                <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-                                <TabsTrigger value="hormones">Hormonal</TabsTrigger>
-                                <TabsTrigger value="metabolic">Métabolique</TabsTrigger>
-                                <TabsTrigger value="inflammation">Inflammation</TabsTrigger>
-                            </TabsList>
-                        </div>
-
-                        <TabsContent value="overview" className="mt-0">
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {Object.values(SCIENCE_DATA).map((marker) => (
-                                    <BiomarkerCard key={marker.id} data={marker} />
-                                ))}
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="hormones">
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {Object.values(SCIENCE_DATA).filter(m => m.category === 'Hormonal').map((marker) => (
-                                    <BiomarkerCard key={marker.id} data={marker} />
-                                ))}
-                            </div>
-                        </TabsContent>
-                        {/* Other tabs would filter similarly */}
-                    </Tabs>
-                </div>
-
-                {/* Protocol Engine */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="mb-12"
-                >
-                    <Card className="border-primary/20 bg-primary/5">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-2xl">
-                                <Clock className="h-7 w-7 text-primary" />
-                                Protocole Quotidien Optimisé
-                            </CardTitle>
-                            <p className="text-muted-foreground">
-                                Généré basé sur vos carences en Vitamine D et profil Hormonal (Ref: Huberman Lab, Attia).
-                            </p>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid md:grid-cols-3 gap-8 mt-4">
-                                {PROTOCOLS.map((phase, i) => (
-                                    <div key={i} className="relative pl-6 border-l-2 border-primary/20">
-                                        <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-primary" />
-                                        <h3 className="text-lg font-bold mb-4">{phase.time}</h3>
-                                        <div className="space-y-4">
-                                            {phase.items.map((item, j) => (
-                                                <div key={j} className="bg-background rounded-lg p-3 shadow-sm border">
-                                                    <div className="flex justify-between font-semibold">
-                                                        <span>{item.name}</span>
-                                                        <Badge variant="secondary">{item.dose}</Badge>
-                                                    </div>
-                                                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                        <ArrowRight className="h-3 w-3" /> {item.reason}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-
-            </main>
-            <Footer />
+              <div
+                className={`p-6 rounded-sm border prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}
+                style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border, color: currentTheme.colors.text }}
+                dangerouslySetInnerHTML={{ __html: section.content }}
+              />
+            </section>
+          ))}
         </div>
-    );
+      </main>
+
+      <button
+        onClick={() => scrollToSection('dashboard')}
+        className="hidden lg:flex fixed bottom-6 right-6 p-3 rounded-full shadow-lg transition-all hover:scale-105"
+        style={{ backgroundColor: currentTheme.colors.surface }}
+      >
+        <ArrowUp className="w-5 h-5" />
+      </button>
+
+      <button
+        onClick={() => scrollToSection(sections[0]?.id || 'dashboard')}
+        className="hidden lg:flex fixed bottom-6 right-16 p-3 rounded-full shadow-lg transition-all hover:scale-105"
+        style={{ backgroundColor: currentTheme.colors.primary, color: currentTheme.type === 'dark' ? '#000' : '#fff' }}
+      >
+        <ArrowDown className="w-5 h-5" />
+      </button>
+    </div>
+  );
 }

@@ -4,7 +4,7 @@
  * Tests:
  * 1. Discovery Scan (GRATUIT)
  * 2. Anabolic Bioscan (PREMIUM)
- * 3. Burnout Engine
+ * 3. Peptides Engine
  *
  * Note: Ultimate Scan déjà testé séparément avec photos
  */
@@ -17,6 +17,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const API_BASE = "https://neurocore-360.onrender.com";
+const TEST_EMAIL = process.env.TEST_EMAIL?.trim() || "";
+const TEST_NAME = process.env.TEST_NAME?.trim() || "";
+const SKIP_PEPTIDES = /^(1|true|yes)$/i.test(process.env.SKIP_PEPTIDES || "");
+
+const buildTestEmail = (prefix: string): string => {
+  if (TEST_EMAIL) return TEST_EMAIL;
+  return `test.${prefix}.${Date.now()}@achzodcoaching.com`;
+};
+
+const resolveTestName = (): string => {
+  return TEST_NAME || "Julien";
+};
 
 // ============================================================================
 // DONNÉES TEST RÉALISTES - Profil type "cadre stressé 35 ans"
@@ -25,7 +37,7 @@ const API_BASE = "https://neurocore-360.onrender.com";
 const PROFIL_CADRE_STRESSE = {
   // PROFIL BASE
   sexe: "homme",
-  prenom: "Julien",
+  prenom: resolveTestName(),
   email: "", // Sera rempli dynamiquement
   instagram: "@julien_fitness",
   age: "36-45",
@@ -194,7 +206,7 @@ async function testDiscoveryScan(): Promise<{ id: string; url: string } | null> 
   console.log("🧪 TEST 1: DISCOVERY SCAN (GRATUIT)");
   console.log("=".repeat(70));
 
-  const email = `test.discovery.${Date.now()}@achzodcoaching.com`;
+  const email = buildTestEmail("discovery");
 
   const responses = {
     ...PROFIL_CADRE_STRESSE,
@@ -237,7 +249,7 @@ async function testAnabolicBioscan(): Promise<{ id: string; url: string } | null
   console.log("🧪 TEST 2: ANABOLIC BIOSCAN (PREMIUM)");
   console.log("=".repeat(70));
 
-  const email = `test.anabolic.${Date.now()}@achzodcoaching.com`;
+  const email = buildTestEmail("anabolic");
 
   // Load test photos
   const PHOTOS_DIR = path.join(__dirname, "test-data/photos");
@@ -305,68 +317,74 @@ async function testAnabolicBioscan(): Promise<{ id: string; url: string } | null
   }
 }
 
-async function testBurnoutEngine(): Promise<{ id: string; url: string } | null> {
+async function testPeptidesEngine(): Promise<{ id: string; url: string } | null> {
   console.log("\n" + "=".repeat(70));
-  console.log("🧪 TEST 3: BURNOUT ENGINE");
+  console.log("🧪 TEST 3: PEPTIDES ENGINE");
   console.log("=".repeat(70));
 
-  const email = `test.burnout.${Date.now()}@achzodcoaching.com`;
+  const email = `test.peptides.${Date.now()}@achzodcoaching.com`;
 
-  // Réponses spécifiques Burnout - profil en phase de résistance/épuisement
-  const burnoutResponses = {
+  const peptidesResponses = {
     prenom: "Julien",
-    email,
-
-    // Épuisement émotionnel
-    fatigue_reveil: "toujours",
-    energie_journee: "epuise",
-    motivation_travail: "aucune",
-    sentiment_vide: "souvent",
-
-    // Dépersonnalisation
-    cynisme_travail: "souvent",
-    detachement_collegues: "souvent",
-    impatience: "tres-souvent",
-
-    // Accomplissement personnel
-    efficacite_percue: "tres-faible",
-    sens_travail: "aucun",
-    reconnaissance: "jamais",
-
-    // Symptômes physiques
-    maux_tete: "quotidien",
-    tensions_musculaires: "chroniques",
-    troubles_sommeil: "severes",
-    problemes_digestifs: "frequents",
-
-    // Symptômes cognitifs
-    concentration: "tres-difficile",
-    memoire: "problemes-frequents",
-    decisions: "tres-difficile",
-
-    // Contexte
-    heures_travail: "50+",
-    equilibre_vie: "inexistant",
-    soutien_social: "faible",
-    controle_travail: "aucun",
-
-    // Historique
-    duree_symptomes: "plus-6mois",
-    arret_maladie: "envisage",
-    aide_professionnelle: "non",
+    age: "32",
+    sexe: "homme",
+    taille: "178",
+    poids: "82",
+    niveau_entrainement: "avance",
+    objectif_principal: "recomposition",
+    objectifs_secondaires: ["sommeil", "libido"],
+    antecedents: ["anxiete"],
+    medicaments: "aucun",
+    supplements: "creatine, omega-3, magnesium",
+    sommeil_qualite: "6-7",
+    stress_niveau: "eleve",
+    digestion: "ballonnements",
+    blessures: "tendon coude droit",
+    allergies: "aucune",
+    frequence_entrainement: "5-6",
+    type_entrainement: ["musculation", "endurance"],
+    recuperation: "moyenne",
+    plateau: "oui",
+    masse_grasse: "15-20",
+    douleurs_articulaires: "parfois",
+    energie_journee: "chute",
+    cardio: "1-2",
+    objectifs_peptides: ["gh", "tendons", "sommeil"],
+    experience_peptides: "jamais",
+    tolerance_injection: "ok",
+    delai: "8",
+    budget: "100-200",
+    suivi: "oui",
+    peptides_precis: "",
+    effets_secondaires: "",
+    bilans_dispo: "non",
+    biomarqueurs_notes: "",
+    traitement_hormonal: "non",
+    objectif_igf1: "optimiser",
+    suivi_medical: "oui",
+    timeline: "Shooting photo dans 10 semaines",
+    top_resultats: "Recuperation rapide, sommeil profond, repartition graisse",
+    contraintes: "Voyages frequents",
+    tolerance_risque: "modere",
+    niveau_engagement: "optimise",
+    notes_finales: "Je veux un plan simple et execute.",
   };
 
   try {
-    console.log(`📤 Soumission Burnout Engine...`);
+    console.log(`📤 Soumission Peptides Engine...`);
     console.log(`   Email: ${email}`);
 
-    const res = await fetch(`${API_BASE}/api/burnout-detection/analyze`, {
+    const res = await fetch(`${API_BASE}/api/peptides-engine/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
       body: JSON.stringify({
         responses: burnoutResponses,
         email: email
       }),
+=======
+      body: JSON.stringify({ responses: peptidesResponses, email }),
+>>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
     });
 
     if (!res.ok) {
@@ -376,27 +394,71 @@ async function testBurnoutEngine(): Promise<{ id: string; url: string } | null> 
     }
 
     const result = await res.json();
-    console.log(`✅ Analyse Burnout générée`);
+    console.log(`✅ Analyse Peptides générée`);
 
-    // Le burnout engine retourne directement l'analyse, pas un audit ID
-    if (result.auditId) {
-      console.log(`   Audit ID: ${result.auditId}`);
-      console.log(`   URL: ${API_BASE}/audit/${result.auditId}`);
-      return { id: result.auditId, url: `${API_BASE}/audit/${result.auditId}` };
-    } else {
-      console.log(`   Phase détectée: ${result.phase || "N/A"}`);
-      console.log(`   Score global: ${result.globalScore || "N/A"}`);
-      // Sauvegarder le résultat pour analyse
-      fs.writeFileSync(
-        path.join(__dirname, `test-burnout-result-${Date.now()}.json`),
-        JSON.stringify(result, null, 2)
-      );
-      return { id: "burnout-direct", url: "voir fichier JSON" };
+    if (result.id) {
+      console.log(`   Audit ID: ${result.id}`);
+      console.log(`   URL: ${API_BASE}/peptides/${result.id}`);
+      return { id: result.id, url: `${API_BASE}/peptides/${result.id}` };
     }
+
+    fs.writeFileSync(
+      path.join(__dirname, `test-peptides-result-${Date.now()}.json`),
+      JSON.stringify(result, null, 2)
+    );
+    return { id: "peptides-direct", url: "voir fichier JSON" };
   } catch (e) {
     console.error(`❌ Erreur réseau:`, e);
     return null;
   }
+}
+
+async function waitForDiscoveryCompletion(auditId: string, maxWaitMinutes: number = 15): Promise<boolean> {
+  console.log(`\n⏳ Attente génération rapport Discovery ${auditId}...`);
+  const maxWait = maxWaitMinutes * 60 * 1000;
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWait) {
+    try {
+      const res = await fetch(`${API_BASE}/api/discovery-scan/${auditId}`);
+      if (res.status === 202) {
+        const status = await res.json();
+        process.stdout.write(`\r   ${status.message || "Generation en cours"}...`);
+      } else if (res.ok) {
+        const data = await res.json();
+        if (data?.sections?.length) {
+          console.log(`\n✅ Rapport Discovery terminé!`);
+          return true;
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    await new Promise(r => setTimeout(r, 8000));
+  }
+
+  console.log(`\n⚠️ Timeout après ${maxWaitMinutes} minutes`);
+  return false;
+}
+
+async function analyzePeptidesReport(id: string): Promise<{ ok: boolean; issues: string[] }> {
+  const issues: string[] = [];
+  try {
+    const res = await fetch(`${API_BASE}/api/peptides-engine/${id}`);
+    if (!res.ok) {
+      issues.push(`❌ Fetch peptides ${res.status}`);
+      return { ok: false, issues };
+    }
+    const report = await res.json();
+    if (typeof report?.globalScore !== "number") issues.push("⚠️ Score global manquant");
+    if (!report?.sections?.length) {
+      issues.push("⚠️ Sections absentes");
+    }
+  } catch (e) {
+    issues.push(`❌ Erreur analyse peptides: ${e}`);
+  }
+  return { ok: issues.length === 0, issues };
 }
 
 async function waitForCompletion(auditId: string, maxWaitMinutes: number = 15): Promise<boolean> {
@@ -561,10 +623,14 @@ async function main() {
     results.push({ offer: "Anabolic Bioscan", ...anabolic, status: "pending" });
   }
 
-  // Test 3: Burnout Engine
-  const burnout = await testBurnoutEngine();
-  if (burnout) {
-    results.push({ offer: "Burnout Engine", ...burnout, status: "pending" });
+  // Test 3: Peptides Engine (optionnel)
+  if (!SKIP_PEPTIDES) {
+    const peptides = await testPeptidesEngine();
+    if (peptides) {
+      results.push({ offer: "Peptides Engine", ...peptides, status: "pending" });
+    }
+  } else {
+    console.log("⏭️  Peptides Engine saute (SKIP_PEPTIDES=1)");
   }
 
   // Attendre génération et analyser
@@ -573,9 +639,28 @@ async function main() {
   console.log("=".repeat(70));
 
   for (const r of results) {
-    if (r.id === "burnout-direct") continue; // Burnout analysé différemment
+    if (r.offer === "Peptides Engine") {
+      if (r.id !== "peptides-direct") {
+        const peptidesAnalysis = await analyzePeptidesReport(r.id);
+        r.status = peptidesAnalysis.ok ? "success" : "failed";
+        if (peptidesAnalysis.issues.length > 0) {
+          r.analysis = {
+            hasAIPatterns: false,
+            aiPatterns: [],
+            hasNutritionAnalysis: false,
+            hasExpertSupplements: false,
+            hasCTA: false,
+            issues: peptidesAnalysis.issues,
+          };
+        }
+      }
+      continue;
+    }
 
-    const completed = await waitForCompletion(r.id);
+    const completed =
+      r.offer === "Discovery Scan"
+        ? await waitForDiscoveryCompletion(r.id)
+        : await waitForCompletion(r.id);
     r.status = completed ? "success" : "failed";
 
     if (completed) {

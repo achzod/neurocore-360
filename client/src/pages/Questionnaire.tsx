@@ -64,14 +64,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Header } from "@/components/Header";
-import { QUESTIONNAIRE_SECTIONS, type Question } from "@shared/schema";
-import { getQuestionsForSection, getSectionProgress } from "@/lib/questionnaire-data";
+import {
+  filterQuestionsByGender,
+  getQuestionsForTier,
+  getSectionsForTier,
+  type Question,
+} from "@/lib/questionnaire-tiers";
 import {
   ChevronLeft,
   ChevronRight,
   Check,
   Save,
   User,
+  Stethoscope,
   Scale,
   Zap,
   Apple,
@@ -79,13 +84,20 @@ import {
   Dumbbell,
   Moon,
   Heart,
+  HeartPulse,
   TestTube,
+  Pill,
   Activity,
   Coffee,
   Bone,
   Brain,
+  BrainCircuit,
   HeartHandshake,
   Camera,
+  TrendingUp,
+  Target,
+  Utensils,
+  UtensilsCrossed,
   Upload,
   AlertCircle,
   X,
@@ -104,6 +116,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ElementType> = {
   User,
+  Stethoscope,
   Scale,
   Zap,
   Apple,
@@ -111,13 +124,20 @@ const iconMap: Record<string, React.ElementType> = {
   Dumbbell,
   Moon,
   Heart,
+  HeartPulse,
   TestTube,
+  Pill,
   Activity,
   Coffee,
   Bone,
   Brain,
+  BrainCircuit,
   HeartHandshake,
   Camera,
+  Target,
+  Utensils,
+  UtensilsCrossed,
+  TrendingUp,
 };
 
 function QuestionField({
@@ -136,6 +156,16 @@ function QuestionField({
       return (
         <Input
           type="text"
+          placeholder={question.placeholder}
+          value={(value as string) || ""}
+          onChange={(e) => onChange(e.target.value)}
+          data-testid={`input-${question.id}`}
+        />
+      );
+    case "email":
+      return (
+        <Input
+          type="email"
           placeholder={question.placeholder}
           value={(value as string) || ""}
           onChange={(e) => onChange(e.target.value)}
@@ -325,6 +355,24 @@ function QuestionField({
 
 const PHOTO_FIELDS = ["photo-front", "photo-side", "photo-back"];
 
+type PlanId = "gratuit" | "anabolic" | "ultimate";
+type PlanTier = "free" | "essential" | "elite";
+
+const PLAN_TIER_MAP: Record<PlanId, PlanTier> = {
+  gratuit: "free",
+  anabolic: "essential",
+  ultimate: "elite",
+};
+
+const normalizePlan = (plan: string | null | undefined): PlanId | null => {
+  if (!plan) return null;
+  const normalized = plan.toLowerCase();
+  if (normalized === "gratuit" || normalized === "discovery" || normalized === "free") return "gratuit";
+  if (normalized === "anabolic" || normalized === "premium" || normalized === "essential") return "anabolic";
+  if (normalized === "ultimate" || normalized === "elite") return "ultimate";
+  return null;
+};
+
 function QuestionnaireContent() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -334,16 +382,20 @@ function QuestionnaireContent() {
   const [email, setEmail] = useState("");
   const [emailSubmitted, setEmailSubmitted] = useState(false);
 
-  // Lire le plan depuis l'URL (premium = Anabolic Bioscan, pro = Ultimate Scan)
-  const [selectedPlan] = useState(() => {
+  // Lire le plan depuis l'URL (anabolic/ultimate/gratuit)
+  const [selectedPlan] = useState<PlanId>(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("plan") || "premium"; // Default to premium (pas de photos)
+    const urlPlan = normalizePlan(urlParams.get("plan"));
+    const storedPlan = normalizePlan(localStorage.getItem("neurocore_plan"));
+    const plan = urlPlan ?? storedPlan ?? "gratuit";
+    localStorage.setItem("neurocore_plan", plan);
+    return plan;
   });
 
-  // Filtrer les sections : analyse-posturale (photos) uniquement pour plan=pro (Ultimate Scan)
-  const filteredSections = selectedPlan === "pro"
-    ? QUESTIONNAIRE_SECTIONS
-    : QUESTIONNAIRE_SECTIONS.filter(s => s.id !== "analyse-posturale");
+  const selectedTier = PLAN_TIER_MAP[selectedPlan];
+  const allowWearables = selectedPlan === "ultimate";
+  const allQuestions = getQuestionsForTier(selectedTier);
+  const filteredSections = getSectionsForTier(selectedTier);
 
   // Bounds check pour éviter undefined
   const safeIndex = Math.min(Math.max(0, currentSectionIndex), filteredSections.length - 1);
@@ -355,10 +407,31 @@ function QuestionnaireContent() {
   const [terraConnecting, setTerraConnecting] = useState(false);
   const [terraConnected, setTerraConnected] = useState(false);
   const [terraSkippedQuestions, setTerraSkippedQuestions] = useState<string[]>([]);
-  const sectionQuestions = currentSection ? getQuestionsForSection(currentSection.id, userSex) : [];
+  const normalizedSex = userSex === "homme" || userSex === "femme" ? userSex : undefined;
+  const sectionQuestions = currentSection
+    ? (
+      normalizedSex
+        ? filterQuestionsByGender(
+            allQuestions.filter(q => q.sectionId === currentSection.id),
+            normalizedSex,
+          )
+        : allQuestions.filter(q => q.sectionId === currentSection.id)
+    )
+    : [];
   const IconComponent = currentSection ? (iconMap[currentSection.icon] || User) : User;
 
   const totalProgress = Math.round(((currentSectionIndex + 1) / filteredSections.length) * 100);
+
+  const shouldShowQuestion = (question: Question) => {
+    if (!question.conditionalOn) return true;
+    const [dependencyId, expectedValue] = question.conditionalOn.split(":");
+    if (!dependencyId || !expectedValue) return true;
+    const answer = responses[dependencyId];
+    if (Array.isArray(answer)) {
+      return answer.includes(expectedValue);
+    }
+    return answer === expectedValue;
+  };
 
   // Charger la progression depuis la DB
   const loadProgressFromDB = async (userEmail: string) => {
@@ -417,8 +490,8 @@ function QuestionnaireContent() {
         setPhotoData(parsedPhotos);
       }
 
-      if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0) {
-        setResponses({ ...parsedResponses, ...parsedPhotos });
+      if (Object.keys(parsedResponses).length > 0 || Object.keys(parsedPhotos).length > 0 || savedEmail) {
+        setResponses({ ...parsedResponses, ...parsedPhotos, ...(savedEmail ? { email: savedEmail } : {}) });
       }
 
       if (savedSection) {
@@ -437,6 +510,10 @@ function QuestionnaireContent() {
       }
       if (parsedResponses["prenom"]) {
         setPrenomConfirmed(true);
+      }
+
+      if (!allowWearables) {
+        return;
       }
 
       // Check URL params for Terra callback
@@ -463,14 +540,49 @@ function QuestionnaireContent() {
 
       // Check if returning from Terra widget
       const wasConnecting = sessionStorage.getItem("terraConnecting");
-      if (wasConnecting === "true" || terraSuccess === "true") {
+      if (terraSuccess === "true" || terraError === "true") {
         sessionStorage.removeItem("terraConnecting");
         setWearablesSyncShown(true);
 
         const emailToCheck = savedEmail || localStorage.getItem("neurocore_email");
+        const referenceId =
+          sessionStorage.getItem("terraReferenceId") ||
+          localStorage.getItem("terraReferenceId") ||
+          "";
+        const startedAtRaw =
+          sessionStorage.getItem("terraStartedAt") ||
+          localStorage.getItem("terraStartedAt") ||
+          "";
+        const startedAtMs = startedAtRaw ? Number(startedAtRaw) : NaN;
+        const startedAtValid = Number.isFinite(startedAtMs);
+        const maxSyncWindowMs = 6 * 60 * 60 * 1000;
+        const isStale = startedAtValid ? Date.now() - startedAtMs > maxSyncWindowMs : true;
+
+        if (!emailToCheck || !referenceId || !startedAtValid || isStale) {
+          setTerraConnected(false);
+          setTerraSkippedQuestions([]);
+          sessionStorage.removeItem("terraReferenceId");
+          sessionStorage.removeItem("terraStartedAt");
+          localStorage.removeItem("terraReferenceId");
+          localStorage.removeItem("terraStartedAt");
+          if (terraSuccess === "true" || terraError === "true") {
+            toast({
+              title: "Connexion expiree",
+              description: "Ta tentative de synchronisation a expire. Reconnecte ton wearable pour pre-remplir les questions.",
+              variant: "destructive",
+              duration: 8000,
+            });
+          }
+          return;
+        }
+
         if (emailToCheck) {
+          const query = new URLSearchParams();
+          query.set("referenceId", referenceId);
+          query.set("since", String(startedAtMs));
+
           // Fetch mapped wearable answers
-          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}`)
+          fetch(`/api/terra/answers/${encodeURIComponent(emailToCheck)}?${query.toString()}`)
             .then(res => res.json())
             .then(data => {
               if (data.success && data.hasData) {
@@ -484,22 +596,44 @@ function QuestionnaireContent() {
                 if (data.skippedQuestions && data.skippedQuestions.length > 0) {
                   setTerraSkippedQuestions(data.skippedQuestions);
                   console.log("[Terra] Will skip", data.skippedQuestions.length, "questions");
+                } else {
+                  setTerraSkippedQuestions([]);
                 }
+                sessionStorage.removeItem("terraReferenceId");
+                sessionStorage.removeItem("terraStartedAt");
+                localStorage.removeItem("terraReferenceId");
+                localStorage.removeItem("terraStartedAt");
                 toast({
                   title: "Wearable synchronise !",
                   description: `${Object.keys(data.answers || {}).length} reponses pre-remplies automatiquement.`,
                 });
               } else if (terraSuccess === "true") {
+                setTerraConnected(false);
+                setTerraSkippedQuestions([]);
                 // User connected but no data yet - might be SDK provider
                 toast({
                   title: "Connexion en cours...",
                   description: "Si tu utilises Samsung Health ou Apple Health, ouvre l'app Terra Avengers pour finaliser la sync.",
                   duration: 8000,
                 });
+                // Reset any previous skips/state to avoid stale prefill
+                setTerraConnected(false);
+                setTerraSkippedQuestions([]);
               }
             })
-            .catch(err => console.error("[Terra] Sync check failed:", err));
+          .catch(err => console.error("[Terra] Sync check failed:", err));
         }
+      } else if (wasConnecting === "true") {
+        sessionStorage.removeItem("terraConnecting");
+        setWearablesSyncShown(true);
+        setTerraConnected(false);
+        setTerraSkippedQuestions([]);
+        toast({
+          title: "Connexion non confirmee",
+          description: "Je n'ai pas reçu de confirmation Terra. Si tu veux la sync, relance la connexion.",
+          variant: "destructive",
+          duration: 8000,
+        });
       }
     } catch (e) {
       console.error("[Questionnaire] Init error:", e);
@@ -521,6 +655,7 @@ function QuestionnaireContent() {
       return apiRequest("POST", "/api/questionnaire/save-progress", {
         email,
         currentSection: currentSectionIndex,
+        totalSections: filteredSections.length,
         responses,
       });
     },
@@ -598,6 +733,7 @@ function QuestionnaireContent() {
     if (email && email.includes("@")) {
       setEmailSubmitted(true);
       localStorage.setItem("neurocore_email", email);
+      setResponses((prev) => ({ ...prev, email }));
     }
   };
 
@@ -610,16 +746,15 @@ function QuestionnaireContent() {
     setResponses((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Si on est dans la section 0 et qu'on n'a pas encore confirmé le prénom, ne pas avancer
     if (currentSectionIndex === 0 && sexConfirmed && !prenomConfirmed) {
       return;
     }
 
-    // Vérifier les photos UNIQUEMENT pour Ultimate Scan (plan=pro)
-    // La section analyse-posturale n'existe pas pour premium, donc on skip la validation
+    // Vérifier les photos UNIQUEMENT pour Ultimate Scan
     const isLastSection = currentSectionIndex === filteredSections.length - 1;
-    if (isLastSection && selectedPlan === "pro") {
+    if (isLastSection && selectedPlan === "ultimate") {
       const missingPhotos = PHOTO_FIELDS.filter(field => !photoData[field]);
       if (missingPhotos.length > 0) {
         toast({
@@ -635,11 +770,18 @@ function QuestionnaireContent() {
       setCurrentSectionIndex((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      if (emailSubmitted && email) {
+        try {
+          await saveProgressMutation.mutateAsync();
+        } catch {
+          // Best-effort save; proceed to checkout even if it fails.
+        }
+      }
       const responsesToSave = { ...responses };
       PHOTO_FIELDS.forEach((f) => delete responsesToSave[f]);
       localStorage.setItem("neurocore_responses", JSON.stringify(responsesToSave));
       sessionStorage.setItem("neurocore_photos", JSON.stringify(photoData));
-      navigate("/audit-complet/checkout");
+      navigate(`/audit-complet/checkout?plan=${selectedPlan}`);
     }
   };
 
@@ -667,6 +809,7 @@ function QuestionnaireContent() {
     localStorage.removeItem("neurocore_email");
     localStorage.removeItem("neurocore_responses");
     localStorage.removeItem("neurocore_section");
+    localStorage.removeItem("neurocore_plan");
     sessionStorage.removeItem("neurocore_photos");
     setEmail("");
     setEmailSubmitted(false);
@@ -838,11 +981,11 @@ function QuestionnaireContent() {
                   <IconComponent className="h-6 w-6 text-primary" />
                   {currentSection.title}
                 </CardTitle>
-                <p className="text-muted-foreground">{currentSection.description}</p>
+                <p className="text-muted-foreground">{currentSection.subtitle}</p>
               </CardHeader>
               <CardContent className="space-y-8">
                 {/* Message d'importance pour la section Analyse Posturale */}
-                {currentSection.id === "analyse-posturale" && (
+                {currentSection.id === "analyse-photo" && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -940,7 +1083,7 @@ function QuestionnaireContent() {
                       </Button>
                     )}
                   </motion.div>
-                ) : currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
+                ) : allowWearables && currentSectionIndex === 0 && prenomConfirmed && !wearablesSyncShown ? (
                   /* WEARABLES SYNC SCREEN */
                   <motion.div
                     key="wearables-sync"
@@ -1042,6 +1185,13 @@ function QuestionnaireContent() {
                               // Stocker l'état avant de quitter la page
                               sessionStorage.setItem("terraConnecting", "true");
                               sessionStorage.setItem("questionnaireProgress", JSON.stringify(responses));
+                              if (data.referenceId) {
+                                const now = String(Date.now());
+                                sessionStorage.setItem("terraReferenceId", data.referenceId);
+                                sessionStorage.setItem("terraStartedAt", now);
+                                localStorage.setItem("terraReferenceId", data.referenceId);
+                                localStorage.setItem("terraStartedAt", now);
+                              }
                               // Rediriger vers Terra (fonctionne sur mobile)
                               window.location.href = data.widgetUrl;
                             } else {
@@ -1094,7 +1244,7 @@ function QuestionnaireContent() {
                 ) : (
                   <>
                     {/* Show badge if some questions were auto-filled */}
-                    {terraSkippedQuestions.length > 0 && sectionQuestions.some(q => terraSkippedQuestions.includes(q.id)) && (
+                    {allowWearables && terraSkippedQuestions.length > 0 && sectionQuestions.some(q => terraSkippedQuestions.includes(q.id)) && (
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1110,8 +1260,9 @@ function QuestionnaireContent() {
                       </motion.div>
                     )}
                     {sectionQuestions
-                      .filter(q => (q.id !== "sexe" && q.id !== "prenom") || currentSectionIndex !== 0)
-                      .filter(q => !terraSkippedQuestions.includes(q.id))
+                      .filter(q => q.id !== "sexe" && q.id !== "prenom" && q.id !== "email")
+                      .filter(shouldShowQuestion)
+                      .filter(q => !allowWearables || !terraSkippedQuestions.includes(q.id))
                       .map((question, index) => (
                       <motion.div
                         key={question.id}

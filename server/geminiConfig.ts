@@ -42,13 +42,13 @@ export const AUDIT_TIERS = {
     ]
   },
   PREMIUM: {
-    name: 'Premium',
-    price: 49,
+    name: 'Anabolic Bioscan',
+    price: 59,
     sectionsUnlocked: 'ALL'
   },
   ELITE: {
-    name: 'Elite',
-    price: 149,
+    name: 'Ultimate Scan',
+    price: 79,
     sectionsUnlocked: 'ALL',
     extras: ['Appel 30min', 'Suivi 7 jours', 'Plan personnalisé PDF']
   }

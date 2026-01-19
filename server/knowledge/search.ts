@@ -20,6 +20,22 @@ export const ALLOWED_SOURCES = [
   'mpmd'                   // ⚠️ 6 articles (partiel mais suffisant)
 ] as const;
 
+// Mapping lisible pour toutes les sources connues
+const SOURCE_LABELS: Record<string, string> = {
+  huberman: "Huberman Lab",
+  sbs: "Stronger By Science",
+  applied_metabolics: "Applied Metabolics",
+  newsletter: "ACHZOD Newsletter",
+  examine: "Examine",
+  peter_attia: "Peter Attia",
+  renaissance_periodization: "Renaissance Periodization",
+  mpmd: "More Plates More Dates",
+  manual: "Manual",
+  marek_health: "Marek Health",
+  chris_masterjohn: "Chris Masterjohn",
+  achzod: "ACHZOD",
+};
+
 /**
  * Patterns de recherche par symptôme/problématique
  */
@@ -161,12 +177,7 @@ export async function searchKnowledgeForProfile(
   // Build context string for AI prompt
   const context = articles
     .map(a => {
-      const sourceLabel = {
-        huberman: "Huberman Lab",
-        sbs: "Stronger By Science",
-        applied_metabolics: "Applied Metabolics",
-        newsletter: "ACHZOD Newsletter"
-      }[a.source] || a.source;
+      const sourceLabel = SOURCE_LABELS[a.source] || a.source;
 
       return `[Source: ${sourceLabel}]
 Titre: ${a.title}
@@ -230,24 +241,19 @@ export async function generateKnowledgeContext(
     return "";
   }
 
+  const SOURCE_NAME_REGEX = new RegExp(
+    "\\b(huberman|peter attia|attia|applied metabolics|stronger by science|sbs|examine|renaissance periodization|mpmd|newsletter|achzod|matthew walker|sapolsky)\\b",
+    "gi"
+  );
+
   const contextHeader = `
-CONNAISSANCES PERTINENTES (utilise ces informations pour enrichir ton analyse):
+CONTEXTE SCIENTIFIQUE (integre ces donnees sans citer de sources ni noms propres):
 =============================================================================
 `;
 
   const contextBody = articles
-    .map(a => {
-      const sourceLabel = {
-        huberman: "[Huberman Lab]",
-        sbs: "[Stronger By Science]",
-        applied_metabolics: "[Applied Metabolics]",
-        newsletter: "[ACHZOD]"
-      }[a.source] || `[${a.source}]`;
-
-      return `${sourceLabel} ${a.title}
-${a.content.substring(0, 2500)}`;
-    })
-    .join("\n\n---\n\n");
+    .map(a => a.content.substring(0, 2500).replace(SOURCE_NAME_REGEX, "").trim())
+    .join("\n\n");
 
   return contextHeader + contextBody + "\n\n=============================================================================\n";
 }

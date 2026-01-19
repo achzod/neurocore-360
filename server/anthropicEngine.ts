@@ -14,6 +14,7 @@ import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
 import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
 import { generateKnowledgeContext, searchForSection } from './knowledge';
+import { normalizeSingleVoice, stripInlineHtml } from './textNormalization';
 
 function getFirstNameForReport(clientData: ClientData): string {
   const direct =
@@ -26,7 +27,7 @@ function getFirstNameForReport(clientData: ClientData): string {
   const email = (clientData as any)?.email;
   if (typeof email === "string" && email.includes("@")) return email.split("@")[0].trim();
 
-  return "Client";
+  return "Profil";
 }
 
 // Cache system
@@ -70,12 +71,99 @@ function loadFromCache(auditId: string): CacheData | null {
   return null;
 }
 
+export function deleteAnthropicCache(auditId: string): void {
+  const cachePath = getCachePath(auditId);
+  if (fs.existsSync(cachePath)) {
+    fs.unlinkSync(cachePath);
+  }
+}
+
 function generateAuditId(): string {
   return `anthropic-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
+const KNOWN_SOURCES = [
+  "Huberman",
+  "Andrew Huberman",
+  "Huberman Lab",
+  "Peter Attia",
+  "Attia",
+  "Applied Metabolics",
+  "Stronger By Science",
+  "SBS",
+  "Examine",
+  "Examine.com",
+  "Renaissance Periodization",
+  "MPMD",
+  "More Plates",
+  "Moreplates",
+  "Newsletter",
+  "ACHZOD",
+  "Matthew Walker",
+  "Sapolsky",
+  "Layne Norton",
+  "Ben Bikman",
+  "Rhonda Patrick",
+  "Robert Lustig",
+  "Andy Galpin",
+  "Brad Schoenfeld",
+  "Mike Israetel",
+  "Justin Sonnenburg",
+  "Chris Kresser",
+];
+
+const SOURCE_NAME_REGEX = new RegExp(
+  "\\b(huberman|andrew\\s+huberman|huberman\\s+lab|peter\\s+attia|attia|applied\\s+metabolics|stronger\\s+by\\s+science|sbs|examine(?:\\.com)?|renaissance\\s+periodization|mpmd|more\\s+plates|moreplates|newsletter|achzod|matthew\\s+walker|sapolsky|layne\\s+norton|ben\\s+bikman|rhonda\\s+patrick|robert\\s+lustig|andy\\s+galpin|brad\\s+schoenfeld|mike\\s+israetel|justin\\s+sonnenburg|chris\\s+kresser)\\b",
+  "gi"
+);
+
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
+
+const FORBIDDEN_PATTERNS = [
+  /\bclient\b/i,
+  /\bnous\b/i,
+  /\bnotre\b/i,
+];
+
+function extractSourceMentions(context: string): string[] {
+  const lower = context.toLowerCase();
+  const matches = KNOWN_SOURCES.filter((source) => lower.includes(source.toLowerCase()));
+  return Array.from(new Set(matches));
+}
+
+function sanitizePremiumText(text: string): string {
+  let cleaned = stripInlineHtml(text)
+    .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, "")
+    .replace(/Sources?\s*:.*$/gmi, "")
+    .replace(/^.*\b(Sources?|References?|Références?)\b\s*[:\-–—].*$/gmi, "")
+    .replace(/^\s*[-=]{3,}\s*$/gm, "")
+    .replace(/^\s*[-+•]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/^\s*(rappel coaching|infos importantes|coaching apexlabs|prochaines etapes|prochaine etape|tu as les cl(?:e|\u00e9)s).*$/gmi, "")
+    .replace(/^\s*(code promo|email|site)\s*:.*$/gmi, "")
+    .replace(/^\s*note\s*\(technique\).*$/gmi, "")
+    .replace(/score\s+global\s*:?\s*\d{1,3}\s*\/\s*100/gi, "")
+    .replace(/score\s+global\b.*$/gmi, "")
+    .replace(EMOJI_REGEX, "")
+    .replace(SOURCE_NAME_REGEX, "")
+    .replace(/\bclients\b/gi, "profils")
+    .replace(/\bclient\b/gi, "profil")
+    .replace(/\*\*/g, "")
+    .replace(/##/g, "")
+    .replace(/__/g, "")
+    .replace(/\*/g, "")
+    .trim();
+  cleaned = normalizeSingleVoice(cleaned);
+  return cleaned;
+}
+
+function hasForbiddenPhrases(text: string): boolean {
+  return FORBIDDEN_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 // Initialize Anthropic client
@@ -122,13 +210,29 @@ function getMaxTokensForSection(section: SectionName, tier: AuditTier = 'PREMIUM
   return SECTION_TOKEN_LIMITS.DEFAULT;
 }
 
+function getMinCharsForSection(section: SectionName, tier: AuditTier = 'PREMIUM'): number {
+  const s = String(section).toLowerCase();
+  if (tier === 'GRATUIT') {
+    if (s.includes("executive summary")) return 4200;
+    if (s.includes("synthese") || s.includes("prochaines etapes")) return 4200;
+    return 4500;
+  }
+  if (s.includes("executive summary")) return 4200;
+  if (s.includes("kpi") || s.includes("tableau")) return 3800;
+  if (s.includes("stack") || s.includes("supplements")) return 3200;
+  if (s.includes("synthese") || s.includes("prochaines etapes")) return 4200;
+  if (s.includes("plan") && (s.includes("30") || s.includes("60") || s.includes("90"))) return 5200;
+  if (s.includes("protocole")) return 6500;
+  if (s.includes("analyse")) return 6500;
+  return 4800;
+}
+
 function degradedSectionText(section: SectionName): string {
   return [
     `${String(section).toUpperCase()}`,
     ``,
-    `NOTE (TECHNIQUE)`,
-    `Je n'ai pas pu finaliser cette section a cause d'un incident temporaire.`,
-    `Je la regenere des que le service est stable (sans impacter le reste de ton rapport).`,
+    `Cette section est en cours de regeneration.`,
+    `Je la finalise des que le rendu est au niveau attendu.`,
   ].join("\n");
 }
 
@@ -264,7 +368,7 @@ export async function generateAuditTxtWithClaude(
 ): Promise<string | null> {
   const startTime = Date.now();
 
-  const firstName = clientData['prenom'] || clientData['age'] || 'Client';
+  const firstName = getFirstNameForReport(clientData);
   const lastName = clientData['nom'] || '';
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -332,7 +436,7 @@ export async function generateAuditTxtWithClaude(
     : 'Analyse photo indisponible.';
 
   const fullDataStr = `
-DONNEES CLIENT:
+DONNEES PROFIL:
 ${dataStr}
 
 ANALYSE PHOTO POSTURALE:
@@ -340,9 +444,10 @@ ${photoAnalysisStr}
 `;
 
   const auditParts: string[] = [];
-  const ctaDebut = getCTADebut(tier, PRICING.PREMIUM);
+  const ctaAmount = tier === "ELITE" ? PRICING.ELITE : PRICING.PREMIUM;
+  const ctaDebut = getCTADebut(tier, ctaAmount);
   auditParts.push(ctaDebut);
-  auditParts.push(`\n AUDIT COMPLET NEUROCORE 360 - ${fullName.toUpperCase()} \n`);
+  auditParts.push(`\n AUDIT COMPLET APEXLABS - ${fullName.toUpperCase()} \n`);
   auditParts.push(`Genere le ${new Date().toLocaleString('fr-FR')}\n`);
 
   let newSectionsGenerated = 0;
@@ -413,6 +518,21 @@ ${photoAnalysisStr}
         }
       }
 
+      if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+        try {
+          knowledgeContext = await generateKnowledgeContext(clientData as Record<string, any>);
+          if (knowledgeContext) {
+            console.log(`[Claude] Knowledge context fallback loaded for section "${section}" (${knowledgeContext.length} chars)`);
+          }
+        } catch (kbError) {
+          console.log(`[Claude] Knowledge context fallback unavailable for "${section}": ${kbError}`);
+        }
+      }
+
+      if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
+        throw new Error(`KNOWLEDGE_CONTEXT_EMPTY:${section}`);
+      }
+
       // Calcul de la longueur cible basé sur le tier
       const targetChars = tier === 'GRATUIT'
         ? '3500-5000 caracteres (environ 90-130 lignes)' // Discovery Scan: 5-7 pages total
@@ -425,10 +545,15 @@ Tu analyses les donnees de ${firstName} pour lui fournir un audit personnalise d
 INSTRUCTIONS IMPORTANTES:
 - Sois direct, concret et actionnable
 - Utilise un ton expert mais accessible
-- Personnalise chaque recommandation aux donnees du client
+- Personnalise chaque recommandation aux donnees du profil
 - Evite les generalites - sois specifique
-- Structure clairement avec des paragraphes et listes
+- Paragraphes uniquement (pas de listes, pas de puces)
+- Si une consigne de section propose un format liste, transforme-la en narration fluide
 - N'utilise pas de markdown (pas de ** ou ##)
+- Integre la knowledge base sans citer de sources ni noms propres
+- Ne dis jamais "client", "nous", "notre" ou "on"
+- Parle a la premiere personne ("je") et tutoie ${firstName}
+- Ne mentionne aucune offre, coaching, promo, email, site ou call-to-action
 
 LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Cette section doit contenir ${targetChars}
@@ -437,23 +562,54 @@ LONGUEUR OBLIGATOIRE (CRITIQUE):
 - Inclus des mecanismes biologiques, des exemples concrets, des protocoles detailles
 - Si c'est une analyse: explique le POURQUOI, les MECANISMES, les CONSEQUENCES, les SOLUTIONS
 - Si c'est un protocole: detaille chaque etape minute par minute avec variantes
+- Interdiction de citer des sources, auteurs, etudes, ou noms propres
 
-${knowledgeContext ? `
 ${knowledgeContext}
-` : ""}
 ${PROMPT_SECTION.replace("{section}", section)
   .replace("{section_specific_instructions}", specificInstructions)
   .replace("{data}", fullDataStr)}`;
 
       const t0 = Date.now();
-      let sectionText = await callClaude(claudePrompt, {
-        maxTokens: maxTokensForThisSection,
-        label: String(section),
-      });
+      const minChars = getMinCharsForSection(section as SectionName, tier);
+      let cleanedText = "";
+      const needsScoreLine = (value: string) => {
+        const lower = String(section).toLowerCase();
+        if (!lower.includes("analyse")) return false;
+        return !/Score\s*:?\s*\d{1,3}\s*\/\s*100/i.test(value);
+      };
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const retryNote =
+          attempt === 1
+            ? ""
+            : `\nATTENTION: Ta reponse etait trop courte, sans ligne Score, ou contenait des mots interdits. Tu dois fournir un texte plus long (min ${minChars} caracteres), sans "client", "nous", "notre", "on" ni sources. Termine par "Score : NN/100".\n`;
+        const prompt = `${claudePrompt}\n${retryNote}`;
+
+        const sectionText = await callClaude(prompt, {
+          maxTokens: maxTokensForThisSection,
+          label: `${String(section)}#${attempt}`,
+        });
+
+        if (!sectionText) continue;
+
+        const candidate = sanitizePremiumText(sectionText);
+        const forbidden = hasForbiddenPhrases(candidate);
+        const missingScore = needsScoreLine(candidate);
+
+        if (!forbidden && !missingScore && candidate.length >= minChars) {
+          cleanedText = candidate;
+          break;
+        }
+
+        if (!cleanedText || candidate.length > cleanedText.length) {
+          cleanedText = candidate;
+        }
+      }
+
       const dt = Date.now() - t0;
       console.log(`[Claude] Section "${section}" terminee en ${(dt / 1000).toFixed(1)}s`);
 
-      if (!sectionText) {
+      if (!cleanedText || cleanedText.length < minChars || hasForbiddenPhrases(cleanedText) || needsScoreLine(cleanedText)) {
         const degraded = degradedSectionText(section as SectionName);
         cachedSections[section] = degraded;
         saveToCache(auditId, {
@@ -468,12 +624,6 @@ ${PROMPT_SECTION.replace("{section}", section)
         newSectionsGenerated++;
         return { section, text: degraded, fromCache: false };
       }
-
-      const cleanedText = sectionText
-        .replace(/\*\*/g, "")
-        .replace(/##/g, "")
-        .replace(/__/g, "")
-        .replace(/\*/g, "");
 
       cachedSections[section] = cleanedText;
       saveToCache(auditId, {
@@ -506,10 +656,18 @@ ${PROMPT_SECTION.replace("{section}", section)
     }
   });
 
-  const ctaFin = getCTAFin(tier, PRICING.PREMIUM);
+  const hasGlobalScore = /SCORE\s+GLOBAL\s*:?\s*\d{1,3}\s*\/\s*100/i.test(auditParts.join("\n"));
+  const calcScores = calculateScoresFromResponses(clientData as any);
+  const globalScore = typeof calcScores?.global === "number" ? calcScores.global : 76;
+  if (!hasGlobalScore) {
+    auditParts.push(`\nSCORE GLOBAL : ${globalScore}/100\n`);
+  }
+
+  const ctaFin = getCTAFin(tier, ctaAmount);
   auditParts.push('\n\n' + ctaFin);
 
-  const fullAuditTxt = auditParts.join('\n');
+  let fullAuditTxt = auditParts.join('\n');
+  fullAuditTxt = normalizeSingleVoice(fullAuditTxt);
 
   const generationTime = Date.now() - startTime;
   console.log(
@@ -544,7 +702,7 @@ export async function generateAndConvertAuditWithClaude(
   }
 
   // Validation: minimum 10000 chars for PREMIUM (at least 5-6 pages)
-  const minLength = tier === 'GRATUIT' ? 5000 : 10000;
+  const minLength = tier === 'GRATUIT' ? 16000 : 10000;
   if (txtContent.length < minLength) {
     console.error(`[Claude] TXT trop court pour ${clientName}: ${txtContent.length} chars (min: ${minLength})`);
     console.error(`[Claude] Première section générée: ${txtContent.substring(0, 500)}...`);

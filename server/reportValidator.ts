@@ -27,6 +27,7 @@ export interface ValidationResult {
     averageSectionLength: number;
     hasCTA: boolean;
     hasReviewSection: boolean;
+    sourcesFound: string[];
   };
 }
 
@@ -99,10 +100,10 @@ const AI_PATTERNS = [
 ];
 
 // Minimum section lengths (in characters)
-const MIN_SECTION_LENGTH_PREMIUM = 2000;
-const MIN_SECTION_LENGTH_GRATUIT = 1500;
-const MIN_TOTAL_LENGTH_PREMIUM = 60000; // ~40+ pages
-const MIN_TOTAL_LENGTH_GRATUIT = 15000; // ~10+ pages
+const MIN_SECTION_LENGTH_PREMIUM = 5000;
+const MIN_SECTION_LENGTH_GRATUIT = 4200;
+const MIN_TOTAL_LENGTH_PREMIUM = 75000; // ~45-50 pages
+const MIN_TOTAL_LENGTH_GRATUIT = 20000; // ~12+ pages
 
 // Required CTA markers
 const CTA_MARKERS = [
@@ -129,6 +130,37 @@ const REVIEW_MARKERS = [
   "témoignage",
   "recommander",
 ];
+
+// Knowledge base source markers (should NOT appear in final text)
+const SOURCE_MARKERS = [
+  "huberman",
+  "andrew huberman",
+  "huberman lab",
+  "peter attia",
+  "attia",
+  "applied metabolics",
+  "stronger by science",
+  "sbs",
+  "examine",
+  "examine.com",
+  "renaissance periodization",
+  "mpmd",
+  "newsletter",
+  "layne norton",
+  "ben bikman",
+  "rhonda patrick",
+  "robert lustig",
+  "matthew walker",
+  "sapolsky",
+  "andy galpin",
+  "brad schoenfeld",
+  "mike israetel",
+  "justin sonnenburg",
+  "chris kresser",
+];
+
+const MULTI_PERSON_MARKERS = ["nous", "notre", "nos", "client", "on"];
+const EMOJI_REGEX = /[\p{Extended_Pictographic}\uFE0F]/gu;
 
 export function validateReport(
   reportTxt: string,
@@ -194,7 +226,7 @@ export function validateReport(
 
     if (sectionLength < minSectionLength) {
       shortSections.push(`${section} (${sectionLength} chars)`);
-      warnings.push(`Section trop courte: "${section}" - ${sectionLength} chars (minimum: ${minSectionLength})`);
+      errors.push(`Section trop courte: "${section}" - ${sectionLength} chars (minimum: ${minSectionLength})`);
     }
   }
 
@@ -205,13 +237,42 @@ export function validateReport(
     }
   }
 
-  if (aiPatternsFound.length > 12) {
+  if (aiPatternsFound.length >= 6) {
     errors.push(`Trop de patterns IA détectés (${aiPatternsFound.length}): ${aiPatternsFound.slice(0, 5).join(', ')}...`);
-  } else if (aiPatternsFound.length > 5) {
+  } else if (aiPatternsFound.length >= 2) {
     warnings.push(`Patterns IA détectés (${aiPatternsFound.length}): ${aiPatternsFound.join(', ')}`);
   }
 
-  // 4. Check CTA presence
+  // 4. Knowledge source visibility (should be absent in output)
+  const sourcesFound = SOURCE_MARKERS.filter((marker) => txtLower.includes(marker));
+  const hasSourcesLine = /sources?\s*:/i.test(txtLower);
+  if (hasSourcesLine && !sourcesFound.includes("sources:")) {
+    sourcesFound.push("sources:");
+  }
+  if (sourcesFound.length > 0) {
+    errors.push(`Sources visibles dans le texte: ${sourcesFound.join(", ")}`);
+  }
+
+  // 5. Single-author voice only
+  const multiPersonFound = MULTI_PERSON_MARKERS.filter((marker) =>
+    new RegExp(`\\b${marker}\\b`, "i").test(txtLower)
+  );
+  if (multiPersonFound.length > 0) {
+    errors.push(`Forme plurielle detectee: ${multiPersonFound.join(", ")}`);
+  }
+
+  // 6. No emoji
+  if (EMOJI_REGEX.test(reportTxt)) {
+    errors.push("Emojis detectes dans le texte");
+  }
+
+  // 4b. Single-author voice (no "nous"/"client")
+  const multiFound = MULTI_PERSON_MARKERS.filter((marker) => new RegExp(`\\b${marker}\\b`).test(txtLower));
+  if (multiFound.length > 0) {
+    errors.push(`Pronoms collectifs/termes interdits detectes: ${multiFound.join(", ")}`);
+  }
+
+  // 5. Check CTA presence
   const hasCTA = CTA_MARKERS.some(marker =>
     txtLower.includes(marker.toLowerCase()) || htmlLower.includes(marker.toLowerCase())
   );
@@ -220,16 +281,16 @@ export function validateReport(
     errors.push('CTA coaching/offre manquant dans le rapport');
   }
 
-  // 5. Check review section (only for PREMIUM)
+  // 6. Check review section (only for PREMIUM)
   const hasReviewSection = tier === 'GRATUIT' || REVIEW_MARKERS.some(marker =>
     txtLower.includes(marker.toLowerCase()) || htmlLower.includes(marker.toLowerCase())
   );
 
-  if (!hasReviewSection && tier !== 'GRATUIT') {
+  if (!hasReviewSection) {
     warnings.push('Section demande de review/avis manquante');
   }
 
-  // 6. Check HTML structure
+  // 7. Check HTML structure
   if (reportHtml.length < 5000) {
     errors.push(`HTML trop court: ${reportHtml.length} chars`);
   }
@@ -238,7 +299,7 @@ export function validateReport(
     errors.push('HTML invalide: balise <html> manquante');
   }
 
-  // 7. Check for placeholder/error text
+  // 8. Check for placeholder/error text
   // Note: "null" and "undefined" removed - can appear in legitimate text
   // "ERROR" and "FAILED" only matched in caps to avoid false positives
   const errorMarkers = [
@@ -257,7 +318,7 @@ export function validateReport(
     }
   }
 
-  // 8. Check for personalization (client name should appear)
+  // 9. Check for personalization (client name should appear)
   const personalMarkers = ['ton', 'ta', 'tes', 'toi', 'te '];
   const hasPersonalization = personalMarkers.some(marker => txtLower.includes(marker));
 
@@ -309,6 +370,7 @@ export function validateReport(
       averageSectionLength,
       hasCTA,
       hasReviewSection,
+      sourcesFound,
     },
   };
 }
@@ -371,6 +433,7 @@ export function logValidation(auditId: string, result: ValidationResult): void {
   console.log(`[Validator] Avg section length: ${result.details.averageSectionLength}`);
   console.log(`[Validator] CTA present: ${result.details.hasCTA}`);
   console.log(`[Validator] Review section: ${result.details.hasReviewSection}`);
+  console.log(`[Validator] Sources found: ${result.details.sourcesFound.join(", ") || "none"}`);
 
   if (result.errors.length > 0) {
     console.log(`[Validator] ERRORS:`);

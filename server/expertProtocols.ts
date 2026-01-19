@@ -17,7 +17,7 @@ export const EXPERT_PROTOCOLS = {
   },
 
   "composition-corporelle": {
-    expert: "Coach physique elite (style Mike Israetel, Menno Henselmans)",
+    expert: "Coach physique expert (style Mike Israetel, Menno Henselmans)",
     focus: [
       "Estimation du metabolic adaptation si historique regimes",
       "Set point theory et comment le modifier",
@@ -94,7 +94,7 @@ export const EXPERT_PROTOCOLS = {
   },
 
   "activite-performance": {
-    expert: "Preparateur physique elite (style Eric Cressey, Mike Boyle, Cal Dietz)",
+    expert: "Preparateur physique expert (style Eric Cressey, Mike Boyle, Cal Dietz)",
     focus: [
       "Periodisation selon objectif : lineaire, ondulee, bloc",
       "Ratios force : bench/squat/deadlift selon niveau",

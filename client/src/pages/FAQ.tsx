@@ -13,11 +13,11 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "Qu'est-ce que APEXLABS exactement ?",
-    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€ ou Burnout Engine 39€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
+    answer: "APEXLABS est mon système d'analyse métabolique complet que j'ai développé après des années de coaching individuel. Il couvre 15+ domaines : sommeil, hormones, digestion, stress, nutrition, entraînement, biomécanique, neurotransmetteurs... Selon l'offre choisie (Discovery Scan gratuit, Anabolic Bioscan 59€, Ultimate Scan 79€, Blood Analysis 99€ ou Peptides Engine 99€), tu reçois un rapport de 5 à 50+ pages avec des protocoles que j'ai créés et testés sur des centaines de clients."
   },
   {
     question: "Quelle est la différence entre les différentes offres ?",
-    answer: "DISCOVERY SCAN (Gratuit) : 180 questions, diagnostic complet, score global sur 100, rapport 5-7 pages. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles matin/soir personnalisés, stack suppléments optimisé, plan 30-60-90 jours. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle), 18 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance. BURNOUT ENGINE (39€) : Détection du risque de burnout + protocole récupération 4 semaines."
+    answer: "DISCOVERY SCAN (Gratuit) : ~66 questions, diagnostic global, dashboard interactif. Tu identifies tes blocages sans engagement. ANABOLIC BIOSCAN (59€) : 16 sections d'analyse, protocoles 30-60-90 jours, stack suppléments optimisé. Mon best-seller. ULTIMATE SCAN (79€) : Tout l'Anabolic + analyse photo (posture, composition corporelle) + wearables, 18 sections, rapport 40-50 pages. L'analyse la plus complète. BLOOD ANALYSIS (99€) : Upload ton bilan sanguin, je l'analyse avec des ranges optimaux de performance. PEPTIDES ENGINE (99€) : Protocole peptides sur mesure, dosages, timing, sources fiables, ebook offert."
   },
   {
     question: "Comment fonctionne la synchronisation des wearables ?",
@@ -33,7 +33,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Combien de temps pour recevoir mon rapport ?",
-    answer: "Le questionnaire prend 15-45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est généré automatiquement dès que tu termines - tu le reçois en quelques minutes par email. Pour les offres premium (Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum."
+    answer: "Le questionnaire prend 15-45 minutes selon l'offre choisie. Tu peux sauvegarder ta progression et reprendre plus tard. Le rapport est généré automatiquement dès que tu termines - tu le reçois en quelques minutes par email. Pour les offres payantes (Ultimate Scan, Blood Analysis), je révise personnellement chaque rapport avant envoi, donc compte 24-48h maximum."
   },
   {
     question: "Qui es-tu exactement, Achzod ?",
@@ -49,7 +49,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "C'est un paiement unique ou un abonnement ?",
-    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 49€ une fois. Pro Panel 360 = 99€ une fois. Blood Analysis = 99€ une fois. Burnout Engine = 39€ une fois."
+    answer: "Paiement unique. Pas d'abonnement caché, pas de frais récurrents. Tu paies une fois et tu gardes accès à ton rapport à vie. Discovery Scan = Gratuit pour toujours. Anabolic Bioscan = 59€ une fois. Ultimate Scan = 79€ une fois. Blood Analysis = 99€ une fois. Peptides Engine = 99€ une fois."
   },
   {
     question: "Le rapport remplace-t-il un médecin ?",
@@ -177,7 +177,7 @@ export default function FAQ() {
                 Prêt à découvrir ton potentiel ?
               </h2>
               <p className="text-lg text-white/50">
-                Commence gratuitement ou passe directement à une offre premium.
+                Commence gratuitement ou passe directement à une offre payante.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
                 <Link href="/offers/discovery-scan">

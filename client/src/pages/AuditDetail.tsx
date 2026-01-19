@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -37,6 +37,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
+import { AuditTypeDisplayNames } from "@shared/schema";
 
 interface SupplementProtocol {
   name: string;
@@ -397,12 +398,15 @@ function WeeklyPlan({ weeklyPlan }: { weeklyPlan: NarrativeReport["weeklyPlan"] 
 export default function AuditDetail() {
   const params = useParams<{ auditId: string }>();
   const auditId = params.auditId;
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const [report, setReport] = useState<NarrativeReport | null>(null);
   const [auditData, setAuditData] = useState<{ type: string; reportDeliveryStatus: string; email: string; scores: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenTriggered, setRegenTriggered] = useState(false);
 
   const handleExportPDF = async () => {
     if (!report || !auditId) return;
@@ -526,7 +530,24 @@ export default function AuditDetail() {
         const audit = await auditRes.json();
         setAuditData(audit);
 
-        if (audit.reportDeliveryStatus === "READY" || audit.reportDeliveryStatus === "SENT") {
+        // If Discovery and report seems missing, try fallback endpoint
+        if (audit.type === "GRATUIT") {
+          const discoveryRes = await fetch(`/api/discovery-scan/${auditId}`);
+          if (discoveryRes.ok) {
+            const discoveryReport = await discoveryRes.json();
+            if (discoveryReport && !discoveryReport.error && !discoveryReport.message) {
+              setReport(discoveryReport);
+              setAuditData(prev => prev ? { ...prev, reportDeliveryStatus: "READY" } : prev);
+            }
+          }
+        }
+
+        if (
+          !report &&
+          (audit.reportDeliveryStatus === "READY" ||
+            audit.reportDeliveryStatus === "SENT" ||
+            audit.reportDeliveryStatus === "NEEDS_REVIEW")
+        ) {
           const reportRes = await fetch(`/api/audits/${auditId}/narrative`);
           if (reportRes.ok) {
             const reportData = await reportRes.json();
@@ -544,7 +565,53 @@ export default function AuditDetail() {
     fetchData();
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, [auditId]);
+  }, [auditId, report]);
+
+  // Redirect to Ultrahuman per-offer UI to ensure consistent experience
+  useEffect(() => {
+    if (!auditData || !auditId) return;
+    const target =
+      auditData.type === "GRATUIT"
+        ? `/scan/${auditId}`
+        : auditData.type === "PREMIUM"
+        ? `/anabolic/${auditId}`
+        : auditData.type === "ELITE"
+        ? `/ultimate/${auditId}`
+        : null;
+
+    if (target) {
+      navigate(target, { replace: true });
+    }
+  }, [auditData, auditId, navigate]);
+
+  // Auto-regenerate Discovery stuck in PENDING/GENERATING
+  useEffect(() => {
+    const autoRegen = async () => {
+      if (!auditData) return;
+      if (report) return; // already have report, no regen
+      if (regenTriggered) return;
+      if (auditData.type !== "GRATUIT") return;
+      if (auditData.reportDeliveryStatus === "READY" || auditData.reportDeliveryStatus === "SENT") return;
+      setRegenTriggered(true);
+      setRegenLoading(true);
+      try {
+        await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
+        toast({
+          title: "Regeneration lancee",
+          description: "Je recalcule ton rapport Discovery. Il s'affichera dès qu'il est prêt.",
+        });
+      } catch {
+        toast({
+          title: "Regeneration echouée",
+          description: "Reessaie ou contacte le support.",
+          variant: "destructive",
+        });
+      } finally {
+        setRegenLoading(false);
+      }
+    };
+    autoRegen();
+  }, [auditData, auditId, regenTriggered, toast]);
 
   if (loading) {
     return (
@@ -577,7 +644,11 @@ export default function AuditDetail() {
     );
   }
 
-  if (auditData.reportDeliveryStatus !== "READY" && auditData.reportDeliveryStatus !== "SENT") {
+  if (
+    auditData.reportDeliveryStatus !== "READY" &&
+    auditData.reportDeliveryStatus !== "SENT" &&
+    auditData.reportDeliveryStatus !== "NEEDS_REVIEW"
+  ) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -592,8 +663,7 @@ export default function AuditDetail() {
             </div>
             <h2 className="text-2xl font-bold mb-2">Analyse en cours</h2>
             <p className="text-muted-foreground mb-8">
-              Votre dossier est en cours d'analyse par ACHZOD.
-              <br />Vous recevrez une notification des que votre bilan sera disponible.
+              Je suis en train d'analyser ton dossier. Je t'envoie l'email dès que ton bilan est prêt.
             </p>
             
             <Card className="text-left">
@@ -605,10 +675,43 @@ export default function AuditDetail() {
                   <div>
                     <h3 className="font-semibold">Temps de traitement</h3>
                     <p className="text-sm text-muted-foreground">
-                      Votre rapport personnalise sera disponible sous 24 a 48 heures.
+                      Ton rapport sera dispo sous 24 à 48h au maximum (souvent bien plus rapide).
                     </p>
                   </div>
                 </div>
+                {auditData.type === "GRATUIT" && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        setRegenLoading(true);
+                        try {
+                          await fetch(`/api/discovery-scan/${params.auditId}/regenerate`, {
+                            method: "POST",
+                          });
+                          toast({
+                            title: "Recalcul lancé",
+                            description: "Je regénère ton rapport. Il s'affichera dès qu'il est prêt.",
+                          });
+                        } catch {
+                          toast({
+                            title: "Erreur",
+                            description: "Regeneration échouée. Réessaie ou contacte le support.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setRegenLoading(false);
+                        }
+                      }}
+                      disabled={regenLoading}
+                    >
+                      {regenLoading ? "Recalcul..." : "Forcer la génération"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Si tu vois ce message trop longtemps, clique sur Forcer la génération.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -674,7 +777,7 @@ export default function AuditDetail() {
                       {report.auditType === "ELITE" && <Zap className="mr-1 h-3 w-3" />}
                       {report.auditType === "PREMIUM" && <Crown className="mr-1 h-3 w-3" />}
                       {report.auditType === "GRATUIT" && <Star className="mr-1 h-3 w-3" />}
-                      Bilan {report.auditType}
+                      Bilan {AuditTypeDisplayNames[report.auditType] ?? report.auditType}
                     </Badge>
                     <h1 className="text-3xl font-bold tracking-tight">APEXLABS</h1>
                     <p className="text-slate-300 mt-1">Audit 360 Complet</p>
@@ -806,7 +909,7 @@ export default function AuditDetail() {
                 <p className="text-muted-foreground text-sm mt-1">
                   {isPremiumUser
                     ? "Acces complet aux 15 domaines d'analyse expert."
-                    : "4 sections accessibles. Passez en Premium pour debloquer les 11 sections avancees."}
+                    : "4 sections accessibles. Passez en Anabolic pour debloquer les 11 sections avancees."}
                 </p>
               </div>
             </div>
@@ -882,9 +985,9 @@ export default function AuditDetail() {
                   </p>
                 </div>
                 <Link href="/audit-complet/checkout">
-                  <Button size="lg" data-testid="button-upgrade-premium">
+                  <Button size="lg" data-testid="button-upgrade-anabolic">
                     <Unlock className="mr-2 h-4 w-4" />
-                    Passer Premium
+                    Passer Anabolic
                   </Button>
                 </Link>
               </CardContent>

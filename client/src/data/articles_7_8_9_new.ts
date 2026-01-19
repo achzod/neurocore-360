@@ -850,3 +850,4 @@ Commencez par un aspect, maîtrisez-le, puis ajoutez les autres. Une approche pr
 
 **Votre rythme circadien est-il optimisé ou sabote-t-il votre santé silencieusement ?** L'équipe APEX LABS propose l'[Ultimate Scan](/offers/ultimate-scan) pour analyser vos patterns circadiens avec précision. Identifiez vos dysfonctionnements, recevez un protocole personnalisé, et regardez votre énergie et votre santé se transformer. Pour une implémentation guidée, notre [Performance Protocol](/offers/performance-protocol) vous accompagne étape par étape vers la synchronisation parfaite.
     `,
+};

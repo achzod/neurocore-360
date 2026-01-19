@@ -51,7 +51,7 @@ export default function CGV() {
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
               Est considere comme "client" toute personne physique ou morale realisant aupres de ce
-              site une commande validee par notre plateforme de paiement securisee.
+              site une commande validee par ma plateforme de paiement securisee.
             </p>
             <p className="mt-3 text-white/60 leading-relaxed">
               AchzodCoaching se reserve la possibilite d'adapter ou de modifier les presentes Conditions
@@ -68,23 +68,23 @@ export default function CGV() {
             </p>
             <div className="mt-6 space-y-4">
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
-                <h4 className="font-semibold text-white">Audit Decouverte (Gratuit)</h4>
+                <h4 className="font-semibold text-white">Discovery Scan (Gratuit)</h4>
                 <p className="mt-1 text-sm text-white/50">
                   Rapport de base avec score global et resume des domaines analyses.
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
-                <h4 className="font-semibold text-white">Audit Premium (79€ - Paiement unique)</h4>
+                <h4 className="font-semibold text-white">Audit Anabolic Bioscan (59€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
                   Rapport complet de 20+ pages avec recommandations personnalisees, plan d'action 30 jours,
                   et analyse detaillee de chaque domaine.
                 </p>
               </div>
               <div className="rounded-sm border border-white/10 bg-[#0F0F0F] p-4">
-                <h4 className="font-semibold text-white">Audit Elite (129€/an)</h4>
+                <h4 className="font-semibold text-white">Audit Ultimate Scan (79€ - Paiement unique)</h4>
                 <p className="mt-1 text-sm text-white/50">
-                  Tous les avantages Premium + 4 audits par an pour suivre ta progression +
-                  suivi de l'evolution dans le temps.
+                  Tous les avantages Anabolic Bioscan + analyse photo posturale complete + integration wearables +
+                  protocoles avances 30-60-90 jours.
                 </p>
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 3 - Deduction sur les Coachings</h2>
             <p className="text-white/60 leading-relaxed">
-              Le montant paye pour les audits Premium (79€) et Elite (129€) est deductible de l'achat
+              Le montant paye pour les audits Anabolic Bioscan (59€) et Ultimate Scan (79€) est deductible de l'achat
               d'un coaching AchzodCoaching, sous les conditions suivantes :
             </p>
             <ul className="mt-4 space-y-2 text-white/60">
@@ -122,7 +122,7 @@ export default function CGV() {
           <section className="rounded-sm bg-white/[0.03] border border-white/10 p-6 md:p-8">
             <h2 className="mb-4 text-xl font-bold text-white">Article 4 - Commandes</h2>
             <p className="text-white/60 leading-relaxed">
-              L'acceptation d'une commande se fait via notre plateforme de paiement securisee Stripe.
+              L'acceptation d'une commande se fait via ma plateforme de paiement securisee Stripe.
               Une fois votre commande saisie, un mail de confirmation vous sera adresse et votre
               commande enregistree.
             </p>

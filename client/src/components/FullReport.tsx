@@ -204,7 +204,7 @@ const DEFAULT_REPORT_DATA: ReportData = {
       title: 'Lecture globale',
       subtitle: 'Le Paradoxe',
       content: `<p>Ton corps hurle quelque chose que tu refuses d'entendre.</p>
-<p>Tu fais tout ce qu'on attend d'un gars qui veut optimiser sa sante. Et pourtant... tu stagnes. L'energie manque. La recuperation traine. Les resultats ne suivent pas l'investissement.</p>
+        <p>Tu fais tout ce que j'attends d'un gars qui veut optimiser sa sante. Et pourtant... tu stagnes. L'energie manque. La recuperation traine. Les resultats ne suivent pas l'investissement.</p>
 <p><strong>Systeme nerveux : 38 sur 100.</strong> Le score le plus bas de ton bilan. Et c'est precisement ce score qui tire tout le reste vers le bas.</p>
 <p>Stress eleve. Anxiete frequente. Concentration difficile. Ce triptyque raconte une histoire que ton corps connait par coeur : mode survie permanent. Ton systeme nerveux sympathique — celui qui gere la reponse au danger — tourne en surregime.</p>`,
       chips: ['Mode Survie', 'Sympathique Dominant', 'Frein Metabolique'],
@@ -1243,10 +1243,10 @@ const CoachingCTA = ({ color }: { color: string }) => {
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.name}
-              className={`p-5 rounded relative ${plan.popular ? 'ring-2' : ''}`}
+              className="p-5 rounded relative"
               style={{
                 backgroundColor: 'var(--color-bg)',
-                ringColor: plan.popular ? color : 'transparent'
+                boxShadow: plan.popular ? `0 0 0 2px ${color}` : 'none'
               }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1717,7 +1717,7 @@ export function FullReport({ reportData = DEFAULT_REPORT_DATA, initialTheme = 'n
                     transition={{ duration: 2, repeat: Infinity }}
                   />
                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
-                    Audit Premium
+                    Audit Anabolic Bioscan
                   </span>
                 </motion.div>
                 <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">

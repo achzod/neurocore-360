@@ -22,7 +22,8 @@ import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
 import BloodAnalysis from "@/pages/BloodAnalysis";
-import BurnoutDetectionPage from "@/pages/BurnoutDetectionPage";
+import BloodDashboard from "@/pages/BloodDashboard";
+import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
 import Press from "@/pages/Press";
@@ -31,14 +32,14 @@ import ApexLabs from "@/pages/ApexLabs";
 import DiscoveryScanReport from "@/pages/DiscoveryScanReport";
 import AnabolicScanReport from "@/pages/AnabolicScanReport";
 import UltimateScanReport from "@/pages/UltimateScanReport";
-import BurnoutEngineReport from "@/pages/BurnoutEngineReport";
+import PeptidesEngineReport from "@/pages/PeptidesEngineReport";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
 import AuditPremium from "@/pages/offers/AuditPremium";
 import BloodAnalysisOffer from "@/pages/offers/BloodAnalysisOffer";
 import ProPanel from "@/pages/offers/ProPanel";
-import BurnoutDetection from "@/pages/offers/BurnoutDetection";
+import PeptidesEngine from "@/pages/offers/PeptidesEngine";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -58,16 +59,18 @@ function Router() {
       <Route path="/apexlabs" component={ApexLabs} />
       <Route path="/audit-complet" component={Landing} />
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
+      <Route path="/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
       <Route path="/blood-analysis" component={BloodAnalysis} />
-      <Route path="/burnout-detection" component={BurnoutDetectionPage} />
+      <Route path="/blood-dashboard" component={BloodDashboard} />
+      <Route path="/peptides-engine" component={PeptidesEnginePage} />
 
       {/* Offer Pages - New Names */}
       <Route path="/offers/discovery-scan" component={AuditGratuit} />
       <Route path="/offers/anabolic-bioscan" component={AuditPremium} />
       <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
       <Route path="/offers/ultimate-scan" component={ProPanel} />
-      <Route path="/offers/burnout-detection" component={BurnoutDetection} />
+      <Route path="/offers/peptides-engine" component={PeptidesEngine} />
 
       {/* Legacy routes - redirects */}
       <Route path="/offers/audit-gratuit" component={AuditGratuit} />
@@ -78,7 +81,7 @@ function Router() {
       <Route path="/scan/:auditId" component={DiscoveryScanReport} />
       <Route path="/anabolic/:auditId" component={AnabolicScanReport} />
       <Route path="/ultimate/:auditId" component={UltimateScanReport} />
-      <Route path="/burnout/:auditId" component={BurnoutEngineReport} />
+      <Route path="/peptides/:auditId" component={PeptidesEngineReport} />
 
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />

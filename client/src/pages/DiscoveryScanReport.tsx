@@ -3,7 +3,9 @@ import { useParams } from 'wouter';
 import { Sidebar } from '@/components/ultrahuman/Sidebar';
 import { RadialProgress } from '@/components/ultrahuman/RadialProgress';
 import { MetricsRadar, ProjectionChart } from '@/components/ultrahuman/Charts';
+import { ULTRAHUMAN_THEMES } from '@/components/ultrahuman/themes';
 import { Theme, ReportData } from '@/components/ultrahuman/types';
+import { Button } from '@/components/ui/button';
 import {
   Menu,
   ArrowUp,
@@ -25,69 +27,16 @@ import {
   Send
 } from 'lucide-react';
 
-// Theme definitions
-const THEMES: Theme[] = [
-  {
-    id: 'ultrahuman',
-    name: 'M1 Black',
-    type: 'dark',
-    colors: {
-      primary: '#FCDD00',
-      background: '#000000',
-      surface: '#0a0a0a',
-      border: 'rgba(252, 221, 0, 0.15)',
-      text: '#FFFFFF',
-      textMuted: '#a1a1aa',
-      grid: 'rgba(252, 221, 0, 0.05)',
-      glow: 'rgba(252, 221, 0, 0.2)'
-    }
-  },
-  {
-    id: 'metabolic',
-    name: 'Ice Blue',
-    type: 'dark',
-    colors: {
-      primary: '#38BDF8',
-      background: '#020617',
-      surface: '#0f172a',
-      border: 'rgba(56, 189, 248, 0.15)',
-      text: '#F1F5F9',
-      textMuted: '#94A3B8',
-      grid: 'rgba(56, 189, 248, 0.05)',
-      glow: 'rgba(56, 189, 248, 0.25)'
-    }
-  },
-  {
-    id: 'titanium',
-    name: 'Titanium Light',
-    type: 'light',
-    colors: {
-      primary: '#000000',
-      background: '#F2F2F2',
-      surface: '#FFFFFF',
-      border: 'rgba(0, 0, 0, 0.08)',
-      text: '#171717',
-      textMuted: '#737373',
-      grid: 'rgba(0, 0, 0, 0.04)',
-      glow: 'rgba(0, 0, 0, 0.05)'
-    }
-  },
-  {
-    id: 'organic',
-    name: 'Sand Stone',
-    type: 'light',
-    colors: {
-      primary: '#A85A32',
-      background: '#F0EFE9',
-      surface: '#E6E4DD',
-      border: 'rgba(168, 90, 50, 0.1)',
-      text: '#292524',
-      textMuted: '#78716C',
-      grid: 'rgba(168, 90, 50, 0.05)',
-      glow: 'rgba(168, 90, 50, 0.1)'
-    }
-  }
-];
+const THEMES: Theme[] = ULTRAHUMAN_THEMES;
+
+const formatName = (value?: string) => {
+  if (!value) return "Profil";
+  return value
+    .trim()
+    .split(/\s+/)
+    .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(" ");
+};
 
 // Icon mapping for metrics
 const METRIC_ICONS: Record<string, React.ElementType> = {
@@ -117,9 +66,36 @@ const DiscoveryScanReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenAttempts, setRegenAttempts] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const regenTimer = useRef<number | null>(null);
+  const displayName = reportData ? formatName(reportData.clientName) : "Profil";
+  const rawMetrics = reportData?.metrics ?? [];
+  const displayMetrics = rawMetrics.map(metric => ({
+    ...metric,
+    value: Math.max(1, Math.min(10, Number.isFinite(metric.value) ? metric.value : 0))
+  }));
+  const metricsAverage =
+    displayMetrics.length > 0
+      ? displayMetrics.reduce((acc, metric) => acc + metric.value, 0) / displayMetrics.length
+      : null;
+  const rawGlobalScore = reportData?.globalScore;
+  const normalizedGlobalScore = (() => {
+    if (!Number.isFinite(rawGlobalScore)) {
+      return metricsAverage ?? 0;
+    }
+    const score10 = rawGlobalScore > 10 ? rawGlobalScore / 10 : rawGlobalScore;
+    if (metricsAverage !== null && Math.abs(score10 - metricsAverage) >= 2) {
+      return metricsAverage;
+    }
+    return score10;
+  })();
+  const displayGlobalScore = reportData
+    ? Math.round(Math.max(1, Math.min(10, normalizedGlobalScore)) * 10) / 10
+    : 0;
 
   // Review form state
   const [reviewRating, setReviewRating] = useState<number>(0);
@@ -132,7 +108,9 @@ const DiscoveryScanReport: React.FC = () => {
 
   // Fetch report data
   useEffect(() => {
-    const fetchReport = async () => {
+    let cancelled = false;
+
+    const fetchReport = async (attempt = 0) => {
       if (!auditId) {
         setError('ID audit manquant');
         setLoading(false);
@@ -143,16 +121,36 @@ const DiscoveryScanReport: React.FC = () => {
         const response = await fetch(`/api/discovery-scan/${auditId}`);
         const data = await response.json();
 
+        const isPending = response.status === 202 || data?.status === 'regenerating';
+        if (isPending) {
+          if (cancelled) return;
+          setIsRegenerating(true);
+          setError(null);
+          setLoading(false);
+          const nextAttempt = attempt + 1;
+          setRegenAttempts(nextAttempt);
+
+          if (nextAttempt <= 60) {
+            regenTimer.current = window.setTimeout(() => fetchReport(nextAttempt), 3500);
+          } else {
+            setError("Regeneration en attente trop longue. Clique sur Recalculer ou reessaie plus tard.");
+            setIsRegenerating(false);
+          }
+          return;
+        }
+
         // Check if error response
         if (data.error) {
           setError(data.error);
+          setIsRegenerating(false);
           setLoading(false);
           return;
         }
 
         // API returns ReportData directly (not wrapped)
-        if (!data.globalScore || !data.sections) {
+        if (typeof data.globalScore !== "number" || !Array.isArray(data.sections)) {
           setError('Format de rapport invalide');
+          setIsRegenerating(false);
           setLoading(false);
           return;
         }
@@ -161,6 +159,7 @@ const DiscoveryScanReport: React.FC = () => {
         if (data.sections?.length > 0) {
           setActiveSection(data.sections[0].id);
         }
+        setIsRegenerating(false);
       } catch (err) {
         setError('Erreur de chargement du rapport');
       } finally {
@@ -168,7 +167,17 @@ const DiscoveryScanReport: React.FC = () => {
       }
     };
 
-    fetchReport();
+    setLoading(true);
+    setError(null);
+    setIsRegenerating(false);
+    fetchReport(0);
+
+    return () => {
+      cancelled = true;
+      if (regenTimer.current) {
+        clearTimeout(regenTimer.current);
+      }
+    };
   }, [auditId]);
 
   // Apply theme CSS variables
@@ -181,6 +190,16 @@ const DiscoveryScanReport: React.FC = () => {
     root.style.setProperty('--color-text-muted', currentTheme.colors.textMuted);
     root.style.setProperty('--color-primary', currentTheme.colors.primary);
     root.style.setProperty('--color-grid', currentTheme.colors.grid);
+    root.style.setProperty('--color-on-primary', currentTheme.type === 'dark' ? '#000' : '#fff');
+    root.style.setProperty('--text', currentTheme.colors.text);
+    root.style.setProperty('--text-secondary', currentTheme.colors.textMuted);
+    root.style.setProperty('--text-muted', currentTheme.colors.textMuted);
+    root.style.setProperty('--surface-1', currentTheme.colors.surface);
+    root.style.setProperty('--surface-2', currentTheme.colors.background);
+    root.style.setProperty('--border', currentTheme.colors.border);
+    root.style.setProperty('--primary', currentTheme.colors.primary);
+    root.style.setProperty('--accent-ok', currentTheme.colors.primary);
+    root.style.setProperty('--accent-warning', currentTheme.colors.primary);
   }, [currentTheme]);
 
   // Scroll handling
@@ -259,7 +278,10 @@ const DiscoveryScanReport: React.FC = () => {
       if (data.success) {
         setReviewSubmitted(true);
       } else {
-        setReviewError(data.error || 'Erreur lors de la soumission');
+        const detailMessages = Array.isArray(data.details)
+          ? data.details.map((detail: { message?: string }) => detail.message).filter(Boolean).join(" ")
+          : "";
+        setReviewError(detailMessages || data.error || 'Erreur lors de la soumission');
       }
     } catch (err) {
       setReviewError('Erreur de connexion au serveur');
@@ -287,12 +309,21 @@ const DiscoveryScanReport: React.FC = () => {
   };
 
   // Loading state
-  if (loading) {
+  if ((loading || isRegenerating) && !reportData) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-white/50 mx-auto mb-4" />
-          <p className="text-white/70">Chargement du rapport...</p>
+          <p className="text-white/70">
+            {isRegenerating
+              ? "Je recalcule ton rapport Discovery. La page se met a jour automatiquement..."
+              : "Chargement du rapport..."}
+          </p>
+          {isRegenerating && (
+            <p className="text-xs text-white/50 mt-2">
+              Tentative {regenAttempts}/12
+            </p>
+          )}
         </div>
       </div>
     );
@@ -305,20 +336,59 @@ const DiscoveryScanReport: React.FC = () => {
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-white/70">{error || 'Rapport non disponible'}</p>
+          {auditId && (
+            <div className="mt-6 flex items-center justify-center">
+              <Button
+                onClick={async () => {
+                  setError(null);
+                  setIsRegenerating(true);
+                  setRegenAttempts(0);
+                  try {
+                    await fetch(`/api/discovery-scan/${auditId}/regenerate`, { method: "POST" });
+                  } catch {
+                    // best-effort
+                  } finally {
+                    setLoading(true);
+                  }
+                }}
+              >
+                Recalculer maintenant
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   // Get worst metrics for KPI cards
-  const sortedMetrics = [...reportData.metrics].sort((a, b) => a.value - b.value);
+  const sortedMetrics = [...displayMetrics].sort((a, b) => a.value - b.value);
   const worstMetric = sortedMetrics[0];
   const bestMetric = sortedMetrics[sortedMetrics.length - 1];
+  const themeVars = {
+    '--color-bg': currentTheme.colors.background,
+    '--color-surface': currentTheme.colors.surface,
+    '--color-border': currentTheme.colors.border,
+    '--color-text': currentTheme.colors.text,
+    '--color-text-muted': currentTheme.colors.textMuted,
+    '--color-primary': currentTheme.colors.primary,
+    '--color-grid': currentTheme.colors.grid,
+    '--color-on-primary': currentTheme.type === 'dark' ? '#000' : '#fff',
+    '--text': currentTheme.colors.text,
+    '--text-secondary': currentTheme.colors.textMuted,
+    '--text-muted': currentTheme.colors.textMuted,
+    '--surface-1': currentTheme.colors.surface,
+    '--surface-2': currentTheme.colors.background,
+    '--border': currentTheme.colors.border,
+    '--primary': currentTheme.colors.primary,
+    '--accent-ok': currentTheme.colors.primary,
+    '--accent-warning': currentTheme.colors.primary,
+  } as React.CSSProperties;
 
   return (
     <div
-      className="flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
-      style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
+      className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
@@ -347,7 +417,7 @@ const DiscoveryScanReport: React.FC = () => {
           themes={THEMES}
           currentTheme={currentTheme}
           onThemeChange={setCurrentTheme}
-          clientName={reportData.clientName}
+          clientName={displayName}
           auditType={reportData.auditType}
         />
       </aside>
@@ -376,7 +446,7 @@ const DiscoveryScanReport: React.FC = () => {
 
         {/* Mobile Header */}
         <div className="lg:hidden sticky top-0 z-40 backdrop-blur-md px-4 py-4 flex items-center justify-between" style={{ backgroundColor: 'var(--color-bg)', borderBottom: `1px solid var(--color-border)` }}>
-          <span className="font-bold text-sm tracking-widest uppercase">{reportData.clientName}</span>
+          <span className="font-bold text-sm tracking-widest uppercase">{displayName}</span>
           <button onClick={() => setMobileMenuOpen(true)}><Menu size={20} /></button>
         </div>
 
@@ -390,17 +460,17 @@ const DiscoveryScanReport: React.FC = () => {
                   <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Discovery Scan</span>
                 </div>
                 <h1 className="text-5xl lg:text-7xl font-medium tracking-tighter leading-[0.9]">
-                  {reportData.clientName}, <br />
+                  {displayName}, <br />
                   <span style={{ color: currentTheme.colors.textMuted }}>voici ton scan.</span>
                 </h1>
                 <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                  {reportData.globalScore}/10 — {reportData.globalScore >= 7 ? 'Une base solide.' : reportData.globalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
+                  {displayGlobalScore}/10 — {displayGlobalScore >= 7 ? 'Une base solide.' : displayGlobalScore >= 5 ? 'Des axes d\'optimisation identifies.' : 'Plusieurs blocages a debloquer.'}
                 </p>
               </div>
 
               <div className="flex gap-4 items-end">
                 <div className="text-right hidden md:block">
-                  <div className="text-3xl font-bold font-mono">{reportData.globalScore}<span className="text-lg opacity-50">/10</span></div>
+                  <div className="text-3xl font-bold font-mono">{displayGlobalScore}<span className="text-lg opacity-50">/10</span></div>
                   <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
                 </div>
               </div>
@@ -416,7 +486,7 @@ const DiscoveryScanReport: React.FC = () => {
                 <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
                 <div className="flex items-center justify-center py-8">
                   <RadialProgress
-                    score={reportData.globalScore}
+                    score={displayGlobalScore}
                     max={10}
                     size={180}
                     strokeWidth={4}
@@ -424,8 +494,8 @@ const DiscoveryScanReport: React.FC = () => {
                   />
                 </div>
                 <div className="flex items-center justify-center">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${getScoreStatus(reportData.globalScore).color}`}>
-                    {getScoreStatus(reportData.globalScore).label}
+                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${getScoreStatus(displayGlobalScore).color}`}>
+                    {getScoreStatus(displayGlobalScore).label}
                   </span>
                 </div>
               </div>
@@ -436,7 +506,15 @@ const DiscoveryScanReport: React.FC = () => {
                   <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Balance Systemique</h3>
                 </div>
                 <div className="h-full w-full min-h-[300px] flex items-center justify-center pt-8">
-                  <MetricsRadar data={reportData.metrics} color={currentTheme.colors.primary} />
+                  <MetricsRadar
+                    data={displayMetrics}
+                    color={currentTheme.colors.primary}
+                    gridColor={currentTheme.colors.grid}
+                    labelColor={currentTheme.colors.textMuted}
+                    tooltipBg={currentTheme.colors.surface}
+                    tooltipBorder={currentTheme.colors.border}
+                    tooltipText={currentTheme.colors.text}
+                  />
                 </div>
               </div>
 
@@ -479,7 +557,7 @@ const DiscoveryScanReport: React.FC = () => {
                   </p>
                 </div>
                 <div className="w-full md:w-2/3 h-[150px]">
-                  <ProjectionChart color={currentTheme.colors.primary} currentScore={reportData.globalScore} />
+              <ProjectionChart color={currentTheme.colors.primary} currentScore={displayGlobalScore} />
                 </div>
               </div>
             </section>
@@ -498,7 +576,7 @@ const DiscoveryScanReport: React.FC = () => {
                       <span className="font-mono text-4xl lg:text-5xl font-bold group-hover:opacity-50 transition-colors block mb-2 opacity-20" style={{ color: 'var(--color-border)' }}>
                         {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                       </span>
-                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight">
+                      <h2 className="text-xl font-bold tracking-tight mb-2 leading-tight" style={{ color: 'var(--color-text)' }}>
                         {section.title}
                       </h2>
                       {section.subtitle && (
@@ -521,12 +599,13 @@ const DiscoveryScanReport: React.FC = () => {
                   {/* Section Content */}
                   <div className="flex-1 min-w-0">
                     <div
-                      className="prose prose-lg max-w-none"
+                      className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)] prose-ul:text-[var(--color-text-muted)]`}
                       style={{
-                        '--tw-prose-body': 'var(--color-text-muted)',
-                        '--tw-prose-headings': 'var(--color-text)',
-                        '--tw-prose-strong': 'var(--color-text)',
-                        '--tw-prose-bullets': 'var(--color-primary)'
+                        color: currentTheme.colors.text,
+                        '--tw-prose-body': currentTheme.colors.text,
+                        '--tw-prose-headings': currentTheme.colors.text,
+                        '--tw-prose-strong': currentTheme.colors.text,
+                        '--tw-prose-bullets': currentTheme.colors.primary,
                       } as React.CSSProperties}
                       dangerouslySetInnerHTML={{ __html: section.content }}
                     />
@@ -537,7 +616,7 @@ const DiscoveryScanReport: React.FC = () => {
           </div>
 
           {/* Review Section */}
-          <section className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>
+          <section id="review" className="py-16" style={{ borderTop: `1px solid var(--color-border)` }}>
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
                 <Star className="w-10 h-10 mx-auto mb-4" style={{ color: currentTheme.colors.primary }} />
@@ -553,8 +632,8 @@ const DiscoveryScanReport: React.FC = () => {
                   <h4 className="text-xl font-bold mb-2">Merci pour ton avis !</h4>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                     {hasExistingReview
-                      ? 'Tu as deja laisse un avis pour ce scan.'
-                      : 'Ton code promo te sera envoye par email apres validation.'}
+                      ? 'Ton avis est deja enregistre.'
+                      : 'Je t envoie ton code promo par email apres validation.'}
                   </p>
                 </div>
               ) : (
@@ -609,7 +688,7 @@ const DiscoveryScanReport: React.FC = () => {
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
-                      placeholder="Qu'as-tu pense de ce Discovery Scan ? Ton avis nous aide a nous ameliorer..."
+                      placeholder="Qu'as-tu pense de ce Discovery Scan ? Ton avis m aide a te livrer encore mieux..."
                       rows={4}
                       required
                       minLength={10}

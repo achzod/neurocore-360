@@ -399,7 +399,7 @@ export default function ProPanel() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            ~210 questions sur 22 sections + analyse photo posturale + integration wearables.
+            ~183 questions sur 18 sections + analyse photo posturale + integration wearables.
             Nutrition timing, cardio & performance (Zone 2, HRV), blessures & mobilite, psychologie.
           </motion.p>
 
@@ -418,7 +418,7 @@ export default function ProPanel() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <Link href="/questionnaire?plan=pro">
+            <Link href="/questionnaire?plan=ultimate">
               <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                 Commencer mon Ultimate Scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -466,7 +466,7 @@ export default function ProPanel() {
                 pour generer le rapport le plus complet et precis possible.
               </p>
               <ul className="space-y-4">
-                {["210 questions sur 22 sections", "Analyse photo posturale et biomecanique", "Integration donnees wearables (HRV, sommeil, activite)"].map((item, i) => (
+                {["183 questions sur 18 sections", "Analyse photo posturale et biomecanique", "Integration donnees wearables (HRV, sommeil, activite)"].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <Check className="w-5 h-5 text-[#FCDD00]" />
                     {item}
@@ -677,7 +677,7 @@ export default function ProPanel() {
           >
             <div className="grid sm:grid-cols-2 gap-6">
               {[
-                "Questionnaire 22 sections",
+                "Questionnaire 18 sections",
                 "Analyse photo posturale",
                 "Integration wearables",
                 "Score global sur 100",
@@ -702,7 +702,7 @@ export default function ProPanel() {
                 <span className="text-white text-5xl font-bold tracking-[-0.04em]">79€</span>
                 <span className="text-white/40 ml-2">one-time</span>
               </div>
-              <Link href="/questionnaire?plan=pro">
+              <Link href="/questionnaire?plan=ultimate">
                 <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
                   Commencer maintenant
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -727,10 +727,10 @@ export default function ProPanel() {
             <span className="text-[#FCDD00]">la plus complete.</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            Questionnaire + photos + wearables. 22 sections. 210 questions.
+            Questionnaire + photos + wearables. 18 sections. 183 questions.
             Le maximum de donnees pour le maximum de resultats.
           </p>
-          <Link href="/questionnaire?plan=pro">
+          <Link href="/questionnaire?plan=ultimate">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Ultimate Scan — 79€
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

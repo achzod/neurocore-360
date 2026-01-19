@@ -142,17 +142,17 @@ export default function TestAudit() {
                   variant={planType === "PREMIUM" ? "default" : "outline"}
                   onClick={() => setPlanType("PREMIUM")}
                   className="flex-1"
-                  data-testid="button-plan-premium"
+                  data-testid="button-plan-anabolic"
                 >
-                  Premium (15 sections)
+                  Anabolic (16 sections)
                 </Button>
                 <Button
                   variant={planType === "ELITE" ? "default" : "outline"}
                   onClick={() => setPlanType("ELITE")}
                   className="flex-1"
-                  data-testid="button-plan-elite"
+                  data-testid="button-plan-ultimate"
                 >
-                  Elite (15 sections)
+                  Ultimate (18 sections)
                 </Button>
               </div>
             </div>

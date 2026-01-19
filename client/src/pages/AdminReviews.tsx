@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ interface Review {
   auditId: string;
   userId?: string;
   email: string;
-  auditType: 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'BURNOUT';
+  auditType: 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'PEPTIDES';
   rating: number;
   comment: string;
   status: "pending" | "approved" | "rejected";
@@ -38,7 +39,7 @@ const AUDIT_TYPE_LABELS: Record<string, string> = {
   'ANABOLIC_BIOSCAN': 'Anabolic Bioscan',
   'ULTIMATE_SCAN': 'Ultimate Scan',
   'BLOOD_ANALYSIS': 'Blood Analysis',
-  'BURNOUT': 'Burnout Engine',
+  'PEPTIDES': 'Peptides Engine',
 };
 
 const PROMO_CODES: Record<string, { code: string; description: string }> = {
@@ -46,19 +47,29 @@ const PROMO_CODES: Record<string, { code: string; description: string }> = {
   'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ deduits' },
   'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ deduits' },
   'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ deduits' },
-  'BURNOUT': { code: 'BURNOUT', description: '39€ deduits' },
+  'PEPTIDES': { code: 'PEPTIDES', description: '99€ deduits' },
 };
 
 export default function AdminReviews() {
+  const [, navigate] = useLocation();
+  const [adminKey] = useState<string>(() => sessionStorage.getItem("admin_key") || import.meta.env.VITE_ADMIN_KEY || "");
+  const isAuthenticated = sessionStorage.getItem("admin_auth") === "true";
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchPendingReviews = async () => {
+    if (!isAuthenticated || !adminKey) {
+      setIsLoading(false);
+      navigate("/admin");
+      return;
+    }
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/reviews/pending");
+      const response = await fetch("/api/admin/reviews/pending", {
+        headers: { "x-admin-key": adminKey },
+      });
       const data = await response.json();
       if (data.success) {
         setReviews(data.reviews);
@@ -76,15 +87,16 @@ export default function AdminReviews() {
 
   useEffect(() => {
     fetchPendingReviews();
-  }, []);
+  }, [adminKey, isAuthenticated]);
 
   const handleApprove = async (reviewId: string) => {
+    if (!adminKey) return;
     const review = reviews.find(r => r.id === reviewId);
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ reviewedBy: "admin" }),
       });
       const data = await response.json();
@@ -110,11 +122,12 @@ export default function AdminReviews() {
   };
 
   const handleReject = async (reviewId: string) => {
+    if (!adminKey) return;
     setProcessingId(reviewId);
     try {
       const response = await fetch(`/api/admin/reviews/${reviewId}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ reviewedBy: "admin" }),
       });
       const data = await response.json();

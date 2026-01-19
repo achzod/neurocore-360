@@ -1,4 +1,33 @@
+import { normalizeResponses } from "./responseNormalizer";
+
 type Responses = Record<string, unknown>;
+
+function parseNumeric(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const cleaned = value.trim();
+    if (!cleaned) return null;
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function resolveAgeBand(ageRaw: unknown): string | null {
+  const numeric = parseNumeric(ageRaw);
+  if (numeric !== null) {
+    if (numeric >= 56) return "56+";
+    if (numeric >= 46) return "46-55";
+    if (numeric >= 36) return "36-45";
+    if (numeric >= 26) return "26-35";
+    if (numeric >= 18) return "18-25";
+    return null;
+  }
+  const ageStr = typeof ageRaw === "string" ? ageRaw.trim() : "";
+  if (!ageStr) return null;
+  const known = ["18-25", "26-35", "36-45", "46-55", "56+"];
+  return known.includes(ageStr) ? ageStr : null;
+}
 
 // Helper pour convertir une valeur en array de strings de façon sécurisée
 function toStringArray(value: unknown): string[] {
@@ -84,6 +113,7 @@ export function analyzeProfilBase(responses: Responses): SectionScore {
   const actionItems: string[] = [];
 
   const age = responses["age"] as string;
+  const ageBand = resolveAgeBand(age);
   const sexe = responses["sexe"] as string;
   const objectif = responses["objectif"] as string;
   const activite = responses["niveau-activite"] as string;
@@ -96,8 +126,8 @@ export function analyzeProfilBase(responses: Responses): SectionScore {
   subMetrics.push({ name: "Niveau d'activite", score: activiteScore, status: getStatus(activiteScore) });
 
   let ageScore = 80;
-  if (age === "46-55") ageScore = 65;
-  else if (age === "56+") ageScore = 50;
+  if (ageBand === "46-55") ageScore = 65;
+  else if (ageBand === "56+") ageScore = 50;
   subMetrics.push({ name: "Facteur age", score: ageScore, status: getStatus(ageScore) });
 
   score = Math.round((activiteScore + ageScore) / 2);
@@ -181,7 +211,7 @@ export function analyzeProfilBase(responses: Responses): SectionScore {
     recommendations.push("Prioriser les proteines : 2-2.2g/kg de poids corporel minimum, reparties sur 4-5 prises de 30-40g pour maximiser la synthese proteique et la satiete.");
     recommendations.push("Implementer des refeeds strategiques : 1 jour par semaine a maintenance calorique avec surplus de glucides pour relancer la leptin et eviter l'adaptation metabolique.");
     
-    if (age === "36-45" || age === "46-55" || age === "56+") {
+    if (ageBand === "36-45" || ageBand === "46-55" || ageBand === "56+") {
       insights.push("Apres 35-40 ans, la perte de graisse devient plus complexe en raison du declin hormonal progressif (testosterone, hormone de croissance, DHEA). La resistance a l'insuline s'installe plus facilement, la masse musculaire diminue (sarcopenie), et le cortisol a tendance a rester eleve plus longtemps. Une approche holistique ciblant ces parametres est essentielle.");
       
       supplements.push({
@@ -1445,7 +1475,7 @@ export function analyzePsychologieMental(responses: Responses): SectionScore {
   let soutienScore = 80;
   if (soutienSocial === "pas-du-tout" || soutienSocial === "peu") {
     soutienScore = soutienSocial === "pas-du-tout" ? 30 : 50;
-    insights.push("Le manque de soutien social est un facteur de risque majeur pour l'abandon des objectifs de sante. Les etudes montrent que l'entourage impacte directement nos comportements : nous adoptons les habitudes de notre environnement. L'isolement augmente aussi le stress et reduit la motivation.");
+    insights.push("Le manque de soutien social est un facteur de risque majeur pour l'abandon des objectifs de sante. Les etudes montrent que l'entourage impacte directement le comportement : tu finis souvent par adopter les habitudes de ton environnement. L'isolement augmente aussi le stress et reduit la motivation.");
     recommendations.push("Chercher une communaute alignee avec tes objectifs (groupe de sport, communaute en ligne, coaching de groupe).");
     recommendations.push("Communiquer tes objectifs a tes proches et demander leur soutien explicitement.");
   }
@@ -1495,21 +1525,22 @@ export function analyzeNeurotransmetteurs(responses: Responses): SectionScore {
 }
 
 export function generateFullAnalysis(responses: Responses): AnalysisResult {
+  const normalized = normalizeResponses(responses);
   const sections: Record<string, SectionScore> = {
-    "profil-base": analyzeProfilBase(responses),
-    "composition-corporelle": analyzeCompositionCorporelle(responses),
-    "metabolisme-energie": analyzeMetabolismeEnergie(responses),
-    "nutrition-tracking": analyzeNutritionTracking(responses),
-    "digestion-microbiome": analyzeDigestionMicrobiome(responses),
-    "activite-performance": analyzeActivitePerformance(responses),
-    "sommeil-recuperation": analyzeSommeilRecuperation(responses),
-    "hrv-cardiaque": analyzeHRVCardiaque(responses),
-    "analyses-biomarqueurs": analyzeAnalysesBiomarqueurs(responses),
-    "hormones-stress": analyzeHormonesStress(responses),
-    "lifestyle-substances": analyzeLifestyleSubstances(responses),
-    "biomecanique-mobilite": analyzeBiomecaniqueMobilite(responses),
-    "psychologie-mental": analyzePsychologieMental(responses),
-    neurotransmetteurs: analyzeNeurotransmetteurs(responses),
+    "profil-base": analyzeProfilBase(normalized),
+    "composition-corporelle": analyzeCompositionCorporelle(normalized),
+    "metabolisme-energie": analyzeMetabolismeEnergie(normalized),
+    "nutrition-tracking": analyzeNutritionTracking(normalized),
+    "digestion-microbiome": analyzeDigestionMicrobiome(normalized),
+    "activite-performance": analyzeActivitePerformance(normalized),
+    "sommeil-recuperation": analyzeSommeilRecuperation(normalized),
+    "hrv-cardiaque": analyzeHRVCardiaque(normalized),
+    "analyses-biomarqueurs": analyzeAnalysesBiomarqueurs(normalized),
+    "hormones-stress": analyzeHormonesStress(normalized),
+    "lifestyle-substances": analyzeLifestyleSubstances(normalized),
+    "biomecanique-mobilite": analyzeBiomecaniqueMobilite(normalized),
+    "psychologie-mental": analyzePsychologieMental(normalized),
+    neurotransmetteurs: analyzeNeurotransmetteurs(normalized),
   };
 
   const sectionScores = Object.values(sections).map((s) => s.score);
@@ -1538,13 +1569,13 @@ export function generateFullAnalysis(responses: Responses): AnalysisResult {
 
   let globalSummary = "";
   if (global >= 75) {
-    globalSummary = "Ton profil NEUROCORE 360 revele des fondations excellentes. Tu es dans le top 20% des personnes que nous analysons. Les recommandations ci-dessous te permettront de passer du 'bien' a 'l'exceptionnel' en ciblant les quelques points d'optimisation restants.";
+    globalSummary = "Ton profil APEXLABS revele des fondations excellentes. Tu es dans le top 20% des personnes que j'analyse. Les recommandations ci-dessous te permettront de passer du 'bien' a 'l'exceptionnel' en ciblant les quelques points d'optimisation restants.";
   } else if (global >= 60) {
-    globalSummary = "Ton profil NEUROCORE 360 montre un potentiel significatif avec des zones d'optimisation claires. En adressant systematiquement les priorites identifiees, tu peux t'attendre a des gains notables en energie, composition corporelle et bien-etre general dans les 8-12 prochaines semaines.";
+    globalSummary = "Ton profil APEXLABS montre un potentiel significatif avec des zones d'optimisation claires. En adressant systematiquement les priorites identifiees, tu peux t'attendre a des gains notables en energie, composition corporelle et bien-etre general dans les 8-12 prochaines semaines.";
   } else if (global >= 45) {
-    globalSummary = "Ton profil NEUROCORE 360 met en evidence des domaines necessitant une attention immediate. La bonne nouvelle : avec les interventions ciblees que nous proposons, tu as un potentiel de transformation important. Concentre-toi sur les 3 priorites avant d'aller plus loin.";
+    globalSummary = "Ton profil APEXLABS met en evidence des domaines necessitant une attention immediate. La bonne nouvelle : avec les interventions ciblees que je propose, tu as un potentiel de transformation important. Concentre-toi sur les 3 priorites avant d'aller plus loin.";
   } else {
-    globalSummary = "Ton profil NEUROCORE 360 revele des desequilibres majeurs qui expliquent probablement beaucoup de tes symptomes actuels. C'est une base de travail precieuse : chaque zone identifiee est une opportunite d'amelioration concrete. Avec un plan structure, les progres seront visibles rapidement.";
+    globalSummary = "Ton profil APEXLABS revele des desequilibres majeurs qui expliquent probablement beaucoup de tes symptomes actuels. C'est une base de travail precieuse : chaque zone identifiee est une opportunite d'amelioration concrete. Avec un plan structure, les progres seront visibles rapidement.";
   }
 
   const executiveSummary = generateExecutiveSummary(global, sections, priorities, strengths, responses);
@@ -1601,7 +1632,7 @@ function generateExecutiveSummary(
     neurotransmetteurs: "Neurotransmetteurs",
   };
 
-  let summary = `Avec un score global de ${global}%, ton audit NEUROCORE 360 complete revele `;
+  let summary = `Avec un score global de ${global}%, ton audit APEXLABS complet revele `;
   
   if (global >= 70) {
     summary += "un profil globalement sain avec des opportunites d'optimisation ciblees. ";
@@ -1612,11 +1643,11 @@ function generateExecutiveSummary(
   }
 
   if (objectif === "perte-graisse") {
-    summary += "Pour ton objectif de perte de graisse, nous avons identifie les leviers metaboliques et hormonaux specifiques a activer. ";
+    summary += "Pour ton objectif de perte de graisse, j'ai identifie les leviers metaboliques et hormonaux specifiques a activer. ";
   } else if (objectif === "prise-muscle") {
     summary += "Pour ta prise de muscle, le plan cible l'optimisation de ta nutrition proteique, ta recuperation, et tes hormones anaboliques. ";
   } else if (objectif === "energie") {
-    summary += "Pour booster ton energie, nous ciblons tes mitochondries, ta glycemie, et ton sommeil - les trois piliers energetiques. ";
+    summary += "Pour booster ton energie, je cible tes mitochondries, ta glycemie, et ton sommeil - les trois piliers energetiques. ";
   }
 
   const priorityScores = priorities.map(p => sections[p]?.score || 0);

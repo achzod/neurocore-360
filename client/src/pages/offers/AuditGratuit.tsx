@@ -1,6 +1,6 @@
 /**
  * APEXLABS - Discovery Scan
- * TRUE Ultrahuman Design - 56 questions, 10 domaines
+ * TRUE Ultrahuman Design - 66 questions, 10 domaines
  */
 
 import { useRef } from "react";
@@ -312,7 +312,7 @@ export default function AuditGratuit() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-white/60 text-lg sm:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
           >
-            ~50 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion,
+            ~66 questions sur 10 domaines essentiels: sommeil, stress, energie, digestion,
             entrainement, nutrition, lifestyle. J'identifie tes blocages metaboliques et hormonaux.
           </motion.p>
 
@@ -322,7 +322,7 @@ export default function AuditGratuit() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <Link href="/questionnaire">
+            <Link href="/questionnaire?plan=gratuit">
               <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 Commencer le scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -376,7 +376,7 @@ export default function AuditGratuit() {
                 Identifie ce qui te bloque vraiment.
               </h2>
               <p className="text-white/50 text-lg leading-relaxed mb-8">
-                56 questions ciblees analysent chaque aspect de ta sante : sommeil,
+                66 questions ciblees analysent chaque aspect de ta sante : sommeil,
                 hormones, digestion, stress, metabolisme, lifestyle. Je detecte
                 les desequilibres caches que tu ne soupconnes meme pas.
               </p>
@@ -570,10 +570,10 @@ export default function AuditGratuit() {
             className="text-center mb-16"
           >
             <h2 className="text-white text-4xl sm:text-5xl font-bold tracking-[-0.04em] mb-6">
-              Gratuit vs Premium
+              Gratuit vs Anabolic
             </h2>
             <p className="text-white/50 text-lg">
-              Le Discovery Scan te donne le diagnostic. Les offres premium te donnent les solutions.
+              Le Discovery Scan te donne le diagnostic. Les offres payantes te donnent les solutions.
             </p>
           </motion.div>
 
@@ -600,14 +600,14 @@ export default function AuditGratuit() {
                   </li>
                 ))}
               </ul>
-              <Link href="/questionnaire">
+              <Link href="/questionnaire?plan=gratuit">
                 <button className="w-full mt-8 bg-[#FCDD00] text-black font-semibold py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all">
                   Commencer
                 </button>
               </Link>
             </motion.div>
 
-            {/* Premium */}
+            {/* Anabolic */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -623,7 +623,7 @@ export default function AuditGratuit() {
                   "Protocoles d'action personnalises",
                   "Stack supplements optimise",
                   "Plan 30-60-90 jours",
-                  "17 sections d'analyse",
+                  "16 sections d'analyse",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-white/70">
                     <Check className="w-5 h-5 text-[#FCDD00]" />
@@ -655,9 +655,9 @@ export default function AuditGratuit() {
             <span className="text-[#FCDD00]">tes blocages ?</span>
           </h2>
           <p className="text-white/50 text-lg mb-12 max-w-xl mx-auto">
-            5 minutes. 56 questions. Un diagnostic qui peut tout changer.
+            5 minutes. 66 questions. Un diagnostic qui peut tout changer.
           </p>
-          <Link href="/questionnaire">
+          <Link href="/questionnaire?plan=gratuit">
             <button className="group inline-flex items-center gap-3 bg-[#FCDD00] text-black font-semibold text-base px-8 py-4 rounded-sm hover:bg-[#FCDD00]/90 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 shadow-[0_0_40px_rgba(252,221,0,0.3)]">
               Lancer mon Discovery Scan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

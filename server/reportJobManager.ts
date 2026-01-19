@@ -1,10 +1,20 @@
+<<<<<<< HEAD
 import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
+=======
+import { generateAndConvertAudit, deleteCache as deleteGeminiCache } from "./geminiPremiumEngine";
+import { generateAndConvertAuditWithClaude, deleteAnthropicCache } from "./anthropicEngine";
+>>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
+<<<<<<< HEAD
 import { getSectionsForTier } from "./reportStructure";
+=======
+import { getSectionsForTier } from "./geminiPremiumEngine";
+import { normalizeResponses } from "./responseNormalizer";
+>>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
@@ -13,7 +23,7 @@ import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
 const PROGRESS_CHECK_INTERVAL_MS = 2 * 60 * 1000;
 
 // Minimum validation score to accept report
-const MIN_VALIDATION_SCORE = 60;
+const MIN_VALIDATION_SCORE = 75;
 
 /**
  * Report Job Manager - Handles async AI report generation with persistence
@@ -106,6 +116,8 @@ export async function getJobStatus(auditId: string): Promise<ReportJob | null> {
 }
 
 export async function forceRegenerate(auditId: string): Promise<void> {
+  deleteGeminiCache(auditId);
+  deleteAnthropicCache(auditId);
   await storage.deleteReportJob(auditId);
   console.log(`[ReportJobManager] Force deleted job for audit ${auditId}`);
 }
@@ -179,6 +191,8 @@ async function generateReportAsync(
 ): Promise<void> {
   const startTime = Date.now();
   console.log(`[ReportJobManager] Starting async generation for ${auditId}`);
+  const normalizeMode = auditType === "GRATUIT" ? "discovery" : "analysis";
+  const normalizedResponses = normalizeResponses(responses, { mode: normalizeMode });
 
   try {
     await storage.createOrUpdateReportJob({
@@ -191,6 +205,17 @@ async function generateReportAsync(
     // ⚠️ FIX: Récupérer les photos depuis audit.photos (tableau) ou responses
     const audit = await storage.getAudit(auditId);
     const auditResponses = (audit as any)?.responses || {};
+
+    const pickPhoto = (source: any, keys: string[]): string | null => {
+      if (!source) return null;
+      for (const key of keys) {
+        const value = source?.[key];
+        if (typeof value === "string" && value.trim().length > 100) {
+          return value;
+        }
+      }
+      return null;
+    };
     
     // Les photos peuvent être stockées de plusieurs façons selon le flux
     let photos: string[] = [];
@@ -200,19 +225,33 @@ async function generateReportAsync(
       photos = (audit as any).photos.filter((p: string) => p && (p.startsWith('data:') || p.length > 100));
     }
     // Option 2: Dans responses (flux alternatif)
-    else if (auditResponses.photoFront || auditResponses.photoSide || auditResponses.photoBack) {
+    else if (
+      auditResponses.photoFront ||
+      auditResponses.photoSide ||
+      auditResponses.photoBack ||
+      auditResponses["photo-front"] ||
+      auditResponses["photo-side"] ||
+      auditResponses["photo-back"]
+    ) {
       photos = [
-        auditResponses.photoFront,
-        auditResponses.photoSide,
-        auditResponses.photoBack
+        pickPhoto(auditResponses, ["photoFront", "photo-front"]),
+        pickPhoto(auditResponses, ["photoSide", "photo-side"]),
+        pickPhoto(auditResponses, ["photoBack", "photo-back"]),
       ].filter(Boolean) as string[];
     }
     // Option 3: Direct sur audit (legacy)
-    else if ((audit as any)?.photoFront) {
+    else if (
+      (audit as any)?.photoFront ||
+      (audit as any)?.photoSide ||
+      (audit as any)?.photoBack ||
+      (audit as any)?.["photo-front"] ||
+      (audit as any)?.["photo-side"] ||
+      (audit as any)?.["photo-back"]
+    ) {
       photos = [
-        (audit as any)?.photoFront,
-        (audit as any)?.photoSide,
-        (audit as any)?.photoBack
+        pickPhoto(audit as any, ["photoFront", "photo-front"]),
+        pickPhoto(audit as any, ["photoSide", "photo-side"]),
+        pickPhoto(audit as any, ["photoBack", "photo-back"]),
       ].filter(Boolean) as string[];
     }
     
@@ -272,7 +311,7 @@ async function generateReportAsync(
 
     // Utiliser Claude Opus 4.5 pour la génération
     const generationPromise = withTimeout(
-      generateAndConvertAuditWithClaude(responses as ClientData, photoAnalysis, auditType as any, auditId),
+      generateAndConvertAuditWithClaude(normalizedResponses as ClientData, photoAnalysis, auditType as any, auditId),
       AI_CALL_TIMEOUT_MS,
       `Claude Opus 4.5 report generation for ${auditId}`
     );
@@ -345,7 +384,12 @@ async function generateReportAsync(
     
     // Convert TXT to HTML with Premium Design (Ultrahuman-style)
     console.log(`[ReportJobManager] Converting TXT to Premium HTML for ${auditId}...`);
-    const reportHtml = generatePremiumHTMLFromTxt(result.txt || '', auditId, photos, responses as Record<string, unknown>);
+    const reportHtml = generatePremiumHTMLFromTxt(
+      result.txt || '',
+      auditId,
+      photos,
+      normalizedResponses as Record<string, unknown>
+    );
     
     if (!reportHtml || reportHtml.length < 1000) {
       throw new Error(`HTML generation failed or too short (${reportHtml?.length || 0} chars)`);
@@ -502,4 +546,3 @@ export async function clearJob(auditId: string): Promise<void> {
   await storage.deleteReportJob(auditId);
   console.log(`[ReportJobManager] Cleared job for ${auditId}`);
 }
-
