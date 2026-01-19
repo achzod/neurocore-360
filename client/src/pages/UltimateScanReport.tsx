@@ -143,7 +143,15 @@ const withAlpha = (hex: string, alpha: number): string => {
 const normalizeTextInput = (value?: unknown): string => {
   if (!value) return "";
   if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.filter(Boolean).join("\n\n");
+  if (Array.isArray(value)) {
+    return value.map(item => normalizeTextInput(item)).filter(Boolean).join("\n\n");
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>)
+      .map(item => normalizeTextInput(item))
+      .filter(Boolean)
+      .join("\n\n");
+  }
   return String(value);
 };
 
@@ -989,7 +997,7 @@ const UltimateScanReport: React.FC = () => {
     }
 
     if (section.id === 'photo-analysis') {
-      if (!report.photoAnalysis) {
+      if (!report.photoAnalysis || typeof report.photoAnalysis !== "object") {
         return (
           <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
             <div className="flex items-center gap-3 mb-3">
@@ -1003,7 +1011,20 @@ const UltimateScanReport: React.FC = () => {
         );
       }
 
-      const photoScore = typeof report.photoAnalysis.score === 'number' ? report.photoAnalysis.score : Math.round(globalScore);
+      const rawPhoto = report.photoAnalysis as Record<string, unknown>;
+      const normalizedPhoto = {
+        summary: normalizeTextInput(rawPhoto.summary) || normalizeTextInput(rawPhoto.medicalObservations),
+        posture: normalizeTextInput(rawPhoto.postureAnalysis) || normalizeTextInput(rawPhoto.posture),
+        muscular: normalizeTextInput(rawPhoto.muscularAnalysis) || normalizeTextInput(rawPhoto.muscularBalance),
+        fat: normalizeTextInput(rawPhoto.fatAnalysis) || normalizeTextInput(rawPhoto.fatDistribution),
+        recommendations:
+          normalizeTextInput(rawPhoto.correctiveProtocol) ||
+          normalizeTextInput(rawPhoto.recommendations) ||
+          normalizeTextInput(rawPhoto.medicalObservations),
+        score: typeof rawPhoto.score === "number" ? rawPhoto.score : undefined,
+      };
+      const photoScore =
+        typeof normalizedPhoto.score === 'number' ? normalizedPhoto.score : Math.round(globalScore);
 
       return (
         <div className="space-y-6">
@@ -1022,22 +1043,26 @@ const UltimateScanReport: React.FC = () => {
                   color={currentTheme.colors.primary}
                 />
               </div>
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{report.photoAnalysis.summary}</p>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                {normalizedPhoto.summary || "Analyse photo en cours de synthese."}
+              </p>
             </div>
 
             <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
               <h4 className="text-sm font-bold mb-3" style={{ color: currentTheme.colors.primary }}>Observations cles</h4>
               <div className="space-y-3 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                <p><strong style={{ color: currentTheme.colors.text }}>Posture:</strong> {report.photoAnalysis.postureAnalysis}</p>
-                <p><strong style={{ color: currentTheme.colors.text }}>Musculature:</strong> {report.photoAnalysis.muscularAnalysis}</p>
-                <p><strong style={{ color: currentTheme.colors.text }}>Graisse:</strong> {report.photoAnalysis.fatAnalysis}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Posture:</strong> {normalizedPhoto.posture || "Analyse en attente."}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Musculature:</strong> {normalizedPhoto.muscular || "Analyse en attente."}</p>
+                <p><strong style={{ color: currentTheme.colors.text }}>Graisse:</strong> {normalizedPhoto.fat || "Analyse en attente."}</p>
               </div>
             </div>
           </div>
 
           <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
             <h4 className="text-sm font-bold mb-3" style={{ color: currentTheme.colors.primary }}>Correctifs prioritaires</h4>
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{report.photoAnalysis.correctiveProtocol || report.photoAnalysis.recommendations}</p>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              {normalizedPhoto.recommendations || "Protocoles correctifs en cours de consolidation."}
+            </p>
           </div>
         </div>
       );

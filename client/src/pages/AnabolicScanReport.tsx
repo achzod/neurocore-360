@@ -81,7 +81,15 @@ const withAlpha = (hex: string, alpha: number): string => {
 const normalizeTextInput = (value?: unknown): string => {
   if (!value) return "";
   if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.filter(Boolean).join("\n\n");
+  if (Array.isArray(value)) {
+    return value.map(item => normalizeTextInput(item)).filter(Boolean).join("\n\n");
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>)
+      .map(item => normalizeTextInput(item))
+      .filter(Boolean)
+      .join("\n\n");
+  }
   return String(value);
 };
 
