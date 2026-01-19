@@ -377,14 +377,7 @@ async function testPeptidesEngine(): Promise<{ id: string; url: string } | null>
     const res = await fetch(`${API_BASE}/api/peptides-engine/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-<<<<<<< HEAD
-      body: JSON.stringify({
-        responses: burnoutResponses,
-        email: email
-      }),
-=======
       body: JSON.stringify({ responses: peptidesResponses, email }),
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
     });
 
     if (!res.ok) {

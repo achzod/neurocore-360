@@ -1,12 +1,7 @@
 const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
 const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
-<<<<<<< HEAD
-const SENDER_EMAIL = "coaching@achzodcoaching.com";
-const SENDER_NAME = "ApexLabs by Achzod";
-=======
 const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
 const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
 
 // SendPulse Address Book IDs - configure in env or hardcode after creating in SendPulse
 const SENDPULSE_APEXLABS_BOOK_ID = process.env.SENDPULSE_APEXLABS_BOOK_ID || "";
@@ -128,10 +123,6 @@ function encodeBase64(str: string): string {
   return Buffer.from(str).toString("base64");
 }
 
-<<<<<<< HEAD
-// Reusable email wrapper with NEUROCORE 360 design
-function getEmailWrapper(content: string, headerGradient: string = `linear-gradient(135deg, ${COLORS.primary} 0%, #d4af37 100%)`): string {
-=======
 function renderCoachingOffersTable(deductionAmount: number, accentColor: string): string {
   const hasDeduction = deductionAmount > 0;
   const headerNote = hasDeduction
@@ -205,7 +196,6 @@ function getEmailWrapper(
   headerTitle: string = "Audit Métabolique",
   headerSubtitle: string = "Analyse Personnalisée"
 ): string {
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
   return `
 <!DOCTYPE html>
 <html>
@@ -229,23 +219,14 @@ function getEmailWrapper(
                   <td align="center">
                     <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px;">
                       <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${COLORS.background};"></div>
-<<<<<<< HEAD
-                      <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">APEXLABS</span>
-=======
                       <span style="color: ${COLORS.background}; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">APEXLABS BY ACHZOD</span>
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
                     </div>
                   </td>
                 </tr>
                 <tr>
                   <td align="center">
-<<<<<<< HEAD
-                    <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">Scan Bio-Data</h1>
-                    <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">Analyse Métabolique Complète</p>
-=======
                     <h1 style="color: ${COLORS.background}; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px;">${headerTitle}</h1>
                     <p style="color: rgba(0,0,0,0.7); margin: 8px 0 0; font-size: 14px; font-weight: 500;">${headerSubtitle}</p>
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
                   </td>
                 </tr>
               </table>

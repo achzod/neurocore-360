@@ -1,20 +1,12 @@
-<<<<<<< HEAD
-import { generateAndConvertAuditWithClaude } from "./anthropicEngine";
-=======
 import { generateAndConvertAudit, deleteCache as deleteGeminiCache } from "./geminiPremiumEngine";
 import { generateAndConvertAuditWithClaude, deleteAnthropicCache } from "./anthropicEngine";
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
 import { generatePremiumHTMLFromTxt } from "./exportServicePremium";
 import { storage } from "./storage";
 import type { ClientData, AuditTier } from "./types";
 import { ANTHROPIC_CONFIG } from "./anthropicConfig";
 import { validateReport, logValidation, quickValidate } from "./reportValidator";
-<<<<<<< HEAD
-import { getSectionsForTier } from "./reportStructure";
-=======
 import { getSectionsForTier } from "./geminiPremiumEngine";
 import { normalizeResponses } from "./responseNormalizer";
->>>>>>> fc9b7869f70155b5ae2a0c185afa001c9b73e483
 
 export type ProgressCallback = (progress: number, section: string) => Promise<void>;
 import type { ReportJob, ReportJobStatusEnum } from "@shared/schema";
