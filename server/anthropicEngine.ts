@@ -12,7 +12,7 @@ import { ANTHROPIC_CONFIG, validateAnthropicConfig, SECTION_TOKEN_LIMITS } from 
 import { getCTADebut, getCTAFin, PRICING } from './cta';
 import { calculateScoresFromResponses } from "./analysisEngine";
 import { generateSupplementsSectionText, generateEnhancedSupplementsHTML } from "./supplementEngine";
-import { SECTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './reportStructure';
+import { SECTIONS, SECTION_INSTRUCTIONS, PROMPT_SECTION, getSectionsForTier, getSectionInstructionsForTier } from './geminiPremiumEngine';
 import { generateKnowledgeContext, searchForSection } from './knowledge';
 
 function getFirstNameForReport(clientData: ClientData): string {

@@ -363,7 +363,10 @@ async function testBurnoutEngine(): Promise<{ id: string; url: string } | null> 
     const res = await fetch(`${API_BASE}/api/burnout-detection/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(burnoutResponses),
+      body: JSON.stringify({
+        responses: burnoutResponses,
+        email: email
+      }),
     });
 
     if (!res.ok) {
