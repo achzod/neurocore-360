@@ -2723,9 +2723,20 @@ export async function registerRoutes(
         return;
       }
 
-      // If report already exists, return it immediately
-      if (audit.narrativeReport) {
-        res.json(audit.narrativeReport);
+      const existingReport = audit.narrativeReport as any;
+      const hasInvalidScore =
+        existingReport &&
+        (typeof existingReport.globalScore !== "number" || existingReport.globalScore <= 2);
+      const metricsEmpty =
+        existingReport &&
+        Array.isArray(existingReport.metrics) &&
+        existingReport.metrics.length > 0 &&
+        existingReport.metrics.every((metric: any) => !metric?.value || metric.value <= 0);
+      const invalidReport = Boolean(hasInvalidScore || metricsEmpty);
+
+      // If report already exists and is valid, return it immediately
+      if (existingReport && !invalidReport) {
+        res.json(existingReport);
         return;
       }
 

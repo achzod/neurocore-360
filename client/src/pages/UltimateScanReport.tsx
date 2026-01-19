@@ -312,9 +312,9 @@ const UltimateScanReport: React.FC = () => {
         }
 
         await loadNarrativeReport();
+        setLoading(false);
       } catch {
         setError('Erreur de connexion');
-      } finally {
         setLoading(false);
       }
     };

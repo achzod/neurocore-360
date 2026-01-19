@@ -298,9 +298,9 @@ const AnabolicScanReport: React.FC = () => {
 
         // Get narrative report
         await loadNarrativeReport();
+        setLoading(false);
       } catch (err) {
         setError('Erreur de connexion');
-      } finally {
         setLoading(false);
       }
     };
