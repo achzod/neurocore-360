@@ -20,6 +20,7 @@ const API_BASE = "https://neurocore-360.onrender.com";
 const TEST_EMAIL = process.env.TEST_EMAIL?.trim() || "";
 const TEST_NAME = process.env.TEST_NAME?.trim() || "";
 const SKIP_PEPTIDES = /^(1|true|yes)$/i.test(process.env.SKIP_PEPTIDES || "");
+const TEST_PROFILE = (process.env.TEST_PROFILE || "cadre").toLowerCase();
 
 const buildTestEmail = (prefix: string): string => {
   if (TEST_EMAIL) return TEST_EMAIL;
@@ -31,7 +32,9 @@ const resolveTestName = (): string => {
 };
 
 // ============================================================================
-// DONNÉES TEST RÉALISTES - Profil type "cadre stressé 35 ans"
+// DONNÉES TEST RÉALISTES
+// - "cadre": profil stressé (scores bas)
+// - "clean": profil sain (scores hauts)
 // ============================================================================
 
 const PROFIL_CADRE_STRESSE = {
@@ -122,6 +125,101 @@ const PROFIL_CADRE_STRESSE = {
   "temps-training-semaine": "2-4h",
 };
 
+const PROFIL_CLEAN = {
+  // PROFIL BASE
+  sexe: "homme",
+  prenom: resolveTestName(),
+  email: "",
+  instagram: "@achkan",
+  age: "26-35",
+  taille: "171-180",
+  poids: "71-80",
+  objectif: "recomposition",
+
+  // SANTÉ & HISTORIQUE
+  "diagnostic-medical": ["aucun"],
+  "traitement-medical": "non",
+  "bilan-sanguin-recent": "moins-6mois",
+  "plateau-metabolique": "jamais",
+  "tca-historique": "jamais",
+  "experience-sportive": "avance",
+
+  // SOMMEIL - Bon
+  "heures-sommeil": "7-8",
+  "qualite-sommeil": "bonne",
+  endormissement: "jamais",
+  "reveils-nocturnes": "jamais",
+  "reveil-fatigue": "jamais",
+  "heure-coucher": "22h-23h",
+
+  // STRESS & NERVEUX - Bas
+  "niveau-stress": "bas",
+  anxiete: "rarement",
+  concentration: "bonne",
+  irritabilite: "jamais",
+  "humeur-fluctuation": "stable",
+  "gestion-stress": ["sport", "nature"],
+
+  // ÉNERGIE - Stable
+  "energie-matin": "bonne",
+  "energie-aprem": "stable",
+  "coup-fatigue": "jamais",
+  "envies-sucre": "rarement",
+  motivation: "eleve",
+  thermogenese: "non",
+
+  // DIGESTION - OK
+  "digestion-qualite": "bonne",
+  ballonnements: "jamais",
+  transit: "regulier",
+  reflux: "jamais",
+  intolerance: ["aucune"],
+  "energie-post-repas": "stable",
+
+  // TRAINING - Regulier
+  "sport-frequence": "3-4",
+  "type-sport": ["musculation", "cardio"],
+  intensite: "intense",
+  recuperation: "bonne",
+  courbatures: "parfois",
+  "performance-evolution": "progression",
+
+  // NUTRITION BASE - Propre
+  "nb-repas": "3",
+  "petit-dejeuner": "souvent",
+  "proteines-jour": "bon",
+  "eau-jour": "2-3L",
+  "regime-alimentaire": "equilibre",
+  "aliments-transformes": "rarement",
+  "sucres-ajoutes": "faible",
+  alcool: "1-3",
+
+  // LIFESTYLE
+  "cafe-jour": "1-2",
+  tabac: "non",
+  "temps-ecran": "2-4h",
+  "exposition-soleil": "regulier",
+  profession: "mixte",
+  "heures-assis": "4-6h",
+
+  // MINDSET
+  "frustration-passee": "J'ai deja eu des phases moins bonnes, mais je veux optimiser.",
+  "si-rien-change": "Je veux eviter la stagnation et rester performant.",
+  "ideal-6mois": "Continuer a progresser sans blessure, garder un energie stable.",
+  "plus-grosse-peur": "Perdre mon rythme et ma constance.",
+  "engagement-niveau": "8-9",
+  "motivation-principale": "performance",
+  "consignes-strictes": "oui",
+  "temps-training-semaine": "4-6h",
+};
+
+const resolveBaseProfile = () => {
+  if (["clean", "propre", "sain", "healthy"].includes(TEST_PROFILE)) {
+    return PROFIL_CLEAN;
+  }
+  return PROFIL_CADRE_STRESSE;
+};
+
 // ============================================================================
 // DONNÉES SUPPLÉMENTAIRES POUR ANABOLIC BIOSCAN (PREMIUM)
 // ============================================================================
@@ -209,7 +307,7 @@ async function testDiscoveryScan(): Promise<{ id: string; url: string } | null> 
   const email = buildTestEmail("discovery");
 
   const responses = {
-    ...PROFIL_CADRE_STRESSE,
+    ...resolveBaseProfile(),
     email,
   };
 
@@ -270,7 +368,7 @@ async function testAnabolicBioscan(): Promise<{ id: string; url: string } | null
   }
 
   const responses = {
-    ...PROFIL_CADRE_STRESSE,
+    ...resolveBaseProfile(),
     ...NUTRITION_DETAILLEE,
     ...HORMONES_HOMME,
     ...AXES_CLINIQUES,

@@ -198,10 +198,29 @@ export async function registerRoutes(
 
   app.get("/api/questionnaire/progress/:email", async (req, res) => {
     try {
-      const progress = await storage.getProgress(req.params.email);
+      const email = req.params.email;
+      const progress = await storage.getProgress(email);
       if (!progress) {
         res.status(404).json({ error: "Aucune progression trouvée" });
         return;
+      }
+      // Evite de recharger une progression plus ancienne qu'un audit deja termine.
+      try {
+        const audits = await storage.getAuditsByEmail(email);
+        const latestAudit = audits[0];
+        const progressTimestamp = progress.lastActivityAt ? new Date(progress.lastActivityAt).getTime() : 0;
+        const latestAuditTimestamp = latestAudit?.createdAt
+          ? new Date(latestAudit.createdAt).getTime()
+          : latestAudit?.completedAt
+          ? new Date(latestAudit.completedAt).getTime()
+          : 0;
+        if (latestAuditTimestamp && progressTimestamp && latestAuditTimestamp > progressTimestamp) {
+          await storage.deleteProgress(email);
+          res.status(404).json({ error: "Aucune progression trouvée" });
+          return;
+        }
+      } catch (err) {
+        console.warn("[Questionnaire] Unable to compare audit/progress freshness:", err);
       }
       res.json(progress);
     } catch (error) {
@@ -302,6 +321,13 @@ export async function registerRoutes(
           responses: data.responses,
         });
 
+        // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
+        try {
+          await storage.deleteProgress(data.email);
+        } catch (err) {
+          console.warn("[Questionnaire] Unable to clear progress after audit creation:", err);
+        }
+
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
         res.json(audit);
 
@@ -341,6 +367,13 @@ export async function registerRoutes(
         email: data.email,
         responses: data.responses,
       });
+
+      // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
+      try {
+        await storage.deleteProgress(data.email);
+      } catch (err) {
+        console.warn("[Questionnaire] Unable to clear progress after audit creation:", err);
+      }
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
