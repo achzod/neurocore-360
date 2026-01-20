@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
+import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
@@ -1924,6 +1925,17 @@ export async function registerRoutes(
         console.error("[Review] Error:", error);
         const debug = req.query.debug === "1";
         const err = error as any;
+        let columns: string[] | null = null;
+        if (debug) {
+          try {
+            const result = await pool.query(
+              `SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews' ORDER BY column_name`
+            );
+            columns = (result.rows || []).map((row: any) => row.column_name);
+          } catch {
+            columns = null;
+          }
+        }
         res.status(500).json({
           success: false,
           error: "Erreur serveur",
@@ -1935,6 +1947,7 @@ export async function registerRoutes(
                   table: err?.table || null,
                   constraint: err?.constraint || null,
                   detail: err?.detail || null,
+                  columns,
                 },
               }
             : {}),
