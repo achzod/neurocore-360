@@ -87,7 +87,6 @@ interface PromoCode {
   createdAt: string;
 }
 
-const ADMIN_PASSWORD = "badboy007";
 const ADMIN_ENV_KEY = import.meta.env.VITE_ADMIN_KEY || "";
 
 const getAuditReportUrl = (audit: Audit) => {
@@ -123,18 +122,36 @@ export default function AdminDashboard() {
   });
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const validateAdminKey = async (key: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/admin/reviews/pending", {
+        headers: { "x-admin-key": key },
+      });
+      const data = await response.json();
+      return response.ok && data?.success === true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const valid = ADMIN_ENV_KEY ? password === ADMIN_ENV_KEY : password === ADMIN_PASSWORD;
-    if (valid) {
+    setPasswordError(false);
+    setIsLoading(true);
+    const key = password.trim();
+    const ok = key.length > 0 && (await validateAdminKey(key));
+    if (ok) {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
-      sessionStorage.setItem("admin_key", password);
-      setAdminKey(password);
-      setPasswordError(false);
+      sessionStorage.setItem("admin_key", key);
+      setAdminKey(key);
     } else {
       setPasswordError(true);
+      sessionStorage.removeItem("admin_auth");
+      sessionStorage.removeItem("admin_key");
+      setAdminKey(null);
     }
+    setIsLoading(false);
   };
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [showCtaModal, setShowCtaModal] = useState(false);
@@ -143,6 +160,44 @@ export default function AdminDashboard() {
   const [ctaMessage, setCtaMessage] = useState("");
   const { toast } = useToast();
 
+  const handleAdminResponse = async (response: Response) => {
+    const data = await response.json();
+    if (response.status === 401) {
+      setIsAuthenticated(false);
+      sessionStorage.removeItem("admin_auth");
+      sessionStorage.removeItem("admin_key");
+      setAdminKey(null);
+      toast({
+        title: "Clé admin invalide",
+        description: "Reconnecte-toi avec la bonne clé.",
+        variant: "destructive",
+      });
+      throw new Error("Unauthorized");
+    }
+    if (!response.ok || !data.success) {
+      throw new Error(data?.error || "Acces admin refuse");
+    }
+    return data;
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || !adminKey) return;
+    (async () => {
+      const ok = await validateAdminKey(adminKey);
+      if (!ok) {
+        setIsAuthenticated(false);
+        sessionStorage.removeItem("admin_auth");
+        sessionStorage.removeItem("admin_key");
+        setAdminKey(null);
+        toast({
+          title: "Clé admin invalide",
+          description: "Reconnecte-toi avec la bonne clé.",
+          variant: "destructive",
+        });
+      }
+    })();
+  }, [adminKey, isAuthenticated, toast]);
+
   const fetchAudits = async () => {
     if (!adminKey) return;
     setIsLoading(true);
@@ -150,10 +205,8 @@ export default function AdminDashboard() {
       const response = await fetch("/api/admin/audits", {
         headers: { "x-admin-key": adminKey },
       });
-      const data = await response.json();
-      if (data.success) {
-        setAudits(data.audits);
-      }
+      const data = await handleAdminResponse(response);
+      setAudits(data.audits);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -172,10 +225,8 @@ export default function AdminDashboard() {
       const response = await fetch("/api/admin/reviews/pending", {
         headers: { "x-admin-key": adminKey },
       });
-      const data = await response.json();
-      if (data.success) {
-        setReviews(data.reviews);
-      }
+      const data = await handleAdminResponse(response);
+      setReviews(data.reviews);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -194,10 +245,8 @@ export default function AdminDashboard() {
       const response = await fetch("/api/admin/incomplete-questionnaires", {
         headers: { "x-admin-key": adminKey },
       });
-      const data = await response.json();
-      if (data.success) {
-        setIncompleteQuestionnaires(data.questionnaires);
-      }
+      const data = await handleAdminResponse(response);
+      setIncompleteQuestionnaires(data.questionnaires);
     } catch (error) {
       toast({
         title: "Erreur",
@@ -216,10 +265,8 @@ export default function AdminDashboard() {
       const response = await fetch("/api/admin/promo-codes", {
         headers: { "x-admin-key": adminKey },
       });
-      const data = await response.json();
-      if (data.success) {
-        setPromoCodes(data.codes);
-      }
+      const data = await handleAdminResponse(response);
+      setPromoCodes(data.codes);
     } catch (error) {
       toast({
         title: "Erreur",
