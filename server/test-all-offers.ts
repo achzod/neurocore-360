@@ -169,10 +169,10 @@ const PROFIL_CLEAN = {
   thermogenese: "parfois",
 
   // DIGESTION - OK mais pas parfaite
-  "digestion-qualite": "bonne",
+  "digestion-qualite": "moyenne",
   ballonnements: "parfois",
   transit: "regulier",
-  reflux: "rarement",
+  reflux: "parfois",
   intolerance: ["aucune"],
   "energie-post-repas": "legere-baisse",
 
