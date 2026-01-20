@@ -1931,6 +1931,8 @@ export async function registerRoutes(
             ? {
                 debug: {
                   code: err?.code || null,
+                  column: err?.column || null,
+                  table: err?.table || null,
                   constraint: err?.constraint || null,
                   detail: err?.detail || null,
                 },
