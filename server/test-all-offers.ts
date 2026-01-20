@@ -144,73 +144,73 @@ const PROFIL_CLEAN = {
   "tca-historique": "jamais",
   "experience-sportive": "avance",
 
-  // SOMMEIL - Bon
+  // SOMMEIL - Bon mais perfectible
   "heures-sommeil": "7-8",
-  "qualite-sommeil": "bonne",
-  endormissement: "jamais",
-  "reveils-nocturnes": "jamais",
-  "reveil-fatigue": "jamais",
-  "heure-coucher": "22h-23h",
+  "qualite-sommeil": "moyenne",
+  endormissement: "parfois",
+  "reveils-nocturnes": "parfois",
+  "reveil-fatigue": "parfois",
+  "heure-coucher": "23h-00h",
 
-  // STRESS & NERVEUX - Bas
-  "niveau-stress": "bas",
-  anxiete: "rarement",
-  concentration: "bonne",
-  irritabilite: "jamais",
-  "humeur-fluctuation": "stable",
-  "gestion-stress": ["sport", "nature"],
+  // STRESS & NERVEUX - Modere
+  "niveau-stress": "modere",
+  anxiete: "parfois",
+  concentration: "moyenne",
+  irritabilite: "parfois",
+  "humeur-fluctuation": "parfois",
+  "gestion-stress": ["sport"],
 
-  // ÉNERGIE - Stable
+  // ÉNERGIE - Stable avec variations
   "energie-matin": "bonne",
-  "energie-aprem": "stable",
-  "coup-fatigue": "jamais",
-  "envies-sucre": "rarement",
-  motivation: "eleve",
-  thermogenese: "non",
+  "energie-aprem": "legere-baisse",
+  "coup-fatigue": "parfois",
+  "envies-sucre": "parfois",
+  motivation: "moyen",
+  thermogenese: "parfois",
 
-  // DIGESTION - OK
+  // DIGESTION - OK mais pas parfaite
   "digestion-qualite": "bonne",
-  ballonnements: "jamais",
+  ballonnements: "parfois",
   transit: "regulier",
-  reflux: "jamais",
+  reflux: "rarement",
   intolerance: ["aucune"],
-  "energie-post-repas": "stable",
+  "energie-post-repas": "legere-baisse",
 
   // TRAINING - Regulier
   "sport-frequence": "3-4",
   "type-sport": ["musculation", "cardio"],
-  intensite: "intense",
-  recuperation: "bonne",
+  intensite: "modere",
+  recuperation: "moyenne",
   courbatures: "parfois",
   "performance-evolution": "progression",
 
-  // NUTRITION BASE - Propre
+  // NUTRITION BASE - Propre mais pas parfaite
   "nb-repas": "3",
   "petit-dejeuner": "souvent",
-  "proteines-jour": "bon",
-  "eau-jour": "2-3L",
+  "proteines-jour": "moyen",
+  "eau-jour": "1.5-2L",
   "regime-alimentaire": "equilibre",
-  "aliments-transformes": "rarement",
-  "sucres-ajoutes": "faible",
+  "aliments-transformes": "parfois",
+  "sucres-ajoutes": "modere",
   alcool: "1-3",
 
   // LIFESTYLE
-  "cafe-jour": "1-2",
+  "cafe-jour": "3-4",
   tabac: "non",
-  "temps-ecran": "2-4h",
-  "exposition-soleil": "regulier",
+  "temps-ecran": "4-6h",
+  "exposition-soleil": "parfois",
   profession: "mixte",
-  "heures-assis": "4-6h",
+  "heures-assis": "6-8h",
 
   // MINDSET
   "frustration-passee": "J'ai deja eu des phases moins bonnes, mais je veux optimiser.",
   "si-rien-change": "Je veux eviter la stagnation et rester performant.",
   "ideal-6mois": "Continuer a progresser sans blessure, garder un energie stable.",
   "plus-grosse-peur": "Perdre mon rythme et ma constance.",
-  "engagement-niveau": "8-9",
+  "engagement-niveau": "6-7",
   "motivation-principale": "performance",
-  "consignes-strictes": "oui",
-  "temps-training-semaine": "4-6h",
+  "consignes-strictes": "partiellement",
+  "temps-training-semaine": "2-4h",
 };
 
 const resolveBaseProfile = () => {
