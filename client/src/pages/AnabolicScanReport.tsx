@@ -180,8 +180,11 @@ interface NarrativeReport {
 
 const isAnalysisSection = (section: NarrativeSection): boolean => /analyse/i.test(section.title);
 
-const AnabolicScanReport: React.FC = () => {
-  const { auditId } = useParams();
+type AnabolicScanReportProps = {
+  auditId?: string;
+};
+
+const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId }) => {
   const [report, setReport] = useState<NarrativeReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1142,23 +1145,11 @@ const AnabolicScanReport: React.FC = () => {
     );
   };
 
-  const handleBoundaryRetry = () => {
-    if (!auditId) return;
-    fetch(`/api/audit/${auditId}/regenerate`, { method: 'POST' })
-      .catch(() => {})
-      .finally(() => {
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
-      });
-  };
-
   return (
-    <ReportErrorBoundary onRetry={handleBoundaryRetry}>
-      <div
-        className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
-        style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
-      >
+    <div
+      className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+    >
         <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
           <div
             className="h-full transition-all duration-150 ease-out"
@@ -1366,7 +1357,25 @@ const AnabolicScanReport: React.FC = () => {
             </div>
           </div>
         </main>
-      </div>
+    </div>
+  );
+};
+
+const AnabolicScanReport: React.FC = () => {
+  const { auditId } = useParams();
+
+  const handleBoundaryRetry = () => {
+    if (auditId) {
+      fetch(`/api/audit/${auditId}/regenerate`, { method: 'POST' }).catch(() => {});
+    }
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
+  return (
+    <ReportErrorBoundary onRetry={handleBoundaryRetry}>
+      <AnabolicScanReportInner auditId={auditId} />
     </ReportErrorBoundary>
   );
 };
