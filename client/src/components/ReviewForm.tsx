@@ -26,7 +26,7 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
 
     const loadAudit = async () => {
       try {
-        const response = await fetch(`/api/audits/${auditId}`);
+        const response = await fetch(`/api/audits/${auditId}?light=1`);
         if (!response.ok) {
           throw new Error("Audit non trouvé");
         }

@@ -2170,7 +2170,7 @@ export async function convertToNarrativeReport(
   </div>
 
   <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
-    Voir toutes les formules
+    <span style="color: var(--color-on-primary);">Voir toutes les formules</span>
   </a>
 </div>`,
     chips: ["-20% Coaching", "Code Promo", "Avis"]

@@ -279,7 +279,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
       }
 
       try {
-        const auditRes = await fetch(`/api/audits/${auditId}`);
+        const auditRes = await fetch(`/api/audits/${auditId}?light=1`);
         if (!auditRes.ok) {
           setError('Audit non trouve');
           setLoading(false);

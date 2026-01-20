@@ -1758,6 +1758,30 @@ class PgReviewStorage implements IReviewStorage {
       )`
     );
     await pool.query(`ALTER TABLE IF EXISTS reviews ALTER COLUMN id DROP DEFAULT`);
+    try {
+      await pool.query(
+        `ALTER TABLE IF EXISTS reviews ALTER COLUMN audit_type TYPE VARCHAR(50) USING audit_type::text`
+      );
+    } catch (error) {
+      console.warn("[Reviews] Unable to normalize audit_type column:", error);
+    }
+    try {
+      await pool.query(
+        `ALTER TABLE IF EXISTS reviews ALTER COLUMN status TYPE VARCHAR(20) USING status::text`
+      );
+    } catch (error) {
+      console.warn("[Reviews] Unable to normalize status column:", error);
+    }
+    try {
+      await pool.query(
+        `ALTER TABLE IF EXISTS reviews ALTER COLUMN id TYPE VARCHAR(36) USING id::text`
+      );
+      await pool.query(
+        `ALTER TABLE IF EXISTS reviews ALTER COLUMN audit_id TYPE VARCHAR(36) USING audit_id::text`
+      );
+    } catch (error) {
+      console.warn("[Reviews] Unable to normalize id columns:", error);
+    }
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`);
     this.ensuredReviewsTable = true;

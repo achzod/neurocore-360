@@ -639,7 +639,7 @@ export default function Dashboard() {
   }, [navigate]);
 
   const { data: audits, isLoading } = useQuery<Audit[]>({
-    queryKey: [`/api/audits?email=${encodeURIComponent(userEmail || "")}`],
+    queryKey: [`/api/audits?email=${encodeURIComponent(userEmail || "")}&light=1`],
     enabled: !!userEmail,
   });
 

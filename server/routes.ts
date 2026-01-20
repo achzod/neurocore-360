@@ -123,6 +123,41 @@ export async function registerRoutes(
       .slice(0, maxLen);
   }
 
+  const PHOTO_FIELD_KEYS = PHOTO_FIELD_VARIANTS.flat();
+  const isInlineImage = (value: unknown): value is string =>
+    typeof value === "string" && value.startsWith("data:image");
+
+  function sanitizeAuditPayload(audit: any): any {
+    if (!audit) return audit;
+    const sanitized = { ...audit };
+
+    if (sanitized.responses && typeof sanitized.responses === "object") {
+      const responses = { ...sanitized.responses };
+      for (const key of PHOTO_FIELD_KEYS) {
+        if (isInlineImage((responses as any)[key])) {
+          delete (responses as any)[key];
+        }
+      }
+      sanitized.responses = responses;
+    }
+
+    for (const key of PHOTO_FIELD_KEYS) {
+      if (isInlineImage((sanitized as any)[key])) {
+        delete (sanitized as any)[key];
+      }
+    }
+
+    if (Array.isArray(sanitized.photos)) {
+      delete sanitized.photos;
+    }
+
+    delete sanitized.narrativeReport;
+    delete sanitized.reportTxt;
+    delete sanitized.reportHtml;
+
+    return sanitized;
+  }
+
   // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY
   function requireAdminAuth(req: any, res: any): boolean {
     const adminKey = req.headers["x-admin-key"] || req.query.key || req.body?.adminKey;
@@ -395,7 +430,8 @@ export async function registerRoutes(
         return;
       }
       const audits = await storage.getAuditsByEmail(email);
-      res.json(audits);
+      const light = req.query.light === "1";
+      res.json(light ? audits.map(sanitizeAuditPayload) : audits);
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -408,7 +444,8 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
-      res.json(audit);
+      const light = req.query.light === "1";
+      res.json(light ? sanitizeAuditPayload(audit) : audit);
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }

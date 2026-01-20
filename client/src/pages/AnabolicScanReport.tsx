@@ -268,7 +268,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
 
       try {
         // First get audit info
-        const auditRes = await fetch(`/api/audits/${auditId}`);
+        const auditRes = await fetch(`/api/audits/${auditId}?light=1`);
         if (!auditRes.ok) {
           setError('Audit non trouve');
           setLoading(false);
