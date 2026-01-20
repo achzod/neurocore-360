@@ -1758,6 +1758,28 @@ class PgReviewStorage implements IReviewStorage {
       )`
     );
     await pool.query(`ALTER TABLE IF EXISTS reviews ALTER COLUMN id DROP DEFAULT`);
+    const addColumns = [
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS audit_id VARCHAR(36)`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS user_id VARCHAR(36)`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS email VARCHAR(255)`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS audit_type VARCHAR(50)`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS rating INTEGER`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS comment TEXT`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS status VARCHAR(20)`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS promo_code VARCHAR(50)`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS promo_code_sent_at TIMESTAMP`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS admin_notes TEXT`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS created_at TIMESTAMP`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP`,
+      `ALTER TABLE IF EXISTS reviews ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(255)`,
+    ];
+    for (const stmt of addColumns) {
+      try {
+        await pool.query(stmt);
+      } catch (error) {
+        console.warn("[Reviews] Unable to add review column:", error);
+      }
+    }
     try {
       await pool.query(
         `ALTER TABLE IF EXISTS reviews ALTER COLUMN audit_type TYPE VARCHAR(50) USING audit_type::text`
@@ -1782,6 +1804,36 @@ class PgReviewStorage implements IReviewStorage {
     } catch (error) {
       console.warn("[Reviews] Unable to normalize id columns:", error);
     }
+    try {
+      const columnsRes = await pool.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews'`
+      );
+      const columns = new Set((columnsRes.rows || []).map((row: any) => row.column_name));
+      const migrations: Array<[string, string]> = [
+        ["auditId", "audit_id"],
+        ["userId", "user_id"],
+        ["auditType", "audit_type"],
+        ["promoCode", "promo_code"],
+        ["promoCodeSentAt", "promo_code_sent_at"],
+        ["adminNotes", "admin_notes"],
+        ["createdAt", "created_at"],
+        ["reviewedAt", "reviewed_at"],
+        ["reviewedBy", "reviewed_by"],
+        ["reviewStatus", "status"],
+      ];
+      for (const [camel, snake] of migrations) {
+        if (columns.has(camel)) {
+          const sql = `UPDATE reviews SET ${snake} = "${camel}" WHERE ${snake} IS NULL AND "${camel}" IS NOT NULL`;
+          try {
+            await pool.query(sql);
+          } catch (error) {
+            console.warn("[Reviews] Unable to migrate review column:", error);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("[Reviews] Unable to inspect review columns:", error);
+    }
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_audit_id ON reviews(audit_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status)`);
     this.ensuredReviewsTable = true;
@@ -1790,19 +1842,19 @@ class PgReviewStorage implements IReviewStorage {
   private rowToReview(row: any): Review {
     return {
       id: row.id,
-      auditId: row.audit_id,
-      userId: row.user_id,
+      auditId: row.audit_id ?? row.auditId,
+      userId: row.user_id ?? row.userId,
       email: row.email,
-      auditType: row.audit_type as ReviewAuditTypeEnum,
+      auditType: (row.audit_type ?? row.auditType) as ReviewAuditTypeEnum,
       rating: row.rating,
       comment: row.comment,
-      status: row.status as ReviewStatusEnum,
-      promoCode: row.promo_code,
-      promoCodeSentAt: row.promo_code_sent_at,
-      adminNotes: row.admin_notes,
-      createdAt: row.created_at,
-      reviewedAt: row.reviewed_at,
-      reviewedBy: row.reviewed_by,
+      status: (row.status ?? row.reviewStatus) as ReviewStatusEnum,
+      promoCode: row.promo_code ?? row.promoCode,
+      promoCodeSentAt: row.promo_code_sent_at ?? row.promoCodeSentAt,
+      adminNotes: row.admin_notes ?? row.adminNotes,
+      createdAt: row.created_at ?? row.createdAt,
+      reviewedAt: row.reviewed_at ?? row.reviewedAt,
+      reviewedBy: row.reviewed_by ?? row.reviewedBy,
     };
   }
 
