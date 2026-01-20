@@ -538,6 +538,26 @@ export async function registerRoutes(
   app.get("/api/audits/:id/narrative-status", async (req, res) => {
     try {
       const job = await getJobStatus(req.params.id);
+      const jobReferenceTime = job?.lastProgressAt
+        ? new Date(job.lastProgressAt).getTime()
+        : job?.startedAt
+        ? new Date(job.startedAt).getTime()
+        : 0;
+      const isJobStale =
+        job &&
+        (job.status === "pending" || job.status === "generating") &&
+        jobReferenceTime > 0 &&
+        Date.now() - jobReferenceTime > 15 * 60 * 1000;
+
+      if (isJobStale) {
+        console.warn(`[Narrative] Job stale for audit ${req.params.id}, relance generation.`);
+        await forceRegenerate(req.params.id);
+        await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
+        await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
+        processReportAndSendEmail(req.params.id, audit.email, audit.type);
+        res.status(202).json({ message: "Rapport relance", status: "generating", progress: 0 });
+        return;
+      }
       if (!job) {
         res.json({ status: "not_started", progress: 0, currentSection: "" });
         return;
@@ -2824,8 +2844,13 @@ export async function registerRoutes(
         return;
       }
 
-      // If a regeneration is in progress, avoid serving stale reports
-      if (audit.reportDeliveryStatus === "GENERATING") {
+      const generationStart = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
+      const generationAgeMs = generationStart ? Date.now() - generationStart : 0;
+      const isGenerating = audit.reportDeliveryStatus === "GENERATING";
+      const isStaleGeneration = isGenerating && generationAgeMs > 12 * 60 * 1000;
+
+      // If a regeneration is in progress, avoid serving stale reports (unless stale).
+      if (isGenerating && !isStaleGeneration) {
         res.status(202).json({
           success: true,
           status: "generating",
@@ -2853,7 +2878,7 @@ export async function registerRoutes(
 
       // No report stored -> trigger a fresh generation in background
       // to avoid users getting stuck on "Analyse en cours".
-      const shouldRegenerate = audit.reportDeliveryStatus !== "GENERATING";
+      const shouldRegenerate = !isGenerating || isStaleGeneration;
       if (shouldRegenerate) {
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       }
