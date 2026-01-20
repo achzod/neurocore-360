@@ -1922,7 +1922,21 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "Données invalides", details: error.errors });
       } else {
         console.error("[Review] Error:", error);
-        res.status(500).json({ success: false, error: "Erreur serveur" });
+        const debug = req.query.debug === "1";
+        const err = error as any;
+        res.status(500).json({
+          success: false,
+          error: "Erreur serveur",
+          ...(debug
+            ? {
+                debug: {
+                  code: err?.code || null,
+                  constraint: err?.constraint || null,
+                  detail: err?.detail || null,
+                },
+              }
+            : {}),
+        });
       }
     }
   });
