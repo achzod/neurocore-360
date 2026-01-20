@@ -140,6 +140,7 @@ export interface IStorage {
 
   getProgress(email: string): Promise<QuestionnaireProgress | undefined>;
   saveProgress(input: SaveProgressInput): Promise<QuestionnaireProgress>;
+  deleteProgress(email: string): Promise<void>;
   getAllIncompleteProgress(): Promise<QuestionnaireProgress[]>;
 
   getBurnoutProgress(email: string): Promise<BurnoutProgress | undefined>;
@@ -352,6 +353,10 @@ export class MemStorage implements IStorage {
 
     this.progress.set(input.email, progress);
     return progress;
+  }
+
+  async deleteProgress(email: string): Promise<void> {
+    this.progress.delete(email);
   }
 
   async getAllIncompleteProgress(): Promise<QuestionnaireProgress[]> {
@@ -861,6 +866,10 @@ export class PgStorage implements IStorage {
         lastActivityAt: row.last_activity_at,
       };
     }
+  }
+
+  async deleteProgress(email: string): Promise<void> {
+    await pool.query("DELETE FROM questionnaire_progress WHERE email = $1", [email]);
   }
 
   async getAllIncompleteProgress(): Promise<QuestionnaireProgress[]> {

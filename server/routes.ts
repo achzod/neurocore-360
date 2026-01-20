@@ -184,6 +184,18 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/questionnaire/clear-progress", async (req, res) => {
+    try {
+      const schema = z.object({ email: z.string().email() });
+      const { email } = schema.parse(req.body);
+      await storage.deleteProgress(email);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[Progress] Error clearing:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.get("/api/questionnaire/progress/:email", async (req, res) => {
     try {
       const progress = await storage.getProgress(req.params.email);

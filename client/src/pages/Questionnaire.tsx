@@ -1,4 +1,4 @@
-import { useState, useEffect, Component, ErrorInfo, ReactNode } from "react";
+import { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -407,6 +407,7 @@ function QuestionnaireContent() {
   const [terraConnecting, setTerraConnecting] = useState(false);
   const [terraConnected, setTerraConnected] = useState(false);
   const [terraSkippedQuestions, setTerraSkippedQuestions] = useState<string[]>([]);
+  const loadNonceRef = useRef(0);
   const normalizedSex = userSex === "homme" || userSex === "femme" ? userSex : undefined;
   const sectionQuestions = currentSection
     ? (
@@ -435,10 +436,14 @@ function QuestionnaireContent() {
 
   // Charger la progression depuis la DB
   const loadProgressFromDB = async (userEmail: string) => {
+    const nonce = loadNonceRef.current;
     try {
       const res = await fetch(`/api/questionnaire/progress/${encodeURIComponent(userEmail)}`);
       if (res.ok) {
         const data = await res.json();
+        if (nonce !== loadNonceRef.current) {
+          return false;
+        }
         if (data && data.responses && Object.keys(data.responses).length > 0) {
           console.log("[Questionnaire] Loaded progress from DB:", Object.keys(data.responses).length, "responses");
           setResponses(prev => ({ ...prev, ...data.responses }));
@@ -805,12 +810,26 @@ function QuestionnaireContent() {
     }
   };
 
-  const handleRestart = () => {
+  const handleRestart = async () => {
+    const emailToClear = email || localStorage.getItem("neurocore_email") || "";
+    loadNonceRef.current += 1;
+    if (emailToClear) {
+      try {
+        await fetch("/api/questionnaire/clear-progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: emailToClear }),
+        });
+      } catch (err) {
+        console.error("[Questionnaire] Unable to clear progress:", err);
+      }
+    }
     localStorage.removeItem("neurocore_email");
     localStorage.removeItem("neurocore_responses");
     localStorage.removeItem("neurocore_section");
     localStorage.removeItem("neurocore_plan");
     sessionStorage.removeItem("neurocore_photos");
+    sessionStorage.removeItem("questionnaireProgress");
     setEmail("");
     setEmailSubmitted(false);
     setResponses({});
@@ -818,7 +837,9 @@ function QuestionnaireContent() {
     setCurrentSectionIndex(0);
     setSexConfirmed(false);
     setPrenomConfirmed(false);
-    window.location.reload();
+    setWearablesSyncShown(false);
+    setTerraConnected(false);
+    setTerraSkippedQuestions([]);
   };
 
   if (!emailSubmitted) {
