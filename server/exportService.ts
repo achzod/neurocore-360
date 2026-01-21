@@ -257,12 +257,12 @@ function generateSVGRadar(scores: Record<string, number>): string {
   `;
 }
 
-export function generateExportHTMLFromTxt(
+export async function generateExportHTMLFromTxt(
   txt: string,
   auditId: string,
   photos?: string[],
   clientResponses?: Record<string, unknown>
-): string {
+): Promise<string> {
   const dashboard = formatTxtToDashboard(txt);
   const firstName = (dashboard.clientName || "Profil").trim().split(/\s+/)[0] || "Profil";
 
@@ -353,7 +353,7 @@ export function generateExportHTMLFromTxt(
     </div>
   ` : '';
 
-  const sectionsHTML = dashboard.sections.map(section => {
+  const sectionsHTML = (await Promise.all(dashboard.sections.map(async (section) => {
     // Check if this is a supplements section - use enhanced HTML
     const isSupplementsSection = section.category === "supplements" ||
                                   section.title.toLowerCase().includes("supplement") ||
@@ -363,7 +363,7 @@ export function generateExportHTMLFromTxt(
 
     if (isSupplementsSection) {
       // Use the enhanced supplements HTML from library
-      formattedContent = generateEnhancedSupplementsHTML({
+      formattedContent = await generateEnhancedSupplementsHTML({
         responses: (dashboard as any).clientResponses || {},
         globalScore: dashboard.global,
         firstName: dashboard.clientName?.split(' ')[0] || 'Profil',
@@ -419,7 +419,7 @@ export function generateExportHTMLFromTxt(
       }
 
       return `<p>${l}</p>`;
-      }).join('');
+  }))).join('');
     }
 
     const level = section.score > 0 ? getScoreLevel(section.score) : "";
@@ -1726,14 +1726,14 @@ export function generateExportHTMLFromTxt(
 </html>`;
 }
 
-export function generateExportHTML(
+export async function generateExportHTML(
   report: any,
   auditId: string,
   photos?: string[],
   clientResponses?: Record<string, unknown>
-): string {
+): Promise<string> {
   if (report.txt) {
-    return generateExportHTMLFromTxt(report.txt, auditId, photos, clientResponses);
+    return await generateExportHTMLFromTxt(report.txt, auditId, photos, clientResponses);
   }
   return "Ancien format non supporté";
 }
@@ -1744,7 +1744,7 @@ export async function generateExportPDF(
   photos?: string[],
   clientResponses?: Record<string, unknown>
 ): Promise<Buffer> {
-  const html = generateExportHTML(report, auditId, photos, clientResponses);
+  const html = await generateExportHTML(report, auditId, photos, clientResponses);
   
   let browser = null;
   try {

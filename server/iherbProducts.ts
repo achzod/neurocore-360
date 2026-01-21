@@ -4,7 +4,7 @@
  * Format: https://fr.iherb.com/pr/[product-slug]/[product-id]?rcode=KAN0746
  */
 
-const AFFILIATE_CODE = "KAN0746";
+export const AFFILIATE_CODE = "KAN0746";
 
 export interface IHerbProduct {
   name: string;

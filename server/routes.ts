@@ -682,7 +682,7 @@ export async function registerRoutes(
             responses: (audit.responses as any) || {},
             globalScore,
           });
-          const supplementsHtml = generateEnhancedSupplementsHTML({
+          const supplementsHtml = await generateEnhancedSupplementsHTML({
             responses: (audit.responses as any) || {},
             globalScore,
             firstName,
@@ -1615,7 +1615,7 @@ export async function registerRoutes(
           return;
         }
         const photos = extractPhotosFromAudit(audit);
-        html = generateExportHTML(narrativeReport, auditId, photos);
+        html = await generateExportHTML(narrativeReport, auditId, photos);
       }
       
       if (!html || html.length < 500) {
