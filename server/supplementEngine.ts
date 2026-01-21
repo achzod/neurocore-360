@@ -831,12 +831,22 @@ function productMatchesSupplement(
   if (tokens.length === 0) return true;
   const productText = normalizeMatchText(`${product.name} ${product.slug} ${product.brand}`);
   const matches = tokens.filter((token) => productText.includes(token));
-  return matches.length >= 1;
+  const requiredMatches = tokens.length >= 3 ? 2 : 1;
+  return matches.length >= requiredMatches;
+}
+
+function normalizeIherbLink(url: string): string {
+  if (!url) return url;
+  const sanitized = url.replace(/https?:\/\/[^/]*iherb\.com\//i, `${IHERB_DOMAIN}/`);
+  if (/rcode=/i.test(sanitized)) {
+    return sanitized.replace(/rcode=[^&\"']*/i, `rcode=${AFFILIATE_CODE}`);
+  }
+  return `${sanitized}${sanitized.includes("?") ? "&" : "?"}rcode=${AFFILIATE_CODE}`;
 }
 
 function buildIherbSearchLink(query: string): string {
   const q = encodeURIComponent(query.trim());
-  return `${IHERB_DOMAIN}/search?kw=${q}&rcode=${AFFILIATE_CODE}`;
+  return normalizeIherbLink(`${IHERB_DOMAIN}/search?kw=${q}`);
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
@@ -849,7 +859,25 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }
 }
 
-async function isIherbLinkHealthy(url: string): Promise<boolean> {
+function isExpectedProductUrl(finalUrl: string, expected?: { productId?: number; slug?: string }): boolean {
+  if (!expected) return true;
+  try {
+    const parsed = new URL(finalUrl);
+    if (!parsed.hostname.includes("iherb.com")) return false;
+    const path = parsed.pathname.toLowerCase();
+    if (!path.includes("/pr/")) return false;
+    if (expected.productId && !path.includes(`/${expected.productId}`)) return false;
+    if (expected.slug && !path.includes(`/${expected.slug.toLowerCase()}`)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isIherbLinkHealthy(
+  url: string,
+  expected?: { productId?: number; slug?: string }
+): Promise<boolean> {
   const cached = linkHealthCache.get(url);
   if (cached && Date.now() - cached.checkedAt < LINK_CACHE_TTL_MS) {
     return cached.ok;
@@ -869,12 +897,12 @@ async function isIherbLinkHealthy(url: string): Promise<boolean> {
         LINK_CHECK_TIMEOUT_MS
       );
 
-      if (res.status >= 200 && res.status < 400) {
+      if (res.status >= 200 && res.status < 400 && isExpectedProductUrl(res.url || url, expected)) {
         linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
         return true;
       }
 
-      if ([400, 403, 405].includes(res.status)) {
+      if ([400, 403, 405].includes(res.status) || !isExpectedProductUrl(res.url || url, expected)) {
         res = await fetchWithTimeout(
           url,
           { method: "GET", redirect: "follow", headers },
@@ -887,7 +915,7 @@ async function isIherbLinkHealthy(url: string): Promise<boolean> {
             // ignore
           }
         }
-        if (res.status >= 200 && res.status < 400) {
+        if (res.status >= 200 && res.status < 400 && isExpectedProductUrl(res.url || url, expected)) {
           linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
           return true;
         }
@@ -936,10 +964,11 @@ async function buildProductLinksHTML(params: {
   searchQuery: string;
 }): Promise<string> {
   const { ingredientLabel, ingredientKey, products, searchQuery } = params;
-  if (products.length === 0) return "";
-
   const query = searchQuery || ingredientLabel;
   const searchLink = buildIherbSearchLink(query);
+  if (products.length === 0) {
+    return buildSearchFallbackHTML({ ingredientLabel, searchQuery: query, searchLink });
+  }
 
   const resolved = await Promise.all(
     products.map(async (product) => {
@@ -948,8 +977,8 @@ async function buildProductLinksHTML(params: {
         return { product, url: searchLink, valid: false };
       }
 
-      const url = getIHerbLink(product);
-      const ok = await isIherbLinkHealthy(url);
+      const url = normalizeIherbLink(getIHerbLink(product));
+      const ok = await isIherbLinkHealthy(url, { productId: product.productId, slug: product.slug });
       if (!ok) {
         return { product, url: searchLink, valid: false };
       }
