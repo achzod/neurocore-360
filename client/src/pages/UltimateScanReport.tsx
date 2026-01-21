@@ -771,7 +771,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   };
 
   const renderCtaPanel = (text: string, badgeLabel: string, variant: 'debut' | 'fin') => {
-    const { paragraphs, bullets, promoLine, emailLine, siteLine } = parseCtaText(text);
+    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = parseCtaText(text);
     const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
     const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
     const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
