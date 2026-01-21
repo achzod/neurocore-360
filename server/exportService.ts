@@ -372,7 +372,7 @@ export async function generateExportHTMLFromTxt(
       // Standard content formatting
       const lines = section.content.split('\n');
       formattedContent = lines.map(line => {
-      let l = line.trim();
+        let l = line.trim();
       
       // Nettoyage
       l = l.replace(/\[[■□\s#=-]+\]\s*\d+\/\d+/, '');
@@ -418,8 +418,8 @@ export async function generateExportHTMLFromTxt(
         `;
       }
 
-      return `<p>${l}</p>`;
-  }))).join('');
+        return `<p>${l}</p>`;
+      }).join('');
     }
 
     const level = section.score > 0 ? getScoreLevel(section.score) : "";
@@ -460,7 +460,7 @@ export async function generateExportHTMLFromTxt(
         </div>
       </div>
     `;
-  }).join("");
+  }))).join("");
 
   return `<!DOCTYPE html>
 <html lang="fr">
