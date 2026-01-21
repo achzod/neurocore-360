@@ -701,7 +701,7 @@ export function formatSupplementForReport(supp: SupplementProtocolAdvanced): {
     why: supp.mechanism,
     brands: supp.label_checks,
     warnings: supp.risks.join("; "),
-    evidence: `Grade ${supp.evidence_grade} - ${supp.citations.join(", ")}`,
+    evidence: `Grade ${supp.evidence_grade}`,
     iherb_search: supp.iherb_search_query || ""
   };
 }
