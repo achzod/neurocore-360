@@ -37,9 +37,10 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
-const formatName = (value?: string) => {
-  if (!value) return "Profil";
-  return value
+const formatName = (value?: unknown) => {
+  const safeValue = value === null || value === undefined ? "" : String(value);
+  if (!safeValue) return "Profil";
+  return safeValue
     .trim()
     .split(/\s+/)
     .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
@@ -373,12 +374,26 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   };
 
   const safeSections = Array.isArray(report?.sections) ? report.sections : [];
+  const normalizedSections = safeSections
+    .filter((section): section is NarrativeSection => Boolean(section && typeof section === "object"))
+    .map((section, idx) => {
+      const id = normalizeTextInput(section.id) || `section-${idx + 1}`;
+      const title = normalizeTextInput(section.title) || `Section ${idx + 1}`;
+      const scoreValue = typeof section.score === "number" ? section.score : Number(section.score);
+      const score = Number.isFinite(scoreValue) ? scoreValue : 0;
+      return {
+        ...section,
+        id,
+        title,
+        score
+      };
+    });
   const safeSupplementStack = Array.isArray(report?.supplementStack) ? report.supplementStack : [];
   const safeRadarMetrics = Array.isArray(report?.radarMetrics) ? report.radarMetrics : [];
 
   const navigationSections = useMemo<SectionContent[]>(() => {
     if (!report) return [];
-    const narrativeSections: SectionContent[] = safeSections.map((section) => {
+    const narrativeSections: SectionContent[] = normalizedSections.map((section) => {
       const scoreLabel = section.score > 0 ? `Score ${Math.round(section.score)}%` : section.level ? section.level.toUpperCase() : "";
       return {
         id: section.id,
@@ -439,7 +454,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   }, [navigationSections]);
 
   const displayName = formatName(clientName);
-  const sectionScores = safeSections
+  const sectionScores = normalizedSections
     .map((section) => section.score)
     .filter((score): score is number => Number.isFinite(score));
   const derivedGlobalScore =
@@ -479,8 +494,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
   };
 
-  const analysisSections = safeSections.filter(isAnalysisSection);
-  const radarSections = (analysisSections.length > 0 ? analysisSections : safeSections).slice(0, 8);
+  const analysisSections = normalizedSections.filter(isAnalysisSection);
+  const radarSections = (analysisSections.length > 0 ? analysisSections : normalizedSections).slice(0, 8);
   const resolveRadarLabel = (section: NarrativeSection) => {
     const byId = RADAR_LABELS[section.id];
     if (byId) return byId;
@@ -499,14 +514,14 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     return shortLabelFromTitle(section.title, section.title);
   };
 
-  const metricsData: Metric[] = radarSections.map(s => {
+  const metricsData: Metric[] = radarSections.map((s, idx) => {
     const safeScore = s.score > 0 ? s.score : globalScore;
     return {
-      label: resolveRadarLabel(s),
+      label: normalizeTextInput(resolveRadarLabel(s)) || `Metric ${idx + 1}`,
       value: Math.round((safeScore / 10) * 10) / 10,
       max: 10,
-      description: s.title,
-      key: s.id
+      description: normalizeTextInput(s.title) || `Metric ${idx + 1}`,
+      key: normalizeTextInput(s.id) || `metric-${idx + 1}`
     };
   });
 
@@ -526,10 +541,14 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   ];
 
   const displayRadarMetrics = (radarMetrics.length ? radarMetrics : fallbackRadarMetrics)
-    .map(metric => {
+    .map((metric, idx) => {
       const rawValue = typeof metric.value === "number" && !Number.isNaN(metric.value) ? metric.value : fallbackMetricValue;
+      const label = normalizeTextInput(metric.label) || `Metric ${idx + 1}`;
+      const key = normalizeTextInput(metric.key) || label.toLowerCase().replace(/\s+/g, "-");
       return {
         ...metric,
+        label,
+        key,
         value: Math.max(1, Math.min(10, rawValue)),
         max: 10,
       };
