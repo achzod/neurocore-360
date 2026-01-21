@@ -249,7 +249,8 @@ async function generateReportAsync(
     // P0 fail-fast : seul ELITE (Ultimate Scan) nécessite 3 photos pour l'analyse visuelle/posturale
     // GRATUIT et PREMIUM n'ont pas besoin de photos
     const requiresPhotos = auditType === "ELITE";
-    const needsPhotos = requiresPhotos && photos.length < 3;
+    const photosForReport = requiresPhotos ? photos : [];
+    const needsPhotos = requiresPhotos && photosForReport.length < 3;
 
     if (needsPhotos) {
       console.error(`[ReportJobManager] Photos insuffisantes pour ${auditId} (${photos.length}/3, type=${auditType}). Rapport non généré.`);
@@ -258,14 +259,18 @@ async function generateReportAsync(
       activeGenerations.delete(auditId);
       return;
     } else if (requiresPhotos) {
-      console.log(`[ReportJobManager] Photos OK pour ${auditId} (count=${photos.length})`);
+      console.log(`[ReportJobManager] Photos OK pour ${auditId} (count=${photosForReport.length})`);
     } else {
-      console.log(`[ReportJobManager] ${auditId} est GRATUIT - photos non requises`);
+      if (photos.length > 0) {
+        console.log(`[ReportJobManager] ${auditId} (${auditType}) - photos ignorees (non requises)`);
+      } else {
+        console.log(`[ReportJobManager] ${auditId} (${auditType}) - photos non requises`);
+      }
     }
 
     let photoAnalysis = null;
-    if (photos.length > 0) {
-      console.log(`[ReportJobManager] ${photos.length} photos detectees, lancement analyse vision...`);
+    if (requiresPhotos && photosForReport.length > 0) {
+      console.log(`[ReportJobManager] ${photosForReport.length} photos detectees, lancement analyse vision...`);
       
       await storage.createOrUpdateReportJob({
         auditId,
@@ -278,9 +283,9 @@ async function generateReportAsync(
         const { analyzeBodyPhotosWithAI } = await import("./photoAnalysisAI");
         // API attendue: { front, side, back }
         photoAnalysis = await analyzeBodyPhotosWithAI({
-          front: photos[0],
-          side: photos[1],
-          back: photos[2],
+          front: photosForReport[0],
+          side: photosForReport[1],
+          back: photosForReport[2],
         } as any);
         console.log(`[ReportJobManager] Analyse vision terminee - confiance: ${photoAnalysis.confidenceLevel}%`);
       } catch (visionError) {
@@ -378,7 +383,7 @@ async function generateReportAsync(
     const reportHtml = generatePremiumHTMLFromTxt(
       result.txt || '',
       auditId,
-      photos,
+      photosForReport,
       normalizedResponses as Record<string, unknown>
     );
     

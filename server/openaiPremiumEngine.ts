@@ -490,16 +490,24 @@ export async function generateAuditTxtWithOpenAI(
     .map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`)
     .join("\n");
 
-  const photoAnalysisStr = photoAnalysis
-    ? formatPhotoAnalysisForReport(photoAnalysis)
-    : 'Analyse photo indisponible (incident vision).';
+  const includePhotoSection = tier === "ELITE";
+  const photoAnalysisStr = includePhotoSection
+    ? photoAnalysis
+      ? formatPhotoAnalysisForReport(photoAnalysis)
+      : 'Analyse photo indisponible (incident vision).'
+    : '';
 
-  const fullDataStr = `
+  const fullDataStr = includePhotoSection
+    ? `
 DONNEES PROFIL:
 ${dataStr}
 
 ANALYSE PHOTO POSTURALE:
 ${photoAnalysisStr}
+`
+    : `
+DONNEES PROFIL:
+${dataStr}
 `;
 
   const auditParts: string[] = [];
