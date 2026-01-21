@@ -897,12 +897,17 @@ async function isIherbLinkHealthy(
         LINK_CHECK_TIMEOUT_MS
       );
 
-      if (res.status >= 200 && res.status < 400 && isExpectedProductUrl(res.url || url, expected)) {
+      const isExpected = isExpectedProductUrl(res.url || url, expected);
+      if (res.status >= 200 && res.status < 400 && isExpected) {
+        linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
+        return true;
+      }
+      if ([403, 405].includes(res.status) && isExpected) {
         linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
         return true;
       }
 
-      if ([400, 403, 405].includes(res.status) || !isExpectedProductUrl(res.url || url, expected)) {
+      if ([400, 403, 405].includes(res.status) || !isExpected) {
         res = await fetchWithTimeout(
           url,
           { method: "GET", redirect: "follow", headers },
@@ -915,7 +920,12 @@ async function isIherbLinkHealthy(
             // ignore
           }
         }
-        if (res.status >= 200 && res.status < 400 && isExpectedProductUrl(res.url || url, expected)) {
+        const isExpectedGet = isExpectedProductUrl(res.url || url, expected);
+        if (res.status >= 200 && res.status < 400 && isExpectedGet) {
+          linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
+          return true;
+        }
+        if ([403, 405].includes(res.status) && isExpectedGet) {
           linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
           return true;
         }
