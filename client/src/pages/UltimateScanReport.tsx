@@ -390,6 +390,21 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     });
   const safeSupplementStack = Array.isArray(report?.supplementStack) ? report.supplementStack : [];
   const safeRadarMetrics = Array.isArray(report?.radarMetrics) ? report.radarMetrics : [];
+  const normalizedRadarMetrics = safeRadarMetrics
+    .filter((metric): metric is Metric => Boolean(metric && typeof metric === "object"))
+    .map((metric, idx) => {
+      const rawValue = typeof metric.value === "number" ? metric.value : Number(metric.value);
+      const rawMax = typeof metric.max === "number" ? metric.max : Number(metric.max);
+      const label = normalizeTextInput(metric.label) || `Metric ${idx + 1}`;
+      const key = normalizeTextInput(metric.key) || label.toLowerCase().replace(/\s+/g, "-");
+      return {
+        ...metric,
+        label,
+        key,
+        value: Number.isFinite(rawValue) ? rawValue : 0,
+        max: Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 10,
+      };
+    });
 
   const navigationSections = useMemo<SectionContent[]>(() => {
     if (!report) return [];
@@ -464,7 +479,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   const rawGlobalScore = Number.isFinite(report?.global) ? report.global : derivedGlobalScore;
   const globalScore =
     rawGlobalScore <= 10 && derivedGlobalScore >= 20 ? derivedGlobalScore : rawGlobalScore;
-  const globalScore10 = Math.round((globalScore / 10) * 10) / 10;
+  const safeGlobalScore = Number.isFinite(globalScore) ? globalScore : 60;
+  const globalScore10 = Math.round((safeGlobalScore / 10) * 10) / 10;
 
   const primary = currentTheme.colors.primary;
   const primarySoft = withAlpha(primary, 0.12);
@@ -515,7 +531,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
   };
 
   const metricsData: Metric[] = radarSections.map((s, idx) => {
-    const safeScore = s.score > 0 ? s.score : globalScore;
+    const safeScore = s.score > 0 ? s.score : safeGlobalScore;
     return {
       label: normalizeTextInput(resolveRadarLabel(s)) || `Metric ${idx + 1}`,
       value: Math.round((safeScore / 10) * 10) / 10,
@@ -525,8 +541,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     };
   });
 
-  const reportRadar = safeRadarMetrics;
-  const reportRadarLabels = reportRadar.map((m) => (m.label || '').toLowerCase());
+  const reportRadar = normalizedRadarMetrics;
+  const reportRadarLabels = reportRadar.map((m) => normalizeTextInput(m.label).toLowerCase());
   const hasUsableReportRadar =
     reportRadar.length >= 4 && reportRadarLabels.some(label => label && !label.includes('analyse'));
   const radarMetrics = hasUsableReportRadar ? reportRadar : metricsData;
@@ -891,9 +907,9 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     );
   };
   const scoreSummary =
-    globalScore >= 75
+    safeGlobalScore >= 75
       ? 'Une base solide.'
-      : globalScore >= 60
+      : safeGlobalScore >= 60
       ? "Des axes d'optimisation identifies."
       : 'Plusieurs blocages a debloquer.';
 
@@ -1046,7 +1062,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
         score: typeof rawPhoto.score === "number" ? rawPhoto.score : undefined,
       };
       const photoScore =
-        typeof normalizedPhoto.score === 'number' ? normalizedPhoto.score : Math.round(globalScore);
+        typeof normalizedPhoto.score === 'number' ? normalizedPhoto.score : Math.round(safeGlobalScore);
 
       return (
         <div className="space-y-6">
@@ -1278,13 +1294,13 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
                     <span style={{ color: currentTheme.colors.textMuted }}>voici ton ultimate scan.</span>
                   </h1>
                   <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                    {Math.round(globalScore)}/100 — {scoreSummary}
+                    {Math.round(safeGlobalScore)}/100 — {scoreSummary}
                   </p>
                 </div>
 
                 <div className="flex gap-4 items-end">
                   <div className="text-right hidden md:block">
-                    <div className="text-3xl font-bold font-mono">{Math.round(globalScore)}<span className="text-lg opacity-50">/100</span></div>
+                    <div className="text-3xl font-bold font-mono">{Math.round(safeGlobalScore)}<span className="text-lg opacity-50">/100</span></div>
                     <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
                   </div>
                 </div>
@@ -1298,7 +1314,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
                   <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
                   <div className="flex items-center justify-center py-8">
                     <RadialProgress
-                      score={Math.round(globalScore)}
+                      score={Math.round(safeGlobalScore)}
                       max={100}
                       size={180}
                       strokeWidth={4}
