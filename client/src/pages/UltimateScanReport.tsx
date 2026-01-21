@@ -155,7 +155,7 @@ const normalizeTextInput = (value?: unknown): string => {
   return String(value);
 };
 
-const parseCtaText = (text?: string) => {
+const parseCtaText = (text?: unknown) => {
   const safeText = normalizeTextInput(text);
   if (!safeText) {
     return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
@@ -1100,25 +1100,35 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
                   </tr>
                 </thead>
                 <tbody>
-                  {safeSupplementStack.slice(0, 10).map((supp, idx) => (
-                    <tr key={idx} className="border-b border-[var(--color-border)]/50">
-                      <td className="py-3 px-2">
-                        <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{supp.name}</span>
-                        {supp.brands?.length > 0 && (
-                          <div className="text-xs text-[var(--color-text-muted)]">{supp.brands[0]}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{supp.dosage}</span>
-                      </td>
-                      <td className="py-3 px-2 text-[var(--color-text-muted)]">{supp.timing}</td>
-                      <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{supp.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {safeSupplementStack.slice(0, 10).map((supp, idx) => {
+            const suppName = normalizeTextInput(supp.name);
+            const suppDosage = normalizeTextInput(supp.dosage);
+            const suppTiming = normalizeTextInput(supp.timing);
+            const suppDuration = normalizeTextInput(supp.duration);
+            const suppBrand =
+              Array.isArray(supp.brands) && supp.brands.length > 0
+                ? normalizeTextInput(supp.brands[0])
+                : "";
+            return (
+            <tr key={idx} className="border-b border-[var(--color-border)]/50">
+              <td className="py-3 px-2">
+                <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{suppName}</span>
+                {suppBrand && (
+                  <div className="text-xs text-[var(--color-text-muted)]">{suppBrand}</div>
+                )}
+              </td>
+              <td className="py-3 px-2">
+                <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{suppDosage}</span>
+              </td>
+              <td className="py-3 px-2 text-[var(--color-text-muted)]">{suppTiming}</td>
+              <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{suppDuration}</td>
+            </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
         </div>
       );
     }
@@ -1127,10 +1137,10 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
       return (
         <div className="space-y-4">
           {[
-            { title: 'Semaine 1', subtitle: 'Fondations', content: report.weeklyPlan?.week1, alpha: 0.7 },
-            { title: 'Semaine 2', subtitle: 'Consolidation', content: report.weeklyPlan?.week2, alpha: 0.55 },
-            { title: 'Semaines 3-4', subtitle: 'Optimisation', content: report.weeklyPlan?.weeks3_4, alpha: 0.45 },
-            { title: 'Mois 2-3', subtitle: 'Maintenance', content: report.weeklyPlan?.months2_3, alpha: 0.35 }
+            { title: 'Semaine 1', subtitle: 'Fondations', content: normalizeTextInput(report.weeklyPlan?.week1), alpha: 0.7 },
+            { title: 'Semaine 2', subtitle: 'Consolidation', content: normalizeTextInput(report.weeklyPlan?.week2), alpha: 0.55 },
+            { title: 'Semaines 3-4', subtitle: 'Optimisation', content: normalizeTextInput(report.weeklyPlan?.weeks3_4), alpha: 0.45 },
+            { title: 'Mois 2-3', subtitle: 'Maintenance', content: normalizeTextInput(report.weeklyPlan?.months2_3), alpha: 0.35 }
           ].map((phase, idx) => (
             <div key={idx} className="flex gap-4">
               <div className="w-1 rounded-full" style={{ backgroundColor: withAlpha(primary, phase.alpha) }} />
@@ -1153,6 +1163,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
       return renderReviewSection();
     }
 
+    const sectionHtml = typeof section.content === 'string' ? section.content : toHtml(section.content);
+
     return (
       <div
         className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)]`}
@@ -1163,7 +1175,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
           '--tw-prose-strong': currentTheme.colors.text,
           '--tw-prose-bullets': currentTheme.colors.primary
         } as React.CSSProperties}
-        dangerouslySetInnerHTML={{ __html: section.content }}
+        dangerouslySetInnerHTML={{ __html: sectionHtml }}
       />
     );
   };
