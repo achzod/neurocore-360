@@ -59,6 +59,15 @@ const getScoreStatus = (value: number) => {
   return { label: 'CRITIQUE', color: 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]' };
 };
 
+const stripCitationHtml = (html: string): string => {
+  if (!html) return html;
+  return html
+    .replace(/<p[^>]*>\s*(Sources?|References?|Références?)\s*[:\-][\s\S]*?<\/p>/gi, '')
+    .replace(/<p[^>]*>[\s\S]*?\b(PMID|DOI|PubMed)\b[\s\S]*?<\/p>/gi, '')
+    .replace(/(?:Sources?|References?|Références?)\s*[:\-][^<]*(?:<br\s*\/?>|<\/p>)/gi, '')
+    .trim();
+};
+
 const DiscoveryScanReport: React.FC = () => {
   const { auditId } = useParams();
   const [reportData, setReportData] = useState<ReportData | null>(null);
@@ -607,7 +616,7 @@ const DiscoveryScanReport: React.FC = () => {
                         '--tw-prose-strong': currentTheme.colors.text,
                         '--tw-prose-bullets': currentTheme.colors.primary,
                       } as React.CSSProperties}
-                      dangerouslySetInnerHTML={{ __html: section.content }}
+                      dangerouslySetInnerHTML={{ __html: stripCitationHtml(section.content) }}
                     />
                   </div>
                 </div>

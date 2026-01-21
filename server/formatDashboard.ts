@@ -143,6 +143,11 @@ const SOURCE_NAME_REGEX = new RegExp(
 
 function cleanSectionContent(content: string): string {
   const cleaned = stripEmoji(stripInlineHtml(content))
+    .replace(/^\s*(PMID|DOI)\s*[:\-].*$/gmi, '')
+    .replace(/\bpmid\b\s*:?[\s#]*\d+/gi, '')
+    .replace(/\bdoi\b\s*:?[\s]*[^\s]+/gi, '')
+    .replace(/^\s*pubmed\b.*$/gmi, '')
+    .replace(/https?:\/\/\S+/gi, '')
     .replace(/^\s*(Sources?|References?|Références?)\s*:.*$/gmi, '')
     .replace(/Sources?\s*:.*$/gmi, '')
     .replace(/\b(Sources?|References?|Références?)\s*:\s*[^.\n]+\.?/gi, '')

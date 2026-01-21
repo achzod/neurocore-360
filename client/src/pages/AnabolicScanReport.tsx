@@ -114,8 +114,29 @@ const normalizeTextInput = (value?: unknown): string => {
   return String(value);
 };
 
+const stripCitationLines = (text: string): string => {
+  if (!text) return text;
+  return text
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      if (/^(sources?|references?|références?)\s*[:\-]/i.test(trimmed)) return false;
+      if (/\bpmid\b/i.test(trimmed)) return false;
+      if (/\bdoi\b/i.test(trimmed)) return false;
+      if (/pubmed/i.test(trimmed)) return false;
+      return true;
+    })
+    .join("\n");
+};
+
+const normalizeNarrativeText = (value?: unknown): string => {
+  const normalized = normalizeTextInput(value);
+  return stripCitationLines(normalized);
+};
+
 const parseCtaText = (text?: unknown) => {
-  const safeText = normalizeTextInput(text);
+  const safeText = normalizeNarrativeText(text);
   if (!safeText) {
     return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
   }
@@ -214,6 +235,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [clientName, setClientName] = useState<string>('Profil');
+  const [auditType, setAuditType] = useState<string | null>(null);
   const [generationStatus, setGenerationStatus] = useState<string>("");
   const [generationProgress, setGenerationProgress] = useState<number>(0);
   const [generationSection, setGenerationSection] = useState<string>("");
@@ -296,6 +318,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
           return;
         }
         const auditData = await auditRes.json();
+        setAuditType(auditData.type || auditData.auditType || null);
         const nameFromResponses = auditData.responses?.prenom;
         setClientName(formatName(nameFromResponses || auditData.email?.split('@')[0] || 'Profil'));
         setReviewEmail(auditData.email || '');
@@ -366,14 +389,14 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
   };
 
   const buildSectionHtml = (section: NarrativeSection) => {
-    const intro = normalizeTextInput(section.introduction).trim();
+    const intro = normalizeNarrativeText(section.introduction).trim();
     const blocks = [
       { label: "Analyse", text: intro },
-      { label: "Ce qui bloque", text: normalizeTextInput(section.whatIsWrong) },
-      { label: "Analyse personnalisee", text: normalizeTextInput(section.personalizedAnalysis) },
-      { label: "Recommandations", text: normalizeTextInput(section.recommendations) },
-      { label: "Plan d'action", text: normalizeTextInput(section.actionPlan) },
-      { label: "Science", text: normalizeTextInput(section.scienceDeepDive) },
+      { label: "Ce qui bloque", text: normalizeNarrativeText(section.whatIsWrong) },
+      { label: "Analyse personnalisee", text: normalizeNarrativeText(section.personalizedAnalysis) },
+      { label: "Recommandations", text: normalizeNarrativeText(section.recommendations) },
+      { label: "Plan d'action", text: normalizeNarrativeText(section.actionPlan) },
+      { label: "Science", text: normalizeNarrativeText(section.scienceDeepDive) },
     ].filter((block) => block.text && block.text.trim().length > 0);
 
     if (intro && hasHtml(intro) && blocks.length === 1) {
@@ -560,39 +583,101 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
   };
 
   const renderCtaPanel = (text: string, badgeLabel: string, variant: 'debut' | 'fin') => {
-    const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = parseCtaText(text);
-    const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
-    const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
-    const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
-    const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
-    const summaryTrimmed = summary.length > 380 ? `${summary.slice(0, 380).trim()}...` : summary;
-    const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
-    const isDebut = variant === 'debut';
-    const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
-    const subline = isDebut ? "Deduction 100% du scan" : "Execution + ajustements";
-    const deductionAmount = getDeductionAmount(report?.auditType);
-    const fallbackBullets = isDebut
-      ? [
-          "Deduction 100% du scan si coaching",
-          "Ajustements hebdo personnalises",
-          "Acces direct pour accelerer les decisions",
-        ]
-      : [
-          "Pilotage des KPIs et corrections",
-          "Protocoles adaptes a ton quotidien",
-          "Suivi humain, pas un plan generique",
-        ];
-    const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
+    try {
+      const ctaData = parseCtaText(text);
+      const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = ctaData;
+      const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
+      const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
+      const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
+      const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
+      const summaryTrimmed = summary.length > 380 ? `${summary.slice(0, 380).trim()}...` : summary;
+      const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
+      const isDebut = variant === 'debut';
+      const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
+      const subline = isDebut ? "Deduction 100% du scan" : "Execution + ajustements";
+      const deductionAmount = getDeductionAmount(report?.auditType);
+      const fallbackBullets = isDebut
+        ? [
+            "Deduction 100% du scan si coaching",
+            "Ajustements hebdo personnalises",
+            "Acces direct pour accelerer les decisions",
+          ]
+        : [
+            "Pilotage des KPIs et corrections",
+            "Protocoles adaptes a ton quotidien",
+            "Suivi humain, pas un plan generique",
+          ];
+      const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
 
-    if (!isDebut) {
+      if (!isDebut) {
+        return (
+          <div
+            className="rounded-xl border p-6 md:p-8"
+            style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+                    style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
+                  >
+                    {badgeLabel}
+                  </span>
+                  <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+                    {subline}
+                  </span>
+                </div>
+                <h4 className="text-2xl font-bold mb-2" style={{ color: currentTheme.colors.text }}>
+                  {headline}
+                </h4>
+                <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+                  {summaryTrimmed || "Tu as la cartographie. Ce qui manque, c'est l'execution avec feedback et ajustements continus."}
+                </p>
+              </div>
+              {promoCode && (
+                <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
+                  {promoCode}
+                </span>
+              )}
+            </div>
+
+            {renderOffersTable(deductionAmount)}
+
+            <div
+              className="mt-6 p-4 rounded-lg"
+              style={{
+                background: withAlpha(primary, 0.08),
+                border: `1px solid ${primaryBorder}`
+              }}
+            >
+              <p className="text-sm font-medium" style={{ color: primary }}>
+                Deduction 100% du scan sur le coaching
+              </p>
+              <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
+                {promoCode ? `Code promo : ${promoCode}.` : "Code promo disponible apres validation."} Pour toute question, ecris-moi.
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+              <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
+              <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div
           className="rounded-xl border p-6 md:p-8"
-          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+          style={{
+            background: `linear-gradient(135deg, ${primary}12 0%, ${currentTheme.colors.surface} 100%)`,
+            borderColor: primaryBorder
+          }}
         >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-3 mb-2">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <span
                   className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
                   style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
@@ -603,12 +688,14 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
                   {subline}
                 </span>
               </div>
-              <h4 className="text-2xl font-bold mb-2" style={{ color: currentTheme.colors.text }}>
+              <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
                 {headline}
               </h4>
-              <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-                {summaryTrimmed || "Tu as la cartographie. Ce qui manque, c'est l'execution avec feedback et ajustements continus."}
-              </p>
+              {summaryTrimmed && (
+                <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+                  {summaryTrimmed}
+                </p>
+              )}
             </div>
             {promoCode && (
               <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
@@ -617,91 +704,41 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
             )}
           </div>
 
-          {renderOffersTable(deductionAmount)}
-
-          <div
-            className="mt-6 p-4 rounded-lg"
-            style={{
-              background: withAlpha(primary, 0.08),
-              border: `1px solid ${primaryBorder}`
-            }}
-          >
-            <p className="text-sm font-medium" style={{ color: primary }}>
-              Deduction 100% du scan sur le coaching
-            </p>
-            <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
-              {promoCode ? `Code promo : ${promoCode}.` : "Code promo disponible apres validation."} Pour toute question, ecris-moi.
-            </p>
+          <div className="grid sm:grid-cols-2 gap-3 mb-6">
+            {bulletsToRender.map((bullet, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                <span style={{ color: primary }}>-</span>
+                <span>{bullet}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+          {renderOffersTable(deductionAmount)}
+
+          {bonusLine && (
+            <div className="text-xs uppercase tracking-widest mb-4" style={{ color: primary }}>
+              {bonusLine}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
             <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
             <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
           </div>
         </div>
       );
+    } catch (err) {
+      console.error("[Anabolic CTA] Render error:", err);
+      const fallbackText = normalizeNarrativeText(text);
+      return (
+        <div
+          className="rounded-xl border p-6 md:p-8 text-sm whitespace-pre-wrap"
+          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border, color: currentTheme.colors.text }}
+        >
+          {fallbackText || "CTA indisponible pour le moment."}
+        </div>
+      );
     }
-
-    return (
-      <div
-        className="rounded-xl border p-6 md:p-8"
-        style={{
-          background: `linear-gradient(135deg, ${primary}12 0%, ${currentTheme.colors.surface} 100%)`,
-          borderColor: primaryBorder
-        }}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <span
-                className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
-                style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
-              >
-                {badgeLabel}
-              </span>
-              <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
-                {subline}
-              </span>
-            </div>
-            <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
-              {headline}
-            </h4>
-            {summaryTrimmed && (
-              <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-                {summaryTrimmed}
-              </p>
-            )}
-          </div>
-          {promoCode && (
-            <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
-              {promoCode}
-            </span>
-          )}
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-3 mb-6">
-          {bulletsToRender.map((bullet, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-              <span style={{ color: primary }}>-</span>
-              <span>{bullet}</span>
-            </div>
-          ))}
-        </div>
-
-        {renderOffersTable(deductionAmount)}
-
-        {bonusLine && (
-          <div className="text-xs uppercase tracking-widest mb-4" style={{ color: primary }}>
-            {bonusLine}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
-          <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
-          <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
-        </div>
-      </div>
-    );
   };
 
   const displayName = formatName(clientName);
@@ -880,6 +917,11 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
     }
   };
 
+  const sanitizedGenerationSection =
+    auditType && auditType !== "ELITE" && /photo|postur/i.test(generationSection)
+      ? "Analyse de ton profil..."
+      : generationSection;
+
   // Loading state
   if (loading) {
     return (
@@ -889,7 +931,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
           <p className="font-semibold mb-2">Preparation du rapport Anabolic...</p>
           {generationStatus && (
             <>
-              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>{generationSection || 'Analyse en cours'}</p>
+              <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>{sanitizedGenerationSection || 'Analyse en cours'}</p>
               <div className="mt-4 h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: currentTheme.colors.surface }}>
                 <div
                   className="h-full transition-all duration-300"
