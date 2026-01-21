@@ -76,15 +76,19 @@ const IHERB_DOMAIN = "fr.iherb.com";
 
 const normalizeIherbLinks = (html: string): string => {
   if (!html || !html.includes("iherb.com")) return html;
-  return html.replace(/href="(https?:\/\/[^"]*iherb\.com[^"]*)"/gi, (_match, url) => {
+
+  const normalizeUrl = (url: string) => {
     let updated = url.replace(/https?:\/\/[^/]*iherb\.com\//i, `https://${IHERB_DOMAIN}/`);
     if (/rcode=/i.test(updated)) {
-      updated = updated.replace(/rcode=[^&"]*/i, `rcode=${IHERB_AFFILIATE_CODE}`);
+      updated = updated.replace(/rcode=[^&\"']*/i, `rcode=${IHERB_AFFILIATE_CODE}`);
     } else {
       updated += `${updated.includes("?") ? "&" : "?"}rcode=${IHERB_AFFILIATE_CODE}`;
     }
-    return `href="${updated}"`;
-  });
+    return updated;
+  };
+
+  const urlPattern = /https?:\/\/[^\s"'<>]*iherb\.com[^\s"'<>]*/gi;
+  return html.replace(urlPattern, (match) => normalizeUrl(match));
 };
 
 // Types
@@ -1217,7 +1221,8 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
       return renderReviewSection();
     }
 
-    const sectionHtml = typeof section.content === 'string' ? section.content : toHtml(section.content);
+    const rawSectionHtml = typeof section.content === 'string' ? section.content : toHtml(section.content);
+    const sectionHtml = normalizeIherbLinks(rawSectionHtml);
 
     return (
       <div
