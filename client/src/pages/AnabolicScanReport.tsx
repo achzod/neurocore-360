@@ -79,6 +79,22 @@ const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const IHERB_AFFILIATE_CODE = "KAN0746";
+const IHERB_DOMAIN = "fr.iherb.com";
+
+const normalizeIherbLinks = (html: string): string => {
+  if (!html || !html.includes("iherb.com")) return html;
+  return html.replace(/href="(https?:\/\/[^"]*iherb\.com[^"]*)"/gi, (_match, url) => {
+    let updated = url.replace(/https?:\/\/[^/]*iherb\.com\//i, `https://${IHERB_DOMAIN}/`);
+    if (/rcode=/i.test(updated)) {
+      updated = updated.replace(/rcode=[^&"]*/i, `rcode=${IHERB_AFFILIATE_CODE}`);
+    } else {
+      updated += `${updated.includes("?") ? "&" : "?"}rcode=${IHERB_AFFILIATE_CODE}`;
+    }
+    return `href="${updated}"`;
+  });
+};
+
 const normalizeTextInput = (value?: unknown): string => {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -1053,9 +1069,12 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
     }
 
     if (section.id === 'supplements') {
+      const supplementsHtml = report.supplementsHtml
+        ? normalizeIherbLinks(report.supplementsHtml)
+        : "";
       return (
         <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-          {report.supplementsHtml && (
+          {supplementsHtml && (
             <div
               className={`mb-8 prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}
               style={{
@@ -1065,7 +1084,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
                 '--tw-prose-strong': currentTheme.colors.text,
                 '--tw-prose-bullets': currentTheme.colors.primary
               } as React.CSSProperties}
-              dangerouslySetInnerHTML={{ __html: report.supplementsHtml }}
+              dangerouslySetInnerHTML={{ __html: supplementsHtml }}
             />
           )}
 
