@@ -746,22 +746,28 @@ import { normalizeSingleVoice } from "./textNormalization";
 const INGREDIENT_TO_IHERB_KEY: Record<string, string> = {
   "magnesium_bisglycinate": "magnesium_bisglycinate",
   "magnesium": "magnesium_bisglycinate",
+  "magnesium_glycinate": "magnesium_bisglycinate",
+  "magnesium_taurate_glycinate": "magnesium_bisglycinate",
   "glycine": "glycine",
+  "omega_3_epa_dha": "omega3_epa_dha",
   "omega3_epa_dha": "omega3_epa_dha",
   "omega3": "omega3_epa_dha",
   "vitamin_d3": "vitamin_d3",
   "vitamine_d": "vitamin_d3",
   "ashwagandha": "ashwagandha",
+  "ashwagandha_ksm_66": "ashwagandha",
   "l_theanine": "l_theanine",
   "theanine": "l_theanine",
   "creatine_monohydrate": "creatine_monohydrate",
   "creatine": "creatine_monohydrate",
   "zinc": "zinc",
   "tongkat_ali": "tongkat_ali",
+  "tongkat_ali_lj100": "tongkat_ali",
   "mucuna_pruriens": "mucuna_pruriens",
   "apigenine": "apigenine",
   "acetyl_l_carnitine": "acetyl_l_carnitine",
   "coq10": "coq10",
+  "coq10_ubiquinol": "coq10",
   "b_complex": "b_complex",
 };
 
@@ -809,6 +815,15 @@ function extractMatchTokens(value: string): string[] {
       return /\d/.test(token) && token.length >= 2;
     });
   return Array.from(new Set(tokens));
+}
+
+function normalizeIngredientKey(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 function buildMatchTokens(ingredientLabel: string, ingredientKey: string): string[] {
@@ -1156,7 +1171,7 @@ export async function generateEnhancedSupplementsHTML(input: {
 
   // Generate supplement sections
   const supplementSections = (await Promise.all(picked.slice(0, 6).map(async (supp, idx) => {
-    const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
+    const ingredientKey = normalizeIngredientKey(supp.ingredient || "");
     const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
     const products = IHERB_PRODUCTS[iherbKey] || [];
     const explanation = HUMAN_EXPLANATIONS[iherbKey];
@@ -1370,7 +1385,7 @@ export function generateSupplementsSectionText(input: {
   }
 
   picked.slice(0, 6).forEach((supp) => {
-    const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
+    const ingredientKey = normalizeIngredientKey(supp.ingredient || "");
     const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
     const explanation = HUMAN_EXPLANATIONS[iherbKey];
 
