@@ -413,8 +413,8 @@ export async function sendReportReadyEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Ton ${planLabel} ApexLabs est pret ! Consulte ton rapport ici : ${reportLink}`,
-          subject: `Ton ${planLabel} est Pret`,
+          text: `Ton ${planLabel} ApexLabs est pret. Consulte ton rapport ici : ${reportLink}`,
+          subject: `Ton ${planLabel} est pret`,
           from: {
             name: "ApexLabs by Achzod",
             email: SENDER_EMAIL,
@@ -882,9 +882,7 @@ export async function sendPromoCodeEmail(
       </p>
     `;
 
-    const htmlContent = getEmailWrapper(content, config.gradient)
-      .replace("Audit Metabolique", config.title)
-      .replace("15 Domaines d'Analyse", config.subtitle);
+    const htmlContent = getEmailWrapper(content, config.gradient, config.title, config.subtitle);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -967,7 +965,7 @@ export async function sendAdminReviewNotification(
         email: {
           html: encodeBase64(emailContent),
           text: `Nouvel avis ${rating}/5 pour ${auditType}: "${comment.substring(0, 100)}..." - A valider dans le dashboard admin.`,
-          subject: `[ApexLabs] Nouvel avis ${stars} a valider`,
+          subject: `[ApexLabs] Nouvel avis ${ratingLabel} a valider`,
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
