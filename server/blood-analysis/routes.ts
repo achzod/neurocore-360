@@ -166,5 +166,116 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     }
   });
 
+  /**
+   * POST /api/blood-analysis/purchase
+   * Create Stripe payment intent for Blood Analysis
+   */
+  app.post("/api/blood-analysis/purchase", async (req, res) => {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        res.status(400).json({ error: "userId required" });
+        return;
+      }
+
+      // TODO: Implement Stripe payment
+      res.json({
+        success: true,
+        clientSecret: "pk_test_placeholder",
+        message: "Stripe integration coming soon"
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Purchase error:", error);
+      res.status(500).json({ error: "Erreur lors de l'achat" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/upload
+   * Upload blood test results (manual input for MVP)
+   */
+  app.post("/api/blood-analysis/upload", async (req, res) => {
+    try {
+      const { userId, markers } = req.body as {
+        userId: string;
+        markers: BloodMarkerInput[];
+      };
+
+      if (!userId || !markers) {
+        res.status(400).json({ error: "userId and markers required" });
+        return;
+      }
+
+      // For MVP: Store markers directly (no OCR)
+      // TODO: Implement file upload + OCR
+
+      res.json({
+        success: true,
+        reportId: `temp-${Date.now()}`,
+        message: "Markers saved - proceed to questionnaire"
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Upload error:", error);
+      res.status(500).json({ error: "Erreur lors de l'upload" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/submit
+   * Submit complete blood analysis (markers + questionnaire)
+   */
+  app.post("/api/blood-analysis/submit", async (req, res) => {
+    try {
+      const { userId, markers, profile } = req.body as {
+        userId: string;
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+          objectives?: string;
+          medications?: string;
+        };
+      };
+
+      if (!userId || !markers || !profile) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+      }
+
+      console.log(`[BloodAnalysis] Processing submission for user ${userId}`);
+
+      // Run analysis
+      const analysisResult = await analyzeBloodwork(markers, profile);
+
+      // Get knowledge context
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        analysisResult.markers,
+        analysisResult.patterns
+      );
+
+      // Generate AI report
+      const aiAnalysis = await generateAIBloodAnalysis(
+        analysisResult,
+        profile,
+        knowledgeContext
+      );
+
+      // TODO: Save to database
+      // TODO: Generate PDF
+      // TODO: Send email
+
+      res.json({
+        success: true,
+        reportId: `report-${Date.now()}`,
+        analysis: analysisResult,
+        aiReport: aiAnalysis
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Submit error:", error);
+      res.status(500).json({ error: "Erreur lors de l'analyse" });
+    }
+  });
+
   console.log("[BloodAnalysis] Routes registered");
 }

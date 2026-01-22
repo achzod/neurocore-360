@@ -50,3 +50,50 @@ export const waitlistSubscribers = pgTable("waitlist_subscribers", {
   sendpulseSynced: timestamp("sendpulse_synced"), // null = not synced yet
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Blood Analysis - Full product
+export const bloodAnalysisReports = pgTable("blood_analysis_reports", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+
+  // Upload files
+  uploadedFiles: jsonb("uploaded_files"), // {name, url, size}[]
+
+  // OCR extraction
+  extractedBiomarkers: jsonb("extracted_biomarkers"), // Record<string, {value, unit}>
+  missingBiomarkers: jsonb("missing_biomarkers"), // string[]
+  ocrConfidence: jsonb("ocr_confidence"), // Record<string, number>
+
+  // Questionnaire
+  questionnaireData: jsonb("questionnaire_data"),
+
+  // Analysis (full JSON from Claude Opus 4.5)
+  analysis: jsonb("analysis"),
+
+  // PDF
+  pdfUrl: text("pdf_url"),
+
+  // Metadata
+  processingStatus: varchar("processing_status", { length: 20 }).notNull().default("pending"), // pending | processing | completed | failed
+  processingError: text("processing_error"),
+  aiModel: varchar("ai_model", { length: 50 }).default("claude-opus-4-5"),
+
+  // Timestamps
+  testDate: timestamp("test_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+
+  // For future comparisons
+  previousReportId: varchar("previous_report_id", { length: 36 }).references((): any => bloodAnalysisReports.id),
+});
+
+// Blood Analysis Purchases (Stripe)
+export const bloodAnalysisPurchases = pgTable("blood_analysis_purchases", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }).unique(),
+  amount: text("amount").notNull(), // "9900" (99.00 EUR in cents)
+  status: varchar("status", { length: 20 }).notNull(), // succeeded | pending | failed
+  reportId: varchar("report_id", { length: 36 }).references(() => bloodAnalysisReports.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
