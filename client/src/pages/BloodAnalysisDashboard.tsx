@@ -3,13 +3,15 @@ import type { ElementType } from "react";
 import { useParams } from "wouter";
 import { Sidebar } from "@/components/ultrahuman/Sidebar";
 import { RadialProgress } from "@/components/ultrahuman/RadialProgress";
-import { MetricsRadar } from "@/components/ultrahuman/Charts";
 import { ULTRAHUMAN_THEMES } from "@/components/ultrahuman/themes";
-import { SectionContent, Theme, Metric } from "@/components/ultrahuman/types";
+import { SectionContent, Theme } from "@/components/ultrahuman/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { StatusIndicator } from "@/components/blood/StatusIndicator";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
+import { BiomarkerTrendChart } from "@/components/blood/BiomarkerTrendChart";
+import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
+import { BloodRadar } from "@/components/blood/BloodRadar";
 import { getBiomarkerStatusColor, normalizeBiomarkerStatus, BiomarkerStatus } from "@/lib/biomarker-colors";
 import { BLOOD_PANELS, getMarkerById } from "@/lib/blood-questionnaire";
 import {
@@ -52,6 +54,7 @@ type RawMarker = {
   normalRange?: string;
   optimalRange?: string;
   interpretation?: string;
+  history?: Array<{ date: string; value: number }>;
 };
 
 type BloodAnalysisReport = {
@@ -166,6 +169,7 @@ export default function BloodAnalysisDashboard() {
         optimalMin: optimal.min,
         optimalMax: optimal.max,
         interpretation: marker.interpretation,
+        history: marker.history,
         panelId: meta?.panel,
         panelTitle: meta ? BLOOD_PANELS.find((p) => p.id === meta.panel)?.title : undefined,
       };
@@ -195,13 +199,12 @@ export default function BloodAnalysisDashboard() {
     return Math.round(total / scored.length);
   }, [panelGroups]);
 
-  const radarMetrics: Metric[] = useMemo(() => {
+  const radarData = useMemo(() => {
     return panelGroups.map((panel) => ({
       key: panel.id,
       label: panel.title,
-      value: Math.round(panel.score / 10),
-      max: 10,
-      description: panel.subtitle,
+      score: panel.score,
+      status: scoreToStatus(panel.score),
     }));
   }, [panelGroups]);
 
@@ -323,7 +326,7 @@ export default function BloodAnalysisDashboard() {
                     <Beaker className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                     <h2 className="text-lg font-semibold">Radar systemique</h2>
                   </div>
-                  <MetricsRadar data={radarMetrics} color={currentTheme.colors.primary} />
+                  <BloodRadar data={radarData} />
                   <p className="text-xs mt-3" style={{ color: currentTheme.colors.textMuted }}>
                     Vue d'ensemble des 6 panels clefs.
                   </p>
@@ -459,6 +462,16 @@ export default function BloodAnalysisDashboard() {
                                 <StatusBadge status={marker.status} />
                               </div>
 
+                              <GaugeWithRange
+                                value={marker.value}
+                                unit={marker.unit}
+                                status={marker.status}
+                                normalMin={marker.normalMin}
+                                normalMax={marker.normalMax}
+                                optimalMin={marker.optimalMin}
+                                optimalMax={marker.optimalMax}
+                              />
+
                               <BiomarkerRangeIndicator
                                 value={marker.value}
                                 unit={marker.unit}
@@ -468,6 +481,19 @@ export default function BloodAnalysisDashboard() {
                                 optimalMin={marker.optimalMin}
                                 optimalMax={marker.optimalMax}
                               />
+
+                              <div className="mt-3">
+                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Tendance</p>
+                                <BiomarkerTrendChart
+                                  data={marker.history}
+                                  unit={marker.unit}
+                                  status={marker.status}
+                                  normalMin={marker.normalMin}
+                                  normalMax={marker.normalMax}
+                                  optimalMin={marker.optimalMin}
+                                  optimalMax={marker.optimalMax}
+                                />
+                              </div>
 
                               {marker.interpretation && (
                                 <p className="text-sm mt-3" style={{ color: currentTheme.colors.textMuted }}>

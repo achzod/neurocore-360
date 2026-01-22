@@ -23,6 +23,7 @@ import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
 import BloodDashboard from "@/pages/BloodDashboard";
 import BloodAnalysisDashboard from "@/pages/BloodAnalysisDashboard";
+import BloodAnalysisStart from "@/pages/BloodAnalysisStart";
 import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
@@ -62,7 +63,9 @@ function Router() {
       <Route path="/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
       <Route path="/blood-dashboard" component={BloodDashboard} />
+      <Route path="/blood-analysis" component={BloodAnalysisStart} />
       <Route path="/blood-analysis/dashboard/:reportId" component={BloodAnalysisDashboard} />
+      <Route path="/blood-analysis/:reportId" component={BloodAnalysisDashboard} />
       <Route path="/peptides-engine" component={PeptidesEnginePage} />
 
       {/* Offer Pages - New Names */}
