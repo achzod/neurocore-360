@@ -1,10 +1,10 @@
 /**
  * iHerb Product Database with Affiliate Links
  * Code affiliation: KAN0746
- * Format: https://ae.iherb.com/pr/[product-slug]/[product-id]?rcode=KAN0746
+ * Format: https://fr.iherb.com/pr/[product-slug]/[product-id]?rcode=KAN0746
  */
 
-const AFFILIATE_CODE = "KAN0746";
+export const AFFILIATE_CODE = "KAN0746";
 
 export interface IHerbProduct {
   name: string;
@@ -496,7 +496,7 @@ export const IHERB_PRODUCTS: SupplementProducts = {
  * Genere le lien iHerb complet avec code affiliation
  */
 export function getIHerbLink(product: IHerbProduct): string {
-  return `https://ae.iherb.com/pr/${product.slug}/${product.productId}?rcode=${AFFILIATE_CODE}`;
+  return `https://fr.iherb.com/pr/${product.slug}/${product.productId}?rcode=${AFFILIATE_CODE}`;
 }
 
 /**

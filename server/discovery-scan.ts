@@ -296,6 +296,21 @@ function normalizeParagraphs(text: string): string {
   return paragraphs.join("\n\n");
 }
 
+function stripCitationLines(text: string): string {
+  if (!text) return text;
+  const lines = text.split("\n");
+  const cleaned = lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return true;
+    if (/^(sources?|references?|références?)\s*[:\-]/i.test(trimmed)) return false;
+    if (/\bpmid\b/i.test(trimmed)) return false;
+    if (/\bdoi\b/i.test(trimmed)) return false;
+    if (/pubmed/i.test(trimmed)) return false;
+    return true;
+  });
+  return cleaned.join("\n").trim();
+}
+
 function formatFirstName(raw: string): string {
   const cleaned = raw.trim().replace(/[^a-zA-ZÀ-ÿ' -]/g, "");
   if (!cleaned) return "toi";
@@ -1248,6 +1263,7 @@ FORMAT OBLIGATOIRE:
         rawText = stripEnglishLines(rawText);
       }
       rawText = normalizeSingleVoice(rawText);
+      rawText = stripCitationLines(rawText);
       rawText = normalizeParagraphs(rawText);
       rawText = normalizeParagraphs(rawText);
 
@@ -1317,6 +1333,7 @@ FORMAT OBLIGATOIRE:
         cleanedText = stripEnglishLines(cleanedText);
       }
       cleanedText = normalizeSingleVoice(cleanedText);
+      cleanedText = stripCitationLines(cleanedText);
       cleanedText = normalizeParagraphs(cleanedText);
       const validation = isValidContent(cleanedText);
       if (validation.charCount > bestValidation.charCount) {
@@ -1714,6 +1731,7 @@ RAPPELS CRITIQUES:
       }
 
       rawText = normalizeSingleVoice(rawText);
+      rawText = stripCitationLines(rawText);
       rawText = ensureSynthesisLength(rawText, responses, scores, blocages);
       return cleanMarkdownToHTML(rawText);
     }
@@ -1744,6 +1762,7 @@ RAPPELS CRITIQUES:
             cleaned = stripEnglishLines(cleaned);
           }
           cleaned = normalizeSingleVoice(cleaned);
+          cleaned = stripCitationLines(cleaned);
           cleaned = ensureSynthesisLength(cleaned, responses, scores, blocages);
           return cleanMarkdownToHTML(cleaned);
         }
@@ -2170,7 +2189,7 @@ export async function convertToNarrativeReport(
   </div>
 
   <a href="https://www.achzodcoaching.com/formules-coaching" target="_blank" class="mt-4 block w-full py-3 rounded-lg text-center font-bold transition-all hover:opacity-90" style="background: var(--color-primary); color: var(--color-on-primary);">
-    Voir toutes les formules
+    <span style="color: var(--color-on-primary);">Voir toutes les formules</span>
   </a>
 </div>`,
     chips: ["-20% Coaching", "Code Promo", "Avis"]

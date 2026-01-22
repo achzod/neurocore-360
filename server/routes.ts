@@ -1,10 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
+import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
-import { generateFullAnalysis } from "./analysisEngine";
+import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
   sendMagicLinkEmail,
@@ -123,6 +124,81 @@ export async function registerRoutes(
       .slice(0, maxLen);
   }
 
+  const PHOTO_FIELD_KEYS = PHOTO_FIELD_VARIANTS.flat();
+  const isInlineImage = (value: unknown): value is string =>
+    typeof value === "string" && value.startsWith("data:image");
+
+  function sanitizeAuditPayload(audit: any): any {
+    if (!audit) return audit;
+    const sanitized = { ...audit };
+
+    if (sanitized.responses && typeof sanitized.responses === "object") {
+      const responses = { ...sanitized.responses };
+      for (const key of PHOTO_FIELD_KEYS) {
+        if (isInlineImage((responses as any)[key])) {
+          delete (responses as any)[key];
+        }
+      }
+      sanitized.responses = responses;
+    }
+
+    for (const key of PHOTO_FIELD_KEYS) {
+      if (isInlineImage((sanitized as any)[key])) {
+        delete (sanitized as any)[key];
+      }
+    }
+
+    if (Array.isArray(sanitized.photos)) {
+      delete sanitized.photos;
+    }
+
+    delete sanitized.narrativeReport;
+    delete sanitized.reportTxt;
+    delete sanitized.reportHtml;
+
+    return sanitized;
+  }
+
+  const parseResponsesRecord = (value: unknown): Record<string, unknown> | null => {
+    if (!value) return null;
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === "object" && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+    return null;
+  };
+
+  const mergeResponses = (
+    primary: Record<string, unknown>,
+    fallback: Record<string, unknown> | null
+  ): Record<string, unknown> => {
+    if (!fallback) return primary;
+    return { ...fallback, ...primary };
+  };
+
+  const ensureAuditScores = (
+    rawScores: unknown,
+    rawResponses: unknown
+  ): Record<string, number> => {
+    const scores =
+      rawScores && typeof rawScores === "object" && !Array.isArray(rawScores)
+        ? (rawScores as Record<string, number>)
+        : null;
+    const hasGlobal = scores && Number.isFinite(scores.global);
+    if (scores && hasGlobal && Object.keys(scores).length >= 3) {
+      return scores;
+    }
+    const responses = parseResponsesRecord(rawResponses) || {};
+    return calculateScoresFromResponses(responses);
+  };
+
   // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY
   function requireAdminAuth(req: any, res: any): boolean {
     const adminKey = req.headers["x-admin-key"] || req.query.key || req.body?.adminKey;
@@ -148,12 +224,43 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/questionnaire/clear-progress", async (req, res) => {
+    try {
+      const schema = z.object({ email: z.string().email() });
+      const { email } = schema.parse(req.body);
+      await storage.deleteProgress(email);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[Progress] Error clearing:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.get("/api/questionnaire/progress/:email", async (req, res) => {
     try {
-      const progress = await storage.getProgress(req.params.email);
+      const email = req.params.email;
+      const progress = await storage.getProgress(email);
       if (!progress) {
         res.status(404).json({ error: "Aucune progression trouvée" });
         return;
+      }
+      // Evite de recharger une progression plus ancienne qu'un audit deja termine.
+      try {
+        const audits = await storage.getAuditsByEmail(email);
+        const latestAudit = audits[0];
+        const progressTimestamp = progress.lastActivityAt ? new Date(progress.lastActivityAt).getTime() : 0;
+        const latestAuditTimestamp = latestAudit?.createdAt
+          ? new Date(latestAudit.createdAt).getTime()
+          : latestAudit?.completedAt
+          ? new Date(latestAudit.completedAt).getTime()
+          : 0;
+        if (latestAuditTimestamp && progressTimestamp && latestAuditTimestamp > progressTimestamp) {
+          await storage.deleteProgress(email);
+          res.status(404).json({ error: "Aucune progression trouvée" });
+          return;
+        }
+      } catch (err) {
+        console.warn("[Questionnaire] Unable to compare audit/progress freshness:", err);
       }
       res.json(progress);
     } catch (error) {
@@ -247,20 +354,30 @@ export async function registerRoutes(
     try {
       const data = createAuditBodySchema.parse(req.body);
       if (data.type === "GRATUIT") {
+        const progress = await storage.getProgress(data.email);
+        const progressResponses = parseResponsesRecord(progress?.responses);
+        const mergedResponses = mergeResponses(data.responses, progressResponses);
         const audit = await storage.createAudit({
           userId: "",
           type: data.type,
           email: data.email,
-          responses: data.responses,
+          responses: mergedResponses,
         });
+
+        // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
+        try {
+          await storage.deleteProgress(data.email);
+        } catch (err) {
+          console.warn("[Questionnaire] Unable to clear progress after audit creation:", err);
+        }
 
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
         res.json(audit);
 
         (async () => {
           try {
-            const result = await analyzeDiscoveryScan(data.responses as any);
-            const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
+            const result = await analyzeDiscoveryScan(mergedResponses as any);
+            const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
 
             await storage.updateAudit(audit.id, {
               narrativeReport,
@@ -271,7 +388,7 @@ export async function registerRoutes(
             const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
             if (emailSent) {
               await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-              const clientName = (data.responses as any)?.prenom || data.email.split("@")[0];
+              const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
               await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
             }
           } catch (error) {
@@ -293,6 +410,13 @@ export async function registerRoutes(
         email: data.email,
         responses: data.responses,
       });
+
+      // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
+      try {
+        await storage.deleteProgress(data.email);
+      } catch (err) {
+        console.warn("[Questionnaire] Unable to clear progress after audit creation:", err);
+      }
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, audit.type);
@@ -395,7 +519,8 @@ export async function registerRoutes(
         return;
       }
       const audits = await storage.getAuditsByEmail(email);
-      res.json(audits);
+      const light = req.query.light === "1";
+      res.json(light ? audits.map(sanitizeAuditPayload) : audits);
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -408,7 +533,8 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
-      res.json(audit);
+      const light = req.query.light === "1";
+      res.json(light ? sanitizeAuditPayload(audit) : audit);
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -455,6 +581,26 @@ export async function registerRoutes(
   app.get("/api/audits/:id/narrative-status", async (req, res) => {
     try {
       const job = await getJobStatus(req.params.id);
+      const jobReferenceTime = job?.lastProgressAt
+        ? new Date(job.lastProgressAt).getTime()
+        : job?.startedAt
+        ? new Date(job.startedAt).getTime()
+        : 0;
+      const isJobStale =
+        job &&
+        (job.status === "pending" || job.status === "generating") &&
+        jobReferenceTime > 0 &&
+        Date.now() - jobReferenceTime > 15 * 60 * 1000;
+
+      if (isJobStale) {
+        console.warn(`[Narrative] Job stale for audit ${req.params.id}, relance generation.`);
+        await forceRegenerate(req.params.id);
+        await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
+        await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
+        processReportAndSendEmail(req.params.id, audit.email, audit.type);
+        res.status(202).json({ message: "Rapport relance", status: "generating", progress: 0 });
+        return;
+      }
       if (!job) {
         res.json({ status: "not_started", progress: 0, currentSection: "" });
         return;
@@ -567,7 +713,7 @@ export async function registerRoutes(
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
-          const auditScores = audit.scores || {};
+          const auditScores = ensureAuditScores(audit.scores, audit.responses);
           const globalScore =
             typeof auditScores.global === "number"
               ? auditScores.global
@@ -579,7 +725,7 @@ export async function registerRoutes(
             responses: (audit.responses as any) || {},
             globalScore,
           });
-          const supplementsHtml = generateEnhancedSupplementsHTML({
+          const supplementsHtml = await generateEnhancedSupplementsHTML({
             responses: (audit.responses as any) || {},
             globalScore,
             firstName,
@@ -1512,7 +1658,7 @@ export async function registerRoutes(
           return;
         }
         const photos = extractPhotosFromAudit(audit);
-        html = generateExportHTML(narrativeReport, auditId, photos);
+        html = await generateExportHTML(narrativeReport, auditId, photos);
       }
       
       if (!html || html.length < 500) {
@@ -1885,7 +2031,35 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "Données invalides", details: error.errors });
       } else {
         console.error("[Review] Error:", error);
-        res.status(500).json({ success: false, error: "Erreur serveur" });
+        const debug = req.query.debug === "1";
+        const err = error as any;
+        let columns: string[] | null = null;
+        if (debug) {
+          try {
+            const result = await pool.query(
+              `SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews' ORDER BY column_name`
+            );
+            columns = (result.rows || []).map((row: any) => row.column_name);
+          } catch {
+            columns = null;
+          }
+        }
+        res.status(500).json({
+          success: false,
+          error: "Erreur serveur",
+          ...(debug
+            ? {
+                debug: {
+                  code: err?.code || null,
+                  column: err?.column || null,
+                  table: err?.table || null,
+                  constraint: err?.constraint || null,
+                  detail: err?.detail || null,
+                  columns,
+                },
+              }
+            : {}),
+        });
       }
     }
   });
@@ -2713,8 +2887,13 @@ export async function registerRoutes(
         return;
       }
 
-      // If a regeneration is in progress, avoid serving stale reports
-      if (audit.reportDeliveryStatus === "GENERATING") {
+      const generationStart = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
+      const generationAgeMs = generationStart ? Date.now() - generationStart : 0;
+      const isGenerating = audit.reportDeliveryStatus === "GENERATING";
+      const isStaleGeneration = isGenerating && generationAgeMs > 12 * 60 * 1000;
+
+      // If a regeneration is in progress, avoid serving stale reports (unless stale).
+      if (isGenerating && !isStaleGeneration) {
         res.status(202).json({
           success: true,
           status: "generating",
@@ -2742,7 +2921,7 @@ export async function registerRoutes(
 
       // No report stored -> trigger a fresh generation in background
       // to avoid users getting stuck on "Analyse en cours".
-      const shouldRegenerate = audit.reportDeliveryStatus !== "GENERATING";
+      const shouldRegenerate = !isGenerating || isStaleGeneration;
       if (shouldRegenerate) {
         await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       }

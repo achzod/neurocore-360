@@ -8,6 +8,7 @@ type ReportErrorBoundaryProps = {
 
 type ReportErrorBoundaryState = {
   hasError: boolean;
+  errorMessage?: string;
 };
 
 export class ReportErrorBoundary extends React.Component<
@@ -16,8 +17,8 @@ export class ReportErrorBoundary extends React.Component<
 > {
   state: ReportErrorBoundaryState = { hasError: false };
 
-  static getDerivedStateFromError(): ReportErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): ReportErrorBoundaryState {
+    return { hasError: true, errorMessage: error?.message || "Erreur inconnue" };
   }
 
   componentDidCatch(error: Error) {
@@ -45,6 +46,17 @@ export class ReportErrorBoundary extends React.Component<
               {this.props.message ||
                 "Le rapport a rencontré une erreur d'affichage. Je relance la génération si besoin."}
             </p>
+            {this.state.errorMessage && (
+              <div
+                className="text-[11px] font-mono rounded px-3 py-2"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  color: "var(--color-text-muted, #9ca3af)"
+                }}
+              >
+                {this.state.errorMessage}
+              </div>
+            )}
             <button
               onClick={this.handleRetry}
               className="px-4 py-2 rounded font-semibold"

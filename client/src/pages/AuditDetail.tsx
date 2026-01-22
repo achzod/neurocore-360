@@ -522,7 +522,7 @@ export default function AuditDetail() {
 
     const fetchData = async () => {
       try {
-        const auditRes = await fetch(`/api/audits/${auditId}`);
+        const auditRes = await fetch(`/api/audits/${auditId}?light=1`);
         if (!auditRes.ok) {
           setLoading(false);
           return;

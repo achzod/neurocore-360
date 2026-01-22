@@ -71,8 +71,21 @@ export default function AdminReviews() {
         headers: { "x-admin-key": adminKey },
       });
       const data = await response.json();
+      if (response.status === 401) {
+        sessionStorage.removeItem("admin_auth");
+        sessionStorage.removeItem("admin_key");
+        toast({
+          title: "Clé admin invalide",
+          description: "Reconnecte-toi avec la bonne clé.",
+          variant: "destructive",
+        });
+        navigate("/admin");
+        return;
+      }
       if (data.success) {
         setReviews(data.reviews);
+      } else {
+        throw new Error(data?.error || "Acces admin refuse");
       }
     } catch (error) {
       toast({

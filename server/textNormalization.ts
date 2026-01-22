@@ -84,6 +84,7 @@ export function normalizeSingleVoice(text: string): string {
     .replace(/\bnotre\b/gi, (match) => (match[0] === "N" ? "Mon" : "mon"))
     .replace(/\bnos\b/gi, (match) => (match[0] === "N" ? "Mes" : "mes"))
     .replace(/\bon\b/gi, (match) => (match[0] === "O" ? "Je" : "je"))
+    .replace(/\bje ne peux pas\b/gi, "je n'ai pas les elements pour")
     .replace(/\bJe\s+([aeiouh])/g, "J'$1")
     .replace(/\bje\s+([aeiouh])/g, "j'$1");
   normalized = replaceEnglishArtifacts(normalized);

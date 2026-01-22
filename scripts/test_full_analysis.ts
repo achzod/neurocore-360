@@ -80,7 +80,7 @@ async function testFullAnalysis() {
     `data:image/jpeg;base64,${photos.side}`
   ];
 
-  const html = generateExportHTMLFromTxt(auditTxt, 'TEST-HOMME-1', photoUrls);
+  const html = await generateExportHTMLFromTxt(auditTxt, 'TEST-HOMME-1', photoUrls);
 
   const htmlPath = 'audit_test_photos.html';
   fs.writeFileSync(htmlPath, html);
@@ -93,4 +93,3 @@ testFullAnalysis().catch(err => {
   console.error("❌ Erreur:", err);
   process.exit(1);
 });
-

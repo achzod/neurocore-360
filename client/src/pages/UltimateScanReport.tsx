@@ -37,9 +37,10 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
-const formatName = (value?: string) => {
-  if (!value) return "Profil";
-  return value
+const formatName = (value?: unknown) => {
+  const safeValue = value === null || value === undefined ? "" : String(value);
+  if (!safeValue) return "Profil";
+  return safeValue
     .trim()
     .split(/\s+/)
     .map(part => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
@@ -69,6 +70,26 @@ const getMetricStatus = (value: number) => {
 };
 
 const hasHtml = (value: string) => /<\s*[a-z][\s\S]*>/i.test(value);
+
+const IHERB_AFFILIATE_CODE = "KAN0746";
+const IHERB_DOMAIN = "fr.iherb.com";
+
+const normalizeIherbLinks = (html: string): string => {
+  if (!html || !html.includes("iherb.com")) return html;
+
+  const normalizeUrl = (url: string) => {
+    let updated = url.replace(/https?:\/\/[^/]*iherb\.com\//i, `https://${IHERB_DOMAIN}/`);
+    if (/rcode=/i.test(updated)) {
+      updated = updated.replace(/rcode=[^&\"']*/i, `rcode=${IHERB_AFFILIATE_CODE}`);
+    } else {
+      updated += `${updated.includes("?") ? "&" : "?"}rcode=${IHERB_AFFILIATE_CODE}`;
+    }
+    return updated;
+  };
+
+  const urlPattern = /https?:\/\/[^\s"'<>]*iherb\.com[^\s"'<>]*/gi;
+  return html.replace(urlPattern, (match) => normalizeUrl(match));
+};
 
 // Types
 interface SupplementProtocol {
@@ -155,8 +176,29 @@ const normalizeTextInput = (value?: unknown): string => {
   return String(value);
 };
 
-const parseCtaText = (text?: string) => {
-  const safeText = normalizeTextInput(text);
+const stripCitationLines = (text: string): string => {
+  if (!text) return text;
+  return text
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      if (/^(sources?|references?|références?)\s*[:\-]/i.test(trimmed)) return false;
+      if (/\bpmid\b/i.test(trimmed)) return false;
+      if (/\bdoi\b/i.test(trimmed)) return false;
+      if (/pubmed/i.test(trimmed)) return false;
+      return true;
+    })
+    .join("\n");
+};
+
+const normalizeNarrativeText = (value?: unknown): string => {
+  const normalized = normalizeTextInput(value);
+  return stripCitationLines(normalized);
+};
+
+const parseCtaText = (text?: unknown) => {
+  const safeText = normalizeNarrativeText(text);
   if (!safeText) {
     return { paragraphs: [] as string[], bullets: [] as string[], promoLine: "", bonusLine: "", emailLine: "", siteLine: "" };
   }
@@ -192,8 +234,11 @@ const parseCtaText = (text?: string) => {
 
 const isAnalysisSection = (section: NarrativeSection): boolean => /analyse/i.test(section.title);
 
-const UltimateScanReport: React.FC = () => {
-  const { auditId } = useParams();
+type UltimateScanReportProps = {
+  auditId?: string;
+};
+
+const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId }) => {
   const [report, setReport] = useState<NarrativeReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -276,7 +321,7 @@ const UltimateScanReport: React.FC = () => {
       }
 
       try {
-        const auditRes = await fetch(`/api/audits/${auditId}`);
+        const auditRes = await fetch(`/api/audits/${auditId}?light=1`);
         if (!auditRes.ok) {
           setError('Audit non trouve');
           setLoading(false);
@@ -350,14 +395,14 @@ const UltimateScanReport: React.FC = () => {
   };
 
   const buildSectionHtml = (section: NarrativeSection) => {
-    const intro = normalizeTextInput(section.introduction).trim();
+    const intro = normalizeNarrativeText(section.introduction).trim();
     const blocks = [
       { label: "Analyse", text: intro },
-      { label: "Ce qui bloque", text: normalizeTextInput(section.whatIsWrong) },
-      { label: "Analyse personnalisee", text: normalizeTextInput(section.personalizedAnalysis) },
-      { label: "Recommandations", text: normalizeTextInput(section.recommendations) },
-      { label: "Plan d'action", text: normalizeTextInput(section.actionPlan) },
-      { label: "Science", text: normalizeTextInput(section.scienceDeepDive) },
+      { label: "Ce qui bloque", text: normalizeNarrativeText(section.whatIsWrong) },
+      { label: "Analyse personnalisee", text: normalizeNarrativeText(section.personalizedAnalysis) },
+      { label: "Recommandations", text: normalizeNarrativeText(section.recommendations) },
+      { label: "Plan d'action", text: normalizeNarrativeText(section.actionPlan) },
+      { label: "Science", text: normalizeNarrativeText(section.scienceDeepDive) },
     ].filter((block) => block.text && block.text.trim().length > 0);
 
     if (intro && hasHtml(intro) && blocks.length === 1) {
@@ -370,12 +415,41 @@ const UltimateScanReport: React.FC = () => {
   };
 
   const safeSections = Array.isArray(report?.sections) ? report.sections : [];
+  const normalizedSections = safeSections
+    .filter((section): section is NarrativeSection => Boolean(section && typeof section === "object"))
+    .map((section, idx) => {
+      const id = normalizeTextInput(section.id) || `section-${idx + 1}`;
+      const title = normalizeTextInput(section.title) || `Section ${idx + 1}`;
+      const scoreValue = typeof section.score === "number" ? section.score : Number(section.score);
+      const score = Number.isFinite(scoreValue) ? scoreValue : 0;
+      return {
+        ...section,
+        id,
+        title,
+        score
+      };
+    });
   const safeSupplementStack = Array.isArray(report?.supplementStack) ? report.supplementStack : [];
   const safeRadarMetrics = Array.isArray(report?.radarMetrics) ? report.radarMetrics : [];
+  const normalizedRadarMetrics = safeRadarMetrics
+    .filter((metric): metric is Metric => Boolean(metric && typeof metric === "object"))
+    .map((metric, idx) => {
+      const rawValue = typeof metric.value === "number" ? metric.value : Number(metric.value);
+      const rawMax = typeof metric.max === "number" ? metric.max : Number(metric.max);
+      const label = normalizeTextInput(metric.label) || `Metric ${idx + 1}`;
+      const key = normalizeTextInput(metric.key) || label.toLowerCase().replace(/\s+/g, "-");
+      return {
+        ...metric,
+        label,
+        key,
+        value: Number.isFinite(rawValue) ? rawValue : 0,
+        max: Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 10,
+      };
+    });
 
   const navigationSections = useMemo<SectionContent[]>(() => {
     if (!report) return [];
-    const narrativeSections: SectionContent[] = safeSections.map((section) => {
+    const narrativeSections: SectionContent[] = normalizedSections.map((section) => {
       const scoreLabel = section.score > 0 ? `Score ${Math.round(section.score)}%` : section.level ? section.level.toUpperCase() : "";
       return {
         id: section.id,
@@ -436,7 +510,7 @@ const UltimateScanReport: React.FC = () => {
   }, [navigationSections]);
 
   const displayName = formatName(clientName);
-  const sectionScores = safeSections
+  const sectionScores = normalizedSections
     .map((section) => section.score)
     .filter((score): score is number => Number.isFinite(score));
   const derivedGlobalScore =
@@ -446,7 +520,8 @@ const UltimateScanReport: React.FC = () => {
   const rawGlobalScore = Number.isFinite(report?.global) ? report.global : derivedGlobalScore;
   const globalScore =
     rawGlobalScore <= 10 && derivedGlobalScore >= 20 ? derivedGlobalScore : rawGlobalScore;
-  const globalScore10 = Math.round((globalScore / 10) * 10) / 10;
+  const safeGlobalScore = Number.isFinite(globalScore) ? globalScore : 60;
+  const globalScore10 = Math.round((safeGlobalScore / 10) * 10) / 10;
 
   const primary = currentTheme.colors.primary;
   const primarySoft = withAlpha(primary, 0.12);
@@ -476,8 +551,8 @@ const UltimateScanReport: React.FC = () => {
     return words.length > 1 ? words.slice(0, 2).join(" ") : fallback;
   };
 
-  const analysisSections = safeSections.filter(isAnalysisSection);
-  const radarSections = (analysisSections.length > 0 ? analysisSections : safeSections).slice(0, 8);
+  const analysisSections = normalizedSections.filter(isAnalysisSection);
+  const radarSections = (analysisSections.length > 0 ? analysisSections : normalizedSections).slice(0, 8);
   const resolveRadarLabel = (section: NarrativeSection) => {
     const byId = RADAR_LABELS[section.id];
     if (byId) return byId;
@@ -496,19 +571,19 @@ const UltimateScanReport: React.FC = () => {
     return shortLabelFromTitle(section.title, section.title);
   };
 
-  const metricsData: Metric[] = radarSections.map(s => {
-    const safeScore = s.score > 0 ? s.score : globalScore;
+  const metricsData: Metric[] = radarSections.map((s, idx) => {
+    const safeScore = s.score > 0 ? s.score : safeGlobalScore;
     return {
-      label: resolveRadarLabel(s),
+      label: normalizeTextInput(resolveRadarLabel(s)) || `Metric ${idx + 1}`,
       value: Math.round((safeScore / 10) * 10) / 10,
       max: 10,
-      description: s.title,
-      key: s.id
+      description: normalizeTextInput(s.title) || `Metric ${idx + 1}`,
+      key: normalizeTextInput(s.id) || `metric-${idx + 1}`
     };
   });
 
-  const reportRadar = safeRadarMetrics;
-  const reportRadarLabels = reportRadar.map((m) => (m.label || '').toLowerCase());
+  const reportRadar = normalizedRadarMetrics;
+  const reportRadarLabels = reportRadar.map((m) => normalizeTextInput(m.label).toLowerCase());
   const hasUsableReportRadar =
     reportRadar.length >= 4 && reportRadarLabels.some(label => label && !label.includes('analyse'));
   const radarMetrics = hasUsableReportRadar ? reportRadar : metricsData;
@@ -523,10 +598,14 @@ const UltimateScanReport: React.FC = () => {
   ];
 
   const displayRadarMetrics = (radarMetrics.length ? radarMetrics : fallbackRadarMetrics)
-    .map(metric => {
+    .map((metric, idx) => {
       const rawValue = typeof metric.value === "number" && !Number.isNaN(metric.value) ? metric.value : fallbackMetricValue;
+      const label = normalizeTextInput(metric.label) || `Metric ${idx + 1}`;
+      const key = normalizeTextInput(metric.key) || label.toLowerCase().replace(/\s+/g, "-");
       return {
         ...metric,
+        label,
+        key,
         value: Math.max(1, Math.min(10, rawValue)),
         max: 10,
       };
@@ -733,39 +812,101 @@ const UltimateScanReport: React.FC = () => {
   };
 
   const renderCtaPanel = (text: string, badgeLabel: string, variant: 'debut' | 'fin') => {
-    const { paragraphs, bullets, promoLine, emailLine, siteLine } = parseCtaText(text);
-    const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
-    const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
-    const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
-    const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
-    const summaryTrimmed = summary.length > 380 ? `${summary.slice(0, 380).trim()}...` : summary;
-    const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
-    const isDebut = variant === 'debut';
-    const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
-    const subline = isDebut ? "Deduction 100% du scan" : "Execution + ajustements";
-    const deductionAmount = getDeductionAmount(report?.auditType);
-    const fallbackBullets = isDebut
-      ? [
-          "Deduction 100% du scan si coaching",
-          "Ajustements hebdo personnalises",
-          "Acces direct pour accelerer les decisions",
-        ]
-      : [
-          "Pilotage des KPIs et corrections",
-          "Protocoles adaptes a ton quotidien",
-          "Suivi humain, pas un plan generique",
-        ];
-    const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
+    try {
+      const ctaData = parseCtaText(text);
+      const { paragraphs, bullets, promoLine, bonusLine, emailLine, siteLine } = ctaData;
+      const contactEmail = emailLine.replace(/^email\s*:\s*/i, "").trim() || "coaching@achzodcoaching.com";
+      const contactSite = siteLine.replace(/^site\s*:\s*/i, "").trim() || "achzodcoaching.com";
+      const promoCode = promoLine.match(/[A-Z0-9_-]{6,}/i)?.[0] || "";
+      const summary = paragraphs.join(" ").replace(/\s+/g, " ").trim();
+      const summaryTrimmed = summary.length > 380 ? `${summary.slice(0, 380).trim()}...` : summary;
+      const siteUrl = contactSite.startsWith("http") ? contactSite : `https://${contactSite}`;
+      const isDebut = variant === 'debut';
+      const headline = isDebut ? "Rappel coaching" : "Passe a l'action";
+      const subline = isDebut ? "Deduction 100% du scan" : "Execution + ajustements";
+      const deductionAmount = getDeductionAmount(report?.auditType);
+      const fallbackBullets = isDebut
+        ? [
+            "Deduction 100% du scan si coaching",
+            "Ajustements hebdo personnalises",
+            "Acces direct pour accelerer les decisions",
+          ]
+        : [
+            "Pilotage des KPIs et corrections",
+            "Protocoles adaptes a ton quotidien",
+            "Suivi humain, pas un plan generique",
+          ];
+      const bulletsToRender = bullets.length > 0 ? bullets.slice(0, 6) : fallbackBullets;
 
-    if (!isDebut) {
+      if (!isDebut) {
+        return (
+          <div
+            className="rounded-xl border p-6 md:p-8"
+            style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
+                    style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
+                  >
+                    {badgeLabel}
+                  </span>
+                  <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
+                    {subline}
+                  </span>
+                </div>
+                <h4 className="text-2xl font-bold mb-2" style={{ color: currentTheme.colors.text }}>
+                  {headline}
+                </h4>
+                <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
+                  {summaryTrimmed || "Tu as la cartographie. Ce qui manque, c'est l'execution avec feedback et ajustements continus."}
+                </p>
+              </div>
+              {promoCode && (
+                <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
+                  {promoCode}
+                </span>
+              )}
+            </div>
+
+            {renderOffersTable(deductionAmount)}
+
+            <div
+              className="mt-6 p-4 rounded-lg"
+              style={{
+                background: withAlpha(primary, 0.08),
+                border: `1px solid ${primaryBorder}`
+              }}
+            >
+              <p className="text-sm font-medium" style={{ color: primary }}>
+                Deduction 100% du scan sur le coaching
+              </p>
+              <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
+                {promoCode ? `Code promo : ${promoCode}.` : "Code promo disponible apres validation."} Pour toute question, ecris-moi.
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+              <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
+              <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div
           className="rounded-xl border p-6 md:p-8"
-          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+          style={{
+            background: `linear-gradient(135deg, ${primary}12 0%, ${currentTheme.colors.surface} 100%)`,
+            borderColor: primaryBorder
+          }}
         >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-3 mb-2">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <span
                   className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
                   style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
@@ -776,11 +917,11 @@ const UltimateScanReport: React.FC = () => {
                   {subline}
                 </span>
               </div>
-              <h4 className="text-2xl font-bold mb-2" style={{ color: currentTheme.colors.text }}>
+              <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
                 {headline}
               </h4>
               <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-                {summaryTrimmed || "Tu as la cartographie. Ce qui manque, c'est l'execution avec feedback et ajustements continus."}
+                {summaryTrimmed || "Tu as la cartographie. Maintenant, il faut executer avec methode."}
               </p>
             </div>
             {promoCode && (
@@ -790,88 +931,46 @@ const UltimateScanReport: React.FC = () => {
             )}
           </div>
 
-          {renderOffersTable(deductionAmount)}
-
-          <div
-            className="mt-6 p-4 rounded-lg"
-            style={{
-              background: withAlpha(primary, 0.08),
-              border: `1px solid ${primaryBorder}`
-            }}
-          >
-            <p className="text-sm font-medium" style={{ color: primary }}>
-              Deduction 100% du scan sur le coaching
-            </p>
-            <p className="text-xs mt-1" style={{ color: currentTheme.colors.textMuted }}>
-              {promoCode ? `Code promo : ${promoCode}.` : "Code promo disponible apres validation."} Pour toute question, ecris-moi.
-            </p>
+          <div className="grid sm:grid-cols-2 gap-3 mb-6">
+            {bulletsToRender.map((bullet, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                <span style={{ color: primary }}>-</span>
+                <span>{bullet}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
+          {renderOffersTable(deductionAmount)}
+
+          {bonusLine && (
+            <div className="text-xs uppercase tracking-widest mb-4" style={{ color: primary }}>
+              {bonusLine}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
             <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
             <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
           </div>
         </div>
       );
+    } catch (err) {
+      console.error("[Ultimate CTA] Render error:", err);
+      const fallbackText = normalizeNarrativeText(text);
+      return (
+        <div
+          className="rounded-xl border p-6 md:p-8 text-sm whitespace-pre-wrap"
+          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border, color: currentTheme.colors.text }}
+        >
+          {fallbackText || "CTA indisponible pour le moment."}
+        </div>
+      );
     }
-
-    return (
-      <div
-        className="rounded-xl border p-6 md:p-8"
-        style={{
-          background: `linear-gradient(135deg, ${primary}12 0%, ${currentTheme.colors.surface} 100%)`,
-          borderColor: primaryBorder
-        }}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <span
-                className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full"
-                style={{ backgroundColor: primarySoft, color: primary, border: `1px solid ${primaryBorder}` }}
-              >
-                {badgeLabel}
-              </span>
-              <span className="text-xs uppercase tracking-widest" style={{ color: currentTheme.colors.textMuted }}>
-                {subline}
-              </span>
-            </div>
-            <h4 className="text-2xl font-bold" style={{ color: currentTheme.colors.text }}>
-              {headline}
-            </h4>
-            <p className="text-sm leading-relaxed" style={{ color: currentTheme.colors.textMuted }}>
-              {summaryTrimmed || "Tu as la cartographie. Maintenant, il faut executer avec methode."}
-            </p>
-          </div>
-          {promoCode && (
-            <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: primary, border: `1px solid ${primaryBorder}` }}>
-              {promoCode}
-            </span>
-          )}
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-3 mb-6">
-          {bulletsToRender.map((bullet, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-sm" style={{ color: currentTheme.colors.textMuted }}>
-              <span style={{ color: primary }}>-</span>
-              <span>{bullet}</span>
-            </div>
-          ))}
-        </div>
-
-        {renderOffersTable(deductionAmount)}
-
-        <div className="flex flex-wrap items-center gap-4 text-xs" style={{ color: currentTheme.colors.textMuted }}>
-          <span>Email: <a href={`mailto:${contactEmail}`} className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactEmail}</a></span>
-          <span>Site: <a href={siteUrl} target="_blank" rel="noreferrer" className="font-semibold" style={{ color: currentTheme.colors.text }}>{contactSite}</a></span>
-        </div>
-      </div>
-    );
   };
   const scoreSummary =
-    globalScore >= 75
+    safeGlobalScore >= 75
       ? 'Une base solide.'
-      : globalScore >= 60
+      : safeGlobalScore >= 60
       ? "Des axes d'optimisation identifies."
       : 'Plusieurs blocages a debloquer.';
 
@@ -1024,7 +1123,7 @@ const UltimateScanReport: React.FC = () => {
         score: typeof rawPhoto.score === "number" ? rawPhoto.score : undefined,
       };
       const photoScore =
-        typeof normalizedPhoto.score === 'number' ? normalizedPhoto.score : Math.round(globalScore);
+        typeof normalizedPhoto.score === 'number' ? normalizedPhoto.score : Math.round(safeGlobalScore);
 
       return (
         <div className="space-y-6">
@@ -1069,9 +1168,12 @@ const UltimateScanReport: React.FC = () => {
     }
 
     if (section.id === 'supplements') {
+      const supplementsHtml = report.supplementsHtml
+        ? normalizeIherbLinks(report.supplementsHtml)
+        : "";
       return (
         <div className="p-6 rounded-sm border" style={{ backgroundColor: 'var(--color-surface)', border: `1px solid var(--color-border)` }}>
-          {report.supplementsHtml && (
+          {supplementsHtml && (
             <div
               className={`mb-8 prose max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''}`}
               style={{
@@ -1081,7 +1183,7 @@ const UltimateScanReport: React.FC = () => {
                 '--tw-prose-strong': currentTheme.colors.text,
                 '--tw-prose-bullets': currentTheme.colors.primary
               } as React.CSSProperties}
-              dangerouslySetInnerHTML={{ __html: report.supplementsHtml }}
+              dangerouslySetInnerHTML={{ __html: supplementsHtml }}
             />
           )}
 
@@ -1097,25 +1199,35 @@ const UltimateScanReport: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {safeSupplementStack.slice(0, 10).map((supp, idx) => (
-                    <tr key={idx} className="border-b border-[var(--color-border)]/50">
-                      <td className="py-3 px-2">
-                        <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{supp.name}</span>
-                        {supp.brands?.length > 0 && (
-                          <div className="text-xs text-[var(--color-text-muted)]">{supp.brands[0]}</div>
-                        )}
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{supp.dosage}</span>
-                      </td>
-                      <td className="py-3 px-2 text-[var(--color-text-muted)]">{supp.timing}</td>
-                      <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{supp.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {safeSupplementStack.slice(0, 10).map((supp, idx) => {
+            const suppName = normalizeTextInput(supp.name);
+            const suppDosage = normalizeTextInput(supp.dosage);
+            const suppTiming = normalizeTextInput(supp.timing);
+            const suppDuration = normalizeTextInput(supp.duration);
+            const suppBrand =
+              Array.isArray(supp.brands) && supp.brands.length > 0
+                ? normalizeTextInput(supp.brands[0])
+                : "";
+            return (
+            <tr key={idx} className="border-b border-[var(--color-border)]/50">
+              <td className="py-3 px-2">
+                <span className="font-medium" style={{ color: currentTheme.colors.primary }}>{suppName}</span>
+                {suppBrand && (
+                  <div className="text-xs text-[var(--color-text-muted)]">{suppBrand}</div>
+                )}
+              </td>
+              <td className="py-3 px-2">
+                <span className="px-2 py-1 rounded bg-[var(--color-bg)] text-xs font-mono">{suppDosage}</span>
+              </td>
+              <td className="py-3 px-2 text-[var(--color-text-muted)]">{suppTiming}</td>
+              <td className="py-3 px-2 text-[var(--color-text-muted)] hidden md:table-cell">{suppDuration}</td>
+            </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
         </div>
       );
     }
@@ -1124,10 +1236,10 @@ const UltimateScanReport: React.FC = () => {
       return (
         <div className="space-y-4">
           {[
-            { title: 'Semaine 1', subtitle: 'Fondations', content: report.weeklyPlan?.week1, alpha: 0.7 },
-            { title: 'Semaine 2', subtitle: 'Consolidation', content: report.weeklyPlan?.week2, alpha: 0.55 },
-            { title: 'Semaines 3-4', subtitle: 'Optimisation', content: report.weeklyPlan?.weeks3_4, alpha: 0.45 },
-            { title: 'Mois 2-3', subtitle: 'Maintenance', content: report.weeklyPlan?.months2_3, alpha: 0.35 }
+            { title: 'Semaine 1', subtitle: 'Fondations', content: normalizeTextInput(report.weeklyPlan?.week1), alpha: 0.7 },
+            { title: 'Semaine 2', subtitle: 'Consolidation', content: normalizeTextInput(report.weeklyPlan?.week2), alpha: 0.55 },
+            { title: 'Semaines 3-4', subtitle: 'Optimisation', content: normalizeTextInput(report.weeklyPlan?.weeks3_4), alpha: 0.45 },
+            { title: 'Mois 2-3', subtitle: 'Maintenance', content: normalizeTextInput(report.weeklyPlan?.months2_3), alpha: 0.35 }
           ].map((phase, idx) => (
             <div key={idx} className="flex gap-4">
               <div className="w-1 rounded-full" style={{ backgroundColor: withAlpha(primary, phase.alpha) }} />
@@ -1150,6 +1262,9 @@ const UltimateScanReport: React.FC = () => {
       return renderReviewSection();
     }
 
+    const rawSectionHtml = typeof section.content === 'string' ? section.content : toHtml(section.content);
+    const sectionHtml = normalizeIherbLinks(rawSectionHtml);
+
     return (
       <div
         className={`prose prose-lg max-w-none ${currentTheme.type === 'dark' ? 'prose-invert' : ''} prose-p:text-[var(--color-text)] prose-p:leading-relaxed prose-headings:text-[var(--color-text)] prose-strong:text-[var(--color-text)]`}
@@ -1160,28 +1275,16 @@ const UltimateScanReport: React.FC = () => {
           '--tw-prose-strong': currentTheme.colors.text,
           '--tw-prose-bullets': currentTheme.colors.primary
         } as React.CSSProperties}
-        dangerouslySetInnerHTML={{ __html: section.content }}
+        dangerouslySetInnerHTML={{ __html: sectionHtml }}
       />
     );
   };
 
-  const handleBoundaryRetry = () => {
-    if (!auditId) return;
-    fetch(`/api/audit/${auditId}/regenerate`, { method: 'POST' })
-      .catch(() => {})
-      .finally(() => {
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
-      });
-  };
-
   return (
-    <ReportErrorBoundary onRetry={handleBoundaryRetry}>
-      <div
-        className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
-        style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
-      >
+    <div
+      className="ultrahuman-report flex h-screen font-sans overflow-hidden selection:bg-white/20 relative transition-colors duration-500"
+      style={{ ...themeVars, backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+    >
         <div className="fixed top-0 left-0 right-0 h-1 z-[60]" style={{ backgroundColor: 'var(--color-border)' }}>
           <div
             className="h-full transition-all duration-150 ease-out"
@@ -1256,13 +1359,13 @@ const UltimateScanReport: React.FC = () => {
                     <span style={{ color: currentTheme.colors.textMuted }}>voici ton ultimate scan.</span>
                   </h1>
                   <p className="text-lg leading-relaxed max-w-lg" style={{ color: 'var(--color-text-muted)' }}>
-                    {Math.round(globalScore)}/100 — {scoreSummary}
+                    {Math.round(safeGlobalScore)}/100 — {scoreSummary}
                   </p>
                 </div>
 
                 <div className="flex gap-4 items-end">
                   <div className="text-right hidden md:block">
-                    <div className="text-3xl font-bold font-mono">{Math.round(globalScore)}<span className="text-lg opacity-50">/100</span></div>
+                    <div className="text-3xl font-bold font-mono">{Math.round(safeGlobalScore)}<span className="text-lg opacity-50">/100</span></div>
                     <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Score Global</div>
                   </div>
                 </div>
@@ -1276,7 +1379,7 @@ const UltimateScanReport: React.FC = () => {
                   <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-text-muted)' }}>Performance Globale</h3>
                   <div className="flex items-center justify-center py-8">
                     <RadialProgress
-                      score={Math.round(globalScore)}
+                      score={Math.round(safeGlobalScore)}
                       max={100}
                       size={180}
                       strokeWidth={4}
@@ -1389,7 +1492,25 @@ const UltimateScanReport: React.FC = () => {
             </div>
           </div>
         </main>
-      </div>
+    </div>
+  );
+};
+
+const UltimateScanReport: React.FC = () => {
+  const { auditId } = useParams();
+
+  const handleBoundaryRetry = () => {
+    if (auditId) {
+      fetch(`/api/audit/${auditId}/regenerate`, { method: 'POST' }).catch(() => {});
+    }
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  };
+
+  return (
+    <ReportErrorBoundary onRetry={handleBoundaryRetry}>
+      <UltimateScanReportInner auditId={auditId} />
     </ReportErrorBoundary>
   );
 };

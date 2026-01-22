@@ -12,11 +12,12 @@ const testResponses = {
   medicaments: ""
 };
 
-const html = generateEnhancedSupplementsHTML({
-  responses: testResponses,
-  globalScore: 52,
-  firstName: "Marc"
-});
+async function run(): Promise<void> {
+  const html = await generateEnhancedSupplementsHTML({
+    responses: testResponses,
+    globalScore: 52,
+    firstName: "Marc"
+  });
 
 // CSS du rapport (dark theme)
 const CSS = `
@@ -50,7 +51,7 @@ const CSS = `
   a:hover { opacity: 0.8; }
 `;
 
-fs.writeFileSync('test-supplements-output.html', `
+  fs.writeFileSync('test-supplements-output.html', `
 <!DOCTYPE html>
 <html>
 <head>
@@ -63,7 +64,10 @@ fs.writeFileSync('test-supplements-output.html', `
   ${html}
 </body>
 </html>
-`);
+  `);
 
-console.log("HTML genere dans test-supplements-output.html");
-console.log("Ouvre le fichier pour voir le rendu.");
+  console.log("HTML genere dans test-supplements-output.html");
+  console.log("Ouvre le fichier pour voir le rendu.");
+}
+
+void run();

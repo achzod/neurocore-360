@@ -701,7 +701,7 @@ export function formatSupplementForReport(supp: SupplementProtocolAdvanced): {
     why: supp.mechanism,
     brands: supp.label_checks,
     warnings: supp.risks.join("; "),
-    evidence: `Grade ${supp.evidence_grade} - ${supp.citations.join(", ")}`,
+    evidence: `Grade ${supp.evidence_grade}`,
     iherb_search: supp.iherb_search_query || ""
   };
 }
@@ -738,31 +738,314 @@ function uniqueByName(list: SupplementProtocolAdvanced[]): SupplementProtocolAdv
  * Objectif : zéro hallucination, cohérence, et intégration de tes règles d'achat/sécurité.
  * IMPORTANT : retourne du texte brut (pas de markdown).
  */
-import { IHERB_PRODUCTS, getIHerbLink, type IHerbProduct } from "./iherbProducts";
+import pLimit from "p-limit";
+import { AFFILIATE_CODE, IHERB_PRODUCTS, getIHerbLink, type IHerbProduct } from "./iherbProducts";
 import { normalizeSingleVoice } from "./textNormalization";
 
 // Mapping ingredient_id vers iHerb product database key
 const INGREDIENT_TO_IHERB_KEY: Record<string, string> = {
   "magnesium_bisglycinate": "magnesium_bisglycinate",
   "magnesium": "magnesium_bisglycinate",
+  "magnesium_glycinate": "magnesium_bisglycinate",
+  "magnesium_taurate_glycinate": "magnesium_bisglycinate",
   "glycine": "glycine",
+  "omega_3_epa_dha": "omega3_epa_dha",
   "omega3_epa_dha": "omega3_epa_dha",
   "omega3": "omega3_epa_dha",
   "vitamin_d3": "vitamin_d3",
   "vitamine_d": "vitamin_d3",
   "ashwagandha": "ashwagandha",
+  "ashwagandha_ksm_66": "ashwagandha",
   "l_theanine": "l_theanine",
   "theanine": "l_theanine",
   "creatine_monohydrate": "creatine_monohydrate",
   "creatine": "creatine_monohydrate",
   "zinc": "zinc",
   "tongkat_ali": "tongkat_ali",
+  "tongkat_ali_lj100": "tongkat_ali",
   "mucuna_pruriens": "mucuna_pruriens",
   "apigenine": "apigenine",
   "acetyl_l_carnitine": "acetyl_l_carnitine",
   "coq10": "coq10",
+  "coq10_ubiquinol": "coq10",
   "b_complex": "b_complex",
 };
+
+const IHERB_DOMAIN = "https://fr.iherb.com";
+const LINK_CHECK_TIMEOUT_MS = 4500;
+const LINK_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
+const linkCheckLimiter = pLimit(4);
+const linkHealthCache = new Map<string, { ok: boolean; checkedAt: number }>();
+
+const MATCH_STOP_WORDS = new Set([
+  "caps", "capsules", "capsule", "tablet", "tablets", "softgel", "softgels",
+  "powder", "liquid", "oil", "extract", "complex", "formula", "support",
+  "supplement", "nutrition", "food", "foods", "best", "research", "labs",
+  "lab", "natural", "naturals", "source", "pure", "sports", "doctor", "now",
+]);
+
+const INGREDIENT_ALIAS_TOKENS: Record<string, string[]> = {
+  coq10: ["q10", "coenzyme", "ubiquinol", "ubiquinone"],
+  b_complex: ["b-complex", "b complex", "b-right", "co-enzyme", "coenzyme"],
+  omega3_epa_dha: ["omega", "epa", "dha", "fish oil"],
+  vitamin_d3: ["vitamin", "d3", "cholecalciferol"],
+  l_theanine: ["theanine", "suntheanine"],
+  magnesium_bisglycinate: ["magnesium", "glycinate", "bisglycinate"],
+  creatine_monohydrate: ["creatine", "monohydrate", "creapure"],
+};
+
+function normalizeMatchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function extractMatchTokens(value: string): string[] {
+  const normalized = normalizeMatchText(value);
+  const tokens = normalized
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => {
+      if (MATCH_STOP_WORDS.has(token)) return false;
+      if (token.length >= 3) return true;
+      return /\d/.test(token) && token.length >= 2;
+    });
+  return Array.from(new Set(tokens));
+}
+
+function normalizeIngredientKey(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function buildMatchTokens(ingredientLabel: string, ingredientKey: string): string[] {
+  const tokens = new Set<string>();
+  extractMatchTokens(ingredientLabel).forEach((token) => tokens.add(token));
+  extractMatchTokens(ingredientKey.replace(/_/g, " ")).forEach((token) => tokens.add(token));
+  const aliases = INGREDIENT_ALIAS_TOKENS[ingredientKey] || [];
+  aliases.forEach((alias) => {
+    extractMatchTokens(alias).forEach((token) => tokens.add(token));
+  });
+  return Array.from(tokens);
+}
+
+function productMatchesSupplement(
+  ingredientLabel: string,
+  ingredientKey: string,
+  product: IHerbProduct
+): boolean {
+  const tokens = buildMatchTokens(ingredientLabel, ingredientKey);
+  if (tokens.length === 0) return true;
+  const productText = normalizeMatchText(`${product.name} ${product.slug} ${product.brand}`);
+  const matches = tokens.filter((token) => productText.includes(token));
+  const requiredMatches = tokens.length >= 3 ? 2 : 1;
+  return matches.length >= requiredMatches;
+}
+
+function normalizeIherbLink(url: string): string {
+  if (!url) return url;
+  const sanitized = url.replace(/https?:\/\/[^/]*iherb\.com\//i, `${IHERB_DOMAIN}/`);
+  if (/rcode=/i.test(sanitized)) {
+    return sanitized.replace(/rcode=[^&\"']*/i, `rcode=${AFFILIATE_CODE}`);
+  }
+  return `${sanitized}${sanitized.includes("?") ? "&" : "?"}rcode=${AFFILIATE_CODE}`;
+}
+
+function buildIherbSearchLink(query: string): string {
+  const q = encodeURIComponent(query.trim());
+  return normalizeIherbLink(`${IHERB_DOMAIN}/search?kw=${q}`);
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function isExpectedProductUrl(finalUrl: string, expected?: { productId?: number; slug?: string }): boolean {
+  if (!expected) return true;
+  try {
+    const parsed = new URL(finalUrl);
+    if (!parsed.hostname.includes("iherb.com")) return false;
+    const path = parsed.pathname.toLowerCase();
+    if (!path.includes("/pr/")) return false;
+    if (expected.productId && !path.includes(`/${expected.productId}`)) return false;
+    if (expected.slug && !path.includes(`/${expected.slug.toLowerCase()}`)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isIherbLinkHealthy(
+  url: string,
+  expected?: { productId?: number; slug?: string }
+): Promise<boolean> {
+  const cached = linkHealthCache.get(url);
+  if (cached && Date.now() - cached.checkedAt < LINK_CACHE_TTL_MS) {
+    return cached.ok;
+  }
+
+  const ok = await linkCheckLimiter(async () => {
+    try {
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+        "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      };
+
+      let res = await fetchWithTimeout(
+        url,
+        { method: "HEAD", redirect: "follow", headers },
+        LINK_CHECK_TIMEOUT_MS
+      );
+
+      const isExpected = isExpectedProductUrl(res.url || url, expected);
+      if (res.status >= 200 && res.status < 400 && isExpected) {
+        linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
+        return true;
+      }
+      if ([403, 405].includes(res.status) && isExpected) {
+        linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
+        return true;
+      }
+
+      if ([400, 403, 405].includes(res.status) || !isExpected) {
+        res = await fetchWithTimeout(
+          url,
+          { method: "GET", redirect: "follow", headers },
+          LINK_CHECK_TIMEOUT_MS
+        );
+        if (res.body) {
+          try {
+            await res.body.cancel();
+          } catch {
+            // ignore
+          }
+        }
+        const isExpectedGet = isExpectedProductUrl(res.url || url, expected);
+        if (res.status >= 200 && res.status < 400 && isExpectedGet) {
+          linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
+          return true;
+        }
+        if ([403, 405].includes(res.status) && isExpectedGet) {
+          linkHealthCache.set(url, { ok: true, checkedAt: Date.now() });
+          return true;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    linkHealthCache.set(url, { ok: false, checkedAt: Date.now() });
+    return false;
+  });
+
+  return ok;
+}
+
+function buildSearchFallbackHTML(params: {
+  ingredientLabel: string;
+  searchQuery: string;
+  searchLink: string;
+}): string {
+  const { ingredientLabel, searchQuery, searchLink } = params;
+  return `
+    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+      <h5 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">
+        Mes recommandations iHerb
+      </h5>
+      <a href="${searchLink}" target="_blank" rel="noopener noreferrer" style="display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-decoration: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <div style="flex: 1;">
+            <span style="background: var(--accent-warning); color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;">RECHERCHE</span>
+            <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin: 10px 0 4px 0;">${ingredientLabel}</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">Recherche iHerb: ${searchQuery}</p>
+          </div>
+          <span style="color: var(--accent-warning); font-weight: 700; font-size: 0.95rem; white-space: nowrap;">Lien iHerb</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 0 0;">Lien generique pour retrouver la meilleure option valide.</p>
+      </a>
+    </div>
+  `;
+}
+
+async function buildProductLinksHTML(params: {
+  ingredientLabel: string;
+  ingredientKey: string;
+  products: IHerbProduct[];
+  searchQuery: string;
+}): Promise<string> {
+  const { ingredientLabel, ingredientKey, products, searchQuery } = params;
+  const query = searchQuery || ingredientLabel;
+  const searchLink = buildIherbSearchLink(query);
+  if (products.length === 0) {
+    return buildSearchFallbackHTML({ ingredientLabel, searchQuery: query, searchLink });
+  }
+
+  const resolved = await Promise.all(
+    products.map(async (product) => {
+      const matches = productMatchesSupplement(ingredientLabel, ingredientKey, product);
+      if (!matches) {
+        return { product, url: searchLink, valid: false };
+      }
+
+      const url = normalizeIherbLink(getIHerbLink(product));
+      const ok = await isIherbLinkHealthy(url, { productId: product.productId, slug: product.slug });
+      if (!ok) {
+        return { product, url: searchLink, valid: false };
+      }
+
+      return { product, url, valid: true };
+    })
+  );
+
+  const validProducts = resolved.filter((entry) => entry.valid);
+  if (validProducts.length === 0) {
+    return buildSearchFallbackHTML({ ingredientLabel, searchQuery: query, searchLink });
+  }
+
+  const linksHTML = validProducts.map((entry, pIdx) => {
+    const product = entry.product;
+    const badgeText = pIdx === 0 ? "MON CHOIX" : pIdx === 1 ? "ALTERNATIVE" : "BUDGET";
+    const badgeColor = pIdx === 0 ? "var(--accent-ok)" : pIdx === 1 ? "var(--primary)" : "var(--accent-warning)";
+    return `
+      <a href="${entry.url}" target="_blank" rel="noopener noreferrer" style="display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none; transition: all 0.2s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <div style="flex: 1;">
+            <span style="background: ${badgeColor}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;">${badgeText}</span>
+            <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin: 10px 0 4px 0;">${product.brand}</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">${product.name}</p>
+          </div>
+          <span style="color: var(--primary); font-weight: 700; font-size: 0.95rem; white-space: nowrap;">${product.priceRange}</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 0 0;">${product.dose} | ${product.count}</p>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0 0 0; font-style: italic;">${product.whyThisOne}</p>
+      </a>
+    `;
+  }).join("");
+
+  return `
+    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+      <h5 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">
+        Mes recommandations iHerb
+      </h5>
+      ${linksHTML}
+    </div>
+  `;
+}
 
 // Explications humaines detaillees pour chaque supplement
 const HUMAN_EXPLANATIONS: Record<string, {
@@ -841,11 +1124,11 @@ const HUMAN_EXPLANATIONS: Record<string, {
  * Generates enhanced HTML for supplements section with detailed human explanations
  * and real iHerb affiliate product links.
  */
-export function generateEnhancedSupplementsHTML(input: {
+export async function generateEnhancedSupplementsHTML(input: {
   responses: Record<string, unknown>;
   globalScore?: number;
   firstName?: string;
-}): string {
+}): Promise<string> {
   const responses = input.responses || {};
   const firstName = input.firstName || "Profil";
   const meds = [
@@ -887,8 +1170,8 @@ export function generateEnhancedSupplementsHTML(input: {
   }
 
   // Generate supplement sections
-  const supplementSections = picked.slice(0, 6).map((supp, idx) => {
-    const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
+  const supplementSections = (await Promise.all(picked.slice(0, 6).map(async (supp, idx) => {
+    const ingredientKey = normalizeIngredientKey(supp.ingredient || "");
     const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
     const products = IHERB_PRODUCTS[iherbKey] || [];
     const explanation = HUMAN_EXPLANATIONS[iherbKey];
@@ -897,33 +1180,13 @@ export function generateEnhancedSupplementsHTML(input: {
                           supp.evidence_grade === "B" ? "var(--primary)" :
                           supp.evidence_grade === "C" ? "var(--accent-warning)" : "var(--text-muted)";
 
-    // Product links HTML
-    const productLinksHTML = products.length > 0 ? `
-      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
-        <h5 style="font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">
-          Mes recommandations iHerb
-        </h5>
-        ${products.map((product, pIdx) => {
-          const link = getIHerbLink(product);
-          const badgeText = pIdx === 0 ? "MON CHOIX" : pIdx === 1 ? "ALTERNATIVE" : "BUDGET";
-          const badgeColor = pIdx === 0 ? "var(--accent-ok)" : pIdx === 1 ? "var(--primary)" : "var(--accent-warning)";
-          return `
-            <a href="${link}" target="_blank" rel="noopener noreferrer" style="display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none; transition: all 0.2s ease;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <div style="flex: 1;">
-                  <span style="background: ${badgeColor}; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;">${badgeText}</span>
-                  <p style="font-size: 1rem; font-weight: 600; color: var(--text); margin: 10px 0 4px 0;">${product.brand}</p>
-                  <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">${product.name}</p>
-                </div>
-                <span style="color: var(--primary); font-weight: 700; font-size: 0.95rem; white-space: nowrap;">${product.priceRange}</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 0 0;">${product.dose} | ${product.count}</p>
-              <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0 0 0; font-style: italic;">${product.whyThisOne}</p>
-            </a>
-          `;
-        }).join("")}
-      </div>
-    ` : "";
+    // Product links HTML with validation + fallback
+    const productLinksHTML = await buildProductLinksHTML({
+      ingredientLabel: supp.ingredient,
+      ingredientKey: iherbKey,
+      products,
+      searchQuery: supp.iherb_search_query || supp.ingredient,
+    });
 
     return `
       <div style="background: var(--surface-1); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px;">
@@ -1013,7 +1276,7 @@ export function generateEnhancedSupplementsHTML(input: {
 
       </div>
     `;
-  }).join("");
+  }))).join("");
 
   // Safety warning for medications
   const safetyHTML = meds.length > 0 ? `
@@ -1122,7 +1385,7 @@ export function generateSupplementsSectionText(input: {
   }
 
   picked.slice(0, 6).forEach((supp) => {
-    const ingredientKey = supp.ingredient?.toLowerCase().replace(/[\s-]/g, "_") || "";
+    const ingredientKey = normalizeIngredientKey(supp.ingredient || "");
     const iherbKey = INGREDIENT_TO_IHERB_KEY[ingredientKey] || ingredientKey;
     const explanation = HUMAN_EXPLANATIONS[iherbKey];
 

@@ -49,7 +49,7 @@ export async function streamAuditZip(params: {
 
   // HTML (design + SVG)
   try {
-    const html = generateExportHTML(narrativeReport as any, auditId, photos);
+    const html = await generateExportHTML(narrativeReport as any, auditId, photos);
     zip.append(html, { name: "report.html" });
   } catch (e: any) {
     zip.append(
@@ -93,7 +93,6 @@ export async function streamAuditZip(params: {
 
   await zip.finalize();
 }
-
 
 
 
