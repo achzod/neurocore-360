@@ -751,8 +751,8 @@ export function analyzeNutritionTracking(responses: Responses): SectionScore {
   };
 }
 
-function createBasicSection(name: string, responses: Responses): SectionScore {
-  const score = 60 + Math.floor(Math.random() * 20);
+function createBasicSection(name: string, baseScore: number): SectionScore {
+  const score = Math.max(25, Math.min(90, Math.round(baseScore)));
   return {
     score,
     level: getLevel(score),
@@ -1330,20 +1330,20 @@ export function analyzeActivitePerformance(responses: Responses): SectionScore {
   };
 }
 
-export function analyzeHRVCardiaque(responses: Responses): SectionScore {
-  return createBasicSection("HRV et Cardiaque", responses);
+export function analyzeHRVCardiaque(_responses: Responses, baseScore: number): SectionScore {
+  return createBasicSection("HRV et Cardiaque", baseScore);
 }
 
-export function analyzeAnalysesBiomarqueurs(responses: Responses): SectionScore {
-  return createBasicSection("Analyses et Biomarqueurs", responses);
+export function analyzeAnalysesBiomarqueurs(_responses: Responses, baseScore: number): SectionScore {
+  return createBasicSection("Analyses et Biomarqueurs", baseScore);
 }
 
-export function analyzeLifestyleSubstances(responses: Responses): SectionScore {
-  return createBasicSection("Lifestyle et Substances", responses);
+export function analyzeLifestyleSubstances(_responses: Responses, baseScore: number): SectionScore {
+  return createBasicSection("Lifestyle et Substances", baseScore);
 }
 
-export function analyzeBiomecaniqueMobilite(responses: Responses): SectionScore {
-  return createBasicSection("Biomecanique et Mobilite", responses);
+export function analyzeBiomecaniqueMobilite(_responses: Responses, baseScore: number): SectionScore {
+  return createBasicSection("Biomecanique et Mobilite", baseScore);
 }
 
 export function analyzePsychologieMental(responses: Responses): SectionScore {
@@ -1520,13 +1520,13 @@ export function analyzePsychologieMental(responses: Responses): SectionScore {
   };
 }
 
-export function analyzeNeurotransmetteurs(responses: Responses): SectionScore {
-  return createBasicSection("Neurotransmetteurs", responses);
+export function analyzeNeurotransmetteurs(_responses: Responses, baseScore: number): SectionScore {
+  return createBasicSection("Neurotransmetteurs", baseScore);
 }
 
 export function generateFullAnalysis(responses: Responses): AnalysisResult {
   const normalized = normalizeResponses(responses);
-  const sections: Record<string, SectionScore> = {
+  const coreSections: Record<string, SectionScore> = {
     "profil-base": analyzeProfilBase(normalized),
     "composition-corporelle": analyzeCompositionCorporelle(normalized),
     "metabolisme-energie": analyzeMetabolismeEnergie(normalized),
@@ -1534,13 +1534,19 @@ export function generateFullAnalysis(responses: Responses): AnalysisResult {
     "digestion-microbiome": analyzeDigestionMicrobiome(normalized),
     "activite-performance": analyzeActivitePerformance(normalized),
     "sommeil-recuperation": analyzeSommeilRecuperation(normalized),
-    "hrv-cardiaque": analyzeHRVCardiaque(normalized),
-    "analyses-biomarqueurs": analyzeAnalysesBiomarqueurs(normalized),
     "hormones-stress": analyzeHormonesStress(normalized),
-    "lifestyle-substances": analyzeLifestyleSubstances(normalized),
-    "biomecanique-mobilite": analyzeBiomecaniqueMobilite(normalized),
     "psychologie-mental": analyzePsychologieMental(normalized),
-    neurotransmetteurs: analyzeNeurotransmetteurs(normalized),
+  };
+
+  const coreScores = Object.values(coreSections).map((s) => s.score);
+  const baseScore = Math.round(coreScores.reduce((a, b) => a + b, 0) / coreScores.length);
+  const sections: Record<string, SectionScore> = {
+    ...coreSections,
+    "hrv-cardiaque": analyzeHRVCardiaque(normalized, baseScore),
+    "analyses-biomarqueurs": analyzeAnalysesBiomarqueurs(normalized, baseScore),
+    "lifestyle-substances": analyzeLifestyleSubstances(normalized, baseScore),
+    "biomecanique-mobilite": analyzeBiomecaniqueMobilite(normalized, baseScore),
+    neurotransmetteurs: analyzeNeurotransmetteurs(normalized, baseScore),
   };
 
   const sectionScores = Object.values(sections).map((s) => s.score);
