@@ -338,7 +338,12 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
           offset += line.length + 1;
         }
       }
-      return txtContent.substring(start.index, endIdx).trim();
+      const raw = txtContent.substring(start.index, endIdx);
+      const cleaned = raw
+        .replace(/^\s*AUDIT COMPLET (?:NEUROCORE 360|APEXLABS)[^\n]*$/gmi, '')
+        .replace(/^\s*G[eé]n[eé]r[eé] le [^\n]*$/gmi, '')
+        .trim();
+      return cleaned || undefined;
     }
   } else {
     // Chercher "PRET A TRANSFORMER" ou "PROCHAINES ETAPES"
@@ -353,7 +358,12 @@ function extractCTA(txtContent: string, type: 'debut' | 'fin'): string | undefin
     ];
     const start = findLastLineMarker(txtContent, markers);
     if (start.index !== -1) {
-      return txtContent.substring(start.index).trim();
+      const raw = txtContent.substring(start.index);
+      const cleaned = raw
+        .replace(/^\s*AUDIT COMPLET (?:NEUROCORE 360|APEXLABS)[^\n]*$/gmi, '')
+        .replace(/^\s*G[eé]n[eé]r[eé] le [^\n]*$/gmi, '')
+        .trim();
+      return cleaned || undefined;
     }
   }
   return undefined;
