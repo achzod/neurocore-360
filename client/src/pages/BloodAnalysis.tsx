@@ -69,6 +69,31 @@ export default function BloodAnalysisLanding() {
         </div>
       </section>
 
+      {/* Important Note - PDF Password */}
+      <section className="py-12 px-4 bg-orange-900/10 border-y border-orange-700/30">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-start gap-4 p-6 bg-slate-900/50 backdrop-blur border border-orange-500/30 rounded-xl">
+            <div className="text-3xl">⚠️</div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-orange-400 mb-2">
+                Important : PDF sans mot de passe
+              </h3>
+              <p className="text-slate-300 mb-3">
+                Ton PDF de résultats sanguins <strong>ne doit pas avoir de mot de passe</strong> pour que notre système puisse l'analyser.
+              </p>
+              <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                <p className="text-sm text-slate-400 mb-2">
+                  <strong className="text-white">Si ton PDF est protégé par mot de passe :</strong>
+                </p>
+                <p className="text-sm text-slate-300">
+                  Utilise un outil gratuit en ligne comme <a href="https://www.ilovepdf.com/fr/debloquer_pdf" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">iLovePDF</a> ou <a href="https://smallpdf.com/fr/deverrouiller-pdf" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">SmallPDF</a> pour enlever le mot de passe avant de l'uploader.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 px-4 bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border-t border-slate-700">
         <div className="max-w-4xl mx-auto text-center">
