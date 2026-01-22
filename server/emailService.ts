@@ -16,6 +16,7 @@ const COLORS = {
   textMuted: '#a1a1aa',
   warning: '#f59e0b',
   purple: '#8b5cf6',
+  blood: '#ef4444',
 };
 
 type CoachingOfferTier = {
@@ -327,6 +328,8 @@ export async function sendReportReadyEmail(
         ? `/anabolic/${auditId}`
         : auditType === "ELITE"
         ? `/ultimate/${auditId}`
+        : auditType === "BLOOD_ANALYSIS"
+        ? `/blood-analysis/${auditId}`
         : auditType === "PEPTIDES"
         ? `/peptides/${auditId}`
         : `/ultimate/${auditId}`;
@@ -339,11 +342,15 @@ export async function sendReportReadyEmail(
         ? "Anabolic Bioscan"
         : auditType === "ELITE"
         ? "Ultimate Scan"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Blood Analysis"
         : auditType === "PEPTIDES"
         ? "Peptides Engine"
         : "Ultimate Scan";
     const planColor =
-      auditType === "PEPTIDES"
+      auditType === "BLOOD_ANALYSIS"
+        ? COLORS.blood
+        : auditType === "PEPTIDES"
         ? COLORS.warning
         : auditType === "ELITE"
         ? COLORS.purple
@@ -360,6 +367,8 @@ export async function sendReportReadyEmail(
         ? "16 Domaines d'Analyse"
         : auditType === "ELITE"
         ? "18 Domaines d'Analyse"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Lecture de biomarqueurs"
         : "Peptides • protocole sur mesure";
     const domainsCount =
       auditType === "GRATUIT"
@@ -368,6 +377,8 @@ export async function sendReportReadyEmail(
         ? "16 domaines de santé"
         : auditType === "ELITE"
         ? "18 domaines de santé"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "biomarqueurs clés"
         : "protocole peptides personalise";
 
     const content = `
@@ -517,6 +528,8 @@ export async function sendAdminEmailNewAudit(
         ? "Anabolic Bioscan"
         : auditType === "ELITE"
         ? "Ultimate Scan"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Blood Analysis"
         : auditType === "PEPTIDES"
         ? "Peptides Engine"
         : "Ultimate Scan";

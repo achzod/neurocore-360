@@ -11,6 +11,16 @@ import {
   DIAGNOSTIC_PATTERNS,
   BloodMarkerInput
 } from "./index";
+import { storage } from "../storage";
+import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
+
+const getBaseUrl = (): string => {
+  return (
+    process.env.APP_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    "http://localhost:10000"
+  );
+};
 
 export function registerBloodAnalysisRoutes(app: Express): void {
   /**
@@ -227,8 +237,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/blood-analysis/submit", async (req, res) => {
     try {
-      const { userId, markers, profile } = req.body as {
-        userId: string;
+      const { userId, email, markers, profile } = req.body as {
+        userId?: string;
+        email?: string;
         markers: BloodMarkerInput[];
         profile: {
           gender: "homme" | "femme";
@@ -238,12 +249,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         };
       };
 
-      if (!userId || !markers || !profile) {
+      const recipientEmail = email || userId;
+
+      if (!recipientEmail || !markers || !profile) {
         res.status(400).json({ error: "Missing required fields" });
         return;
       }
 
-      console.log(`[BloodAnalysis] Processing submission for user ${userId}`);
+      console.log(`[BloodAnalysis] Processing submission for ${recipientEmail}`);
 
       // Run analysis
       const analysisResult = await analyzeBloodwork(markers, profile);
@@ -261,19 +274,47 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         knowledgeContext
       );
 
-      // TODO: Save to database
-      // TODO: Generate PDF
-      // TODO: Send email
+      const reportRecord = await storage.createBloodReport({
+        email: recipientEmail,
+        profile,
+        markers,
+        analysis: analysisResult,
+        aiReport: aiAnalysis,
+      });
+
+      const baseUrl = getBaseUrl();
+      const emailSent = await sendReportReadyEmail(recipientEmail, reportRecord.id, "BLOOD_ANALYSIS", baseUrl);
+      if (emailSent) {
+        await sendAdminEmailNewAudit(recipientEmail, recipientEmail.split("@")[0], "BLOOD_ANALYSIS", reportRecord.id);
+      }
 
       res.json({
         success: true,
-        reportId: `report-${Date.now()}`,
+        reportId: reportRecord.id,
         analysis: analysisResult,
         aiReport: aiAnalysis
       });
     } catch (error) {
       console.error("[BloodAnalysis] Submit error:", error);
       res.status(500).json({ error: "Erreur lors de l'analyse" });
+    }
+  });
+
+  /**
+   * GET /api/blood-analysis/report/:id
+   * Fetch stored blood analysis report
+   */
+  app.get("/api/blood-analysis/report/:id", async (req, res) => {
+    try {
+      const report = await storage.getBloodReport(req.params.id);
+      if (!report) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+      res.json({ success: true, report });
+    } catch (error) {
+      console.error("[BloodAnalysis] Report fetch error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
   });
 

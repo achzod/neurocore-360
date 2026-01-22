@@ -1906,6 +1906,7 @@ export async function registerRoutes(
     try {
       const allAudits = await storage.getAllAudits();
       const peptidesReports = await storage.getAllPeptidesReports();
+      const bloodReports = await storage.getAllBloodReports();
       const mappedPeptides = peptidesReports.map((report) => ({
         id: report.id,
         email: report.email,
@@ -1917,7 +1918,18 @@ export async function registerRoutes(
         completedAt: report.createdAt,
       }));
 
-      const audits = [...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
+      const mappedBlood = bloodReports.map((report) => ({
+        id: report.id,
+        email: report.email,
+        type: "BLOOD_ANALYSIS",
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: report.createdAt,
+        createdAt: report.createdAt,
+        completedAt: report.createdAt,
+      }));
+
+      const audits = [...mappedBlood, ...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
         return dateB - dateA;

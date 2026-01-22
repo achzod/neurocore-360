@@ -125,6 +125,16 @@ export interface PeptidesReportRecord {
   createdAt: Date | string;
 }
 
+export interface BloodReportRecord {
+  id: string;
+  email: string;
+  profile: Record<string, unknown>;
+  markers: unknown[];
+  analysis: unknown;
+  aiReport: string;
+  createdAt: Date | string;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -156,6 +166,10 @@ export interface IStorage {
   getPeptidesReport(id: string): Promise<PeptidesReportRecord | undefined>;
   updatePeptidesReport(id: string, report: unknown): Promise<PeptidesReportRecord | undefined>;
   getAllPeptidesReports(): Promise<PeptidesReportRecord[]>;
+
+  createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord>;
+  getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
+  getAllBloodReports(): Promise<BloodReportRecord[]>;
 
   createMagicToken(email: string): Promise<string>;
   verifyMagicToken(token: string): Promise<string | null>;
@@ -194,6 +208,7 @@ export class MemStorage implements IStorage {
   private burnoutReports: Map<string, BurnoutReportRecord>;
   private peptidesProgress: Map<string, PeptidesProgress>;
   private peptidesReports: Map<string, PeptidesReportRecord>;
+  private bloodReports: Map<string, BloodReportRecord>;
   private magicTokens: Map<string, MagicToken>;
   private reportArtifacts: ReportArtifact[];
   private promoCodes: Map<string, PromoCode>;
@@ -207,6 +222,7 @@ export class MemStorage implements IStorage {
     this.burnoutReports = new Map();
     this.peptidesProgress = new Map();
     this.peptidesReports = new Map();
+    this.bloodReports = new Map();
     this.magicTokens = new Map();
     this.reportArtifacts = [];
     this.promoCodes = new Map();
@@ -481,6 +497,33 @@ export class MemStorage implements IStorage {
 
   async getAllPeptidesReports(): Promise<PeptidesReportRecord[]> {
     return Array.from(this.peptidesReports.values()).sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+  }
+
+  async createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord> {
+    const id = randomUUID();
+    const record: BloodReportRecord = {
+      id,
+      email: input.email,
+      profile: input.profile,
+      markers: input.markers,
+      analysis: input.analysis,
+      aiReport: input.aiReport,
+      createdAt: new Date(),
+    };
+    this.bloodReports.set(id, record);
+    return record;
+  }
+
+  async getBloodReport(id: string): Promise<BloodReportRecord | undefined> {
+    return this.bloodReports.get(id);
+  }
+
+  async getAllBloodReports(): Promise<BloodReportRecord[]> {
+    return Array.from(this.bloodReports.values()).sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
@@ -1167,6 +1210,63 @@ export class PgStorage implements IStorage {
     }));
   }
 
+  async createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord> {
+    await this.ensureBloodReportsTable();
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO blood_reports (id, email, profile, markers, analysis, ai_report)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        id,
+        input.email,
+        JSON.stringify(input.profile || {}),
+        JSON.stringify(input.markers || []),
+        JSON.stringify(input.analysis || {}),
+        input.aiReport || "",
+      ]
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    };
+  }
+
+  async getBloodReport(id: string): Promise<BloodReportRecord | undefined> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query("SELECT * FROM blood_reports WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    };
+  }
+
+  async getAllBloodReports(): Promise<BloodReportRecord[]> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query("SELECT * FROM blood_reports ORDER BY created_at DESC LIMIT 100");
+    return result.rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    }));
+  }
+
   async createMagicToken(email: string): Promise<string> {
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -1473,6 +1573,7 @@ export class PgStorage implements IStorage {
   private ensuredBurnoutReportsTable = false;
   private ensuredPeptidesProgressTable = false;
   private ensuredPeptidesReportsTable = false;
+  private ensuredBloodReportsTable = false;
 
   private async ensureTerraDataTable(): Promise<void> {
     if (this.ensuredTerraTable) return;
@@ -1585,6 +1686,28 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error creating peptides_reports table:", err);
       this.ensuredPeptidesReportsTable = true;
+    }
+  }
+
+  private async ensureBloodReportsTable(): Promise<void> {
+    if (this.ensuredBloodReportsTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS blood_reports (
+          id VARCHAR(36) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          profile JSONB DEFAULT '{}'::jsonb,
+          markers JSONB DEFAULT '[]'::jsonb,
+          analysis JSONB DEFAULT '{}'::jsonb,
+          ai_report TEXT,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_email ON blood_reports(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_created_at ON blood_reports(created_at)`);
+      this.ensuredBloodReportsTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating blood_reports table:", err);
     }
   }
 
