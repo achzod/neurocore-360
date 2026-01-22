@@ -455,7 +455,7 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
 
     const hasSupplements = Boolean(report.supplementsHtml || safeSupplementStack.length > 0);
     const hasPlan = Boolean(report.weeklyPlan?.week1 || report.weeklyPlan?.week2 || report.weeklyPlan?.weeks3_4 || report.weeklyPlan?.months2_3);
-    const showUpgrade = report.auditType === 'ANABOLIC_BIOSCAN';
+    const showUpgrade = report.auditType === 'ANABOLIC_BIOSCAN' || report.auditType === 'PREMIUM';
 
     return [
       { id: 'dashboard', title: 'Dashboard', subtitle: 'Vue globale', content: '' },
@@ -917,8 +917,9 @@ const AnabolicScanReportInner: React.FC<AnabolicScanReportProps> = ({ auditId })
     }
   };
 
+  const effectiveAuditType = auditType || report?.auditType || null;
   const sanitizedGenerationSection =
-    auditType && auditType !== "ELITE" && /photo|postur/i.test(generationSection)
+    effectiveAuditType && effectiveAuditType !== "ELITE" && /photo|postur/i.test(generationSection)
       ? "Analyse de ton profil..."
       : generationSection;
 

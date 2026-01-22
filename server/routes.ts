@@ -5,7 +5,7 @@ import { pool } from "./db";
 import { saveProgressSchema, insertAuditSchema, insertReviewSchema } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
-import { generateFullAnalysis } from "./analysisEngine";
+import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 import { startReportGeneration, getJobStatus, forceRegenerate } from "./reportJobManager";
 import {
   sendMagicLinkEmail,
@@ -158,6 +158,46 @@ export async function registerRoutes(
 
     return sanitized;
   }
+
+  const parseResponsesRecord = (value: unknown): Record<string, unknown> | null => {
+    if (!value) return null;
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === "object" && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+    return null;
+  };
+
+  const mergeResponses = (
+    primary: Record<string, unknown>,
+    fallback: Record<string, unknown> | null
+  ): Record<string, unknown> => {
+    if (!fallback) return primary;
+    return { ...fallback, ...primary };
+  };
+
+  const ensureAuditScores = (
+    rawScores: unknown,
+    rawResponses: unknown
+  ): Record<string, number> => {
+    const scores =
+      rawScores && typeof rawScores === "object" && !Array.isArray(rawScores)
+        ? (rawScores as Record<string, number>)
+        : null;
+    const hasGlobal = scores && Number.isFinite(scores.global);
+    if (scores && hasGlobal && Object.keys(scores).length >= 3) {
+      return scores;
+    }
+    const responses = parseResponsesRecord(rawResponses) || {};
+    return calculateScoresFromResponses(responses);
+  };
 
   // Admin auth helper - checks ADMIN_SECRET or ADMIN_KEY
   function requireAdminAuth(req: any, res: any): boolean {
@@ -314,11 +354,14 @@ export async function registerRoutes(
     try {
       const data = createAuditBodySchema.parse(req.body);
       if (data.type === "GRATUIT") {
+        const progress = await storage.getProgress(data.email);
+        const progressResponses = parseResponsesRecord(progress?.responses);
+        const mergedResponses = mergeResponses(data.responses, progressResponses);
         const audit = await storage.createAudit({
           userId: "",
           type: data.type,
           email: data.email,
-          responses: data.responses,
+          responses: mergedResponses,
         });
 
         // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
@@ -333,8 +376,8 @@ export async function registerRoutes(
 
         (async () => {
           try {
-            const result = await analyzeDiscoveryScan(data.responses as any);
-            const narrativeReport = await convertToNarrativeReport(result, data.responses as any);
+            const result = await analyzeDiscoveryScan(mergedResponses as any);
+            const narrativeReport = await convertToNarrativeReport(result, mergedResponses as any);
 
             await storage.updateAudit(audit.id, {
               narrativeReport,
@@ -345,7 +388,7 @@ export async function registerRoutes(
             const emailSent = await sendReportReadyEmail(audit.email, audit.id, audit.type, baseUrl);
             if (emailSent) {
               await storage.updateAudit(audit.id, { reportDeliveryStatus: "SENT", reportSentAt: new Date() });
-              const clientName = (data.responses as any)?.prenom || data.email.split("@")[0];
+              const clientName = (mergedResponses as any)?.prenom || data.email.split("@")[0];
               await sendAdminEmailNewAudit(audit.email, clientName, audit.type, audit.id);
             }
           } catch (error) {
@@ -670,7 +713,7 @@ export async function registerRoutes(
         // pour que le frontend puisse l'afficher sans tout casser
         if (report.txt) {
           const dashboard = formatTxtToDashboard(report.txt);
-          const auditScores = audit.scores || {};
+          const auditScores = ensureAuditScores(audit.scores, audit.responses);
           const globalScore =
             typeof auditScores.global === "number"
               ? auditScores.global
