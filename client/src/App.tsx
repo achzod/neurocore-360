@@ -21,7 +21,6 @@ import CGV from "@/pages/CGV";
 import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
-import BloodAnalysis from "@/pages/BloodAnalysis";
 import BloodDashboard from "@/pages/BloodDashboard";
 import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
 import Blog from "@/pages/Blog";
@@ -61,7 +60,6 @@ function Router() {
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
       <Route path="/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
-      <Route path="/blood-analysis" component={BloodAnalysis} />
       <Route path="/blood-dashboard" component={BloodDashboard} />
       <Route path="/peptides-engine" component={PeptidesEnginePage} />
 

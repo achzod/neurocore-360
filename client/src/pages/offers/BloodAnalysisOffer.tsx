@@ -502,6 +502,60 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
+      {/* PDF WARNING */}
+      <section className="py-16 px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-sm bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 p-8"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-sm bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white text-lg font-semibold mb-2">
+                  PDF sans mot de passe requis
+                </h3>
+                <p className="text-white/60 mb-4 leading-relaxed">
+                  Ton PDF de résultats sanguins ne doit pas avoir de mot de passe pour que notre système puisse l'analyser.
+                </p>
+                <div className="rounded-sm bg-white/5 border border-white/10 p-4">
+                  <p className="text-white/80 text-sm mb-2 font-medium">
+                    Si ton PDF est protégé :
+                  </p>
+                  <p className="text-white/60 text-sm">
+                    Utilise{' '}
+                    <a
+                      href="https://www.ilovepdf.com/fr/debloquer_pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-400 hover:text-amber-300 underline"
+                    >
+                      iLovePDF
+                    </a>
+                    {' '}ou{' '}
+                    <a
+                      href="https://smallpdf.com/fr/deverrouiller-pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-400 hover:text-amber-300 underline"
+                    >
+                      SmallPDF
+                    </a>
+                    {' '}pour enlever le mot de passe avant de l'uploader.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* BLOOD CELLS + DNA SECTION */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
