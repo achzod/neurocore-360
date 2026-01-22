@@ -461,7 +461,11 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
 
     const hasSupplements = Boolean(report.supplementsHtml || safeSupplementStack.length > 0);
     const hasPlan = Boolean(report.weeklyPlan?.week1 || report.weeklyPlan?.week2 || report.weeklyPlan?.weeks3_4 || report.weeklyPlan?.months2_3);
-    const hasPhoto = Boolean(report.photoAnalysis);
+    const hasVisualSection = normalizedSections.some((section) => {
+      const token = `${normalizeTextInput(section.title)} ${normalizeTextInput(section.id)}`.toLowerCase();
+      return token.includes("visuelle") || token.includes("postural") || token.includes("posture") || token.includes("biomecanique") || token.includes("photo");
+    });
+    const hasPhoto = Boolean(report.photoAnalysis) && !hasVisualSection;
 
     return [
       { id: 'dashboard', title: 'Dashboard', subtitle: 'Vue globale', content: '' },
