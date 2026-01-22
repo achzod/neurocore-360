@@ -64,6 +64,9 @@ export const MetricsRadar: React.FC<RadarProps> = ({
   tooltipText = 'var(--color-text)'
 }) => {
   const tooltipMuted = labelColor;
+  const radarStrokeOpacity = 0.9;
+  const radarFillOpacity = 0.28;
+  const radarDot = { r: 2, fill: color, fillOpacity: 0.9, stroke: "none" };
   const chartData = data.map(m => ({
     subject: m.label,
     A: m.value,
@@ -92,7 +95,9 @@ export const MetricsRadar: React.FC<RadarProps> = ({
             stroke={color}
             strokeWidth={3}
             fill={color}
-            fillOpacity={0.2}
+            fillOpacity={radarFillOpacity}
+            strokeOpacity={radarStrokeOpacity}
+            dot={radarDot}
             isAnimationActive={true}
             animationDuration={1500}
             animationEasing="ease-out"
