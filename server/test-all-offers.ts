@@ -20,7 +20,7 @@ const API_BASE = "https://neurocore-360.onrender.com";
 const TEST_EMAIL = process.env.TEST_EMAIL?.trim() || "";
 const TEST_NAME = process.env.TEST_NAME?.trim() || "";
 const SKIP_PEPTIDES = /^(1|true|yes)$/i.test(process.env.SKIP_PEPTIDES || "");
-const TEST_PROFILE = (process.env.TEST_PROFILE || "cadre").toLowerCase();
+const TEST_PROFILE = (process.env.TEST_PROFILE || "clean").toLowerCase();
 
 const buildTestEmail = (prefix: string): string => {
   if (TEST_EMAIL) return TEST_EMAIL;

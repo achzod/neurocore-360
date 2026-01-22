@@ -707,6 +707,15 @@ export async function registerRoutes(
         return;
       }
 
+      const generationStart = audit.reportScheduledFor
+        ? new Date(audit.reportScheduledFor).getTime()
+        : audit.createdAt
+          ? new Date(audit.createdAt).getTime()
+          : 0;
+      const generationAgeMs = generationStart ? Date.now() - generationStart : 0;
+      const isGenerating = audit.reportDeliveryStatus === "GENERATING";
+      const isStaleGeneration = isGenerating && generationAgeMs > 12 * 60 * 1000;
+
       if (audit.narrativeReport) {
         const report = audit.narrativeReport as any;
         // Si c'est le nouveau format TXT (V4 Pro), on le convertit au format dashboard
@@ -956,6 +965,15 @@ export async function registerRoutes(
           res.json(freshAudit.narrativeReport);
           return;
         }
+      }
+
+      if (isStaleGeneration && !audit.narrativeReport) {
+        console.warn(`[Narrative] Stale generation detected for ${req.params.id}, restarting...`);
+        await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
+        await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
+        processReportAndSendEmail(req.params.id, audit.email, audit.type);
+        res.status(202).json({ message: "Rapport en cours de regeneration", status: "regenerating", progress: 0 });
+        return;
       }
       
       if (job && (job.status === "pending" || job.status === "generating")) {
