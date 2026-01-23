@@ -31,6 +31,7 @@ type BloodTestDetail = {
     optimalMin: number | null;
     optimalMax: number | null;
     status: MarkerStatus;
+    interpretation?: string;
   }>;
   analysis: {
     globalScore: number;
@@ -451,6 +452,9 @@ export default function BloodAnalysisReport() {
                       optimalMax={marker.optimalMax ?? undefined}
                       className="mt-2"
                     />
+                    {marker.interpretation && (
+                      <p className="text-xs text-white/50 mt-2">{marker.interpretation}</p>
+                    )}
                   </div>
                 ))}
               </div>

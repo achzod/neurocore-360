@@ -114,6 +114,10 @@ export default function BloodClientDashboard() {
       setError("Email requis.");
       return;
     }
+    if (!prenom.trim() || !nom.trim() || !dob) {
+      setError("Prenom, nom et date de naissance requis.");
+      return;
+    }
     setError(null);
     setMessage(null);
     setUploading(true);

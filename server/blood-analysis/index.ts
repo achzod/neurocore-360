@@ -1256,8 +1256,16 @@ export async function getBloodworkKnowledgeContext(
   keywords.push("bloodwork", "biomarker", "optimal range");
 
   // Search knowledge base
-  const articles = await searchArticles(keywords, 5, [
-    "peter_attia", "marek_health", "examine", "chris_masterjohn", "mpmd"
+  const articles = await searchArticles(keywords, 6, [
+    "huberman",
+    "sbs",
+    "applied_metabolics",
+    "newsletter",
+    "peter_attia",
+    "marek_health",
+    "examine",
+    "chris_masterjohn",
+    "mpmd"
   ]);
 
   if (articles.length === 0) {

@@ -220,6 +220,24 @@ export function registerBloodTestsRoutes(app: Express): void {
           : pdfProfile.gender) || "homme",
         dob: String(req.body.dob || pdfProfile.dob || "").trim() || undefined,
       };
+      const missingProfile: string[] = [];
+      if (!profile.prenom) missingProfile.push("prenom");
+      if (!profile.nom) missingProfile.push("nom");
+      if (!profile.email) missingProfile.push("email");
+      if (!profile.dob) missingProfile.push("date de naissance");
+      if (!profile.gender) missingProfile.push("sexe");
+      if (missingProfile.length > 0) {
+        const updated = await storage.updateBloodTest(baseRecord.id, {
+          status: "error",
+          error: `Infos patient manquantes: ${missingProfile.join(", ")}.`,
+        });
+        res.status(400).json({
+          error: `Infos patient manquantes: ${missingProfile.join(", ")}.`,
+          bloodTest: updated || baseRecord,
+          remainingCredits: updatedUser.credits ?? 0,
+        });
+        return;
+      }
 
       const analysisResult = await analyzeBloodwork(extractedMarkers, {
         gender: profile.gender,
@@ -255,6 +273,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           optimalMin: range?.optimalMin ?? null,
           optimalMax: range?.optimalMax ?? null,
           status: marker.status,
+          interpretation: marker.interpretation,
         };
       });
 
