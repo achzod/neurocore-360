@@ -464,46 +464,255 @@ const extractJsonArray = (raw: string): unknown[] => {
   }
 };
 
-const normalizeMarkerValue = (markerId: string, value: number): number => {
+const normalizeUnit = (unit?: string): string | undefined => {
+  if (!unit) return undefined;
+  const cleaned = unit
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/μ/g, "u")
+    .replace(/µ/g, "u");
+  const map: Record<string, string> = {
+    "mmol/l": "mmol/L",
+    "nmol/l": "nmol/L",
+    "umol/l": "µmol/L",
+    "pmol/l": "pmol/L",
+    "mg/dl": "mg/dL",
+    "mg/l": "mg/L",
+    "g/l": "g/L",
+    "ng/ml": "ng/mL",
+    "ng/l": "ng/L",
+    "pg/ml": "pg/mL",
+    "ng/dl": "ng/dL",
+    "ug/dl": "µg/dL",
+    "mui/l": "mIU/L",
+    "ui/l": "IU/L",
+    "u/l": "U/L",
+    "ml/min": "mL/min",
+    "%": "%",
+  };
+  return map[cleaned] || unit;
+};
+
+const roundValue = (value: number, decimals = 2): number => {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+};
+
+const normalizeMarkerValue = (markerId: string, value: number, unit?: string): number => {
   if (!Number.isFinite(value)) return value;
 
-  // Glucose mmol/L -> mg/dL
-  if (markerId === "glycemie_jeun" && value < 20) {
-    return Math.round(value * 18);
+  const sourceUnit = normalizeUnit(unit);
+
+  if (markerId === "glycemie_jeun") {
+    if (sourceUnit === "mmol/L") return Math.round(value * 18);
+    if (sourceUnit === "g/L") return Math.round(value * 100);
+    if (sourceUnit === "mg/L") return Math.round(value / 10);
+    if (value < 20) return Math.round(value * 18);
   }
 
-  // Vitamin D nmol/L -> ng/mL
-  if (markerId === "vitamine_d" && value > 100) {
-    return Math.round((value / 2.5) * 10) / 10;
+  if (markerId === "vitamine_d") {
+    if (sourceUnit === "nmol/L") return roundValue(value / 2.5, 1);
+    if (value > 100) return roundValue(value / 2.5, 1);
   }
 
-  // Creatinine µmol/L -> mg/dL
-  if (markerId === "creatinine" && value > 20) {
-    return Math.round((value / 88.4) * 100) / 100;
+  if (markerId === "creatinine") {
+    if (sourceUnit === "µmol/L") return roundValue(value / 88.4, 2);
+    if (sourceUnit === "mg/L") return roundValue(value / 10, 2);
+    if (value > 20) return roundValue(value / 88.4, 2);
+  }
+
+  if (markerId === "testosterone_total" && sourceUnit === "nmol/L") {
+    return roundValue(value * 28.84, 1);
+  }
+  if (markerId === "testosterone_libre" && sourceUnit === "pmol/L") {
+    return roundValue(value / 3.47, 2);
+  }
+  if (markerId === "estradiol" && sourceUnit === "pmol/L") {
+    return roundValue(value / 3.67, 1);
+  }
+  if (markerId === "t4_libre" && sourceUnit === "pmol/L") {
+    return roundValue(value / 12.87, 2);
+  }
+  if (markerId === "t3_libre" && sourceUnit === "pmol/L") {
+    return roundValue(value / 1.536, 2);
+  }
+  if (markerId === "cortisol" && sourceUnit === "nmol/L") {
+    return roundValue(value / 27.59, 2);
+  }
+  if (markerId === "igf1" && sourceUnit === "nmol/L") {
+    return roundValue(value * 7.65, 1);
+  }
+  if (markerId === "dhea_s" && sourceUnit === "µmol/L") {
+    return roundValue(value * 36.85, 1);
+  }
+  if (markerId === "fer_serique" && sourceUnit === "µmol/L") {
+    return roundValue(value * 5.585, 1);
+  }
+  if (markerId === "b12" && sourceUnit === "pmol/L") {
+    return roundValue(value / 0.738, 0);
+  }
+  if (markerId === "folate" && sourceUnit === "nmol/L") {
+    return roundValue(value / 2.266, 1);
+  }
+  if (markerId === "zinc" && sourceUnit === "µmol/L") {
+    return roundValue(value * 6.538, 1);
   }
 
   const lipidMmolToMg = 38.67;
   const trigMmolToMg = 88.57;
 
-  if (["ldl", "hdl", "cholesterol", "apob", "lpa"].includes(markerId)) {
-    if (value <= 1.9) {
-      return Math.round(value * 100);
-    }
-    if (value < 10) {
-      return Math.round(value * lipidMmolToMg);
-    }
+  if (["ldl", "hdl", "apob", "lpa", "cholesterol"].includes(markerId)) {
+    if (sourceUnit === "mmol/L") return Math.round(value * lipidMmolToMg);
+    if (sourceUnit === "g/L") return Math.round(value * 100);
+    if (sourceUnit === "mg/L") return Math.round(value / 10);
+    if (value <= 1.9) return Math.round(value * 100);
+    if (value < 10) return Math.round(value * lipidMmolToMg);
   }
 
   if (markerId === "triglycerides") {
-    if (value <= 1.9) {
-      return Math.round(value * 100);
-    }
-    if (value < 10) {
-      return Math.round(value * trigMmolToMg);
-    }
+    if (sourceUnit === "mmol/L") return Math.round(value * trigMmolToMg);
+    if (sourceUnit === "g/L") return Math.round(value * 100);
+    if (sourceUnit === "mg/L") return Math.round(value / 10);
+    if (value <= 1.9) return Math.round(value * 100);
+    if (value < 10) return Math.round(value * trigMmolToMg);
   }
 
   return value;
+};
+
+const MARKER_SYNONYMS: Record<string, RegExp[]> = {
+  testosterone_total: [/testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i],
+  testosterone_libre: [/testost[ée]rone\s*libre/i, /testost[ée]rone\s*bio/i],
+  shbg: [/shbg/i, /globuline.*sex/i],
+  estradiol: [/estradiol/i, /\be2\b/i],
+  lh: [/\blh\b/i, /luteinis/i],
+  fsh: [/\bfsh\b/i, /folliculo/i],
+  prolactine: [/prolactine/i],
+  dhea_s: [/dhea[-\s]?s/i],
+  cortisol: [/cortisol/i],
+  igf1: [/igf[-\s]?1/i],
+  tsh: [/t\.?\s*s\.?\s*h\.?/i],
+  t4_libre: [/t4\s*libre/i, /ft4/i],
+  t3_libre: [/t3\s*libre/i, /ft3/i],
+  t3_reverse: [/t3\s*reverse/i, /\brt3\b/i],
+  anti_tpo: [/anti[-\s]?tpo/i, /anti[-\s]?thyro/i],
+  glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i],
+  hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i],
+  insuline_jeun: [/insuline.*je[uû]n/i],
+  homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
+  triglycerides: [/triglyc[ée]rides/i],
+  hdl: [/cholest[ée]rol\s*hdl/i, /\bhdl\b/i],
+  ldl: [/cholest[ée]rol\s*ldl/i, /\bldl\b/i],
+  apob: [/apo\s*b/i],
+  lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
+  crp_us: [/crp.*(us|ultra)/i],
+  homocysteine: [/homocyst[ée]ine/i],
+  ferritine: [/ferritine/i],
+  fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i],
+  transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i],
+  vitamine_d: [/vitamine\s*d/i, /25\s*oh/i],
+  b12: [/vitamine\s*b12/i, /cobalamine/i],
+  folate: [/folate/i, /vitamine\s*b9/i],
+  magnesium_rbc: [/magn[eé]sium.*rbc/i, /magn[eé]sium.*intra/i],
+  zinc: [/\bzinc\b/i],
+  alt: [/\balt\b/i, /\balat\b/i, /\bsgpt\b/i],
+  ast: [/\bast\b/i, /\basat\b/i, /\bsgot\b/i],
+  ggt: [/\bggt\b/i, /gamma[-\s]*gt/i],
+  creatinine: [/cr[ée]atinine/i],
+  egfr: [/\begfr\b/i, /d[ée]bit.*filtration/i, /d\.?\s*f\.?\s*g\.?/i],
+};
+
+const extractFirstNumber = (line: string): number | null => {
+  const match = line.match(/(?<![A-Za-zÀ-ÿ])[<>]?\s*\d+(?:[.,]\d+)?/);
+  if (!match) return null;
+  const value = Number(match[0].replace(/[<>]/g, "").replace(",", ".").trim());
+  return Number.isNaN(value) ? null : value;
+};
+
+const extractValueAfterLabel = (line: string, match: RegExpMatchArray): number | null => {
+  const index = match.index ?? line.toLowerCase().indexOf(match[0].toLowerCase());
+  if (index < 0) return null;
+  const after = line.slice(index + match[0].length);
+  return extractFirstNumber(after);
+};
+
+const UNIT_REGEX =
+  /(mmol\/l|nmol\/l|mg\/dl|mg\/l|g\/l|ng\/ml|ng\/l|pg\/ml|ng\/dl|pmol\/l|umol\/l|µmol\/l|mui\/l|ui\/l|u\/l|ml\/min|%)/i;
+
+const SKIP_LINE_REGEX =
+  /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page)/i;
+
+const DATE_LINE_REGEX = /^\d{2}[\/-]\d{2}[\/-]\d{2,4}$/;
+
+const findUnit = (line?: string): string | undefined => {
+  if (!line) return undefined;
+  const match = line.match(UNIT_REGEX);
+  if (!match) return undefined;
+  return normalizeUnit(match[0]);
+};
+
+const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
+  const lines = pdfText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const results = new Map<string, { value: number; unit?: string }>();
+  const markerEntries = Object.entries(MARKER_SYNONYMS);
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (!line || SKIP_LINE_REGEX.test(line) || DATE_LINE_REGEX.test(line)) continue;
+
+    for (const [markerId, patterns] of markerEntries) {
+      if (results.has(markerId)) continue;
+      let match: RegExpMatchArray | null = null;
+      for (const pattern of patterns) {
+        match = line.match(pattern);
+        if (match) break;
+      }
+      if (!match) continue;
+
+      const valueFromLabel = extractValueAfterLabel(line, match);
+      let unit = findUnit(line);
+      let value = valueFromLabel;
+
+      if (value === null) {
+        for (let offset = 1; offset <= 4; offset += 1) {
+          const nextLine = lines[i + offset];
+          if (!nextLine || DATE_LINE_REGEX.test(nextLine) || SKIP_LINE_REGEX.test(nextLine)) continue;
+          const nextValue = extractFirstNumber(nextLine);
+          if (nextValue === null) continue;
+          value = nextValue;
+          unit = unit || findUnit(nextLine) || findUnit(lines[i + offset + 1]) || findUnit(lines[i + offset + 2]);
+          break;
+        }
+      } else {
+        unit = unit || findUnit(lines[i + 1]) || findUnit(lines[i + 2]);
+      }
+
+      if (value === null || Number.isNaN(value)) continue;
+      results.set(markerId, { value, unit });
+    }
+  }
+
+  return Array.from(results.entries()).map(([markerId, data]) => ({
+    markerId,
+    value: normalizeMarkerValue(markerId, data.value, data.unit),
+  }));
+};
+
+const addComputedMarkers = (markers: BloodMarkerInput[]): BloodMarkerInput[] => {
+  const map = new Map(markers.map((marker) => [marker.markerId, marker]));
+  if (!map.has("homa_ir")) {
+    const gly = map.get("glycemie_jeun");
+    const insulin = map.get("insuline_jeun");
+    if (gly && insulin) {
+      const homa = roundValue((gly.value * insulin.value) / 405, 2);
+      map.set("homa_ir", { markerId: "homa_ir", value: homa });
+    }
+  }
+  return Array.from(map.values());
 };
 
 export async function extractMarkersFromPdfText(
@@ -512,6 +721,13 @@ export async function extractMarkersFromPdfText(
 ): Promise<BloodMarkerInput[]> {
   const cleaned = pdfText.replace(/\s+/g, " ").trim();
   if (!cleaned) return [];
+
+  const lineExtracted = extractMarkersFromLines(pdfText);
+  const unique = new Map(lineExtracted.map((item) => [item.markerId, item]));
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return addComputedMarkers(Array.from(unique.values()));
+  }
 
   const anthropic = new Anthropic();
   const markerList = Object.entries(BIOMARKER_RANGES)
@@ -547,8 +763,7 @@ ${cleaned.slice(0, 12000)}`;
   });
 
   const textContent = response.content.find((c) => c.type === "text");
-  const extracted = extractJsonArray(textContent?.text || "");
-  return extracted
+  const extracted = extractJsonArray(textContent?.text || "")
     .map((item) => ({
       markerId: String((item as any).markerId || "").trim(),
       value: normalizeMarkerValue(
@@ -558,6 +773,14 @@ ${cleaned.slice(0, 12000)}`;
     }))
     .filter((item) => item.markerId && !Number.isNaN(item.value))
     .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]));
+
+  for (const item of extracted) {
+    if (!unique.has(item.markerId)) {
+      unique.set(item.markerId, item);
+    }
+  }
+
+  return addComputedMarkers(Array.from(unique.values()));
 }
 
 function getMarkerStatus(value: number, range: BiomarkerRange): "optimal" | "normal" | "suboptimal" | "critical" {
