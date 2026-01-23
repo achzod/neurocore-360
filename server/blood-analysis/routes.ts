@@ -262,17 +262,20 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
-      if (!sessionId) {
-        res.status(400).json({ error: "Paiement requis" });
-        return;
-      }
+      const requirePayment = process.env.BLOOD_ANALYSIS_REQUIRE_PAYMENT === "true";
+      if (requirePayment) {
+        if (!sessionId) {
+          res.status(400).json({ error: "Paiement requis" });
+          return;
+        }
 
-      const stripe = await getUncachableStripeClient();
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      const paid = session.payment_status === "paid" || session.status === "complete";
-      if (!paid || session.metadata?.planType !== "BLOOD_ANALYSIS") {
-        res.status(403).json({ error: "Paiement invalide" });
-        return;
+        const stripe = await getUncachableStripeClient();
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const paid = session.payment_status === "paid" || session.status === "complete";
+        if (!paid || session.metadata?.planType !== "BLOOD_ANALYSIS") {
+          res.status(403).json({ error: "Paiement invalide" });
+          return;
+        }
       }
 
       console.log(`[BloodAnalysis] Processing submission for ${recipientEmail}`);

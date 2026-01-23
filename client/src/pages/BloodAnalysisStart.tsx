@@ -14,7 +14,8 @@ export default function BloodAnalysisStart() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentReady, setPaymentReady] = useState(false);
+  const requirePayment = import.meta.env.VITE_BLOOD_ANALYSIS_REQUIRE_PAYMENT === "true";
+  const [paymentReady, setPaymentReady] = useState(!requirePayment);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   const sessionId =
@@ -29,7 +30,7 @@ export default function BloodAnalysisStart() {
   };
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!requirePayment || !sessionId) return;
     const confirmPayment = async () => {
       setPaymentLoading(true);
       try {
@@ -54,7 +55,7 @@ export default function BloodAnalysisStart() {
       }
     };
     confirmPayment();
-  }, [sessionId]);
+  }, [sessionId, requirePayment]);
 
   const handlePayment = async () => {
     setError(null);
@@ -110,7 +111,7 @@ export default function BloodAnalysisStart() {
 
   const handleSubmit = async () => {
     setError(null);
-    if (!paymentReady) {
+    if (requirePayment && !paymentReady) {
       setError("Paiement requis avant l'analyse.");
       return;
     }
@@ -134,7 +135,7 @@ export default function BloodAnalysisStart() {
           markers: [],
           pdfBase64,
           pdfName: pdfFile.name,
-          sessionId,
+          sessionId: requirePayment ? sessionId : undefined,
           profile: {
             prenom: prenom.trim() || undefined,
             nom: nom.trim() || undefined,
@@ -163,7 +164,7 @@ export default function BloodAnalysisStart() {
           <p className="text-xs uppercase tracking-[0.3em] text-white/60">Blood Analysis</p>
           <h1 className="text-3xl font-semibold mt-2">Soumettre ton bilan sanguin</h1>
           <p className="text-sm text-white/60 mt-3">
-            Tu paies, tu uploades ton PDF, je te renvoie le dashboard expert.
+            Paiement puis upload du PDF, dashboard expert en sortie.
           </p>
         </div>
 
@@ -247,7 +248,7 @@ export default function BloodAnalysisStart() {
                 className="block w-full text-sm text-white/70 file:mr-4 file:rounded-md file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-white/20"
               />
               <p className="text-xs text-white/50">
-                Formats acceptes: PDF. On extrait automatiquement les marqueurs.
+                Formats acceptes: PDF. Extraction automatique des marqueurs.
               </p>
             </div>
 
@@ -257,7 +258,7 @@ export default function BloodAnalysisStart() {
               </div>
             )}
 
-            {!paymentReady ? (
+            {requirePayment && !paymentReady ? (
               <Button
                 onClick={handlePayment}
                 disabled={paymentLoading}
@@ -280,7 +281,9 @@ export default function BloodAnalysisStart() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-4">
               <h2 className="text-lg font-semibold">Suivi paiement</h2>
               <p className="text-sm text-white/60">
-                {paymentReady
+                {!requirePayment
+                  ? "Mode test actif. Paiement desactive."
+                  : paymentReady
                   ? "Paiement confirme. Tu peux uploader ton PDF."
                   : paymentLoading
                   ? "Verification du paiement..."
