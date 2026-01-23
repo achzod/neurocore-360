@@ -464,6 +464,48 @@ const extractJsonArray = (raw: string): unknown[] => {
   }
 };
 
+const normalizeMarkerValue = (markerId: string, value: number): number => {
+  if (!Number.isFinite(value)) return value;
+
+  // Glucose mmol/L -> mg/dL
+  if (markerId === "glycemie_jeun" && value < 20) {
+    return Math.round(value * 18);
+  }
+
+  // Vitamin D nmol/L -> ng/mL
+  if (markerId === "vitamine_d" && value > 100) {
+    return Math.round((value / 2.5) * 10) / 10;
+  }
+
+  // Creatinine µmol/L -> mg/dL
+  if (markerId === "creatinine" && value > 20) {
+    return Math.round((value / 88.4) * 100) / 100;
+  }
+
+  const lipidMmolToMg = 38.67;
+  const trigMmolToMg = 88.57;
+
+  if (["ldl", "hdl", "cholesterol", "apob", "lpa"].includes(markerId)) {
+    if (value <= 1.9) {
+      return Math.round(value * 100);
+    }
+    if (value < 10) {
+      return Math.round(value * lipidMmolToMg);
+    }
+  }
+
+  if (markerId === "triglycerides") {
+    if (value <= 1.9) {
+      return Math.round(value * 100);
+    }
+    if (value < 10) {
+      return Math.round(value * trigMmolToMg);
+    }
+  }
+
+  return value;
+};
+
 export async function extractMarkersFromPdfText(
   pdfText: string,
   fileName: string
@@ -485,7 +527,14 @@ Regles:
 - Retourne UNIQUEMENT un JSON array (sans markdown).
 - Chaque element: {"markerId": "...", "value": number}
 - Utilise seulement les markerId de la liste autorisee.
-- Ignore les valeurs non numeriques ou ambigues.
+- Convertis dans l'unite attendue (celle de la liste autorisee).
+
+Conversions utiles:
+- Cholesterol / HDL / LDL / ApoB / Lp(a): mmol/L -> mg/dL (x38.67), g/L -> mg/dL (x100)
+- Triglycerides: mmol/L -> mg/dL (x88.57), g/L -> mg/dL (x100)
+- Glycemie: mmol/L -> mg/dL (x18)
+- Vitamine D: nmol/L -> ng/mL (÷2.5)
+- Creatinine: µmol/L -> mg/dL (÷88.4)
 
 TEXTE PDF:
 ${cleaned.slice(0, 12000)}`;
@@ -502,7 +551,10 @@ ${cleaned.slice(0, 12000)}`;
   return extracted
     .map((item) => ({
       markerId: String((item as any).markerId || "").trim(),
-      value: Number((item as any).value),
+      value: normalizeMarkerValue(
+        String((item as any).markerId || "").trim(),
+        Number((item as any).value)
+      ),
     }))
     .filter((item) => item.markerId && !Number.isNaN(item.value))
     .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]));
