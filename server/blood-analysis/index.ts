@@ -763,19 +763,95 @@ export const extractPatientInfoFromPdfText = (pdfText: string): PatientInfo => {
   const cleaned = pdfText.replace(/\s+/g, " ").trim();
   if (!cleaned) return {};
 
+  const lines = pdfText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const findLine = (regex: RegExp) => lines.find((line) => regex.test(line));
+  const extractAfter = (line: string) => line.split(":").slice(1).join(":").trim();
+  const cleanName = (value?: string) =>
+    value
+      ? value
+          .replace(/\b(date|sexe|lieu|matricule|ins|adresse|t[ée]l|mail)\b.*$/i, "")
+          .replace(/\s{2,}/g, " ")
+          .trim()
+      : undefined;
+
+  let prenom: string | undefined;
+  let nom: string | undefined;
+  let gender: PatientInfo["gender"];
+  let dob: string | undefined;
+  let email: string | undefined;
+
+  const usedLine = findLine(/nom et pr[ée]nom utilis[ée]s?/i);
+  if (usedLine) {
+    const raw = cleanName(extractAfter(usedLine));
+    if (raw) {
+      const spaced = raw.replace(/([A-ZÀ-Ÿ]{2,})([A-Z][a-zà-ÿ])/g, "$1 $2");
+      const parts = spaced.split(/\s+/);
+      if (parts.length >= 2) {
+        nom = parts[0];
+        prenom = parts.slice(1).join(" ");
+      }
+    }
+  }
+
+  const nomLine = findLine(/nom\s*de\s*naissance/i) || findLine(/\bnom\s*[:]/i);
+  if (!nom && nomLine) {
+    nom = cleanName(extractAfter(nomLine));
+  }
+
+  const prenomLine =
+    findLine(/pr[ée]nom\(s\)?\s*de\s*naissance/i) || findLine(/pr[ée]nom\s*[:]/i);
+  if (!prenom && prenomLine) {
+    prenom = cleanName(extractAfter(prenomLine));
+  }
+
+  const dobLine =
+    findLine(/date\s*de\s*naissance/i) || findLine(/\bn[ée]e?\s*le\b/i);
+  if (dobLine) {
+    const match = dobLine.match(/(\d{2}[\/.\-−]\d{2}[\/.\-−]\d{2,4})/);
+    dob = match?.[1]?.replace(/−/g, "-");
+  }
+
+  const genderLine = findLine(/\b(sexe|genre)\b/i);
+  if (genderLine) {
+    const match = genderLine.match(
+      /\b(sexe|genre)\s*[:\-]?\s*(homme|femme|masculin|f[ée]minin|h|f|m)\b/i
+    );
+    const value = match?.[2]?.toLowerCase();
+    if (value) gender = value.startsWith("f") ? "femme" : "homme";
+  }
+
+  const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+  const blockedEmail = /(labo|biogroup|laboratoire|rgpd|eurofins|biomnis|contact)/i;
+  const preferredEmailLine = lines.find(
+    (line) =>
+      emailRegex.test(line) &&
+      /(messagerie|patient|courriel|email|mail)/i.test(line) &&
+      !blockedEmail.test(line)
+  );
+  const fallbackEmailLine = lines.find((line) => emailRegex.test(line) && !blockedEmail.test(line));
+  const emailLine = preferredEmailLine || fallbackEmailLine;
+  if (emailLine) {
+    const match = emailLine.match(emailRegex);
+    email = match?.[0];
+  }
+
   const pick = (regex: RegExp): string | undefined => {
     const match = cleaned.match(regex);
     return match?.[1]?.trim();
   };
 
-  const prenom =
+  const fallbackPrenom =
     pick(
       /pr[ée]nom\(s\)?\s*de\s*naissance\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(date|sexe|lieu|n°|adresse|$))/i
     ) ||
     pick(
       /pr[ée]nom\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(date|sexe|lieu|n°|adresse|$))/i
     );
-  const nom =
+  const fallbackNom =
     pick(
       /nom\s*de\s*naissance\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(pr[ée]nom|date|sexe|lieu|n°|adresse|$))/i
     ) ||
@@ -783,25 +859,24 @@ export const extractPatientInfoFromPdfText = (pdfText: string): PatientInfo => {
       /\bnom\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(pr[ée]nom|date|sexe|lieu|n°|adresse|$))/i
     );
   const dobMatch = cleaned.match(
-    /(date de naissance|n[ée]e?\s*le)\s*[:\-]?\s*([0-9]{2}[\/.-][0-9]{2}[\/.-][0-9]{2,4})/i
+    /(date de naissance|n[ée]e?\s*le)\s*[:\-]?\s*([0-9]{2}[\/.\-−][0-9]{2}[\/.\-−][0-9]{2,4})/i
   );
-  const dob = dobMatch?.[2] || pick(/\b([0-9]{2}[\/.-][0-9]{2}[\/.-][0-9]{2,4})\b/);
+  const fallbackDob = dobMatch?.[2]?.replace(/−/g, "-");
   const genderMatch = cleaned.match(/\b(sexe|genre)\s*[:\-]?\s*(homme|femme|h|f)\b/i);
   const genderRaw = genderMatch?.[2];
-  const email = pick(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const fallbackEmail = pick(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
 
-  let gender: PatientInfo["gender"];
-  if (genderRaw) {
+  if (!gender && genderRaw) {
     const normalized = genderRaw.toLowerCase();
     gender = normalized.startsWith("f") ? "femme" : "homme";
   }
 
   return {
-    prenom,
-    nom,
-    email,
+    prenom: prenom || fallbackPrenom,
+    nom: nom || fallbackNom,
+    email: email || fallbackEmail,
     gender,
-    dob,
+    dob: dob || fallbackDob,
   };
 };
 
