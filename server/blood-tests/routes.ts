@@ -1,4 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import fs from "fs";
+import path from "path";
 import multer from "multer";
 import pdf from "pdf-parse";
 import {
@@ -147,7 +149,155 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+const requireAdmin = (req: Request, res: Response): boolean => {
+  const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+  const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+  if (!validKey || adminKey !== validKey) {
+    res.status(401).json({ error: "Unauthorized - admin key required" });
+    return false;
+  }
+  return true;
+};
+
 export function registerBloodTestsRoutes(app: Express): void {
+  app.post("/api/admin/blood-tests/seed", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const body = (req.body || {}) as { email?: string; files?: string[]; includeAI?: boolean };
+      const seedEmail =
+        String(body.email || "").trim() ||
+        (process.env.ADMIN_EMAILS || "").split(",")[0]?.trim() ||
+        "achkou@gmail.com";
+
+      let user = await storage.getUserByEmail(seedEmail);
+      if (!user) {
+        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+        user = await storage.createUser({ email: seedEmail, credits: defaultCredits });
+      }
+
+      const dataDir = path.resolve(process.cwd(), "data");
+      const available = fs
+        .readdirSync(dataDir)
+        .filter((file) => file.toLowerCase().endsWith(".pdf"));
+      const wanted = Array.isArray(body.files) && body.files.length > 0 ? body.files : available;
+      const targetFiles = available.filter((file) => wanted.includes(file));
+
+      const created: Array<{ id: string; fileName: string; markers: number; globalScore: number }> = [];
+      const skipped: Array<{ fileName: string; error: string }> = [];
+
+      for (const file of targetFiles) {
+        try {
+          const buffer = fs.readFileSync(path.join(dataDir, file));
+          const parsed = await pdf(buffer);
+          const pdfText = parsed.text || "";
+          const extractedMarkers = await extractMarkersFromPdfText(pdfText, file);
+          if (!extractedMarkers.length) {
+            skipped.push({ fileName: file, error: "Aucun biomarqueur detecte" });
+            continue;
+          }
+
+          const pdfProfile = extractPatientInfoFromPdfText(pdfText);
+          const profile = {
+            email: pdfProfile.email || seedEmail,
+            prenom: pdfProfile.prenom || "Non fourni",
+            nom: pdfProfile.nom || "Non fourni",
+            gender: pdfProfile.gender || "homme",
+            dob: pdfProfile.dob || "Non fourni",
+          };
+
+          const analysisResult = await analyzeBloodwork(extractedMarkers, {
+            gender: profile.gender as "homme" | "femme",
+            age: undefined,
+            objectives: undefined,
+            medications: undefined,
+          });
+
+          const knowledgeContext = await getBloodworkKnowledgeContext(
+            analysisResult.markers,
+            analysisResult.patterns
+          );
+
+          let aiAnalysis = "";
+          const includeAI = body.includeAI !== false;
+          if (includeAI && process.env.ANTHROPIC_API_KEY) {
+            try {
+              aiAnalysis = await generateAIBloodAnalysis(analysisResult, profile, knowledgeContext);
+            } catch {
+              aiAnalysis = "";
+            }
+          }
+
+          const markers = analysisResult.markers.map((marker) => {
+            const range = BIOMARKER_RANGES[marker.markerId];
+            return {
+              name: marker.name,
+              code: marker.markerId,
+              category: CATEGORY_BY_MARKER[marker.markerId] || "general",
+              value: marker.value,
+              unit: marker.unit,
+              refMin: range?.normalMin ?? null,
+              refMax: range?.normalMax ?? null,
+              optimalMin: range?.optimalMin ?? null,
+              optimalMax: range?.optimalMax ?? null,
+              status: marker.status,
+              interpretation: marker.interpretation,
+            };
+          });
+
+          const categoryScores = computeCategoryScores(markers);
+          const globalScore = computeGlobalScore(categoryScores);
+          const globalLevel = getGlobalLevel(globalScore);
+          const temporalRisk = computeTemporalRisk(markers);
+          const protocolPhases = buildProtocolPhases(markers);
+
+          const analysisPayload = {
+            globalScore,
+            globalLevel,
+            categoryScores,
+            temporalRisk,
+            summary: analysisResult.summary,
+            patterns: analysisResult.patterns,
+            recommendations: analysisResult.recommendations,
+            followUp: analysisResult.followUp,
+            alerts: analysisResult.alerts,
+            aiAnalysis,
+            protocolPhases,
+            patient: profile,
+          };
+
+          const createdRecord = await storage.createBloodTest({
+            userId: user.id,
+            fileName: file,
+            fileType: "application/pdf",
+            fileSize: buffer.length,
+            status: "completed",
+            error: null,
+            markers,
+            analysis: analysisPayload,
+            globalScore,
+            globalLevel,
+            createdAt: new Date(),
+            completedAt: new Date(),
+          });
+
+          created.push({
+            id: createdRecord.id,
+            fileName: createdRecord.fileName,
+            markers: markers.length,
+            globalScore,
+          });
+        } catch (err) {
+          skipped.push({ fileName: file, error: err instanceof Error ? err.message : "Erreur inconnue" });
+        }
+      }
+
+      res.json({ created, skipped });
+    } catch (error) {
+      console.error("[BloodTests] Seed error:", error);
+      res.status(500).json({ error: "Seed error" });
+    }
+  });
+
   app.post("/api/blood-tests/upload", requireAuth, upload.single("file"), async (req, res) => {
     try {
       const auth = (req as any).auth as { userId: string; email: string };
