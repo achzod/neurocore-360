@@ -164,10 +164,11 @@ export function registerBloodTestsRoutes(app: Express): void {
     if (!requireAdmin(req, res)) return;
     try {
       const body = (req.body || {}) as { email?: string; files?: string[]; includeAI?: boolean };
-      const seedEmail =
+      const seedEmail = (
         String(body.email || "").trim() ||
         (process.env.ADMIN_EMAILS || "").split(",")[0]?.trim() ||
-        "achkou@gmail.com";
+        "achkou@gmail.com"
+      ).toLowerCase();
 
       let user = await storage.getUserByEmail(seedEmail);
       if (!user) {

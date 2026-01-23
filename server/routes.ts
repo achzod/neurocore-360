@@ -1007,25 +1007,28 @@ export async function registerRoutes(
   app.post("/api/auth/magic-link", async (req, res) => {
     try {
       const { email } = req.body;
-      if (!email || !email.includes("@")) {
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+      if (!normalizedEmail || !normalizedEmail.includes("@")) {
         res.status(400).json({ error: "Email invalide" });
         return;
       }
 
-      let user = await storage.getUserByEmail(email);
+      let user = await storage.getUserByEmail(normalizedEmail);
       if (!user) {
-        user = await storage.createUser({ email });
+        user = await storage.createUser({ email: normalizedEmail });
       }
 
-      const token = await storage.createMagicToken(email);
+      const token = await storage.createMagicToken(normalizedEmail);
       
       const baseUrl = getBaseUrl();
-      const emailSent = await sendMagicLinkEmail(email, token, baseUrl);
+      const emailSent = await sendMagicLinkEmail(normalizedEmail, token, baseUrl);
       
       if (emailSent) {
         res.json({ success: true, message: "Lien magique envoyé" });
       } else {
-        console.log(`[Auth] Magic link for ${email}: ${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`);
+        console.log(
+          `[Auth] Magic link for ${normalizedEmail}: ${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(normalizedEmail)}`
+        );
         res.json({ success: true, message: "Lien magique envoyé" });
       }
     } catch (error) {
@@ -1042,13 +1045,14 @@ export async function registerRoutes(
         return;
       }
 
+      const normalizedEmail = String(email).trim().toLowerCase();
       const verifiedEmail = await storage.verifyMagicToken(token as string);
-      if (!verifiedEmail || verifiedEmail !== email) {
+      if (!verifiedEmail || verifiedEmail.trim().toLowerCase() !== normalizedEmail) {
         res.status(401).json({ error: "Lien invalide ou expiré" });
         return;
       }
 
-      res.json({ success: true, email: verifiedEmail });
+      res.json({ success: true, email: normalizedEmail });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -1057,21 +1061,22 @@ export async function registerRoutes(
   app.post("/api/auth/verify-magic-link", async (req, res) => {
     try {
       const { token, email } = req.body as { token?: string; email?: string };
-      if (!token || !email) {
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+      if (!token || !normalizedEmail) {
         res.status(400).json({ error: "Token ou email manquant" });
         return;
       }
 
       const verifiedEmail = await storage.verifyMagicToken(token);
-      if (!verifiedEmail || verifiedEmail !== email) {
+      if (!verifiedEmail || verifiedEmail.trim().toLowerCase() !== normalizedEmail) {
         res.status(401).json({ error: "Lien invalide ou expire" });
         return;
       }
 
-      let user = await storage.getUserByEmail(verifiedEmail);
+      let user = await storage.getUserByEmail(normalizedEmail);
       if (!user) {
         const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
-        user = await storage.createUser({ email: verifiedEmail, credits: defaultCredits });
+        user = await storage.createUser({ email: normalizedEmail, credits: defaultCredits });
       }
 
       const jwtToken = signAuthToken({ userId: user.id, email: user.email });
@@ -1093,7 +1098,8 @@ export async function registerRoutes(
   app.post("/api/auth/check-email", async (req, res) => {
     try {
       const { email } = req.body;
-      const user = await storage.getUserByEmail(email);
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+      const user = normalizedEmail ? await storage.getUserByEmail(normalizedEmail) : undefined;
       res.json({ exists: !!user });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });

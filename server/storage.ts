@@ -288,14 +288,19 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find((user) => user.email === email);
+    const normalizedEmail = email.trim().toLowerCase();
+    return Array.from(this.users.values()).find(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail
+    );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
+    const normalizedEmail = insertUser.email.trim().toLowerCase();
     const user: User = {
       ...insertUser,
       id,
+      email: normalizedEmail,
       credits: insertUser.credits ?? DEFAULT_USER_CREDITS,
       createdAt: new Date(),
     };
@@ -842,7 +847,8 @@ export class PgStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const normalizedEmail = email.trim().toLowerCase();
+    const result = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1", [normalizedEmail]);
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
     return {
@@ -857,9 +863,10 @@ export class PgStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     await this.ensureUserCreditsColumn();
     const id = randomUUID();
+    const normalizedEmail = insertUser.email.trim().toLowerCase();
     const result = await pool.query(
       `INSERT INTO users (id, email, name, credits, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *`,
-      [id, insertUser.email, insertUser.name || null, insertUser.credits ?? DEFAULT_USER_CREDITS]
+      [id, normalizedEmail, insertUser.name || null, insertUser.credits ?? DEFAULT_USER_CREDITS]
     );
     const row = result.rows[0];
     return {
