@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ClientHeader } from "@/components/client/ClientHeader";
 import { BloodRadar } from "@/components/blood/BloodRadar";
+import { StatusBadge } from "@/components/blood/StatusBadge";
+import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
 import { getBiomarkerStatusLabel } from "@/lib/biomarker-colors";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
@@ -224,10 +226,20 @@ export default function BloodAnalysisReport() {
             ) : (
               critical.map((marker) => (
                 <div key={marker.code} className="border-b border-white/10 py-3 last:border-b-0">
-                  <p className="font-medium">{marker.name}</p>
-                  <p className="text-sm text-white/60">
-                    {marker.value} {marker.unit} • Ref {marker.refMin}-{marker.refMax}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{marker.name}</p>
+                    <StatusBadge status={marker.status} />
+                  </div>
+                  <BiomarkerRangeIndicator
+                    value={marker.value}
+                    unit={marker.unit}
+                    status={marker.status}
+                    normalMin={marker.refMin ?? undefined}
+                    normalMax={marker.refMax ?? undefined}
+                    optimalMin={marker.optimalMin ?? undefined}
+                    optimalMax={marker.optimalMax ?? undefined}
+                    className="mt-2"
+                  />
                 </div>
               ))
             )}
@@ -239,10 +251,20 @@ export default function BloodAnalysisReport() {
             ) : (
               warning.map((marker) => (
                 <div key={marker.code} className="border-b border-white/10 py-3 last:border-b-0">
-                  <p className="font-medium">{marker.name}</p>
-                  <p className="text-sm text-white/60">
-                    {marker.value} {marker.unit} • Optimal {marker.optimalMin}-{marker.optimalMax}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{marker.name}</p>
+                    <StatusBadge status={marker.status} />
+                  </div>
+                  <BiomarkerRangeIndicator
+                    value={marker.value}
+                    unit={marker.unit}
+                    status={marker.status}
+                    normalMin={marker.refMin ?? undefined}
+                    normalMax={marker.refMax ?? undefined}
+                    optimalMin={marker.optimalMin ?? undefined}
+                    optimalMax={marker.optimalMax ?? undefined}
+                    className="mt-2"
+                  />
                 </div>
               ))
             )}
@@ -260,15 +282,26 @@ export default function BloodAnalysisReport() {
               <div className="grid gap-3 md:grid-cols-2">
                 {items.map((marker) => (
                   <div key={marker.code} className="rounded border border-white/10 p-4">
-                    <p className="text-sm text-white/60">{marker.code.toUpperCase()}</p>
-                    <p className="font-medium">{marker.name}</p>
-                    <p className="text-sm text-white/60">
-                      {marker.value} {marker.unit} • {getBiomarkerStatusLabel(marker.status)}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-white/60">{marker.code.toUpperCase()}</p>
+                        <p className="font-medium">{marker.name}</p>
+                      </div>
+                      <StatusBadge status={marker.status} />
+                    </div>
+                    <p className="text-sm text-white/60 mt-2">
+                      {getBiomarkerStatusLabel(marker.status)} • Ref {marker.refMin ?? "-"}-{marker.refMax ?? "-"}
                     </p>
-                    <p className="text-xs text-white/40 mt-1">
-                      Ref {marker.refMin ?? "-"}-{marker.refMax ?? "-"} • Optimal {marker.optimalMin ?? "-"}-
-                      {marker.optimalMax ?? "-"}
-                    </p>
+                    <BiomarkerRangeIndicator
+                      value={marker.value}
+                      unit={marker.unit}
+                      status={marker.status}
+                      normalMin={marker.refMin ?? undefined}
+                      normalMax={marker.refMax ?? undefined}
+                      optimalMin={marker.optimalMin ?? undefined}
+                      optimalMax={marker.optimalMax ?? undefined}
+                      className="mt-2"
+                    />
                   </div>
                 ))}
               </div>
