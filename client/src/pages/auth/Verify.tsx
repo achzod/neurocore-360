@@ -23,12 +23,18 @@ export default function Verify() {
       return;
     }
 
-    fetch(`/api/auth/verify?token=${token}&email=${encodeURIComponent(emailParam)}`)
+    fetch("/api/auth/verify-magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, email: emailParam }),
+    })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.email) {
-          setEmail(data.email);
-          localStorage.setItem("neurocore_email", data.email);
+        if (data.success && data.me?.email && data.token) {
+          setEmail(data.me.email);
+          localStorage.setItem("neurocore_email", data.me.email);
+          localStorage.setItem("apexlabs_token", data.token);
+          setStatus("success");
           navigate("/dashboard");
         } else {
           setStatus("error");

@@ -9,7 +9,8 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Questionnaire from "@/pages/Questionnaire";
 import Checkout from "@/pages/Checkout";
-import Dashboard from "@/pages/Dashboard";
+import DashboardRouter from "@/pages/DashboardRouter";
+import BloodAnalysisReport from "@/pages/BloodAnalysisReport";
 import AuditDetail from "@/pages/AuditDetail";
 import AdminReviews from "@/pages/AdminReviews";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -86,7 +87,9 @@ function Router() {
       <Route path="/ultimate/:auditId" component={UltimateScanReport} />
       <Route path="/peptides/:auditId" component={PeptidesEngineReport} />
 
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard" component={DashboardRouter} />
+      <Route path="/analysis/:id" component={BloodAnalysisReport} />
+      <Route path="/login" component={Login} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
       <Route path="/auth/login" component={Login} />
       <Route path="/auth/check-email" component={CheckEmail} />

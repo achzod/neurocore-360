@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) NOT NULL UNIQUE,
   name VARCHAR(255),
+  credits INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
@@ -36,6 +37,23 @@ CREATE TABLE IF NOT EXISTS questionnaire_progress (
   status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
   started_at TIMESTAMP DEFAULT NOW() NOT NULL,
   last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Table: blood_tests (dashboard client)
+CREATE TABLE IF NOT EXISTS blood_tests (
+  id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+  file_name TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'processing',
+  error TEXT,
+  markers JSONB DEFAULT '[]'::jsonb,
+  analysis JSONB DEFAULT '{}'::jsonb,
+  global_score INTEGER,
+  global_level TEXT,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  completed_at TIMESTAMP
 );
 
 -- Table: peptides_progress

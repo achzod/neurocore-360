@@ -38,6 +38,8 @@ import {
 } from "./terraService";
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
+import { registerBloodTestsRoutes } from "./blood-tests/routes";
+import { getAuthPayload, signAuthToken } from "./auth";
 import { registerPeptidesRoutes } from "./peptides-engine";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import {
@@ -1052,11 +1054,80 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/auth/verify-magic-link", async (req, res) => {
+    try {
+      const { token, email } = req.body as { token?: string; email?: string };
+      if (!token || !email) {
+        res.status(400).json({ error: "Token ou email manquant" });
+        return;
+      }
+
+      const verifiedEmail = await storage.verifyMagicToken(token);
+      if (!verifiedEmail || verifiedEmail !== email) {
+        res.status(401).json({ error: "Lien invalide ou expire" });
+        return;
+      }
+
+      let user = await storage.getUserByEmail(verifiedEmail);
+      if (!user) {
+        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+        user = await storage.createUser({ email: verifiedEmail, credits: defaultCredits });
+      }
+
+      const jwtToken = signAuthToken({ userId: user.id, email: user.email });
+      res.json({
+        success: true,
+        token: jwtToken,
+        me: {
+          email: user.email,
+          credits: user.credits ?? 0,
+          isAdmin: false,
+        },
+      });
+    } catch (error) {
+      console.error("[Auth] Verify magic link error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.post("/api/auth/check-email", async (req, res) => {
     try {
       const { email } = req.body;
       const user = await storage.getUserByEmail(email);
       res.json({ exists: !!user });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/me", async (req, res) => {
+    try {
+      const payload = getAuthPayload(req);
+      if (!payload) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const user = await storage.getUser(payload.userId);
+      if (!user) {
+        res.status(404).json({ error: "Utilisateur introuvable" });
+        return;
+      }
+
+      const adminEmails = (process.env.ADMIN_EMAILS || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+      const isAdmin = adminEmails.includes(user.email.toLowerCase());
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          credits: user.credits ?? 0,
+          isAdmin,
+        },
+      });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -3442,6 +3513,9 @@ export async function registerRoutes(
 
   // ==================== BLOOD ANALYSIS ROUTES ====================
   registerBloodAnalysisRoutes(app);
+
+  // ==================== BLOOD TESTS DASHBOARD ROUTES ====================
+  registerBloodTestsRoutes(app);
 
   // ==================== PEPTIDES ENGINE ROUTES ====================
   registerPeptidesRoutes(app);
