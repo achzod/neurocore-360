@@ -702,6 +702,21 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
   }));
 };
 
+const hasMarkerValueInText = (text: string, markerId: string): boolean => {
+  const synonyms = MARKER_SYNONYMS[markerId];
+  if (!synonyms || synonyms.length === 0) return false;
+  const cleaned = text.replace(/\s+/g, " ");
+  const number = "[<>]?\\s*\\d+(?:[.,]\\d+)?";
+  for (const synonym of synonyms) {
+    const patternA = new RegExp(`${synonym.source}[^0-9]{0,35}(${number})`, "i");
+    const patternB = new RegExp(`(${number})[^A-Za-z0-9]{0,35}${synonym.source}`, "i");
+    if (patternA.test(cleaned) || patternB.test(cleaned)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const addComputedMarkers = (markers: BloodMarkerInput[]): BloodMarkerInput[] => {
   const map = new Map(markers.map((marker) => [marker.markerId, marker]));
   if (!map.has("homa_ir")) {
@@ -775,9 +790,9 @@ ${cleaned.slice(0, 12000)}`;
     .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]));
 
   for (const item of extracted) {
-    if (!unique.has(item.markerId)) {
-      unique.set(item.markerId, item);
-    }
+    if (unique.has(item.markerId)) continue;
+    if (!hasMarkerValueInText(cleaned, item.markerId)) continue;
+    unique.set(item.markerId, item);
   }
 
   return addComputedMarkers(Array.from(unique.values()));
