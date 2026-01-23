@@ -424,6 +424,14 @@ export interface BloodMarkerInput {
   value: number;
 }
 
+export interface PatientInfo {
+  prenom?: string;
+  nom?: string;
+  email?: string;
+  gender?: "homme" | "femme";
+  dob?: string;
+}
+
 export interface MarkerAnalysis {
   markerId: string;
   name: string;
@@ -591,26 +599,26 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   dhea_s: [/dhea[-\s]?s/i],
   cortisol: [/cortisol/i],
   igf1: [/igf[-\s]?1/i],
-  tsh: [/t\.?\s*s\.?\s*h\.?/i],
-  t4_libre: [/t4\s*libre/i, /ft4/i],
-  t3_libre: [/t3\s*libre/i, /ft3/i],
+  tsh: [/t\.?\s*s\.?\s*h\.?/i, /thyr[eé]o?stim/i],
+  t4_libre: [/t4\s*libre/i, /ft4/i, /thyroxine\s*libre/i],
+  t3_libre: [/t3\s*libre/i, /ft3/i, /triiodothyronine\s*libre/i],
   t3_reverse: [/t3\s*reverse/i, /\brt3\b/i],
   anti_tpo: [/anti[-\s]?tpo/i, /anti[-\s]?thyro/i],
-  glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i],
-  hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i],
+  glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i, /glyc[ée]mie\s*à\s*jeun/i],
+  hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i],
   insuline_jeun: [/insuline.*je[uû]n/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
   triglycerides: [/triglyc[ée]rides/i],
-  hdl: [/cholest[ée]rol\s*hdl/i, /\bhdl\b/i],
-  ldl: [/cholest[ée]rol\s*ldl/i, /\bldl\b/i],
+  hdl: [/cholest[ée]rol\s*hdl/i, /\bhdl\b/i, /\bhdl[-\s]?c\b/i],
+  ldl: [/cholest[ée]rol\s*ldl/i, /\bldl\b/i, /\bldl[-\s]?c\b/i],
   apob: [/apo\s*b/i],
   lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
-  crp_us: [/crp.*(us|ultra)/i],
+  crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
   homocysteine: [/homocyst[ée]ine/i],
   ferritine: [/ferritine/i],
   fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i],
   transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i],
-  vitamine_d: [/vitamine\s*d/i, /25\s*oh/i],
+  vitamine_d: [/vitamine\s*d/i, /25\s*oh/i, /25[-\s]?oh\s*vit/i],
   b12: [/vitamine\s*b12/i, /cobalamine/i],
   folate: [/folate/i, /vitamine\s*b9/i],
   magnesium_rbc: [/magn[eé]sium.*rbc/i, /magn[eé]sium.*intra/i],
@@ -702,6 +710,101 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
   }));
 };
 
+const extractNumberFromSnippet = (snippet: string): number | null => {
+  const matches = snippet.matchAll(/[<>]?\s*\d+(?:[.,]\d+)?/g);
+  for (const match of matches) {
+    const raw = match[0].replace(/[<>]/g, "").replace(",", ".").trim();
+    const value = Number(raw);
+    if (Number.isNaN(value)) continue;
+    const start = match.index ?? 0;
+    const before = snippet.slice(Math.max(0, start - 3), start);
+    const after = snippet.slice(start + match[0].length, start + match[0].length + 3);
+    if (before.includes("-") || after.includes("-") || before.includes("–") || after.includes("–")) {
+      continue;
+    }
+    return value;
+  }
+  return null;
+};
+
+const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
+  const cleaned = pdfText.replace(/\s+/g, " ").trim();
+  if (!cleaned) return [];
+
+  const results = new Map<string, { value: number; unit?: string }>();
+  const entries = Object.entries(MARKER_SYNONYMS);
+
+  for (const [markerId, patterns] of entries) {
+    for (const pattern of patterns) {
+      const regex = new RegExp(pattern.source, "gi");
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(cleaned)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+        const after = cleaned.slice(end, end + 55);
+        const before = cleaned.slice(Math.max(0, start - 55), start);
+        const value = extractNumberFromSnippet(after) ?? extractNumberFromSnippet(before);
+        if (value === null) continue;
+        const unit = findUnit(after) || findUnit(before);
+        results.set(markerId, { value, unit });
+        break;
+      }
+      if (results.has(markerId)) break;
+    }
+  }
+
+  return Array.from(results.entries()).map(([markerId, data]) => ({
+    markerId,
+    value: normalizeMarkerValue(markerId, data.value, data.unit),
+  }));
+};
+
+export const extractPatientInfoFromPdfText = (pdfText: string): PatientInfo => {
+  const cleaned = pdfText.replace(/\s+/g, " ").trim();
+  if (!cleaned) return {};
+
+  const pick = (regex: RegExp): string | undefined => {
+    const match = cleaned.match(regex);
+    return match?.[1]?.trim();
+  };
+
+  const prenom =
+    pick(
+      /pr[ée]nom\(s\)?\s*de\s*naissance\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(date|sexe|lieu|n°|adresse|$))/i
+    ) ||
+    pick(
+      /pr[ée]nom\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(date|sexe|lieu|n°|adresse|$))/i
+    );
+  const nom =
+    pick(
+      /nom\s*de\s*naissance\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(pr[ée]nom|date|sexe|lieu|n°|adresse|$))/i
+    ) ||
+    pick(
+      /\bnom\s*[:\-]?\s*([A-Za-zÀ-ÿ' -]{2,}?)(?=\s*(pr[ée]nom|date|sexe|lieu|n°|adresse|$))/i
+    );
+  const dobMatch = cleaned.match(
+    /(date de naissance|n[ée]e?\s*le)\s*[:\-]?\s*([0-9]{2}[\/.-][0-9]{2}[\/.-][0-9]{2,4})/i
+  );
+  const dob = dobMatch?.[2] || pick(/\b([0-9]{2}[\/.-][0-9]{2}[\/.-][0-9]{2,4})\b/);
+  const genderMatch = cleaned.match(/\b(sexe|genre)\s*[:\-]?\s*(homme|femme|h|f)\b/i);
+  const genderRaw = genderMatch?.[2];
+  const email = pick(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+
+  let gender: PatientInfo["gender"];
+  if (genderRaw) {
+    const normalized = genderRaw.toLowerCase();
+    gender = normalized.startsWith("f") ? "femme" : "homme";
+  }
+
+  return {
+    prenom,
+    nom,
+    email,
+    gender,
+    dob,
+  };
+};
+
 const hasMarkerValueInText = (text: string, markerId: string): boolean => {
   const synonyms = MARKER_SYNONYMS[markerId];
   if (!synonyms || synonyms.length === 0) return false;
@@ -738,7 +841,10 @@ export async function extractMarkersFromPdfText(
   if (!cleaned) return [];
 
   const lineExtracted = extractMarkersFromLines(pdfText);
-  const unique = new Map(lineExtracted.map((item) => [item.markerId, item]));
+  const textExtracted = extractMarkersFromText(cleaned);
+  const unique = new Map(
+    [...lineExtracted, ...textExtracted].map((item) => [item.markerId, item])
+  );
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return addComputedMarkers(Array.from(unique.values()));

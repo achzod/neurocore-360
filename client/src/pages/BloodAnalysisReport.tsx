@@ -36,6 +36,14 @@ type BloodTestDetail = {
     globalScore: number;
     categoryScores: Record<string, number>;
     temporalRisk?: { score: number; level: string; critical: number; warning: number };
+    summary?: { optimal: string[]; watch: string[]; action: string[] };
+    patterns?: Array<{ name: string; causes: string[]; protocol: string[] }>;
+    recommendations?: {
+      priority1: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
+      priority2: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
+    };
+    followUp?: Array<{ test: string; delay: string; objective: string }>;
+    alerts?: string[];
     aiAnalysis?: string;
     protocolPhases?: Array<{ id: string; title: string; items: string[] }>;
     patient?: {
@@ -97,15 +105,40 @@ export default function BloodAnalysisReport() {
   const markers = data?.markers || [];
   const analysis = data?.analysis;
   const globalScore = analysis?.globalScore ?? data?.bloodTest.globalScore ?? 0;
+  const categoryScores = analysis?.categoryScores || {};
+  const hasCategoryScores = Object.keys(categoryScores).length > 0;
+  const computeFallbackScores = () => {
+    const buckets: Record<string, number[]> = {};
+    markers.forEach((marker) => {
+      const bucket = marker.category || "general";
+      if (!buckets[bucket]) buckets[bucket] = [];
+      const score =
+        marker.status === "optimal"
+          ? 100
+          : marker.status === "normal"
+          ? 80
+          : marker.status === "suboptimal"
+          ? 55
+          : 30;
+      buckets[bucket].push(score);
+    });
+    return Object.fromEntries(
+      Object.entries(buckets).map(([key, values]) => [
+        key,
+        Math.round(values.reduce((sum, value) => sum + value, 0) / values.length),
+      ])
+    );
+  };
+  const fallbackScores = useMemo(() => computeFallbackScores(), [markers]);
   const radarData = useMemo(() => {
-    const scores = analysis?.categoryScores || {};
+    const scores = hasCategoryScores ? categoryScores : fallbackScores;
     return Object.entries(scores).map(([key, score]) => ({
       key,
       label: categoryLabels[key] || key,
       score,
       status: score >= 80 ? "optimal" : score >= 65 ? "normal" : score >= 45 ? "suboptimal" : "critical",
     }));
-  }, [analysis]);
+  }, [categoryScores, fallbackScores, hasCategoryScores]);
 
   const groupedMarkers = useMemo(() => {
     return markers.reduce<Record<string, typeof markers>>((acc, marker) => {
@@ -151,6 +184,9 @@ export default function BloodAnalysisReport() {
           <div className="flex flex-wrap gap-4 text-sm text-white/60">
             <span>REF-{data.bloodTest.id.slice(0, 8).toUpperCase()}</span>
             <span>Patient {patientLabel}</span>
+            {patient.gender && <span>Sexe {patient.gender}</span>}
+            {patient.dob && <span>Naissance {patient.dob}</span>}
+            {patient.email && <span>{patient.email}</span>}
             <span>Upload {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR")}</span>
             <span>{markers.length} marqueurs</span>
           </div>
@@ -167,6 +203,29 @@ export default function BloodAnalysisReport() {
             {radarData.length > 0 ? <BloodRadar data={radarData} /> : <p className="text-white/60">Radar indisponible.</p>}
           </Card>
         </section>
+
+        {analysis?.summary && (
+          <section className="grid gap-4 md:grid-cols-3">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Optimaux</p>
+              <p className="text-sm text-white/70 mt-3">
+                {analysis.summary.optimal.length ? analysis.summary.optimal.join(", ") : "Aucun"}
+              </p>
+            </Card>
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">A surveiller</p>
+              <p className="text-sm text-white/70 mt-3">
+                {analysis.summary.watch.length ? analysis.summary.watch.join(", ") : "Aucun"}
+              </p>
+            </Card>
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Action requise</p>
+              <p className="text-sm text-white/70 mt-3">
+                {analysis.summary.action.length ? analysis.summary.action.join(", ") : "Aucune"}
+              </p>
+            </Card>
+          </section>
+        )}
 
         <section className="grid gap-4 md:grid-cols-3">
           <Card className="border border-white/10 bg-white/5 p-4">
@@ -195,6 +254,27 @@ export default function BloodAnalysisReport() {
           </section>
         )}
 
+        {analysis?.patterns && analysis.patterns.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Patterns detectes</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {analysis.patterns.map((pattern) => (
+                <Card key={pattern.name} className="border border-white/10 bg-white/5 p-5 space-y-2">
+                  <p className="font-semibold">{pattern.name}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">Causes</p>
+                  <p className="text-sm text-white/70">{pattern.causes.join(", ")}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">Protocoles</p>
+                  <ul className="text-sm text-white/70 space-y-1">
+                    {pattern.protocol.map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Protocole d'optimisation</h2>
           <div className="flex flex-wrap gap-2">
@@ -217,6 +297,75 @@ export default function BloodAnalysisReport() {
             </Card>
           )}
         </section>
+
+        {analysis?.recommendations && (
+          <section className="grid gap-4 md:grid-cols-2">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <h3 className="text-lg font-semibold mb-3">Priorite 1</h3>
+              {analysis.recommendations.priority1.length === 0 ? (
+                <p className="text-sm text-white/50">Aucune recommandation urgente.</p>
+              ) : (
+                <ul className="space-y-2 text-sm text-white/70">
+                  {analysis.recommendations.priority1.map((item) => (
+                    <li key={item.action}>
+                      <span className="font-semibold">{item.action}</span>
+                      {item.dosage ? ` • ${item.dosage}` : ""}
+                      {item.timing ? ` • ${item.timing}` : ""}
+                      <span className="block text-xs text-white/50">Pourquoi: {item.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <h3 className="text-lg font-semibold mb-3">Priorite 2</h3>
+              {analysis.recommendations.priority2.length === 0 ? (
+                <p className="text-sm text-white/50">Aucune recommandation secondaire.</p>
+              ) : (
+                <ul className="space-y-2 text-sm text-white/70">
+                  {analysis.recommendations.priority2.map((item) => (
+                    <li key={item.action}>
+                      <span className="font-semibold">{item.action}</span>
+                      {item.dosage ? ` • ${item.dosage}` : ""}
+                      {item.timing ? ` • ${item.timing}` : ""}
+                      <span className="block text-xs text-white/50">Pourquoi: {item.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </section>
+        )}
+
+        {analysis?.followUp && analysis.followUp.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Controles a prevoir</h2>
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <div className="grid gap-3 md:grid-cols-3 text-sm text-white/70">
+                {analysis.followUp.map((item) => (
+                  <div key={item.test} className="space-y-1">
+                    <p className="font-semibold">{item.test}</p>
+                    <p className="text-xs text-white/50">Delai: {item.delay}</p>
+                    <p className="text-xs text-white/50">{item.objective}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </section>
+        )}
+
+        {analysis?.alerts && analysis.alerts.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Alertes prioritaires</h2>
+            <Card className="border border-white/10 bg-white/5 p-6 text-sm text-white/70">
+              <ul className="space-y-2">
+                {analysis.alerts.map((alert) => (
+                  <li key={alert}>• {alert}</li>
+                ))}
+              </ul>
+            </Card>
+          </section>
+        )}
 
         <section className="grid gap-4 md:grid-cols-2">
           <Card className="border border-white/10 bg-white/5 p-6">

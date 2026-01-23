@@ -3,6 +3,7 @@ import multer from "multer";
 import pdf from "pdf-parse";
 import {
   analyzeBloodwork,
+  extractPatientInfoFromPdfText,
   extractMarkersFromPdfText,
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
@@ -194,7 +195,8 @@ export function registerBloodTestsRoutes(app: Express): void {
       });
 
       const parsed = await pdf(req.file.buffer);
-      const extractedMarkers = await extractMarkersFromPdfText(parsed.text || "", req.file.originalname);
+      const pdfText = parsed.text || "";
+      const extractedMarkers = await extractMarkersFromPdfText(pdfText, req.file.originalname);
       if (!extractedMarkers.length) {
         const updated = await storage.updateBloodTest(baseRecord.id, {
           status: "error",
@@ -207,12 +209,16 @@ export function registerBloodTestsRoutes(app: Express): void {
         return;
       }
 
+      const pdfProfile = extractPatientInfoFromPdfText(pdfText);
+      const bodyGender = String(req.body.gender || "").trim().toLowerCase();
       const profile = {
-        email: String(req.body.email || user.email || "").trim() || undefined,
-        prenom: String(req.body.prenom || "").trim() || undefined,
-        nom: String(req.body.nom || "").trim() || undefined,
-        gender: (req.body.gender as "homme" | "femme") || "homme",
-        dob: req.body.dob || undefined,
+        email: String(req.body.email || pdfProfile.email || user.email || "").trim() || undefined,
+        prenom: String(req.body.prenom || pdfProfile.prenom || "").trim() || undefined,
+        nom: String(req.body.nom || pdfProfile.nom || "").trim() || undefined,
+        gender: (bodyGender === "femme" || bodyGender === "homme"
+          ? (bodyGender as "homme" | "femme")
+          : pdfProfile.gender) || "homme",
+        dob: String(req.body.dob || pdfProfile.dob || "").trim() || undefined,
       };
 
       const analysisResult = await analyzeBloodwork(extractedMarkers, {
@@ -265,6 +271,9 @@ export function registerBloodTestsRoutes(app: Express): void {
         temporalRisk,
         summary: analysisResult.summary,
         patterns: analysisResult.patterns,
+        recommendations: analysisResult.recommendations,
+        followUp: analysisResult.followUp,
+        alerts: analysisResult.alerts,
         aiAnalysis,
         protocolPhases,
         patient: profile,
