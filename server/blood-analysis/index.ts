@@ -451,6 +451,63 @@ export interface BloodAnalysisResult {
   alerts: string[];
 }
 
+const extractJsonArray = (raw: string): unknown[] => {
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  const start = trimmed.indexOf("[");
+  const end = trimmed.lastIndexOf("]");
+  if (start === -1 || end === -1 || end <= start) return [];
+  try {
+    return JSON.parse(trimmed.slice(start, end + 1));
+  } catch {
+    return [];
+  }
+};
+
+export async function extractMarkersFromPdfText(
+  pdfText: string,
+  fileName: string
+): Promise<BloodMarkerInput[]> {
+  const cleaned = pdfText.replace(/\s+/g, " ").trim();
+  if (!cleaned) return [];
+
+  const anthropic = new Anthropic();
+  const markerList = Object.entries(BIOMARKER_RANGES)
+    .map(([id, range]) => `${id} (${range.name}, ${range.unit})`)
+    .join(", ");
+
+  const userPrompt = `Tu recois le texte extrait d'un bilan sanguin PDF (${fileName}).
+Ta mission: extraire les valeurs numeriques et les associer aux biomarqueurs autorises.
+
+Liste autorisee: ${markerList}
+
+Regles:
+- Retourne UNIQUEMENT un JSON array (sans markdown).
+- Chaque element: {"markerId": "...", "value": number}
+- Utilise seulement les markerId de la liste autorisee.
+- Ignore les valeurs non numeriques ou ambigues.
+
+TEXTE PDF:
+${cleaned.slice(0, 12000)}`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-5-20251101",
+    max_tokens: 1200,
+    system: "Tu es un extracteur strict de biomarqueurs. Tu ne renvoies que du JSON valide.",
+    messages: [{ role: "user", content: userPrompt }],
+  });
+
+  const textContent = response.content.find((c) => c.type === "text");
+  const extracted = extractJsonArray(textContent?.text || "");
+  return extracted
+    .map((item) => ({
+      markerId: String((item as any).markerId || "").trim(),
+      value: Number((item as any).value),
+    }))
+    .filter((item) => item.markerId && !Number.isNaN(item.value))
+    .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]));
+}
+
 function getMarkerStatus(value: number, range: BiomarkerRange): "optimal" | "normal" | "suboptimal" | "critical" {
   // Check if value is within optimal range
   if (value >= range.optimalMin && value <= range.optimalMax) {

@@ -1,33 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BLOOD_PANELS, getMarkersByGender } from "@/lib/blood-questionnaire";
 
 export default function BloodAnalysisStart() {
   const [, setLocation] = useLocation();
   const [reportId, setReportId] = useState("");
-  const [email, setEmail] = useState("");
   const [prenom, setPrenom] = useState("");
-  const [age, setAge] = useState("");
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
+  const [dob, setDob] = useState("");
   const [gender, setGender] = useState<"homme" | "femme">("homme");
-  const [objectives, setObjectives] = useState("");
-  const [medications, setMedications] = useState("");
-  const [markerValues, setMarkerValues] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentReady, setPaymentReady] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
-  const panels = useMemo(() => {
-    const genderMarkers = getMarkersByGender(gender);
-    return BLOOD_PANELS.map((panel) => ({
-      ...panel,
-      markers: panel.markers.filter((marker) =>
-        genderMarkers.some((allowed) => allowed.id === marker.id)
-      ),
-    })).filter((panel) => panel.markers.length > 0);
-  }, [gender]);
+  const sessionId =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("session_id")
+      : null;
 
   const handleOpen = () => {
     const trimmed = reportId.trim();
@@ -35,63 +28,118 @@ export default function BloodAnalysisStart() {
     setLocation(`/blood-analysis/${trimmed}`);
   };
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    if (!sessionId) return;
+    const confirmPayment = async () => {
+      setPaymentLoading(true);
+      try {
+        const response = await fetch("/api/stripe/confirm-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        const data = await response.json();
+        if (data?.success) {
+          setPaymentReady(true);
+          if (data.email && !email) {
+            setEmail(data.email);
+          }
+        } else {
+          setError("Paiement non confirme. Reessaie ou contacte le support.");
+        }
+      } catch {
+        setError("Impossible de verifier le paiement.");
+      } finally {
+        setPaymentLoading(false);
+      }
+    };
+    confirmPayment();
+  }, [sessionId]);
+
+  const handlePayment = async () => {
     setError(null);
     if (!email.trim()) {
       setError("Merci d'indiquer un email valide.");
       return;
     }
-
-    const requiredMarkers = panels.flatMap((panel) => panel.markers.filter((marker) => marker.required));
-    const missingRequired = requiredMarkers.filter((marker) => !markerValues[marker.id]?.trim());
-    if (missingRequired.length > 0) {
-      setError(`Champs requis manquants: ${missingRequired.map((m) => m.name).join(", ")}`);
+    const priceId = import.meta.env.VITE_STRIPE_PRICE_BLOOD_ANALYSIS;
+    if (!priceId) {
+      setError("Stripe price_id manquant pour Blood Analysis.");
       return;
     }
 
-    const markers = panels
-      .flatMap((panel) => panel.markers)
-      .map((marker) => {
-        const raw = markerValues[marker.id];
-        if (!raw) return null;
-        const parsed = Number(raw.replace(",", "."));
-        if (Number.isNaN(parsed)) {
-          return { marker, invalid: true };
+    setPaymentLoading(true);
+    try {
+      const response = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          email: email.trim(),
+          planType: "BLOOD_ANALYSIS",
+          responses: {},
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.url) {
+        throw new Error(data?.error || "Paiement indisponible.");
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur paiement.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          reject(new Error("Lecture PDF impossible"));
+          return;
         }
-        return { markerId: marker.id, value: parsed };
-      })
-      .filter(Boolean);
+        const base64 = result.split(",")[1];
+        resolve(base64 || "");
+      };
+      reader.onerror = () => reject(new Error("Lecture PDF impossible"));
+      reader.readAsDataURL(file);
+    });
 
-    const invalidMarkers = markers.filter((entry) => "invalid" in entry) as Array<{ marker: { name: string } }>;
-    if (invalidMarkers.length > 0) {
-      setError(`Valeurs invalides: ${invalidMarkers.map((m) => m.marker.name).join(", ")}`);
+  const handleSubmit = async () => {
+    setError(null);
+    if (!paymentReady) {
+      setError("Paiement requis avant l'analyse.");
       return;
     }
-
-    const payloadMarkers = markers.filter((entry) => !("invalid" in entry)) as Array<{
-      markerId: string;
-      value: number;
-    }>;
-
-    if (payloadMarkers.length === 0) {
-      setError("Renseigne au moins un biomarqueur pour lancer l'analyse.");
+    if (!email.trim()) {
+      setError("Merci d'indiquer un email valide.");
+      return;
+    }
+    if (!pdfFile) {
+      setError("Ajoute ton PDF de prise de sang.");
       return;
     }
 
     setSubmitting(true);
     try {
+      const pdfBase64 = await fileToBase64(pdfFile);
       const response = await fetch("/api/blood-analysis/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
-          markers: payloadMarkers,
+          markers: [],
+          pdfBase64,
+          pdfName: pdfFile.name,
+          sessionId,
           profile: {
             prenom: prenom.trim() || undefined,
+            nom: nom.trim() || undefined,
             gender,
-            age: age.trim() || undefined,
-            objectives: objectives.trim() || undefined,
-            medications: medications.trim() || undefined,
+            dob: dob || undefined,
           },
         }),
       });
@@ -115,8 +163,7 @@ export default function BloodAnalysisStart() {
           <p className="text-xs uppercase tracking-[0.3em] text-white/60">Blood Analysis</p>
           <h1 className="text-3xl font-semibold mt-2">Soumettre ton bilan sanguin</h1>
           <p className="text-sm text-white/60 mt-3">
-            Renseigne tes marqueurs pour declencher l'analyse premium. Le rapport sera genere automatiquement et
-            accessible depuis ton email.
+            Tu paies, tu uploades ton PDF, je te renvoie le dashboard expert.
           </p>
         </div>
 
@@ -144,11 +191,11 @@ export default function BloodAnalysisStart() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-[0.2em] text-white/50">Age</label>
+                  <label className="text-xs uppercase tracking-[0.2em] text-white/50">Nom</label>
                   <Input
-                    value={age}
-                    onChange={(event) => setAge(event.target.value)}
-                    placeholder="36"
+                    value={nom}
+                    onChange={(event) => setNom(event.target.value)}
+                    placeholder="Achzod"
                     className="mt-2 bg-black/40 border-white/10 text-white placeholder:text-white/40"
                   />
                 </div>
@@ -171,64 +218,37 @@ export default function BloodAnalysisStart() {
                     ))}
                   </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Objectifs</label>
-                <Textarea
-                  value={objectives}
-                  onChange={(event) => setObjectives(event.target.value)}
-                  placeholder="Performance, perte de gras, optimisation hormonale..."
-                  className="mt-2 bg-black/40 border-white/10 text-white placeholder:text-white/40 min-h-[90px]"
-                />
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Medicaments / suppl.</label>
-                <Textarea
-                  value={medications}
-                  onChange={(event) => setMedications(event.target.value)}
-                  placeholder="Ex: metformine, TRT, complement..."
-                  className="mt-2 bg-black/40 border-white/10 text-white placeholder:text-white/40 min-h-[90px]"
-                />
+                <div>
+                  <label className="text-xs uppercase tracking-[0.2em] text-white/50">Date de naissance</label>
+                  <Input
+                    type="date"
+                    value={dob}
+                    onChange={(event) => setDob(event.target.value)}
+                    className="mt-2 bg-black/40 border-white/10 text-white placeholder:text-white/40"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <h2 className="text-lg font-semibold mb-4">Biomarqueurs</h2>
-              <Accordion type="multiple" defaultValue={panels.map((panel) => panel.id)}>
-                {panels.map((panel) => (
-                  <AccordionItem key={panel.id} value={panel.id} className="border-white/10">
-                    <AccordionTrigger className="text-left text-white/90">
-                      <div>
-                        <p className="text-sm font-semibold">{panel.title}</p>
-                        <p className="text-xs text-white/50">{panel.subtitle}</p>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {panel.markers.map((marker) => (
-                          <div key={marker.id} className="rounded-lg border border-white/10 bg-black/40 p-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold">{marker.name}</p>
-                                <p className="text-xs text-white/50">{marker.hint || "Range optimal disponible"}</p>
-                              </div>
-                              <span className="text-xs text-white/50">{marker.unit}</span>
-                            </div>
-                            <Input
-                              value={markerValues[marker.id] || ""}
-                              onChange={(event) =>
-                                setMarkerValues((prev) => ({ ...prev, [marker.id]: event.target.value }))
-                              }
-                              placeholder={marker.placeholder}
-                              className="mt-3 bg-black/60 border-white/10 text-white placeholder:text-white/40"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-4">
+              <h2 className="text-lg font-semibold">Upload PDF</h2>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  if (file && file.size > 8 * 1024 * 1024) {
+                    setError("PDF trop lourd (max 8MB).");
+                    setPdfFile(null);
+                    return;
+                  }
+                  setPdfFile(file);
+                }}
+                className="block w-full text-sm text-white/70 file:mr-4 file:rounded-md file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-white/20"
+              />
+              <p className="text-xs text-white/50">
+                Formats acceptes: PDF. On extrait automatiquement les marqueurs.
+              </p>
             </div>
 
             {error && (
@@ -237,16 +257,36 @@ export default function BloodAnalysisStart() {
               </div>
             )}
 
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
-            >
-              {submitting ? "Analyse en cours..." : "Generer mon rapport Blood Analysis"}
-            </Button>
+            {!paymentReady ? (
+              <Button
+                onClick={handlePayment}
+                disabled={paymentLoading}
+                className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+              >
+                {paymentLoading ? "Paiement en cours..." : "Payer et debloquer l'analyse"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+              >
+                {submitting ? "Analyse en cours..." : "Generer mon rapport Blood Analysis"}
+              </Button>
+            )}
           </div>
 
           <div className="space-y-6">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-4">
+              <h2 className="text-lg font-semibold">Suivi paiement</h2>
+              <p className="text-sm text-white/60">
+                {paymentReady
+                  ? "Paiement confirme. Tu peux uploader ton PDF."
+                  : paymentLoading
+                  ? "Verification du paiement..."
+                  : "Paiement requis avant l'analyse."}
+              </p>
+            </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-4">
               <h2 className="text-lg font-semibold">Deja un rapport</h2>
               <p className="text-sm text-white/60">
@@ -266,8 +306,8 @@ export default function BloodAnalysisStart() {
               </Button>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-6 text-sm text-white/60 space-y-2">
-              <p>Minimum requis: TSH, glycemie a jeun, HDL, LDL, ferritine, vitamine D.</p>
-              <p>Les valeurs sont analysees selon des ranges optimaux orientés performance.</p>
+              <p>Une fois le PDF soumis, le dashboard expert est accessible en quelques minutes.</p>
+              <p>Si l'analyse echoue, tu recevras un email de correction.</p>
             </div>
           </div>
         </div>

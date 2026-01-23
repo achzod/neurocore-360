@@ -5,6 +5,7 @@
 import type { Express } from "express";
 import {
   analyzeBloodwork,
+  extractMarkersFromPdfText,
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
   BIOMARKER_RANGES,
@@ -13,6 +14,8 @@ import {
 } from "./index";
 import { storage } from "../storage";
 import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
+import { getUncachableStripeClient } from "../stripeClient";
+import pdf from "pdf-parse";
 
 const getBaseUrl = (): string => {
   return (
@@ -237,29 +240,78 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/blood-analysis/submit", async (req, res) => {
     try {
-      const { userId, email, markers, profile } = req.body as {
+      const { userId, email, markers, profile, pdfBase64, pdfName, sessionId } = req.body as {
         userId?: string;
         email?: string;
         markers: BloodMarkerInput[];
         profile: {
+          prenom?: string;
+          nom?: string;
           gender: "homme" | "femme";
-          age?: string;
-          objectives?: string;
-          medications?: string;
+          dob?: string;
         };
+        pdfBase64?: string;
+        pdfName?: string;
+        sessionId?: string;
       };
 
       const recipientEmail = email || userId;
 
-      if (!recipientEmail || !markers || !profile) {
+      if (!recipientEmail || !profile) {
         res.status(400).json({ error: "Missing required fields" });
+        return;
+      }
+
+      if (!sessionId) {
+        res.status(400).json({ error: "Paiement requis" });
+        return;
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const paid = session.payment_status === "paid" || session.status === "complete";
+      if (!paid || session.metadata?.planType !== "BLOOD_ANALYSIS") {
+        res.status(403).json({ error: "Paiement invalide" });
         return;
       }
 
       console.log(`[BloodAnalysis] Processing submission for ${recipientEmail}`);
 
+      let resolvedMarkers = markers;
+      if ((!resolvedMarkers || resolvedMarkers.length === 0) && pdfBase64) {
+        try {
+          const pdfBuffer = Buffer.from(pdfBase64, "base64");
+          const parsed = await pdf(pdfBuffer);
+          const extractedMarkers = await extractMarkersFromPdfText(parsed.text || "", pdfName || "bilan.pdf");
+          resolvedMarkers = extractedMarkers;
+        } catch (parseError) {
+          console.error("[BloodAnalysis] PDF parse error:", parseError);
+          res.status(400).json({ error: "PDF illisible. Reessaie avec un export labo standard." });
+          return;
+        }
+      }
+
+      if (!resolvedMarkers || resolvedMarkers.length === 0) {
+        res.status(400).json({ error: "Aucun biomarqueur detecte" });
+        return;
+      }
+
+      let computedAge: string | undefined;
+      if (profile.dob) {
+        const dobDate = new Date(profile.dob);
+        if (!Number.isNaN(dobDate.getTime())) {
+          const ageYears = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          computedAge = String(ageYears);
+        }
+      }
+
       // Run analysis
-      const analysisResult = await analyzeBloodwork(markers, profile);
+      const analysisResult = await analyzeBloodwork(resolvedMarkers, {
+        gender: profile.gender,
+        age: computedAge,
+        objectives: undefined,
+        medications: undefined,
+      });
 
       // Get knowledge context
       const knowledgeContext = await getBloodworkKnowledgeContext(
@@ -276,8 +328,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const reportRecord = await storage.createBloodReport({
         email: recipientEmail,
-        profile,
-        markers,
+        profile: {
+          ...profile,
+          age: computedAge,
+        },
+        markers: resolvedMarkers,
         analysis: analysisResult,
         aiReport: aiAnalysis,
       });

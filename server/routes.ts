@@ -1771,6 +1771,14 @@ export async function registerRoutes(
         }
       }
 
+      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
+      const successUrl = isBloodAnalysis
+        ? `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`
+        : `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = isBloodAnalysis
+        ? `${baseUrl}/offers/blood-analysis?cancelled=true`
+        : `${baseUrl}/audit-complet/checkout?cancelled=true`;
+
       const sessionParams: any = {
         payment_method_types: ['card'],
         line_items: [
@@ -1780,8 +1788,8 @@ export async function registerRoutes(
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/audit-complet/checkout?cancelled=true`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         customer_email: email,
         metadata: {
           email,
@@ -1841,8 +1849,13 @@ export async function registerRoutes(
         return;
       }
 
-      if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE") {
+      if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE" && planType !== "BLOOD_ANALYSIS") {
         res.status(400).json({ error: "PLAN_INVALID" });
+        return;
+      }
+
+      if (planType === "BLOOD_ANALYSIS") {
+        res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
       }
 
