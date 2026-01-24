@@ -1,0 +1,651 @@
+
+
+Page 1BLOOD AI - PRD v2.0CONFIDENTIEL
+BLOOD ANALYSIS AI
+Product Requirements Document v2.0 - COMPLET
+Version2.0 - ENRICHI
+DateJanvier 2025
+AuteurProduct Owner
+StatutDraft - Pour dev
+Pages~35 pages
+VISION : Transformer un simple PDF de prise de sang en une experience d'analyse premium. Le
+client      upload      son      bilan,      l'IA      l'analyse      comme      un      medecin      expert      en
+biohacking/performance/longevite,  et  lui  parle  DIRECTEMENT,  comme  en  consultation.  Pas  un
+rapport froid - une vraie conversation.
+CE QUI FAIT LA DIFFERENCE : Le ton. L'IA parle AU client, pas DE lui. 'Ta testosterone est
+excellente' pas 'Le patient presente un taux de testosterone normal'.
+PHILOSOPHIE : Chaque ecran, chaque explication doit apporter de la VALEUR. Le client doit se dire
+'putain je comprends enfin mon corps'. C'est ca qui fait payer premium.
+
+Page 2BLOOD AI - PRD v2.0CONFIDENTIEL
+TABLE DES MATIERES
+PARTIE 1 : EXPERIENCE UTILISATEUR
+•1.1 Parcours utilisateur complet (user flow)
+•1.2 Ecran d'upload et onboarding
+•1.3 Dashboard principal
+•1.4 Onglets et navigation
+PARTIE 2 : SYSTEME D'EXPLICATIONS
+•2.1 Le ton conversationnel (exemples)
+•2.2 Structure d'explication par marqueur
+•2.3 Explications par systeme/theme
+•2.4 Correlations et insights intelligents
+PARTIE 3 : CONTENU & CONNAISSANCES
+•3.1 Base de marqueurs (80+)
+•3.2 Ranges biohacking vs medicaux
+•3.3 Protocoles et recommandations
+•3.4 Sources et references
+PARTIE 4 : FEATURES DIFFERENCIANTES
+•4.1 Scoring gamifie et badges
+•4.2 Comparaison population
+•4.3 Simulateur 'What if'
+•4.4 Timeline et predictions
+•4.5 Mode Coach vs Mode Expert
+PARTIE 5 : TECHNIQUE
+•5.1 Stack et architecture
+•5.2 AI Engine et prompts
+•5.3 Base de donnees
+•5.4 Export PDF client
+
+Page 3BLOOD AI - PRD v2.0CONFIDENTIEL
+PARTIE 1 : EXPERIENCE UTILISATEUR
+1.1 Parcours Utilisateur Complet
+Le parcours doit etre fluide, excitant, et donner envie de revenir. Chaque etape apporte de la valeur.
+Etape 1 : Onboarding (premiere visite)
+•Ecran de bienvenue : 'Bienvenue. On va transformer ta prise de sang en plan d'action.'
+•Questionnaire rapide (2 min) : age, sexe, objectifs (perf, longevite, energie, body comp, libido,
+cognitif)
+•Mode : 'Je debute' vs 'Je connais le biohacking' vs 'Je suis praticien'
+•Historique medical optionnel : pathologies, medicaments, supplements actuels
+•Objectifs chiffres : 'Je veux ameliorer mon energie de X a Y'
+Etape 2 : Upload du PDF
+•Drag & drop ou file picker (PDF, JPG, PNG)
+•Animation de scan pendant l'OCR (3-5 sec)
+•Affichage progressif : 'Marqueurs detectes : 47/47'
+•Validation : Si < 85% confidence, highlight les valeurs a verifier manuellement
+•Historique : 'C'est ton 3eme bilan. On va comparer avec les precedents.'
+Etape 3 : Analyse en cours (loading state)
+•Pas un spinner vide - des messages qui eduquent pendant l'attente :
+-'On analyse ton profil lipidique...'
+-'On calcule ton age metabolique...'
+-'On detecte les correlations entre tes marqueurs...'
+-'On prepare tes recommandations personnalisees...'
+•Barre de progression avec % reel
+Etape 4 : Reveal du score (moment wow)
+•Animation cinematique du score global (count-up 0 -> 82)
+•Message personnalise : 'Achkan, ton score global est de 82/100. Tu es dans le top 15% des
+hommes de ton age.'
+•Points forts en vert, points d'attention en orange/rouge
+•CTA : 'Decouvrir mon analyse complete'
+
+Page 4BLOOD AI - PRD v2.0CONFIDENTIEL
+1.2 Dashboard Principal - Vue d'ensemble
+Le  dashboard  est  le  coeur  de  l'experience.  Il  doit  etre  LISIBLE,  ACTIONNABLE,  et  donner  envie
+d'explorer.
+Zone 1 : Header personnalise
+•Nom + photo (optionnel) : 'Bonjour Achkan'
+•Date du bilan : 'Analyse du 15 janvier 2025'
+•Comparaison : 'vs ton bilan du 3 octobre 2024'
+•Bouton : 'Uploader un nouveau bilan'
+Zone 2 : Score Global (hero section)
+•Cercle anime avec score 0-100 (style Apple Watch)
+•Sous-titre dynamique selon le score :
+-90+ : 'Exceptionnel - Tu es une machine'
+-80-89 : 'Tres bien - Quelques optimisations possibles'
+-70-79 : 'Correct - Des axes d'amelioration clairs'
+-60-69 : 'Attention - Actions recommandees'
+-<60 : 'Prioritaire - Consulte un professionnel'
+•Trend vs dernier bilan : '+7 pts depuis octobre'
+•Age biologique estime : 'Age bio : 32 ans (age reel : 38)'
+Zone 3 : Radar des systemes
+•8 axes : Cardio, Hormonal, Metabolique, Inflammatoire, Hepatique, Renal, Hemato, Thyroide
+•Chaque axe cliquable -> drill-down vers le detail
+•Overlay fantome du bilan precedent pour comparaison visuelle
+•Couleurs semantiques : vert (>80), jaune (60-80), rouge (<60)
+Zone 4 : Alertes prioritaires
+•Cards avec badge pulse pour les marqueurs critiques
+•Exemple : 'nn Homocysteine elevee (14 umol/L) - Risque cardiovasculaire'
+•CTA : 'Voir le protocole'
+•Max 3 alertes visibles, le reste en 'Voir toutes les alertes'
+Zone 5 : Quick wins
+•3 actions simples a faire MAINTENANT
+•Exemple : '1. Ajoute 5000 UI de vitamine D3 le matin'
+•Exemple : '2. Reduis l'alcool a 2 verres/semaine max'
+•Exemple : '3. Ajoute 30mg de zinc au coucher'
+•Chaque action = impact attendu : 'Impact estime : +5 pts en 8 semaines'
+
+Page 5BLOOD AI - PRD v2.0CONFIDENTIEL
+1.3 Onglets et Navigation
+Navigation claire avec onglets accessibles depuis n'importe ou. Chaque onglet = une valeur ajoutee
+specifique.
+ONGLETS PRINCIPAUX (barre de navigation)
+OngletContenuValeur ajoutee
+Dashboard
+Vue d'ensemble, score, radar,
+alertes
+Comprendre sa sante en 10 sec
+SystemesDetail par systeme (8 onglets)Deep dive par theme
+Marqueurs
+Liste complete des 80+
+marqueurs
+Recherche et detail individuel
+HistoriqueEvolution dans le tempsVoir sa progression
+ProtocolesPlan d'action personnaliseSavoir quoi faire concretement
+InsightsCorrelations et predictions IAComprendre les liens
+SimulateurWhat-if scenariosProjeter son futur
+ExportPDF, partage, CSVPartager avec son medecin
+Detail de l'onglet SYSTEMES
+Chaque systeme a sa propre page avec :
+•Score du systeme (0-100) avec interpretation textuelle
+•Liste des marqueurs du systeme avec gauges visuelles
+•Explication globale du systeme (par l'IA)
+•Correlations internes au systeme
+•Recommandations specifiques au systeme
+•Sources et etudes
+Detail de l'onglet INSIGHTS
+C'est LA ou on apporte le plus de valeur. L'IA detecte des patterns :
+•Correlations detectees : 'Ta SHBG elevee + E2 basse = probable deficit en graisses saturees'
+•Patterns temporels : 'Ton cortisol augmente a chaque bilan d'hiver'
+•Risques predits : 'Si tu ne changes rien, risque de resistance insuline dans 2 ans'
+•Comparaison population : 'Tu es dans le top 5% pour la testosterone vs hommes de 35-40 ans'
+•Recommandations croisees : 'En ameliorant X, tu vas aussi ameliorer Y et Z'
+Detail de l'onglet SIMULATEUR
+Feature KILLER - Le client peut simuler l'impact de changements :
+
+Page 6BLOOD AI - PRD v2.0CONFIDENTIEL
+•Sliders interactifs : 'Si j'ajoute 5000 UI de D3...'
+•Prediction IA : '...ton score Inflammatoire devrait passer de 72 a 85 en 8 semaines'
+•Scenarios pre-configures : 'Mode athlete', 'Mode longevite', 'Mode energie'
+•Comparaison avant/apres visuelle
+•Export du plan simule en PDF
+
+Page 7BLOOD AI - PRD v2.0CONFIDENTIEL
+PARTIE 2 : SYSTEME D'EXPLICATIONS
+C'est  ICI  que  tout  se  joue.  Le  ton,  la  pedagogie,  la  personnalisation.  Le  client  doit  avoir
+l'impression de parler a un expert qui le connait.
+2.1 Le Ton Conversationnel
+L'IA parle AU client, comme un coach expert. Jamais froid, jamais alarmiste, toujours actionnable.
+REGLE D'OR : Utiliser 'tu/ta/ton' PARTOUT. Jamais 'le patient', jamais 'l'utilisateur'. C'est UNE
+conversation.
+Exemples de ton - BON vs MAUVAIS
+MAUVAIS : 'Le taux de testosterone du patient (685 ng/dL) se situe dans les valeurs normales de
+reference (264-916 ng/dL).'
+BON : 'Ta testosterone a 685 ng/dL, c'est solide. T'es dans la tranche haute pour ton age. Si tu veux
+passer au niveau superieur (750+), on peut optimiser avec quelques ajustements.'
+MAUVAIS : 'L'homocysteine elevee (14 umol/L) represente un facteur de risque cardiovasculaire. Une
+supplementation en vitamines B est recommandee.'
+BON : 'Ton homocysteine a 14, c'est trop haut. Concretement, ca abime tes arteres en silence. La bonne
+nouvelle ? C'est ultra facile a corriger : un complexe B methyle pendant 8 semaines et tu redescends sous
+8. Je t'explique le protocole exact.'
+MAUVAIS : 'Le ratio TG/HDL de 2.1 suggere une possible resistance a l'insuline debutante.'
+BON : 'Ton ratio TG/HDL a 2.1, ca m'interpelle. C'est un signal precoce que ton corps gere moins bien le
+sucre qu'avant. T'es pas diabetique, loin de la, mais si tu changes rien, ca peut evoluer. Voila ce qu'on va
+faire...'
+
+Page 8BLOOD AI - PRD v2.0CONFIDENTIEL
+2.2 Structure d'Explication par Marqueur
+Chaque marqueur a une fiche COMPLETE. L'utilisateur peut aller du plus simple au plus expert.
+STRUCTURE EN 7 BLOCS (du plus simple au plus expert)
+Bloc 1 : Le Verdict (1 ligne)
+Ce que le client voit EN PREMIER. Un mot + couleur + valeur.
+'OPTIMAL' (badge vert) - 685 ng/dL
+•Verdicts possibles : OPTIMAL / BON / SUBOPTIMAL / ATTENTION / CRITIQUE
+Bloc 2 : L'Explication Simple (2-3 phrases)
+Pour quelqu'un qui ne connait rien. Zero jargon.
+'La testosterone, c'est l'hormone qui te donne de l'energie, de la masse musculaire, de la libido et de la
+motivation. Plus elle est haute (dans les limites), mieux tu te sens.'
+Bloc 3 : TON Resultat (personnalise)
+Ce que SA valeur signifie pour LUI.
+'A 685 ng/dL, t'es dans le top 25% des hommes de ton age. C'est bien, mais on peut viser 750+ pour une
+energie et une libido encore meilleures. Tu as de la marge.'
+Bloc 4 : Pourquoi c'est Important
+Les consequences si c'est trop haut ou trop bas.
+'Une testosterone basse (<400), ca veut dire : fatigue chronique, perte de muscle meme si tu t'entraines,
+libido en berne, brouillard mental, et a long terme, risque de depression et d'osteoporose.'
+Bloc 5 : Ce qui le Fait Bouger
+Facteurs qui augmentent et diminuent le marqueur.
+•Ce qui l'augmente : Sommeil 8h+, musculation composee, zinc, vitamine D, cholesterol
+alimentaire, reduction du stress
+•Ce qui le diminue : Manque de sommeil, alcool, obesite viscerale, stress chronique,
+entrainement excessif, soja en exces
+Bloc 6 : Le Protocole Concret
+EXACTEMENT quoi faire. Dosages, timing, duree.
+'Pour passer de 685 a 750+ :
+1. Zinc 30mg (bisglycinate) au coucher - 8 semaines
+2. Vitamine D3 5000 UI le matin avec du gras - continu
+3. Ashwagandha KSM-66 600mg le soir - 12 semaines
+4. Sommeil 7h30 minimum non-negociable
+Retest dans 8 semaines pour valider.'
+Bloc 7 : Mode Expert (toggle)
+Pour ceux qui veulent les details biochimiques, les etudes, les mecanismes.
+
+Page 9BLOOD AI - PRD v2.0CONFIDENTIEL
+•Pathway de synthese (cholesterol -> pregnenolone -> DHEA -> androstenedione ->
+testosterone)
+•Role de la LH et FSH dans la regulation
+•Etudes cles : Huberman Lab ep. 15, Examine.com testosterone page
+•Interactions avec SHBG, albumine, E2
+
+Page 10BLOOD AI - PRD v2.0CONFIDENTIEL
+2.3 Explications par Systeme/Theme
+Chaque systeme a une page dediee avec une introduction conversationnelle.
+Exemple : Page Systeme Cardiovasculaire
+INTRO DU SYSTEME :
+'Ton systeme cardiovasculaire, c'est le moteur. Si ton coeur et tes arteres sont en forme, tout le reste suit.
+Ici, on regarde pas juste le cholesterol (c'est depasse), on analyse les vrais predicteurs de risque : ApoB,
+Lp(a), inflammation, homocysteine. Voila ce que tes resultats disent...'
+Structure de la page systeme :
+•Score du systeme : 74/100 - 'Globalement sain, mais 2-3 signaux a surveiller'
+•Marqueurs du systeme : Liste avec valeur, gauge, verdict (ApoB, HDL, TG, Lp(a),
+homocysteine, hs-CRP...)
+•Ce qui va bien : 'Ton HDL a 58 c'est top, tes triglycerides a 62 c'est excellent'
+•Ce qui merite attention : 'Ton homocysteine a 14 et ton ApoB a 95 sont au-dessus de
+l'optimal'
+•Correlations : 'Ton ApoB eleve + homocysteine elevee = double signal d'attention CV'
+•Plan d'action systeme : '1. Complexe B methyle, 2. Omega-3 3g/jour, 3. Retest dans 8 sem'
+Exemples d'intros pour chaque systeme
+SystemeIntro conversationnelle
+Cardiovasculaire
+'Le moteur. On regarde les vrais predicteurs, pas juste le cholesterol
+total.'
+Hormonal
+'Tes hormones dictent ton energie, ta libido, ta composition corporelle.
+C'est le chef d'orchestre.'
+Metabolique
+'Comment ton corps gere le sucre et l'energie. Si c'est desequilibre, tu
+stockes du gras et t'es fatigue.'
+Inflammatoire
+'L'inflammation silencieuse, c'est le tueur invisible. On la detecte avant
+qu'elle fasse des degats.'
+Thyroidien
+'Ta thyroide, c'est le thermostat. Si elle tourne au ralenti, tout ralentit :
+metabolisme, energie, humeur.'
+Hepatique
+'Ton foie, c'est l'usine de detox. S'il est surcharge, ca se voit sur ces
+marqueurs.'
+Renal
+'Tes reins filtrent tout. On s'assure qu'ils tournent bien, surtout si tu
+prends des supplements.'
+Hematologique
+'Ton sang transporte l'oxygene et les nutriments. Anemie, carences, tout
+se voit ici.'
+
+Page 11BLOOD AI - PRD v2.0CONFIDENTIEL
+2.4 Correlations et Insights Intelligents
+C'est LA ou l'IA apporte une valeur que le client ne peut pas avoir ailleurs. On connecte les points.
+TYPES DE CORRELATIONS DETECTEES
+Type 1 : Correlations causales
+Un marqueur influence directement un autre.
+'Ta SHBG a 85 nmol/L est haute. C'est pour ca que ta testosterone libre est basse malgre une testosterone
+totale correcte. La SHBG capture ta testo et la rend inutilisable.'
+Type 2 : Correlations de pattern
+Plusieurs marqueurs pointent vers la meme cause.
+'Ton insuline a jeun (8 uIU/mL) + tes triglycerides (95 mg/dL) + ton ratio TG/HDL (1.6) = tout pointe vers
+une resistance a l'insuline debutante. C'est coherent.'
+Type 3 : Correlations d'alerte
+Combinaison qui augmente un risque specifique.
+'Ton ApoB eleve + homocysteine elevee + hs-CRP a 1.2 = profil inflammatoire avec risque
+cardiovasculaire. Individuellement, chaque marqueur serait 'borderline'. Ensemble, ca devient prioritaire.'
+Type 4 : Correlations d'optimisation
+Ameliorer X va automatiquement ameliorer Y.
+'Si tu baisses ton homocysteine avec les vitamines B, tu vas aussi baisser ton inflammation (hs-CRP) et
+ameliorer ta methylation globale. C'est 3 en 1.'
+Type 5 : Correlations temporelles
+Patterns dans l'historique du client.
+'A chaque bilan de janvier, ta vitamine D est dans les choux. C'est logique : moins de soleil en hiver. Cette
+annee, on anticipe avec 5000 UI/jour des octobre.'
+L'IA doit generer ces correlations automatiquement en analysant les donnees. C'est le coeur de la valeur
+ajoutee.
+
+Page 12BLOOD AI - PRD v2.0CONFIDENTIEL
+PARTIE 3 : CONTENU & CONNAISSANCES
+3.1 Base de Marqueurs Complete (80+)
+Chaque marqueur a une fiche complete dans la DB. Voici la liste exhaustive par systeme.
+Systeme Cardiovasculaire (16 marqueurs)
+MarqueurOptimalPourquoi
+ApoB< 80 mg/dLMeilleur predicteur CV selon Attia/Sniderman
+LDL-CContext-dependentMoins important que ApoB et LDL-P
+HDL-C> 55 H / > 65 FProtecteur, transporte le cholesterol vers le foie
+Triglycerides< 70 mg/dLReflete la sante metabolique
+VLDL< 20 mg/dLTransporteur de triglycerides
+Lp(a)< 30 nmol/LGenetique, facteur de risque independant
+ApoA1> 150 mg/dLProteine du HDL, protecteur
+LDL-P< 1000 nmol/LNombre de particules (mieux que concentration)
+Small dense LDLMinimalLes particules les plus dangereuses
+Ox-LDLBasLDL oxyde = inflammatoire
+hs-CRP< 0.5 mg/LInflammation systemique
+Homocysteine< 8 umol/LToxique pour les arteres
+Fibrinogene200-300 mg/dLCoagulation
+NT-proBNP< 50 pg/mLStress cardiaque
+Ratio TG/HDL< 1.0Proxy de sensibilite insuline
+Ratio ApoB/ApoA1< 0.6Equilibre atherogenique
+
+Page 13BLOOD AI - PRD v2.0CONFIDENTIEL
+Systeme Hormonal (14 marqueurs)
+MarqueurOptimal (H)Role
+Testosterone Totale600-900 ng/dL (H)Energie, muscle, libido, motivation
+Testosterone Libre15-25 pg/mL (H)La fraction active
+SHBG25-45 nmol/LLie la testo, trop haute = moins de libre
+Estradiol (E2)20-35 pg/mL (H)Equilibre avec testo important
+LH3-8 mIU/mLStimule la production de testo
+FSH2-8 mIU/mLSpermatogenese
+Prolactine5-15 ng/mLTrop haute = baisse libido et testo
+Cortisol (matin)10-18 ug/dLHormone du stress, rythme circadien
+DHEA-S300-500 ug/dLPrecurseur hormonal, anti-aging
+IGF-1150-250 ng/mLHormone de croissance, contexte age
+Progesterone (H)0.3-1.2 ng/mLSouvent oublie chez l'homme
+Pregnenolone50-150 ng/dLHormone mere
+Free Androgen Index> 50Ratio testo/SHBG
+DHT30-85 ng/dLForme active de la testo
+Systeme Metabolique (9 marqueurs)
+MarqueurOptimalSignification
+Glucose a jeun72-85 mg/dLPas juste 'normal', optimal
+HbA1c< 5.0%Moyenne glycemique sur 3 mois
+Insuline a jeun3-5 uIU/mLPlus sensible que le glucose
+HOMA-IR< 1.0Index de resistance insuline
+C-peptide1.0-2.5 ng/mLProduction endogene d'insuline
+Triglycerides< 70 mg/dLSante metabolique
+Acide urique3.5-5.5 mg/dLEleve = fructose, alcool, purine
+Adiponectine> 10 ug/mLHormone de sensibilite insuline
+Leptine1-10 ng/mL (H)Hormone de satiete
+
+Page 14BLOOD AI - PRD v2.0CONFIDENTIEL
+Systeme Inflammatoire (9 marqueurs)
+MarqueurOptimalCe qu'il mesure
+hs-CRP< 0.5 mg/LInflammation systemique globale
+Homocysteine< 8 umol/LInflammation + risque CV
+Ferritine70-150 ng/mL (H)Trop haute = inflammation
+ESR< 10 mm/hVitesse de sedimentation
+IL-6< 1.0 pg/mLCytokine inflammatoire
+TNF-alpha< 1.0 pg/mLCytokine inflammatoire
+Fibrinogene200-300 mg/dLInflammation + coagulation
+Ratio
+Omega6/Omega3
+< 3:1Equilibre inflammatoire
+GlycA< 400 umol/LNouveau marqueur inflammation
+Systeme Thyroidien (8 marqueurs)
+MarqueurOptimalImportance
+TSH1.0-2.0 mIU/LPas 0.4-4.0 du labo, c'est trop large
+T4 Libre1.2-1.8 ng/dLHormone stockee
+T3 Libre3.2-4.2 pg/mLHormone active
+rT3< 15 ng/dLFreine le metabolisme si eleve
+Ratio T3/rT3> 0.2Conversion peripherique
+Anti-TPO< 35 IU/mLAnticorps Hashimoto
+Anti-Thyroglobuline< 20 IU/mLAnticorps thyroidiens
+Iode urinaire100-200 ug/LCarence frequente
+
+Page 15BLOOD AI - PRD v2.0CONFIDENTIEL
+Systeme Hepatique (8 marqueurs)
+MarqueurOptimalCe qu'il dit
+AST (SGOT)15-25 U/LPas juste < 40, on vise optimal
+ALT (SGPT)15-25 U/LPlus specifique du foie
+GGT< 25 U/LStress oxydatif, alcool
+Phosphatase Alcaline40-100 U/LFoie + os
+Bilirubine Totale0.3-1.0 mg/dLLegerement elevee = antioxydant
+Albumine4.2-5.0 g/dLFonction hepatique
+Ratio AST/ALT~ 1.0> 2 = possible atteinte alcoolique
+GGT/ALP Ratio< 2.5Differencie foie vs os
+Systeme Renal (7 marqueurs)
+MarqueurOptimalRole
+Creatinine0.8-1.2 mg/dLFonction renale (contexte muscle)
+eGFR> 90 mL/minFiltration glomerulaire
+BUN10-18 mg/dLAzote ureique
+Acide Urique3.5-5.5 mg/dLEleve = goutte, fructose
+Ratio BUN/Creatinine10-15Hydratation, fonction renale
+Cystatin C< 0.9 mg/LPlus precis que creatinine
+Microalbuminurie< 30 mg/gAtteinte renale precoce
+Systeme Hematologique (12 marqueurs)
+MarqueurOptimalFonction
+Hemoglobine14-16 g/dL (H)Transport O2
+Hematocrite40-48% (H)Volume globules rouges
+Fer serique80-120 ug/dLPas trop bas, pas trop haut
+Ferritine70-150 ng/mL (H)Reserves de fer
+Transferrine Sat.25-40%Saturation transport fer
+TIBC250-370 ug/dLCapacite de fixation
+B12800-1200 pg/mLPas juste > 200, optimal > 800
+Folate> 15 ng/mLMethylation, globules rouges
+
+Page 16BLOOD AI - PRD v2.0CONFIDENTIEL
+Vitamine D60-80 ng/mLImmunite, os, humeur
+RDW< 13%Variabilite taille globules
+Reticulocytes0.5-2.5%Production globules rouges
+Haptoglobine30-200 mg/dLHemolyse
+
+Page 17BLOOD AI - PRD v2.0CONFIDENTIEL
+3.2 Ranges Biohacking vs Medicaux
+C'est  LA  difference  avec  les  autres.  Les  labos  donnent  des  ranges  'normaux'  bases  sur  la
+population generale (souvent malade). Nous, on vise OPTIMAL.
+POURQUOI LES RANGES LABO SONT INSUFFISANTS
+•Les ranges sont bases sur 95% de la population = incluent des gens malades
+•'Normal' ne veut pas dire 'optimal' pour la performance
+•Les ranges ne tiennent pas compte de l'age, du sexe, des objectifs
+•Un TSH a 3.8 est 'normal' mais suboptimal pour l'energie
+Exemples de differences critiques
+MarqueurRange LaboRange OptimalPourquoi ca compte
+Ferritine (H)15-300 ng/mL70-150 ng/mL
+Trop bas = fatigue, trop haut =
+inflammation
+TSH0.4-4.0 mIU/L1.0-2.0 mIU/L
+Un TSH a 3.5 = hypothyroidie
+subclinique
+Vitamine D30-100 ng/mL60-80 ng/mL30 = carence fonctionnelle
+B12200-900 pg/mL800-1200 pg/mL< 500 = deficience pour le cerveau
+Testosterone (H)264-916 ng/dL600-900 ng/dL
+A 300, t'es 'normal' mais tu
+galeres
+Insuline a jeun2-25 uIU/mL3-5 uIU/mL
+A 15, t'es 'normal' mais deja
+resistant
+hs-CRP< 3.0 mg/L< 0.5 mg/LA 2.5, t'es 'normal' mais inflamme
+Homocysteine5-15 umol/L< 8 umol/L
+A 12, t'es 'normal' mais a risque
+CV
+SOURCES : Peter Attia (The Drive), Andrew Huberman (Huberman Lab), Rhonda Patrick
+(FoundMyFitness), Examine.com, Medecine fonctionnelle. Chaque range optimal est documente et source.
+
+Page 18BLOOD AI - PRD v2.0CONFIDENTIEL
+3.3 Protocoles et Recommandations
+Chaque  recommandation  est  CONCRETE  :  quoi,  combien,  quand,  pendant  combien  de  temps,  et
+pourquoi.
+FORMAT STANDARD D'UNE RECOMMANDATION
+Structure obligatoire
+•QUOI : Action precise (molecule, aliment, habitude)
+•COMBIEN : Dosage exact (ex: 5000 UI, 30mg, 3g)
+•FORME : Forme active recommandee (ex: bisglycinate, methylcobalamine, D3+K2)
+•QUAND : Timing optimal (matin/soir, avec/sans repas)
+•DUREE : Pendant combien de temps (8 semaines, continu, cycles)
+•POURQUOI : Lien avec le marqueur concerne
+•IMPACT ATTENDU : Ce qu'on espere voir au retest
+•INTERACTIONS : A eviter si X, synergie avec Y
+•SOURCE : Reference (Huberman ep. XX, Examine, Attia)
+Exemple complet : Protocole Homocysteine
+OBJECTIF : Baisser ton homocysteine de 14 a < 8 umol/L PROTOCOLE : 1. Methylfolate (5-MTHF) - 800
+mcg/jour - Le matin 2. Methylcobalamine (B12) - 1000 mcg sublingual - Le matin 3. P5P (B6 active) - 50
+mg/jour - Le matin 4. TMG (Betaine) - 500 mg x2/jour - Matin et soir POURQUOI CES FORMES : - Methyl-
+car 40% de la population a une mutation MTHFR qui empeche d'utiliser les formes classiques (acide
+folique, cyanocobalamine) - P5P car c'est la forme active de B6, pas besoin de conversion DUREE : 8
+semaines puis retest IMPACT ATTENDU : Baisse de 30-50% de l'homocysteine BONUS : Coche aussi :
+reduction inflammation (hs-CRP), meilleure methylation, meilleure energie SOURCE : Examine.com
+Homocysteine, Huberman Lab ep. 234
+
+Page 19BLOOD AI - PRD v2.0CONFIDENTIEL
+PARTIE 4 : FEATURES DIFFERENCIANTES
+C'est ca qui fait payer premium. Des features que personne d'autre n'a.
+4.1 Scoring Gamifie et Badges
+Transformer l'optimisation sante en jeu. Le client veut PROGRESSER et le voir.
+Systeme de niveaux
+NiveauScoreMessage
+BronzeScore 50-64Tu decouvres ton corps
+SilverScore 65-74T'es sur la bonne voie
+GoldScore 75-84T'es au-dessus de la moyenne
+PlatinumScore 85-94T'es dans le top 10%
+DiamondScore 95-100T'es une machine
+Badges a debloquer
+BadgeConditionDescription
+Premier BilanUpload ton premier bilanBienvenue dans le game
+En Progression+10 pts entre 2 bilansT'avances, continue
+Marathonien5 bilans uploadesLa regularite paie
+Cardio KingScore CV > 90Ton coeur est une machine
+Hormone HeroScore hormonal > 90Tes hormones sont au top
+Inflammation Fighterhs-CRP < 0.3Inflammation maitrisee
+Methylation MasterHomocysteine < 7Methylation parfaite
+Biohacker EliteScore global > 95Tu fais partie du 1%
+Les badges sont partageables sur les reseaux (Instagram story, Twitter). Marketing viral integre.
+
+Page 20BLOOD AI - PRD v2.0CONFIDENTIEL
+4.2 Comparaison Population
+Le client veut savoir ou il se situe. Percentiles anonymises par age, sexe, objectifs.
+Ce qu'on affiche
+•Percentile global : 'Ton score te place dans le top 15% des hommes de 35-40 ans'
+•Percentile par systeme : 'Ton profil hormonal est dans le top 5%'
+•Percentile par marqueur : 'Ta testosterone est meilleure que 82% des hommes de ton age'
+•Comparaison par objectif : 'Parmi ceux qui visent la performance, tu es dans le top 20%'
+•Evolution du percentile : 'Tu es passe du top 40% au top 15% en 6 mois'
+Cohortes de comparaison
+CritereSegments
+Age25-30, 30-35, 35-40, 40-45, 45-50, 50+
+SexeHomme, Femme
+ObjectifPerformance, Longevite, Energie, Body comp, General
+LifestyleAthlete, Actif, Sedentaire
+RegionFR, US, UAE, UK, Autre
+PRIVACY : Toutes les donnees sont anonymisees. Aucune donnee individuelle n'est partagee.
+4.3 Simulateur 'What If'
+Le client peut simuler l'impact de changements AVANT de les faire. Engagement et motivation.
+Fonctionnement
+•Sliders interactifs pour chaque intervention (D3, zinc, omega-3, sommeil, etc.)
+•L'IA predit l'impact sur chaque marqueur et le score global
+•Visualisation avant/apres avec deltas
+•Timeline estimee pour voir les resultats
+•Export du plan simule en PDF pour son medecin
+EXEMPLE :
+'Si j'ajoute 5000 UI de D3 + 30mg de zinc + 8h de sommeil...'
+-> Score global : 78 -> 86 (+8 pts)
+-> Score hormonal : 72 -> 85 (+13 pts)
+-> Testosterone : 550 -> ~650 ng/dL (estime)
+-> Timeline : 8-12 semaines
+
+Page 21BLOOD AI - PRD v2.0CONFIDENTIEL
+4.4 Timeline et Predictions
+Montrer au client son FUTUR selon qu'il agit ou non. Puissant pour la motivation.
+Predictions si action
+'Si tu suis le protocole pendant 12 semaines :
+- Ton homocysteine devrait passer de 14 a ~7
+- Ton score CV devrait passer de 74 a ~88
+- Ton inflammation (hs-CRP) devrait baisser de 30%
+- Tu devrais ressentir : plus d'energie, meilleure concentration'
+Predictions si inaction
+'Si tu ne changes rien :
+- Ton homocysteine risque de monter a 16-18
+- Ton risque cardiovasculaire augmente de X% par an
+- Dans 5 ans, possible : fatigue chronique, risque AVC augmente
+Ce n'est pas pour te faire peur, c'est pour que tu comprennes l'enjeu.'
+Calendrier de retest
+L'IA suggere automatiquement quand retester quoi :
+•8 semaines : Homocysteine, vitamines B, vitamine D (apres supplementation)
+•3 mois : Profil lipidique, hs-CRP, HbA1c
+•6 mois : Bilan hormonal complet, fonction thyroidienne
+•12 mois : Bilan complet annuel
+4.5 Mode Coach vs Mode Expert
+Deux niveaux de lecture pour deux types de clients.
+Mode Coach (par defaut)
+•Langage simple, zero jargon
+•Focus sur les actions concretes
+•Pas de details biochimiques
+•Pour : 80% des utilisateurs qui veulent juste savoir quoi faire
+Mode Expert (toggle)
+•Details biochimiques complets
+•Pathways metaboliques
+•Etudes et references
+•Protocoles avances (peptides, hormones)
+•Pour : biohackers avances, praticiens, curieux
+
+Page 22BLOOD AI - PRD v2.0CONFIDENTIEL
+PARTIE 5 : TECHNIQUE
+5.1 Stack et Architecture
+LayerTechnologieJustification
+Frontend
+Next.js 14 + Tailwind + Framer
+Motion
+SSR, perf, animations fluides
+ChartsRecharts ou D3.js + VisxRadar, gauges, trends, customisation
+BackendPython FastAPI ou Node.jsAPI REST, processing IA
+OCR
+Google Cloud Vision + AWS
+Textract
+Precision, multi-langues, fallback
+AI EngineClaude API (Anthropic)Analyse, explications, recos
+DatabasePostgreSQL + PrismaRelationnel, requetes complexes
+Vector DBPinecone ou WeaviateRecherche semantique marqueurs
+CacheRedisCache analyses, sessions
+AuthClerk ou Auth0Auth robuste, social login
+StorageCloudflare R2 / AWS S3PDFs, rapports
+PDF GenPuppeteer ou React-PDFExport PDF depuis React
+HostingVercel + RailwayCI/CD, scaling
+AnalyticsPosthog + SentryProduct analytics, errors
+EmailResend ou PostmarkTransactional emails
+
+Page 23BLOOD AI - PRD v2.0CONFIDENTIEL
+5.2 AI Engine et Prompts
+Le  coeur  du  systeme.  L'IA  doit  generer  des  explications  personnalisees,  conversationnelles,  et
+sourcees.
+Architecture du prompt
+Prompt system structure en plusieurs parties :
+•Contexte client : Age, sexe, objectifs, historique, supplements actuels
+•Donnees du bilan : JSON avec toutes les valeurs, scores, ranges
+•Base de connaissances : Fiches marqueurs, protocoles, correlations
+•Regles de ton : Conversationnel, personnalise, jamais alarmiste
+•Format de sortie : JSON structure pour le frontend
+Exemple de prompt simplifie
+SYSTEM: Tu es un expert en biohacking, longevite et performance. Tu parles DIRECTEMENT au client, en
+utilisant 'tu/ta/ton'. Ton ton est celui d'un coach expert : precis, rassurant, actionnable. Tu ne fais JAMAIS
+peur inutilement. Tu donnes toujours des solutions concretes avec dosages et timing. Tu sources tes
+recommandations (Huberman, Attia, Examine). CONTEXTE CLIENT: - Nom: Achkan, 38 ans, homme -
+Objectifs: Performance, energie, longevite - Supplements actuels: D3 2000UI, Omega-3 1g - Historique: 2
+bilans precedents (scores 72, 78) DONNEES BILAN: {json_du_bilan} TACHE: Genere l'analyse complete
+avec le ton conversationnel. Structure ta reponse en JSON.
+
+Page 24BLOOD AI - PRD v2.0CONFIDENTIEL
+5.3 Schema Base de Donnees
+Tables principales
+•users : id, email, name, age, sex, goals[], supplements[], created_at
+•uploads : id, user_id, file_url, lab_name, date_test, status, created_at
+•results : id, upload_id, marker_id, value, unit, score, created_at
+•markers : id, name, aliases[], category, unit_standard, ranges, explanations, protocols
+•marker_explanations : marker_id, short, medium, expert, factors_up[], factors_down[]
+•marker_protocols : marker_id, condition, recommendations[], sources[]
+•correlations : marker1_id, marker2_id, type, description, strength
+•analyses : id, upload_id, global_score, system_scores[], insights[], recommendations[]
+•badges : id, user_id, badge_type, unlocked_at
+•simulations : id, user_id, interventions[], predicted_scores[], created_at
+5.4 Export PDF Client
+Le rapport PDF fait ~10 pages et doit etre partageable avec un medecin.
+Structure du PDF exporte
+•Page 1 : Cover brandee + infos client + score global
+•Page 2 : Resume executif conversationnel
+•Page 3 : Radar + scores systemes
+•Pages 4-7 : Detail par systeme (marqueurs + explications + recos)
+•Page 8 : Correlations et insights
+•Page 9 : Plan d'action consolide + timeline retest
+•Page 10 : Disclaimer medical + QR code vers dashboard
+
+Page 25BLOOD AI - PRD v2.0CONFIDENTIEL
+NEXT STEPS DEV
+•1. Setup projet Next.js 14 + Tailwind + Prisma + base PostgreSQL
+•2. Implementer l'upload + OCR (Google Vision) + parsing multi-labo
+•3. Creer la DB marqueurs complete (80+ marqueurs avec fiches)
+•4. Implementer le scoring engine (normalisation + score 0-100 + systemes)
+•5. Integrer Claude API avec le prompt conversationnel
+•6. Developper le dashboard principal (score, radar, alertes, quick wins)
+•7. Developper les pages systemes avec explications completes
+•8. Implementer les modals marqueurs (7 blocs)
+•9. Developper l'onglet Insights (correlations IA)
+•10. Developper le simulateur 'What if'
+•11. Developper le systeme de badges
+•12. Developper l'export PDF (~10 pages)
+•13. Tests E2E + UAT avec vrais bilans
+•14. Deploy staging -> production
+DISCLAIMER MEDICAL : Ce document decrit un outil d'optimisation et d'education. Il ne remplace pas un
+avis medical. Toute recommandation doit etre validee par un professionnel de sante. Les ranges 'optimaux
+biohacking' sont bases sur la litterature scientifique recente mais ne constituent pas un diagnostic.
+SOURCES PRINCIPALES : Andrew Huberman (Huberman Lab Podcast), Peter Attia (The Drive), Rhonda
+Patrick (FoundMyFitness), Examine.com, Dr. Ben Bikman, Dr. David Perlmutter, Layne Norton (Biolayne),
+Dr. Jacob Wilson (Muscle PhD). Chaque recommandation est sourcee.

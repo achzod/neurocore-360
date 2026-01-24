@@ -92,12 +92,16 @@ export default function BloodClientDashboard() {
     [tests]
   );
 
+  const latestCompleted = completedTests[0];
+
   const stats = useMemo(() => {
     const total = tests?.bloodTests?.length || 0;
     const scores = completedTests.map((test) => test.globalScore || 0);
     const avg = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0;
     return { total, avg };
   }, [tests, completedTests]);
+
+  const displayName = prenom || (me?.user?.email ? me.user.email.split("@")[0] : "");
 
   const trendData = useMemo(() => {
     return completedTests
@@ -165,7 +169,58 @@ export default function BloodClientDashboard() {
 
       <main className="mx-auto max-w-7xl px-6 py-10 space-y-10">
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="border border-white/10 bg-white/5 p-6 space-y-5">
+          <Card className="border border-white/10 bg-white/5 p-6 space-y-4 lg:col-span-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              Bonjour {displayName || "Profil"}
+            </p>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold">Dashboard Blood Analysis</h1>
+                <p className="text-sm text-white/60 mt-2">
+                  Ton historique, tes scores et tes protocoles en un seul endroit.
+                </p>
+              </div>
+              {latestCompleted ? (
+                <Button
+                  className="bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+                  onClick={() => navigate(`/analysis/${latestCompleted.id}`)}
+                >
+                  Ouvrir le dernier rapport
+                </Button>
+              ) : (
+                <Button
+                  className="bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+                  onClick={() => document.getElementById("blood-upload")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  Lancer un premier bilan
+                </Button>
+              )}
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
+                <p className="text-xs text-white/50">Dernier bilan</p>
+                <p className="text-sm mt-1 text-white">
+                  {latestCompleted
+                    ? new Date(latestCompleted.uploadedAt).toLocaleDateString("fr-FR")
+                    : "Aucun"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
+                <p className="text-xs text-white/50">Score global</p>
+                <p className="text-sm mt-1 text-white">
+                  {latestCompleted?.globalScore ?? "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
+                <p className="text-xs text-white/50">Credits restants</p>
+                <p className="text-sm mt-1 text-white">{credits}</p>
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <Card id="blood-upload" className="border border-white/10 bg-white/5 p-6 space-y-5">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-white/40">Blood Analysis</p>
               <h1 className="text-2xl font-semibold mt-2">Injecter un bilan</h1>

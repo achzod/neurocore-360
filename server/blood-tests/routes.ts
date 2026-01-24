@@ -10,6 +10,7 @@ import {
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
   BIOMARKER_RANGES,
+  buildFallbackAnalysis,
 } from "../blood-analysis";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
@@ -74,6 +75,48 @@ const CATEGORY_BY_MARKER: Record<string, string> = {
   egfr: "liver_kidney",
 };
 
+const SYSTEM_BY_MARKER: Record<string, string> = {
+  hdl: "cardio",
+  ldl: "cardio",
+  triglycerides: "cardio",
+  apob: "cardio",
+  lpa: "cardio",
+  homocysteine: "cardio",
+  testosterone_total: "hormonal",
+  testosterone_libre: "hormonal",
+  shbg: "hormonal",
+  estradiol: "hormonal",
+  lh: "hormonal",
+  fsh: "hormonal",
+  prolactine: "hormonal",
+  dhea_s: "hormonal",
+  cortisol: "hormonal",
+  igf1: "hormonal",
+  glycemie_jeun: "metabolic",
+  hba1c: "metabolic",
+  insuline_jeun: "metabolic",
+  homa_ir: "metabolic",
+  crp_us: "inflammatory",
+  ferritine: "inflammatory",
+  fer_serique: "inflammatory",
+  transferrine_sat: "inflammatory",
+  alt: "hepatic",
+  ast: "hepatic",
+  ggt: "hepatic",
+  creatinine: "renal",
+  egfr: "renal",
+  vitamine_d: "hemato",
+  b12: "hemato",
+  folate: "hemato",
+  magnesium_rbc: "hemato",
+  zinc: "hemato",
+  tsh: "thyroid",
+  t4_libre: "thyroid",
+  t3_libre: "thyroid",
+  t3_reverse: "thyroid",
+  anti_tpo: "thyroid",
+};
+
 const SCORE_BY_STATUS: Record<MarkerStatus, number> = {
   optimal: 100,
   normal: 80,
@@ -105,10 +148,34 @@ const computeCategoryScores = (markers: Array<{ category?: string; status?: Mark
   );
 };
 
-const computeGlobalScore = (categoryScores: Record<string, number>) => {
-  const scores = Object.values(categoryScores);
+const computeGlobalScore = (scoresMap: Record<string, number>) => {
+  const scores = Object.values(scoresMap);
   if (scores.length === 0) return 0;
   return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+};
+
+const getAgeFromDob = (dob?: string): string | undefined => {
+  if (!dob) return undefined;
+  const parsed = new Date(dob);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  const age = Math.floor((Date.now() - parsed.getTime()) / 31557600000);
+  return Number.isFinite(age) ? String(age) : undefined;
+};
+
+const computeSystemScores = (markers: Array<{ code?: string; status?: MarkerStatus }>) => {
+  const buckets: Record<string, number[]> = {};
+  for (const marker of markers) {
+    const system = SYSTEM_BY_MARKER[marker.code || \"\"] || \"metabolic\";
+    const status = marker.status || \"normal\";
+    if (!buckets[system]) buckets[system] = [];
+    buckets[system].push(SCORE_BY_STATUS[status]);
+  }
+  return Object.fromEntries(
+    Object.entries(buckets).map(([system, scores]) => {
+      const avg = scores.reduce((sum, value) => sum + value, 0) / scores.length;
+      return [system, Math.round(avg)];
+    })
+  );
 };
 
 const computeTemporalRisk = (markers: Array<{ status?: MarkerStatus }>) => {
@@ -206,9 +273,10 @@ export function registerBloodTestsRoutes(app: Express): void {
             dob: pdfProfile.dob || "Non fourni",
           };
 
+          const age = getAgeFromDob(profile.dob);
           const analysisResult = await analyzeBloodwork(extractedMarkers, {
             gender: profile.gender as "homme" | "femme",
-            age: undefined,
+            age,
             objectives: undefined,
             medications: undefined,
           });
@@ -222,10 +290,17 @@ export function registerBloodTestsRoutes(app: Express): void {
           const includeAI = body.includeAI !== false;
           if (includeAI && process.env.ANTHROPIC_API_KEY) {
             try {
-              aiAnalysis = await generateAIBloodAnalysis(analysisResult, profile, knowledgeContext);
+              aiAnalysis = await generateAIBloodAnalysis(
+                analysisResult,
+                { gender: profile.gender as "homme" | "femme", age },
+                knowledgeContext
+              );
             } catch {
               aiAnalysis = "";
             }
+          }
+          if (!aiAnalysis) {
+            aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: profile.gender as "homme" | "femme", age });
           }
 
           const markers = analysisResult.markers.map((marker) => {
@@ -246,7 +321,9 @@ export function registerBloodTestsRoutes(app: Express): void {
           });
 
           const categoryScores = computeCategoryScores(markers);
-          const globalScore = computeGlobalScore(categoryScores);
+          const systemScores = computeSystemScores(markers);
+          const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
+          const globalScore = computeGlobalScore(scoreSource);
           const globalLevel = getGlobalLevel(globalScore);
           const temporalRisk = computeTemporalRisk(markers);
           const protocolPhases = buildProtocolPhases(markers);
@@ -255,6 +332,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             globalScore,
             globalLevel,
             categoryScores,
+            systemScores,
             temporalRisk,
             summary: analysisResult.summary,
             patterns: analysisResult.patterns,
@@ -390,9 +468,10 @@ export function registerBloodTestsRoutes(app: Express): void {
         return;
       }
 
+      const age = getAgeFromDob(profile.dob);
       const analysisResult = await analyzeBloodwork(extractedMarkers, {
         gender: profile.gender,
-        age: undefined,
+        age,
         objectives: undefined,
         medications: undefined,
       });
@@ -405,10 +484,17 @@ export function registerBloodTestsRoutes(app: Express): void {
       let aiAnalysis = "";
       if (process.env.ANTHROPIC_API_KEY) {
         try {
-          aiAnalysis = await generateAIBloodAnalysis(analysisResult, profile, knowledgeContext);
+          aiAnalysis = await generateAIBloodAnalysis(
+            analysisResult,
+            { gender: profile.gender as "homme" | "femme", age },
+            knowledgeContext
+          );
         } catch {
           aiAnalysis = "";
         }
+      }
+      if (!aiAnalysis) {
+        aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: profile.gender as "homme" | "femme", age });
       }
 
       const markers = analysisResult.markers.map((marker) => {
@@ -429,7 +515,9 @@ export function registerBloodTestsRoutes(app: Express): void {
       });
 
       const categoryScores = computeCategoryScores(markers);
-      const globalScore = computeGlobalScore(categoryScores);
+      const systemScores = computeSystemScores(markers);
+      const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
+      const globalScore = computeGlobalScore(scoreSource);
       const globalLevel = getGlobalLevel(globalScore);
       const temporalRisk = computeTemporalRisk(markers);
       const protocolPhases = buildProtocolPhases(markers);
@@ -438,6 +526,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         globalScore,
         globalLevel,
         categoryScores,
+        systemScores,
         temporalRisk,
         summary: analysisResult.summary,
         patterns: analysisResult.patterns,
@@ -501,6 +590,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           fileName: test.fileName,
           uploadedAt: test.createdAt,
           status: test.status,
+          error: test.error ?? null,
           globalScore: test.globalScore ?? null,
           globalLevel: test.globalLevel ?? null,
         },

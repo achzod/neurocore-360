@@ -1143,6 +1143,7 @@ REGLES DE STYLE:
 - Pas de mention d'IA, pas de sources, pas de liens.
 - Utilise les ranges optimaux en priorite.
 - Reste structure et operationnel.
+- Adresse-toi directement au client avec \"tu/ta/ton\" partout.
 
 FORMAT DE REPONSE (respecte les titres):
 ## Synthese executive
@@ -1183,6 +1184,122 @@ FORMAT DE REPONSE (respecte les titres):
 ## Vigilance
 - [alerte medicale si necessaire]`;
 
+export function buildFallbackAnalysis(
+  analysisResult: BloodAnalysisResult,
+  userProfile: {
+    gender: "homme" | "femme";
+    age?: string;
+    objectives?: string;
+    medications?: string;
+  }
+): string {
+  const formatList = (items: string[], emptyLabel: string) =>
+    items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${emptyLabel}`;
+
+  const summary = analysisResult.summary;
+  const critical = analysisResult.markers.filter((m) => m.status === "critical");
+  const suboptimal = analysisResult.markers.filter((m) => m.status === "suboptimal");
+  const priority1 = analysisResult.recommendations.priority1.map((rec) => rec.action);
+  const priority2 = analysisResult.recommendations.priority2.map((rec) => rec.action);
+  const followUp = analysisResult.followUp.map(
+    (item) => `- ${item.test} - ${item.delay} - ${item.objective}`
+  );
+  const alerts = analysisResult.alerts.map((alert) => `- ${alert}`);
+
+  return [
+    "## Synthese executive",
+    `- Optimal: ${summary.optimal.join(", ") || "Aucun"}`,
+    `- A surveiller: ${summary.watch.join(", ") || "Aucun"}`,
+    `- Action requise: ${summary.action.join(", ") || "Aucune"}`,
+    `- Lecture globale: Ton profil ${userProfile.gender}${userProfile.age ? ` (${userProfile.age} ans)` : ""} montre ${critical.length} alerte(s) critique(s) et ${suboptimal.length} zone(s) a optimiser.`,
+    "",
+    "## Systeme par systeme",
+    `### Hormonal\n- Points cles: ${formatList(
+      analysisResult.markers
+        .filter((m) =>
+          [
+            "testosterone_total",
+            "testosterone_libre",
+            "shbg",
+            "estradiol",
+            "lh",
+            "fsh",
+            "prolactine",
+            "dhea_s",
+            "cortisol",
+            "igf1",
+          ].includes(m.markerId)
+        )
+        .map((m) => `${m.name} (${m.status})`),
+      "Aucun signal prioritaire"
+    )}\n- Impact: Ton axe hormonal conditionne energie, libido et composition corporelle.`,
+    `### Thyroide\n- Points cles: ${formatList(
+      analysisResult.markers
+        .filter((m) => ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId))
+        .map((m) => `${m.name} (${m.status})`),
+      "Rien d'urgent"
+    )}\n- Impact: La thyroide pilote ton metabolisme et ta temperature interne.`,
+    `### Metabolique\n- Points cles: ${formatList(
+      analysisResult.markers
+        .filter((m) =>
+          [
+            "glycemie_jeun",
+            "hba1c",
+            "insuline_jeun",
+            "homa_ir",
+            "triglycerides",
+            "hdl",
+            "ldl",
+            "apob",
+            "lpa",
+          ].includes(m.markerId)
+        )
+        .map((m) => `${m.name} (${m.status})`),
+      "Profil metabolique stable"
+    )}\n- Impact: C'est la base de ton energie et de ta gestion du gras.`,
+    `### Inflammation\n- Points cles: ${formatList(
+      analysisResult.markers
+        .filter((m) =>
+          ["crp_us", "homocysteine", "ferritine", "fer_serique", "transferrine_sat"].includes(
+            m.markerId
+          )
+        )
+        .map((m) => `${m.name} (${m.status})`),
+      "Inflammation controlee"
+    )}\n- Impact: Une inflammation basse accelere la recuperation et l'anabolisme.`,
+    `### Vitamines\n- Points cles: ${formatList(
+      analysisResult.markers
+        .filter((m) => ["vitamine_d", "b12", "folate", "magnesium_rbc", "zinc"].includes(m.markerId))
+        .map((m) => `${m.name} (${m.status})`),
+      "Couverture micronutriments correcte"
+    )}\n- Impact: Micronutriments = production hormonale et immunite.`,
+    `### Foie & rein\n- Points cles: ${formatList(
+      analysisResult.markers
+        .filter((m) => ["alt", "ast", "ggt", "creatinine", "egfr"].includes(m.markerId))
+        .map((m) => `${m.name} (${m.status})`),
+      "Fonctions hepatiques et renales stables"
+    )}\n- Impact: Detox, elimination et tolerance au stress metabolique.`,
+    "",
+    "## Interconnexions majeures",
+    ...analysisResult.patterns.map((pattern) => `- ${pattern.name}: ${pattern.causes.join(", ")}`),
+    analysisResult.patterns.length ? "" : "- Aucune correlation critique detectee pour le moment.",
+    "",
+    "## Protocoles 180 jours",
+    "### Jours 1-30",
+    formatList(priority1, "Stabiliser sommeil, hydratation, apport proteique."),
+    "### Jours 31-90",
+    formatList(priority2, "Optimiser activite et nutrition ciblee."),
+    "### Jours 91-180",
+    formatList(["Consolider les routines, re-tester les marqueurs clefs."], "Consolider les routines"),
+    "",
+    "## Controles a prevoir",
+    followUp.length ? followUp.join("\n") : "- Aucun controle prioritaire",
+    "",
+    "## Vigilance",
+    alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
+  ].join("\n");
+}
+
 export async function generateAIBloodAnalysis(
   analysisResult: BloodAnalysisResult,
   userProfile: {
@@ -1219,7 +1336,7 @@ RÉSUMÉ:
 - À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
 - Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
 
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}
+${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE (ne cite pas les sources):\n${knowledgeContext}` : ""}
 
 Génère une analyse complète selon le format demandé.`;
 
@@ -1277,9 +1394,9 @@ export async function getBloodworkKnowledgeContext(
   }
 
   // Build context from articles
-  const context = articles.map(a =>
-    `[${a.source}] ${a.title}\n${a.content.substring(0, 1000)}...`
-  ).join("\n\n---\n\n");
+  const context = articles
+    .map((article) => `${article.title}\n${article.content.substring(0, 1000)}...`)
+    .join("\n\n---\n\n");
 
-  return `Sources consultées:\n${context}`;
+  return context;
 }

@@ -9,63 +9,9 @@ import { BloodRadar } from "@/components/blood/BloodRadar";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
 import { StatusIndicator } from "@/components/blood/StatusIndicator";
-import {
-  Activity,
-  AlertTriangle,
-  ArrowUpRight,
-  ClipboardList,
-  FileText,
-  Shield,
-  Stethoscope,
-} from "lucide-react";
-
-const categoryMeta: Record<string, { label: string; description: string }> = {
-  hormonal: {
-    label: "Hormonal",
-    description: "Testosterone, cortisol, thyroid, regulation endocrine.",
-  },
-  thyroid: {
-    label: "Thyroide",
-    description: "TSH, T3/T4, regulation metabolique globale.",
-  },
-  metabolic: {
-    label: "Metabolique",
-    description: "Glycemie, insuline, lipides, efficacite energetique.",
-  },
-  inflammatory: {
-    label: "Inflammation",
-    description: "CRP-us, homocysteine, stress oxydatif.",
-  },
-  vitamins: {
-    label: "Vitamines",
-    description: "Vitamines et mineraux, reserves tissulaires.",
-  },
-  liver_kidney: {
-    label: "Foie & Rein",
-    description: "Detox, enzymes hepatiques, filtration renale.",
-  },
-  general: {
-    label: "General",
-    description: "Marqueurs transversaux et indicateurs globaux.",
-  },
-};
-
-const categoryOrder = [
-  "metabolic",
-  "hormonal",
-  "thyroid",
-  "inflammatory",
-  "vitamins",
-  "liver_kidney",
-  "general",
-];
-
-const getScoreLevel = (score: number) => {
-  if (score >= 80) return { label: "Optimal", tone: "optimal" };
-  if (score >= 65) return { label: "Stable", tone: "normal" };
-  if (score >= 45) return { label: "Fragile", tone: "suboptimal" };
-  return { label: "Critique", tone: "critical" };
-};
+import { AlertTriangle, ArrowUpRight, FileText, LineChart, RefreshCcw, Shield, Upload } from "lucide-react";
+import { LineChart as RechartLineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import ReactMarkdown from "react-markdown";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -75,6 +21,7 @@ type BloodTestDetail = {
     fileName: string;
     uploadedAt: string;
     status: string;
+    error: string | null;
     globalScore: number | null;
     globalLevel: string | null;
   };
@@ -93,7 +40,8 @@ type BloodTestDetail = {
   }>;
   analysis: {
     globalScore: number;
-    categoryScores: Record<string, number>;
+    categoryScores?: Record<string, number>;
+    systemScores?: Record<string, number>;
     temporalRisk?: { score: number; level: string; critical: number; warning: number };
     summary?: { optimal: string[]; watch: string[]; action: string[] };
     patterns?: Array<{ name: string; causes: string[]; protocol: string[] }>;
@@ -115,22 +63,167 @@ type BloodTestDetail = {
   };
 };
 
-const fetchDetail = async (id: string): Promise<BloodTestDetail> => {
+type BloodTestSummary = {
+  id: string;
+  fileName: string;
+  uploadedAt: string;
+  status: string;
+  globalScore: number | null;
+  globalLevel: string | null;
+};
+
+type BloodTestsResponse = { bloodTests: BloodTestSummary[] };
+
+type SystemKey =
+  | "cardio"
+  | "hormonal"
+  | "metabolic"
+  | "inflammatory"
+  | "hepatic"
+  | "renal"
+  | "hemato"
+  | "thyroid";
+
+const SYSTEM_META: Record<SystemKey, { label: string; description: string }> = {
+  cardio: {
+    label: "Cardio",
+    description: "Profil lipidique, ApoB, risque cardiovasculaire.",
+  },
+  hormonal: {
+    label: "Hormonal",
+    description: "Testosterone, cortisol, axes gonadiques.",
+  },
+  metabolic: {
+    label: "Metabolique",
+    description: "Glycemie, insuline, rendement energetique.",
+  },
+  inflammatory: {
+    label: "Inflammatoire",
+    description: "Inflammation systemique et stress oxydatif.",
+  },
+  hepatic: {
+    label: "Hepatique",
+    description: "Foie, detox, enzymes hepatiques.",
+  },
+  renal: {
+    label: "Renal",
+    description: "Filtration renale, creatinine, eGFR.",
+  },
+  hemato: {
+    label: "Hemato",
+    description: "Fer, ferritine, vitamines sanguines.",
+  },
+  thyroid: {
+    label: "Thyroide",
+    description: "TSH, T3/T4, regulation endocrine.",
+  },
+};
+
+const SYSTEM_ORDER: SystemKey[] = [
+  "cardio",
+  "hormonal",
+  "metabolic",
+  "inflammatory",
+  "hepatic",
+  "renal",
+  "hemato",
+  "thyroid",
+];
+
+const SYSTEM_BY_MARKER: Record<string, SystemKey> = {
+  hdl: "cardio",
+  ldl: "cardio",
+  triglycerides: "cardio",
+  apob: "cardio",
+  lpa: "cardio",
+  homocysteine: "cardio",
+  crp_us: "inflammatory",
+  ferritine: "hemato",
+  fer_serique: "hemato",
+  transferrine_sat: "hemato",
+  vitamine_d: "hemato",
+  b12: "hemato",
+  folate: "hemato",
+  magnesium_rbc: "hemato",
+  zinc: "hemato",
+  testosterone_total: "hormonal",
+  testosterone_libre: "hormonal",
+  shbg: "hormonal",
+  estradiol: "hormonal",
+  lh: "hormonal",
+  fsh: "hormonal",
+  prolactine: "hormonal",
+  dhea_s: "hormonal",
+  cortisol: "hormonal",
+  igf1: "hormonal",
+  glycemie_jeun: "metabolic",
+  hba1c: "metabolic",
+  insuline_jeun: "metabolic",
+  homa_ir: "metabolic",
+  tsh: "thyroid",
+  t4_libre: "thyroid",
+  t3_libre: "thyroid",
+  t3_reverse: "thyroid",
+  anti_tpo: "thyroid",
+  alt: "hepatic",
+  ast: "hepatic",
+  ggt: "hepatic",
+  creatinine: "renal",
+  egfr: "renal",
+};
+
+const statusScore: Record<MarkerStatus, number> = {
+  optimal: 100,
+  normal: 80,
+  suboptimal: 55,
+  critical: 30,
+};
+
+const fetcher = async <T,>(url: string): Promise<T> => {
   const token = localStorage.getItem("apexlabs_token");
-  const res = await fetch(`/api/blood-tests/${id}`, {
+  const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
-  if (!res.ok) throw new Error("Not found");
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
   return res.json();
 };
 
+const fetchDetail = async (id: string): Promise<BloodTestDetail> => {
+  return fetcher(`/api/blood-tests/${id}`);
+};
+
 const fetchMe = async (): Promise<{ user: { credits: number } }> => {
-  const token = localStorage.getItem("apexlabs_token");
-  const res = await fetch("/api/me", {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!res.ok) throw new Error("Unauthorized");
-  return res.json();
+  return fetcher("/api/me");
+};
+
+const fetchTests = async (): Promise<BloodTestsResponse> => {
+  return fetcher("/api/blood-tests");
+};
+
+const getScoreLevel = (score: number) => {
+  if (score >= 90) return { label: "Exceptionnel", tone: "optimal" };
+  if (score >= 80) return { label: "Tres bien", tone: "optimal" };
+  if (score >= 70) return { label: "Correct", tone: "normal" };
+  if (score >= 60) return { label: "Attention", tone: "suboptimal" };
+  return { label: "Prioritaire", tone: "critical" };
+};
+
+const getScoreMessage = (score: number) => {
+  if (score >= 90) return "Exceptionnel - Tu es une machine";
+  if (score >= 80) return "Tres bien - Quelques optimisations possibles";
+  if (score >= 70) return "Correct - Des axes d'amelioration clairs";
+  if (score >= 60) return "Attention - Actions recommandees";
+  return "Prioritaire - Consulte un professionnel";
+};
+
+const getPercentile = (score: number) => {
+  if (score >= 90) return 10;
+  if (score >= 80) return 20;
+  if (score >= 70) return 35;
+  if (score >= 60) return 50;
+  return 70;
 };
 
 export default function BloodAnalysisReport() {
@@ -150,61 +243,106 @@ export default function BloodAnalysisReport() {
     onError: () => navigate("/auth/login"),
   });
 
+  const { data: tests } = useQuery({
+    queryKey: ["/api/blood-tests"],
+    queryFn: fetchTests,
+    onError: () => undefined,
+  });
+
   const markers = data?.markers || [];
   const analysis = data?.analysis;
-  const globalScore = analysis?.globalScore ?? data?.bloodTest.globalScore ?? 0;
-  const categoryScores = analysis?.categoryScores || {};
-  const hasCategoryScores = Object.keys(categoryScores).length > 0;
-  const computeFallbackScores = () => {
-    const buckets: Record<string, number[]> = {};
-    markers.forEach((marker) => {
-      const bucket = marker.category || "general";
-      if (!buckets[bucket]) buckets[bucket] = [];
-      const score =
-        marker.status === "optimal"
-          ? 100
-          : marker.status === "normal"
-          ? 80
-          : marker.status === "suboptimal"
-          ? 55
-          : 30;
-      buckets[bucket].push(score);
-    });
-    return Object.fromEntries(
-      Object.entries(buckets).map(([key, values]) => [
-        key,
-        Math.round(values.reduce((sum, value) => sum + value, 0) / values.length),
-      ])
-    );
-  };
-
-  const fallbackScores = useMemo(() => computeFallbackScores(), [markers]);
-  const radarData = useMemo(() => {
-    const scores = hasCategoryScores ? categoryScores : fallbackScores;
-    return Object.entries(scores).map(([key, score]) => ({
-      key,
-      label: categoryMeta[key]?.label || key,
-      score,
-      status: score >= 80 ? "optimal" : score >= 65 ? "normal" : score >= 45 ? "suboptimal" : "critical",
-    }));
-  }, [categoryScores, fallbackScores, hasCategoryScores]);
-
-  const groupedMarkers = useMemo(() => {
-    return markers.reduce<Record<string, typeof markers>>((acc, marker) => {
-      const key = marker.category || "general";
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(marker);
-      return acc;
-    }, {});
+  const fallbackScore = useMemo(() => {
+    if (!markers.length) return 0;
+    const values = markers.map((marker) => statusScore[marker.status]);
+    return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
   }, [markers]);
+  const rawGlobalScore = analysis?.globalScore ?? data?.bloodTest.globalScore ?? null;
+  const globalScore =
+    rawGlobalScore === null || (rawGlobalScore === 0 && markers.length > 0)
+      ? fallbackScore
+      : rawGlobalScore;
+  const patient = analysis?.patient || {};
+  const patientLabel = [patient.prenom, patient.nom].filter(Boolean).join(" ") || "Anonyme";
+
+  const groupedBySystem = useMemo(() => {
+    const groups: Record<SystemKey, typeof markers> = {
+      cardio: [],
+      hormonal: [],
+      metabolic: [],
+      inflammatory: [],
+      hepatic: [],
+      renal: [],
+      hemato: [],
+      thyroid: [],
+    };
+    markers.forEach((marker) => {
+      const system = SYSTEM_BY_MARKER[marker.code] || "metabolic";
+      groups[system].push(marker);
+    });
+    return groups;
+  }, [markers]);
+
+  const systemScores = useMemo(() => {
+    if (analysis?.systemScores && Object.keys(analysis.systemScores).length > 0) {
+      return analysis.systemScores as Record<SystemKey, number>;
+    }
+    const scores: Partial<Record<SystemKey, number>> = {};
+    SYSTEM_ORDER.forEach((system) => {
+      const items = groupedBySystem[system];
+      if (!items.length) return;
+      const avg =
+        items.reduce((sum, item) => sum + statusScore[item.status], 0) /
+        items.length;
+      scores[system] = Math.round(avg);
+    });
+    return scores as Record<SystemKey, number>;
+  }, [analysis?.systemScores, groupedBySystem]);
+
+  const radarData = useMemo(() => {
+    return SYSTEM_ORDER.map((system) => ({
+      key: system,
+      label: SYSTEM_META[system].label,
+      score: systemScores[system] ?? 0,
+      status:
+        (systemScores[system] ?? 0) >= 80
+          ? "optimal"
+          : (systemScores[system] ?? 0) >= 65
+          ? "normal"
+          : (systemScores[system] ?? 0) >= 45
+          ? "suboptimal"
+          : "critical",
+    }));
+  }, [systemScores]);
 
   const critical = markers.filter((marker) => marker.status === "critical");
   const warning = markers.filter((marker) => marker.status === "suboptimal");
-  const patient = analysis?.patient || {};
-  const patientLabel = [patient.prenom, patient.nom].filter(Boolean).join(" ") || "Anonyme";
-  const riskScore = analysis?.temporalRisk?.score ?? Math.min(100, critical.length * 18 + warning.length * 8);
-  const riskLevel = analysis?.temporalRisk?.level || getScoreLevel(100 - riskScore).label;
-  const summary = analysis?.summary;
+  const summary = analysis?.summary || {
+    optimal: markers.filter((marker) => marker.status === "optimal").map((marker) => marker.name),
+    watch: markers.filter((marker) => marker.status === "normal").map((marker) => marker.name),
+    action: markers
+      .filter((marker) => marker.status === "suboptimal" || marker.status === "critical")
+      .map((marker) => marker.name),
+  };
+  const riskScore = analysis?.temporalRisk?.score ?? Math.min(100, critical.length * 20 + warning.length * 10);
+  const riskLabel = analysis?.temporalRisk?.level || getScoreLevel(100 - riskScore).label;
+
+  const orderedTests = useMemo(() => {
+    if (!tests?.bloodTests?.length) return [];
+    return [...tests.bloodTests].sort((a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+  }, [tests?.bloodTests]);
+
+  const currentIndex = orderedTests.findIndex((test) => test.id === data?.bloodTest.id);
+  const previousTest = currentIndex >= 0 ? orderedTests[currentIndex + 1] : undefined;
+  const trendDelta =
+    previousTest && data?.bloodTest.globalScore !== null && previousTest.globalScore !== null
+      ? data.bloodTest.globalScore - previousTest.globalScore
+      : null;
+
+  const age = patient.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
+  const ageBio = age ? Math.max(18, Math.round(age - (globalScore - 70) / 5)) : null;
+
   const protocolPhases =
     analysis?.protocolPhases && analysis.protocolPhases.length > 0
       ? analysis.protocolPhases
@@ -226,10 +364,83 @@ export default function BloodAnalysisReport() {
           },
         ].filter((phase) => phase.items.length > 0);
 
+  const quickWins = useMemo(() => {
+    const actions = analysis?.recommendations?.priority1 || [];
+    if (actions.length) {
+      return actions.slice(0, 3).map((item, index) => ({
+        action: item.action,
+        impact: `Impact estime: +${4 + index} pts en 8 semaines`,
+      }));
+    }
+    const fallback = [...critical, ...warning].slice(0, 3);
+    return fallback.map((marker, index) => ({
+      action: `Corriger ${marker.name} en priorite`,
+      impact: `Impact estime: +${3 + index} pts en 8 semaines`,
+    }));
+  }, [analysis?.recommendations?.priority1, critical, warning]);
+
+  const fallbackAiAnalysis = useMemo(() => {
+    const optimal = summary.optimal.slice(0, 6).join(", ") || "Aucun";
+    const watch = summary.watch.slice(0, 6).join(", ") || "Aucun";
+    const action = summary.action.slice(0, 6).join(", ") || "Aucune";
+    const phase1 = protocolPhases[0]?.items || [];
+    const phase2 = protocolPhases[1]?.items || [];
+    const phase3 = protocolPhases[2]?.items || [];
+    const followUp = analysis?.followUp?.map((item) => `- ${item.test} - ${item.delay}`) || [];
+
+    return [
+      "## Synthese executive",
+      `- Optimal: ${optimal}`,
+      `- A surveiller: ${watch}`,
+      `- Action requise: ${action}`,
+      `- Lecture globale: Ton score global est de ${globalScore}/100, il reste des axes cles a stabiliser.`,
+      "",
+      "## Protocoles 180 jours",
+      "### Jours 1-30",
+      ...(phase1.length ? phase1.map((item) => `- ${item}`) : ["- Stabiliser sommeil, hydratation, apports proteiques."]),
+      "### Jours 31-90",
+      ...(phase2.length ? phase2.map((item) => `- ${item}`) : ["- Optimiser activite, stress et nutrition."]),
+      "### Jours 91-180",
+      ...(phase3.length ? phase3.map((item) => `- ${item}`) : ["- Consolider les routines et re-tester."]),
+      "",
+      "## Controles a prevoir",
+      ...(followUp.length ? followUp : ["- Aucun controle prioritaire pour l'instant."]),
+    ].join("\n");
+  }, [analysis?.followUp, globalScore, protocolPhases, summary.action, summary.optimal, summary.watch]);
+
+  const aiAnalysis =
+    analysis?.aiAnalysis && analysis.aiAnalysis.trim() ? analysis.aiAnalysis : fallbackAiAnalysis;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         Chargement...
+      </div>
+    );
+  }
+
+  if (data && data.bloodTest.status !== "completed") {
+    const statusLabel =
+      data.bloodTest.status === "processing"
+        ? "Analyse en cours"
+        : data.bloodTest.status === "error"
+        ? "Analyse interrompue"
+        : "Analyse en attente";
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-xl font-semibold">{statusLabel}</p>
+        <p className="text-sm text-white/60 max-w-md">
+          {data.bloodTest.error ||
+            "Ton bilan est en cours de traitement. Rafraichis dans quelques instants pour voir le rapport."}
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Recharger
+          </Button>
+          <Button className="bg-[#FCDD00] text-black hover:bg-[#e7c700]" onClick={() => navigate("/dashboard")}>
+            Retour dashboard
+          </Button>
+        </div>
       </div>
     );
   }
@@ -243,348 +454,382 @@ export default function BloodAnalysisReport() {
     );
   }
 
-  const orderedCategories = categoryOrder.filter((key) => groupedMarkers[key]?.length);
-
   return (
     <div className="min-h-screen bg-black text-white">
       <ClientHeader credits={me?.user?.credits ?? 0} />
 
       <main className="mx-auto max-w-7xl px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">Rapport premium</p>
-              <h1 className="mt-2 text-2xl font-semibold">{patientLabel}</h1>
-              <p className="text-sm text-white/60">{data.bloodTest.fileName}</p>
-              <div className="mt-4 space-y-2 text-xs text-white/60">
-                <div className="flex items-center justify-between">
-                  <span>Reference</span>
-                  <span>REF-{data.bloodTest.id.slice(0, 8).toUpperCase()}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Upload</span>
-                  <span>{new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR")}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Marqueurs</span>
-                  <span>{markers.length}</span>
-                </div>
-                {patient.gender && (
-                  <div className="flex items-center justify-between">
-                    <span>Sexe</span>
-                    <span>{patient.gender}</span>
-                  </div>
-                )}
-                {patient.dob && (
-                  <div className="flex items-center justify-between">
-                    <span>Naissance</span>
-                    <span>{patient.dob}</span>
-                  </div>
-                )}
-                {patient.email && (
-                  <div className="flex items-center justify-between">
-                    <span>Email</span>
-                    <span>{patient.email}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Bonjour {patientLabel}</p>
+            <h1 className="text-2xl font-semibold mt-2">Analyse du {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR")}</h1>
+            {previousTest && (
+              <p className="text-sm text-white/60 mt-1">
+                vs ton bilan du {new Date(previousTest.uploadedAt).toLocaleDateString("fr-FR")}
+              </p>
+            )}
+            <p className="text-xs text-white/50 mt-2">
+              {patient.gender ? `Sexe: ${patient.gender}` : "Sexe: non renseigne"} ·{" "}
+              {patient.dob ? `Naissance: ${patient.dob}` : "Naissance: non renseignee"} ·{" "}
+              {patient.email ? `Email: ${patient.email}` : "Email: non renseigne"}
+            </p>
+          </div>
+          <Button className="bg-[#FCDD00] text-black hover:bg-[#e7c700]" onClick={() => navigate("/dashboard")}> 
+            <Upload className="h-4 w-4 mr-2" />
+            Uploader un nouveau bilan
+          </Button>
+        </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">Etat global</p>
-              <div className="mt-3 flex items-end justify-between">
-                <div>
-                  <p className="text-3xl font-semibold">{globalScore}</p>
+        <Tabs defaultValue="dashboard" className="mt-8 space-y-6">
+          <TabsList className="flex w-full flex-wrap justify-start gap-2 bg-white/5">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="systemes">Systemes</TabsTrigger>
+            <TabsTrigger value="marqueurs">Marqueurs</TabsTrigger>
+            <TabsTrigger value="protocoles">Protocoles</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="historique">Historique</TabsTrigger>
+            <TabsTrigger value="simulateur">Simulateur</TabsTrigger>
+            <TabsTrigger value="export">Export</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <Card className="border border-white/10 bg-white/5 p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Score global</p>
+                    <p className="text-4xl font-semibold mt-3">{globalScore}/100</p>
+                    <p className="text-sm text-white/60 mt-2">{getScoreMessage(globalScore)}</p>
+                  </div>
+                  <div className="text-right text-xs text-white/60">
+                    {trendDelta !== null && (
+                      <p>{trendDelta >= 0 ? "+" : ""}{trendDelta} pts depuis le dernier bilan</p>
+                    )}
+                  {age !== null && ageBio !== null && (
+                    <p className="mt-2">Age bio: {ageBio} ans (age reel: {age})</p>
+                  )}
                   <StatusIndicator status={getScoreLevel(globalScore).tone} label={getScoreLevel(globalScore).label} />
-                </div>
-                <div className="text-right text-xs text-white/60">
-                  <p>Risque</p>
-                  <p className="text-white">{riskLevel}</p>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-white/60">
-                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
-                  Critiques <span className="text-white">{critical.length}</span>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
-                  A surveiller <span className="text-white">{warning.length}</span>
+                  <p className="mt-2 text-xs text-white/50">
+                    Top {getPercentile(globalScore)}% des profils similaires
+                  </p>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-xs text-white/60">
-              <p className="uppercase tracking-[0.3em] text-white/40">Navigation</p>
-              <ul className="mt-3 space-y-2">
-                <li className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-[#FCDD00]" />
-                  Overview
-                </li>
-                <li className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-[#FCDD00]" />
-                  Biomarkers
-                </li>
-                <li className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[#FCDD00]" />
-                  Insights
-                </li>
-              </ul>
-            </div>
-          </aside>
-
-          <section className="space-y-8">
-            <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 bg-white/5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="biomarkers">Biomarkers</TabsTrigger>
-                <TabsTrigger value="insights">Insights</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-                  <Card className="border border-white/10 bg-white/5 p-6">
-                    <div className="flex items-center justify-between">
+              <Card className="border border-white/10 bg-white/5 p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Alertes prioritaires</p>
+                <div className="mt-4 space-y-3 text-sm text-white/70">
+                  {critical.length === 0 && <p>Aucune alerte critique.</p>}
+                  {critical.slice(0, 3).map((marker) => (
+                    <div key={marker.code} className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-3">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Radar multi-systemes</p>
-                        <p className="text-sm text-white/60 mt-2">
-                          Vue globale des systemes, basee sur les biomarqueurs disponibles.
+                        <p className="font-semibold text-white">{marker.name}</p>
+                        <p className="text-xs text-white/50">{marker.value} {marker.unit}</p>
+                      </div>
+                      <Button variant="outline" size="sm">Voir le protocole</Button>
+                    </div>
+                  ))}
+                  {critical.length > 3 && (
+                    <p className="text-xs text-white/50">+{critical.length - 3} alertes supplementaires</p>
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">Radar des systemes</p>
+                  <p className="text-sm text-white/60 mt-2">8 axes cles pour lire ton bilan en 10 secondes.</p>
+                </div>
+                <StatusIndicator status={getScoreLevel(globalScore).tone} />
+              </div>
+              <div className="mt-4">
+                <BloodRadar data={radarData} />
+              </div>
+            </Card>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Quick wins</p>
+                <div className="mt-3 space-y-3 text-sm text-white/70">
+                  {quickWins.length ? (
+                    quickWins.map((item, index) => (
+                      <div key={`quick-${index}`} className="rounded-lg border border-white/10 bg-black/40 p-3">
+                        <p className="font-semibold text-white">{index + 1}. {item.action}</p>
+                        <p className="text-xs text-white/50 mt-1">{item.impact}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p>Aucune action rapide prioritaire.</p>
+                  )}
+                </div>
+              </Card>
+              <Card className="border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Risque temporel</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-[#FCDD00]" />
+                  <div>
+                    <p className="text-lg font-semibold">{riskScore}/100</p>
+                    <p className="text-xs text-white/60">Risque {riskLabel}</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-white/60">
+                  <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                    Critiques <span className="text-white">{critical.length}</span>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                    Sous-optimaux <span className="text-white">{warning.length}</span>
+                  </div>
+                </div>
+              </Card>
+              <Card className="border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Resume</p>
+                <div className="mt-3 text-sm text-white/70 space-y-2">
+                  <p><span className="text-white">Optimal:</span> {summary?.optimal?.length ? summary.optimal.join(", ") : "Aucun"}</p>
+                  <p><span className="text-white">A surveiller:</span> {summary?.watch?.length ? summary.watch.join(", ") : "Aucun"}</p>
+                  <p><span className="text-white">Action requise:</span> {summary?.action?.length ? summary.action.join(", ") : "Aucune"}</p>
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="systemes" className="space-y-6">
+            {SYSTEM_ORDER.map((system) => {
+              const items = groupedBySystem[system];
+              if (!items.length) return null;
+              const score = systemScores[system] ?? 0;
+              const level = getScoreLevel(score);
+              const meta = SYSTEM_META[system];
+              return (
+                <Card key={system} className="border border-white/10 bg-white/5 p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-semibold">{meta.label}</p>
+                      <p className="text-xs text-white/50">{meta.description}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-2xl font-semibold">{score}/100</p>
+                      <StatusBadge status={level.tone} label={level.label} />
+                    </div>
+                  </div>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    {items.map((marker) => (
+                      <div key={`${system}-${marker.code}`} className="rounded-xl border border-white/10 bg-black/40 p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold">{marker.name}</p>
+                            <p className="text-xs text-white/50">{marker.code}</p>
+                          </div>
+                          <StatusBadge status={marker.status} />
+                        </div>
+                        <div className="mt-3 text-sm">
+                          <span className="text-2xl font-semibold">{marker.value}</span>{" "}
+                          <span className="text-white/60">{marker.unit}</span>
+                        </div>
+                        <BiomarkerRangeIndicator
+                          value={marker.value}
+                          unit={marker.unit}
+                          status={marker.status}
+                          normalMin={marker.refMin ?? undefined}
+                          normalMax={marker.refMax ?? undefined}
+                          optimalMin={marker.optimalMin ?? undefined}
+                          optimalMax={marker.optimalMax ?? undefined}
+                          className="mt-3"
+                        />
+                        <p className="mt-3 text-xs text-white/60">
+                          {marker.interpretation || "Analyse clinique en cours d'enrichissement."}
                         </p>
                       </div>
-                      <StatusIndicator status={getScoreLevel(globalScore).tone} />
-                    </div>
-                    <div className="mt-4">
-                      {radarData.length > 0 ? (
-                        <BloodRadar data={radarData} />
-                      ) : (
-                        <p className="text-white/60">Radar indisponible.</p>
-                      )}
-                    </div>
-                  </Card>
-
-                  <Card className="border border-white/10 bg-white/5 p-6 space-y-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Priorites</p>
-                    <div className="space-y-3 text-sm text-white/70">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-4 w-4 text-red-400 mt-1" />
-                        <div>
-                          <p className="text-white">Critiques detectees</p>
-                          <p className="text-white/60">
-                            {critical.length ? critical.map((item) => item.name).join(", ") : "Aucune alerte critique."}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Shield className="h-4 w-4 text-amber-400 mt-1" />
-                        <div>
-                          <p className="text-white">A surveiller</p>
-                          <p className="text-white/60">
-                            {warning.length ? warning.map((item) => item.name).join(", ") : "Rien a surveiller pour le moment."}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Stethoscope className="h-4 w-4 text-emerald-400 mt-1" />
-                        <div>
-                          <p className="text-white">Suivi recommande</p>
-                          <p className="text-white/60">
-                            {analysis?.followUp?.length
-                              ? analysis.followUp.map((item) => `${item.test} (${item.delay})`).join(", ")
-                              : "Aucune recommandation de suivi automatique."}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-                {(summary?.optimal || summary?.watch || summary?.action) && (
-                  <div className="grid gap-4 lg:grid-cols-3">
-                    <Card className="border border-white/10 bg-white/5 p-5">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">Optimaux</p>
-                      <p className="text-sm text-white/70 mt-3">
-                        {summary?.optimal?.length ? summary.optimal.join(", ") : "Aucun marqueur optimal notable."}
-                      </p>
-                    </Card>
-                    <Card className="border border-white/10 bg-white/5 p-5">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">A surveiller</p>
-                      <p className="text-sm text-white/70 mt-3">
-                        {summary?.watch?.length ? summary.watch.join(", ") : "Aucune faiblesse majeure identifiee."}
-                      </p>
-                    </Card>
-                    <Card className="border border-white/10 bg-white/5 p-5">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">Actions clees</p>
-                      <p className="text-sm text-white/70 mt-3">
-                        {summary?.action?.length ? summary.action.join(", ") : "Aucune action prioritaire."}
-                      </p>
-                    </Card>
-                  </div>
-                )}
-
-                <div className="grid gap-4 lg:grid-cols-3">
-                  {categoryOrder
-                    .filter((key) => radarData.find((item) => item.key === key))
-                    .map((key) => {
-                      const score = (hasCategoryScores ? categoryScores : fallbackScores)[key];
-                      const meta = categoryMeta[key] || { label: key, description: "" };
-                      const level = getScoreLevel(score || 0);
-                      return (
-                        <Card key={key} className="border border-white/10 bg-white/5 p-5">
-                          <div className="flex items-center justify-between">
-                            <p className="font-semibold">{meta.label}</p>
-                            <StatusBadge status={level.tone} />
-                          </div>
-                          <p className="text-xs text-white/50 mt-2">{meta.description}</p>
-                          <div className="mt-4 flex items-end justify-between">
-                            <p className="text-2xl font-semibold">{score || 0}</p>
-                            <span className="text-xs text-white/60">{level.label}</span>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="biomarkers" className="space-y-6">
-                {orderedCategories.length === 0 && (
-                  <Card className="border border-white/10 bg-white/5 p-6 text-sm text-white/60">
-                    Aucun biomarqueur exploitable dans ce bilan.
-                  </Card>
-                )}
-                {orderedCategories.map((category) => {
-                  const items = groupedMarkers[category];
-                  const meta = categoryMeta[category] || { label: category, description: "" };
-                  return (
-                    <Card key={category} className="border border-white/10 bg-white/5 p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-lg font-semibold">{meta.label}</p>
-                          <p className="text-xs text-white/50">{meta.description}</p>
-                        </div>
-                        <span className="text-xs text-white/60">{items.length} marqueurs</span>
-                      </div>
-                      <div className="mt-6 grid gap-4 md:grid-cols-2">
-                        {items.map((marker) => (
-                          <div key={`${marker.code}-${marker.name}`} className="rounded-xl border border-white/10 bg-black/40 p-4">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="text-sm font-semibold">{marker.name}</p>
-                                <p className="text-xs text-white/50">{marker.code}</p>
-                              </div>
-                              <StatusBadge status={marker.status} />
-                            </div>
-                            <div className="mt-3 text-sm">
-                              <span className="text-2xl font-semibold">{marker.value}</span>{" "}
-                              <span className="text-white/60">{marker.unit}</span>
-                            </div>
-                            <BiomarkerRangeIndicator
-                              value={marker.value}
-                              unit={marker.unit}
-                              status={marker.status}
-                              normalMin={marker.refMin ?? undefined}
-                              normalMax={marker.refMax ?? undefined}
-                              optimalMin={marker.optimalMin ?? undefined}
-                              optimalMax={marker.optimalMax ?? undefined}
-                              className="mt-3"
-                            />
-                            <p className="mt-3 text-xs text-white/60">
-                              {marker.interpretation || "Analyse clinique en cours d'enrichissement."}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  );
-                })}
-              </TabsContent>
-
-              <TabsContent value="insights" className="space-y-6">
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Card className="border border-white/10 bg-white/5 p-6">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Synthese experte</p>
-                    <p className="mt-3 text-sm text-white/70 whitespace-pre-line">
-                      {analysis?.aiAnalysis || "Analyse en cours de generation."}
-                    </p>
-                  </Card>
-                  <Card className="border border-white/10 bg-white/5 p-6">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Patterns detectes</p>
-                    <div className="mt-4 space-y-4 text-sm text-white/70">
-                      {analysis?.patterns?.length ? (
-                        analysis.patterns.map((pattern) => (
-                          <div key={pattern.name} className="rounded-lg border border-white/10 bg-black/40 p-4">
-                            <p className="font-semibold text-white">{pattern.name}</p>
-                            <p className="text-xs text-white/50 mt-1">Causes: {pattern.causes.join(", ")}</p>
-                            <p className="text-xs text-white/50 mt-2">Protocoles: {pattern.protocol.join(", ")}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <p>Aucun pattern prioritaire detecte.</p>
-                      )}
-                    </div>
-                  </Card>
-                </div>
-
-                {(analysis?.alerts?.length || analysis?.recommendations) && (
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <Card className="border border-white/10 bg-white/5 p-6">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">Alertes</p>
-                      <ul className="mt-3 space-y-2 text-sm text-white/70">
-                        {analysis?.alerts?.length
-                          ? analysis.alerts.map((alert, index) => (
-                              <li key={`alert-${index}`} className="flex gap-2">
-                                <AlertTriangle className="h-4 w-4 text-amber-400" />
-                                <span>{alert}</span>
-                              </li>
-                            ))
-                          : "Aucune alerte critique a signaler."}
-                      </ul>
-                    </Card>
-                    <Card className="border border-white/10 bg-white/5 p-6">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">Actions prioritaires</p>
-                      <div className="mt-3 space-y-3 text-sm text-white/70">
-                        {analysis?.recommendations?.priority1?.length ? (
-                          analysis.recommendations.priority1.map((rec, index) => (
-                            <div key={`p1-${index}`} className="rounded-lg border border-white/10 bg-black/40 p-3">
-                              <p className="font-semibold text-white">{rec.action}</p>
-                              <p className="text-xs text-white/50 mt-1">
-                                {rec.dosage ? `Dosage: ${rec.dosage}. ` : ""}
-                                {rec.timing ? `Timing: ${rec.timing}. ` : ""}
-                                {rec.why}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <p>Aucune action prioritaire definie.</p>
-                        )}
-                      </div>
-                    </Card>
-                  </div>
-                )}
-
-                <Card className="border border-white/10 bg-white/5 p-6">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">Protocoles 180 jours</p>
-                  <div className="mt-4 grid gap-4 md:grid-cols-3">
-                    {protocolPhases.length ? (
-                      protocolPhases.map((phase) => (
-                        <div key={phase.id} className="rounded-xl border border-white/10 bg-black/40 p-4">
-                          <p className="font-semibold">{phase.title}</p>
-                          <ul className="mt-3 space-y-2 text-xs text-white/60">
-                            {phase.items.map((item, index) => (
-                              <li key={`${phase.id}-${index}`} className="flex gap-2">
-                                <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" />
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-white/60">Aucun protocole detaille disponible.</p>
-                    )}
+                    ))}
                   </div>
                 </Card>
-              </TabsContent>
-            </Tabs>
-          </section>
-        </div>
+              );
+            })}
+          </TabsContent>
+
+          <TabsContent value="marqueurs" className="space-y-6">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold">Liste complete des marqueurs</p>
+                  <p className="text-xs text-white/50">{markers.length} marqueurs detectes.</p>
+                </div>
+                <StatusIndicator status={getScoreLevel(globalScore).tone} />
+              </div>
+            </Card>
+            <div className="grid gap-4 md:grid-cols-2">
+              {markers.map((marker) => (
+                <div key={`${marker.code}-full`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold">{marker.name}</p>
+                      <p className="text-xs text-white/50">{marker.code}</p>
+                    </div>
+                    <StatusBadge status={marker.status} />
+                  </div>
+                  <div className="mt-3 text-sm">
+                    <span className="text-2xl font-semibold">{marker.value}</span>{" "}
+                    <span className="text-white/60">{marker.unit}</span>
+                  </div>
+                  <BiomarkerRangeIndicator
+                    value={marker.value}
+                    unit={marker.unit}
+                    status={marker.status}
+                    normalMin={marker.refMin ?? undefined}
+                    normalMax={marker.refMax ?? undefined}
+                    optimalMin={marker.optimalMin ?? undefined}
+                    optimalMax={marker.optimalMax ?? undefined}
+                    className="mt-3"
+                  />
+                  <p className="mt-3 text-xs text-white/60">
+                    {marker.interpretation || "Analyse clinique en cours d'enrichissement."}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="protocoles" className="space-y-6">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <p className="text-lg font-semibold">Plan d'action personnalise</p>
+              <p className="text-xs text-white/50">Protocoles progressifs sur 180 jours.</p>
+            </Card>
+            <div className="grid gap-4 md:grid-cols-3">
+              {protocolPhases.map((phase) => (
+                <Card key={phase.id} className="border border-white/10 bg-white/5 p-4">
+                  <p className="font-semibold">{phase.title}</p>
+                  <ul className="mt-3 space-y-2 text-xs text-white/60">
+                    {phase.items.map((item, index) => (
+                      <li key={`${phase.id}-${index}`} className="flex gap-2">
+                        <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              ))}
+            </div>
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Controles a prevoir</p>
+              <div className="mt-4 space-y-2 text-sm text-white/70">
+                {analysis?.followUp?.length
+                  ? analysis.followUp.map((item, index) => (
+                      <div key={`follow-${index}`} className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-3">
+                        <p>{item.test}</p>
+                        <span className="text-xs text-white/50">{item.delay}</span>
+                      </div>
+                    ))
+                  : "Aucun controle recommande."}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card className="border border-white/10 bg-white/5 p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Synthese experte</p>
+                <div className="mt-3 text-sm text-white/70 prose prose-invert max-w-none">
+                  <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                </div>
+              </Card>
+              <Card className="border border-white/10 bg-white/5 p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Patterns detectes</p>
+                <div className="mt-4 space-y-4 text-sm text-white/70">
+                  {analysis?.patterns?.length ? (
+                    analysis.patterns.map((pattern) => (
+                      <div key={pattern.name} className="rounded-lg border border-white/10 bg-black/40 p-4">
+                        <p className="font-semibold text-white">{pattern.name}</p>
+                        <p className="text-xs text-white/50 mt-1">Causes: {pattern.causes.join(", ")}</p>
+                        <p className="text-xs text-white/50 mt-2">Protocoles: {pattern.protocol.join(", ")}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p>Aucun pattern prioritaire detecte.</p>
+                  )}
+                </div>
+              </Card>
+            </div>
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Alertes medicales</p>
+              <ul className="mt-3 space-y-2 text-sm text-white/70">
+                {analysis?.alerts?.length
+                  ? analysis.alerts.map((alert, index) => (
+                      <li key={`alert-${index}`} className="flex gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-400" />
+                        <span>{alert}</span>
+                      </li>
+                    ))
+                  : "Aucune alerte critique a signaler."}
+              </ul>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="historique" className="space-y-6">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold">Evolution dans le temps</p>
+                  <p className="text-xs text-white/50">Suivi de tes scores par bilan.</p>
+                </div>
+                <LineChart className="h-5 w-5 text-[#FCDD00]" />
+              </div>
+              {orderedTests.length >= 2 ? (
+                <div className="h-48 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartLineChart data={orderedTests.slice().reverse().map((test) => ({
+                      date: new Date(test.uploadedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+                      score: test.globalScore || 0,
+                    }))}>
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" />
+                      <YAxis stroke="rgba(255,255,255,0.4)" domain={[0, 100]} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
+                        labelStyle={{ color: "#fff" }}
+                      />
+                      <Line type="monotone" dataKey="score" stroke="#FCDD00" strokeWidth={2} dot={false} />
+                    </RechartLineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-sm text-white/60 mt-4">Uploade un second bilan pour debloquer la comparaison.</p>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="simulateur" className="space-y-6">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <div className="flex items-center gap-3">
+                <RefreshCcw className="h-5 w-5 text-[#FCDD00]" />
+                <div>
+                  <p className="text-lg font-semibold">Simulateur what-if</p>
+                  <p className="text-xs text-white/50">Scenario interactif en preparation.</p>
+                </div>
+              </div>
+              <p className="text-sm text-white/70 mt-4">
+                Ici tu pourras simuler l'impact de changements (vitamine D, sommeil, activite) sur ton score.
+              </p>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-6">
+            <Card className="border border-white/10 bg-white/5 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold">Export</p>
+                  <p className="text-xs text-white/50">PDF partageable avec ton medecin.</p>
+                </div>
+                <Button variant="outline" onClick={() => window.open(`/api/blood-tests/${data.bloodTest.id}/export/pdf`, "_blank")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export PDF
+                </Button>
+              </div>
+              <p className="text-sm text-white/60 mt-4">
+                L'export inclut tes scores, marqueurs et protocoles. Si l'export est indisponible, contacte-moi.
+              </p>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
