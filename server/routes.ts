@@ -1033,7 +1033,12 @@ export async function registerRoutes(
       }
     } catch (error) {
       console.error("[Auth] Error:", error);
-      res.status(500).json({ error: "Erreur serveur" });
+      const adminKey = String(req.headers["x-admin-key"] || "");
+      const expectedKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "";
+      const detail = adminKey && expectedKey && adminKey === expectedKey
+        ? (error instanceof Error ? error.message : String(error))
+        : undefined;
+      res.status(500).json({ error: "Erreur serveur", ...(detail ? { detail } : {}) });
     }
   });
 
