@@ -1645,9 +1645,11 @@ export class PgStorage implements IStorage {
     }
     pushField("token", token);
     pushField("email", normalizedEmail);
-    pushField("expires_at", expiresAt);
-    if (!columns.has("expires_at")) {
-      pushField("expiresat", expiresAt);
+
+    const expiresColumn = columns.get("expires_at") || columns.get("expiresat");
+    if (expiresColumn) {
+      fields.push(`"${expiresColumn}"`);
+      values.push(expiresAt);
     }
 
     if (fields.length === 0) {
