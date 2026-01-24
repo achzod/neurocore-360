@@ -846,6 +846,8 @@ export class PgStorage implements IStorage {
           expires_at TIMESTAMP NOT NULL
         )`
       );
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS id VARCHAR(36) DEFAULT gen_random_uuid()::text`);
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS token VARCHAR(255)`);
       await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
       await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP`);
       this.ensuredMagicTokensTable = true;
@@ -1596,11 +1598,12 @@ export class PgStorage implements IStorage {
   async createMagicToken(email: string): Promise<string> {
     await this.ensureMagicTokensTable();
     const token = randomUUID();
+    const id = randomUUID();
     const normalizedEmail = email.trim().toLowerCase();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await pool.query(
-      "INSERT INTO magic_tokens (token, email, expires_at) VALUES ($1, $2, $3)",
-      [token, normalizedEmail, expiresAt]
+      "INSERT INTO magic_tokens (id, token, email, expires_at) VALUES ($1, $2, $3, $4)",
+      [id, token, normalizedEmail, expiresAt]
     );
     return token;
   }
