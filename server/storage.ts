@@ -1629,8 +1629,9 @@ export class PgStorage implements IStorage {
     };
 
     let userId: string | null = null;
-    const userIdColumn = columns.get("userid") || columns.get("user_id");
-    if (userIdColumn) {
+    const userIdColumn = columns.get("userid");
+    const userIdSnake = columns.get("user_id");
+    if (userIdColumn || userIdSnake) {
       let user = await this.getUserByEmail(normalizedEmail);
       if (!user) {
         user = await this.createUser({ email: normalizedEmail });
@@ -1639,16 +1640,27 @@ export class PgStorage implements IStorage {
     }
 
     pushField("id", id);
-    if (userIdColumn && userId) {
-      fields.push(`"${userIdColumn}"`);
-      values.push(userId);
+    if (userId) {
+      if (userIdColumn) {
+        fields.push(`"${userIdColumn}"`);
+        values.push(userId);
+      }
+      if (userIdSnake && userIdSnake !== userIdColumn) {
+        fields.push(`"${userIdSnake}"`);
+        values.push(userId);
+      }
     }
     pushField("token", token);
     pushField("email", normalizedEmail);
 
-    const expiresColumn = columns.get("expires_at") || columns.get("expiresat");
+    const expiresColumn = columns.get("expiresat");
+    const expiresSnake = columns.get("expires_at");
     if (expiresColumn) {
       fields.push(`"${expiresColumn}"`);
+      values.push(expiresAt);
+    }
+    if (expiresSnake && expiresSnake !== expiresColumn) {
+      fields.push(`"${expiresSnake}"`);
       values.push(expiresAt);
     }
 
