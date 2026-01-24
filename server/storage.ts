@@ -623,7 +623,8 @@ export class MemStorage implements IStorage {
   async createMagicToken(email: string): Promise<string> {
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    this.magicTokens.set(token, { token, email, expiresAt });
+    const normalizedEmail = email.trim().toLowerCase();
+    this.magicTokens.set(token, { token, email: normalizedEmail, expiresAt });
     return token;
   }
 
@@ -759,6 +760,7 @@ export class PgStorage implements IStorage {
   private ensuredArtifactsTable = false;
   private ensuredUserCreditsColumn = false;
   private ensuredBloodTestsTable = false;
+  private ensuredMagicTokensTable = false;
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
     if (this.auditColumnsCache) return this.auditColumnsCache;
@@ -831,6 +833,23 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error ensuring blood_tests table:", err);
       this.ensuredBloodTestsTable = true;
+    }
+  }
+
+  private async ensureMagicTokensTable(): Promise<void> {
+    if (this.ensuredMagicTokensTable) return;
+    try {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS magic_tokens (
+          token VARCHAR(255) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          expires_at TIMESTAMP NOT NULL
+        )`
+      );
+      this.ensuredMagicTokensTable = true;
+    } catch (err) {
+      console.error("[Storage] Error ensuring magic_tokens table:", err);
+      this.ensuredMagicTokensTable = true;
     }
   }
   async getUser(id: string): Promise<User | undefined> {
@@ -1573,16 +1592,19 @@ export class PgStorage implements IStorage {
   }
 
   async createMagicToken(email: string): Promise<string> {
+    await this.ensureMagicTokensTable();
     const token = randomUUID();
+    const normalizedEmail = email.trim().toLowerCase();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await pool.query(
       "INSERT INTO magic_tokens (token, email, expires_at) VALUES ($1, $2, $3)",
-      [token, email, expiresAt]
+      [token, normalizedEmail, expiresAt]
     );
     return token;
   }
 
   async verifyMagicToken(token: string): Promise<string | null> {
+    await this.ensureMagicTokensTable();
     const result = await pool.query("SELECT * FROM magic_tokens WHERE token = $1", [token]);
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
