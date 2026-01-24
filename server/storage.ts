@@ -757,6 +757,7 @@ export class MemStorage implements IStorage {
 
 export class PgStorage implements IStorage {
   private auditColumnsCache: Set<string> | null = null;
+  private magicTokensColumnsCache: Map<string, string> | null = null;
   private ensuredArtifactsTable = false;
   private ensuredUserCreditsColumn = false;
   private ensuredBloodTestsTable = false;
@@ -850,11 +851,26 @@ export class PgStorage implements IStorage {
       await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS token VARCHAR(255)`);
       await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
       await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP`);
+      this.magicTokensColumnsCache = null;
       this.ensuredMagicTokensTable = true;
     } catch (err) {
       console.error("[Storage] Error ensuring magic_tokens table:", err);
       this.ensuredMagicTokensTable = true;
     }
+  }
+
+  private async getMagicTokensColumns(): Promise<Map<string, string>> {
+    if (this.magicTokensColumnsCache) return this.magicTokensColumnsCache;
+    const result = await pool.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name = 'magic_tokens'"
+    );
+    const map = new Map<string, string>();
+    for (const row of result.rows || []) {
+      const name = String(row.column_name);
+      map.set(name.toLowerCase(), name);
+    }
+    this.magicTokensColumnsCache = map;
+    return map;
   }
   async getUser(id: string): Promise<User | undefined> {
     const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
@@ -1601,10 +1617,46 @@ export class PgStorage implements IStorage {
     const id = randomUUID();
     const normalizedEmail = email.trim().toLowerCase();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    await pool.query(
-      "INSERT INTO magic_tokens (id, token, email, expires_at) VALUES ($1, $2, $3, $4)",
-      [id, token, normalizedEmail, expiresAt]
-    );
+    const columns = await this.getMagicTokensColumns();
+    const values: Array<string | Date> = [];
+    const fields: string[] = [];
+
+    const pushField = (key: string, value: string | Date) => {
+      const columnName = columns.get(key);
+      if (!columnName) return;
+      fields.push(`"${columnName}"`);
+      values.push(value);
+    };
+
+    let userId: string | null = null;
+    const userIdColumn = columns.get("userid") || columns.get("user_id");
+    if (userIdColumn) {
+      let user = await this.getUserByEmail(normalizedEmail);
+      if (!user) {
+        user = await this.createUser({ email: normalizedEmail });
+      }
+      userId = user.id;
+    }
+
+    pushField("id", id);
+    if (userIdColumn && userId) {
+      fields.push(`"${userIdColumn}"`);
+      values.push(userId);
+    }
+    pushField("token", token);
+    pushField("email", normalizedEmail);
+    pushField("expires_at", expiresAt);
+    if (!columns.has("expires_at")) {
+      pushField("expiresat", expiresAt);
+    }
+
+    if (fields.length === 0) {
+      throw new Error("magic_tokens schema missing required columns");
+    }
+
+    const placeholders = values.map((_, idx) => `$${idx + 1}`).join(", ");
+    const sql = `INSERT INTO magic_tokens (${fields.join(", ")}) VALUES (${placeholders})`;
+    await pool.query(sql, values);
     return token;
   }
 
