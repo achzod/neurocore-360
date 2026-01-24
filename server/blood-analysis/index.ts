@@ -609,8 +609,8 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   insuline_jeun: [/insuline.*je[uû]n/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
   triglycerides: [/triglyc[ée]rides/i],
-  hdl: [/cholest[ée]rol\s*hdl/i, /\bhdl\b/i, /\bhdl[-\s]?c\b/i],
-  ldl: [/cholest[ée]rol\s*ldl/i, /\bldl\b/i, /\bldl[-\s]?c\b/i],
+  hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
+  ldl: [/cholest[ée]rol\s*l\.?d\.?l/i, /\bl\.?d\.?l\b/i, /\bldl[-\s]?c\b/i],
   apob: [/apo\s*b/i],
   lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
   crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
@@ -631,10 +631,7 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
 };
 
 const extractFirstNumber = (line: string): number | null => {
-  const match = line.match(/(?<![A-Za-zÀ-ÿ])[<>]?\s*\d+(?:[.,]\d+)?/);
-  if (!match) return null;
-  const value = Number(match[0].replace(/[<>]/g, "").replace(",", ".").trim());
-  return Number.isNaN(value) ? null : value;
+  return extractNumberFromSnippet(line);
 };
 
 const extractValueAfterLabel = (line: string, match: RegExpMatchArray): number | null => {
@@ -648,9 +645,10 @@ const UNIT_REGEX =
   /(mmol\/l|nmol\/l|mg\/dl|mg\/l|g\/l|ng\/ml|ng\/l|pg\/ml|ng\/dl|pmol\/l|umol\/l|µmol\/l|mui\/l|ui\/l|u\/l|ml\/min|%)/i;
 
 const SKIP_LINE_REGEX =
-  /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page)/i;
+  /(objectif|recommand|valeur|référence|reference|score|esc|risque|guide|interpret|evaluation|page|\bhas\b)/i;
 
 const DATE_LINE_REGEX = /^\d{2}[\/-]\d{2}[\/-]\d{2,4}$/;
+const RANGE_LINE_REGEX = /\d+(?:[.,]\d+)?\s*(?:à|a|–|-)\s*\d+(?:[.,]\d+)?/i;
 
 const findUnit = (line?: string): string | undefined => {
   if (!line) return undefined;
@@ -688,7 +686,9 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
       if (value === null) {
         for (let offset = 1; offset <= 4; offset += 1) {
           const nextLine = lines[i + offset];
-          if (!nextLine || DATE_LINE_REGEX.test(nextLine) || SKIP_LINE_REGEX.test(nextLine)) continue;
+          if (!nextLine || DATE_LINE_REGEX.test(nextLine) || SKIP_LINE_REGEX.test(nextLine) || RANGE_LINE_REGEX.test(nextLine)) {
+            continue;
+          }
           const nextValue = extractFirstNumber(nextLine);
           if (nextValue === null) continue;
           value = nextValue;
@@ -700,31 +700,91 @@ const extractMarkersFromLines = (pdfText: string): BloodMarkerInput[] => {
       }
 
       if (value === null || Number.isNaN(value)) continue;
-      results.set(markerId, { value, unit });
+      const normalized = normalizeMarkerValue(markerId, value, unit);
+      if (!isPlausibleMarkerValue(markerId, normalized)) continue;
+      results.set(markerId, { value: normalized, unit });
     }
   }
 
   return Array.from(results.entries()).map(([markerId, data]) => ({
     markerId,
-    value: normalizeMarkerValue(markerId, data.value, data.unit),
+    value: data.value,
   }));
 };
 
+const isYearLike = (value: number, raw: string) => {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length !== 4) return false;
+  return Number.isInteger(value) && value >= 1900 && value <= 2100;
+};
+
+const isHugeNumber = (raw: string, value: number) => {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length >= 8 || value >= 100000;
+};
+
 const extractNumberFromSnippet = (snippet: string): number | null => {
+  const dateMatches = Array.from(
+    snippet.matchAll(/\d{2}[\/.\-−]\d{2}[\/.\-−]\d{2,4}/g)
+  ).map((match) => ({
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }));
+
   const matches = snippet.matchAll(/[<>]?\s*\d+(?:[.,]\d+)?/g);
   for (const match of matches) {
     const raw = match[0].replace(/[<>]/g, "").replace(",", ".").trim();
     const value = Number(raw);
     if (Number.isNaN(value)) continue;
     const start = match.index ?? 0;
+    const end = start + match[0].length;
+    const beforeChar = snippet[start - 1] || "";
+    const afterChar = snippet[end] || "";
+    if (/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) continue;
+    if (dateMatches.some((range) => start >= range.start && end <= range.end)) continue;
+    if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
     const before = snippet.slice(Math.max(0, start - 3), start);
-    const after = snippet.slice(start + match[0].length, start + match[0].length + 3);
+    const after = snippet.slice(end, end + 3);
     if (before.includes("-") || after.includes("-") || before.includes("–") || after.includes("–")) {
       continue;
     }
     return value;
   }
   return null;
+};
+
+const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
+  egfr: { min: 30, max: 200 },
+  crp_us: { min: 0, max: 50 },
+  homocysteine: { min: 2, max: 60 },
+  apob: { min: 30, max: 300 },
+  lpa: { min: 0, max: 300 },
+  triglycerides: { min: 5, max: 1000 },
+  hdl: { min: 10, max: 150 },
+  ldl: { min: 20, max: 400 },
+  glycemie_jeun: { min: 40, max: 300 },
+  insuline_jeun: { min: 0.2, max: 200 },
+  testosterone_total: { min: 100, max: 2000 },
+  testosterone_libre: { min: 1, max: 60 },
+  cortisol: { min: 1, max: 50 },
+  vitamine_d: { min: 5, max: 200 },
+  b12: { min: 100, max: 3000 },
+};
+
+const isPlausibleMarkerValue = (markerId: string, value: number): boolean => {
+  if (!Number.isFinite(value)) return false;
+  const range = BIOMARKER_RANGES[markerId];
+  if (!range) return true;
+  const minRange = Math.min(range.normalMin, range.optimalMin);
+  const maxRange = Math.max(range.normalMax, range.optimalMax);
+  const baseMin = Math.max(0, minRange * 0.2);
+  const baseMax = Math.max(maxRange * 6, maxRange + 50);
+  const override = PLAUSIBLE_BOUNDS[markerId];
+  const min = override?.min ?? baseMin;
+  const max = override?.max ?? baseMax;
+  if (value < min || value > max) return false;
+  if (value > 1000 && maxRange < 200) return false;
+  return true;
 };
 
 const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
@@ -746,7 +806,9 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
         const value = extractNumberFromSnippet(after) ?? extractNumberFromSnippet(before);
         if (value === null) continue;
         const unit = findUnit(after) || findUnit(before);
-        results.set(markerId, { value, unit });
+        const normalized = normalizeMarkerValue(markerId, value, unit);
+        if (!isPlausibleMarkerValue(markerId, normalized)) continue;
+        results.set(markerId, { value: normalized, unit });
         break;
       }
       if (results.has(markerId)) break;
@@ -755,7 +817,7 @@ const extractMarkersFromText = (pdfText: string): BloodMarkerInput[] => {
 
   return Array.from(results.entries()).map(([markerId, data]) => ({
     markerId,
-    value: normalizeMarkerValue(markerId, data.value, data.unit),
+    value: data.value,
   }));
 };
 
@@ -917,9 +979,16 @@ export async function extractMarkersFromPdfText(
 
   const lineExtracted = extractMarkersFromLines(pdfText);
   const textExtracted = extractMarkersFromText(cleaned);
-  const unique = new Map(
-    [...lineExtracted, ...textExtracted].map((item) => [item.markerId, item])
-  );
+  const unique = new Map<string, BloodMarkerInput>();
+  for (const item of lineExtracted) {
+    if (!isPlausibleMarkerValue(item.markerId, item.value)) continue;
+    unique.set(item.markerId, item);
+  }
+  for (const item of textExtracted) {
+    if (unique.has(item.markerId)) continue;
+    if (!isPlausibleMarkerValue(item.markerId, item.value)) continue;
+    unique.set(item.markerId, item);
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return addComputedMarkers(Array.from(unique.values()));
@@ -968,12 +1037,14 @@ ${cleaned.slice(0, 12000)}`;
       ),
     }))
     .filter((item) => item.markerId && !Number.isNaN(item.value))
-    .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]));
+    .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
+    .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
 
   for (const item of extracted) {
-    if (unique.has(item.markerId)) continue;
     if (!hasMarkerValueInText(cleaned, item.markerId)) continue;
-    unique.set(item.markerId, item);
+    if (!unique.has(item.markerId)) {
+      unique.set(item.markerId, item);
+    }
   }
 
   return addComputedMarkers(Array.from(unique.values()));
@@ -1144,6 +1215,8 @@ REGLES DE STYLE:
 - Utilise les ranges optimaux en priorite.
 - Reste structure et operationnel.
 - Adresse-toi directement au client avec \"tu/ta/ton\" partout.
+- Jamais \"patient\" ou \"utilisateur\".
+- Ajoute une phrase simple et actionnable avant chaque recommandation.
 
 FORMAT DE REPONSE (respecte les titres):
 ## Synthese executive

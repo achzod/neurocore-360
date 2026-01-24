@@ -165,8 +165,8 @@ const getAgeFromDob = (dob?: string): string | undefined => {
 const computeSystemScores = (markers: Array<{ code?: string; status?: MarkerStatus }>) => {
   const buckets: Record<string, number[]> = {};
   for (const marker of markers) {
-    const system = SYSTEM_BY_MARKER[marker.code || \"\"] || \"metabolic\";
-    const status = marker.status || \"normal\";
+    const system = SYSTEM_BY_MARKER[marker.code || ""] || "metabolic";
+    const status = marker.status || "normal";
     if (!buckets[system]) buckets[system] = [];
     buckets[system].push(SCORE_BY_STATUS[status]);
   }
@@ -265,17 +265,17 @@ export function registerBloodTestsRoutes(app: Express): void {
           }
 
           const pdfProfile = extractPatientInfoFromPdfText(pdfText);
-          const profile = {
+          const patientProfile = {
             email: pdfProfile.email || seedEmail,
-            prenom: pdfProfile.prenom || "Non fourni",
-            nom: pdfProfile.nom || "Non fourni",
+            prenom: pdfProfile.prenom,
+            nom: pdfProfile.nom,
             gender: pdfProfile.gender || "homme",
-            dob: pdfProfile.dob || "Non fourni",
+            dob: pdfProfile.dob,
           };
 
-          const age = getAgeFromDob(profile.dob);
+          const age = getAgeFromDob(patientProfile.dob);
           const analysisResult = await analyzeBloodwork(extractedMarkers, {
-            gender: profile.gender as "homme" | "femme",
+            gender: patientProfile.gender as "homme" | "femme",
             age,
             objectives: undefined,
             medications: undefined,
@@ -292,7 +292,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             try {
               aiAnalysis = await generateAIBloodAnalysis(
                 analysisResult,
-                { gender: profile.gender as "homme" | "femme", age },
+                { gender: patientProfile.gender as "homme" | "femme", age },
                 knowledgeContext
               );
             } catch {
@@ -300,7 +300,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             }
           }
           if (!aiAnalysis) {
-            aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: profile.gender as "homme" | "femme", age });
+            aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: patientProfile.gender as "homme" | "femme", age });
           }
 
           const markers = analysisResult.markers.map((marker) => {
@@ -341,7 +341,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             alerts: analysisResult.alerts,
             aiAnalysis,
             protocolPhases,
-            patient: profile,
+            patient: patientProfile,
           };
 
           const createdRecord = await storage.createBloodTest({
@@ -353,6 +353,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             error: null,
             markers,
             analysis: analysisPayload,
+            patientProfile,
             globalScore,
             globalLevel,
             createdAt: new Date(),
@@ -418,6 +419,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         error: null,
         markers: [],
         analysis: {},
+        patientProfile: {},
         globalScore: null,
         globalLevel: null,
         createdAt: new Date(),
@@ -440,13 +442,17 @@ export function registerBloodTestsRoutes(app: Express): void {
 
       const pdfProfile = extractPatientInfoFromPdfText(pdfText);
       const bodyGender = String(req.body.gender || "").trim().toLowerCase();
+      const normalizedGender =
+        bodyGender.startsWith("f")
+          ? "femme"
+          : bodyGender.startsWith("h") || bodyGender.startsWith("m")
+          ? "homme"
+          : undefined;
       const profile = {
         email: String(req.body.email || pdfProfile.email || user.email || "").trim() || undefined,
         prenom: String(req.body.prenom || pdfProfile.prenom || "").trim() || undefined,
         nom: String(req.body.nom || pdfProfile.nom || "").trim() || undefined,
-        gender: (bodyGender === "femme" || bodyGender === "homme"
-          ? (bodyGender as "homme" | "femme")
-          : pdfProfile.gender) || "homme",
+        gender: normalizedGender || pdfProfile.gender || "homme",
         dob: String(req.body.dob || pdfProfile.dob || "").trim() || undefined,
       };
       const missingProfile: string[] = [];
@@ -542,6 +548,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         status: "completed",
         markers,
         analysis: analysisPayload,
+        patientProfile: profile,
         globalScore,
         globalLevel,
         completedAt: new Date(),
@@ -568,6 +575,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         status: test.status,
         globalScore: test.globalScore ?? null,
         globalLevel: test.globalLevel ?? null,
+        patient: test.patientProfile || (test.analysis as any)?.patient || null,
       }));
       res.json({ bloodTests: summaries });
     } catch (error) {
@@ -593,6 +601,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           error: test.error ?? null,
           globalScore: test.globalScore ?? null,
           globalLevel: test.globalLevel ?? null,
+          patient: test.patientProfile || (test.analysis as any)?.patient || null,
         },
         markers: test.markers,
         derivedMetrics: {},

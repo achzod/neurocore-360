@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS blood_tests (
   error TEXT,
   markers JSONB DEFAULT '[]'::jsonb,
   analysis JSONB DEFAULT '{}'::jsonb,
+  patient_profile JSONB DEFAULT '{}'::jsonb,
   global_score INTEGER,
   global_level TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,

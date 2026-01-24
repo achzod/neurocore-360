@@ -24,6 +24,13 @@ type BloodTestDetail = {
     error: string | null;
     globalScore: number | null;
     globalLevel: string | null;
+    patient?: {
+      prenom?: string;
+      nom?: string;
+      email?: string;
+      gender?: string;
+      dob?: string;
+    } | null;
   };
   markers: Array<{
     name: string;
@@ -261,7 +268,13 @@ export default function BloodAnalysisReport() {
     rawGlobalScore === null || (rawGlobalScore === 0 && markers.length > 0)
       ? fallbackScore
       : rawGlobalScore;
-  const patient = analysis?.patient || {};
+  const patient = (data?.bloodTest?.patient || analysis?.patient || {}) as {
+    prenom?: string;
+    nom?: string;
+    email?: string;
+    gender?: string;
+    dob?: string;
+  };
   const patientLabel = [patient.prenom, patient.nom].filter(Boolean).join(" ") || "Anonyme";
 
   const groupedBySystem = useMemo(() => {
@@ -455,10 +468,19 @@ export default function BloodAnalysisReport() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(252,221,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(252,221,0,0.08) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black" />
       <ClientHeader credits={me?.user?.credits ?? 0} />
 
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10">
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/40">Bonjour {patientLabel}</p>
@@ -468,6 +490,9 @@ export default function BloodAnalysisReport() {
                 vs ton bilan du {new Date(previousTest.uploadedAt).toLocaleDateString("fr-FR")}
               </p>
             )}
+            <p className="text-xs text-white/50 mt-2">
+              {`REF-${data.bloodTest.id.slice(0, 8).toUpperCase()}`} · {markers.length} biomarqueurs analyses
+            </p>
             <p className="text-xs text-white/50 mt-2">
               {patient.gender ? `Sexe: ${patient.gender}` : "Sexe: non renseigne"} ·{" "}
               {patient.dob ? `Naissance: ${patient.dob}` : "Naissance: non renseignee"} ·{" "}

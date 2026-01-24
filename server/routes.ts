@@ -1019,18 +1019,21 @@ export async function registerRoutes(
       }
 
       const token = await storage.createMagicToken(normalizedEmail);
-      
+
       const baseUrl = getBaseUrl();
-      const emailSent = await sendMagicLinkEmail(normalizedEmail, token, baseUrl);
-      
-      if (emailSent) {
-        res.json({ success: true, message: "Lien magique envoyé" });
-      } else {
+      let emailSent = false;
+      try {
+        emailSent = await sendMagicLinkEmail(normalizedEmail, token, baseUrl);
+      } catch (err) {
+        console.error("[Auth] Magic link email error:", err);
+      }
+
+      if (!emailSent) {
         console.log(
           `[Auth] Magic link for ${normalizedEmail}: ${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(normalizedEmail)}`
         );
-        res.json({ success: true, message: "Lien magique envoyé" });
       }
+      res.json({ success: true, message: "Lien magique envoyé" });
     } catch (error) {
       console.error("[Auth] Error:", error);
       const adminKey = String(req.headers["x-admin-key"] || "");

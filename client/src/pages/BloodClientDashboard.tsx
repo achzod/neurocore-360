@@ -24,6 +24,13 @@ type BloodTestSummary = {
   status: string;
   globalScore: number | null;
   globalLevel: string | null;
+  patient?: {
+    prenom?: string;
+    nom?: string;
+    email?: string;
+    gender?: string;
+    dob?: string;
+  } | null;
 };
 
 type BloodTestsResponse = { bloodTests: BloodTestSummary[] };
@@ -44,6 +51,15 @@ const statusStyles: Record<string, string> = {
   processing: "bg-amber-500/15 text-amber-300",
   failed: "bg-red-500/15 text-red-300",
   error: "bg-red-500/15 text-red-300",
+};
+
+const getScoreMessage = (score?: number | null) => {
+  if (score === null || score === undefined) return "Aucun score pour l'instant";
+  if (score >= 90) return "Exceptionnel - Tu es une machine";
+  if (score >= 80) return "Tres bien - Quelques optimisations possibles";
+  if (score >= 70) return "Correct - Des axes d'amelioration clairs";
+  if (score >= 60) return "Attention - Actions recommandees";
+  return "Prioritaire - Consulte un professionnel";
 };
 
 export default function BloodClientDashboard() {
@@ -81,6 +97,16 @@ export default function BloodClientDashboard() {
     }
   }, [me?.user?.email, email]);
 
+  useEffect(() => {
+    if (latestPatient?.prenom && !prenom) setPrenom(latestPatient.prenom);
+    if (latestPatient?.nom && !nom) setNom(latestPatient.nom);
+    if (latestPatient?.dob && !dob) setDob(latestPatient.dob);
+    if (latestPatient?.gender && (latestPatient.gender === "homme" || latestPatient.gender === "femme")) {
+      setGender(latestPatient.gender);
+    }
+    if (latestPatient?.email && !email) setEmail(latestPatient.email);
+  }, [latestPatient, prenom, nom, dob, email]);
+
   const { data: tests } = useQuery({
     queryKey: ["/api/blood-tests"],
     queryFn: () => fetcher<BloodTestsResponse>("/api/blood-tests"),
@@ -93,6 +119,7 @@ export default function BloodClientDashboard() {
   );
 
   const latestCompleted = completedTests[0];
+  const latestPatient = latestCompleted?.patient || null;
 
   const stats = useMemo(() => {
     const total = tests?.bloodTests?.length || 0;
@@ -101,7 +128,8 @@ export default function BloodClientDashboard() {
     return { total, avg };
   }, [tests, completedTests]);
 
-  const displayName = prenom || (me?.user?.email ? me.user.email.split("@")[0] : "");
+  const displayName =
+    prenom || latestPatient?.prenom || (me?.user?.email ? me.user.email.split("@")[0] : "");
 
   const trendData = useMemo(() => {
     return completedTests
@@ -164,10 +192,19 @@ export default function BloodClientDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(252,221,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(252,221,0,0.08) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black" />
       <ClientHeader credits={credits} />
 
-      <main className="mx-auto max-w-7xl px-6 py-10 space-y-10">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 space-y-10">
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <Card className="border border-white/10 bg-white/5 p-6 space-y-4 lg:col-span-2">
             <p className="text-xs uppercase tracking-[0.3em] text-white/40">
@@ -209,6 +246,9 @@ export default function BloodClientDashboard() {
                 <p className="text-xs text-white/50">Score global</p>
                 <p className="text-sm mt-1 text-white">
                   {latestCompleted?.globalScore ?? "--"}
+                </p>
+                <p className="text-[11px] text-white/50 mt-1">
+                  {getScoreMessage(latestCompleted?.globalScore)}
                 </p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
@@ -321,6 +361,15 @@ export default function BloodClientDashboard() {
               <p className="text-sm text-white/60">
                 Credits a zero. Passe par l'achat pour relancer une analyse.
               </p>
+            )}
+            {credits <= 0 && (
+              <Button
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+                onClick={() => navigate("/offers/blood-analysis")}
+              >
+                Acheter des credits
+              </Button>
             )}
 
             <Button

@@ -147,6 +147,7 @@ export interface BloodTestRecord {
   error?: string | null;
   markers: unknown[];
   analysis: unknown;
+  patientProfile?: Record<string, unknown>;
   globalScore?: number | null;
   globalLevel?: string | null;
   createdAt: Date | string;
@@ -586,6 +587,7 @@ export class MemStorage implements IStorage {
       error: input.error ?? null,
       markers: input.markers || [],
       analysis: input.analysis || {},
+      patientProfile: input.patientProfile || {},
       globalScore: input.globalScore ?? null,
       globalLevel: input.globalLevel ?? null,
       createdAt: input.createdAt || new Date(),
@@ -822,11 +824,15 @@ export class PgStorage implements IStorage {
           error TEXT,
           markers JSONB DEFAULT '[]'::jsonb,
           analysis JSONB DEFAULT '{}'::jsonb,
+          patient_profile JSONB DEFAULT '{}'::jsonb,
           global_score INTEGER,
           global_level TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           completed_at TIMESTAMP
         )`
+      );
+      await pool.query(
+        `ALTER TABLE blood_tests ADD COLUMN IF NOT EXISTS patient_profile JSONB DEFAULT '{}'::jsonb`
       );
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_tests_user ON blood_tests(user_id)`);
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_tests_created_at ON blood_tests(created_at)`);
@@ -1484,8 +1490,8 @@ export class PgStorage implements IStorage {
     const id = randomUUID();
     const result = await pool.query(
       `INSERT INTO blood_tests
-        (id, user_id, file_name, file_type, file_size, status, error, markers, analysis, global_score, global_level, created_at, completed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        (id, user_id, file_name, file_type, file_size, status, error, markers, analysis, patient_profile, global_score, global_level, created_at, completed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         id,
@@ -1497,6 +1503,7 @@ export class PgStorage implements IStorage {
         input.error ?? null,
         JSON.stringify(input.markers || []),
         JSON.stringify(input.analysis || {}),
+        JSON.stringify(input.patientProfile || {}),
         input.globalScore ?? null,
         input.globalLevel ?? null,
         input.createdAt || new Date(),
@@ -1514,6 +1521,7 @@ export class PgStorage implements IStorage {
       error: row.error,
       markers: row.markers || [],
       analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
       globalScore: row.global_score ?? null,
       globalLevel: row.global_level ?? null,
       createdAt: row.created_at,
@@ -1536,6 +1544,7 @@ export class PgStorage implements IStorage {
     if (data.error !== undefined) push("error", data.error ?? null);
     if (data.markers !== undefined) push("markers", JSON.stringify(data.markers));
     if (data.analysis !== undefined) push("analysis", JSON.stringify(data.analysis));
+    if (data.patientProfile !== undefined) push("patient_profile", JSON.stringify(data.patientProfile));
     if (data.globalScore !== undefined) push("global_score", data.globalScore ?? null);
     if (data.globalLevel !== undefined) push("global_level", data.globalLevel ?? null);
     if (data.completedAt !== undefined) push("completed_at", data.completedAt ?? null);
@@ -1559,6 +1568,7 @@ export class PgStorage implements IStorage {
       error: row.error,
       markers: row.markers || [],
       analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
       globalScore: row.global_score ?? null,
       globalLevel: row.global_level ?? null,
       createdAt: row.created_at,
@@ -1581,6 +1591,7 @@ export class PgStorage implements IStorage {
       error: row.error,
       markers: row.markers || [],
       analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
       globalScore: row.global_score ?? null,
       globalLevel: row.global_level ?? null,
       createdAt: row.created_at,
@@ -1604,6 +1615,7 @@ export class PgStorage implements IStorage {
       error: row.error,
       markers: row.markers || [],
       analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
       globalScore: row.global_score ?? null,
       globalLevel: row.global_level ?? null,
       createdAt: row.created_at,
