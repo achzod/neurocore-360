@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ClientHeader } from "@/components/client/ClientHeader";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { ArrowUpRight, FileUp, ShieldCheck } from "lucide-react";
+import { motion } from "framer-motion";
 
 type MeResponse = {
   user: {
@@ -60,6 +61,20 @@ const getScoreMessage = (score?: number | null) => {
   if (score >= 70) return "Correct - Des axes d'amelioration clairs";
   if (score >= 60) return "Attention - Actions recommandees";
   return "Prioritaire - Consulte un professionnel";
+};
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { staggerChildren: 0.08, duration: 0.4, ease: "easeOut" },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
 };
 
 export default function BloodClientDashboard() {
@@ -204,69 +219,107 @@ export default function BloodClientDashboard() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black" />
       <ClientHeader credits={credits} />
 
-      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 space-y-10">
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="border border-white/10 bg-white/5 p-6 space-y-4 lg:col-span-2">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40">
-              Bonjour {displayName || "Profil"}
-            </p>
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold">Dashboard Blood Analysis</h1>
-                <p className="text-sm text-white/60 mt-2">
-                  Ton historique, tes scores et tes protocoles en un seul endroit.
+      <motion.main
+        className="relative z-10 mx-auto max-w-7xl px-6 py-10 space-y-10"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
+          <Card className="border border-white/10 bg-gradient-to-br from-[#0c1214] via-[#080b0c] to-black p-8 lg:col-span-2">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-4 max-w-2xl">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[#7fe1d6]">
+                  Blood Analysis Command Center
                 </p>
+                <div>
+                  <p className="text-sm text-white/60">Bonjour {displayName || "Profil"}</p>
+                  <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "Decimal, Helvetica Neue, sans-serif" }}>
+                    Tableau d'intelligence biologique
+                  </h1>
+                </div>
+                <p className="text-sm text-white/60">
+                  Une lecture experte de tes biomarqueurs, conçue pour comprendre les liens systémiques, prioriser les actions et suivre l'évolution réelle de ton terrain.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
+                    <p className="text-xs text-white/40">Dernier bilan</p>
+                    <p className="text-sm mt-1 text-white">
+                      {latestCompleted
+                        ? new Date(latestCompleted.uploadedAt).toLocaleDateString("fr-FR")
+                        : "Aucun"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
+                    <p className="text-xs text-white/40">Score global</p>
+                    <p className="text-2xl font-semibold mt-1 text-[#FCDD00]">
+                      {latestCompleted?.globalScore ?? "--"}
+                    </p>
+                    <p className="text-[11px] text-white/50 mt-1">
+                      {getScoreMessage(latestCompleted?.globalScore)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
+                    <p className="text-xs text-white/40">Credits</p>
+                    <p className="text-sm mt-1 text-white">{credits}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
+                    <p className="text-xs text-white/40">Trajectoire</p>
+                    <p className="text-sm mt-1 text-white">
+                      {completedTests.length >= 2
+                        ? `${completedTests[0].globalScore! - completedTests[1].globalScore! >= 0 ? "+" : ""}${completedTests[0].globalScore! - completedTests[1].globalScore!} pts`
+                        : "Non disponible"}
+                    </p>
+                  </div>
+                </div>
               </div>
-              {latestCompleted ? (
-                <Button
-                  className="bg-[#FCDD00] text-black hover:bg-[#e7c700]"
-                  onClick={() => navigate(`/analysis/${latestCompleted.id}`)}
-                >
-                  Ouvrir le dernier rapport
-                </Button>
-              ) : (
-                <Button
-                  className="bg-[#FCDD00] text-black hover:bg-[#e7c700]"
-                  onClick={() => document.getElementById("blood-upload")?.scrollIntoView({ behavior: "smooth" })}
-                >
-                  Lancer un premier bilan
-                </Button>
-              )}
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
-                <p className="text-xs text-white/50">Dernier bilan</p>
-                <p className="text-sm mt-1 text-white">
+              <div className="rounded-2xl border border-white/10 bg-black/60 p-5 w-full lg:max-w-xs space-y-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/40">Statut actif</p>
+                <p className="text-lg font-semibold">{latestCompleted ? "Rapport complet" : "Aucun rapport"}</p>
+                <p className="text-sm text-white/60">
                   {latestCompleted
-                    ? new Date(latestCompleted.uploadedAt).toLocaleDateString("fr-FR")
-                    : "Aucun"}
+                    ? "Bilan prêt pour analyse approfondie."
+                    : "Lance une première analyse pour générer tes scores."}
                 </p>
-              </div>
-              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
-                <p className="text-xs text-white/50">Score global</p>
-                <p className="text-sm mt-1 text-white">
-                  {latestCompleted?.globalScore ?? "--"}
-                </p>
-                <p className="text-[11px] text-white/50 mt-1">
-                  {getScoreMessage(latestCompleted?.globalScore)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
-                <p className="text-xs text-white/50">Credits restants</p>
-                <p className="text-sm mt-1 text-white">{credits}</p>
+                {latestCompleted ? (
+                  <Button
+                    className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+                    onClick={() => navigate(`/analysis/${latestCompleted.id}`)}
+                  >
+                    Ouvrir le dernier rapport
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+                    onClick={() => document.getElementById("blood-upload")?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    Lancer un premier bilan
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
-        </section>
+        </motion.section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
           <Card id="blood-upload" className="border border-white/10 bg-white/5 p-6 space-y-5">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-white/40">Blood Analysis</p>
               <h1 className="text-2xl font-semibold mt-2">Injecter un bilan</h1>
               <p className="text-sm text-white/60 mt-2">
-                Uploade un PDF de laboratoire, je lance l'analyse et le rapport expert apparait dans l'historique.
+                Uploade un PDF de laboratoire. Je decode les biomarqueurs, je calcule les scores systemes et je livre un rapport didactique dans l'historique.
               </p>
+              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs text-white/50">
+                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                  1. Extraction biomarqueurs + verification ranges
+                </div>
+                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                  2. Analyse systemes + correlations
+                </div>
+                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                  3. Protocoles actionnables 180 jours
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-5">
@@ -422,9 +475,9 @@ export default function BloodClientDashboard() {
               </ul>
             </Card>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+        <motion.section className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]" variants={itemVariants}>
           <Card className="border border-white/10 bg-white/5">
             <div className="px-6 py-4 border-b border-white/10">
               <h2 className="text-lg font-semibold">Historique des bilans</h2>
@@ -503,8 +556,8 @@ export default function BloodClientDashboard() {
               </div>
             )}
           </Card>
-        </section>
-      </main>
+        </motion.section>
+      </motion.main>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { StatusIndicator } from "@/components/blood/StatusIndicator";
 import { AlertTriangle, ArrowUpRight, FileText, LineChart, RefreshCcw, Shield, Upload } from "lucide-react";
 import { LineChart as RechartLineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import ReactMarkdown from "react-markdown";
+import { motion } from "framer-motion";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -233,6 +234,20 @@ const getPercentile = (score: number) => {
   return 70;
 };
 
+const containerVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { staggerChildren: 0.08, duration: 0.4, ease: "easeOut" },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
+};
+
 export default function BloodAnalysisReport() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
@@ -424,6 +439,15 @@ export default function BloodAnalysisReport() {
   const aiAnalysis =
     analysis?.aiAnalysis && analysis.aiAnalysis.trim() ? analysis.aiAnalysis : fallbackAiAnalysis;
 
+  const expertIntro = useMemo(() => {
+    const plain = aiAnalysis
+      .replace(/[#>*`_-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!plain) return "Lecture experte en cours de consolidation.";
+    return plain.length > 260 ? `${plain.slice(0, 260)}…` : plain;
+  }, [aiAnalysis]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -480,8 +504,16 @@ export default function BloodAnalysisReport() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black" />
       <ClientHeader credits={me?.user?.credits ?? 0} />
 
-      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10">
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
+      <motion.main
+        className="relative z-10 mx-auto max-w-7xl px-6 py-10"
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-br from-[#0c1214] via-[#090c0d] to-black px-6 py-5"
+          variants={itemVariants}
+        >
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/40">Bonjour {patientLabel}</p>
             <h1 className="text-2xl font-semibold mt-2">Analyse du {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR")}</h1>
@@ -490,6 +522,9 @@ export default function BloodAnalysisReport() {
                 vs ton bilan du {new Date(previousTest.uploadedAt).toLocaleDateString("fr-FR")}
               </p>
             )}
+            <p className="text-xs text-white/50 mt-2">
+              Biohacking Bloodwork · lecture experte et actionnable
+            </p>
             <p className="text-xs text-white/50 mt-2">
               {`REF-${data.bloodTest.id.slice(0, 8).toUpperCase()}`} · {markers.length} biomarqueurs analyses
             </p>
@@ -503,28 +538,32 @@ export default function BloodAnalysisReport() {
             <Upload className="h-4 w-4 mr-2" />
             Uploader un nouveau bilan
           </Button>
-        </div>
+        </motion.div>
 
-        <Tabs defaultValue="dashboard" className="mt-8 space-y-6">
-          <TabsList className="flex w-full flex-wrap justify-start gap-2 bg-white/5">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="systemes">Systemes</TabsTrigger>
-            <TabsTrigger value="marqueurs">Marqueurs</TabsTrigger>
-            <TabsTrigger value="protocoles">Protocoles</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="historique">Historique</TabsTrigger>
-            <TabsTrigger value="simulateur">Simulateur</TabsTrigger>
-            <TabsTrigger value="export">Export</TabsTrigger>
-          </TabsList>
+        <motion.div variants={itemVariants}>
+          <Tabs defaultValue="dashboard" className="mt-8 space-y-6">
+            <TabsList className="flex w-full flex-wrap justify-start gap-2 rounded-full border border-white/10 bg-black/70 px-2 py-2">
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="systemes">Systemes</TabsTrigger>
+              <TabsTrigger value="marqueurs">Marqueurs</TabsTrigger>
+              <TabsTrigger value="protocoles">Protocoles</TabsTrigger>
+              <TabsTrigger value="insights">Insights</TabsTrigger>
+              <TabsTrigger value="historique">Historique</TabsTrigger>
+              <TabsTrigger value="simulateur">Simulateur</TabsTrigger>
+              <TabsTrigger value="export">Export</TabsTrigger>
+            </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <Card className="border border-white/10 bg-white/5 p-6">
+              <Card className="border border-white/10 bg-gradient-to-br from-[#0f1719] via-[#0a0e0f] to-black p-6">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-white/40">Score global</p>
-                    <p className="text-4xl font-semibold mt-3">{globalScore}/100</p>
+                    <p className="text-5xl font-semibold mt-3 text-[#FCDD00]">{globalScore}/100</p>
                     <p className="text-sm text-white/60 mt-2">{getScoreMessage(globalScore)}</p>
+                    <p className="text-xs text-white/50 mt-2">
+                      Lecture experte: ton terrain biologique montre des signaux clairs, mesurables, et actionnables.
+                    </p>
                   </div>
                   <div className="text-right text-xs text-white/60">
                     {trendDelta !== null && (
@@ -541,7 +580,7 @@ export default function BloodAnalysisReport() {
               </div>
             </Card>
 
-              <Card className="border border-white/10 bg-white/5 p-6">
+              <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/40">Alertes prioritaires</p>
                 <div className="mt-4 space-y-3 text-sm text-white/70">
                   {critical.length === 0 && <p>Aucune alerte critique.</p>}
@@ -561,6 +600,11 @@ export default function BloodAnalysisReport() {
               </Card>
             </div>
 
+            <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Lecture experte</p>
+              <p className="text-sm text-white/70 mt-3">{expertIntro}</p>
+            </Card>
+
             <Card className="border border-white/10 bg-white/5 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -575,7 +619,7 @@ export default function BloodAnalysisReport() {
             </Card>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="border border-white/10 bg-white/5 p-5">
+              <Card className="border border-white/10 bg-[#0b0f10]/80 p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/40">Quick wins</p>
                 <div className="mt-3 space-y-3 text-sm text-white/70">
                   {quickWins.length ? (
@@ -590,7 +634,7 @@ export default function BloodAnalysisReport() {
                   )}
                 </div>
               </Card>
-              <Card className="border border-white/10 bg-white/5 p-5">
+              <Card className="border border-white/10 bg-[#0b0f10]/80 p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/40">Risque temporel</p>
                 <div className="mt-4 flex items-center gap-3">
                   <Shield className="h-5 w-5 text-[#FCDD00]" />
@@ -608,7 +652,7 @@ export default function BloodAnalysisReport() {
                   </div>
                 </div>
               </Card>
-              <Card className="border border-white/10 bg-white/5 p-5">
+              <Card className="border border-white/10 bg-[#0b0f10]/80 p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/40">Resume</p>
                 <div className="mt-3 text-sm text-white/70 space-y-2">
                   <p><span className="text-white">Optimal:</span> {summary?.optimal?.length ? summary.optimal.join(", ") : "Aucun"}</p>
@@ -626,12 +670,21 @@ export default function BloodAnalysisReport() {
               const score = systemScores[system] ?? 0;
               const level = getScoreLevel(score);
               const meta = SYSTEM_META[system];
+              const criticalCount = items.filter((item) => item.status === "critical").length;
+              const suboptimalCount = items.filter((item) => item.status === "suboptimal").length;
+              const systemFocus =
+                criticalCount > 0
+                  ? `${criticalCount} alerte critique a stabiliser en priorite.`
+                  : suboptimalCount > 0
+                  ? `${suboptimalCount} levier(s) d'optimisation identifie(s).`
+                  : "Terrain stable, maintien des routines actuelles.";
               return (
                 <Card key={system} className="border border-white/10 bg-white/5 p-6">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <p className="text-lg font-semibold">{meta.label}</p>
                       <p className="text-xs text-white/50">{meta.description}</p>
+                      <p className="text-sm text-white/70 mt-3">{systemFocus}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="text-2xl font-semibold">{score}/100</p>
@@ -674,7 +727,7 @@ export default function BloodAnalysisReport() {
           </TabsContent>
 
           <TabsContent value="marqueurs" className="space-y-6">
-            <Card className="border border-white/10 bg-white/5 p-6">
+            <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold">Liste complete des marqueurs</p>
@@ -716,7 +769,7 @@ export default function BloodAnalysisReport() {
           </TabsContent>
 
           <TabsContent value="protocoles" className="space-y-6">
-            <Card className="border border-white/10 bg-white/5 p-6">
+            <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
               <p className="text-lg font-semibold">Plan d'action personnalise</p>
               <p className="text-xs text-white/50">Protocoles progressifs sur 180 jours.</p>
             </Card>
@@ -854,8 +907,9 @@ export default function BloodAnalysisReport() {
               </p>
             </Card>
           </TabsContent>
-        </Tabs>
-      </main>
+          </Tabs>
+        </motion.div>
+      </motion.main>
     </div>
   );
 }
