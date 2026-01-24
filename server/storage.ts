@@ -846,6 +846,8 @@ export class PgStorage implements IStorage {
           expires_at TIMESTAMP NOT NULL
         )`
       );
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP`);
       this.ensuredMagicTokensTable = true;
     } catch (err) {
       console.error("[Storage] Error ensuring magic_tokens table:", err);
