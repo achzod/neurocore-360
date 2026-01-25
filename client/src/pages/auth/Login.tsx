@@ -55,9 +55,9 @@ export default function Login() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-primary/10">
                 <Mail className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Connexion</CardTitle>
+              <CardTitle className="text-2xl">Acces au dossier</CardTitle>
               <p className="mt-2 text-muted-foreground">
-                Entre ton email pour recevoir un lien de connexion magique.
+                Entre ton email pour recevoir un lien d'acces. Aucun mot de passe requis.
               </p>
             </CardHeader>
             <CardContent>
@@ -87,7 +87,7 @@ export default function Login() {
                     </>
                   ) : (
                     <>
-                      Recevoir le lien
+                      Recevoir le lien d'acces
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
@@ -96,15 +96,15 @@ export default function Login() {
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Pas encore de compte ?{" "}
-                  <a
-                    href="/audit-complet/questionnaire"
-                    className="font-medium text-primary hover:underline"
-                    data-testid="link-start-audit"
-                  >
-                    Commence ton audit
-                  </a>
+                  Lien valable 60 minutes. Si tu n'as pas encore de compte, commence ton audit.
                 </p>
+                <a
+                  href="/audit-complet/questionnaire"
+                  className="mt-2 inline-flex text-sm font-medium text-primary hover:underline"
+                  data-testid="link-start-audit"
+                >
+                  Commencer l'audit
+                </a>
               </div>
             </CardContent>
           </Card>

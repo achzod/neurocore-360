@@ -68,7 +68,7 @@ export default function Verify() {
                   </motion.div>
                   <CardTitle className="text-2xl">Verification en cours...</CardTitle>
                   <p className="mt-2 text-muted-foreground">
-                    Patiente quelques secondes
+                    Nous confirmons ton acces
                   </p>
                 </>
               )}
@@ -83,9 +83,9 @@ export default function Verify() {
                   >
                     <CheckCircle2 className="h-10 w-10 text-primary" />
                   </motion.div>
-                  <CardTitle className="text-2xl">Connexion reussie</CardTitle>
+                  <CardTitle className="text-2xl">Acces confirme</CardTitle>
                   <p className="mt-2 text-muted-foreground">
-                    Bienvenue {email}! Redirection vers ton dashboard...
+                    Bienvenue {email}. Redirection vers ton dossier...
                   </p>
                 </>
               )}
