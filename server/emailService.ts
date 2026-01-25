@@ -457,21 +457,30 @@ export async function sendMagicLinkEmail(
     const magicLink = `${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Connexion a ton espace
+      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+        Acces a ton dossier Blood Analysis
       </h2>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
-        Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits ApexLabs.
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
+        Voici ton lien personnel pour ouvrir ton dossier et consulter tes rapports.
       </p>
 
-      ${getPrimaryButton('Acceder au dashboard', magicLink)}
+      ${getPrimaryButton('Ouvrir mon dossier', magicLink)}
 
-      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
-        Ce lien expire dans <strong style="color: ${COLORS.text};">1 heure</strong>. Si tu n'as pas demande cette connexion, ignore cet email.
+      <div style="margin: 24px 0 0; padding: 16px; background-color: ${COLORS.background}; border-radius: 10px; border: 1px solid ${COLORS.border};">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 6px; text-align: center;">
+          1. Clique sur le bouton
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; text-align: center;">
+          2. Accede immediatement a ton dashboard
+        </p>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 20px 0 0; text-align: center;">
+        Ce lien expire dans <strong style="color: ${COLORS.text};">60 minutes</strong>. Si tu n'as pas demande cet acces, ignore cet email.
       </p>
 
-      <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
+      <div style="margin-top: 18px; padding: 16px; background-color: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
           Si le bouton ne fonctionne pas, copie ce lien :
         </p>
@@ -491,14 +500,14 @@ export async function sendMagicLinkEmail(
       },
       body: JSON.stringify({
         email: {
-          subject: "Ton lien de connexion ApexLabs",
+          subject: "Acces a ton dossier Blood Analysis",
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
           },
           to: [{ email }],
           html: encodeBase64(emailContent),
-          text: `Connexion ApexLabs - Clique sur ce lien pour acceder a ton dashboard : ${magicLink}`,
+          text: `Acces dossier Blood Analysis - Clique sur ce lien pour acceder a ton dashboard : ${magicLink}`,
         },
       }),
     });

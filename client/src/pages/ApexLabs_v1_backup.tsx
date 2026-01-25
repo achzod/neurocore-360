@@ -500,7 +500,7 @@ function BloodAnalysisSection() {
             <h2 className="text-4xl font-bold text-white mb-2">99€</h2>
             <p className="text-gray-400 text-lg mb-6">Ton bilan sanguin decode</p>
             <p className="text-gray-500 mb-8 leading-relaxed">
-              Upload ton PDF de bilan sanguin. Notre IA analyse chaque marqueur avec des ranges optimaux de performance, pas les ranges "normaux" de labo. Radars de risques visuels et protocoles cibles.
+              Upload ton PDF de bilan sanguin. J'analyse chaque marqueur avec des ranges optimaux de performance, pas les ranges "normaux" de labo. Radars de risques visuels et protocoles ciblés.
             </p>
             <div className="flex flex-wrap gap-2">
               {["Ranges optimaux", "Radars visuels", "Protocoles cibles", "Upload PDF"].map((f) => (

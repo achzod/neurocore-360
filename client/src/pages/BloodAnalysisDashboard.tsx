@@ -515,9 +515,9 @@ export default function BloodAnalysisDashboard() {
                 className="rounded border p-6"
                 style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
               >
-                <h2 className="text-xl font-semibold mb-2">Insights IA</h2>
+                <h2 className="text-xl font-semibold mb-2">Synthèse Experte</h2>
                 <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                  Cette section arrive ensuite. Tu y trouveras la synthese IA, les protocoles et les priorites d'action.
+                  Cette section arrive ensuite. Tu y trouveras la synthèse approfondie, les protocoles et les priorités d'action.
                 </p>
               </div>
             </TabsContent>
