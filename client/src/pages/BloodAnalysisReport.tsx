@@ -635,7 +635,7 @@ export default function BloodAnalysisReport() {
           </div>
           <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]" onClick={() => navigate("/dashboard")}> 
             <Upload className="h-4 w-4 mr-2" />
-            Uploader un nouveau bilan
+            Retour au dossier
           </Button>
         </motion.div>
 
