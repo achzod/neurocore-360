@@ -1,17 +1,45 @@
 /**
  * NEUROCORE 360 - Blood Analysis API Routes
+ * Comprehensive bloodwork analysis with risk assessments
  */
 
 import type { Express } from "express";
 import {
   analyzeBloodwork,
   extractMarkersFromPdfText,
+  extractPatientInfoFromPdfText,
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
+  buildFallbackAnalysis,
   BIOMARKER_RANGES,
   DIAGNOSTIC_PATTERNS,
   BloodMarkerInput
 } from "./index";
+import {
+  generateComprehensiveRiskProfile,
+  calculatePrediabetesRisk,
+  calculateInsulinResistanceIndex,
+  calculateCardiovascularRisk,
+  detectMetabolicSyndrome,
+  calculateThyroidScore,
+  calculateInflammationIndex,
+  calculateAnemiaRiskScore,
+  calculateLiverHealthScore,
+  calculateKidneyFunctionScore,
+  calculateHormonalHealthScore,
+  EXTENDED_BIOMARKER_RANGES,
+  ComprehensiveRiskProfile,
+  RiskScore
+} from "./risk-scores";
+import {
+  generateComprehensiveBloodReport,
+  generateSupplementRecommendations,
+  generateProtocolRecommendations,
+  generateBloodRadarChart,
+  generateActionPlan,
+  searchKnowledgeForMarker,
+  searchKnowledgeForRisk
+} from "./recommendations-engine";
 import { storage } from "../storage";
 import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
@@ -376,5 +404,808 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     }
   });
 
-  console.log("[BloodAnalysis] Routes registered");
+  // ============================================
+  // RISK ASSESSMENT ROUTES
+  // ============================================
+
+  /**
+   * POST /api/blood-analysis/risk-profile
+   * Generate comprehensive risk profile from blood markers
+   */
+  app.post("/api/blood-analysis/risk-profile", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+          bmi?: number;
+          waistCircumference?: number;
+          bloodPressure?: { systolic: number; diastolic: number };
+          smoker?: boolean;
+          hypertension?: boolean;
+          familyHistory?: boolean;
+        };
+      };
+
+      if (!markers || !Array.isArray(markers) || markers.length === 0) {
+        res.status(400).json({ error: "Aucun marqueur fourni" });
+        return;
+      }
+
+      if (!profile || !profile.gender) {
+        res.status(400).json({ error: "Profil invalide (gender requis)" });
+        return;
+      }
+
+      console.log(`[BloodAnalysis] Generating risk profile for ${profile.gender}, ${markers.length} markers`);
+
+      const riskProfile = generateComprehensiveRiskProfile(markers, profile);
+
+      res.json({
+        success: true,
+        riskProfile,
+        summary: {
+          overallScore: riskProfile.overallHealth.score,
+          overallLevel: riskProfile.overallHealth.level,
+          criticalAreas: Object.entries(riskProfile)
+            .filter(([key, value]) => key !== 'timestamp' && (value as RiskScore).score < 50)
+            .map(([key, value]) => ({ area: key, score: (value as RiskScore).score })),
+          recommendations: riskProfile.overallHealth.recommendations
+        }
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Risk profile error:", error);
+      res.status(500).json({ error: "Erreur lors du calcul des risques" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/prediabetes-risk
+   * Calculate pre-diabetes risk score only
+   */
+  app.post("/api/blood-analysis/prediabetes-risk", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+          bmi?: number;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculatePrediabetesRisk(markers, profile || { gender: "homme" });
+
+      res.json({
+        success: true,
+        risk: riskScore,
+        alert: riskScore.score < 50 ? "RISQUE PRÉ-DIABÈTE DÉTECTÉ" : null
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Prediabetes risk error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/insulin-resistance
+   * Calculate insulin resistance index
+   */
+  app.post("/api/blood-analysis/insulin-resistance", async (req, res) => {
+    try {
+      const { markers } = req.body as { markers: BloodMarkerInput[] };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateInsulinResistanceIndex(markers);
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Insulin resistance error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/cardiovascular-risk
+   * Calculate cardiovascular risk score
+   */
+  app.post("/api/blood-analysis/cardiovascular-risk", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+          smoker?: boolean;
+          hypertension?: boolean;
+          familyHistory?: boolean;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateCardiovascularRisk(markers, profile || { gender: "homme" });
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] CV risk error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/metabolic-syndrome
+   * Detect metabolic syndrome (ATP III criteria)
+   */
+  app.post("/api/blood-analysis/metabolic-syndrome", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          waistCircumference?: number;
+          bloodPressure?: { systolic: number; diastolic: number };
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = detectMetabolicSyndrome(markers, profile || { gender: "homme" });
+
+      res.json({
+        success: true,
+        risk: riskScore,
+        hasMetabolicSyndrome: riskScore.score < 40
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Metabolic syndrome error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/thyroid-health
+   * Calculate thyroid function score
+   */
+  app.post("/api/blood-analysis/thyroid-health", async (req, res) => {
+    try {
+      const { markers } = req.body as { markers: BloodMarkerInput[] };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateThyroidScore(markers);
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Thyroid health error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/inflammation-index
+   * Calculate inflammation index
+   */
+  app.post("/api/blood-analysis/inflammation-index", async (req, res) => {
+    try {
+      const { markers } = req.body as { markers: BloodMarkerInput[] };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateInflammationIndex(markers);
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Inflammation error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/hormonal-health
+   * Calculate hormonal health score
+   */
+  app.post("/api/blood-analysis/hormonal-health", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateHormonalHealthScore(markers, profile || { gender: "homme" });
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Hormonal health error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/anemia-risk
+   * Calculate anemia risk score
+   */
+  app.post("/api/blood-analysis/anemia-risk", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: { gender: "homme" | "femme" };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateAnemiaRiskScore(markers, profile || { gender: "homme" });
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Anemia risk error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/liver-health
+   * Calculate liver health score
+   */
+  app.post("/api/blood-analysis/liver-health", async (req, res) => {
+    try {
+      const { markers } = req.body as { markers: BloodMarkerInput[] };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateLiverHealthScore(markers);
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Liver health error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/kidney-function
+   * Calculate kidney function score
+   */
+  app.post("/api/blood-analysis/kidney-function", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: { age?: string };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskScore = calculateKidneyFunctionScore(markers, profile || {});
+
+      res.json({
+        success: true,
+        risk: riskScore
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Kidney function error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * GET /api/blood-analysis/extended-biomarkers
+   * Get all biomarker ranges including extended panel
+   */
+  app.get("/api/blood-analysis/extended-biomarkers", async (req, res) => {
+    try {
+      res.json({
+        success: true,
+        standardBiomarkers: BIOMARKER_RANGES,
+        extendedBiomarkers: EXTENDED_BIOMARKER_RANGES,
+        totalCount: Object.keys(BIOMARKER_RANGES).length + Object.keys(EXTENDED_BIOMARKER_RANGES).length
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/full-analysis
+   * Complete analysis with all risk scores + AI report
+   */
+  app.post("/api/blood-analysis/full-analysis", async (req, res) => {
+    try {
+      const { markers, profile, pdfBase64, pdfName } = req.body as {
+        markers?: BloodMarkerInput[];
+        profile: {
+          prenom?: string;
+          nom?: string;
+          email?: string;
+          gender: "homme" | "femme";
+          age?: string;
+          dob?: string;
+          bmi?: number;
+          waistCircumference?: number;
+          bloodPressure?: { systolic: number; diastolic: number };
+          smoker?: boolean;
+          hypertension?: boolean;
+          familyHistory?: boolean;
+        };
+        pdfBase64?: string;
+        pdfName?: string;
+      };
+
+      if (!profile || !profile.gender) {
+        res.status(400).json({ error: "Profil invalide" });
+        return;
+      }
+
+      // Extract markers from PDF if provided
+      let resolvedMarkers = markers || [];
+      let extractedPatient = {};
+      
+      if ((!resolvedMarkers || resolvedMarkers.length === 0) && pdfBase64) {
+        try {
+          const pdfBuffer = Buffer.from(pdfBase64, "base64");
+          const parsed = await pdf(pdfBuffer);
+          resolvedMarkers = await extractMarkersFromPdfText(parsed.text || "", pdfName || "bilan.pdf");
+          extractedPatient = extractPatientInfoFromPdfText(parsed.text || "");
+        } catch (parseError) {
+          console.error("[BloodAnalysis] PDF parse error:", parseError);
+          res.status(400).json({ error: "PDF illisible" });
+          return;
+        }
+      }
+
+      if (!resolvedMarkers || resolvedMarkers.length === 0) {
+        res.status(400).json({ error: "Aucun biomarqueur détecté" });
+        return;
+      }
+
+      // Calculate age from DOB if provided
+      let computedAge = profile.age;
+      if (!computedAge && profile.dob) {
+        const dobDate = new Date(profile.dob);
+        if (!Number.isNaN(dobDate.getTime())) {
+          computedAge = String(Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
+        }
+      }
+
+      const profileWithAge = { ...profile, age: computedAge };
+
+      console.log(`[BloodAnalysis] Full analysis: ${resolvedMarkers.length} markers, ${profile.gender}, age ${computedAge || 'unknown'}`);
+
+      // 1. Basic analysis
+      const basicAnalysis = await analyzeBloodwork(resolvedMarkers, {
+        gender: profile.gender,
+        age: computedAge,
+        objectives: undefined,
+        medications: undefined
+      });
+
+      // 2. Comprehensive risk profile
+      const riskProfile = generateComprehensiveRiskProfile(resolvedMarkers, profileWithAge);
+
+      // 3. AI-powered narrative report
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        basicAnalysis.markers,
+        basicAnalysis.patterns
+      );
+
+      let aiReport: string;
+      try {
+        aiReport = await generateAIBloodAnalysis(
+          basicAnalysis,
+          profileWithAge,
+          knowledgeContext
+        );
+      } catch (aiError) {
+        console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
+      }
+
+      res.json({
+        success: true,
+        extractedPatient,
+        markersFound: resolvedMarkers.length,
+        markers: resolvedMarkers,
+        basicAnalysis: {
+          summary: basicAnalysis.summary,
+          patterns: basicAnalysis.patterns,
+          markerDetails: basicAnalysis.markers
+        },
+        riskProfile,
+        aiReport,
+        priorityActions: [
+          ...riskProfile.overallHealth.recommendations,
+          ...riskProfile.prediabetes.recommendations.slice(0, 2),
+          ...riskProfile.cardiovascular.recommendations.slice(0, 2)
+        ].slice(0, 8)
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Full analysis error:", error);
+      res.status(500).json({ error: "Erreur lors de l'analyse complète" });
+    }
+  });
+
+  // ============================================
+  // COMPREHENSIVE REPORT ROUTES
+  // ============================================
+
+  /**
+   * POST /api/blood-analysis/comprehensive-report
+   * Generate the full comprehensive blood analysis report
+   * Includes: radar chart, risk scores, supplements, protocols, action plan
+   */
+  app.post("/api/blood-analysis/comprehensive-report", async (req, res) => {
+    try {
+      const { markers, profile, pdfBase64, pdfName } = req.body as {
+        markers?: BloodMarkerInput[];
+        profile: {
+          prenom?: string;
+          nom?: string;
+          email?: string;
+          gender: "homme" | "femme";
+          age?: string;
+          dob?: string;
+          bmi?: number;
+          waistCircumference?: number;
+          bloodPressure?: { systolic: number; diastolic: number };
+          smoker?: boolean;
+          hypertension?: boolean;
+          familyHistory?: boolean;
+        };
+        pdfBase64?: string;
+        pdfName?: string;
+      };
+
+      if (!profile || !profile.gender) {
+        res.status(400).json({ error: "Profil invalide (gender requis)" });
+        return;
+      }
+
+      // Extract markers from PDF if provided
+      let resolvedMarkers = markers || [];
+      let extractedPatient = {};
+
+      if ((!resolvedMarkers || resolvedMarkers.length === 0) && pdfBase64) {
+        try {
+          const pdfBuffer = Buffer.from(pdfBase64, "base64");
+          const parsed = await pdf(pdfBuffer);
+          resolvedMarkers = await extractMarkersFromPdfText(parsed.text || "", pdfName || "bilan.pdf");
+          extractedPatient = extractPatientInfoFromPdfText(parsed.text || "");
+        } catch (parseError) {
+          console.error("[BloodAnalysis] PDF parse error:", parseError);
+          res.status(400).json({ error: "PDF illisible" });
+          return;
+        }
+      }
+
+      if (!resolvedMarkers || resolvedMarkers.length === 0) {
+        res.status(400).json({ error: "Aucun biomarqueur détecté" });
+        return;
+      }
+
+      // Calculate age from DOB if provided
+      let computedAge = profile.age;
+      if (!computedAge && profile.dob) {
+        const dobDate = new Date(profile.dob);
+        if (!Number.isNaN(dobDate.getTime())) {
+          computedAge = String(Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
+        }
+      }
+
+      const profileWithAge = { ...profile, age: computedAge };
+      const patientName = profile.prenom ? `${profile.prenom} ${profile.nom || ""}`.trim() : undefined;
+
+      console.log(`[BloodAnalysis] Comprehensive report: ${resolvedMarkers.length} markers for ${patientName || 'anonymous'}`);
+
+      // 1. Basic analysis
+      const basicAnalysis = await analyzeBloodwork(resolvedMarkers, {
+        gender: profile.gender,
+        age: computedAge,
+        objectives: undefined,
+        medications: undefined
+      });
+
+      // 2. Risk profile
+      const riskProfile = generateComprehensiveRiskProfile(resolvedMarkers, profileWithAge);
+
+      // 3. Generate comprehensive report with recommendations
+      const comprehensiveReport = await generateComprehensiveBloodReport(
+        resolvedMarkers,
+        basicAnalysis,
+        riskProfile,
+        patientName
+      );
+
+      // 4. AI narrative report
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        basicAnalysis.markers,
+        basicAnalysis.patterns
+      );
+
+      let aiReport: string;
+      try {
+        aiReport = await generateAIBloodAnalysis(
+          basicAnalysis,
+          profileWithAge,
+          knowledgeContext
+        );
+      } catch (aiError) {
+        console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
+      }
+
+      res.json({
+        success: true,
+        extractedPatient,
+        markersFound: resolvedMarkers.length,
+        report: comprehensiveReport,
+        aiNarrative: aiReport,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Comprehensive report error:", error);
+      res.status(500).json({ error: "Erreur lors de la génération du rapport" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/supplements
+   * Get supplement recommendations only
+   */
+  app.post("/api/blood-analysis/supplements", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const basicAnalysis = await analyzeBloodwork(markers, {
+        gender: profile?.gender || "homme",
+        age: profile?.age
+      });
+
+      const riskProfile = generateComprehensiveRiskProfile(markers, profile || { gender: "homme" });
+      const supplements = generateSupplementRecommendations(basicAnalysis.markers, riskProfile);
+
+      res.json({
+        success: true,
+        supplements,
+        priority1Count: supplements.filter(s => s.priority === 1).length,
+        priority2Count: supplements.filter(s => s.priority === 2).length,
+        priority3Count: supplements.filter(s => s.priority === 3).length
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Supplements error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/protocols
+   * Get protocol recommendations only
+   */
+  app.post("/api/blood-analysis/protocols", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const riskProfile = generateComprehensiveRiskProfile(markers, profile || { gender: "homme" });
+      const protocols = generateProtocolRecommendations(riskProfile);
+
+      res.json({
+        success: true,
+        protocols,
+        categories: [...new Set(protocols.map(p => p.category))]
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Protocols error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/radar-chart
+   * Get radar chart data only
+   */
+  app.post("/api/blood-analysis/radar-chart", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const basicAnalysis = await analyzeBloodwork(markers, {
+        gender: profile?.gender || "homme",
+        age: profile?.age
+      });
+
+      const riskProfile = generateComprehensiveRiskProfile(markers, profile || { gender: "homme" });
+      const radarChart = generateBloodRadarChart(basicAnalysis.markers, riskProfile);
+
+      res.json({
+        success: true,
+        radarChart
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Radar chart error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/action-plan
+   * Get action plan only
+   */
+  app.post("/api/blood-analysis/action-plan", async (req, res) => {
+    try {
+      const { markers, profile } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: {
+          gender: "homme" | "femme";
+          age?: string;
+        };
+      };
+
+      if (!markers || markers.length === 0) {
+        res.status(400).json({ error: "Marqueurs requis" });
+        return;
+      }
+
+      const basicAnalysis = await analyzeBloodwork(markers, {
+        gender: profile?.gender || "homme",
+        age: profile?.age
+      });
+
+      const riskProfile = generateComprehensiveRiskProfile(markers, profile || { gender: "homme" });
+      const supplements = generateSupplementRecommendations(basicAnalysis.markers, riskProfile);
+      const protocols = generateProtocolRecommendations(riskProfile);
+      const actionPlan = generateActionPlan(riskProfile, supplements, protocols);
+
+      res.json({
+        success: true,
+        actionPlan
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Action plan error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * GET /api/blood-analysis/knowledge/:markerId
+   * Get knowledge base articles for a specific marker
+   */
+  app.get("/api/blood-analysis/knowledge/:markerId", async (req, res) => {
+    try {
+      const { markerId } = req.params;
+      const articles = await searchKnowledgeForMarker(markerId, 5);
+
+      res.json({
+        success: true,
+        markerId,
+        articleCount: articles.length,
+        articles: articles.map(a => ({
+          title: a.title,
+          source: a.source,
+          category: a.category,
+          excerpt: a.content.substring(0, 500) + "..."
+        }))
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Knowledge search error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  /**
+   * GET /api/blood-analysis/knowledge-risk/:riskType
+   * Get knowledge base articles for a risk type
+   */
+  app.get("/api/blood-analysis/knowledge-risk/:riskType", async (req, res) => {
+    try {
+      const { riskType } = req.params;
+      const articles = await searchKnowledgeForRisk(riskType, 5);
+
+      res.json({
+        success: true,
+        riskType,
+        articleCount: articles.length,
+        articles: articles.map(a => ({
+          title: a.title,
+          source: a.source,
+          category: a.category,
+          excerpt: a.content.substring(0, 500) + "..."
+        }))
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Knowledge risk search error:", error);
+      res.status(500).json({ error: "Erreur" });
+    }
+  });
+
+  console.log("[BloodAnalysis] Routes registered (comprehensive with recommendations engine)");
 }
