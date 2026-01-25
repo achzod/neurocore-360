@@ -360,18 +360,24 @@ export default function BloodAnalysisReport() {
   }, [markers]);
 
   const systemScores = useMemo(() => {
-    if (analysis?.systemScores && Object.keys(analysis.systemScores).length > 0) {
-      return analysis.systemScores as Record<SystemKey, number>;
-    }
     const scores: Partial<Record<SystemKey, number>> = {};
     SYSTEM_ORDER.forEach((system) => {
       const items = groupedBySystem[system];
-      if (!items.length) return;
+      if (!items.length) {
+        scores[system] = 0;
+        return;
+      }
       const avg =
         items.reduce((sum, item) => sum + statusScore[item.status], 0) /
         items.length;
       scores[system] = Math.round(avg);
     });
+    if (analysis?.systemScores && Object.keys(analysis.systemScores).length > 0) {
+      return {
+        ...scores,
+        ...(analysis.systemScores as Record<SystemKey, number>),
+      } as Record<SystemKey, number>;
+    }
     return scores as Record<SystemKey, number>;
   }, [analysis?.systemScores, groupedBySystem]);
 
