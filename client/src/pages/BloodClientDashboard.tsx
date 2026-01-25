@@ -112,16 +112,6 @@ export default function BloodClientDashboard() {
     }
   }, [me?.user?.email, email]);
 
-  useEffect(() => {
-    if (latestPatient?.prenom && !prenom) setPrenom(latestPatient.prenom);
-    if (latestPatient?.nom && !nom) setNom(latestPatient.nom);
-    if (latestPatient?.dob && !dob) setDob(latestPatient.dob);
-    if (latestPatient?.gender && (latestPatient.gender === "homme" || latestPatient.gender === "femme")) {
-      setGender(latestPatient.gender);
-    }
-    if (latestPatient?.email && !email) setEmail(latestPatient.email);
-  }, [latestPatient, prenom, nom, dob, email]);
-
   const { data: tests } = useQuery({
     queryKey: ["/api/blood-tests"],
     queryFn: () => fetcher<BloodTestsResponse>("/api/blood-tests"),
@@ -135,6 +125,16 @@ export default function BloodClientDashboard() {
 
   const latestCompleted = completedTests[0];
   const latestPatient = latestCompleted?.patient || null;
+
+  useEffect(() => {
+    if (latestPatient?.prenom && !prenom) setPrenom(latestPatient.prenom);
+    if (latestPatient?.nom && !nom) setNom(latestPatient.nom);
+    if (latestPatient?.dob && !dob) setDob(latestPatient.dob);
+    if (latestPatient?.gender && (latestPatient.gender === "homme" || latestPatient.gender === "femme")) {
+      setGender(latestPatient.gender);
+    }
+    if (latestPatient?.email && !email) setEmail(latestPatient.email);
+  }, [latestPatient, prenom, nom, dob, email]);
 
   const stats = useMemo(() => {
     const total = tests?.bloodTests?.length || 0;
