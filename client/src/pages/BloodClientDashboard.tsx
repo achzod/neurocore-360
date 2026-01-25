@@ -207,17 +207,16 @@ export default function BloodClientDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#f7f5f0] text-slate-900 relative overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-25"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgba(252,221,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(252,221,0,0.08) 1px, transparent 1px)",
+            "linear-gradient(to right, rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.08) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black" />
-      <ClientHeader credits={credits} />
+      <ClientHeader credits={credits} variant="light" />
 
       <motion.main
         className="relative z-10 mx-auto max-w-7xl px-6 py-10 space-y-10"
@@ -226,46 +225,46 @@ export default function BloodClientDashboard() {
         animate="show"
       >
         <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
-          <Card className="border border-white/10 bg-gradient-to-br from-[#0c1214] via-[#080b0c] to-black p-8 lg:col-span-2">
+          <Card className="border border-slate-200 bg-white p-8 lg:col-span-2">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-4 max-w-2xl">
-                <p className="text-[11px] uppercase tracking-[0.35em] text-[#7fe1d6]">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
                   Blood Analysis Command Center
                 </p>
                 <div>
-                  <p className="text-sm text-white/60">Bonjour {displayName || "Profil"}</p>
+                  <p className="text-sm text-slate-600">Bonjour {displayName || "Profil"}</p>
                   <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "Decimal, Helvetica Neue, sans-serif" }}>
                     Tableau d'intelligence biologique
                   </h1>
                 </div>
-                <p className="text-sm text-white/60">
+                <p className="text-sm text-slate-600">
                   Une lecture experte de tes biomarqueurs, conçue pour comprendre les liens systémiques, prioriser les actions et suivre l'évolution réelle de ton terrain.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
-                    <p className="text-xs text-white/40">Dernier bilan</p>
-                    <p className="text-sm mt-1 text-white">
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <p className="text-xs text-slate-400">Dernier bilan</p>
+                    <p className="text-sm mt-1 text-slate-900">
                       {latestCompleted
                         ? new Date(latestCompleted.uploadedAt).toLocaleDateString("fr-FR")
                         : "Aucun"}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
-                    <p className="text-xs text-white/40">Score global</p>
-                    <p className="text-2xl font-semibold mt-1 text-[#FCDD00]">
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <p className="text-xs text-slate-400">Score global</p>
+                    <p className="text-2xl font-semibold mt-1 text-[#0f172a]">
                       {latestCompleted?.globalScore ?? "--"}
                     </p>
-                    <p className="text-[11px] text-white/50 mt-1">
+                    <p className="text-[11px] text-slate-500 mt-1">
                       {getScoreMessage(latestCompleted?.globalScore)}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
-                    <p className="text-xs text-white/40">Credits</p>
-                    <p className="text-sm mt-1 text-white">{credits}</p>
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <p className="text-xs text-slate-400">Credits</p>
+                    <p className="text-sm mt-1 text-slate-900">{credits}</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-black/50 px-4 py-3">
-                    <p className="text-xs text-white/40">Trajectoire</p>
-                    <p className="text-sm mt-1 text-white">
+                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <p className="text-xs text-slate-400">Trajectoire</p>
+                    <p className="text-sm mt-1 text-slate-900">
                       {completedTests.length >= 2
                         ? `${completedTests[0].globalScore! - completedTests[1].globalScore! >= 0 ? "+" : ""}${completedTests[0].globalScore! - completedTests[1].globalScore!} pts`
                         : "Non disponible"}
@@ -273,24 +272,24 @@ export default function BloodClientDashboard() {
                   </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/60 p-5 w-full lg:max-w-xs space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/40">Statut actif</p>
+              <div className="rounded-2xl border border-slate-200 bg-white/60 p-5 w-full lg:max-w-xs space-y-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Statut actif</p>
                 <p className="text-lg font-semibold">{latestCompleted ? "Rapport complet" : "Aucun rapport"}</p>
-                <p className="text-sm text-white/60">
+                <p className="text-sm text-slate-600">
                   {latestCompleted
                     ? "Bilan prêt pour analyse approfondie."
                     : "Lance une première analyse pour générer tes scores."}
                 </p>
                 {latestCompleted ? (
                   <Button
-                    className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+                    className="w-full bg-[#0f172a] text-black hover:bg-[#1e293b]"
                     onClick={() => navigate(`/analysis/${latestCompleted.id}`)}
                   >
                     Ouvrir le dernier rapport
                   </Button>
                 ) : (
                   <Button
-                    className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+                    className="w-full bg-[#0f172a] text-black hover:bg-[#1e293b]"
                     onClick={() => document.getElementById("blood-upload")?.scrollIntoView({ behavior: "smooth" })}
                   >
                     Lancer un premier bilan
@@ -302,21 +301,21 @@ export default function BloodClientDashboard() {
         </motion.section>
 
         <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
-          <Card id="blood-upload" className="border border-white/10 bg-white/5 p-6 space-y-5">
+          <Card id="blood-upload" className="border border-slate-200 bg-white p-6 space-y-5">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">Blood Analysis</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Blood Analysis</p>
               <h1 className="text-2xl font-semibold mt-2">Injecter un bilan</h1>
-              <p className="text-sm text-white/60 mt-2">
+              <p className="text-sm text-slate-600 mt-2">
                 Uploade un PDF de laboratoire. Je decode les biomarqueurs, je calcule les scores systemes et je livre un rapport didactique dans l'historique.
               </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs text-white/50">
-                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs text-slate-500">
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
                   1. Extraction biomarqueurs + verification ranges
                 </div>
-                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
                   2. Analyse systemes + correlations
                 </div>
-                <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
                   3. Protocoles actionnables 180 jours
                 </div>
               </div>
@@ -324,34 +323,34 @@ export default function BloodClientDashboard() {
 
             <div className="grid gap-4 md:grid-cols-5">
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Prenom</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Prenom</label>
                 <Input
                   value={prenom}
                   onChange={(event) => setPrenom(event.target.value)}
-                  className="mt-2 bg-black/50 border-white/10 text-white"
+                  className="mt-2 bg-white border-slate-200 text-slate-900"
                   placeholder="Achkan"
                 />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Nom</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Nom</label>
                 <Input
                   value={nom}
                   onChange={(event) => setNom(event.target.value)}
-                  className="mt-2 bg-black/50 border-white/10 text-white"
+                  className="mt-2 bg-white border-slate-200 text-slate-900"
                   placeholder="Achzod"
                 />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Email</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Email</label>
                 <Input
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="mt-2 bg-black/50 border-white/10 text-white"
+                  className="mt-2 bg-white border-slate-200 text-slate-900"
                   placeholder="achkan@email.com"
                 />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Genre</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Genre</label>
                 <div className="mt-2 flex gap-2">
                   {(["homme", "femme"] as const).map((option) => (
                     <button
@@ -360,8 +359,8 @@ export default function BloodClientDashboard() {
                       onClick={() => setGender(option)}
                       className={`flex-1 rounded-lg border px-3 py-2 text-sm ${
                         gender === option
-                          ? "border-[#FCDD00] text-[#FCDD00]"
-                          : "border-white/10 text-white/70"
+                          ? "border-[#0f172a] text-[#0f172a]"
+                          : "border-slate-200 text-slate-700"
                       }`}
                     >
                       {option === "homme" ? "Homme" : "Femme"}
@@ -370,12 +369,12 @@ export default function BloodClientDashboard() {
                 </div>
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-white/50">Naissance</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Naissance</label>
                 <Input
                   type="date"
                   value={dob}
                   onChange={(event) => setDob(event.target.value)}
-                  className="mt-2 bg-black/50 border-white/10 text-white"
+                  className="mt-2 bg-white border-slate-200 text-slate-900"
                 />
               </div>
             </div>
@@ -393,32 +392,32 @@ export default function BloodClientDashboard() {
                 if (dropped) setFile(dropped);
               }}
               className={`flex flex-col items-center justify-center rounded-xl border border-dashed p-6 text-sm ${
-                dragging ? "border-[#FCDD00] bg-white/5" : "border-white/10"
+                dragging ? "border-[#0f172a] bg-white" : "border-slate-200"
               }`}
             >
-              <FileUp className="h-6 w-6 text-[#FCDD00]" />
-              <p className="text-white/70 mt-3">Glisse un PDF ici</p>
-              <p className="text-white/40 text-xs mt-2">PDF - 10 MB max</p>
+              <FileUp className="h-6 w-6 text-[#0f172a]" />
+              <p className="text-slate-700 mt-3">Glisse un PDF ici</p>
+              <p className="text-slate-400 text-xs mt-2">PDF - 10 MB max</p>
               <Input
                 type="file"
                 accept="application/pdf"
                 onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-4 max-w-sm bg-black/40 border-white/10 text-white"
+                className="mt-4 max-w-sm bg-white border-slate-200 text-slate-900"
               />
-              {file && <Badge className="mt-3 bg-white/10 text-white">{file.name}</Badge>}
+              {file && <Badge className="mt-3 bg-white text-slate-900">{file.name}</Badge>}
             </div>
 
             {message && <p className="text-sm text-emerald-300">{message}</p>}
             {error && <p className="text-sm text-red-300">{error}</p>}
             {credits <= 0 && (
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-slate-600">
                 Credits a zero. Passe par l'achat pour relancer une analyse.
               </p>
             )}
             {credits <= 0 && (
               <Button
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
+                className="border-white/20 text-slate-900 hover:bg-white"
                 onClick={() => navigate("/offers/blood-analysis")}
               >
                 Acheter des credits
@@ -426,7 +425,7 @@ export default function BloodClientDashboard() {
             )}
 
             <Button
-              className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
+              className="w-full bg-[#0f172a] text-black hover:bg-[#1e293b]"
               disabled={uploading || credits <= 0}
               onClick={handleUpload}
             >
@@ -435,42 +434,42 @@ export default function BloodClientDashboard() {
           </Card>
 
           <div className="space-y-4">
-            <Card className="border border-white/10 bg-white/5 p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Vue rapide</p>
+            <Card className="border border-slate-200 bg-white p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Vue rapide</p>
               <div className="mt-4 grid gap-3">
-                <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
-                  <p className="text-xs text-white/50">Analyses totales</p>
+                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs text-slate-500">Analyses totales</p>
                   <p className="text-2xl font-semibold mt-1">{stats.total}</p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
-                  <p className="text-xs text-white/50">Score moyen</p>
+                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs text-slate-500">Score moyen</p>
                   <p className="text-2xl font-semibold mt-1">{stats.avg}</p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-black/40 px-4 py-3">
-                  <p className="text-xs text-white/50">Credits restants</p>
+                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                  <p className="text-xs text-slate-500">Credits restants</p>
                   <p className="text-2xl font-semibold mt-1">{credits}</p>
                 </div>
               </div>
-              <div className="mt-4 flex items-start gap-2 text-xs text-white/60">
+              <div className="mt-4 flex items-start gap-2 text-xs text-slate-600">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
                 Donnees securisees, historisees par bilan.
               </div>
             </Card>
 
-            <Card className="border border-white/10 bg-white/5 p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Workflow</p>
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
+            <Card className="border border-slate-200 bg-white p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Workflow</p>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" /> Upload du PDF
+                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Upload du PDF
                 </li>
                 <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" /> Extraction biomarqueurs
+                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Extraction biomarqueurs
                 </li>
                 <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" /> Analyse experte + protocoles
+                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Analyse experte + protocoles
                 </li>
                 <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" /> Rapport premium disponible
+                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Rapport premium disponible
                 </li>
               </ul>
             </Card>
@@ -478,10 +477,10 @@ export default function BloodClientDashboard() {
         </motion.section>
 
         <motion.section className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]" variants={itemVariants}>
-          <Card className="border border-white/10 bg-white/5">
-            <div className="px-6 py-4 border-b border-white/10">
+          <Card className="border border-slate-200 bg-white">
+            <div className="px-6 py-4 border-b border-slate-200">
               <h2 className="text-lg font-semibold">Historique des bilans</h2>
-              <p className="text-xs text-white/50">Clique un rapport termine pour l'ouvrir.</p>
+              <p className="text-xs text-slate-500">Clique un rapport termine pour l'ouvrir.</p>
             </div>
             <div className="divide-y divide-white/10">
               {(tests?.bloodTests || []).map((test, index) => {
@@ -490,7 +489,7 @@ export default function BloodClientDashboard() {
                   <div
                     key={test.id}
                     className={`flex flex-col gap-2 px-6 py-4 md:flex-row md:items-center md:justify-between ${
-                      isCompleted ? "cursor-pointer hover:bg-white/5" : "opacity-60"
+                      isCompleted ? "cursor-pointer hover:bg-white" : "opacity-60"
                     }`}
                     onClick={() => {
                       if (isCompleted) navigate(`/analysis/${test.id}`);
@@ -498,38 +497,38 @@ export default function BloodClientDashboard() {
                   >
                     <div>
                       <p className="font-medium">{test.fileName}</p>
-                      <p className="text-xs text-white/40">
+                      <p className="text-xs text-slate-400">
                         {new Date(test.uploadedAt).toLocaleDateString("fr-FR")}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       {index === 0 && isCompleted && (
-                        <Badge className="bg-[#FCDD00] text-black">Recent</Badge>
+                        <Badge className="bg-[#0f172a] text-black">Recent</Badge>
                       )}
-                      <Badge className={statusStyles[test.status] || "bg-white/10 text-white"}>
+                      <Badge className={statusStyles[test.status] || "bg-white text-slate-900"}>
                         {test.status}
                       </Badge>
                       {test.globalScore !== null && (
-                        <span className="text-sm text-white/70">Score {test.globalScore}</span>
+                        <span className="text-sm text-slate-700">Score {test.globalScore}</span>
                       )}
                     </div>
                   </div>
                 );
               })}
               {(!tests || tests.bloodTests.length === 0) && (
-                <div className="px-6 py-6 text-sm text-white/50">Aucun bilan pour l'instant.</div>
+                <div className="px-6 py-6 text-sm text-slate-500">Aucun bilan pour l'instant.</div>
               )}
             </div>
           </Card>
 
-          <Card className="border border-white/10 bg-white/5 p-5">
+          <Card className="border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Tendances</h2>
-                <p className="text-xs text-white/50">Evolution du score global.</p>
+                <p className="text-xs text-slate-500">Evolution du score global.</p>
               </div>
               {completedTests.length >= 2 && (
-                <p className="text-sm text-white">
+                <p className="text-sm text-slate-900">
                   {completedTests[0].globalScore! - completedTests[1].globalScore! >= 0 ? "+" : ""}
                   {completedTests[0].globalScore! - completedTests[1].globalScore!} pts
                 </p>
@@ -546,12 +545,12 @@ export default function BloodClientDashboard() {
                       contentStyle={{ backgroundColor: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
                       labelStyle={{ color: "#fff" }}
                     />
-                    <Line type="monotone" dataKey="score" stroke="#FCDD00" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="mt-4 text-sm text-white/60">
+              <div className="mt-4 text-sm text-slate-600">
                 Uploade un second bilan pour debloquer la comparaison.
               </div>
             )}

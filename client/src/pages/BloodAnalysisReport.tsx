@@ -236,10 +236,22 @@ const buildSystemNarrative = (label: string, items: BloodTestDetail["markers"], 
   return [headline, alerts, highlight, positive].filter(Boolean).join(" ");
 };
 
+const getAdminKey = () => {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("key");
+};
+
 const fetcher = async <T,>(url: string): Promise<T> => {
   const token = localStorage.getItem("apexlabs_token");
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  const adminKey = getAdminKey();
+  const requestUrl = adminKey
+    ? `${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(adminKey)}`
+    : url;
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (adminKey) headers["x-admin-key"] = adminKey;
+  const res = await fetch(requestUrl, {
+    headers: Object.keys(headers).length ? headers : undefined,
   });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
@@ -300,11 +312,17 @@ const itemVariants = {
 export default function BloodAnalysisReport() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
+  const adminKey = getAdminKey();
 
   const { data: me } = useQuery({
     queryKey: ["/api/me"],
     queryFn: fetchMe,
-    onError: () => navigate("/auth/login"),
+    enabled: !adminKey,
+    onError: () => {
+      if (!adminKey) {
+        navigate("/auth/login");
+      }
+    },
   });
 
   const { data, isLoading, isError } = useQuery({
@@ -532,7 +550,7 @@ export default function BloodAnalysisReport() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#f7f5f0] text-slate-900 flex items-center justify-center">
         Chargement...
       </div>
     );
@@ -546,9 +564,9 @@ export default function BloodAnalysisReport() {
         ? "Analyse interrompue"
         : "Analyse en attente";
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="min-h-screen bg-[#f7f5f0] text-slate-900 flex flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-xl font-semibold">{statusLabel}</p>
-        <p className="text-sm text-white/60 max-w-md">
+        <p className="text-sm text-slate-600 max-w-md">
           {data.bloodTest.error ||
             "Ton bilan est en cours de traitement. Rafraichis dans quelques instants pour voir le rapport."}
         </p>
@@ -556,7 +574,7 @@ export default function BloodAnalysisReport() {
           <Button variant="outline" onClick={() => window.location.reload()}>
             Recharger
           </Button>
-          <Button className="bg-[#FCDD00] text-black hover:bg-[#e7c700]" onClick={() => navigate("/dashboard")}>
+          <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]" onClick={() => navigate("/dashboard")}>
             Retour dashboard
           </Button>
         </div>
@@ -566,7 +584,7 @@ export default function BloodAnalysisReport() {
 
   if (isError || !data) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-3">
+      <div className="min-h-screen bg-[#f7f5f0] text-slate-900 flex flex-col items-center justify-center gap-3">
         <p>Rapport introuvable.</p>
         <Button onClick={() => navigate("/dashboard")}>Retour dashboard</Button>
       </div>
@@ -574,17 +592,16 @@ export default function BloodAnalysisReport() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#f7f5f0] text-slate-900 relative overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-25"
         style={{
           backgroundImage:
-            "linear-gradient(to right, rgba(252,221,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(252,221,0,0.08) 1px, transparent 1px)",
+            "linear-gradient(to right, rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.08) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black" />
-      <ClientHeader credits={me?.user?.credits ?? 0} />
+      <ClientHeader credits={me?.user?.credits ?? 0} variant="light" />
 
       <motion.main
         className="relative z-10 mx-auto max-w-7xl px-6 py-10"
@@ -593,30 +610,30 @@ export default function BloodAnalysisReport() {
         animate="show"
       >
         <motion.div
-          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-br from-[#0c1214] via-[#090c0d] to-black px-6 py-5"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5"
           variants={itemVariants}
         >
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Bonjour {patientLabel}</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Bonjour {patientLabel}</p>
             <h1 className="text-2xl font-semibold mt-2">Analyse du {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR")}</h1>
             {previousTest && (
-              <p className="text-sm text-white/60 mt-1">
+              <p className="text-sm text-slate-600 mt-1">
                 vs ton bilan du {new Date(previousTest.uploadedAt).toLocaleDateString("fr-FR")}
               </p>
             )}
-            <p className="text-xs text-white/50 mt-2">
+            <p className="text-xs text-slate-500 mt-2">
               Biohacking Bloodwork · lecture experte et actionnable
             </p>
-            <p className="text-xs text-white/50 mt-2">
+            <p className="text-xs text-slate-500 mt-2">
               {`REF-${data.bloodTest.id.slice(0, 8).toUpperCase()}`} · {markers.length} biomarqueurs analyses
             </p>
-            <p className="text-xs text-white/50 mt-2">
+            <p className="text-xs text-slate-500 mt-2">
               {patient.gender ? `Sexe: ${patient.gender}` : "Sexe: non renseigne"} ·{" "}
               {patient.dob ? `Naissance: ${patient.dob}` : "Naissance: non renseignee"} ·{" "}
               {patient.email ? `Email: ${patient.email}` : "Email: non renseigne"}
             </p>
           </div>
-          <Button className="bg-[#FCDD00] text-black hover:bg-[#e7c700]" onClick={() => navigate("/dashboard")}> 
+          <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]" onClick={() => navigate("/dashboard")}> 
             <Upload className="h-4 w-4 mr-2" />
             Uploader un nouveau bilan
           </Button>
@@ -624,7 +641,7 @@ export default function BloodAnalysisReport() {
 
         <motion.div variants={itemVariants}>
           <Tabs defaultValue="dashboard" className="mt-8 space-y-6">
-            <TabsList className="flex w-full flex-wrap justify-start gap-2 rounded-full border border-white/10 bg-black/70 px-2 py-2">
+            <TabsList className="flex w-full flex-wrap justify-start gap-2 rounded-full border border-slate-200 bg-white px-2 py-2">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="systemes">Systemes</TabsTrigger>
               <TabsTrigger value="marqueurs">Marqueurs</TabsTrigger>
@@ -637,17 +654,17 @@ export default function BloodAnalysisReport() {
 
           <TabsContent value="dashboard" className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <Card className="border border-white/10 bg-gradient-to-br from-[#0f1719] via-[#0a0e0f] to-black p-6">
+              <Card className="border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Score global</p>
-                    <p className="text-5xl font-semibold mt-3 text-[#FCDD00]">{globalScore}/100</p>
-                    <p className="text-sm text-white/60 mt-2">{getScoreMessage(globalScore)}</p>
-                    <p className="text-xs text-white/50 mt-2">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Score global</p>
+                    <p className="text-5xl font-semibold mt-3 text-[#0f172a]">{globalScore}/100</p>
+                    <p className="text-sm text-slate-600 mt-2">{getScoreMessage(globalScore)}</p>
+                    <p className="text-xs text-slate-500 mt-2">
                       Je lis ton terrain biologique comme une cartographie d'actions precises, pas comme un simple PDF.
                     </p>
                   </div>
-                  <div className="text-right text-xs text-white/60">
+                  <div className="text-right text-xs text-slate-600">
                     {trendDelta !== null && (
                       <p>{trendDelta >= 0 ? "+" : ""}{trendDelta} pts depuis le dernier bilan</p>
                     )}
@@ -655,43 +672,43 @@ export default function BloodAnalysisReport() {
                     <p className="mt-2">Age bio: {ageBio} ans (age reel: {age})</p>
                   )}
                   <StatusIndicator status={getScoreLevel(globalScore).tone} label={getScoreLevel(globalScore).label} />
-                  <p className="mt-2 text-xs text-white/50">
+                  <p className="mt-2 text-xs text-slate-500">
                     Top {getPercentile(globalScore)}% des profils similaires
                   </p>
                 </div>
               </div>
             </Card>
 
-              <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Alertes prioritaires</p>
-                <div className="mt-4 space-y-3 text-sm text-white/70">
+              <Card className="border border-slate-200 bg-white p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Alertes prioritaires</p>
+                <div className="mt-4 space-y-3 text-sm text-slate-700">
                   {critical.length === 0 && <p>Aucune alerte critique.</p>}
                   {critical.slice(0, 3).map((marker) => (
-                    <div key={marker.code} className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-3">
+                    <div key={marker.code} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
                       <div>
-                        <p className="font-semibold text-white">{marker.name}</p>
-                        <p className="text-xs text-white/50">{marker.value} {marker.unit}</p>
+                        <p className="font-semibold text-slate-900">{marker.name}</p>
+                        <p className="text-xs text-slate-500">{marker.value} {marker.unit}</p>
                       </div>
                       <Button variant="outline" size="sm">Voir le protocole</Button>
                     </div>
                   ))}
                   {critical.length > 3 && (
-                    <p className="text-xs text-white/50">+{critical.length - 3} alertes supplementaires</p>
+                    <p className="text-xs text-slate-500">+{critical.length - 3} alertes supplementaires</p>
                   )}
                 </div>
               </Card>
             </div>
 
-            <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Lecture experte</p>
-              <p className="text-sm text-white/70 mt-3">{expertIntro}</p>
+            <Card className="border border-slate-200 bg-white p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Lecture experte</p>
+              <p className="text-sm text-slate-700 mt-3">{expertIntro}</p>
             </Card>
 
-            <Card className="border border-white/10 bg-white/5 p-6">
+            <Card className="border border-slate-200 bg-white p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40">Radar des systemes</p>
-                  <p className="text-sm text-white/60 mt-2">8 axes cles pour lire ton bilan en 10 secondes.</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Radar des systemes</p>
+                  <p className="text-sm text-slate-600 mt-2">8 axes cles pour lire ton bilan en 10 secondes.</p>
                 </div>
                 <StatusIndicator status={getScoreLevel(globalScore).tone} />
               </div>
@@ -701,14 +718,14 @@ export default function BloodAnalysisReport() {
             </Card>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="border border-white/10 bg-[#0b0f10]/80 p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Quick wins</p>
-                <div className="mt-3 space-y-3 text-sm text-white/70">
+              <Card className="border border-slate-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Quick wins</p>
+                <div className="mt-3 space-y-3 text-sm text-slate-700">
                   {quickWins.length ? (
                     quickWins.map((item, index) => (
-                      <div key={`quick-${index}`} className="rounded-lg border border-white/10 bg-black/40 p-3">
-                        <p className="font-semibold text-white">{index + 1}. {item.action}</p>
-                        <p className="text-xs text-white/50 mt-1">{item.impact}</p>
+                      <div key={`quick-${index}`} className="rounded-lg border border-slate-200 bg-white p-3">
+                        <p className="font-semibold text-slate-900">{index + 1}. {item.action}</p>
+                        <p className="text-xs text-slate-500 mt-1">{item.impact}</p>
                       </div>
                     ))
                   ) : (
@@ -716,30 +733,30 @@ export default function BloodAnalysisReport() {
                   )}
                 </div>
               </Card>
-              <Card className="border border-white/10 bg-[#0b0f10]/80 p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Risque temporel</p>
+              <Card className="border border-slate-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Risque temporel</p>
                 <div className="mt-4 flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-[#FCDD00]" />
+                  <Shield className="h-5 w-5 text-[#0f172a]" />
                   <div>
                     <p className="text-lg font-semibold">{riskScore}/100</p>
-                    <p className="text-xs text-white/60">Risque {riskLabel}</p>
+                    <p className="text-xs text-slate-600">Risque {riskLabel}</p>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-white/60">
-                  <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
-                    Critiques <span className="text-white">{critical.length}</span>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    Critiques <span className="text-slate-900">{critical.length}</span>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-black/40 px-3 py-2">
-                    Sous-optimaux <span className="text-white">{warning.length}</span>
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    Sous-optimaux <span className="text-slate-900">{warning.length}</span>
                   </div>
                 </div>
               </Card>
-              <Card className="border border-white/10 bg-[#0b0f10]/80 p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Resume</p>
-                <div className="mt-3 text-sm text-white/70 space-y-2">
-                  <p><span className="text-white">Optimal:</span> {summary?.optimal?.length ? summary.optimal.join(", ") : "Aucun"}</p>
-                  <p><span className="text-white">A surveiller:</span> {summary?.watch?.length ? summary.watch.join(", ") : "Aucun"}</p>
-                  <p><span className="text-white">Action requise:</span> {summary?.action?.length ? summary.action.join(", ") : "Aucune"}</p>
+              <Card className="border border-slate-200 bg-white p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Resume</p>
+                <div className="mt-3 text-sm text-slate-700 space-y-2">
+                  <p><span className="text-slate-900">Optimal:</span> {summary?.optimal?.length ? summary.optimal.join(", ") : "Aucun"}</p>
+                  <p><span className="text-slate-900">A surveiller:</span> {summary?.watch?.length ? summary.watch.join(", ") : "Aucun"}</p>
+                  <p><span className="text-slate-900">Action requise:</span> {summary?.action?.length ? summary.action.join(", ") : "Aucune"}</p>
                 </div>
               </Card>
             </div>
@@ -755,12 +772,12 @@ export default function BloodAnalysisReport() {
               const systemFocus = systemNarratives[system] || "";
               const radarPoints = systemRadarData[system] || [];
               return (
-                <Card key={system} className="border border-white/10 bg-gradient-to-br from-[#0f1719] via-[#0b0f10] to-black p-6">
+                <Card key={system} className="border border-slate-200 bg-white p-6">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">Systeme</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Systeme</p>
                       <p className="text-lg font-semibold mt-2">{meta.label}</p>
-                      <p className="text-xs text-white/50">{meta.description}</p>
+                      <p className="text-xs text-slate-500">{meta.description}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="text-2xl font-semibold">{score}/100</p>
@@ -769,37 +786,37 @@ export default function BloodAnalysisReport() {
                   </div>
                   <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                     <div className="space-y-4">
-                      <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Lecture directe</p>
-                        <p className="text-sm text-white/70 mt-2">{systemFocus}</p>
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Lecture directe</p>
+                        <p className="text-sm text-slate-700 mt-2">{systemFocus}</p>
                       </div>
-                      <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Radar du theme</p>
-                        <p className="text-xs text-white/50 mt-2">
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Radar du theme</p>
+                        <p className="text-xs text-slate-500 mt-2">
                           Visualise les marqueurs cles de ce systeme.
                         </p>
                         <div className="mt-4">
                           {radarPoints.length ? (
                             <BloodRadar data={radarPoints} height={220} outerRadius="72%" />
                           ) : (
-                            <p className="text-xs text-white/50">Aucune donnee radar disponible.</p>
+                            <p className="text-xs text-slate-500">Aucune donnee radar disponible.</p>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       {items.map((marker) => (
-                        <div key={`${system}-${marker.code}`} className="rounded-xl border border-white/10 bg-black/40 p-4">
+                        <div key={`${system}-${marker.code}`} className="rounded-xl border border-slate-200 bg-white p-4">
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="text-sm font-semibold">{marker.name}</p>
-                              <p className="text-xs text-white/50">{marker.code}</p>
+                              <p className="text-xs text-slate-500">{marker.code}</p>
                             </div>
                             <StatusBadge status={marker.status} />
                           </div>
                           <div className="mt-3 text-sm">
                             <span className="text-2xl font-semibold">{marker.value}</span>{" "}
-                            <span className="text-white/60">{marker.unit}</span>
+                            <span className="text-slate-600">{marker.unit}</span>
                           </div>
                           <BiomarkerRangeIndicator
                             value={marker.value}
@@ -811,7 +828,7 @@ export default function BloodAnalysisReport() {
                             optimalMax={marker.optimalMax ?? undefined}
                             className="mt-3"
                           />
-                          <p className="mt-3 text-xs text-white/60">
+                          <p className="mt-3 text-xs text-slate-600">
                             {marker.interpretation || "Je detaille ce marqueur dans ta synthese experte."}
                           </p>
                         </div>
@@ -824,28 +841,28 @@ export default function BloodAnalysisReport() {
           </TabsContent>
 
           <TabsContent value="marqueurs" className="space-y-6">
-            <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
+            <Card className="border border-slate-200 bg-white p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold">Liste complete des marqueurs</p>
-                  <p className="text-xs text-white/50">{markers.length} marqueurs detectes.</p>
+                  <p className="text-xs text-slate-500">{markers.length} marqueurs detectes.</p>
                 </div>
                 <StatusIndicator status={getScoreLevel(globalScore).tone} />
               </div>
             </Card>
             <div className="grid gap-4 md:grid-cols-2">
               {markers.map((marker) => (
-                <div key={`${marker.code}-full`} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div key={`${marker.code}-full`} className="rounded-xl border border-slate-200 bg-white p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold">{marker.name}</p>
-                      <p className="text-xs text-white/50">{marker.code}</p>
+                      <p className="text-xs text-slate-500">{marker.code}</p>
                     </div>
                     <StatusBadge status={marker.status} />
                   </div>
                   <div className="mt-3 text-sm">
                     <span className="text-2xl font-semibold">{marker.value}</span>{" "}
-                    <span className="text-white/60">{marker.unit}</span>
+                    <span className="text-slate-600">{marker.unit}</span>
                   </div>
                   <BiomarkerRangeIndicator
                     value={marker.value}
@@ -857,7 +874,7 @@ export default function BloodAnalysisReport() {
                     optimalMax={marker.optimalMax ?? undefined}
                     className="mt-3"
                   />
-                  <p className="mt-3 text-xs text-white/60">
+                  <p className="mt-3 text-xs text-slate-600">
                     {marker.interpretation || "Je detaille ce marqueur dans ta synthese experte."}
                   </p>
                 </div>
@@ -866,18 +883,18 @@ export default function BloodAnalysisReport() {
           </TabsContent>
 
           <TabsContent value="protocoles" className="space-y-6">
-            <Card className="border border-white/10 bg-[#0b0f10]/80 p-6">
+            <Card className="border border-slate-200 bg-white p-6">
               <p className="text-lg font-semibold">Plan d'action personnalise</p>
-              <p className="text-xs text-white/50">Protocoles progressifs sur 180 jours.</p>
+              <p className="text-xs text-slate-500">Protocoles progressifs sur 180 jours.</p>
             </Card>
             <div className="grid gap-4 md:grid-cols-3">
               {protocolPhases.map((phase) => (
-                <Card key={phase.id} className="border border-white/10 bg-white/5 p-4">
+                <Card key={phase.id} className="border border-slate-200 bg-white p-4">
                   <p className="font-semibold">{phase.title}</p>
-                  <ul className="mt-3 space-y-2 text-xs text-white/60">
+                  <ul className="mt-3 space-y-2 text-xs text-slate-600">
                     {phase.items.map((item, index) => (
                       <li key={`${phase.id}-${index}`} className="flex gap-2">
-                        <ArrowUpRight className="h-3 w-3 text-[#FCDD00]" />
+                        <ArrowUpRight className="h-3 w-3 text-[#0f172a]" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -885,14 +902,14 @@ export default function BloodAnalysisReport() {
                 </Card>
               ))}
             </div>
-            <Card className="border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Controles a prevoir</p>
-              <div className="mt-4 space-y-2 text-sm text-white/70">
+            <Card className="border border-slate-200 bg-white p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Controles a prevoir</p>
+              <div className="mt-4 space-y-2 text-sm text-slate-700">
                 {analysis?.followUp?.length
                   ? analysis.followUp.map((item, index) => (
-                      <div key={`follow-${index}`} className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 px-4 py-3">
+                      <div key={`follow-${index}`} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
                         <p>{item.test}</p>
-                        <span className="text-xs text-white/50">{item.delay}</span>
+                        <span className="text-xs text-slate-500">{item.delay}</span>
                       </div>
                     ))
                   : "Aucun controle recommande."}
@@ -902,21 +919,21 @@ export default function BloodAnalysisReport() {
 
           <TabsContent value="insights" className="space-y-6">
             <div className="grid gap-4 lg:grid-cols-2">
-              <Card className="border border-white/10 bg-white/5 p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Synthese experte</p>
-                <div className="mt-3 text-sm text-white/70 prose prose-invert max-w-none">
+              <Card className="border border-slate-200 bg-white p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Synthese experte</p>
+                <div className="mt-3 text-sm text-slate-700 prose prose-slate max-w-none">
                   <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                 </div>
               </Card>
-              <Card className="border border-white/10 bg-white/5 p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Patterns detectes</p>
-                <div className="mt-4 space-y-4 text-sm text-white/70">
+              <Card className="border border-slate-200 bg-white p-6">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Patterns detectes</p>
+                <div className="mt-4 space-y-4 text-sm text-slate-700">
                   {analysis?.patterns?.length ? (
                     analysis.patterns.map((pattern) => (
-                      <div key={pattern.name} className="rounded-lg border border-white/10 bg-black/40 p-4">
-                        <p className="font-semibold text-white">{pattern.name}</p>
-                        <p className="text-xs text-white/50 mt-1">Causes: {pattern.causes.join(", ")}</p>
-                        <p className="text-xs text-white/50 mt-2">Protocoles: {pattern.protocol.join(", ")}</p>
+                      <div key={pattern.name} className="rounded-lg border border-slate-200 bg-white p-4">
+                        <p className="font-semibold text-slate-900">{pattern.name}</p>
+                        <p className="text-xs text-slate-500 mt-1">Causes: {pattern.causes.join(", ")}</p>
+                        <p className="text-xs text-slate-500 mt-2">Protocoles: {pattern.protocol.join(", ")}</p>
                       </div>
                     ))
                   ) : (
@@ -925,9 +942,9 @@ export default function BloodAnalysisReport() {
                 </div>
               </Card>
             </div>
-            <Card className="border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">Alertes medicales</p>
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
+            <Card className="border border-slate-200 bg-white p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Alertes medicales</p>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 {analysis?.alerts?.length
                   ? analysis.alerts.map((alert, index) => (
                       <li key={`alert-${index}`} className="flex gap-2">
@@ -941,13 +958,13 @@ export default function BloodAnalysisReport() {
           </TabsContent>
 
           <TabsContent value="historique" className="space-y-6">
-            <Card className="border border-white/10 bg-white/5 p-6">
+            <Card className="border border-slate-200 bg-white p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold">Evolution dans le temps</p>
-                  <p className="text-xs text-white/50">Suivi de tes scores par bilan.</p>
+                  <p className="text-xs text-slate-500">Suivi de tes scores par bilan.</p>
                 </div>
-                <LineChart className="h-5 w-5 text-[#FCDD00]" />
+                <LineChart className="h-5 w-5 text-[#0f172a]" />
               </div>
               {orderedTests.length >= 2 ? (
                 <div className="h-48 mt-4">
@@ -956,50 +973,50 @@ export default function BloodAnalysisReport() {
                       date: new Date(test.uploadedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
                       score: test.globalScore || 0,
                     }))}>
-                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" />
-                      <YAxis stroke="rgba(255,255,255,0.4)" domain={[0, 100]} />
+                      <XAxis dataKey="date" stroke="rgba(15,23,42,0.45)" />
+                      <YAxis stroke="rgba(15,23,42,0.45)" domain={[0, 100]} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                        labelStyle={{ color: "#fff" }}
+                        contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", color: "#0f172a" }}
+                        labelStyle={{ color: "#0f172a" }}
                       />
-                      <Line type="monotone" dataKey="score" stroke="#FCDD00" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} dot={false} />
                     </RechartLineChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <p className="text-sm text-white/60 mt-4">Uploade un second bilan pour debloquer la comparaison.</p>
+                <p className="text-sm text-slate-600 mt-4">Uploade un second bilan pour debloquer la comparaison.</p>
               )}
             </Card>
           </TabsContent>
 
           <TabsContent value="simulateur" className="space-y-6">
-            <Card className="border border-white/10 bg-white/5 p-6">
+            <Card className="border border-slate-200 bg-white p-6">
               <div className="flex items-center gap-3">
-                <RefreshCcw className="h-5 w-5 text-[#FCDD00]" />
+                <RefreshCcw className="h-5 w-5 text-[#0f172a]" />
                 <div>
                   <p className="text-lg font-semibold">Simulateur what-if</p>
-                  <p className="text-xs text-white/50">Scenario interactif en preparation.</p>
+                  <p className="text-xs text-slate-500">Scenario interactif en preparation.</p>
                 </div>
               </div>
-              <p className="text-sm text-white/70 mt-4">
+              <p className="text-sm text-slate-700 mt-4">
                 Ici tu pourras simuler l'impact de changements (vitamine D, sommeil, activite) sur ton score.
               </p>
             </Card>
           </TabsContent>
 
           <TabsContent value="export" className="space-y-6">
-            <Card className="border border-white/10 bg-white/5 p-6">
+            <Card className="border border-slate-200 bg-white p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold">Export</p>
-                  <p className="text-xs text-white/50">PDF partageable avec ton medecin.</p>
+                  <p className="text-xs text-slate-500">PDF partageable avec ton medecin.</p>
                 </div>
                 <Button variant="outline" onClick={() => window.open(`/api/blood-tests/${data.bloodTest.id}/export/pdf`, "_blank")}>
                   <FileText className="h-4 w-4 mr-2" />
                   Export PDF
                 </Button>
               </div>
-              <p className="text-sm text-white/60 mt-4">
+              <p className="text-sm text-slate-600 mt-4">
                 L'export inclut tes scores, marqueurs et protocoles. Si l'export est indisponible, contacte-moi.
               </p>
             </Card>
