@@ -186,6 +186,55 @@ const statusScore: Record<MarkerStatus, number> = {
   suboptimal: 55,
   critical: 30,
 };
+const statusRank: Record<MarkerStatus, number> = {
+  critical: 0,
+  suboptimal: 1,
+  normal: 2,
+  optimal: 3,
+};
+
+const compactLabel = (label: string) => {
+  const cleaned = label.replace(/\s*\(.*?\)\s*/g, "").trim();
+  if (cleaned.length <= 14) return cleaned;
+  return `${cleaned.slice(0, 12)}…`;
+};
+
+const buildSystemNarrative = (label: string, items: BloodTestDetail["markers"], score: number) => {
+  if (!items.length) {
+    return `Pas assez de donnees pour lire ton systeme ${label.toLowerCase()}.`;
+  }
+  const ordered = [...items].sort((a, b) => statusRank[a.status] - statusRank[b.status]);
+  const worst = ordered[0];
+  const best = ordered.find((item) => item.status === "optimal");
+  const criticalCount = items.filter((item) => item.status === "critical").length;
+  const suboptimalCount = items.filter((item) => item.status === "suboptimal").length;
+  const tone =
+    score >= 80
+      ? "solide"
+      : score >= 70
+      ? "stable"
+      : score >= 60
+      ? "fragile"
+      : "prioritaire";
+
+  const headline = `Ton systeme ${label.toLowerCase()} est ${tone} (${score}/100).`;
+  const alerts =
+    criticalCount > 0
+      ? `Tu as ${criticalCount} signal${criticalCount > 1 ? "s" : ""} critique${
+          criticalCount > 1 ? "s" : ""
+        } a corriger.`
+      : suboptimalCount > 0
+      ? `${suboptimalCount} levier${suboptimalCount > 1 ? "s" : ""} d'optimisation clair${
+          suboptimalCount > 1 ? "s" : ""
+        }.`
+      : "Rien d'urgent, l'objectif est de consolider.";
+  const highlight = worst
+    ? `Point cle: ${worst.name} a ${worst.value} ${worst.unit}.`
+    : "Point cle: donnees insuffisantes.";
+  const positive = best ? `Bon signal: ${best.name} est dans ta zone optimale.` : "";
+
+  return [headline, alerts, highlight, positive].filter(Boolean).join(" ");
+};
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const token = localStorage.getItem("apexlabs_token");
@@ -326,6 +375,33 @@ export default function BloodAnalysisReport() {
     return scores as Record<SystemKey, number>;
   }, [analysis?.systemScores, groupedBySystem]);
 
+  const systemRadarData = useMemo(() => {
+    const data: Partial<Record<SystemKey, { key: string; label: string; score: number; status: MarkerStatus }[]>> = {};
+    SYSTEM_ORDER.forEach((system) => {
+      const items = groupedBySystem[system];
+      if (!items.length) return;
+      const ordered = [...items].sort((a, b) => statusRank[a.status] - statusRank[b.status]);
+      const selected = ordered.slice(0, Math.min(6, ordered.length));
+      data[system] = selected.map((marker) => ({
+        key: marker.code,
+        label: compactLabel(marker.name),
+        score: statusScore[marker.status],
+        status: marker.status,
+      }));
+    });
+    return data as Record<SystemKey, { key: string; label: string; score: number; status: MarkerStatus }[]>;
+  }, [groupedBySystem]);
+
+  const systemNarratives = useMemo(() => {
+    const narratives: Partial<Record<SystemKey, string>> = {};
+    SYSTEM_ORDER.forEach((system) => {
+      const items = groupedBySystem[system];
+      if (!items.length) return;
+      narratives[system] = buildSystemNarrative(SYSTEM_META[system].label, items, systemScores[system] ?? 0);
+    });
+    return narratives as Record<SystemKey, string>;
+  }, [groupedBySystem, systemScores]);
+
   const radarData = useMemo(() => {
     return SYSTEM_ORDER.map((system) => ({
       key: system,
@@ -444,7 +520,7 @@ export default function BloodAnalysisReport() {
       .replace(/[#>*`_-]/g, "")
       .replace(/\s+/g, " ")
       .trim();
-    if (!plain) return "Lecture experte en cours de consolidation.";
+    if (!plain) return "Je consolide la lecture experte de ton bilan.";
     return plain.length > 260 ? `${plain.slice(0, 260)}…` : plain;
   }, [aiAnalysis]);
 
@@ -562,7 +638,7 @@ export default function BloodAnalysisReport() {
                     <p className="text-5xl font-semibold mt-3 text-[#FCDD00]">{globalScore}/100</p>
                     <p className="text-sm text-white/60 mt-2">{getScoreMessage(globalScore)}</p>
                     <p className="text-xs text-white/50 mt-2">
-                      Lecture experte: ton terrain biologique montre des signaux clairs, mesurables, et actionnables.
+                      Je lis ton terrain biologique comme une cartographie d'actions precises, pas comme un simple PDF.
                     </p>
                   </div>
                   <div className="text-right text-xs text-white/60">
@@ -670,56 +746,71 @@ export default function BloodAnalysisReport() {
               const score = systemScores[system] ?? 0;
               const level = getScoreLevel(score);
               const meta = SYSTEM_META[system];
-              const criticalCount = items.filter((item) => item.status === "critical").length;
-              const suboptimalCount = items.filter((item) => item.status === "suboptimal").length;
-              const systemFocus =
-                criticalCount > 0
-                  ? `${criticalCount} alerte critique a stabiliser en priorite.`
-                  : suboptimalCount > 0
-                  ? `${suboptimalCount} levier(s) d'optimisation identifie(s).`
-                  : "Terrain stable, maintien des routines actuelles.";
+              const systemFocus = systemNarratives[system] || "";
+              const radarPoints = systemRadarData[system] || [];
               return (
-                <Card key={system} className="border border-white/10 bg-white/5 p-6">
+                <Card key={system} className="border border-white/10 bg-gradient-to-br from-[#0f1719] via-[#0b0f10] to-black p-6">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <p className="text-lg font-semibold">{meta.label}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-white/40">Systeme</p>
+                      <p className="text-lg font-semibold mt-2">{meta.label}</p>
                       <p className="text-xs text-white/50">{meta.description}</p>
-                      <p className="text-sm text-white/70 mt-3">{systemFocus}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="text-2xl font-semibold">{score}/100</p>
                       <StatusBadge status={level.tone} label={level.label} />
                     </div>
                   </div>
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    {items.map((marker) => (
-                      <div key={`${system}-${marker.code}`} className="rounded-xl border border-white/10 bg-black/40 p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-semibold">{marker.name}</p>
-                            <p className="text-xs text-white/50">{marker.code}</p>
-                          </div>
-                          <StatusBadge status={marker.status} />
-                        </div>
-                        <div className="mt-3 text-sm">
-                          <span className="text-2xl font-semibold">{marker.value}</span>{" "}
-                          <span className="text-white/60">{marker.unit}</span>
-                        </div>
-                        <BiomarkerRangeIndicator
-                          value={marker.value}
-                          unit={marker.unit}
-                          status={marker.status}
-                          normalMin={marker.refMin ?? undefined}
-                          normalMax={marker.refMax ?? undefined}
-                          optimalMin={marker.optimalMin ?? undefined}
-                          optimalMax={marker.optimalMax ?? undefined}
-                          className="mt-3"
-                        />
-                        <p className="mt-3 text-xs text-white/60">
-                          {marker.interpretation || "Analyse clinique en cours d'enrichissement."}
-                        </p>
+                  <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Lecture directe</p>
+                        <p className="text-sm text-white/70 mt-2">{systemFocus}</p>
                       </div>
-                    ))}
+                      <div className="rounded-xl border border-white/10 bg-black/40 p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Radar du theme</p>
+                        <p className="text-xs text-white/50 mt-2">
+                          Visualise les marqueurs cles de ce systeme.
+                        </p>
+                        <div className="mt-4">
+                          {radarPoints.length ? (
+                            <BloodRadar data={radarPoints} height={220} outerRadius="72%" />
+                          ) : (
+                            <p className="text-xs text-white/50">Aucune donnee radar disponible.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {items.map((marker) => (
+                        <div key={`${system}-${marker.code}`} className="rounded-xl border border-white/10 bg-black/40 p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold">{marker.name}</p>
+                              <p className="text-xs text-white/50">{marker.code}</p>
+                            </div>
+                            <StatusBadge status={marker.status} />
+                          </div>
+                          <div className="mt-3 text-sm">
+                            <span className="text-2xl font-semibold">{marker.value}</span>{" "}
+                            <span className="text-white/60">{marker.unit}</span>
+                          </div>
+                          <BiomarkerRangeIndicator
+                            value={marker.value}
+                            unit={marker.unit}
+                            status={marker.status}
+                            normalMin={marker.refMin ?? undefined}
+                            normalMax={marker.refMax ?? undefined}
+                            optimalMin={marker.optimalMin ?? undefined}
+                            optimalMax={marker.optimalMax ?? undefined}
+                            className="mt-3"
+                          />
+                          <p className="mt-3 text-xs text-white/60">
+                            {marker.interpretation || "Je detaille ce marqueur dans ta synthese experte."}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </Card>
               );
@@ -761,7 +852,7 @@ export default function BloodAnalysisReport() {
                     className="mt-3"
                   />
                   <p className="mt-3 text-xs text-white/60">
-                    {marker.interpretation || "Analyse clinique en cours d'enrichissement."}
+                    {marker.interpretation || "Je detaille ce marqueur dans ta synthese experte."}
                   </p>
                 </div>
               ))}

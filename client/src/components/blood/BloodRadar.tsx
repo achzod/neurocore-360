@@ -22,9 +22,11 @@ type RadarPoint = {
 interface BloodRadarProps {
   className?: string;
   data: RadarPoint[];
+  height?: number;
+  outerRadius?: number | string;
 }
 
-export function BloodRadar({ className, data }: BloodRadarProps) {
+export function BloodRadar({ className, data, height = 350, outerRadius = "80%" }: BloodRadarProps) {
   const statusByLabel = new Map(data.map((item) => [item.label, item.status]));
 
   return (
@@ -34,10 +36,11 @@ export function BloodRadar({ className, data }: BloodRadarProps) {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="h-[350px] w-full"
+          className="w-full"
+          style={{ height }}
         >
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+            <RadarChart cx="50%" cy="50%" outerRadius={outerRadius} data={data}>
               <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
               <PolarAngleAxis
                 dataKey="label"
