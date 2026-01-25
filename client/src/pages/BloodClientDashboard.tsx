@@ -48,10 +48,10 @@ const fetcher = async <T,>(url: string): Promise<T> => {
 };
 
 const statusStyles: Record<string, string> = {
-  completed: "bg-emerald-500/15 text-emerald-300",
-  processing: "bg-amber-500/15 text-amber-300",
-  failed: "bg-red-500/15 text-red-300",
-  error: "bg-red-500/15 text-red-300",
+  completed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  processing: "bg-amber-50 text-amber-700 border border-amber-200",
+  failed: "bg-rose-50 text-rose-700 border border-rose-200",
+  error: "bg-rose-50 text-rose-700 border border-rose-200",
 };
 
 const getScoreMessage = (score?: number | null) => {
@@ -229,16 +229,16 @@ export default function BloodClientDashboard() {
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-4 max-w-2xl">
                 <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
-                  Blood Analysis Command Center
+                  Dashboard client
                 </p>
                 <div>
                   <p className="text-sm text-slate-600">Bonjour {displayName || "Profil"}</p>
-                  <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "Decimal, Helvetica Neue, sans-serif" }}>
-                    Tableau d'intelligence biologique
+                  <h1 className="text-3xl font-semibold tracking-tight">
+                    Compte rendu sanguin
                   </h1>
                 </div>
                 <p className="text-sm text-slate-600">
-                  Une lecture experte de tes biomarqueurs, conçue pour comprendre les liens systémiques, prioriser les actions et suivre l'évolution réelle de ton terrain.
+                  Tu retrouves ici chaque bilan, tes scores de systemes, et une lecture clinique claire pour comprendre ce qui est normal, ce qui est a surveiller, et ce qui demande une action.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
@@ -273,26 +273,26 @@ export default function BloodClientDashboard() {
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white/60 p-5 w-full lg:max-w-xs space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Statut actif</p>
-                <p className="text-lg font-semibold">{latestCompleted ? "Rapport complet" : "Aucun rapport"}</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Etat du dossier</p>
+                <p className="text-lg font-semibold">{latestCompleted ? "Rapport disponible" : "Aucun rapport"}</p>
                 <p className="text-sm text-slate-600">
                   {latestCompleted
-                    ? "Bilan prêt pour analyse approfondie."
-                    : "Lance une première analyse pour générer tes scores."}
+                    ? "Le dernier bilan est analyse et disponible."
+                    : "Charge ton premier bilan pour demarrer l'analyse."}
                 </p>
                 {latestCompleted ? (
                   <Button
-                    className="w-full bg-[#0f172a] text-black hover:bg-[#1e293b]"
+                    className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]"
                     onClick={() => navigate(`/analysis/${latestCompleted.id}`)}
                   >
                     Ouvrir le dernier rapport
                   </Button>
                 ) : (
                   <Button
-                    className="w-full bg-[#0f172a] text-black hover:bg-[#1e293b]"
+                    className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]"
                     onClick={() => document.getElementById("blood-upload")?.scrollIntoView({ behavior: "smooth" })}
                   >
-                    Lancer un premier bilan
+                    Ajouter un bilan
                   </Button>
                 )}
               </div>
@@ -303,20 +303,20 @@ export default function BloodClientDashboard() {
         <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
           <Card id="blood-upload" className="border border-slate-200 bg-white p-6 space-y-5">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Blood Analysis</p>
-              <h1 className="text-2xl font-semibold mt-2">Injecter un bilan</h1>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Depot de bilan</p>
+              <h1 className="text-2xl font-semibold mt-2">Ajouter un compte rendu</h1>
               <p className="text-sm text-slate-600 mt-2">
-                Uploade un PDF de laboratoire. Je decode les biomarqueurs, je calcule les scores systemes et je livre un rapport didactique dans l'historique.
+                Tu deposes ton PDF de laboratoire. Je recupere les biomarqueurs, je synthese par systeme et je genere un rapport medical clair dans l'historique.
               </p>
               <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs text-slate-500">
                 <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  1. Extraction biomarqueurs + verification ranges
+                  1. Extraction et controle des valeurs
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  2. Analyse systemes + correlations
+                  2. Analyse clinique par systeme
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  3. Protocoles actionnables 180 jours
+                  3. Synthese et protocoles priorises
                 </div>
               </div>
             </div>
@@ -407,8 +407,8 @@ export default function BloodClientDashboard() {
               {file && <Badge className="mt-3 bg-white text-slate-900">{file.name}</Badge>}
             </div>
 
-            {message && <p className="text-sm text-emerald-300">{message}</p>}
-            {error && <p className="text-sm text-red-300">{error}</p>}
+            {message && <p className="text-sm text-emerald-700">{message}</p>}
+            {error && <p className="text-sm text-rose-700">{error}</p>}
             {credits <= 0 && (
               <p className="text-sm text-slate-600">
                 Credits a zero. Passe par l'achat pour relancer une analyse.
@@ -417,7 +417,7 @@ export default function BloodClientDashboard() {
             {credits <= 0 && (
               <Button
                 variant="outline"
-                className="border-white/20 text-slate-900 hover:bg-white"
+                className="border-slate-200 text-slate-900 hover:bg-white"
                 onClick={() => navigate("/offers/blood-analysis")}
               >
                 Acheter des credits
@@ -425,7 +425,7 @@ export default function BloodClientDashboard() {
             )}
 
             <Button
-              className="w-full bg-[#0f172a] text-black hover:bg-[#1e293b]"
+              className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]"
               disabled={uploading || credits <= 0}
               onClick={handleUpload}
             >
@@ -435,7 +435,7 @@ export default function BloodClientDashboard() {
 
           <div className="space-y-4">
             <Card className="border border-slate-200 bg-white p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Vue rapide</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Synthese</p>
               <div className="mt-4 grid gap-3">
                 <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
                   <p className="text-xs text-slate-500">Analyses totales</p>
@@ -451,13 +451,13 @@ export default function BloodClientDashboard() {
                 </div>
               </div>
               <div className="mt-4 flex items-start gap-2 text-xs text-slate-600">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                Donnees securisees, historisees par bilan.
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                Donnees securisees et historisees par bilan.
               </div>
             </Card>
 
             <Card className="border border-slate-200 bg-white p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Workflow</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Processus d'analyse</p>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 <li className="flex gap-2">
                   <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Upload du PDF
@@ -482,7 +482,7 @@ export default function BloodClientDashboard() {
               <h2 className="text-lg font-semibold">Historique des bilans</h2>
               <p className="text-xs text-slate-500">Clique un rapport termine pour l'ouvrir.</p>
             </div>
-            <div className="divide-y divide-white/10">
+            <div className="divide-y divide-slate-200">
               {(tests?.bloodTests || []).map((test, index) => {
                 const isCompleted = test.status === "completed";
                 return (
@@ -503,9 +503,9 @@ export default function BloodClientDashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                       {index === 0 && isCompleted && (
-                        <Badge className="bg-[#0f172a] text-black">Recent</Badge>
+                        <Badge className="bg-slate-900 text-white">Recent</Badge>
                       )}
-                      <Badge className={statusStyles[test.status] || "bg-white text-slate-900"}>
+                      <Badge className={statusStyles[test.status] || "bg-slate-100 text-slate-700"}>
                         {test.status}
                       </Badge>
                       {test.globalScore !== null && (
@@ -539,11 +539,11 @@ export default function BloodClientDashboard() {
               <div className="h-48 mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
-                    <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" />
-                    <YAxis stroke="rgba(255,255,255,0.4)" domain={[0, 100]} />
+                    <XAxis dataKey="date" stroke="rgba(15,23,42,0.45)" />
+                    <YAxis stroke="rgba(15,23,42,0.45)" domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: "#111", border: "1px solid rgba(255,255,255,0.1)" }}
-                      labelStyle={{ color: "#fff" }}
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", color: "#0f172a" }}
+                      labelStyle={{ color: "#0f172a" }}
                     />
                     <Line type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} dot={false} />
                   </LineChart>
