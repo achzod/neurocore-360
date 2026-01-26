@@ -355,10 +355,25 @@ export default function BloodAnalysisReport() {
 
         <div className="mt-10">
           <Tabs defaultValue="overview">
-            <TabsList className="border border-white/10 bg-white/[0.02]">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="markers">Biomarqueurs</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsList className="border border-white/10 bg-white/[0.02] p-1">
+              <TabsTrigger
+                value="overview"
+                className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="markers"
+                className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+              >
+                Biomarqueurs
+              </TabsTrigger>
+              <TabsTrigger
+                value="insights"
+                className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+              >
+                Insights
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-6">
