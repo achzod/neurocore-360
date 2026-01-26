@@ -33,6 +33,11 @@ type BloodTestSummary = {
     email?: string;
     gender?: string;
     dob?: string;
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
   } | null;
 };
 
@@ -89,6 +94,11 @@ export default function BloodClientDashboard() {
   const [nom, setNom] = useState("");
   const [gender, setGender] = useState<"homme" | "femme">("homme");
   const [dob, setDob] = useState("");
+  const [sleepHours, setSleepHours] = useState("");
+  const [trainingHours, setTrainingHours] = useState("");
+  const [calorieDeficit, setCalorieDeficit] = useState("");
+  const [alcoholWeekly, setAlcoholWeekly] = useState("");
+  const [stressLevel, setStressLevel] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("apexlabs_token");
@@ -139,7 +149,12 @@ export default function BloodClientDashboard() {
       setGender(latestPatient.gender);
     }
     if (latestPatient?.email && !email) setEmail(latestPatient.email);
-  }, [latestPatient, prenom, nom, dob, email]);
+    if (latestPatient?.sleepHours && !sleepHours) setSleepHours(String(latestPatient.sleepHours));
+    if (latestPatient?.trainingHours && !trainingHours) setTrainingHours(String(latestPatient.trainingHours));
+    if (latestPatient?.calorieDeficit && !calorieDeficit) setCalorieDeficit(String(latestPatient.calorieDeficit));
+    if (latestPatient?.alcoholWeekly && !alcoholWeekly) setAlcoholWeekly(String(latestPatient.alcoholWeekly));
+    if (latestPatient?.stressLevel && !stressLevel) setStressLevel(String(latestPatient.stressLevel));
+  }, [latestPatient, prenom, nom, dob, email, sleepHours, trainingHours, calorieDeficit, alcoholWeekly, stressLevel]);
 
   const stats = useMemo(() => {
     const total = orderedTests.length;
@@ -191,6 +206,11 @@ export default function BloodClientDashboard() {
       form.append("nom", nom);
       form.append("gender", gender);
       form.append("dob", dob);
+      if (sleepHours) form.append("sleepHours", sleepHours);
+      if (trainingHours) form.append("trainingHours", trainingHours);
+      if (calorieDeficit) form.append("calorieDeficit", calorieDeficit);
+      if (alcoholWeekly) form.append("alcoholWeekly", alcoholWeekly);
+      if (stressLevel) form.append("stressLevel", stressLevel);
       const res = await fetch("/api/blood-tests/upload", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -294,6 +314,66 @@ export default function BloodClientDashboard() {
                     </button>
                   ))}
                 </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/70">Sommeil (h/nuit)</label>
+                <Input
+                  type="number"
+                  min="3"
+                  max="12"
+                  step="0.5"
+                  value={sleepHours}
+                  onChange={(e) => setSleepHours(e.target.value)}
+                  placeholder="Ex: 7.5"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/70">Training (h/sem)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="30"
+                  step="1"
+                  value={trainingHours}
+                  onChange={(e) => setTrainingHours(e.target.value)}
+                  placeholder="Ex: 6"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/70">Deficit calorique (%)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="50"
+                  step="1"
+                  value={calorieDeficit}
+                  onChange={(e) => setCalorieDeficit(e.target.value)}
+                  placeholder="Ex: 15"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/70">Alcool (verres/sem)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="30"
+                  step="1"
+                  value={alcoholWeekly}
+                  onChange={(e) => setAlcoholWeekly(e.target.value)}
+                  placeholder="Ex: 3"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-medium text-white/70">Stress percu (0-10)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="1"
+                  value={stressLevel}
+                  onChange={(e) => setStressLevel(e.target.value)}
+                  placeholder="Ex: 6"
+                />
               </div>
             </div>
 

@@ -1416,6 +1416,11 @@ export async function generateAIBloodAnalysis(
     medications?: string;
     prenom?: string;
     nom?: string;
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
   },
   knowledgeContext?: string
 ): Promise<string> {
@@ -1430,9 +1435,12 @@ export async function generateAIBloodAnalysis(
     `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
   ).join("\n\n");
 
+  const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "N/A"} h/nuit | Training: ${userProfile.trainingHours ?? "N/A"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "N/A"}% | Alcool: ${userProfile.alcoholWeekly ?? "N/A"} verres/sem | Stress: ${userProfile.stressLevel ?? "N/A"}/10`;
+
   const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
 Objectifs: ${userProfile.objectives || "Performance et santé"}
 Médicaments: ${userProfile.medications || "Aucun"}
+Lifestyle: ${lifestyleLine}
 
 MARQUEURS:
 ${markersTable}

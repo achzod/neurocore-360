@@ -47,6 +47,11 @@ type BloodTestDetail = {
       email?: string;
       gender?: string;
       dob?: string;
+      sleepHours?: number;
+      trainingHours?: number;
+      calorieDeficit?: number;
+      alcoholWeekly?: number;
+      stressLevel?: number;
     } | null;
   };
   markers: Array<{
@@ -81,6 +86,11 @@ type BloodTestDetail = {
       email?: string;
       gender?: string;
       dob?: string;
+      sleepHours?: number;
+      trainingHours?: number;
+      calorieDeficit?: number;
+      alcoholWeekly?: number;
+      stressLevel?: number;
     };
   };
 };
@@ -283,7 +293,16 @@ const getMarkerDetail = (marker: BloodTestDetail["markers"][number]) => {
   return buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
 };
 
-const buildLifestyleCorrelations = (markers: BloodTestDetail["markers"]) => {
+const buildLifestyleCorrelations = (
+  markers: BloodTestDetail["markers"],
+  lifestyle?: {
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
+  }
+) => {
   const lookup = (code: string) => markers.find((m) => m.code === code);
   const cortisol = lookup("cortisol");
   const testo = lookup("testosterone_total");
@@ -291,6 +310,53 @@ const buildLifestyleCorrelations = (markers: BloodTestDetail["markers"]) => {
   const insulin = lookup("insuline_jeun");
 
   const items: Array<{ factor: string; current: string; impact: string; recommendation: string }> = [];
+
+  if (lifestyle?.sleepHours && lifestyle.sleepHours < 7) {
+    items.push({
+      factor: "Sommeil",
+      current: `${lifestyle.sleepHours} h/nuit`,
+      impact: "Cortisol plus eleve + testosterone plus basse.",
+      recommendation: "Viser 7h30-8h30, coucher regulier, limiter cafeine apres 14h.",
+    });
+  }
+
+  if (lifestyle?.trainingHours && lifestyle.trainingHours > 10) {
+    items.push({
+      factor: "Volume d'entrainement",
+      current: `${lifestyle.trainingHours} h/sem`,
+      impact: "Risque de recuperation incomplete et cortisol eleve.",
+      recommendation: "Structurer 3-4 seances fortes + 1-2 seances legeres.",
+    });
+  }
+
+  if (lifestyle?.calorieDeficit && lifestyle.calorieDeficit > 25) {
+    items.push({
+      factor: "Deficit calorique",
+      current: `${lifestyle.calorieDeficit}%`,
+      impact: "Baisse de T3 et de la testosterone libre.",
+      recommendation: "Rester entre 10-20% pour preserver hormones et performance.",
+    });
+  }
+
+  if (lifestyle?.stressLevel && lifestyle.stressLevel >= 7) {
+    items.push({
+      factor: "Stress percu",
+      current: `${lifestyle.stressLevel}/10`,
+      impact: "Inflammation plus haute, sommeil plus fragile.",
+      recommendation: "Respiration 10 min/jour + deload et sommeil prioritaire.",
+    });
+  }
+
+  if (lifestyle?.alcoholWeekly && lifestyle.alcoholWeekly >= 5) {
+    items.push({
+      factor: "Alcool",
+      current: `${lifestyle.alcoholWeekly} verres/sem`,
+      impact: "Risque hepatique et baisse de recuperation.",
+      recommendation: "Objectif <3 verres/sem sur la phase 1.",
+    });
+  }
+
+  if (items.length >= 3) return items.slice(0, 3);
 
   if (cortisol && (cortisol.status === "suboptimal" || cortisol.status === "critical")) {
     items.push({
@@ -465,8 +531,8 @@ export default function BloodAnalysisReport() {
   }, [data?.markers]);
 
   const lifestyleCorrelations = useMemo(() => {
-    return data?.markers ? buildLifestyleCorrelations(data.markers) : [];
-  }, [data?.markers]);
+    return data?.markers ? buildLifestyleCorrelations(data.markers, patient || undefined) : [];
+  }, [data?.markers, patient]);
 
   const narrative = useMemo(() => {
     if (!data?.markers?.length) return "";
