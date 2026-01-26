@@ -50,7 +50,7 @@ export function BloodRadar({
         >
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius={outerRadius} data={data}>
-              <PolarGrid stroke="rgba(15, 23, 42, 0.15)" strokeOpacity={0.7} />
+              <PolarGrid stroke="rgba(255, 255, 255, 0.18)" strokeOpacity={0.7} />
               <PolarAngleAxis
                 dataKey="label"
                 tick={({ payload, x, y, textAnchor }) => {
@@ -61,7 +61,7 @@ export function BloodRadar({
                       x={x}
                       y={y}
                       textAnchor={textAnchor}
-                      fill={meta.muted ? "rgba(15, 23, 42, 0.35)" : colors.primary}
+                      fill={meta.muted ? "rgba(255, 255, 255, 0.35)" : colors.primary}
                       fontSize={12}
                       fontWeight={600}
                     >
@@ -83,7 +83,7 @@ export function BloodRadar({
                   return (
                     <circle
                       r={4}
-                      fill={payload.muted ? "rgba(15, 23, 42, 0.35)" : colors.primary}
+                      fill={payload.muted ? "rgba(255, 255, 255, 0.35)" : colors.primary}
                       stroke="#ffffff"
                       strokeWidth={1}
                     />

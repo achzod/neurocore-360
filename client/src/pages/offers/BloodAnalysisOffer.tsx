@@ -86,7 +86,7 @@ const FAQ = [
 
 function BadgePill({ children }: { children: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+    <span className="inline-flex items-center rounded-full border border-white/15 bg-[#0a0a0a] px-3 py-1 text-xs text-white/70">
       {children}
     </span>
   );
@@ -110,7 +110,7 @@ export default function BloodAnalysisOffer() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F7F5F0] text-slate-900">
+    <div className="blood-uh min-h-screen bg-black text-white">
       <Header />
 
       <section className="relative overflow-hidden">
@@ -144,12 +144,12 @@ export default function BloodAnalysisOffer() {
                 <span style={{ color: PRIMARY_BLUE }}>Ranges optimaux vs normaux</span>
               </h1>
 
-              <p className="text-slate-600 text-lg leading-relaxed max-w-2xl">
+              <p className="text-white/70 text-lg leading-relaxed max-w-2xl">
                 Upload ton PDF de laboratoire. Je decode tes biomarqueurs, je compare les ranges normaux aux
                 ranges optimaux (performance/longevite), et je te livre un plan d'action priorise.
               </p>
 
-              <div className="flex flex-wrap items-center gap-5 text-sm text-slate-500">
+              <div className="flex flex-wrap items-center gap-5 text-sm text-white/50">
                 {trustRow.map((item) => (
                   <div key={item} className="inline-flex items-center gap-2">
                     <Check className="h-4 w-4" style={{ color: PRIMARY_BLUE }} />
@@ -171,7 +171,7 @@ export default function BloodAnalysisOffer() {
                 <button
                   type="button"
                   onClick={() => panelsRef.current?.scrollIntoView({ behavior: "smooth" })}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-transparent px-6 py-3 text-sm text-slate-700 hover:bg-slate-100 transition-all"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-transparent px-6 py-3 text-sm text-white/80 hover:bg-white/10 transition-all"
                 >
                   Voir les panels
                   <FileText className="h-4 w-4" />
@@ -179,14 +179,14 @@ export default function BloodAnalysisOffer() {
                 <button
                   type="button"
                   onClick={() => exampleRef.current?.scrollIntoView({ behavior: "smooth" })}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-transparent px-6 py-3 text-sm text-slate-700 hover:bg-slate-100 transition-all"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-transparent px-6 py-3 text-sm text-white/80 hover:bg-white/10 transition-all"
                 >
                   Voir un exemple
                   <Beaker className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="pt-3 text-xs text-slate-400">
+              <div className="pt-3 text-xs text-white/40">
                 Paiement securise (Stripe) · RGPD · Analyse basee sur ton PDF (pas un service labo proprietaire).
               </div>
             </motion.div>
@@ -197,7 +197,7 @@ export default function BloodAnalysisOffer() {
               transition={{ duration: 0.65, ease: "easeOut", delay: 0.1 }}
               className="h-[360px] md:h-[440px]"
             >
-              <div className="h-full rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="h-full rounded-2xl border border-white/15 bg-[#0a0a0a] p-4">
                 <BloodVisionVisual />
               </div>
             </motion.div>
@@ -205,7 +205,7 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section className="bg-white py-24 px-6">
+      <section className="bg-[#0a0a0a] py-24 px-6">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <p className="text-sm font-medium tracking-[0.2em] uppercase" style={{ color: PRIMARY_BLUE }}>
@@ -244,16 +244,16 @@ export default function BloodAnalysisOffer() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, ease: "easeOut", delay: idx * 0.05 }}
-                className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-10"
+                className="relative overflow-hidden rounded-xl border border-white/15 bg-[#0a0a0a] p-10"
               >
-                <div className="absolute right-4 top-2 text-7xl font-semibold text-slate-900/[0.06]">{item.step}</div>
+                <div className="absolute right-4 top-2 text-7xl font-semibold text-white/[0.06]">{item.step}</div>
                 <div className="relative z-10">
-                  <div className="h-12 w-12 rounded-lg border border-slate-200 bg-white flex items-center justify-center">
+                  <div className="h-12 w-12 rounded-lg border border-white/15 bg-[#0a0a0a] flex items-center justify-center">
                     <item.icon className="h-6 w-6" style={{ color: PRIMARY_BLUE }} />
                   </div>
                   <p className="mt-6 text-2xl font-semibold tracking-tight">{item.title}</p>
-                  <p className="mt-3 text-slate-600 leading-relaxed">{item.desc}</p>
-                  <p className="mt-6 text-sm text-slate-400">Duree: {item.time}</p>
+                  <p className="mt-3 text-white/70 leading-relaxed">{item.desc}</p>
+                  <p className="mt-6 text-sm text-white/40">Duree: {item.time}</p>
                 </div>
               </motion.div>
             ))}
@@ -265,7 +265,7 @@ export default function BloodAnalysisOffer() {
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">39 biomarqueurs · 6 panels</h2>
-            <p className="mt-4 text-slate-500 max-w-3xl mx-auto">
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
               Un PDF standard contient rarement 80 biomarqueurs. Ici on couvre ce qui est realiste, exploitable, et actionnable.
               Roadmap: +11 marqueurs (NFS + ionogramme) pour atteindre 50.
             </p>
@@ -275,18 +275,18 @@ export default function BloodAnalysisOffer() {
             {PANELS.map((panel) => (
               <div
                 key={panel.title}
-                className="rounded-xl border border-slate-200 bg-white p-8 hover:border-slate-200 transition-colors"
+                className="rounded-xl border border-white/15 bg-[#0a0a0a] p-8 hover:border-white/15 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-semibold tracking-tight">{panel.title}</p>
-                    <p className="mt-2 text-sm text-slate-500">{panel.count} biomarqueurs analyses</p>
+                    <p className="mt-2 text-sm text-white/50">{panel.count} biomarqueurs analyses</p>
                   </div>
-                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+                  <span className="inline-flex items-center rounded-full border border-white/15 bg-[#0a0a0a] px-3 py-1 text-xs text-white/70">
                     Panel
                   </span>
                 </div>
-                <ul className="mt-6 space-y-2 text-sm text-slate-600">
+                <ul className="mt-6 space-y-2 text-sm text-white/70">
                   {panel.bullets.map((bullet) => (
                     <li key={bullet} className="flex gap-2">
                       <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: PRIMARY_BLUE }} />
@@ -297,68 +297,68 @@ export default function BloodAnalysisOffer() {
               </div>
             ))}
 
-            <div className="rounded-xl border border-slate-200 bg-white p-8">
+            <div className="rounded-xl border border-white/15 bg-[#0a0a0a] p-8">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-lg font-semibold tracking-tight">Phase 2</p>
-                  <p className="mt-2 text-sm text-slate-500">NFS + ionogramme + 3 ajouts</p>
+                  <p className="mt-2 text-sm text-white/50">NFS + ionogramme + 3 ajouts</p>
                 </div>
-                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-[#0a0a0a] px-3 py-1 text-xs text-white/70">
                   Coming soon
                 </span>
               </div>
-              <p className="mt-6 text-sm text-slate-600 leading-relaxed">
+              <p className="mt-6 text-sm text-white/70 leading-relaxed">
                 Ajout de 11 marqueurs frequents (hemoglobine, hematocrite, GR/GB, plaquettes, sodium/potassium/chlore, cholesterol total, ApoA1, uree).
               </p>
-              <div className="mt-6 h-28 rounded-lg border border-slate-200 bg-[radial-gradient(ellipse_at_center,_rgba(2,121,232,0.10)_0%,_transparent_70%)]" />
+              <div className="mt-6 h-28 rounded-lg border border-white/15 bg-[radial-gradient(ellipse_at_center,_rgba(2,121,232,0.10)_0%,_transparent_70%)]" />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white py-24 px-6">
+      <section className="bg-[#0a0a0a] py-24 px-6">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Ranges optimaux vs normaux</h2>
-            <p className="mt-4 text-slate-500 max-w-3xl mx-auto">
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
               “Normal” ne veut pas dire “optimal” si ton objectif est performance, composition corporelle, energie et longevite.
             </p>
           </div>
 
           <div className="mt-14 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-10">
+            <div className="rounded-xl border border-white/15 bg-[#0a0a0a] p-10">
               <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-lg border border-slate-200 bg-white flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-slate-700" />
+                <div className="h-11 w-11 rounded-lg border border-white/15 bg-[#0a0a0a] flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-white/80" />
                 </div>
                 <p className="text-2xl font-semibold tracking-tight">Ranges laboratoire (normaux)</p>
               </div>
-              <p className="mt-4 text-slate-600 leading-relaxed">
+              <p className="mt-4 text-white/70 leading-relaxed">
                 Base sur la moyenne population (95%). Cela inclut sedentarite, surpoids, pathologies silencieuses. Utile pour depistage, pas pour optimisation.
               </p>
-              <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div className="mt-8 rounded-lg border border-white/15 bg-[#0a0a0a] p-5">
                 <p className="text-sm font-semibold">Exemple: testosterone totale</p>
-                <p className="mt-2 text-sm text-slate-600">Normal labo: 300–1000 ng/dL</p>
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-2 text-sm text-white/70">Normal labo: 300–1000 ng/dL</p>
+                <p className="mt-4 text-sm text-white/70">
                   350 = “normal”, mais souvent associe a fatigue, libido basse, progression lente.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-10">
+            <div className="rounded-xl border border-white/15 bg-[#0a0a0a] p-10">
               <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-lg border border-slate-200 bg-white flex items-center justify-center">
+                <div className="h-11 w-11 rounded-lg border border-white/15 bg-[#0a0a0a] flex items-center justify-center">
                   <Target className="h-5 w-5" style={{ color: PRIMARY_BLUE }} />
                 </div>
                 <p className="text-2xl font-semibold tracking-tight">Ranges optimaux (performance)</p>
               </div>
-              <p className="mt-4 text-slate-600 leading-relaxed">
+              <p className="mt-4 text-white/70 leading-relaxed">
                 Base sur top performers (litterature performance/longevite). Objectif: energie stable, meilleure recuperation, meilleure sensibilite metabolique.
               </p>
-              <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div className="mt-8 rounded-lg border border-white/15 bg-[#0a0a0a] p-5">
                 <p className="text-sm font-semibold">Exemple: testosterone totale</p>
-                <p className="mt-2 text-sm text-slate-600">Optimal: 600–900 ng/dL</p>
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-2 text-sm text-white/70">Optimal: 600–900 ng/dL</p>
+                <p className="mt-4 text-sm text-white/70">
                   700 = zone optimale: energie, libido et progression generalement meilleures.
                 </p>
               </div>
@@ -383,39 +383,39 @@ export default function BloodAnalysisOffer() {
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Bibliotheque de connaissances</h2>
-            <p className="mt-4 text-slate-500 max-w-3xl mx-auto">
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
               7 sources expertes. Corrélations et protocoles construits sur de la litterature, pas un PDF genere au hasard.
             </p>
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-white/40">
               Mise a jour reguliere. Objectif: rendre ton bilan compréhensible et actionnable.
             </p>
           </div>
 
           <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {SOURCES.map((item) => (
-              <div key={item.title} className="rounded-xl border border-slate-200 bg-white p-8">
+              <div key={item.title} className="rounded-xl border border-white/15 bg-[#0a0a0a] p-8">
                 <p className="text-lg font-semibold">{item.title}</p>
-                <p className="mt-3 text-sm text-slate-600 leading-relaxed">{item.detail}</p>
+                <p className="mt-3 text-sm text-white/70 leading-relaxed">{item.detail}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section ref={exampleRef} className="bg-white py-24 px-6">
+      <section ref={exampleRef} className="bg-[#0a0a0a] py-24 px-6">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Exemple de rendu</h2>
-            <p className="mt-4 text-slate-500 max-w-3xl mx-auto">
+            <p className="mt-4 text-white/50 max-w-3xl mx-auto">
               Score global + breakdown par panels, alertes prioritaires, biomarqueurs detailles, protocoles et suivi.
             </p>
           </div>
 
-          <div className="mt-14 rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-10">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Preview</p>
+          <div className="mt-14 rounded-2xl border border-white/15 bg-[#0a0a0a] p-6">
+            <div className="rounded-xl border border-white/15 bg-[#0a0a0a] p-10">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/40">Preview</p>
               <p className="mt-3 text-3xl font-semibold tracking-tight">Ton score global: 78/100</p>
-              <p className="mt-3 text-slate-600 max-w-2xl leading-relaxed">
+              <p className="mt-3 text-white/70 max-w-2xl leading-relaxed">
                 “Ton profil montre un axe cardio-metabolique a optimiser (TG/HDL), et un levier hormonal clair (testosterone libre). Je te donne un plan en 3 phases, avec une priorisation clinique.”
               </p>
 
@@ -423,23 +423,23 @@ export default function BloodAnalysisOffer() {
                 {["Hormones 72", "Thyroide 88", "Metabolisme 81", "Inflammation 65", "Vitamines 90", "Foie/Rein 92"]
                   .slice(0, 6)
                   .map((label) => (
-                    <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+                    <div key={label} className="rounded-lg border border-white/15 bg-[#0a0a0a] px-4 py-4">
                       <p className="text-sm font-semibold">{label}</p>
-                      <p className="mt-2 text-xs text-slate-500">Interpretation + action</p>
+                      <p className="mt-2 text-xs text-white/50">Interpretation + action</p>
                     </div>
                   ))}
               </div>
 
               <div className="mt-10 flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#0a0a0a] px-4 py-2 text-sm text-white/70">
                   <Shield className="h-4 w-4" style={{ color: PRIMARY_BLUE }} />
                   Alertes prioritaires
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#0a0a0a] px-4 py-2 text-sm text-white/70">
                   <FileText className="h-4 w-4" style={{ color: PRIMARY_BLUE }} />
                   Export PDF
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#0a0a0a] px-4 py-2 text-sm text-white/70">
                   <Target className="h-4 w-4" style={{ color: PRIMARY_BLUE }} />
                   Plan 180 jours
                 </span>
@@ -455,14 +455,14 @@ export default function BloodAnalysisOffer() {
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Questions frequentes</h2>
           </div>
 
-          <div className="mt-10 rounded-xl border border-slate-200 bg-white p-6">
+          <div className="mt-10 rounded-xl border border-white/15 bg-[#0a0a0a] p-6">
             <Accordion type="single" collapsible className="w-full">
               {FAQ.map((item) => (
-                <AccordionItem key={item.q} value={item.q} className="border-slate-200">
-                  <AccordionTrigger className="text-left text-slate-900/90 hover:no-underline">
+                <AccordionItem key={item.q} value={item.q} className="border-white/15">
+                  <AccordionTrigger className="text-left text-white/90 hover:no-underline">
                     {item.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-600 leading-relaxed">
+                  <AccordionContent className="text-white/70 leading-relaxed">
                     {item.a}
                   </AccordionContent>
                 </AccordionItem>
@@ -472,10 +472,10 @@ export default function BloodAnalysisOffer() {
         </div>
       </section>
 
-      <section className="bg-white py-20 px-6">
+      <section className="bg-[#0a0a0a] py-20 px-6">
         <div className="mx-auto max-w-6xl text-center">
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">Analyser ton bilan maintenant</h2>
-          <p className="mt-4 text-slate-500 max-w-2xl mx-auto">
+          <p className="mt-4 text-white/50 max-w-2xl mx-auto">
             Tu uploade ton PDF. Tu recuperes un dashboard clair, des ranges optimaux, et un plan d'action.
           </p>
           <div className="mt-8 flex justify-center">
@@ -489,7 +489,7 @@ export default function BloodAnalysisOffer() {
               </a>
             </Link>
           </div>
-          <p className="mt-4 text-xs text-slate-400">Paiement securise · Historique conserve · Export PDF</p>
+          <p className="mt-4 text-xs text-white/40">Paiement securise · Historique conserve · Export PDF</p>
         </div>
       </section>
 
@@ -500,8 +500,8 @@ export default function BloodAnalysisOffer() {
 
 function BloodVisionVisual() {
   return (
-    <div className="relative w-full h-full rounded-xl border border-slate-200 bg-[radial-gradient(ellipse_at_top,_rgba(2,121,232,0.10)_0%,_transparent_55%)] overflow-hidden">
-      <div className="absolute inset-0 bg-white" />
+    <div className="relative w-full h-full rounded-xl border border-white/15 bg-[radial-gradient(ellipse_at_top,_rgba(2,121,232,0.10)_0%,_transparent_55%)] overflow-hidden">
+      <div className="absolute inset-0 bg-[#0a0a0a]" />
       <div
         className="absolute inset-0 opacity-35"
         style={{
@@ -512,9 +512,9 @@ function BloodVisionVisual() {
       />
       <div className="relative z-10 p-6 h-full flex flex-col justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Apercu dashboard</p>
-          <p className="mt-3 text-slate-900 text-2xl font-semibold tracking-tight">Un dashboard. 39 biomarqueurs.</p>
-          <p className="mt-2 text-slate-500 text-sm leading-relaxed">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/40">Apercu dashboard</p>
+          <p className="mt-3 text-white text-2xl font-semibold tracking-tight">Un dashboard. 39 biomarqueurs.</p>
+          <p className="mt-2 text-white/50 text-sm leading-relaxed">
             Tu lis tes panels comme une carte: points forts, points d'attention, et actions immediates.
           </p>
         </div>
@@ -527,10 +527,10 @@ function BloodVisionVisual() {
             { label: "Vitamines", Icon: FileText },
             { label: "Foie/Rein", Icon: FlaskConical },
           ].map((item) => (
-            <div key={item.label} className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+            <div key={item.label} className="rounded-lg border border-white/15 bg-[#0a0a0a] px-3 py-3">
               <item.Icon className="h-4 w-4" style={{ color: PRIMARY_BLUE }} />
-              <p className="mt-2 text-xs text-slate-600">{item.label}</p>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
+              <p className="mt-2 text-xs text-white/70">{item.label}</p>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-white/10">
                 <div className="h-1.5 rounded-full" style={{ width: "72%", backgroundColor: PRIMARY_BLUE }} />
               </div>
             </div>

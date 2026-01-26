@@ -3,12 +3,12 @@ import { BLOOD_THEME } from "@/components/blood/bloodTheme";
 
 export default function BloodShell({ children }: PropsWithChildren) {
   return (
-    <div className="min-h-screen text-slate-900 relative overflow-hidden" style={{ backgroundColor: BLOOD_THEME.background }}>
+    <div className="blood-uh min-h-screen text-white relative overflow-hidden" style={{ backgroundColor: BLOOD_THEME.background }}>
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at 50% 0%, rgba(2,121,232,0.10) 0%, transparent 60%)",
+            "radial-gradient(circle at 50% 0%, rgba(2,121,232,0.14) 0%, transparent 60%)",
         }}
       />
       <div

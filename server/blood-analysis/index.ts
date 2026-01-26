@@ -1211,7 +1211,9 @@ const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es un expert en analyse de bilans sangu
 
 REGLES DE STYLE:
 - Ton clinique, precis, premium, sans emojis.
-- Pas de mention d'IA, pas de sources, pas de liens.
+- Pas de mention d'IA.
+- Cite des sources scientifiques dans une section dediee.
+- Liens PubMed autorises.
 - Utilise les ranges optimaux en priorite.
 - Reste structure, pedagogique, conversationnel.
 - Adresse-toi directement au client avec \"tu/ta/ton\" partout.
@@ -1279,6 +1281,9 @@ Pour 6 marqueurs max (les plus critiques / sous-optimaux):
 
 ## Supplements & stack
 - Liste 6-10 supplements MAX avec: dosage, timing, duree, objectif.
+
+## Sources scientifiques
+- 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)
 
 ## Controles a prevoir
 - [test] - [delai] - [objectif]
@@ -1440,7 +1445,7 @@ RÉSUMÉ:
 - À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
 - Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
 
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE (ne cite pas les sources):\n${knowledgeContext}` : ""}
+${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
 
 Génère une analyse complète selon le format demandé.`;
 
