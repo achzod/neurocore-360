@@ -490,7 +490,12 @@ export async function sendMagicLinkEmail(
       </div>
     `;
 
-    const emailContent = getEmailWrapper(content);
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #111827 100%)`,
+      "Acces a ton espace",
+      "Lien personnel"
+    );
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
