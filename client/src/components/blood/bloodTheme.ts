@@ -1,13 +1,15 @@
 export const BLOOD_THEME = {
-  black: "#000000",
-  surface: "#0a0a0a",
+  background: "#F7F5F0",
+  surface: "#FFFFFF",
+  surfaceMuted: "#F1EFE8",
   primaryBlue: "rgb(2,121,232)",
-  textPrimary: "rgba(255,255,255,1)",
-  textSecondary: "rgba(255,255,255,0.7)",
-  textTertiary: "rgba(255,255,255,0.5)",
-  borderSubtle: "rgba(255,255,255,0.08)",
-  borderDefault: "rgba(255,255,255,0.13)",
-  borderStrong: "rgba(255,255,255,0.2)",
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#64748B",
+  borderSubtle: "rgba(15, 23, 42, 0.08)",
+  borderDefault: "rgba(15, 23, 42, 0.14)",
+  borderStrong: "rgba(15, 23, 42, 0.24)",
+  grid: "rgba(15, 23, 42, 0.05)",
   status: {
     optimal: "#10B981",
     normal: "#3B82F6",
@@ -15,4 +17,3 @@ export const BLOOD_THEME = {
     critical: "#EF4444",
   },
 } as const;
-

@@ -13,28 +13,29 @@ export default function BloodHeader({ credits }: { credits: number }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur" style={{ borderColor: BLOOD_THEME.borderSubtle }}>
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/blood-dashboard" className="text-sm font-semibold tracking-[0.2em] text-white">
+        <Link href="/blood-dashboard" className="text-sm font-semibold tracking-[0.2em] text-slate-900">
           APEXLABS
         </Link>
         <div className="flex items-center gap-4">
-          <Badge className="bg-white/10 text-white border border-white/10">Credits: {credits}</Badge>
+          <Badge className="border" style={{ backgroundColor: BLOOD_THEME.surfaceMuted, color: BLOOD_THEME.textSecondary, borderColor: BLOOD_THEME.borderSubtle }}>
+            Credits: {credits}
+          </Badge>
           <Link href="/offers/blood-analysis">
             <Button
               variant="secondary"
-              className="bg-white/10 text-white hover:bg-white/20"
-              style={{ borderColor: BLOOD_THEME.borderDefault }}
+              className="text-white hover:opacity-90"
+              style={{ backgroundColor: BLOOD_THEME.primaryBlue, borderColor: BLOOD_THEME.primaryBlue }}
             >
               Acheter des credits
             </Button>
           </Link>
-          <Button variant="ghost" className="text-white/60 hover:text-white" onClick={handleLogout}>
-            Logout
+          <Button variant="ghost" className="text-slate-500 hover:text-slate-900" onClick={handleLogout}>
+            Deconnexion
           </Button>
         </div>
       </div>
     </header>
   );
 }
-

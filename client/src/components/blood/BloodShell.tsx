@@ -3,19 +3,18 @@ import { BLOOD_THEME } from "@/components/blood/bloodTheme";
 
 export default function BloodShell({ children }: PropsWithChildren) {
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen text-slate-900 relative overflow-hidden" style={{ backgroundColor: BLOOD_THEME.background }}>
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at 50% 0%, rgba(2,121,232,0.14) 0%, transparent 55%)",
+            "radial-gradient(circle at 50% 0%, rgba(2,121,232,0.10) 0%, transparent 60%)",
         }}
       />
       <div
         className="pointer-events-none absolute inset-0 opacity-35"
         style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundImage: `linear-gradient(to right, ${BLOOD_THEME.grid} 1px, transparent 1px), linear-gradient(to bottom, ${BLOOD_THEME.grid} 1px, transparent 1px)`,
           backgroundSize: "60px 60px",
         }}
       />
@@ -26,4 +25,3 @@ export default function BloodShell({ children }: PropsWithChildren) {
     </div>
   );
 }
-

@@ -44,13 +44,13 @@ export function BiomarkerRangeIndicator({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+      <div className="flex items-center justify-between text-[11px] text-slate-500">
         <span>
           {normalLabel || (hasRange ? `Normal: ${normalMin}-${normalMax}` : "Normal: N/A")}
         </span>
         <span>{optimalLabel || (optimalMin !== undefined && optimalMax !== undefined ? `Optimal: ${optimalMin}-${optimalMax}` : "Optimal: N/A")}</span>
       </div>
-      <div className="relative h-2 rounded-full overflow-hidden bg-white/5">
+      <div className="relative h-2 rounded-full overflow-hidden bg-slate-100">
         {optimalStart !== null && optimalWidth !== null && (
           <div
             className="absolute top-0 h-full rounded-full"
@@ -73,7 +73,7 @@ export function BiomarkerRangeIndicator({
         <span className="font-semibold" style={{ color: colors.primary }}>
           {value} {unit}
         </span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[11px] text-slate-500">
           {getBiomarkerStatusLabel(normalized)}
         </span>
       </div>
