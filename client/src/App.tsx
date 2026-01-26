@@ -22,7 +22,6 @@ import CGV from "@/pages/CGV";
 import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
-import BloodDashboard from "@/pages/BloodDashboard";
 import BloodAnalysisDashboard from "@/pages/BloodAnalysisDashboard";
 import BloodAnalysisStart from "@/pages/BloodAnalysisStart";
 import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
@@ -35,6 +34,7 @@ import DiscoveryScanReport from "@/pages/DiscoveryScanReport";
 import AnabolicScanReport from "@/pages/AnabolicScanReport";
 import UltimateScanReport from "@/pages/UltimateScanReport";
 import PeptidesEngineReport from "@/pages/PeptidesEngineReport";
+import BloodClientDashboard from "@/pages/BloodClientDashboard";
 
 // Offer Pages
 import AuditGratuit from "@/pages/offers/AuditGratuit";
@@ -63,7 +63,7 @@ function Router() {
       <Route path="/audit-complet/questionnaire" component={Questionnaire} />
       <Route path="/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
-      <Route path="/blood-dashboard" component={BloodDashboard} />
+      <Route path="/blood-dashboard" component={BloodClientDashboard} />
       <Route path="/blood-analysis" component={BloodAnalysisStart} />
       <Route path="/blood-analysis/dashboard/:reportId" component={BloodAnalysisDashboard} />
       <Route path="/blood-analysis/:reportId" component={BloodAnalysisDashboard} />

@@ -35,7 +35,13 @@ export default function Verify() {
           localStorage.setItem("neurocore_email", data.me.email);
           localStorage.setItem("apexlabs_token", data.token);
           setStatus("success");
-          navigate("/dashboard");
+          const next = localStorage.getItem("apexlabs_post_login_redirect") || "";
+          if (next) {
+            localStorage.removeItem("apexlabs_post_login_redirect");
+            navigate(next);
+          } else {
+            navigate("/dashboard");
+          }
         } else {
           setStatus("error");
         }
