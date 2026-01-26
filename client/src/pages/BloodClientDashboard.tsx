@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ClientHeader } from "@/components/client/ClientHeader";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { ArrowUpRight, FileUp, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
+
+import BloodHeader from "@/components/blood/BloodHeader";
+import BloodShell from "@/components/blood/BloodShell";
+import { BLOOD_THEME } from "@/components/blood/bloodTheme";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 type MeResponse = {
   user: {
@@ -38,29 +40,25 @@ type BloodTestsResponse = { bloodTests: BloodTestSummary[] };
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const token = localStorage.getItem("apexlabs_token");
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 };
 
 const statusStyles: Record<string, string> = {
-  completed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  processing: "bg-amber-50 text-amber-700 border border-amber-200",
-  failed: "bg-rose-50 text-rose-700 border border-rose-200",
-  error: "bg-rose-50 text-rose-700 border border-rose-200",
+  completed: "bg-emerald-500/10 text-emerald-200 border border-emerald-500/20",
+  processing: "bg-amber-500/10 text-amber-200 border border-amber-500/20",
+  failed: "bg-rose-500/10 text-rose-200 border border-rose-500/20",
+  error: "bg-rose-500/10 text-rose-200 border border-rose-500/20",
 };
 
 const getScoreMessage = (score?: number | null) => {
   if (score === null || score === undefined) return "Aucun score pour l'instant";
-  if (score >= 90) return "Exceptionnel - Tu es une machine";
-  if (score >= 80) return "Tres bien - Quelques optimisations possibles";
-  if (score >= 70) return "Correct - Des axes d'amelioration clairs";
-  if (score >= 60) return "Attention - Actions recommandees";
-  return "Prioritaire - Consulte un professionnel";
+  if (score >= 90) return "Exceptionnel";
+  if (score >= 80) return "Tres bon";
+  if (score >= 70) return "Correct";
+  if (score >= 60) return "A optimiser";
+  return "Prioritaire";
 };
 
 const containerVariants = {
@@ -94,33 +92,40 @@ export default function BloodClientDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("apexlabs_token");
-    if (!token) {
-      navigate("/auth/login");
-    }
+    if (!token) navigate("/auth/login?next=/blood-dashboard");
   }, [navigate]);
 
   const { data: me } = useQuery({
     queryKey: ["/api/me"],
     queryFn: () => fetcher<MeResponse>("/api/me"),
     onSuccess: (data) => setCredits(data.user.credits ?? 0),
-    onError: () => navigate("/auth/login"),
+    onError: () => navigate("/auth/login?next=/blood-dashboard"),
   });
 
   useEffect(() => {
-    if (me?.user?.email && !email) {
-      setEmail(me.user.email);
-    }
+    if (me?.user?.email && !email) setEmail(me.user.email);
   }, [me?.user?.email, email]);
 
   const { data: tests } = useQuery({
     queryKey: ["/api/blood-tests"],
     queryFn: () => fetcher<BloodTestsResponse>("/api/blood-tests"),
     onError: () => setError("Impossible de charger l'historique."),
+    refetchInterval: (query) => {
+      const current = query.state.data as BloodTestsResponse | undefined;
+      const hasProcessing = current?.bloodTests?.some((test) => test.status === "processing");
+      return hasProcessing ? 5000 : false;
+    },
   });
 
+  const orderedTests = useMemo(() => {
+    return (tests?.bloodTests || [])
+      .slice()
+      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+  }, [tests]);
+
   const completedTests = useMemo(
-    () => (tests?.bloodTests || []).filter((test) => test.status === "completed" && test.globalScore !== null),
-    [tests]
+    () => orderedTests.filter((test) => test.status === "completed" && test.globalScore !== null),
+    [orderedTests]
   );
 
   const latestCompleted = completedTests[0];
@@ -137,14 +142,13 @@ export default function BloodClientDashboard() {
   }, [latestPatient, prenom, nom, dob, email]);
 
   const stats = useMemo(() => {
-    const total = tests?.bloodTests?.length || 0;
+    const total = orderedTests.length;
     const scores = completedTests.map((test) => test.globalScore || 0);
     const avg = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : 0;
     return { total, avg };
-  }, [tests, completedTests]);
+  }, [orderedTests, completedTests]);
 
-  const displayName =
-    prenom || latestPatient?.prenom || (me?.user?.email ? me.user.email.split("@")[0] : "");
+  const displayName = prenom || latestPatient?.prenom || (me?.user?.email ? me.user.email.split("@")[0] : "");
 
   const trendData = useMemo(() => {
     return completedTests
@@ -173,6 +177,7 @@ export default function BloodClientDashboard() {
       setError("Prenom, nom et date de naissance requis.");
       return;
     }
+
     setError(null);
     setMessage(null);
     setUploading(true);
@@ -192,9 +197,8 @@ export default function BloodClientDashboard() {
         body: form,
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "Erreur upload.");
-      }
+      if (!res.ok) throw new Error(data?.error || "Erreur upload.");
+
       setCredits(data.remainingCredits ?? credits);
       setMessage("Analyse lancee. Le rapport apparaitra dans l'historique.");
       setFile(null);
@@ -206,331 +210,242 @@ export default function BloodClientDashboard() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f7f5f0] text-slate-900 relative overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-25"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.08) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
-      <ClientHeader credits={credits} variant="light" />
+  const delta = completedTests.length >= 2 ? (completedTests[0].globalScore! - completedTests[1].globalScore!) : null;
 
-      <motion.main
-        className="relative z-10 mx-auto max-w-7xl px-6 py-10 space-y-10"
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
-          <Card className="border border-slate-200 bg-white p-8 lg:col-span-2">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-4 max-w-2xl">
-                <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
-                  Dashboard client
-                </p>
-                <div>
-                  <p className="text-sm text-slate-600">Bonjour {displayName || "Profil"}</p>
-                  <h1 className="text-3xl font-semibold tracking-tight">
-                    Compte rendu sanguin
-                  </h1>
-                </div>
-                <p className="text-sm text-slate-600">
-                  Tu retrouves ici chaque bilan, tes scores de systemes, et une lecture clinique claire pour comprendre ce qui est normal, ce qui est a surveiller, et ce qui demande une action.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-400">Dernier bilan</p>
-                    <p className="text-sm mt-1 text-slate-900">
-                      {latestCompleted
-                        ? new Date(latestCompleted.uploadedAt).toLocaleDateString("fr-FR")
-                        : "Aucun"}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-400">Score global</p>
-                    <p className="text-2xl font-semibold mt-1 text-[#0f172a]">
-                      {latestCompleted?.globalScore ?? "--"}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      {getScoreMessage(latestCompleted?.globalScore)}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-400">Credits</p>
-                    <p className="text-sm mt-1 text-slate-900">{credits}</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs text-slate-400">Trajectoire</p>
-                    <p className="text-sm mt-1 text-slate-900">
-                      {completedTests.length >= 2
-                        ? `${completedTests[0].globalScore! - completedTests[1].globalScore! >= 0 ? "+" : ""}${completedTests[0].globalScore! - completedTests[1].globalScore!} pts`
-                        : "Non disponible"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/60 p-5 w-full lg:max-w-xs space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Etat du dossier</p>
-                <p className="text-lg font-semibold">{latestCompleted ? "Rapport disponible" : "Aucun rapport"}</p>
-                <p className="text-sm text-slate-600">
-                  {latestCompleted
-                    ? "Le dernier bilan est analyse et disponible."
-                    : "Charge ton premier bilan pour demarrer l'analyse."}
-                </p>
-                {latestCompleted ? (
-                  <Button
-                    className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]"
-                    onClick={() => navigate(`/analysis/${latestCompleted.id}`)}
-                  >
-                    Ouvrir le dernier rapport
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]"
-                    onClick={() => document.getElementById("blood-upload")?.scrollIntoView({ behavior: "smooth" })}
-                  >
-                    Ajouter un bilan
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Card>
+  return (
+    <BloodShell>
+      <BloodHeader credits={credits} />
+
+      <motion.main variants={containerVariants} initial="hidden" animate="show" className="mx-auto max-w-6xl px-6 py-10">
+        <motion.section variants={itemVariants} className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Blood Analysis</p>
+            <h1 className="mt-3 text-4xl font-semibold tracking-tight">Bonjour {displayName}.</h1>
+            <p className="mt-3 max-w-2xl text-white/70 leading-relaxed">
+              Upload ton bilan (PDF) et recois une lecture optimisee (normal vs optimal), des patterns detectes et des protocoles actionnables.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Card className="border border-white/10 bg-white/[0.02] px-4 py-3">
+              <p className="text-xs text-white/50">Credits restants</p>
+              <p className="text-2xl font-semibold text-white">{credits}</p>
+            </Card>
+            <Button
+              className="text-black font-semibold hover:scale-[1.02] transition-all"
+              style={{ backgroundColor: "white" }}
+              onClick={() => navigate("/offers/blood-analysis")}
+            >
+              Acheter des credits
+            </Button>
+          </div>
         </motion.section>
 
-        <motion.section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]" variants={itemVariants}>
-          <Card id="blood-upload" className="border border-slate-200 bg-white p-6 space-y-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Depot de bilan</p>
-              <h1 className="text-2xl font-semibold mt-2">Ajouter un compte rendu</h1>
-              <p className="text-sm text-slate-600 mt-2">
-                Tu deposes ton PDF de laboratoire. Je recupere les biomarqueurs, je synthese par systeme et je genere un rapport medical clair dans l'historique.
-              </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs text-slate-500">
-                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  1. Extraction et controle des valeurs
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  2. Analyse clinique par systeme
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  3. Synthese et protocoles priorises
-                </div>
+        <motion.section variants={itemVariants} className="mt-10 grid gap-6 lg:grid-cols-3">
+          <Card className="border border-white/10 bg-white/[0.02] p-6 lg:col-span-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight">Injecter un bilan</h2>
+                <p className="mt-1 text-sm text-white/60">1 fichier (PDF/JPG/PNG) · 10 MB max · 1 credit par analyse</p>
               </div>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium border ${
+                  credits <= 0 ? "border-rose-500/30 bg-rose-500/10 text-rose-200" : "border-white/10 bg-white/[0.03] text-white/70"
+                }`}
+              >
+                {credits <= 0 ? "Credits requis" : "Disponible"}
+              </span>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-5">
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Prenom</label>
-                <Input
-                  value={prenom}
-                  onChange={(event) => setPrenom(event.target.value)}
-                  className="mt-2 bg-white border-slate-200 text-slate-900"
-                  placeholder="Achkan"
-                />
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/60">Prenom</label>
+                <Input value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Prenom" className="bg-black/40 border-white/10 text-white placeholder:text-white/30" />
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Nom</label>
-                <Input
-                  value={nom}
-                  onChange={(event) => setNom(event.target.value)}
-                  className="mt-2 bg-white border-slate-200 text-slate-900"
-                  placeholder="Achzod"
-                />
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/60">Nom</label>
+                <Input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nom" className="bg-black/40 border-white/10 text-white placeholder:text-white/30" />
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Email</label>
-                <Input
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="mt-2 bg-white border-slate-200 text-slate-900"
-                  placeholder="achkan@email.com"
-                />
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/60">Email</label>
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="bg-black/40 border-white/10 text-white placeholder:text-white/30" />
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Genre</label>
-                <div className="mt-2 flex gap-2">
-                  {(["homme", "femme"] as const).map((option) => (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/60">Date de naissance</label>
+                <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="bg-black/40 border-white/10 text-white" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/60">Sexe</label>
+                <div className="flex gap-2">
+                  {(["homme", "femme"] as const).map((value) => (
                     <button
-                      key={option}
+                      key={value}
                       type="button"
-                      onClick={() => setGender(option)}
-                      className={`flex-1 rounded-lg border px-3 py-2 text-sm ${
-                        gender === option
-                          ? "border-[#0f172a] text-[#0f172a]"
-                          : "border-slate-200 text-slate-700"
+                      onClick={() => setGender(value)}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                        gender === value ? "text-black" : "border-white/10 bg-black/30 text-white/70 hover:bg-white/5"
                       }`}
+                      style={gender === value ? { borderColor: BLOOD_THEME.primaryBlue, backgroundColor: BLOOD_THEME.primaryBlue } : undefined}
                     >
-                      {option === "homme" ? "Homme" : "Femme"}
+                      {value === "homme" ? "Homme" : "Femme"}
                     </button>
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Naissance</label>
-                <Input
-                  type="date"
-                  value={dob}
-                  onChange={(event) => setDob(event.target.value)}
-                  className="mt-2 bg-white border-slate-200 text-slate-900"
+            </div>
+
+            <div
+              className={`mt-6 rounded-xl border-2 border-dashed p-6 transition ${dragging ? "bg-white/[0.04]" : "bg-white/[0.02]"} ${credits <= 0 ? "opacity-60" : ""}`}
+              style={{ borderColor: dragging ? "rgba(2,121,232,0.6)" : "rgba(255,255,255,0.13)" }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                if (credits <= 0) return;
+                setDragging(true);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (credits <= 0) return;
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                if (credits <= 0) return;
+                const dropped = e.dataTransfer.files?.[0] || null;
+                if (dropped) setFile(dropped);
+              }}
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/10">
+                  <FileUp className="h-6 w-6" style={{ color: BLOOD_THEME.primaryBlue }} />
+                </div>
+                <div>
+                  <p className="font-medium text-white">{file ? file.name : "Glisse ton PDF ici, ou selectionne un fichier"}</p>
+                  <p className="mt-1 text-xs text-white/50">PDF, JPG, PNG · 10 MB max</p>
+                </div>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  disabled={credits <= 0}
+                  className="text-xs text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-white hover:file:bg-white/15"
                 />
               </div>
             </div>
 
-            <div
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(event) => {
-                event.preventDefault();
-                setDragging(false);
-                const dropped = event.dataTransfer.files?.[0];
-                if (dropped) setFile(dropped);
-              }}
-              className={`flex flex-col items-center justify-center rounded-xl border border-dashed p-6 text-sm ${
-                dragging ? "border-[#0f172a] bg-white" : "border-slate-200"
-              }`}
-            >
-              <FileUp className="h-6 w-6 text-[#0f172a]" />
-              <p className="text-slate-700 mt-3">Glisse un PDF ici</p>
-              <p className="text-slate-400 text-xs mt-2">PDF - 10 MB max</p>
-              <Input
-                type="file"
-                accept="application/pdf"
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-4 max-w-sm bg-white border-slate-200 text-slate-900"
-              />
-              {file && <Badge className="mt-3 bg-white text-slate-900">{file.name}</Badge>}
-            </div>
-
-            {message && <p className="text-sm text-emerald-700">{message}</p>}
-            {error && <p className="text-sm text-rose-700">{error}</p>}
-            {credits <= 0 && (
-              <p className="text-sm text-slate-600">
-                Credits a zero. Passe par l'achat pour relancer une analyse.
-              </p>
+            {(error || message) && (
+              <div className="mt-4">
+                {error && <p className="text-sm text-rose-200">{error}</p>}
+                {message && <p className="text-sm text-emerald-200">{message}</p>}
+              </div>
             )}
-            {credits <= 0 && (
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-white/50">
+                Credit debite a l'upload. Statut: <span className="text-white/70">processing</span> → <span className="text-white/70">completed</span>.
+              </div>
               <Button
-                variant="outline"
-                className="border-slate-200 text-slate-900 hover:bg-white"
-                onClick={() => navigate("/offers/blood-analysis")}
+                disabled={uploading || credits <= 0}
+                className="text-black font-semibold hover:scale-[1.02] transition-all"
+                style={{ backgroundColor: BLOOD_THEME.primaryBlue }}
+                onClick={handleUpload}
               >
-                Acheter des credits
+                {uploading ? "Upload..." : "Lancer l'analyse"}
               </Button>
-            )}
-
-            <Button
-              className="w-full bg-[#0f172a] text-white hover:bg-[#1e293b]"
-              disabled={uploading || credits <= 0}
-              onClick={handleUpload}
-            >
-              {uploading ? "Analyse en cours..." : credits > 0 ? "Lancer l'analyse" : "Credits insuffisants"}
-            </Button>
+            </div>
           </Card>
 
-          <div className="space-y-4">
-            <Card className="border border-slate-200 bg-white p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Synthese</p>
-              <div className="mt-4 grid gap-3">
-                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs text-slate-500">Analyses totales</p>
-                  <p className="text-2xl font-semibold mt-1">{stats.total}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs text-slate-500">Score moyen</p>
-                  <p className="text-2xl font-semibold mt-1">{stats.avg}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-xs text-slate-500">Credits restants</p>
-                  <p className="text-2xl font-semibold mt-1">{credits}</p>
-                </div>
+          <Card className="border border-white/10 bg-white/[0.02] p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Stats</h2>
+                <p className="text-xs text-white/50">Resume de tes bilans.</p>
               </div>
-              <div className="mt-4 flex items-start gap-2 text-xs text-slate-600">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                Donnees securisees et historisees par bilan.
+              <ShieldCheck className="h-4 w-4" style={{ color: BLOOD_THEME.status.optimal }} />
+            </div>
+            <div className="mt-6 grid gap-4">
+              <div className="rounded-lg border border-white/10 bg-black/40 p-4">
+                <p className="text-xs text-white/50">Analyses totales</p>
+                <p className="text-2xl font-semibold text-white">{stats.total}</p>
               </div>
-            </Card>
-
-            <Card className="border border-slate-200 bg-white p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Processus d'analyse</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Upload du PDF
-                </li>
-                <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Extraction biomarqueurs
-                </li>
-                <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Analyse experte + protocoles
-                </li>
-                <li className="flex gap-2">
-                  <ArrowUpRight className="h-3 w-3 text-[#0f172a]" /> Rapport premium disponible
-                </li>
-              </ul>
-            </Card>
-          </div>
+              <div className="rounded-lg border border-white/10 bg-black/40 p-4">
+                <p className="text-xs text-white/50">Score moyen</p>
+                <p className="text-2xl font-semibold text-white">{stats.avg}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/40 p-4">
+                <p className="text-xs text-white/50">Dernier bilan</p>
+                <p className="mt-1 text-sm font-medium text-white">{latestCompleted ? new Date(latestCompleted.uploadedAt).toLocaleDateString("fr-FR") : "Aucun"}</p>
+                <p className="mt-2 text-xs text-white/60">{getScoreMessage(latestCompleted?.globalScore)}</p>
+              </div>
+            </div>
+          </Card>
         </motion.section>
 
-        <motion.section className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]" variants={itemVariants}>
-          <Card className="border border-slate-200 bg-white">
-            <div className="px-6 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-semibold">Historique des bilans</h2>
-              <p className="text-xs text-slate-500">Clique un rapport termine pour l'ouvrir.</p>
+        <motion.section variants={itemVariants} className="mt-10 grid gap-6 lg:grid-cols-2">
+          <Card className="border border-white/10 bg-white/[0.02] p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Historique</h2>
+                <p className="text-xs text-white/50">Ouvre un rapport complet quand le traitement est termine.</p>
+              </div>
+              <Button variant="outline" className="border-white/10 bg-transparent text-white/70 hover:bg-white/5" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/blood-tests"] })}>
+                Rafraichir
+              </Button>
             </div>
-            <div className="divide-y divide-slate-200">
-              {(tests?.bloodTests || []).map((test, index) => {
-                const isCompleted = test.status === "completed";
+
+            <div className="mt-4 space-y-3">
+              {orderedTests.length === 0 && <p className="text-sm text-white/60">Aucun bilan pour l'instant.</p>}
+              {orderedTests.map((test) => {
+                const canOpen = test.status === "completed";
+                const badgeClass = statusStyles[test.status] || "bg-white/10 text-white/70 border border-white/10";
                 return (
-                  <div
+                  <button
                     key={test.id}
-                    className={`flex flex-col gap-2 px-6 py-4 md:flex-row md:items-center md:justify-between ${
-                      isCompleted ? "cursor-pointer hover:bg-white" : "opacity-60"
-                    }`}
-                    onClick={() => {
-                      if (isCompleted) navigate(`/analysis/${test.id}`);
-                    }}
+                    type="button"
+                    disabled={!canOpen}
+                    onClick={() => canOpen && navigate(`/analysis/${test.id}`)}
+                    className={`w-full rounded-xl border border-white/10 px-4 py-3 text-left transition ${canOpen ? "hover:bg-white/5" : "opacity-70 cursor-default"}`}
                   >
-                    <div>
-                      <p className="font-medium">{test.fileName}</p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(test.uploadedAt).toLocaleDateString("fr-FR")}
-                      </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-white">{test.fileName}</p>
+                        <p className="text-xs text-white/50">{new Date(test.uploadedAt).toLocaleDateString("fr-FR", { dateStyle: "medium" })}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`rounded-full px-3 py-1 text-xs font-medium ${badgeClass}`}>{test.status}</span>
+                        {typeof test.globalScore === "number" && <span className="text-sm font-semibold text-white">{test.globalScore}/100</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {index === 0 && isCompleted && (
-                        <Badge className="bg-slate-900 text-white">Recent</Badge>
-                      )}
-                      <Badge className={statusStyles[test.status] || "bg-slate-100 text-slate-700"}>
-                        {test.status}
-                      </Badge>
-                      {test.globalScore !== null && (
-                        <span className="text-sm text-slate-700">Score {test.globalScore}</span>
-                      )}
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
-              {(!tests || tests.bloodTests.length === 0) && (
-                <div className="px-6 py-6 text-sm text-slate-500">Aucun bilan pour l'instant.</div>
-              )}
+            </div>
+
+            <div className="mt-6 rounded-xl border border-white/10 bg-black/40 p-4">
+              <p className="text-xs font-medium text-white/70">Process</p>
+              <ul className="mt-3 space-y-2 text-xs text-white/60">
+                {["Upload du PDF", "Extraction biomarqueurs", "Analyse experte + protocoles", "Rapport disponible"].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <ArrowUpRight className="h-3 w-3" style={{ color: BLOOD_THEME.primaryBlue }} /> {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </Card>
 
-          <Card className="border border-slate-200 bg-white p-5">
+          <Card className="border border-white/10 bg-white/[0.02] p-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Tendances</h2>
-                <p className="text-xs text-slate-500">Evolution du score global.</p>
+                <p className="text-xs text-white/50">Evolution du score global.</p>
               </div>
-              {completedTests.length >= 2 && (
-                <p className="text-sm text-slate-900">
-                  {completedTests[0].globalScore! - completedTests[1].globalScore! >= 0 ? "+" : ""}
-                  {completedTests[0].globalScore! - completedTests[1].globalScore!} pts
+              {delta !== null && (
+                <p className="text-sm text-white">
+                  {delta >= 0 ? "+" : ""}
+                  {delta} pts
                 </p>
               )}
             </div>
@@ -539,24 +454,27 @@ export default function BloodClientDashboard() {
               <div className="h-48 mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
-                    <XAxis dataKey="date" stroke="rgba(15,23,42,0.45)" />
-                    <YAxis stroke="rgba(15,23,42,0.45)" domain={[0, 100]} />
+                    <XAxis dataKey="date" stroke="rgba(255,255,255,0.35)" />
+                    <YAxis stroke="rgba(255,255,255,0.35)" domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", color: "#0f172a" }}
-                      labelStyle={{ color: "#0f172a" }}
+                      contentStyle={{
+                        backgroundColor: "#0a0a0a",
+                        border: "1px solid rgba(255,255,255,0.13)",
+                        color: "rgba(255,255,255,0.9)",
+                      }}
+                      labelStyle={{ color: "rgba(255,255,255,0.8)" }}
                     />
-                    <Line type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="score" stroke={BLOOD_THEME.primaryBlue} strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="mt-4 text-sm text-slate-600">
-                Uploade un second bilan pour debloquer la comparaison.
-              </div>
+              <div className="mt-4 text-sm text-white/60">Upload un second bilan pour debloquer la comparaison.</div>
             )}
           </Card>
         </motion.section>
       </motion.main>
-    </div>
+    </BloodShell>
   );
 }
+

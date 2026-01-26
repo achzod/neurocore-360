@@ -24,6 +24,7 @@ import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
 import BloodAnalysisDashboard from "@/pages/BloodAnalysisDashboard";
 import BloodAnalysisStart from "@/pages/BloodAnalysisStart";
+import BloodAnalysisLegacyRedirect from "@/pages/BloodAnalysisLegacyRedirect";
 import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
@@ -65,8 +66,8 @@ function Router() {
       <Route path="/audit-complet/checkout" component={Checkout} />
       <Route path="/blood-dashboard" component={BloodClientDashboard} />
       <Route path="/blood-analysis" component={BloodAnalysisStart} />
-      <Route path="/blood-analysis/dashboard/:reportId" component={BloodAnalysisDashboard} />
-      <Route path="/blood-analysis/:reportId" component={BloodAnalysisDashboard} />
+      <Route path="/blood-analysis/dashboard/:reportId" component={BloodAnalysisLegacyRedirect} />
+      <Route path="/blood-analysis/:reportId" component={BloodAnalysisLegacyRedirect} />
       <Route path="/peptides-engine" component={PeptidesEnginePage} />
 
       {/* Offer Pages - New Names */}

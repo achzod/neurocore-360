@@ -329,7 +329,7 @@ export async function sendReportReadyEmail(
         : auditType === "ELITE"
         ? `/ultimate/${auditId}`
         : auditType === "BLOOD_ANALYSIS"
-        ? `/blood-analysis/${auditId}`
+        ? `/analysis/${auditId}`
         : auditType === "PEPTIDES"
         ? `/peptides/${auditId}`
         : `/ultimate/${auditId}`;
