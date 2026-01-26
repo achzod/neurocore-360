@@ -70,7 +70,7 @@ export default function CheckEmail() {
                 <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
                   <li>Ouvre ta boîte mail</li>
                   <li>Cherche un email de APEXLABS by Achzod</li>
-                  <li>Clique sur le lien pour acceder a ton dossier</li>
+                  <li>Clique sur le lien pour acceder a ton espace</li>
                 </ol>
               </div>
 

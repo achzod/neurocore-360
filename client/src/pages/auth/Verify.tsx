@@ -85,7 +85,7 @@ export default function Verify() {
                   </motion.div>
                   <CardTitle className="text-2xl">Acces confirme</CardTitle>
                   <p className="mt-2 text-muted-foreground">
-                    Bienvenue {email}. Redirection vers ton dossier...
+                    Bienvenue {email}. Redirection vers ton espace...
                   </p>
                 </>
               )}

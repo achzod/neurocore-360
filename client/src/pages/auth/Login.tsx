@@ -55,9 +55,9 @@ export default function Login() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-primary/10">
                 <Mail className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Acces au dossier</CardTitle>
+              <CardTitle className="text-2xl">Acces a ton espace</CardTitle>
               <p className="mt-2 text-muted-foreground">
-                Entre ton email pour recevoir un lien d'acces. Aucun mot de passe requis.
+                Entre ton email pour recevoir un lien d'acces unique. Aucun mot de passe requis.
               </p>
             </CardHeader>
             <CardContent>
@@ -96,14 +96,14 @@ export default function Login() {
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Lien valable 60 minutes. Si tu n'as pas encore de compte, commence ton audit.
+                  Lien valable 60 minutes. Tu accedes a tous tes dashboards depuis un seul lien.
                 </p>
                 <a
                   href="/audit-complet/questionnaire"
                   className="mt-2 inline-flex text-sm font-medium text-primary hover:underline"
                   data-testid="link-start-audit"
                 >
-                  Commencer l'audit
+                  Commencer un audit
                 </a>
               </div>
             </CardContent>

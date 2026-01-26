@@ -458,21 +458,21 @@ export async function sendMagicLinkEmail(
 
     const content = `
       <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
-        Acces a ton dossier Blood Analysis
+        Acces a ton espace ApexLabs
       </h2>
 
       <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
-        Voici ton lien personnel pour ouvrir ton dossier et consulter tes rapports.
+        Voici ton lien personnel pour acceder a tous tes dashboards (Discovery, Anabolic, Ultimate, Blood Analysis).
       </p>
 
-      ${getPrimaryButton('Ouvrir mon dossier', magicLink)}
+      ${getPrimaryButton("Acceder a mon espace", magicLink)}
 
       <div style="margin: 24px 0 0; padding: 16px; background-color: ${COLORS.background}; border-radius: 10px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 6px; text-align: center;">
           1. Clique sur le bouton
         </p>
         <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; text-align: center;">
-          2. Accede immediatement a ton dashboard
+          2. Tu arrives directement sur ton espace client
         </p>
       </div>
 
@@ -500,14 +500,14 @@ export async function sendMagicLinkEmail(
       },
       body: JSON.stringify({
         email: {
-          subject: "Acces a ton dossier Blood Analysis",
+          subject: "Acces a ton espace ApexLabs",
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
           },
           to: [{ email }],
           html: encodeBase64(emailContent),
-          text: `Acces dossier Blood Analysis - Clique sur ce lien pour acceder a ton dashboard : ${magicLink}`,
+          text: `Acces ApexLabs - Clique sur ce lien pour acceder a ton espace client : ${magicLink}`,
         },
       }),
     });
