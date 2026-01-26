@@ -75,12 +75,14 @@ export interface User {
   id: string;
   email: string;
   name?: string;
+  credits?: number;
   createdAt: string | Date;
 }
 
 export const insertUserSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
+  credits: z.number().int().nonnegative().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

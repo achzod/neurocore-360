@@ -93,6 +93,7 @@ const getAuditReportUrl = (audit: Audit) => {
   if (audit.type === "GRATUIT") return `/scan/${audit.id}`;
   if (audit.type === "PREMIUM") return `/anabolic/${audit.id}`;
   if (audit.type === "ELITE") return `/ultimate/${audit.id}`;
+  if (audit.type === "BLOOD_ANALYSIS") return `/blood-analysis/${audit.id}`;
   if (audit.type === "PEPTIDES") return `/peptides/${audit.id}`;
   return `/dashboard/${audit.id}`;
 };
@@ -745,7 +746,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">PREMIUM J+7</h3>
-                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching APEXLABS20 (-20%)</p>
+                    <p className="text-sm text-muted-foreground">Demande avis + CTA coaching NEUROCORE20 (-20%)</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 7).length}
@@ -812,7 +813,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">PREMIUM J+14 (Dernière chance)</h3>
-                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - APEXLABS20</p>
+                    <p className="text-sm text-muted-foreground">Relance si J+7 non ouvert - NEUROCORE20</p>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {audits.filter(a => (a.type === "PREMIUM" || a.type === "ELITE") && a.reportDeliveryStatus === "SENT" && getDaysSinceSent(a.reportSentAt) !== null && getDaysSinceSent(a.reportSentAt)! >= 14).length}

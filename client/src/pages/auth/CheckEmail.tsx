@@ -5,9 +5,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/Header";
 import { Mail, ArrowLeft, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CheckEmail() {
   const [email, setEmail] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const resendMutation = useMutation({
+    mutationFn: async () => {
+      if (!email) throw new Error("Email manquant");
+      return apiRequest("POST", "/api/auth/magic-link", { email });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Email renvoye",
+        description: "Le lien d'acces vient d'etre renvoye.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de renvoyer le lien. Verifie ton email.",
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("neurocore_email");
@@ -34,19 +58,19 @@ export default function CheckEmail() {
               >
                 <Mail className="h-10 w-10 text-primary" />
               </motion.div>
-              <CardTitle className="text-2xl">Vérifie ta boîte mail</CardTitle>
+              <CardTitle className="text-2xl">Verifie ta boite mail</CardTitle>
               <p className="mt-2 text-muted-foreground">
-                Je viens d'envoyer un lien de connexion à{" "}
+                Je viens d'envoyer un lien d'acces a{" "}
                 <span className="font-medium text-foreground">{email || "ton email"}</span>
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="rounded-lg bg-muted/50 p-4">
-                <h4 className="mb-2 font-medium">Que faire maintenant ?</h4>
+                <h4 className="mb-2 font-medium">Etape suivante</h4>
                 <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
                   <li>Ouvre ta boîte mail</li>
-                  <li>Cherche un email de APEXLABS°</li>
-                  <li>Clique sur le lien pour accéder à ton dashboard</li>
+                  <li>Cherche un email de APEXLABS by Achzod</li>
+                  <li>Clique sur le lien pour acceder a ton espace</li>
                 </ol>
               </div>
 
@@ -54,14 +78,20 @@ export default function CheckEmail() {
                 <p className="text-sm text-muted-foreground">
                   Tu n'as pas reçu l'email ?
                 </p>
-                <Button variant="ghost" className="mt-1" data-testid="button-resend">
+                <Button
+                  variant="ghost"
+                  className="mt-1"
+                  data-testid="button-resend"
+                  onClick={() => resendMutation.mutate()}
+                  disabled={resendMutation.isPending}
+                >
                   <RefreshCw className="mr-2 h-3 w-3" />
-                  Renvoyer l'email
+                  {resendMutation.isPending ? "Renvoi en cours..." : "Renvoyer le lien"}
                 </Button>
               </div>
 
               <p className="text-center text-xs text-muted-foreground">
-                Vérifie aussi tes spams si tu ne trouves pas l'email.
+                Verifie aussi tes spams si tu ne trouves pas l'email.
               </p>
 
               <div className="pt-4">

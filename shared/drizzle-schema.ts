@@ -1,10 +1,11 @@
-import { pgTable, varchar, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }),
+  credits: integer("credits").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

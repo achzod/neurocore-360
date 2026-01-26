@@ -9,7 +9,8 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Questionnaire from "@/pages/Questionnaire";
 import Checkout from "@/pages/Checkout";
-import Dashboard from "@/pages/Dashboard";
+import DashboardRouter from "@/pages/DashboardRouter";
+import BloodAnalysisReport from "@/pages/BloodAnalysisReport";
 import AuditDetail from "@/pages/AuditDetail";
 import AdminReviews from "@/pages/AdminReviews";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -22,6 +23,8 @@ import TestAudit from "@/pages/TestAudit";
 import FAQ from "@/pages/FAQ";
 import Report from "@/pages/Report";
 import BloodDashboard from "@/pages/BloodDashboard";
+import BloodAnalysisDashboard from "@/pages/BloodAnalysisDashboard";
+import BloodAnalysisStart from "@/pages/BloodAnalysisStart";
 import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
@@ -61,6 +64,9 @@ function Router() {
       <Route path="/questionnaire" component={Questionnaire} />
       <Route path="/audit-complet/checkout" component={Checkout} />
       <Route path="/blood-dashboard" component={BloodDashboard} />
+      <Route path="/blood-analysis" component={BloodAnalysisStart} />
+      <Route path="/blood-analysis/dashboard/:reportId" component={BloodAnalysisDashboard} />
+      <Route path="/blood-analysis/:reportId" component={BloodAnalysisDashboard} />
       <Route path="/peptides-engine" component={PeptidesEnginePage} />
 
       {/* Offer Pages - New Names */}
@@ -81,7 +87,9 @@ function Router() {
       <Route path="/ultimate/:auditId" component={UltimateScanReport} />
       <Route path="/peptides/:auditId" component={PeptidesEngineReport} />
 
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard" component={DashboardRouter} />
+      <Route path="/analysis/:id" component={BloodAnalysisReport} />
+      <Route path="/login" component={Login} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
       <Route path="/auth/login" component={Login} />
       <Route path="/auth/check-email" component={CheckEmail} />

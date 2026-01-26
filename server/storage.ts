@@ -32,6 +32,8 @@ const pool = new Pool({
   connectionString: getDatabaseUrl(),
 });
 
+const DEFAULT_USER_CREDITS = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+
 export interface MagicToken {
   token: string;
   email: string;
@@ -125,10 +127,38 @@ export interface PeptidesReportRecord {
   createdAt: Date | string;
 }
 
+export interface BloodReportRecord {
+  id: string;
+  email: string;
+  profile: Record<string, unknown>;
+  markers: unknown[];
+  analysis: unknown;
+  aiReport: string;
+  createdAt: Date | string;
+}
+
+export interface BloodTestRecord {
+  id: string;
+  userId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  status: string;
+  error?: string | null;
+  markers: unknown[];
+  analysis: unknown;
+  patientProfile?: Record<string, unknown>;
+  globalScore?: number | null;
+  globalLevel?: string | null;
+  createdAt: Date | string;
+  completedAt?: Date | string | null;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  adjustUserCredits(id: string, delta: number): Promise<User | undefined>;
 
   getAudit(id: string): Promise<Audit | undefined>;
   getAuditsByUserId(userId: string): Promise<Audit[]>;
@@ -156,6 +186,15 @@ export interface IStorage {
   getPeptidesReport(id: string): Promise<PeptidesReportRecord | undefined>;
   updatePeptidesReport(id: string, report: unknown): Promise<PeptidesReportRecord | undefined>;
   getAllPeptidesReports(): Promise<PeptidesReportRecord[]>;
+
+  createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord>;
+  getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
+  getAllBloodReports(): Promise<BloodReportRecord[]>;
+
+  createBloodTest(input: Omit<BloodTestRecord, "id" | "createdAt"> & { createdAt?: Date }): Promise<BloodTestRecord>;
+  updateBloodTest(id: string, data: Partial<BloodTestRecord>): Promise<BloodTestRecord | undefined>;
+  getBloodTest(id: string): Promise<BloodTestRecord | undefined>;
+  getBloodTestsByUserId(userId: string): Promise<BloodTestRecord[]>;
 
   createMagicToken(email: string): Promise<string>;
   verifyMagicToken(token: string): Promise<string | null>;
@@ -194,6 +233,8 @@ export class MemStorage implements IStorage {
   private burnoutReports: Map<string, BurnoutReportRecord>;
   private peptidesProgress: Map<string, PeptidesProgress>;
   private peptidesReports: Map<string, PeptidesReportRecord>;
+  private bloodReports: Map<string, BloodReportRecord>;
+  private bloodTests: Map<string, BloodTestRecord>;
   private magicTokens: Map<string, MagicToken>;
   private reportArtifacts: ReportArtifact[];
   private promoCodes: Map<string, PromoCode>;
@@ -207,6 +248,8 @@ export class MemStorage implements IStorage {
     this.burnoutReports = new Map();
     this.peptidesProgress = new Map();
     this.peptidesReports = new Map();
+    this.bloodReports = new Map();
+    this.bloodTests = new Map();
     this.magicTokens = new Map();
     this.reportArtifacts = [];
     this.promoCodes = new Map();
@@ -246,18 +289,34 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find((user) => user.email === email);
+    const normalizedEmail = email.trim().toLowerCase();
+    return Array.from(this.users.values()).find(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail
+    );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
+    const normalizedEmail = insertUser.email.trim().toLowerCase();
     const user: User = {
       ...insertUser,
       id,
+      email: normalizedEmail,
+      credits: insertUser.credits ?? DEFAULT_USER_CREDITS,
       createdAt: new Date(),
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async adjustUserCredits(id: string, delta: number): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    const current = user.credits ?? 0;
+    const next = Math.max(0, current + delta);
+    const updated = { ...user, credits: next };
+    this.users.set(id, updated);
+    return updated;
   }
 
   async getAudit(id: string): Promise<Audit | undefined> {
@@ -487,6 +546,78 @@ export class MemStorage implements IStorage {
     });
   }
 
+  async createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord> {
+    const id = randomUUID();
+    const record: BloodReportRecord = {
+      id,
+      email: input.email,
+      profile: input.profile,
+      markers: input.markers,
+      analysis: input.analysis,
+      aiReport: input.aiReport,
+      createdAt: new Date(),
+    };
+    this.bloodReports.set(id, record);
+    return record;
+  }
+
+  async getBloodReport(id: string): Promise<BloodReportRecord | undefined> {
+    return this.bloodReports.get(id);
+  }
+
+  async getAllBloodReports(): Promise<BloodReportRecord[]> {
+    return Array.from(this.bloodReports.values()).sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+  }
+
+  async createBloodTest(
+    input: Omit<BloodTestRecord, "id" | "createdAt"> & { createdAt?: Date }
+  ): Promise<BloodTestRecord> {
+    const id = randomUUID();
+    const record: BloodTestRecord = {
+      id,
+      userId: input.userId,
+      fileName: input.fileName,
+      fileType: input.fileType,
+      fileSize: input.fileSize,
+      status: input.status,
+      error: input.error ?? null,
+      markers: input.markers || [],
+      analysis: input.analysis || {},
+      patientProfile: input.patientProfile || {},
+      globalScore: input.globalScore ?? null,
+      globalLevel: input.globalLevel ?? null,
+      createdAt: input.createdAt || new Date(),
+      completedAt: input.completedAt ?? null,
+    };
+    this.bloodTests.set(id, record);
+    return record;
+  }
+
+  async updateBloodTest(id: string, data: Partial<BloodTestRecord>): Promise<BloodTestRecord | undefined> {
+    const existing = this.bloodTests.get(id);
+    if (!existing) return undefined;
+    const updated: BloodTestRecord = {
+      ...existing,
+      ...data,
+    };
+    this.bloodTests.set(id, updated);
+    return updated;
+  }
+
+  async getBloodTest(id: string): Promise<BloodTestRecord | undefined> {
+    return this.bloodTests.get(id);
+  }
+
+  async getBloodTestsByUserId(userId: string): Promise<BloodTestRecord[]> {
+    return Array.from(this.bloodTests.values())
+      .filter((test) => test.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   private calculateScores(responses: Record<string, unknown>): Record<string, number> {
     return calculateScoresFromResponses(responses);
   }
@@ -494,7 +625,8 @@ export class MemStorage implements IStorage {
   async createMagicToken(email: string): Promise<string> {
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    this.magicTokens.set(token, { token, email, expiresAt });
+    const normalizedEmail = email.trim().toLowerCase();
+    this.magicTokens.set(token, { token, email: normalizedEmail, expiresAt });
     return token;
   }
 
@@ -627,7 +759,11 @@ export class MemStorage implements IStorage {
 
 export class PgStorage implements IStorage {
   private auditColumnsCache: Set<string> | null = null;
+  private magicTokensColumnsCache: Map<string, string> | null = null;
   private ensuredArtifactsTable = false;
+  private ensuredUserCreditsColumn = false;
+  private ensuredBloodTestsTable = false;
+  private ensuredMagicTokensTable = false;
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
     if (this.auditColumnsCache) return this.auditColumnsCache;
@@ -661,28 +797,151 @@ export class PgStorage implements IStorage {
       this.ensuredArtifactsTable = true;
     }
   }
+
+  private async ensureUserCreditsColumn(): Promise<void> {
+    if (this.ensuredUserCreditsColumn) return;
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER NOT NULL DEFAULT 0`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT NOW()`);
+    } catch (err) {
+      console.error("[Storage] Error ensuring user credits column:", err);
+    } finally {
+      this.ensuredUserCreditsColumn = true;
+    }
+  }
+
+  private async ensureBloodTestsTable(): Promise<void> {
+    if (this.ensuredBloodTestsTable) return;
+    try {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS blood_tests (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(36) NOT NULL REFERENCES users(id),
+          file_name TEXT NOT NULL,
+          file_type TEXT NOT NULL,
+          file_size INTEGER NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'processing',
+          error TEXT,
+          markers JSONB DEFAULT '[]'::jsonb,
+          analysis JSONB DEFAULT '{}'::jsonb,
+          patient_profile JSONB DEFAULT '{}'::jsonb,
+          global_score INTEGER,
+          global_level TEXT,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          completed_at TIMESTAMP
+        )`
+      );
+      await pool.query(
+        `ALTER TABLE blood_tests ADD COLUMN IF NOT EXISTS patient_profile JSONB DEFAULT '{}'::jsonb`
+      );
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_tests_user ON blood_tests(user_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_tests_created_at ON blood_tests(created_at)`);
+      this.ensuredBloodTestsTable = true;
+    } catch (err) {
+      console.error("[Storage] Error ensuring blood_tests table:", err);
+      this.ensuredBloodTestsTable = true;
+    }
+  }
+
+  private async ensureMagicTokensTable(): Promise<void> {
+    if (this.ensuredMagicTokensTable) return;
+    try {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS magic_tokens (
+          token VARCHAR(255) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          expires_at TIMESTAMP NOT NULL
+        )`
+      );
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS id VARCHAR(36) DEFAULT gen_random_uuid()::text`);
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS token VARCHAR(255)`);
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+      await pool.query(`ALTER TABLE magic_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP`);
+      this.magicTokensColumnsCache = null;
+      this.ensuredMagicTokensTable = true;
+    } catch (err) {
+      console.error("[Storage] Error ensuring magic_tokens table:", err);
+      this.ensuredMagicTokensTable = true;
+    }
+  }
+
+  private async getMagicTokensColumns(): Promise<Map<string, string>> {
+    if (this.magicTokensColumnsCache) return this.magicTokensColumnsCache;
+    const result = await pool.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name = 'magic_tokens'"
+    );
+    const map = new Map<string, string>();
+    for (const row of result.rows || []) {
+      const name = String(row.column_name);
+      map.set(name.toLowerCase(), name);
+    }
+    this.magicTokensColumnsCache = map;
+    return map;
+  }
   async getUser(id: string): Promise<User | undefined> {
     const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
-    return { id: row.id, email: row.email, name: row.name, createdAt: row.createdAt || row.created_at };
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      credits: row.credits ?? DEFAULT_USER_CREDITS,
+      createdAt: row.createdAt || row.created_at,
+    };
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const normalizedEmail = email.trim().toLowerCase();
+    const result = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1", [normalizedEmail]);
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
-    return { id: row.id, email: row.email, name: row.name, createdAt: row.createdAt || row.created_at };
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      credits: row.credits ?? DEFAULT_USER_CREDITS,
+      createdAt: row.createdAt || row.created_at,
+    };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    await this.ensureUserCreditsColumn();
     const id = randomUUID();
+    const normalizedEmail = insertUser.email.trim().toLowerCase();
     const result = await pool.query(
-      `INSERT INTO users (id, email, name, "createdAt", "updatedAt") VALUES ($1, $2, $3, NOW(), NOW()) RETURNING *`,
-      [id, insertUser.email, insertUser.name || null]
+      `INSERT INTO users (id, email, name, credits, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *`,
+      [id, normalizedEmail, insertUser.name || null, insertUser.credits ?? DEFAULT_USER_CREDITS]
     );
     const row = result.rows[0];
-    return { id: row.id, email: row.email, name: row.name, createdAt: row.createdAt || row.created_at };
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      credits: row.credits ?? DEFAULT_USER_CREDITS,
+      createdAt: row.createdAt || row.created_at,
+    };
+  }
+
+  async adjustUserCredits(id: string, delta: number): Promise<User | undefined> {
+    await this.ensureUserCreditsColumn();
+    const result = await pool.query(
+      `UPDATE users
+       SET credits = GREATEST(credits + $2, 0),
+           "updatedAt" = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, delta]
+    );
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      credits: row.credits ?? DEFAULT_USER_CREDITS,
+      createdAt: row.createdAt || row.created_at,
+    };
   }
 
   async getAudit(id: string): Promise<Audit | undefined> {
@@ -1167,17 +1426,268 @@ export class PgStorage implements IStorage {
     }));
   }
 
-  async createMagicToken(email: string): Promise<string> {
-    const token = randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-    await pool.query(
-      "INSERT INTO magic_tokens (token, email, expires_at) VALUES ($1, $2, $3)",
-      [token, email, expiresAt]
+  async createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord> {
+    await this.ensureBloodReportsTable();
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO blood_reports (id, email, profile, markers, analysis, ai_report)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        id,
+        input.email,
+        JSON.stringify(input.profile || {}),
+        JSON.stringify(input.markers || []),
+        JSON.stringify(input.analysis || {}),
+        input.aiReport || "",
+      ]
     );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    };
+  }
+
+  async getBloodReport(id: string): Promise<BloodReportRecord | undefined> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query("SELECT * FROM blood_reports WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    };
+  }
+
+  async getAllBloodReports(): Promise<BloodReportRecord[]> {
+    await this.ensureBloodReportsTable();
+    const result = await pool.query("SELECT * FROM blood_reports ORDER BY created_at DESC LIMIT 100");
+    return result.rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    }));
+  }
+
+  async createBloodTest(
+    input: Omit<BloodTestRecord, "id" | "createdAt"> & { createdAt?: Date }
+  ): Promise<BloodTestRecord> {
+    await this.ensureBloodTestsTable();
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO blood_tests
+        (id, user_id, file_name, file_type, file_size, status, error, markers, analysis, patient_profile, global_score, global_level, created_at, completed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING *`,
+      [
+        id,
+        input.userId,
+        input.fileName,
+        input.fileType,
+        input.fileSize,
+        input.status,
+        input.error ?? null,
+        JSON.stringify(input.markers || []),
+        JSON.stringify(input.analysis || {}),
+        JSON.stringify(input.patientProfile || {}),
+        input.globalScore ?? null,
+        input.globalLevel ?? null,
+        input.createdAt || new Date(),
+        input.completedAt || null,
+      ]
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      userId: row.user_id,
+      fileName: row.file_name,
+      fileType: row.file_type,
+      fileSize: row.file_size,
+      status: row.status,
+      error: row.error,
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
+      globalScore: row.global_score ?? null,
+      globalLevel: row.global_level ?? null,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    };
+  }
+
+  async updateBloodTest(id: string, data: Partial<BloodTestRecord>): Promise<BloodTestRecord | undefined> {
+    await this.ensureBloodTestsTable();
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let index = 1;
+
+    const push = (field: string, value: unknown) => {
+      updates.push(`${field} = $${index++}`);
+      values.push(value);
+    };
+
+    if (data.status !== undefined) push("status", data.status);
+    if (data.error !== undefined) push("error", data.error ?? null);
+    if (data.markers !== undefined) push("markers", JSON.stringify(data.markers));
+    if (data.analysis !== undefined) push("analysis", JSON.stringify(data.analysis));
+    if (data.patientProfile !== undefined) push("patient_profile", JSON.stringify(data.patientProfile));
+    if (data.globalScore !== undefined) push("global_score", data.globalScore ?? null);
+    if (data.globalLevel !== undefined) push("global_level", data.globalLevel ?? null);
+    if (data.completedAt !== undefined) push("completed_at", data.completedAt ?? null);
+
+    if (updates.length === 0) return this.getBloodTest(id);
+
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE blood_tests SET ${updates.join(", ")} WHERE id = $${index} RETURNING *`,
+      values
+    );
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      userId: row.user_id,
+      fileName: row.file_name,
+      fileType: row.file_type,
+      fileSize: row.file_size,
+      status: row.status,
+      error: row.error,
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
+      globalScore: row.global_score ?? null,
+      globalLevel: row.global_level ?? null,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    };
+  }
+
+  async getBloodTest(id: string): Promise<BloodTestRecord | undefined> {
+    await this.ensureBloodTestsTable();
+    const result = await pool.query("SELECT * FROM blood_tests WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      userId: row.user_id,
+      fileName: row.file_name,
+      fileType: row.file_type,
+      fileSize: row.file_size,
+      status: row.status,
+      error: row.error,
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
+      globalScore: row.global_score ?? null,
+      globalLevel: row.global_level ?? null,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    };
+  }
+
+  async getBloodTestsByUserId(userId: string): Promise<BloodTestRecord[]> {
+    await this.ensureBloodTestsTable();
+    const result = await pool.query(
+      "SELECT * FROM blood_tests WHERE user_id = $1 ORDER BY created_at DESC",
+      [userId]
+    );
+    return result.rows.map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      fileName: row.file_name,
+      fileType: row.file_type,
+      fileSize: row.file_size,
+      status: row.status,
+      error: row.error,
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      patientProfile: row.patient_profile || {},
+      globalScore: row.global_score ?? null,
+      globalLevel: row.global_level ?? null,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    }));
+  }
+
+  async createMagicToken(email: string): Promise<string> {
+    await this.ensureMagicTokensTable();
+    const token = randomUUID();
+    const id = randomUUID();
+    const normalizedEmail = email.trim().toLowerCase();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const columns = await this.getMagicTokensColumns();
+    const values: Array<string | Date> = [];
+    const fields: string[] = [];
+
+    const pushField = (key: string, value: string | Date) => {
+      const columnName = columns.get(key);
+      if (!columnName) return;
+      fields.push(`"${columnName}"`);
+      values.push(value);
+    };
+
+    let userId: string | null = null;
+    const userIdColumn = columns.get("userid");
+    const userIdSnake = columns.get("user_id");
+    if (userIdColumn || userIdSnake) {
+      let user = await this.getUserByEmail(normalizedEmail);
+      if (!user) {
+        user = await this.createUser({ email: normalizedEmail });
+      }
+      userId = user.id;
+    }
+
+    pushField("id", id);
+    if (userId) {
+      if (userIdColumn) {
+        fields.push(`"${userIdColumn}"`);
+        values.push(userId);
+      }
+      if (userIdSnake && userIdSnake !== userIdColumn) {
+        fields.push(`"${userIdSnake}"`);
+        values.push(userId);
+      }
+    }
+    pushField("token", token);
+    pushField("email", normalizedEmail);
+
+    const expiresColumn = columns.get("expiresat");
+    const expiresSnake = columns.get("expires_at");
+    if (expiresColumn) {
+      fields.push(`"${expiresColumn}"`);
+      values.push(expiresAt);
+    }
+    if (expiresSnake && expiresSnake !== expiresColumn) {
+      fields.push(`"${expiresSnake}"`);
+      values.push(expiresAt);
+    }
+
+    if (fields.length === 0) {
+      throw new Error("magic_tokens schema missing required columns");
+    }
+
+    const placeholders = values.map((_, idx) => `$${idx + 1}`).join(", ");
+    const sql = `INSERT INTO magic_tokens (${fields.join(", ")}) VALUES (${placeholders})`;
+    await pool.query(sql, values);
     return token;
   }
 
   async verifyMagicToken(token: string): Promise<string | null> {
+    await this.ensureMagicTokensTable();
     const result = await pool.query("SELECT * FROM magic_tokens WHERE token = $1", [token]);
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
@@ -1473,6 +1983,7 @@ export class PgStorage implements IStorage {
   private ensuredBurnoutReportsTable = false;
   private ensuredPeptidesProgressTable = false;
   private ensuredPeptidesReportsTable = false;
+  private ensuredBloodReportsTable = false;
 
   private async ensureTerraDataTable(): Promise<void> {
     if (this.ensuredTerraTable) return;
@@ -1585,6 +2096,28 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error creating peptides_reports table:", err);
       this.ensuredPeptidesReportsTable = true;
+    }
+  }
+
+  private async ensureBloodReportsTable(): Promise<void> {
+    if (this.ensuredBloodReportsTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS blood_reports (
+          id VARCHAR(36) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          profile JSONB DEFAULT '{}'::jsonb,
+          markers JSONB DEFAULT '[]'::jsonb,
+          analysis JSONB DEFAULT '{}'::jsonb,
+          ai_report TEXT,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_email ON blood_reports(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_blood_reports_created_at ON blood_reports(created_at)`);
+      this.ensuredBloodReportsTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating blood_reports table:", err);
     }
   }
 

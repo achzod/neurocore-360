@@ -38,6 +38,8 @@ import {
 } from "./terraService";
 import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
+import { registerBloodTestsRoutes } from "./blood-tests/routes";
+import { getAuthPayload, signAuthToken } from "./auth";
 import { registerPeptidesRoutes } from "./peptides-engine";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import {
@@ -1005,30 +1007,41 @@ export async function registerRoutes(
   app.post("/api/auth/magic-link", async (req, res) => {
     try {
       const { email } = req.body;
-      if (!email || !email.includes("@")) {
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+      if (!normalizedEmail || !normalizedEmail.includes("@")) {
         res.status(400).json({ error: "Email invalide" });
         return;
       }
 
-      let user = await storage.getUserByEmail(email);
+      let user = await storage.getUserByEmail(normalizedEmail);
       if (!user) {
-        user = await storage.createUser({ email });
+        user = await storage.createUser({ email: normalizedEmail });
       }
 
-      const token = await storage.createMagicToken(email);
-      
+      const token = await storage.createMagicToken(normalizedEmail);
+
       const baseUrl = getBaseUrl();
-      const emailSent = await sendMagicLinkEmail(email, token, baseUrl);
-      
-      if (emailSent) {
-        res.json({ success: true, message: "Lien magique envoyé" });
-      } else {
-        console.log(`[Auth] Magic link for ${email}: ${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`);
-        res.json({ success: true, message: "Lien magique envoyé" });
+      let emailSent = false;
+      try {
+        emailSent = await sendMagicLinkEmail(normalizedEmail, token, baseUrl);
+      } catch (err) {
+        console.error("[Auth] Magic link email error:", err);
       }
+
+      if (!emailSent) {
+        console.log(
+          `[Auth] Magic link for ${normalizedEmail}: ${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(normalizedEmail)}`
+        );
+      }
+      res.json({ success: true, message: "Lien magique envoyé" });
     } catch (error) {
       console.error("[Auth] Error:", error);
-      res.status(500).json({ error: "Erreur serveur" });
+      const adminKey = String(req.headers["x-admin-key"] || "");
+      const expectedKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "";
+      const detail = adminKey && expectedKey && adminKey === expectedKey
+        ? (error instanceof Error ? error.message : String(error))
+        : undefined;
+      res.status(500).json({ error: "Erreur serveur", ...(detail ? { detail } : {}) });
     }
   });
 
@@ -1040,14 +1053,52 @@ export async function registerRoutes(
         return;
       }
 
+      const normalizedEmail = String(email).trim().toLowerCase();
       const verifiedEmail = await storage.verifyMagicToken(token as string);
-      if (!verifiedEmail || verifiedEmail !== email) {
+      if (!verifiedEmail || verifiedEmail.trim().toLowerCase() !== normalizedEmail) {
         res.status(401).json({ error: "Lien invalide ou expiré" });
         return;
       }
 
-      res.json({ success: true, email: verifiedEmail });
+      res.json({ success: true, email: normalizedEmail });
     } catch (error) {
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/auth/verify-magic-link", async (req, res) => {
+    try {
+      const { token, email } = req.body as { token?: string; email?: string };
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+      if (!token || !normalizedEmail) {
+        res.status(400).json({ error: "Token ou email manquant" });
+        return;
+      }
+
+      const verifiedEmail = await storage.verifyMagicToken(token);
+      if (!verifiedEmail || verifiedEmail.trim().toLowerCase() !== normalizedEmail) {
+        res.status(401).json({ error: "Lien invalide ou expire" });
+        return;
+      }
+
+      let user = await storage.getUserByEmail(normalizedEmail);
+      if (!user) {
+        const defaultCredits = Number(process.env.DEFAULT_BLOOD_CREDITS ?? "5");
+        user = await storage.createUser({ email: normalizedEmail, credits: defaultCredits });
+      }
+
+      const jwtToken = signAuthToken({ userId: user.id, email: user.email });
+      res.json({
+        success: true,
+        token: jwtToken,
+        me: {
+          email: user.email,
+          credits: user.credits ?? 0,
+          isAdmin: false,
+        },
+      });
+    } catch (error) {
+      console.error("[Auth] Verify magic link error:", error);
       res.status(500).json({ error: "Erreur serveur" });
     }
   });
@@ -1055,8 +1106,42 @@ export async function registerRoutes(
   app.post("/api/auth/check-email", async (req, res) => {
     try {
       const { email } = req.body;
-      const user = await storage.getUserByEmail(email);
+      const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+      const user = normalizedEmail ? await storage.getUserByEmail(normalizedEmail) : undefined;
       res.json({ exists: !!user });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/me", async (req, res) => {
+    try {
+      const payload = getAuthPayload(req);
+      if (!payload) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const user = await storage.getUser(payload.userId);
+      if (!user) {
+        res.status(404).json({ error: "Utilisateur introuvable" });
+        return;
+      }
+
+      const adminEmails = (process.env.ADMIN_EMAILS || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+      const isAdmin = adminEmails.includes(user.email.toLowerCase());
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          credits: user.credits ?? 0,
+          isAdmin,
+        },
+      });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
     }
@@ -1771,6 +1856,14 @@ export async function registerRoutes(
         }
       }
 
+      const isBloodAnalysis = planType === "BLOOD_ANALYSIS";
+      const successUrl = isBloodAnalysis
+        ? `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`
+        : `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = isBloodAnalysis
+        ? `${baseUrl}/offers/blood-analysis?cancelled=true`
+        : `${baseUrl}/audit-complet/checkout?cancelled=true`;
+
       const sessionParams: any = {
         payment_method_types: ['card'],
         line_items: [
@@ -1780,8 +1873,8 @@ export async function registerRoutes(
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/audit-complet/checkout?cancelled=true`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         customer_email: email,
         metadata: {
           email,
@@ -1841,8 +1934,13 @@ export async function registerRoutes(
         return;
       }
 
-      if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE") {
+      if (planType !== "GRATUIT" && planType !== "PREMIUM" && planType !== "ELITE" && planType !== "BLOOD_ANALYSIS") {
         res.status(400).json({ error: "PLAN_INVALID" });
+        return;
+      }
+
+      if (planType === "BLOOD_ANALYSIS") {
+        res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
       }
 
@@ -1906,6 +2004,7 @@ export async function registerRoutes(
     try {
       const allAudits = await storage.getAllAudits();
       const peptidesReports = await storage.getAllPeptidesReports();
+      const bloodReports = await storage.getAllBloodReports();
       const mappedPeptides = peptidesReports.map((report) => ({
         id: report.id,
         email: report.email,
@@ -1917,7 +2016,18 @@ export async function registerRoutes(
         completedAt: report.createdAt,
       }));
 
-      const audits = [...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
+      const mappedBlood = bloodReports.map((report) => ({
+        id: report.id,
+        email: report.email,
+        type: "BLOOD_ANALYSIS",
+        status: "COMPLETED",
+        reportDeliveryStatus: "SENT",
+        reportSentAt: report.createdAt,
+        createdAt: report.createdAt,
+        completedAt: report.createdAt,
+      }));
+
+      const audits = [...mappedBlood, ...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
         return dateB - dateA;
@@ -3417,6 +3527,9 @@ export async function registerRoutes(
 
   // ==================== BLOOD ANALYSIS ROUTES ====================
   registerBloodAnalysisRoutes(app);
+
+  // ==================== BLOOD TESTS DASHBOARD ROUTES ====================
+  registerBloodTestsRoutes(app);
 
   // ==================== PEPTIDES ENGINE ROUTES ====================
   registerPeptidesRoutes(app);

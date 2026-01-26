@@ -23,12 +23,18 @@ export default function Verify() {
       return;
     }
 
-    fetch(`/api/auth/verify?token=${token}&email=${encodeURIComponent(emailParam)}`)
+    fetch("/api/auth/verify-magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, email: emailParam }),
+    })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.email) {
-          setEmail(data.email);
-          localStorage.setItem("neurocore_email", data.email);
+        if (data.success && data.me?.email && data.token) {
+          setEmail(data.me.email);
+          localStorage.setItem("neurocore_email", data.me.email);
+          localStorage.setItem("apexlabs_token", data.token);
+          setStatus("success");
           navigate("/dashboard");
         } else {
           setStatus("error");
@@ -62,7 +68,7 @@ export default function Verify() {
                   </motion.div>
                   <CardTitle className="text-2xl">Verification en cours...</CardTitle>
                   <p className="mt-2 text-muted-foreground">
-                    Patiente quelques secondes
+                    Nous confirmons ton acces
                   </p>
                 </>
               )}
@@ -77,9 +83,9 @@ export default function Verify() {
                   >
                     <CheckCircle2 className="h-10 w-10 text-primary" />
                   </motion.div>
-                  <CardTitle className="text-2xl">Connexion reussie</CardTitle>
+                  <CardTitle className="text-2xl">Acces confirme</CardTitle>
                   <p className="mt-2 text-muted-foreground">
-                    Bienvenue {email}! Redirection vers ton dashboard...
+                    Bienvenue {email}. Redirection vers ton espace...
                   </p>
                 </>
               )}

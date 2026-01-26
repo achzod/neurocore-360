@@ -16,6 +16,7 @@ const COLORS = {
   textMuted: '#a1a1aa',
   warning: '#f59e0b',
   purple: '#8b5cf6',
+  blood: '#ef4444',
 };
 
 type CoachingOfferTier = {
@@ -327,6 +328,8 @@ export async function sendReportReadyEmail(
         ? `/anabolic/${auditId}`
         : auditType === "ELITE"
         ? `/ultimate/${auditId}`
+        : auditType === "BLOOD_ANALYSIS"
+        ? `/blood-analysis/${auditId}`
         : auditType === "PEPTIDES"
         ? `/peptides/${auditId}`
         : `/ultimate/${auditId}`;
@@ -339,11 +342,15 @@ export async function sendReportReadyEmail(
         ? "Anabolic Bioscan"
         : auditType === "ELITE"
         ? "Ultimate Scan"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Blood Analysis"
         : auditType === "PEPTIDES"
         ? "Peptides Engine"
         : "Ultimate Scan";
     const planColor =
-      auditType === "PEPTIDES"
+      auditType === "BLOOD_ANALYSIS"
+        ? COLORS.blood
+        : auditType === "PEPTIDES"
         ? COLORS.warning
         : auditType === "ELITE"
         ? COLORS.purple
@@ -360,6 +367,8 @@ export async function sendReportReadyEmail(
         ? "16 Domaines d'Analyse"
         : auditType === "ELITE"
         ? "18 Domaines d'Analyse"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Lecture de biomarqueurs"
         : "Peptides • protocole sur mesure";
     const domainsCount =
       auditType === "GRATUIT"
@@ -368,6 +377,8 @@ export async function sendReportReadyEmail(
         ? "16 domaines de santé"
         : auditType === "ELITE"
         ? "18 domaines de santé"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "biomarqueurs clés"
         : "protocole peptides personalise";
 
     const content = `
@@ -413,8 +424,8 @@ export async function sendReportReadyEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Ton ${planLabel} ApexLabs est pret ! Consulte ton rapport ici : ${reportLink}`,
-          subject: `Ton ${planLabel} est Pret`,
+          text: `Ton ${planLabel} ApexLabs est pret. Consulte ton rapport ici : ${reportLink}`,
+          subject: `Ton ${planLabel} est pret`,
           from: {
             name: "ApexLabs by Achzod",
             email: SENDER_EMAIL,
@@ -446,21 +457,30 @@ export async function sendMagicLinkEmail(
     const magicLink = `${baseUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}`;
 
     const content = `
-      <h2 style="color: ${COLORS.text}; margin: 0 0 16px; font-size: 28px; text-align: center; font-weight: 700; letter-spacing: -1px;">
-        Connexion a ton espace
+      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 26px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+        Acces a ton espace ApexLabs
       </h2>
 
-      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 32px; text-align: center;">
-        Clique sur le bouton ci-dessous pour acceder a ton dashboard et consulter tes audits ApexLabs.
+      <p style="color: ${COLORS.textMuted}; font-size: 16px; line-height: 1.7; margin: 0 0 24px; text-align: center;">
+        Voici ton lien personnel pour acceder a tous tes dashboards (Discovery, Anabolic, Ultimate, Blood Analysis).
       </p>
 
-      ${getPrimaryButton('Acceder au dashboard', magicLink)}
+      ${getPrimaryButton("Acceder a mon espace", magicLink)}
 
-      <p style="color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.6; margin: 28px 0 0; text-align: center;">
-        Ce lien expire dans <strong style="color: ${COLORS.text};">1 heure</strong>. Si tu n'as pas demande cette connexion, ignore cet email.
+      <div style="margin: 24px 0 0; padding: 16px; background-color: ${COLORS.background}; border-radius: 10px; border: 1px solid ${COLORS.border};">
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0 0 6px; text-align: center;">
+          1. Clique sur le bouton
+        </p>
+        <p style="color: ${COLORS.textMuted}; font-size: 13px; margin: 0; text-align: center;">
+          2. Tu arrives directement sur ton espace client
+        </p>
+      </div>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.6; margin: 20px 0 0; text-align: center;">
+        Ce lien expire dans <strong style="color: ${COLORS.text};">60 minutes</strong>. Si tu n'as pas demande cet acces, ignore cet email.
       </p>
 
-      <div style="margin-top: 24px; padding: 20px; background-color: ${COLORS.background}; border-radius: 8px; border: 1px solid ${COLORS.border};">
+      <div style="margin-top: 18px; padding: 16px; background-color: ${COLORS.surface}; border-radius: 8px; border: 1px solid ${COLORS.border};">
         <p style="color: ${COLORS.textMuted}; font-size: 12px; margin: 0 0 8px; text-align: center;">
           Si le bouton ne fonctionne pas, copie ce lien :
         </p>
@@ -480,14 +500,14 @@ export async function sendMagicLinkEmail(
       },
       body: JSON.stringify({
         email: {
-          subject: "Ton lien de connexion ApexLabs",
+          subject: "Acces a ton espace ApexLabs",
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,
           },
           to: [{ email }],
           html: encodeBase64(emailContent),
-          text: `Connexion ApexLabs - Clique sur ce lien pour acceder a ton dashboard : ${magicLink}`,
+          text: `Acces ApexLabs - Clique sur ce lien pour acceder a ton espace client : ${magicLink}`,
         },
       }),
     });
@@ -517,6 +537,8 @@ export async function sendAdminEmailNewAudit(
         ? "Anabolic Bioscan"
         : auditType === "ELITE"
         ? "Ultimate Scan"
+        : auditType === "BLOOD_ANALYSIS"
+        ? "Blood Analysis"
         : auditType === "PEPTIDES"
         ? "Peptides Engine"
         : "Ultimate Scan";
@@ -882,9 +904,7 @@ export async function sendPromoCodeEmail(
       </p>
     `;
 
-    const htmlContent = getEmailWrapper(content, config.gradient)
-      .replace("Audit Metabolique", config.title)
-      .replace("15 Domaines d'Analyse", config.subtitle);
+    const htmlContent = getEmailWrapper(content, config.gradient, config.title, config.subtitle);
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -967,7 +987,7 @@ export async function sendAdminReviewNotification(
         email: {
           html: encodeBase64(emailContent),
           text: `Nouvel avis ${rating}/5 pour ${auditType}: "${comment.substring(0, 100)}..." - A valider dans le dashboard admin.`,
-          subject: `[ApexLabs] Nouvel avis ${stars} a valider`,
+          subject: `[ApexLabs] Nouvel avis ${ratingLabel} a valider`,
           from: {
             name: SENDER_NAME,
             email: SENDER_EMAIL,

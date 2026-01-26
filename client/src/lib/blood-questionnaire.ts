@@ -149,7 +149,7 @@ export function getMarkerById(markerId: string): BloodMarkerQuestion | undefined
 export const BLOOD_ANALYSIS_PRICING = {
   id: "blood-analysis",
   name: "Blood Analysis",
-  price: 79,
+  price: 99,
   currency: "EUR",
   description: "Analyse approfondie de ton bilan sanguin avec ranges OPTIMAUX",
   features: [
