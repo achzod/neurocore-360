@@ -1,18 +1,32 @@
 import { useMemo } from "react";
-import { useParams, useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientHeader } from "@/components/client/ClientHeader";
+import ReactMarkdown from "react-markdown";
+import { motion } from "framer-motion";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  FileText,
+  Loader2,
+  ShieldAlert,
+  Activity,
+  Flame,
+  HeartPulse,
+  Dna,
+  Target,
+} from "lucide-react";
+
+import BloodHeader from "@/components/blood/BloodHeader";
+import BloodShell from "@/components/blood/BloodShell";
+import { BLOOD_THEME } from "@/components/blood/bloodTheme";
 import { BloodRadar } from "@/components/blood/BloodRadar";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
 import { StatusIndicator } from "@/components/blood/StatusIndicator";
-import { AlertTriangle, ArrowUpRight, FileText, LineChart, RefreshCcw, Shield, Upload } from "lucide-react";
-import { LineChart as RechartLineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import ReactMarkdown from "react-markdown";
-import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -47,20 +61,18 @@ type BloodTestDetail = {
     interpretation?: string;
   }>;
   analysis: {
-    globalScore: number;
+    globalScore?: number;
+    globalLevel?: string | null;
     categoryScores?: Record<string, number>;
     systemScores?: Record<string, number>;
     temporalRisk?: { score: number; level: string; critical: number; warning: number };
-    summary?: { optimal: string[]; watch: string[]; action: string[] };
-    patterns?: Array<{ name: string; causes: string[]; protocol: string[] }>;
+    patterns?: Array<{ name: string; causes?: string[]; protocol?: string[] }>;
     recommendations?: {
-      priority1: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
-      priority2: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
+      priority1?: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
+      priority2?: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
     };
-    followUp?: Array<{ test: string; delay: string; objective: string }>;
-    alerts?: string[];
-    aiAnalysis?: string;
     protocolPhases?: Array<{ id: string; title: string; items: string[] }>;
+    aiAnalysis?: string;
     patient?: {
       prenom?: string;
       nom?: string;
@@ -71,959 +83,925 @@ type BloodTestDetail = {
   };
 };
 
-type BloodTestSummary = {
-  id: string;
-  fileName: string;
-  uploadedAt: string;
-  status: string;
-  globalScore: number | null;
-  globalLevel: string | null;
+type MeResponse = {
+  user: { id: string; email: string; credits: number };
 };
 
-type BloodTestsResponse = { bloodTests: BloodTestSummary[] };
+type PanelKey = "hormonal" | "thyroid" | "metabolic" | "inflammatory" | "vitamins" | "liver_kidney";
 
-type SystemKey =
-  | "cardio"
-  | "hormonal"
-  | "metabolic"
-  | "inflammatory"
-  | "hepatic"
-  | "renal"
-  | "hemato"
-  | "thyroid";
-
-const SYSTEM_META: Record<SystemKey, { label: string; description: string }> = {
-  cardio: {
-    label: "Cardio",
-    description: "Profil lipidique, ApoB, risque cardiovasculaire.",
-  },
+const PANEL_META: Record<
+  PanelKey,
+  { label: string; bullets: string[]; impact: string; icon: typeof Activity }
+> = {
   hormonal: {
-    label: "Hormonal",
-    description: "Testosterone, cortisol, axes gonadiques.",
-  },
-  metabolic: {
-    label: "Metabolique",
-    description: "Glycemie, insuline, rendement energetique.",
-  },
-  inflammatory: {
-    label: "Inflammatoire",
-    description: "Inflammation systemique et stress oxydatif.",
-  },
-  hepatic: {
-    label: "Hepatique",
-    description: "Foie, detox, enzymes hepatiques.",
-  },
-  renal: {
-    label: "Renal",
-    description: "Filtration renale, creatinine, eGFR.",
-  },
-  hemato: {
-    label: "Hemato",
-    description: "Fer, ferritine, vitamines sanguines.",
+    label: "Hormones",
+    bullets: ["Testosterone, SHBG, estradiol", "LH/FSH, prolactine", "Cortisol, IGF-1, DHEA-S"],
+    impact: "Impact direct sur prise de muscle, libido, recuperation.",
+    icon: Flame,
   },
   thyroid: {
     label: "Thyroide",
-    description: "TSH, T3/T4, regulation endocrine.",
+    bullets: ["TSH, T3, T4", "Anti-TPO, T3 reverse", "Conversion et regulation"],
+    impact: "Levier majeur sur metabolismes et perte de gras.",
+    icon: Activity,
+  },
+  metabolic: {
+    label: "Metabolisme",
+    bullets: ["Glycemie, HbA1c, HOMA-IR", "Lipides (TG/HDL/LDL)", "ApoB, Lp(a)"],
+    impact: "Determine ton aptitude a bruler la graisse.",
+    icon: HeartPulse,
+  },
+  inflammatory: {
+    label: "Inflammation",
+    bullets: ["CRP-us, homocysteine", "Ferritine, fer serique", "Saturation transferrine"],
+    impact: "Inflammation haute = recuperation ralentie.",
+    icon: ShieldAlert,
+  },
+  vitamins: {
+    label: "Vitamines",
+    bullets: ["Vitamine D, B12, folate", "Magnesium RBC", "Zinc"],
+    impact: "Micronutriments = performance et energie.",
+    icon: Dna,
+  },
+  liver_kidney: {
+    label: "Foie/Rein",
+    bullets: ["ALT/AST/GGT", "Creatinine/eGFR", "Lecture hepatique + renale"],
+    impact: "Detox, metabolisme des hormones.",
+    icon: Target,
   },
 };
 
-const SYSTEM_ORDER: SystemKey[] = [
-  "cardio",
-  "hormonal",
-  "metabolic",
-  "inflammatory",
-  "hepatic",
-  "renal",
-  "hemato",
-  "thyroid",
-];
+class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
-const SYSTEM_BY_MARKER: Record<string, SystemKey> = {
-  hdl: "cardio",
-  ldl: "cardio",
-  triglycerides: "cardio",
-  apob: "cardio",
-  lpa: "cardio",
-  homocysteine: "cardio",
-  crp_us: "inflammatory",
-  ferritine: "hemato",
-  fer_serique: "hemato",
-  transferrine_sat: "hemato",
-  vitamine_d: "hemato",
-  b12: "hemato",
-  folate: "hemato",
-  magnesium_rbc: "hemato",
-  zinc: "hemato",
-  testosterone_total: "hormonal",
-  testosterone_libre: "hormonal",
-  shbg: "hormonal",
-  estradiol: "hormonal",
-  lh: "hormonal",
-  fsh: "hormonal",
-  prolactine: "hormonal",
-  dhea_s: "hormonal",
-  cortisol: "hormonal",
-  igf1: "hormonal",
-  glycemie_jeun: "metabolic",
-  hba1c: "metabolic",
-  insuline_jeun: "metabolic",
-  homa_ir: "metabolic",
-  tsh: "thyroid",
-  t4_libre: "thyroid",
-  t3_libre: "thyroid",
-  t3_reverse: "thyroid",
-  anti_tpo: "thyroid",
-  alt: "hepatic",
-  ast: "hepatic",
-  ggt: "hepatic",
-  creatinine: "renal",
-  egfr: "renal",
+const fetcher = async <T,>(url: string, adminKey?: string): Promise<T> => {
+  const token = localStorage.getItem("apexlabs_token");
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (adminKey) headers["x-admin-key"] = adminKey;
+  const res = await fetch(url, { headers: Object.keys(headers).length ? headers : undefined });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new ApiError(res.status, `${res.status} ${text}`);
+  }
+  return res.json();
 };
 
-const statusScore: Record<MarkerStatus, number> = {
-  optimal: 100,
-  normal: 80,
-  suboptimal: 55,
-  critical: 30,
+const scoreToStatus = (score: number): MarkerStatus => {
+  if (score >= 85) return "optimal";
+  if (score >= 70) return "normal";
+  if (score >= 55) return "suboptimal";
+  return "critical";
 };
-const statusRank: Record<MarkerStatus, number> = {
+
+const scoreLabel = (score: number): string => {
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Bon";
+  if (score >= 55) return "A optimiser";
+  return "Prioritaire";
+};
+
+const average = (values: Array<number | null>) => {
+  const filtered = values.filter((v): v is number => typeof v === "number");
+  if (!filtered.length) return null;
+  return Math.round(filtered.reduce((sum, v) => sum + v, 0) / filtered.length);
+};
+
+const markerStatusRank: Record<MarkerStatus, number> = {
   critical: 0,
   suboptimal: 1,
   normal: 2,
   optimal: 3,
 };
 
-const compactLabel = (label: string) => {
-  const cleaned = label.replace(/\s*\(.*?\)\s*/g, "").trim();
-  if (cleaned.length <= 14) return cleaned;
-  return `${cleaned.slice(0, 12)}…`;
+const getMarkerValue = (markers: BloodTestDetail["markers"], code: string) => {
+  const found = markers.find((m) => m.code === code);
+  return found ? found.value : null;
 };
 
-const buildSystemNarrative = (label: string, items: BloodTestDetail["markers"], score: number) => {
-  if (!items.length) {
-    return `Pas assez de donnees pour lire ton systeme ${label.toLowerCase()}.`;
-  }
-  const ordered = [...items].sort((a, b) => statusRank[a.status] - statusRank[b.status]);
-  const worst = ordered[0];
-  const best = ordered.find((item) => item.status === "optimal");
-  const criticalCount = items.filter((item) => item.status === "critical").length;
-  const suboptimalCount = items.filter((item) => item.status === "suboptimal").length;
-  const tone =
-    score >= 80
-      ? "solide"
-      : score >= 70
-      ? "stable"
-      : score >= 60
-      ? "fragile"
-      : "prioritaire";
+const diabetesRisk = (markers: BloodTestDetail["markers"]) => {
+  const gly = getMarkerValue(markers, "glycemie_jeun");
+  const a1c = getMarkerValue(markers, "hba1c");
+  const insulin = getMarkerValue(markers, "insuline_jeun");
+  const homa = getMarkerValue(markers, "homa_ir");
 
-  const headline = `Ton systeme ${label.toLowerCase()} est ${tone} (${score}/100).`;
-  const alerts =
-    criticalCount > 0
-      ? `Tu as ${criticalCount} signal${criticalCount > 1 ? "s" : ""} critique${
-          criticalCount > 1 ? "s" : ""
-        } a corriger.`
-      : suboptimalCount > 0
-      ? `${suboptimalCount} levier${suboptimalCount > 1 ? "s" : ""} d'optimisation clair${
-          suboptimalCount > 1 ? "s" : ""
-        }.`
-      : "Rien d'urgent, l'objectif est de consolider.";
-  const highlight = worst
-    ? `Point cle: ${worst.name} a ${worst.value} ${worst.unit}.`
-    : "Point cle: donnees insuffisantes.";
-  const positive = best ? `Bon signal: ${best.name} est dans ta zone optimale.` : "";
+  if (gly === null && a1c === null && insulin === null && homa === null) return null;
 
-  return [headline, alerts, highlight, positive].filter(Boolean).join(" ");
+  let score = 20;
+  if (a1c !== null && a1c >= 6.5) score = Math.max(score, 90);
+  if (gly !== null && gly >= 126) score = Math.max(score, 90);
+  if (a1c !== null && a1c >= 5.7) score = Math.max(score, 60);
+  if (gly !== null && gly >= 100) score = Math.max(score, 60);
+  if (homa !== null && homa >= 3.5) score = Math.max(score, 80);
+  if (homa !== null && homa >= 2.5) score = Math.max(score, 65);
+  if (insulin !== null && insulin >= 25) score = Math.max(score, 75);
+  if (insulin !== null && insulin >= 15) score = Math.max(score, 60);
+
+  const level = score >= 75 ? "eleve" : score >= 55 ? "modere" : "faible";
+  return { score, level, gly, a1c, insulin, homa };
 };
 
-const getAdminKey = () => {
-  if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get("key");
+const getMarkerNarrative = (marker: BloodTestDetail["markers"][number], panel: PanelKey) => {
+  const statusTone =
+    marker.status === "critical"
+      ? "critique"
+      : marker.status === "suboptimal"
+      ? "sous-optimal"
+      : marker.status === "normal"
+      ? "normal"
+      : "optimal";
+
+  const definition = `Ta valeur (${marker.value} ${marker.unit}) est ${statusTone}. ${marker.interpretation ? marker.interpretation : `Je l'analyse dans le contexte ${PANEL_META[panel].label.toLowerCase()}.`}`;
+  const mechanism = `Quand ${marker.name} est ${statusTone}, l'impact est direct sur ${PANEL_META[panel].impact.toLowerCase()}`;
+  const optimization =
+    panel === "hormonal"
+      ? "Je commence par optimiser sommeil, entrainement et lipides essentiels pour remonter l'anabolisme."
+      : panel === "metabolic"
+      ? "Je stabilise la glycemie, j'ameliore la sensibilite a l'insuline et je structure le timing glucidique."
+      : panel === "thyroid"
+      ? "Je securise la conversion T4 → T3 et je reduis les freins inflammatoires."
+      : panel === "vitamins"
+      ? "Je corrige les deficits micronutriments pour restaurer energie et recuperation."
+      : "Je corrige les fondamentaux (sommeil, inflammation, nutriments) avant d'aller plus loin.";
+
+  return { definition, mechanism, optimization };
 };
 
-const fetcher = async <T,>(url: string): Promise<T> => {
-  const token = localStorage.getItem("apexlabs_token");
-  const adminKey = getAdminKey();
-  const requestUrl = adminKey
-    ? `${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(adminKey)}`
-    : url;
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  if (adminKey) headers["x-admin-key"] = adminKey;
-  const res = await fetch(requestUrl, {
-    headers: Object.keys(headers).length ? headers : undefined,
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
-};
-
-const fetchDetail = async (id: string): Promise<BloodTestDetail> => {
-  return fetcher(`/api/blood-tests/${id}`);
-};
-
-const fetchMe = async (): Promise<{ user: { credits: number } }> => {
-  return fetcher("/api/me");
-};
-
-const fetchTests = async (): Promise<BloodTestsResponse> => {
-  return fetcher("/api/blood-tests");
-};
-
-const getScoreLevel = (score: number) => {
-  if (score >= 90) return { label: "Exceptionnel", tone: "optimal" };
-  if (score >= 80) return { label: "Tres bien", tone: "optimal" };
-  if (score >= 70) return { label: "Correct", tone: "normal" };
-  if (score >= 60) return { label: "Attention", tone: "suboptimal" };
-  return { label: "Prioritaire", tone: "critical" };
-};
-
-const getScoreMessage = (score: number) => {
-  if (score >= 90) return "Exceptionnel - Tu es une machine";
-  if (score >= 80) return "Tres bien - Quelques optimisations possibles";
-  if (score >= 70) return "Correct - Des axes d'amelioration clairs";
-  if (score >= 60) return "Attention - Actions recommandees";
-  return "Prioritaire - Consulte un professionnel";
-};
-
-const getPercentile = (score: number) => {
-  if (score >= 90) return 10;
-  if (score >= 80) return 20;
-  if (score >= 70) return 35;
-  if (score >= 60) return 50;
-  return 70;
-};
-
-const containerVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { staggerChildren: 0.08, duration: 0.4, ease: "easeOut" },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
-};
+function ScoreDonut({ score }: { score: number }) {
+  const circumference = 2 * Math.PI * 56;
+  const dash = (score / 100) * circumference;
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className="h-36 w-36 -rotate-90">
+        <circle cx="72" cy="72" r="56" stroke="rgba(15, 23, 42, 0.12)" strokeWidth="10" fill="none" />
+        <circle
+          cx="72"
+          cy="72"
+          r="56"
+          stroke={BLOOD_THEME.primaryBlue}
+          strokeWidth="10"
+          fill="none"
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="text-4xl font-semibold tracking-tight text-slate-900">{score}</div>
+        <div className="text-xs tracking-[0.2em] uppercase text-slate-500">{scoreLabel(score)}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function BloodAnalysisReport() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
+  const reportId = params.id;
   const [, navigate] = useLocation();
-  const adminKey = getAdminKey();
+  const adminKey = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const value = new URLSearchParams(window.location.search).get("key");
+    return value ? value.trim() : "";
+  }, []);
 
   const { data: me } = useQuery({
     queryKey: ["/api/me"],
-    queryFn: fetchMe,
+    queryFn: () => fetcher<MeResponse>("/api/me", adminKey || undefined),
+    retry: false,
     enabled: !adminKey,
-    onError: () => {
-      if (!adminKey) {
-        navigate("/auth/login");
+    onError: () => navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`),
+  });
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["/api/blood-tests", reportId],
+    queryFn: () => fetcher<BloodTestDetail>(`/api/blood-tests/${reportId}`, adminKey || undefined),
+    retry: false,
+    refetchInterval: (query) => {
+      const current = query.state.data as BloodTestDetail | undefined;
+      const status = current?.bloodTest?.status;
+      return status === "processing" ? 5000 : false;
+    },
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 401 && !adminKey) {
+        navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
       }
     },
   });
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: [`/api/blood-tests/${id}`],
-    queryFn: () => fetchDetail(id || ""),
-    enabled: Boolean(id),
-    onError: () => navigate("/auth/login"),
-  });
+  const credits = adminKey ? 0 : me?.user?.credits ?? 0;
 
-  const { data: tests } = useQuery({
-    queryKey: ["/api/blood-tests"],
-    queryFn: fetchTests,
-    onError: () => undefined,
-  });
-
-  const markers = data?.markers || [];
-  const analysis = data?.analysis;
-  const fallbackScore = useMemo(() => {
-    if (!markers.length) return 0;
-    const values = markers.map((marker) => statusScore[marker.status]);
-    return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-  }, [markers]);
-  const rawGlobalScore = analysis?.globalScore ?? data?.bloodTest.globalScore ?? null;
-  const globalScore =
-    rawGlobalScore === null || (rawGlobalScore === 0 && markers.length > 0)
-      ? fallbackScore
-      : rawGlobalScore;
-  const patient = (data?.bloodTest?.patient || analysis?.patient || {}) as {
-    prenom?: string;
-    nom?: string;
-    email?: string;
-    gender?: string;
-    dob?: string;
-  };
-  const patientLabel = [patient.prenom, patient.nom].filter(Boolean).join(" ") || "Anonyme";
-
-  const groupedBySystem = useMemo(() => {
-    const groups: Record<SystemKey, typeof markers> = {
-      cardio: [],
+  const markersByPanel = useMemo(() => {
+    const groups: Record<PanelKey, BloodTestDetail["markers"]> = {
       hormonal: [],
+      thyroid: [],
       metabolic: [],
       inflammatory: [],
-      hepatic: [],
-      renal: [],
-      hemato: [],
-      thyroid: [],
+      vitamins: [],
+      liver_kidney: [],
     };
-    markers.forEach((marker) => {
-      const system = SYSTEM_BY_MARKER[marker.code] || "metabolic";
-      groups[system].push(marker);
+    for (const marker of data?.markers || []) {
+      const category = marker.category as PanelKey;
+      if (category in groups) groups[category].push(marker);
+    }
+    (Object.keys(groups) as PanelKey[]).forEach((key) => {
+      groups[key].sort((a, b) => {
+        if (markerStatusRank[a.status] !== markerStatusRank[b.status]) {
+          return markerStatusRank[a.status] - markerStatusRank[b.status];
+        }
+        return a.name.localeCompare(b.name);
+      });
     });
     return groups;
-  }, [markers]);
+  }, [data?.markers]);
 
-  const systemScores = useMemo(() => {
-    const scores: Partial<Record<SystemKey, number>> = {};
-    SYSTEM_ORDER.forEach((system) => {
-      const items = groupedBySystem[system];
-      if (!items.length) {
-        scores[system] = 0;
-        return;
-      }
-      const avg =
-        items.reduce((sum, item) => sum + statusScore[item.status], 0) /
-        items.length;
-      scores[system] = Math.round(avg);
-    });
-    if (analysis?.systemScores && Object.keys(analysis.systemScores).length > 0) {
-      return {
-        ...scores,
-        ...(analysis.systemScores as Record<SystemKey, number>),
-      } as Record<SystemKey, number>;
-    }
-    return scores as Record<SystemKey, number>;
-  }, [analysis?.systemScores, groupedBySystem]);
+  const panelScores = useMemo(() => {
+    const raw = data?.analysis?.categoryScores || {};
+    const scoreByStatus: Record<MarkerStatus, number> = { optimal: 100, normal: 80, suboptimal: 55, critical: 30 };
 
-  const systemRadarData = useMemo(() => {
-    const data: Partial<Record<SystemKey, { key: string; label: string; score: number; status: MarkerStatus }[]>> = {};
-    SYSTEM_ORDER.forEach((system) => {
-      const items = groupedBySystem[system];
-      if (!items.length) return;
-      const ordered = [...items].sort((a, b) => statusRank[a.status] - statusRank[b.status]);
-      const selected = ordered.slice(0, Math.min(6, ordered.length));
-      data[system] = selected.map((marker) => ({
-        key: marker.code,
-        label: compactLabel(marker.name),
-        score: statusScore[marker.status],
-        status: marker.status,
-      }));
-    });
-    return data as Record<SystemKey, { key: string; label: string; score: number; status: MarkerStatus }[]>;
-  }, [groupedBySystem]);
+    const fallbackAvg = (panelKey: PanelKey): number | null => {
+      const markers = markersByPanel[panelKey];
+      if (!markers.length) return null;
+      const avg = markers.reduce((sum, marker) => sum + scoreByStatus[marker.status], 0) / markers.length;
+      return Math.round(avg);
+    };
 
-  const systemNarratives = useMemo(() => {
-    const narratives: Partial<Record<SystemKey, string>> = {};
-    SYSTEM_ORDER.forEach((system) => {
-      const items = groupedBySystem[system];
-      if (!items.length) return;
-      narratives[system] = buildSystemNarrative(SYSTEM_META[system].label, items, systemScores[system] ?? 0);
-    });
-    return narratives as Record<SystemKey, string>;
-  }, [groupedBySystem, systemScores]);
+    return {
+      hormonal: raw.hormonal ?? fallbackAvg("hormonal"),
+      thyroid: raw.thyroid ?? fallbackAvg("thyroid"),
+      metabolic: raw.metabolic ?? fallbackAvg("metabolic"),
+      inflammatory: raw.inflammatory ?? fallbackAvg("inflammatory"),
+      vitamins: raw.vitamins ?? fallbackAvg("vitamins"),
+      liver_kidney: raw.liver_kidney ?? fallbackAvg("liver_kidney"),
+    } satisfies Record<PanelKey, number | null>;
+  }, [data?.analysis?.categoryScores, markersByPanel]);
 
   const radarData = useMemo(() => {
-    return SYSTEM_ORDER.map((system) => ({
-      key: system,
-      label: SYSTEM_META[system].label,
-      score: systemScores[system] ?? 0,
-      status:
-        (systemScores[system] ?? 0) >= 80
-          ? "optimal"
-          : (systemScores[system] ?? 0) >= 65
-          ? "normal"
-          : (systemScores[system] ?? 0) >= 45
-          ? "suboptimal"
-          : "critical",
-    }));
-  }, [systemScores]);
+    return (Object.keys(PANEL_META) as PanelKey[]).map((key) => {
+      const score = panelScores[key];
+      if (score === null) {
+        return { key, label: PANEL_META[key].label, score: 0, status: "normal" as MarkerStatus, muted: true };
+      }
+      return { key, label: PANEL_META[key].label, score, status: scoreToStatus(score) };
+    });
+  }, [panelScores]);
 
-  const critical = markers.filter((marker) => marker.status === "critical");
-  const warning = markers.filter((marker) => marker.status === "suboptimal");
-  const summary = analysis?.summary || {
-    optimal: markers.filter((marker) => marker.status === "optimal").map((marker) => marker.name),
-    watch: markers.filter((marker) => marker.status === "normal").map((marker) => marker.name),
-    action: markers
-      .filter((marker) => marker.status === "suboptimal" || marker.status === "critical")
-      .map((marker) => marker.name),
-  };
-  const riskScore = analysis?.temporalRisk?.score ?? Math.min(100, critical.length * 20 + warning.length * 10);
-  const riskLabel = analysis?.temporalRisk?.level || getScoreLevel(100 - riskScore).label;
+  const globalScore = data?.analysis?.globalScore ?? data?.bloodTest?.globalScore ?? 0;
+  const patient = data?.bloodTest?.patient || data?.analysis?.patient || null;
+  const displayName = patient?.prenom || (me?.user?.email ? me.user.email.split("@")[0] : "toi");
+  const patientAge = patient?.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
+  const genderLabel = patient?.gender === "femme" ? "Femme" : patient?.gender === "homme" ? "Homme" : "N/A";
 
-  const orderedTests = useMemo(() => {
-    if (!tests?.bloodTests?.length) return [];
-    return [...tests.bloodTests].sort((a, b) =>
-      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-    );
-  }, [tests?.bloodTests]);
+  const anabolicIndex = panelScores.hormonal;
+  const recompReadiness = average([panelScores.hormonal, panelScores.thyroid, panelScores.metabolic]);
+  const diabetes = data?.markers ? diabetesRisk(data.markers) : null;
 
-  const currentIndex = orderedTests.findIndex((test) => test.id === data?.bloodTest.id);
-  const previousTest = currentIndex >= 0 ? orderedTests[currentIndex + 1] : undefined;
-  const trendDelta =
-    previousTest && data?.bloodTest.globalScore !== null && previousTest.globalScore !== null
-      ? data.bloodTest.globalScore - previousTest.globalScore
-      : null;
+  const topMarkers = useMemo(() => {
+    return (data?.markers || [])
+      .filter((m) => m.status === "critical" || m.status === "suboptimal")
+      .slice(0, 3);
+  }, [data?.markers]);
 
-  const age = patient.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
-  const ageBio = age ? Math.max(18, Math.round(age - (globalScore - 70) / 5)) : null;
+  const narrative = useMemo(() => {
+    if (!data?.markers?.length) return "";
+    const criticalCount = data.markers.filter((m) => m.status === "critical").length;
+    const subCount = data.markers.filter((m) => m.status === "suboptimal").length;
+    const headline = `Tu as ${criticalCount} marqueur(s) critique(s) et ${subCount} sous-optimaux.`;
+    const hormonalNote =
+      typeof anabolicIndex === "number"
+        ? `Ton index hormonal est a ${anabolicIndex}/100, ce qui influence directement ta prise de muscle et ta perte de gras.`
+        : "Ton panel hormonal manque de donnees pour conclure.";
+    const metabolicNote =
+      typeof panelScores.metabolic === "number"
+        ? `Ton metabolisme est a ${panelScores.metabolic}/100. C'est un signal cle pour ta recomposition corporelle.`
+        : "Ton panel metabolique manque de donnees.";
+    return `${headline} ${hormonalNote} ${metabolicNote}`;
+  }, [data?.markers, anabolicIndex, panelScores.metabolic]);
 
-  const protocolPhases =
-    analysis?.protocolPhases && analysis.protocolPhases.length > 0
-      ? analysis.protocolPhases
-      : [
-          {
-            id: "phase-1",
-            title: "Jours 1-30",
-            items: analysis?.recommendations?.priority1?.map((rec) => rec.action) || [],
-          },
-          {
-            id: "phase-2",
-            title: "Jours 31-90",
-            items: analysis?.recommendations?.priority2?.map((rec) => rec.action) || [],
-          },
-          {
-            id: "phase-3",
-            title: "Jours 91-180",
-            items: analysis?.followUp?.map((item) => item.test) || [],
-          },
-        ].filter((phase) => phase.items.length > 0);
-
-  const quickWins = useMemo(() => {
-    const actions = analysis?.recommendations?.priority1 || [];
-    if (actions.length) {
-      return actions.slice(0, 3).map((item, index) => ({
-        action: item.action,
-        impact: `Impact estime: +${4 + index} pts en 8 semaines`,
-      }));
-    }
-    const fallback = [...critical, ...warning].slice(0, 3);
-    return fallback.map((marker, index) => ({
-      action: `Corriger ${marker.name} en priorite`,
-      impact: `Impact estime: +${3 + index} pts en 8 semaines`,
-    }));
-  }, [analysis?.recommendations?.priority1, critical, warning]);
-
-  const fallbackAiAnalysis = useMemo(() => {
-    const optimal = summary.optimal.slice(0, 6).join(", ") || "Aucun";
-    const watch = summary.watch.slice(0, 6).join(", ") || "Aucun";
-    const action = summary.action.slice(0, 6).join(", ") || "Aucune";
-    const phase1 = protocolPhases[0]?.items || [];
-    const phase2 = protocolPhases[1]?.items || [];
-    const phase3 = protocolPhases[2]?.items || [];
-    const followUp = analysis?.followUp?.map((item) => `- ${item.test} - ${item.delay}`) || [];
-
-    return [
-      "## Synthese executive",
-      `- Optimal: ${optimal}`,
-      `- A surveiller: ${watch}`,
-      `- Action requise: ${action}`,
-      `- Lecture globale: Ton score global est de ${globalScore}/100, il reste des axes cles a stabiliser.`,
-      "",
-      "## Protocoles 180 jours",
-      "### Jours 1-30",
-      ...(phase1.length ? phase1.map((item) => `- ${item}`) : ["- Stabiliser sommeil, hydratation, apports proteiques."]),
-      "### Jours 31-90",
-      ...(phase2.length ? phase2.map((item) => `- ${item}`) : ["- Optimiser activite, stress et nutrition."]),
-      "### Jours 91-180",
-      ...(phase3.length ? phase3.map((item) => `- ${item}`) : ["- Consolider les routines et re-tester."]),
-      "",
-      "## Controles a prevoir",
-      ...(followUp.length ? followUp : ["- Aucun controle prioritaire pour l'instant."]),
-    ].join("\n");
-  }, [analysis?.followUp, globalScore, protocolPhases, summary.action, summary.optimal, summary.watch]);
-
-  const aiAnalysis =
-    analysis?.aiAnalysis && analysis.aiAnalysis.trim() ? analysis.aiAnalysis : fallbackAiAnalysis;
-
-  const expertIntro = useMemo(() => {
-    const plain = aiAnalysis
-      .replace(/[#>*`_-]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (!plain) return "Je consolide la lecture experte de ton bilan.";
-    return plain.length > 260 ? `${plain.slice(0, 260)}…` : plain;
-  }, [aiAnalysis]);
+  const patterns = data?.analysis?.patterns || [];
+  const aiAnalysis = data?.analysis?.aiAnalysis || "";
+  const protocolPhases = data?.analysis?.protocolPhases || [];
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f7f5f0] text-slate-900 flex items-center justify-center">
-        Chargement...
-      </div>
-    );
-  }
-
-  if (data && data.bloodTest.status !== "completed") {
-    const statusLabel =
-      data.bloodTest.status === "processing"
-        ? "Analyse en cours"
-        : data.bloodTest.status === "error"
-        ? "Analyse interrompue"
-        : "Analyse en attente";
-    return (
-      <div className="min-h-screen bg-[#f7f5f0] text-slate-900 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-xl font-semibold">{statusLabel}</p>
-        <p className="text-sm text-slate-600 max-w-md">
-          {data.bloodTest.error ||
-            "Ton bilan est en cours de traitement. Rafraichis dans quelques instants pour voir le rapport."}
-        </p>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Recharger
-          </Button>
-          <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]" onClick={() => navigate("/dashboard")}>
-            Retour dashboard
-          </Button>
+      <BloodShell>
+        <BloodHeader credits={credits} />
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24 text-slate-600">
+          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+          Chargement du rapport...
         </div>
-      </div>
+      </BloodShell>
     );
   }
 
-  if (isError || !data) {
+  if (error || !data) {
+    const isUnauthorized = error instanceof ApiError && error.status === 401;
     return (
-      <div className="min-h-screen bg-[#f7f5f0] text-slate-900 flex flex-col items-center justify-center gap-3">
-        <p>Rapport introuvable.</p>
-        <Button onClick={() => navigate("/dashboard")}>Retour dashboard</Button>
-      </div>
+      <BloodShell>
+        <BloodHeader credits={credits} />
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-6 py-24 text-center">
+          <AlertTriangle className="h-8 w-8 text-rose-500" />
+          <div className="text-lg font-semibold text-slate-900">
+            {isUnauthorized ? "Connexion requise." : "Rapport introuvable."}
+          </div>
+          <div className="text-sm text-slate-600">
+            {isUnauthorized ? "Connecte-toi pour ouvrir ce rapport." : "Le lien est invalide ou le rapport n'est pas accessible."}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              className="text-white"
+              style={{ backgroundColor: BLOOD_THEME.primaryBlue }}
+              onClick={() => navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`)}
+            >
+              Se connecter
+            </Button>
+            <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/blood-dashboard")}>
+              Retour dashboard
+            </Button>
+          </div>
+        </div>
+      </BloodShell>
+    );
+  }
+
+  if (data.bloodTest.status === "processing") {
+    return (
+      <BloodShell>
+        <BloodHeader credits={credits} />
+        <div className="mx-auto max-w-3xl px-6 py-24">
+          <Card className="border border-slate-200 bg-white p-8 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
+              <Loader2 className="h-6 w-6 animate-spin" style={{ color: BLOOD_THEME.primaryBlue }} />
+            </div>
+            <h1 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">Analyse en cours</h1>
+            <p className="mt-3 text-sm text-slate-600">
+              J'extrais tes biomarqueurs et je construis le rapport. La page se met a jour automatiquement.
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <Button className="text-white" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} onClick={() => refetch()}>
+                Rafraichir
+              </Button>
+              <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/blood-dashboard")}>
+                Retour dashboard
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </BloodShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f5f0] text-slate-900 relative overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-25"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.08) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
-      <ClientHeader credits={me?.user?.credits ?? 0} variant="light" />
+    <BloodShell>
+      <BloodHeader credits={credits} />
 
-      <motion.main
-        className="relative z-10 mx-auto max-w-7xl px-6 py-10"
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.div
-          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5"
-          variants={itemVariants}
-        >
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Bonjour {patientLabel}</p>
-            <h1 className="text-2xl font-semibold mt-2">Analyse du {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR")}</h1>
-            {previousTest && (
-              <p className="text-sm text-slate-600 mt-1">
-                vs ton bilan du {new Date(previousTest.uploadedAt).toLocaleDateString("fr-FR")}
-              </p>
-            )}
-            <p className="text-xs text-slate-500 mt-2">
-              Biohacking Bloodwork · lecture experte et actionnable
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Blood Analysis</p>
+            <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
+              {displayName}, voici ton bilan sanguin expert.
+            </h1>
+            <p className="mt-3 max-w-2xl text-slate-600 leading-relaxed">
+              Je compare tes ranges labo (normaux) aux ranges optimaux (performance/longévité), je detecte les patterns,
+              puis je te donne une trajectoire claire.
             </p>
-            <p className="text-xs text-slate-500 mt-2">
-              {`REF-${data.bloodTest.id.slice(0, 8).toUpperCase()}`} · {markers.length} biomarqueurs analyses
-            </p>
-            <p className="text-xs text-slate-500 mt-2">
-              {patient.gender ? `Sexe: ${patient.gender}` : "Sexe: non renseigne"} ·{" "}
-              {patient.dob ? `Naissance: ${patient.dob}` : "Naissance: non renseignee"} ·{" "}
-              {patient.email ? `Email: ${patient.email}` : "Email: non renseigne"}
-            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+                <FileText className="h-3.5 w-3.5" />
+                {data.bloodTest.fileName}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+                {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+                {data.markers.length} biomarqueurs
+              </span>
+              {data.analysis.temporalRisk && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+                  Risque: {data.analysis.temporalRisk.level} ({data.analysis.temporalRisk.score}/100)
+                </span>
+              )}
+            </div>
+            <div className="mt-4 grid gap-3 text-xs text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Patient</span>
+                <div className="mt-1 text-sm text-slate-800">
+                  {patient?.prenom || ""} {patient?.nom || ""}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Sexe</span>
+                <div className="mt-1 text-sm text-slate-800">{genderLabel}</div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Age</span>
+                <div className="mt-1 text-sm text-slate-800">{patientAge ?? "N/A"} {patientAge ? "ans" : ""}</div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Email</span>
+                <div className="mt-1 text-sm text-slate-800">{patient?.email || "N/A"}</div>
+              </div>
+            </div>
           </div>
-          <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]" onClick={() => navigate("/dashboard")}> 
-            <Upload className="h-4 w-4 mr-2" />
-            Retour au dossier
-          </Button>
-        </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Tabs defaultValue="dashboard" className="mt-8 space-y-6">
-            <TabsList className="flex w-full flex-wrap justify-start gap-2 rounded-full border border-slate-200 bg-white px-2 py-2">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="systemes">Systemes</TabsTrigger>
-              <TabsTrigger value="marqueurs">Marqueurs</TabsTrigger>
-              <TabsTrigger value="protocoles">Protocoles</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-              <TabsTrigger value="historique">Historique</TabsTrigger>
-              <TabsTrigger value="simulateur">Simulateur</TabsTrigger>
-              <TabsTrigger value="export">Export</TabsTrigger>
+          <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/blood-dashboard")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+        </div>
+
+        <div className="mt-10">
+          <Tabs defaultValue="overview">
+            <TabsList className="border border-slate-200 bg-white/80 p-1">
+              <TabsTrigger value="overview" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="systems" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+                Systemes
+              </TabsTrigger>
+              <TabsTrigger value="markers" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+                Biomarqueurs
+              </TabsTrigger>
+              <TabsTrigger value="insights" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+                Insights
+              </TabsTrigger>
             </TabsList>
 
-          <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <Card className="border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Score global</p>
-                    <p className="text-5xl font-semibold mt-3 text-[#0f172a]">{globalScore}/100</p>
-                    <p className="text-sm text-slate-600 mt-2">{getScoreMessage(globalScore)}</p>
-                    <p className="text-xs text-slate-500 mt-2">
-                      Je lis ton terrain biologique comme une cartographie d'actions precises, pas comme un simple PDF.
-                    </p>
-                  </div>
-                  <div className="text-right text-xs text-slate-600">
-                    {trendDelta !== null && (
-                      <p>{trendDelta >= 0 ? "+" : ""}{trendDelta} pts depuis le dernier bilan</p>
-                    )}
-                  {age !== null && ageBio !== null && (
-                    <p className="mt-2">Age bio: {ageBio} ans (age reel: {age})</p>
-                  )}
-                  <StatusIndicator status={getScoreLevel(globalScore).tone} label={getScoreLevel(globalScore).label} />
-                  <p className="mt-2 text-xs text-slate-500">
-                    Top {getPercentile(globalScore)}% des profils similaires
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-              <Card className="border border-slate-200 bg-white p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Alertes prioritaires</p>
-                <div className="mt-4 space-y-3 text-sm text-slate-700">
-                  {critical.length === 0 && <p>Aucune alerte critique.</p>}
-                  {critical.slice(0, 3).map((marker) => (
-                    <div key={marker.code} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-                      <div>
-                        <p className="font-semibold text-slate-900">{marker.name}</p>
-                        <p className="text-xs text-slate-500">{marker.value} {marker.unit}</p>
-                      </div>
-                      <Button variant="outline" size="sm">Voir le protocole</Button>
-                    </div>
-                  ))}
-                  {critical.length > 3 && (
-                    <p className="text-xs text-slate-500">+{critical.length - 3} alertes supplementaires</p>
-                  )}
-                </div>
-              </Card>
-            </div>
-
-            <Card className="border border-slate-200 bg-white p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Lecture experte</p>
-              <p className="text-sm text-slate-700 mt-3">{expertIntro}</p>
-            </Card>
-
-            <Card className="border border-slate-200 bg-white p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Radar des systemes</p>
-                  <p className="text-sm text-slate-600 mt-2">8 axes cles pour lire ton bilan en 10 secondes.</p>
-                </div>
-                <StatusIndicator status={getScoreLevel(globalScore).tone} />
-              </div>
-              <div className="mt-4">
-                <BloodRadar data={radarData} />
-              </div>
-            </Card>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="border border-slate-200 bg-white p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Quick wins</p>
-                <div className="mt-3 space-y-3 text-sm text-slate-700">
-                  {quickWins.length ? (
-                    quickWins.map((item, index) => (
-                      <div key={`quick-${index}`} className="rounded-lg border border-slate-200 bg-white p-3">
-                        <p className="font-semibold text-slate-900">{index + 1}. {item.action}</p>
-                        <p className="text-xs text-slate-500 mt-1">{item.impact}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p>Aucune action rapide prioritaire.</p>
-                  )}
-                </div>
-              </Card>
-              <Card className="border border-slate-200 bg-white p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Risque temporel</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-[#0f172a]" />
-                  <div>
-                    <p className="text-lg font-semibold">{riskScore}/100</p>
-                    <p className="text-xs text-slate-600">Risque {riskLabel}</p>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    Critiques <span className="text-slate-900">{critical.length}</span>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    Sous-optimaux <span className="text-slate-900">{warning.length}</span>
-                  </div>
-                </div>
-              </Card>
-              <Card className="border border-slate-200 bg-white p-5">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Resume</p>
-                <div className="mt-3 text-sm text-slate-700 space-y-2">
-                  <p><span className="text-slate-900">Optimal:</span> {summary?.optimal?.length ? summary.optimal.join(", ") : "Aucun"}</p>
-                  <p><span className="text-slate-900">A surveiller:</span> {summary?.watch?.length ? summary.watch.join(", ") : "Aucun"}</p>
-                  <p><span className="text-slate-900">Action requise:</span> {summary?.action?.length ? summary.action.join(", ") : "Aucune"}</p>
-                </div>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="systemes" className="space-y-6">
-            {SYSTEM_ORDER.map((system) => {
-              const items = groupedBySystem[system];
-              if (!items.length) return null;
-              const score = systemScores[system] ?? 0;
-              const level = getScoreLevel(score);
-              const meta = SYSTEM_META[system];
-              const systemFocus = systemNarratives[system] || "";
-              const radarPoints = systemRadarData[system] || [];
-              return (
-                <Card key={system} className="border border-slate-200 bg-white p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+            <TabsContent value="overview" className="mt-6">
+              <div className="grid gap-6 lg:grid-cols-[0.45fr_0.55fr]">
+                <Card className="border border-slate-200 bg-white p-6">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Systeme</p>
-                      <p className="text-lg font-semibold mt-2">{meta.label}</p>
-                      <p className="text-xs text-slate-500">{meta.description}</p>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Score global</p>
+                      <p className="mt-2 text-sm text-slate-600">Lecture multi-systemes sur 100.</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-2xl font-semibold">{score}/100</p>
-                      <StatusBadge status={level.tone} label={level.label} />
+                    <StatusIndicator status={scoreToStatus(globalScore)} />
+                  </div>
+                  <div className="mt-6 flex justify-center">
+                    <ScoreDonut score={globalScore} />
+                  </div>
+                  <div className="mt-6 grid gap-3">
+                    {(Object.keys(PANEL_META) as PanelKey[]).map((key) => {
+                      const score = panelScores[key];
+                      return (
+                        <div key={key} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                          <div className="text-sm font-medium text-slate-900">{PANEL_META[key].label}</div>
+                          <div className="flex items-center gap-2">
+                            {score === null ? (
+                              <StatusBadge status="normal" label="N/A" className="opacity-70" />
+                            ) : (
+                              <StatusBadge status={scoreToStatus(score)} label={`${score}/100`} />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+
+                <Card className="border border-slate-200 bg-white p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Balance systemique</p>
+                      <p className="mt-2 text-sm text-slate-600">6 panels, score 0-100.</p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 text-xs text-slate-500">
+                      <ShieldAlert className="h-4 w-4" style={{ color: BLOOD_THEME.primaryBlue }} />
+                      Optimal vs normal
                     </div>
                   </div>
-                  <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-                    <div className="space-y-4">
-                      <div className="rounded-xl border border-slate-200 bg-white p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Lecture directe</p>
-                        <p className="text-sm text-slate-700 mt-2">{systemFocus}</p>
+                  <div className="mt-6">
+                    <BloodRadar data={radarData} height={320} accentColor={BLOOD_THEME.primaryBlue} />
+                  </div>
+                  <div className="mt-6 grid gap-4 md:grid-cols-2">
+                    {patterns.length ? (
+                      patterns.slice(0, 2).map((pattern) => (
+                        <div key={pattern.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="text-sm font-semibold text-slate-900">{pattern.name}</div>
+                            <StatusBadge status="suboptimal" />
+                          </div>
+                          {!!pattern.causes?.length && (
+                            <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                              {pattern.causes.slice(0, 3).map((cause) => (
+                                <li key={cause} className="flex items-start gap-2">
+                                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-300" />
+                                  <span>{cause}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-slate-600">Aucun pattern majeur detecte.</div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-3">
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Hormonal & anabolic index</p>
+                  <p className="mt-2 text-sm text-slate-600">Levier majeur prise de muscle / perte de gras.</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-3xl font-semibold text-slate-900">{anabolicIndex ?? "N/A"}</div>
+                    {typeof anabolicIndex === "number" && <StatusBadge status={scoreToStatus(anabolicIndex)} />}
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">
+                    {typeof anabolicIndex === "number"
+                      ? "Si ce score est bas, tes resultats stagnent meme avec un entrainement dur."
+                      : "Pas assez de donnees pour conclure sur l'axe anabolique."}
+                  </p>
+                </Card>
+
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Body recomp readiness</p>
+                  <p className="mt-2 text-sm text-slate-600">Synthese hormones + thyroide + metabolisme.</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-3xl font-semibold text-slate-900">{recompReadiness ?? "N/A"}</div>
+                    {typeof recompReadiness === "number" && <StatusBadge status={scoreToStatus(recompReadiness)} />}
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">
+                    {typeof recompReadiness === "number"
+                      ? "Plus ce score est haut, plus ta recomposition est realiste."
+                      : "Donnees insuffisantes pour estimer la recomposition."}
+                  </p>
+                </Card>
+
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Diabetes risk assessment</p>
+                  <p className="mt-2 text-sm text-slate-600">Lecture glycémie, HbA1c, insuline, HOMA-IR.</p>
+                  {diabetes ? (
+                    <>
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="text-3xl font-semibold text-slate-900">{diabetes.score}/100</div>
+                        <StatusBadge status={diabetes.score >= 75 ? "critical" : diabetes.score >= 55 ? "suboptimal" : "normal"} />
                       </div>
-                      <div className="rounded-xl border border-slate-200 bg-white p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Radar du theme</p>
-                        <p className="text-xs text-slate-500 mt-2">
-                          Visualise les marqueurs cles de ce systeme.
-                        </p>
-                        <div className="mt-4">
-                          {radarPoints.length ? (
-                            <BloodRadar data={radarPoints} height={220} outerRadius="72%" />
+                      <p className="mt-3 text-sm text-slate-600">
+                        Risque {diabetes.level}. Priorite: stabiliser la glycemie et l'insuline.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-600">Donnees insuffisantes pour estimer le risque.</p>
+                  )}
+                </Card>
+              </div>
+
+              <div className="mt-6">
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Lecture humaine</p>
+                  <p className="mt-3 text-sm text-slate-700 leading-relaxed">{narrative}</p>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="systems" className="mt-6">
+              <div className="space-y-6">
+                {(Object.keys(PANEL_META) as PanelKey[]).map((key) => {
+                  const score = panelScores[key];
+                  const markers = markersByPanel[key];
+                  const systemStatus = typeof score === "number" ? scoreToStatus(score) : "normal";
+                  const intro = `Je lis ton systeme ${PANEL_META[key].label.toLowerCase()} comme un levier direct sur ta performance.`;
+                  const highlights = markers.filter((marker) => marker.status !== "optimal").slice(0, 3);
+                  return (
+                    <Card key={key} className="border border-slate-200 bg-white p-6">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Systeme</p>
+                          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{PANEL_META[key].label}</h3>
+                          <p className="mt-2 text-sm text-slate-600">{intro}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {typeof score === "number" ? (
+                            <StatusBadge status={systemStatus} label={`${score}/100`} />
                           ) : (
-                            <p className="text-xs text-slate-500">Aucune donnee radar disponible.</p>
+                            <StatusBadge status="normal" label="N/A" />
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {items.map((marker) => (
-                        <div key={`${system}-${marker.code}`} className="rounded-xl border border-slate-200 bg-white p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-sm font-semibold">{marker.name}</p>
-                              <p className="text-xs text-slate-500">{marker.code}</p>
-                            </div>
-                            <StatusBadge status={marker.status} />
-                          </div>
-                          <div className="mt-3 text-sm">
-                            <span className="text-2xl font-semibold">{marker.value}</span>{" "}
-                            <span className="text-slate-600">{marker.unit}</span>
-                          </div>
-                          <BiomarkerRangeIndicator
-                            value={marker.value}
-                            unit={marker.unit}
-                            status={marker.status}
-                            normalMin={marker.refMin ?? undefined}
-                            normalMax={marker.refMax ?? undefined}
-                            optimalMin={marker.optimalMin ?? undefined}
-                            optimalMax={marker.optimalMax ?? undefined}
-                            className="mt-3"
-                          />
-                          <p className="mt-3 text-xs text-slate-600">
-                            {marker.interpretation || "Je detaille ce marqueur dans ta synthese experte."}
-                          </p>
+
+                      <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Lecture rapide</p>
+                          <p className="mt-2 text-sm text-slate-600">{PANEL_META[key].impact}</p>
+                          <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                            {PANEL_META[key].bullets.map((bullet) => (
+                              <li key={bullet} className="flex items-start gap-2">
+                                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                <span>{bullet}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </TabsContent>
 
-          <TabsContent value="marqueurs" className="space-y-6">
-            <Card className="border border-slate-200 bg-white p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold">Liste complete des marqueurs</p>
-                  <p className="text-xs text-slate-500">{markers.length} marqueurs detectes.</p>
-                </div>
-                <StatusIndicator status={getScoreLevel(globalScore).tone} />
-              </div>
-            </Card>
-            <div className="grid gap-4 md:grid-cols-2">
-              {markers.map((marker) => (
-                <div key={`${marker.code}-full`} className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold">{marker.name}</p>
-                      <p className="text-xs text-slate-500">{marker.code}</p>
-                    </div>
-                    <StatusBadge status={marker.status} />
-                  </div>
-                  <div className="mt-3 text-sm">
-                    <span className="text-2xl font-semibold">{marker.value}</span>{" "}
-                    <span className="text-slate-600">{marker.unit}</span>
-                  </div>
-                  <BiomarkerRangeIndicator
-                    value={marker.value}
-                    unit={marker.unit}
-                    status={marker.status}
-                    normalMin={marker.refMin ?? undefined}
-                    normalMax={marker.refMax ?? undefined}
-                    optimalMin={marker.optimalMin ?? undefined}
-                    optimalMax={marker.optimalMax ?? undefined}
-                    className="mt-3"
-                  />
-                  <p className="mt-3 text-xs text-slate-600">
-                    {marker.interpretation || "Je detaille ce marqueur dans ta synthese experte."}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="protocoles" className="space-y-6">
-            <Card className="border border-slate-200 bg-white p-6">
-              <p className="text-lg font-semibold">Plan d'action personnalise</p>
-              <p className="text-xs text-slate-500">Protocoles progressifs sur 180 jours.</p>
-            </Card>
-            <div className="grid gap-4 md:grid-cols-3">
-              {protocolPhases.map((phase) => (
-                <Card key={phase.id} className="border border-slate-200 bg-white p-4">
-                  <p className="font-semibold">{phase.title}</p>
-                  <ul className="mt-3 space-y-2 text-xs text-slate-600">
-                    {phase.items.map((item, index) => (
-                      <li key={`${phase.id}-${index}`} className="flex gap-2">
-                        <ArrowUpRight className="h-3 w-3 text-[#0f172a]" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              ))}
-            </div>
-            <Card className="border border-slate-200 bg-white p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Controles a prevoir</p>
-              <div className="mt-4 space-y-2 text-sm text-slate-700">
-                {analysis?.followUp?.length
-                  ? analysis.followUp.map((item, index) => (
-                      <div key={`follow-${index}`} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-                        <p>{item.test}</p>
-                        <span className="text-xs text-slate-500">{item.delay}</span>
+                        <div className="rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Points d'attention</p>
+                          {highlights.length ? (
+                            <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                              {highlights.map((marker) => (
+                                <li key={marker.code} className="flex items-center justify-between gap-3">
+                                  <span className="font-medium text-slate-900">{marker.name}</span>
+                                  <StatusBadge status={marker.status} label={`${marker.value} ${marker.unit}`} />
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="mt-3 text-sm text-slate-600">Pas de signal critique sur ce systeme.</p>
+                          )}
+                        </div>
                       </div>
-                    ))
-                  : "Aucun controle recommande."}
-              </div>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="insights" className="space-y-6">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Card className="border border-slate-200 bg-white p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Synthese experte</p>
-                <div className="mt-3 text-sm text-slate-700 prose prose-slate max-w-none">
-                  <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
-                </div>
-              </Card>
-              <Card className="border border-slate-200 bg-white p-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Patterns detectes</p>
-                <div className="mt-4 space-y-4 text-sm text-slate-700">
-                  {analysis?.patterns?.length ? (
-                    analysis.patterns.map((pattern) => (
-                      <div key={pattern.name} className="rounded-lg border border-slate-200 bg-white p-4">
-                        <p className="font-semibold text-slate-900">{pattern.name}</p>
-                        <p className="text-xs text-slate-500 mt-1">Causes: {pattern.causes.join(", ")}</p>
-                        <p className="text-xs text-slate-500 mt-2">Protocoles: {pattern.protocol.join(", ")}</p>
+                      <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        {markers.length ? (
+                          markers.map((marker) => {
+                            const narrativeBlocks = getMarkerNarrative(marker, key);
+                            return (
+                              <div key={marker.code} className="rounded-xl border border-slate-200 bg-white p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div>
+                                    <div className="text-sm font-semibold text-slate-900">{marker.name}</div>
+                                    <div className="text-xs text-slate-500">{marker.code}</div>
+                                  </div>
+                                  <StatusBadge status={marker.status} />
+                                </div>
+                                <div className="mt-4">
+                                  <BiomarkerRangeIndicator
+                                    value={marker.value}
+                                    unit={marker.unit}
+                                    status={marker.status}
+                                    normalMin={marker.refMin ?? undefined}
+                                    normalMax={marker.refMax ?? undefined}
+                                    optimalMin={marker.optimalMin ?? undefined}
+                                    optimalMax={marker.optimalMax ?? undefined}
+                                  />
+                                </div>
+                                <div className="mt-4 space-y-2 text-sm text-slate-600">
+                                  <p>
+                                    <span className="font-semibold text-slate-900">Ce que ca dit :</span>{" "}
+                                    {narrativeBlocks.definition}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-slate-900">Impact performance :</span>{" "}
+                                    {narrativeBlocks.mechanism}
+                                  </p>
+                                  <p>
+                                    <span className="font-semibold text-slate-900">Prochaine etape :</span>{" "}
+                                    {narrativeBlocks.optimization}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-sm text-slate-600">Aucun marqueur pour ce systeme.</div>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="markers" className="mt-6">
+              <div className="grid gap-6 lg:grid-cols-[0.33fr_0.67fr]">
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panels</p>
+                  <div className="mt-5 space-y-3">
+                    {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
+                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-semibold text-slate-900">{PANEL_META[key].label}</div>
+                          {panelScores[key] === null ? (
+                            <StatusBadge status="normal" label="N/A" className="opacity-70" />
+                          ) : (
+                            <StatusBadge status={scoreToStatus(panelScores[key]!)} label={`${panelScores[key]}/100`} />
+                          )}
+                        </div>
+                        <p className="mt-2 text-xs text-slate-600">{PANEL_META[key].impact}</p>
+                        <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                          {PANEL_META[key].bullets.map((bullet) => (
+                            <li key={bullet} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300" />
+                              <span>{bullet}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Biomarqueurs</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Chaque biomarqueur a son range normal, son range optimal, et une lecture orientee performance/sante.
+                  </p>
+
+                  <div className="mt-6">
+                    <Accordion type="multiple" className="space-y-3">
+                      {(Object.keys(PANEL_META) as PanelKey[]).flatMap((panelKey) => {
+                        return markersByPanel[panelKey].map((marker) => {
+                          const narrative = getMarkerNarrative(marker, panelKey);
+                          return (
+                            <AccordionItem
+                              key={`${panelKey}:${marker.code}`}
+                              value={`${panelKey}:${marker.code}`}
+                              className="rounded-xl border border-slate-200 bg-slate-50 px-4"
+                            >
+                              <AccordionTrigger className="py-4 text-left hover:no-underline">
+                                <div className="flex w-full items-start justify-between gap-4">
+                                  <div>
+                                    <div className="text-sm font-semibold text-slate-900">{marker.name}</div>
+                                    <div className="mt-1 text-xs text-slate-500">{PANEL_META[panelKey].label}</div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-sm font-semibold text-slate-900">
+                                      {marker.value} {marker.unit}
+                                    </div>
+                                    <StatusBadge status={marker.status} />
+                                  </div>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-5">
+                                <BiomarkerRangeIndicator
+                                  value={marker.value}
+                                  unit={marker.unit}
+                                  status={marker.status}
+                                  normalMin={marker.refMin ?? undefined}
+                                  normalMax={marker.refMax ?? undefined}
+                                  optimalMin={marker.optimalMin ?? undefined}
+                                  optimalMax={marker.optimalMax ?? undefined}
+                                />
+                                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Definition</div>
+                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{narrative.definition}</p>
+                                  </div>
+                                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Ce que ca revele</div>
+                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{narrative.mechanism}</p>
+                                  </div>
+                                  <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Optimisation</div>
+                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{narrative.optimization}</p>
+                                  </div>
+                                </div>
+                                {marker.interpretation && (
+                                  <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Lecture experte</div>
+                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{marker.interpretation}</p>
+                                  </div>
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        });
+                      })}
+                    </Accordion>
+                  </div>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="insights" className="mt-6">
+              <div className="grid gap-6 lg:grid-cols-[0.45fr_0.55fr]">
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Patterns detectes</p>
+                  <div className="mt-6 space-y-4">
+                    {patterns.length ? (
+                      patterns.map((pattern) => (
+                        <div key={pattern.name} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="text-sm font-semibold text-slate-900">{pattern.name}</div>
+                              {!!pattern.causes?.length && (
+                                <div className="mt-2 text-xs text-slate-600">
+                                  Causes: {pattern.causes.slice(0, 3).join(" · ")}
+                                </div>
+                              )}
+                            </div>
+                            <StatusBadge status="suboptimal" />
+                          </div>
+                          {!!pattern.protocol?.length && (
+                            <div className="mt-4">
+                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Protocole</div>
+                              <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                                {pattern.protocol.slice(0, 6).map((item) => (
+                                  <li key={item} className="flex items-start gap-2">
+                                    <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} />
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-slate-600">Aucun pattern majeur detecte.</div>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Diabetes Risk Assessment</p>
+                  {diabetes ? (
+                    <div className="mt-4 space-y-3 text-sm text-slate-600">
+                      <p>
+                        Score: <span className="font-semibold text-slate-900">{diabetes.score}/100</span> (risque {diabetes.level}).
+                      </p>
+                      <ul className="space-y-1">
+                        {diabetes.gly !== null && <li>Glycemie a jeun: {diabetes.gly} mg/dL</li>}
+                        {diabetes.a1c !== null && <li>HbA1c: {diabetes.a1c}%</li>}
+                        {diabetes.insulin !== null && <li>Insuline: {diabetes.insulin} µIU/mL</li>}
+                        {diabetes.homa !== null && <li>HOMA-IR: {diabetes.homa}</li>}
+                      </ul>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Protocole rapide</div>
+                        <ul className="mt-2 space-y-2 text-sm text-slate-600">
+                          <li>Reduire sucres rapides + repas ultra transformes.</li>
+                          <li>Augmenter fibres + proteines a chaque repas.</li>
+                          <li>Marche post-prandiale 10-15 min.</li>
+                          <li>Sommeil 7-9h pour stabiliser l'insuline.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-600">Donnees insuffisantes pour estimer le risque.</p>
+                  )}
+
+                  <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Muscle & performance protocol</div>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Priorite: sommeil profond, deficit calorique maitrise, entrainement lourd structure, micronutriments cles (vitamine D, zinc, magnesium).
+                    </p>
+                  </div>
+                </Card>
+              </div>
+
+              {aiAnalysis ? (
+                <Card className="mt-6 border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Analyse detaillee</p>
+                  <div className="prose mt-4 max-w-none prose-p:text-slate-700 prose-li:text-slate-700 prose-strong:text-slate-900">
+                    <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                  </div>
+                </Card>
+              ) : null}
+
+              {protocolPhases.length > 0 && (
+                <Card className="mt-6 border border-slate-200 bg-white p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Protocoles en 3 phases</p>
+                  <div className="mt-6 grid gap-4 md:grid-cols-3">
+                    {protocolPhases.map((phase) => (
+                      <div key={phase.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-sm font-semibold text-slate-900">{phase.title}</div>
+                        <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                          {phase.items.slice(0, 4).map((item) => (
+                            <li key={item} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              <Card className="mt-6 border border-slate-200 bg-slate-50 p-6">
+                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Actions immediates</p>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  {topMarkers.length ? (
+                    topMarkers.map((marker) => (
+                      <div key={marker.code} className="rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="text-sm font-semibold text-slate-900">{marker.name}</div>
+                        <p className="mt-2 text-xs text-slate-600">
+                          Je priorise {marker.name.toLowerCase()} avec un protocole cible (sommeil, nutrition, supplements).
+                        </p>
                       </div>
                     ))
                   ) : (
-                    <p>Aucun pattern prioritaire detecte.</p>
+                    <div className="text-sm text-slate-600">Aucune action urgente detectee.</div>
                   )}
                 </div>
               </Card>
-            </div>
-            <Card className="border border-slate-200 bg-white p-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Alertes medicales</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {analysis?.alerts?.length
-                  ? analysis.alerts.map((alert, index) => (
-                      <li key={`alert-${index}`} className="flex gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-400" />
-                        <span>{alert}</span>
-                      </li>
-                    ))
-                  : "Aucune alerte critique a signaler."}
-              </ul>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="historique" className="space-y-6">
-            <Card className="border border-slate-200 bg-white p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold">Evolution dans le temps</p>
-                  <p className="text-xs text-slate-500">Suivi de tes scores par bilan.</p>
-                </div>
-                <LineChart className="h-5 w-5 text-[#0f172a]" />
-              </div>
-              {orderedTests.length >= 2 ? (
-                <div className="h-48 mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartLineChart data={orderedTests.slice().reverse().map((test) => ({
-                      date: new Date(test.uploadedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
-                      score: test.globalScore || 0,
-                    }))}>
-                      <XAxis dataKey="date" stroke="rgba(15,23,42,0.45)" />
-                      <YAxis stroke="rgba(15,23,42,0.45)" domain={[0, 100]} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", color: "#0f172a" }}
-                        labelStyle={{ color: "#0f172a" }}
-                      />
-                      <Line type="monotone" dataKey="score" stroke="#0f172a" strokeWidth={2} dot={false} />
-                    </RechartLineChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-600 mt-4">Uploade un second bilan pour debloquer la comparaison.</p>
-              )}
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="simulateur" className="space-y-6">
-            <Card className="border border-slate-200 bg-white p-6">
-              <div className="flex items-center gap-3">
-                <RefreshCcw className="h-5 w-5 text-[#0f172a]" />
-                <div>
-                  <p className="text-lg font-semibold">Simulateur what-if</p>
-                  <p className="text-xs text-slate-500">Scenario interactif en preparation.</p>
-                </div>
-              </div>
-              <p className="text-sm text-slate-700 mt-4">
-                Ici tu pourras simuler l'impact de changements (vitamine D, sommeil, activite) sur ton score.
-              </p>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="export" className="space-y-6">
-            <Card className="border border-slate-200 bg-white p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold">Export</p>
-                  <p className="text-xs text-slate-500">PDF partageable avec ton medecin.</p>
-                </div>
-                <Button variant="outline" onClick={() => window.open(`/api/blood-tests/${data.bloodTest.id}/export/pdf`, "_blank")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export PDF
+              <div className="mt-6 flex items-center justify-between text-xs text-slate-500">
+                <span>Educationnel · Ne remplace pas un avis medical.</span>
+                <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/offers/blood-analysis")}>
+                  Acheter des credits
                 </Button>
               </div>
-              <p className="text-sm text-slate-600 mt-4">
-                L'export inclut tes scores, marqueurs et protocoles. Si l'export est indisponible, contacte-moi.
-              </p>
-            </Card>
-          </TabsContent>
+            </TabsContent>
           </Tabs>
-        </motion.div>
-      </motion.main>
-    </div>
+        </div>
+      </div>
+    </BloodShell>
   );
 }

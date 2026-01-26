@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,10 @@ import { motion } from "framer-motion";
 
 export default function Login() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const next = new URLSearchParams(search).get("next") || "";
 
   const sendMagicLinkMutation = useMutation({
     mutationFn: async () => {
@@ -22,6 +24,11 @@ export default function Login() {
     },
     onSuccess: () => {
       localStorage.setItem("neurocore_email", email);
+      if (next) {
+        localStorage.setItem("apexlabs_post_login_redirect", next);
+      } else {
+        localStorage.removeItem("apexlabs_post_login_redirect");
+      }
       navigate("/auth/check-email");
     },
     onError: () => {

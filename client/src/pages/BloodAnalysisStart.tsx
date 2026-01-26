@@ -10,7 +10,7 @@ export default function BloodAnalysisStart() {
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("apexlabs_token") : null;
     if (token) {
-      navigate("/dashboard");
+      navigate("/blood-dashboard");
     }
   }, [navigate]);
 
@@ -26,7 +26,7 @@ export default function BloodAnalysisStart() {
           </p>
           <Button
             className="w-full bg-[#FCDD00] text-black hover:bg-[#e7c700]"
-            onClick={() => navigate("/auth/login")}
+            onClick={() => navigate("/auth/login?next=/blood-dashboard")}
           >
             Ouvrir le dashboard
           </Button>
