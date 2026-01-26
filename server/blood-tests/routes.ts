@@ -577,6 +577,31 @@ export function registerBloodTestsRoutes(app: Express): void {
 
   app.get("/api/blood-tests", requireAuth, async (req, res) => {
     try {
+      if (isAdminRequest(req)) {
+        const email = String(req.query.email || "").trim().toLowerCase();
+        if (!email) {
+          res.status(400).json({ error: "email query requis (mode admin)" });
+          return;
+        }
+        const user = await storage.getUserByEmail(email);
+        if (!user) {
+          res.json({ bloodTests: [] });
+          return;
+        }
+        const tests = await storage.getBloodTestsByUserId(user.id);
+        const summaries = tests.map((test) => ({
+          id: test.id,
+          fileName: test.fileName,
+          uploadedAt: test.createdAt,
+          status: test.status,
+          globalScore: test.globalScore ?? null,
+          globalLevel: test.globalLevel ?? null,
+          patient: test.patientProfile || (test.analysis as any)?.patient || null,
+        }));
+        res.json({ bloodTests: summaries });
+        return;
+      }
+
       const auth = (req as any).auth as { userId: string };
       const tests = await storage.getBloodTestsByUserId(auth.userId);
       const summaries = tests.map((test) => ({
