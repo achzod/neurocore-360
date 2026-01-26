@@ -65,15 +65,29 @@ export async function registerRoutes(
   });
 
   // Helper function to get base URL
-  function getBaseUrl(): string {
+  function getBaseUrl(req?: Request): string {
+    const host =
+      req?.get("x-forwarded-host") ||
+      req?.get("host") ||
+      "";
+    const proto =
+      req?.get("x-forwarded-proto") ||
+      (req?.secure ? "https" : "") ||
+      "";
+
+    if (host) {
+      const scheme = proto || (host.includes("localhost") ? "http" : "https");
+      return `${scheme}://${host}`;
+    }
+
     if (process.env.RENDER_EXTERNAL_URL) {
       return process.env.RENDER_EXTERNAL_URL;
-    } else if (process.env.REPLIT_DOMAINS) {
-      const replitDomain = process.env.REPLIT_DOMAINS.split(',')[0];
-      return `https://${replitDomain}`;
-    } else {
-      return `http://localhost:${process.env.PORT || 5000}`;
     }
+    if (process.env.REPLIT_DOMAINS) {
+      const replitDomain = process.env.REPLIT_DOMAINS.split(",")[0];
+      return `https://${replitDomain}`;
+    }
+    return `http://localhost:${process.env.PORT || 5000}`;
   }
 
   const PHOTO_FIELD_VARIANTS: string[][] = [
@@ -1020,7 +1034,7 @@ export async function registerRoutes(
 
       const token = await storage.createMagicToken(normalizedEmail);
 
-      const baseUrl = getBaseUrl();
+      const baseUrl = getBaseUrl(req);
       let emailSent = false;
       try {
         emailSent = await sendMagicLinkEmail(normalizedEmail, token, baseUrl);
