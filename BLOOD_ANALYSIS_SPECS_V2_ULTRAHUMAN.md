@@ -53,7 +53,7 @@ Subheadline:
 ✓ Ranges Huberman/Attia  ✓ Bibliothèque 7 sources  ✓ 4.7★ (1800+)
 
 [CTA Primary]
-"Analyser Mon Bilan — GRATUIT (MVP)"
+"Analyser Mon Bilan — 99€"
 bg: white, color: black, padding: 10px 24px, radius: 50px
 
 [CTA Secondary]
@@ -1559,7 +1559,7 @@ Pattern: [Number] + [Benefit] + [Authority]
 
 ```
 Primary (High Contrast):
-"Analyser Mon Bilan — GRATUIT (MVP)"
+"Analyser Mon Bilan — 99€"
 "Lancer Mon Blood Analysis — 99€"
 "Décode Ton Sang Maintenant"
 
@@ -1708,7 +1708,7 @@ A: "Chaque biomarqueur a:
 
 ```
 1. Landing /offers/blood-analysis
-   CTA: "Analyser Mon Bilan — GRATUIT (MVP)"
+   CTA: "Analyser Mon Bilan — 99€"
    ↓
 2. Upload Page /blood-analysis/upload
    • Drag & drop PDF ou Browse
@@ -1856,7 +1856,6 @@ Footer (Reassurance):
 ### **Urgency/Scarcity (AUTHENTIC ONLY)**
 
 ```
-✅ "MVP Gratuit — Profite avant lancement officiel"
 ✅ "Early adopter pricing: 99€ (valeur normale 149€)"
 ✅ "Support prioritaire pour les 100 premiers"
 ✅ Badge "Nouveau Produit" (temporaire)
