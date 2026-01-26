@@ -119,12 +119,23 @@ const scoreLabel = (score: number): string => {
   return "Prioritaire";
 };
 
-const fetcher = async <T,>(url: string): Promise<T> => {
+class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const fetcher = async <T,>(url: string, adminKey?: string): Promise<T> => {
   const token = localStorage.getItem("apexlabs_token");
-  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (adminKey) headers["x-admin-key"] = adminKey;
+  const res = await fetch(url, { headers: Object.keys(headers).length ? headers : undefined });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`${res.status} ${text}`);
+    throw new ApiError(res.status, `${res.status} ${text}`);
   }
   return res.json();
 };
@@ -159,17 +170,23 @@ export default function BloodAnalysisReport() {
   const params = useParams<{ id: string }>();
   const reportId = params.id;
   const [, navigate] = useLocation();
+  const adminKey = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const value = new URLSearchParams(window.location.search).get("key");
+    return value ? value.trim() : "";
+  }, []);
 
   const { data: me } = useQuery({
     queryKey: ["/api/me"],
-    queryFn: () => fetcher<MeResponse>("/api/me"),
+    queryFn: () => fetcher<MeResponse>("/api/me", adminKey || undefined),
     retry: false,
+    enabled: !adminKey,
     onError: () => navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`),
   });
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["/api/blood-tests", reportId],
-    queryFn: () => fetcher<BloodTestDetail>(`/api/blood-tests/${reportId}`),
+    queryFn: () => fetcher<BloodTestDetail>(`/api/blood-tests/${reportId}`, adminKey || undefined),
     retry: false,
     refetchInterval: (query) => {
       const current = query.state.data as BloodTestDetail | undefined;
@@ -177,12 +194,15 @@ export default function BloodAnalysisReport() {
       return status === "processing" ? 5000 : false;
     },
     onError: (err) => {
-      const message = err instanceof Error ? err.message : "";
-      if (message.startsWith("401")) navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
+      if (err instanceof ApiError && err.status === 401) {
+        if (!adminKey) {
+          navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
+        }
+      }
     },
   });
 
-  const credits = me?.user?.credits ?? 0;
+  const credits = adminKey ? 0 : me?.user?.credits ?? 0;
 
   const markersByPanel = useMemo(() => {
     const groups: Record<PanelKey, BloodTestDetail["markers"]> = {
@@ -263,16 +283,39 @@ export default function BloodAnalysisReport() {
   }
 
   if (error || !data) {
+    const isUnauthorized = error instanceof ApiError && error.status === 401;
     return (
       <BloodShell>
         <BloodHeader credits={credits} />
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-6 py-24 text-center">
           <AlertTriangle className="h-8 w-8 text-rose-300" />
-          <div className="text-lg font-semibold text-white">Rapport introuvable.</div>
-          <div className="text-sm text-white/60">Le lien est invalide ou le rapport n'est pas accessible.</div>
-          <Button className="bg-white text-black hover:bg-white/90" onClick={() => navigate("/blood-dashboard")}>
-            Retour dashboard
-          </Button>
+          <div className="text-lg font-semibold text-white">
+            {isUnauthorized ? "Connexion requise." : "Rapport introuvable."}
+          </div>
+          <div className="text-sm text-white/60">
+            {isUnauthorized
+              ? "Connecte-toi pour ouvrir ce rapport."
+              : "Le lien est invalide ou le rapport n'est pas accessible."}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              className="bg-white text-black hover:bg-white/90"
+              onClick={() =>
+                navigate(
+                  `/auth/login?next=/analysis/${encodeURIComponent(reportId)}`
+                )
+              }
+            >
+              Se connecter
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/10 bg-transparent text-white/70 hover:bg-white/5"
+              onClick={() => navigate("/blood-dashboard")}
+            >
+              Retour dashboard
+            </Button>
+          </div>
         </div>
       </BloodShell>
     );
