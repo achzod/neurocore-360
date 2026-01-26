@@ -88,6 +88,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           age?: string;
           objectives?: string;
           medications?: string;
+          prenom?: string;
+          nom?: string;
         };
       };
 

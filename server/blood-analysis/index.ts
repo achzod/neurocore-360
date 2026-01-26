@@ -1213,49 +1213,78 @@ REGLES DE STYLE:
 - Ton clinique, precis, premium, sans emojis.
 - Pas de mention d'IA, pas de sources, pas de liens.
 - Utilise les ranges optimaux en priorite.
-- Reste structure et operationnel.
+- Reste structure, pedagogique, conversationnel.
 - Adresse-toi directement au client avec \"tu/ta/ton\" partout.
 - Jamais \"patient\" ou \"utilisateur\".
-- Ajoute une phrase simple et actionnable avant chaque recommandation.
+- Chaque section doit contenir des phrases completes (pas uniquement des listes).
+- Longueur cible: 1200-1800 mots (pas moins).
+- Chaque recommandation contient: action + dosage + timing + duree + objectif.
+- Si une donnee manque, dis-le clairement et continue.
 
-FORMAT DE REPONSE (respecte les titres):
+FORMAT DE REPONSE (respecte STRICTEMENT les titres):
 ## Synthese executive
-- Optimal: [liste]
-- A surveiller: [liste]
-- Action requise: [liste]
-- Lecture globale: [2-3 phrases sur le profil]
+- Optimal: [liste concise]
+- A surveiller: [liste concise]
+- Action requise: [liste concise]
+- Lecture globale: [6-8 phrases, ton clinique + performance]
 
-## Systeme par systeme
+## Lecture systeme par systeme
 ### Hormonal
-- Points cles: [2-3 puces]
-- Impact: [1-2 phrases]
+- Points cles: [3-4 puces factuelles]
+- Analyse: [5-7 phrases]
+- Impact performance: [2-3 phrases]
 ### Thyroide
-...
+- Points cles: [3-4 puces factuelles]
+- Analyse: [5-7 phrases]
+- Impact performance: [2-3 phrases]
 ### Metabolique
-...
+- Points cles: [3-4 puces factuelles]
+- Analyse: [5-7 phrases]
+- Impact performance: [2-3 phrases]
 ### Inflammation
-...
-### Vitamines
-...
+- Points cles: [3-4 puces factuelles]
+- Analyse: [5-7 phrases]
+- Impact performance: [2-3 phrases]
+### Vitamines & mineraux
+- Points cles: [3-4 puces factuelles]
+- Analyse: [5-7 phrases]
+- Impact performance: [2-3 phrases]
 ### Foie & rein
-...
+- Points cles: [3-4 puces factuelles]
+- Analyse: [5-7 phrases]
+- Impact performance: [2-3 phrases]
 
 ## Interconnexions majeures
-- [Marqueur A] + [Marqueur B] -> [impact physiologique]
+- [Marqueur A] + [Marqueur B] -> [impact physiologique en 1-2 phrases]
+- Donne 2 a 4 correlations maximum.
+
+## Deep dive marqueurs prioritaires
+Pour 6 marqueurs max (les plus critiques / sous-optimaux):
+- Verdict (1 ligne)
+- Ce que ca veut dire pour toi (3-4 phrases)
+- Pourquoi c'est important (2-3 phrases)
+- Protocole exact (actions + dosages + timing + duree)
 
 ## Protocoles 180 jours
 ### Jours 1-30
-- [action + dosage + timing]
+- [action + dosage + timing + duree + objectif]
 ### Jours 31-90
-- [action + dosage + timing]
+- [action + dosage + timing + duree + objectif]
 ### Jours 91-180
-- [action + dosage + timing]
+- [action + dosage + timing + duree + objectif]
+
+## Nutrition & entrainement
+- Nutrition (4-6 phrases)
+- Entrainement (4-6 phrases)
+
+## Supplements & stack
+- Liste 6-10 supplements MAX avec: dosage, timing, duree, objectif.
 
 ## Controles a prevoir
 - [test] - [delai] - [objectif]
 
 ## Vigilance
-- [alerte medicale si necessaire]`;
+- [alerte medicale si necessaire, 2-3 phrases]`;
 
 export function buildFallbackAnalysis(
   analysisResult: BloodAnalysisResult,
@@ -1380,6 +1409,8 @@ export async function generateAIBloodAnalysis(
     age?: string;
     objectives?: string;
     medications?: string;
+    prenom?: string;
+    nom?: string;
   },
   knowledgeContext?: string
 ): Promise<string> {
@@ -1387,14 +1418,14 @@ export async function generateAIBloodAnalysis(
 
   // Build the prompt with analysis data
   const markersTable = analysisResult.markers.map(m =>
-    `- ${m.name}: ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) → ${m.status.toUpperCase()}`
+    `- ${m.name} [${m.markerId}] (${m.category}) : ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) → ${m.status.toUpperCase()}${m.interpretation ? ` | Note: ${m.interpretation}` : ""}`
   ).join("\n");
 
   const patternsText = analysisResult.patterns.map(p =>
     `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
   ).join("\n\n");
 
-  const userPrompt = `Analyse ce bilan sanguin pour un ${userProfile.gender} ${userProfile.age || ""}.
+  const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
 Objectifs: ${userProfile.objectives || "Performance et santé"}
 Médicaments: ${userProfile.medications || "Aucun"}
 

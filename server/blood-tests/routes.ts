@@ -303,7 +303,12 @@ export function registerBloodTestsRoutes(app: Express): void {
             try {
               aiAnalysis = await generateAIBloodAnalysis(
                 analysisResult,
-                { gender: patientProfile.gender as "homme" | "femme", age },
+                {
+                  gender: patientProfile.gender as "homme" | "femme",
+                  age,
+                  prenom: patientProfile.prenom,
+                  nom: patientProfile.nom,
+                },
                 knowledgeContext
               );
             } catch {
@@ -503,7 +508,12 @@ export function registerBloodTestsRoutes(app: Express): void {
         try {
           aiAnalysis = await generateAIBloodAnalysis(
             analysisResult,
-            { gender: profile.gender as "homme" | "femme", age },
+            {
+              gender: profile.gender as "homme" | "femme",
+              age,
+              prenom: profile.prenom,
+              nom: profile.nom,
+            },
             knowledgeContext
           );
         } catch {
