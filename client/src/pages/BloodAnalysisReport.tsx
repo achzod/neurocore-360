@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -418,22 +418,51 @@ const buildLifestyleCorrelations = (
   return items.slice(0, 3);
 };
 
-function ScoreDonut({ score, primary, muted, textPrimary, textTertiary }: { score: number; primary: string; muted: string; textPrimary: string; textTertiary: string }) {
+function scoreToHue(score: number) {
+  const clamped = Math.max(0, Math.min(100, score));
+  return Math.round((clamped / 100) * 120);
+}
+
+function ScoreDonut({ score, muted, textPrimary, textTertiary }: { score: number; muted: string; textPrimary: string; textTertiary: string }) {
   const circumference = 2 * Math.PI * 56;
-  const dash = (score / 100) * circumference;
+  const clampedScore = Math.max(0, Math.min(100, score));
+  const dash = (clampedScore / 100) * circumference;
+  const dashOffset = circumference - dash;
+  const hue = scoreToHue(clampedScore);
+  const gradientId = useId();
+  const glowId = useId();
+  const strokeBase = `hsl(${hue}, 85%, 55%)`;
+  const strokeHighlight = `hsl(${hue}, 90%, 65%)`;
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg className="h-36 w-36 -rotate-90">
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={strokeHighlight} />
+            <stop offset="100%" stopColor={strokeBase} />
+          </linearGradient>
+          <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         <circle cx="72" cy="72" r="56" stroke={muted} strokeWidth="10" fill="none" />
-        <circle
+        <motion.circle
           cx="72"
           cy="72"
           r="56"
-          stroke={primary}
+          stroke={`url(#${gradientId})`}
           strokeWidth="10"
           fill="none"
-          strokeDasharray={`${dash} ${circumference}`}
+          strokeDasharray={circumference}
           strokeLinecap="round"
+          strokeDashoffset={circumference}
+          filter={`url(#${glowId})`}
+          animate={{ strokeDashoffset: dashOffset }}
+          transition={{ duration: 1.15, ease: "easeOut" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -530,19 +559,22 @@ function BloodAnalysisReportInner() {
   }, [data?.analysis?.categoryScores, markersByPanel]);
 
   const radarData = useMemo(() => {
+    const targetScore = 85;
     return (Object.keys(PANEL_META) as PanelKey[]).map((key) => {
       const score = panelScores[key];
       if (score === null) {
-        return { key, label: PANEL_META[key].label, score: 0, status: "normal" as MarkerStatus, muted: true };
+        return { key, label: PANEL_META[key].label, score: 0, target: 0, status: "normal" as MarkerStatus, muted: true };
       }
-      return { key, label: PANEL_META[key].label, score, status: scoreToStatus(score) };
+      return { key, label: PANEL_META[key].label, score, target: targetScore, status: scoreToStatus(score) };
     });
   }, [panelScores]);
 
   const globalScore = data?.analysis?.globalScore ?? data?.bloodTest?.globalScore ?? 0;
   const patient = data?.bloodTest?.patient || data?.analysis?.patient || null;
-  const displayName = patient?.prenom || (me?.user?.email ? me.user.email.split("@")[0] : "toi");
-  const patientAge = patient?.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
+  const patientName = [patient?.prenom, patient?.nom].filter(Boolean).join(" ").trim();
+  const displayName = patient?.prenom || patient?.nom || patientName || "Patient";
+  const patientAgeRaw = patient?.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
+  const patientAge = Number.isFinite(patientAgeRaw) ? patientAgeRaw : null;
 
   const handleExportPDF = async () => {
     if (!reportId) return;
@@ -731,20 +763,24 @@ function BloodAnalysisReportInner() {
               <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
                 <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Patient</span>
                 <div className="mt-1 text-sm blood-text-primary">
-                  {patient?.prenom || ""} {patient?.nom || ""}
+                  {patientName || "Patient"}
                 </div>
               </div>
               <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
                 <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Sexe</span>
                 <div className="mt-1 text-sm blood-text-primary">{genderLabel}</div>
               </div>
-              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Age</span>
-                <div className="mt-1 text-sm blood-text-primary">{patientAge ?? "N/A"} {patientAge ? "ans" : ""}</div>
-              </div>
+              {patientAge !== null && (
+                <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
+                  <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Age</span>
+                  <div className="mt-1 text-sm blood-text-primary">{patientAge} ans</div>
+                </div>
+              )}
               <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
                 <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Email</span>
-                <div className="mt-1 text-sm blood-text-primary">{patient?.email || "N/A"}</div>
+                <div className="mt-1 text-sm blood-text-primary truncate" title={patient?.email || ""}>
+                  {patient?.email || "N/A"}
+                </div>
               </div>
             </div>
           </div>
@@ -810,7 +846,6 @@ function BloodAnalysisReportInner() {
                   <div className="mt-6 flex justify-center">
                     <ScoreDonut
                       score={globalScore}
-                      primary={theme.primaryBlue}
                       muted={theme.borderSubtle}
                       textPrimary={theme.textPrimary}
                       textTertiary={theme.textTertiary}
@@ -1091,7 +1126,10 @@ function BloodAnalysisReportInner() {
                               ? getCorrelationInsights(marker.code, marker.value, marker.unit, patientContext)
                               : [];
                             return (
-                              <div key={marker.code} className="rounded-xl border blood-border-default blood-surface p-4">
+                              <div
+                                key={marker.code}
+                                className="group rounded-xl border blood-border-default blood-surface p-4 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(15,23,42,0.35)]"
+                              >
                                 <div className="flex items-start justify-between gap-4">
                                   <div>
                                     <div className="text-sm font-semibold blood-text-primary">{marker.name}</div>
@@ -1269,7 +1307,7 @@ function BloodAnalysisReportInner() {
                             <AccordionItem
                               key={`${panelKey}:${marker.code}`}
                               value={`${panelKey}:${marker.code}`}
-                              className="rounded-xl border blood-border-default blood-surface px-4"
+                              className="rounded-xl border blood-border-default blood-surface px-4 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(15,23,42,0.35)]"
                             >
                               <AccordionTrigger className="py-4 text-left hover:no-underline">
                                 <div className="flex w-full items-start justify-between gap-4">

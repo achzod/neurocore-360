@@ -19,6 +19,7 @@ type RadarPoint = {
   score: number;
   status: BiomarkerStatus;
   muted?: boolean;
+  target?: number;
 };
 
 interface BloodRadarProps {
@@ -38,7 +39,8 @@ export function BloodRadar({
 }: BloodRadarProps) {
   const { theme } = useBloodTheme();
   const accent = accentColor ?? theme.primaryBlue;
-  const metaByLabel = new Map(data.map((item) => [item.label, { status: item.status, muted: !!item.muted }]));
+  const chartData = data.map((item) => ({ ...item, target: item.target ?? 85 }));
+  const metaByLabel = new Map(chartData.map((item) => [item.label, { status: item.status, muted: !!item.muted }]));
 
   return (
     <Card className={`border-none bg-transparent shadow-none ${className || ""}`}>
@@ -51,7 +53,7 @@ export function BloodRadar({
           style={{ height }}
         >
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius={outerRadius} data={data}>
+            <RadarChart cx="50%" cy="50%" outerRadius={outerRadius} data={chartData}>
               <PolarGrid stroke={theme.borderDefault} strokeOpacity={0.7} />
               <PolarAngleAxis
                 dataKey="label"
@@ -80,6 +82,7 @@ export function BloodRadar({
                 strokeWidth={3}
                 fill={accent}
                 fillOpacity={0.35}
+                animationDuration={900}
                 dot={({ payload }) => {
                   const colors = getBiomarkerStatusColor(payload.status);
                   return (
@@ -91,6 +94,16 @@ export function BloodRadar({
                     />
                   );
                 }}
+              />
+              <Radar
+                name="Optimal"
+                dataKey="target"
+                stroke={theme.textTertiary}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                fill="none"
+                fillOpacity={0}
+                animationDuration={900}
               />
               <Tooltip
                 contentStyle={{
