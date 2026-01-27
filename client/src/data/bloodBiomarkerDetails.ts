@@ -72,6 +72,399 @@ const LIVER_KIDNEY_CITATIONS = [
   },
 ];
 
+export const MARKER_CITATIONS = {
+  "testosterone_total": [
+    {
+      "title": "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29562364/"
+    },
+    {
+      "title": "Harmonized Reference Ranges for Circulating Testosterone Levels in Men of Four Cohort Studies in the United States and Europe (2017)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/28324103/"
+    }
+  ],
+  "testosterone_libre": [
+    {
+      "title": "Harmonized Reference Ranges for Circulating Testosterone Levels in Men of Four Cohort Studies in the United States and Europe (2017)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/28324103/"
+    },
+    {
+      "title": "Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29562364/"
+    }
+  ],
+  "shbg": [
+    {
+      "title": "Testosterone, sex hormone-binding globulin and the metabolic syndrome: a systematic review and meta-analysis of observational studies (2011)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/20870782/"
+    },
+    {
+      "title": "Testosterone, sex hormone-binding globulin and the metabolic syndrome in men: an individual participant data meta-analysis of observational studies (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25019163/"
+    }
+  ],
+  "estradiol": [
+    {
+      "title": "Reference ranges and determinants of testosterone, dihydrotestosterone, and estradiol levels measured using liquid chromatography-tandem mass spectrometry in a population-based cohort of older men (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/22977273/"
+    },
+    {
+      "title": "Serum estradiol levels in normal men and men with idiopathic infertility (1995)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/7614406/"
+    }
+  ],
+  "lh": [
+    {
+      "title": "Reference intervals for serum sex hormones in Han Chinese adult men from the Fangchenggang Area Male Health and Examination Survey (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/22582502/"
+    },
+    {
+      "title": "Late-onset hypogonadism: a concept comes of age (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31639279/"
+    }
+  ],
+  "fsh": [
+    {
+      "title": "Reference intervals for serum sex hormones in Han Chinese adult men from the Fangchenggang Area Male Health and Examination Survey (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/22582502/"
+    },
+    {
+      "title": "Late-onset hypogonadism: a concept comes of age (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31639279/"
+    }
+  ],
+  "prolactine": [
+    {
+      "title": "Diagnosis and treatment of hyperprolactinemia: an Endocrine Society clinical practice guideline (2011)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/21296991/"
+    },
+    {
+      "title": "Guidelines of the Pituitary Society for the diagnosis and management of prolactinomas (2006)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/16886971/"
+    }
+  ],
+  "dhea_s": [
+    {
+      "title": "Reference ranges for serum dehydroepiandrosterone sulfate and testosterone in adult men (2008)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/18599883/"
+    },
+    {
+      "title": "Reference intervals for plasma concentrations of adrenal steroids measured by LC-MS/MS: Impact of gender, age, oral contraceptives, body mass index and blood pressure status (2017)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/28479316/"
+    }
+  ],
+  "cortisol": [
+    {
+      "title": "Morning serum cortisol role in the adrenal insufficiency diagnosis with modern cortisol assays (2023)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/36966469/"
+    },
+    {
+      "title": "Cortisol awakening response and psychosocial factors: a systematic review and meta-analysis (2009)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/19022335/"
+    }
+  ],
+  "igf1": [
+    {
+      "title": "Reference intervals for insulin-like growth factor-1 (igf-i) from birth to senescence: results from a multicenter study using a new automated chemiluminescence IGF-I immunoassay conforming to recent international recommendations (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24606072/"
+    },
+    {
+      "title": "Age- and sex-specific reference intervals across life span for insulin-like growth factor binding protein 3 (IGFBP-3) and the IGF-I to IGFBP-3 ratio measured by new automated chemiluminescence assays (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24483154/"
+    }
+  ],
+  "tsh": [
+    {
+      "title": "Guidelines for the treatment of hypothyroidism: prepared by the american thyroid association task force on thyroid hormone replacement (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25266247/"
+    },
+    {
+      "title": "Clinical practice guidelines for hypothyroidism in adults: cosponsored by the American Association of Clinical Endocrinologists and the American Thyroid Association (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23246686/"
+    }
+  ],
+  "t4_libre": [
+    {
+      "title": "Guidelines for the treatment of hypothyroidism: prepared by the american thyroid association task force on thyroid hormone replacement (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25266247/"
+    },
+    {
+      "title": "Clinical practice guidelines for hypothyroidism in adults: cosponsored by the American Association of Clinical Endocrinologists and the American Thyroid Association (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23246686/"
+    }
+  ],
+  "t3_libre": [
+    {
+      "title": "Guidelines for the treatment of hypothyroidism: prepared by the american thyroid association task force on thyroid hormone replacement (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25266247/"
+    },
+    {
+      "title": "Clinical practice guidelines for hypothyroidism in adults: cosponsored by the American Association of Clinical Endocrinologists and the American Thyroid Association (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23246686/"
+    }
+  ],
+  "t3_reverse": [
+    {
+      "title": "Clinical and laboratory aspects of 3,3',5'-triiodothyronine (reverse T3) (2021)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/33040575/"
+    },
+    {
+      "title": "[Clinical significance of serum reverse T3 analysis in endocrine tests of the thyroid-parathyroid system] (1989)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/2621831/"
+    }
+  ],
+  "anti_tpo": [
+    {
+      "title": "Normal range of anti-thyroid peroxidase antibody (TPO-Ab) and atherosclerosis among eu-thyroid population: A cross-sectional study (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/32957357/"
+    },
+    {
+      "title": "Guidelines for the treatment of hypothyroidism: prepared by the american thyroid association task force on thyroid hormone replacement (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25266247/"
+    }
+  ],
+  "glycemie_jeun": [
+    {
+      "title": "2. Diagnosis and Classification of Diabetes: Standards of Care in Diabetes-2024 (2024)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/38078589/"
+    },
+    {
+      "title": "[Diabetes mellitus: definition, classification, diagnosis, screening and prevention (Update 2023)] (2023)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/37101021/"
+    }
+  ],
+  "hba1c": [
+    {
+      "title": "2. Diagnosis and Classification of Diabetes: Standards of Care in Diabetes-2024 (2024)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/38078589/"
+    },
+    {
+      "title": "[Diabetes mellitus: definition, classification, diagnosis, screening and prevention (Update 2023)] (2023)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/37101021/"
+    }
+  ],
+  "insuline_jeun": [
+    {
+      "title": "Generating a reference interval for fasting serum insulin in healthy nondiabetic adult Chinese men (2012)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23268156/"
+    },
+    {
+      "title": "Homeostasis model assessment: insulin resistance and beta-cell function from fasting plasma glucose and insulin concentrations in man (1985)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/3899825/"
+    }
+  ],
+  "homa_ir": [
+    {
+      "title": "Homeostasis model assessment: insulin resistance and beta-cell function from fasting plasma glucose and insulin concentrations in man (1985)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/3899825/"
+    },
+    {
+      "title": "Use and abuse of HOMA modeling (2004)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/15161807/"
+    }
+  ],
+  "triglycerides": [
+    {
+      "title": "2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol: A Report of the American College of Cardiology/American Heart Association Task Force on Clinical Practice Guidelines (2019)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30586774/"
+    },
+    {
+      "title": "2019 ESC/EAS Guidelines for the management of dyslipidaemias: lipid modification to reduce cardiovascular risk (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31504418/"
+    }
+  ],
+  "hdl": [
+    {
+      "title": "2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol: A Report of the American College of Cardiology/American Heart Association Task Force on Clinical Practice Guidelines (2019)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30586774/"
+    },
+    {
+      "title": "2019 ESC/EAS Guidelines for the management of dyslipidaemias: lipid modification to reduce cardiovascular risk (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31504418/"
+    }
+  ],
+  "ldl": [
+    {
+      "title": "2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol: A Report of the American College of Cardiology/American Heart Association Task Force on Clinical Practice Guidelines (2019)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30586774/"
+    },
+    {
+      "title": "2019 ESC/EAS Guidelines for the management of dyslipidaemias: lipid modification to reduce cardiovascular risk (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31504418/"
+    }
+  ],
+  "apob": [
+    {
+      "title": "Role of apolipoprotein B in the clinical management of cardiovascular risk in adults: An Expert Clinical Consensus from the National Lipid Association (2024)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/39256087/"
+    },
+    {
+      "title": "2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol: A Report of the American College of Cardiology/American Heart Association Task Force on Clinical Practice Guidelines (2019)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30586774/"
+    }
+  ],
+  "lpa": [
+    {
+      "title": "Lipoprotein(a) in atherosclerotic cardiovascular disease and aortic stenosis: a European Atherosclerosis Society consensus statement (2022)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/36036785/"
+    },
+    {
+      "title": "HEART UK consensus statement on Lipoprotein(a): A call to action (2019)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31704552/"
+    }
+  ],
+  "crp_us": [
+    {
+      "title": "C-reactive protein, subclinical atherosclerosis, and risk of cardiovascular events (2002)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/12377722/"
+    },
+    {
+      "title": "Comparison of C-reactive protein and low-density lipoprotein cholesterol levels in the prediction of first cardiovascular events (2002)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/12432042/"
+    }
+  ],
+  "homocysteine": [
+    {
+      "title": "Hyperhomocysteinemia and cardiovascular diseases (2022)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/35129442/"
+    },
+    {
+      "title": "The current status of homocysteine as a risk factor for cardiovascular disease: a mini review (2018)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29979619/"
+    }
+  ],
+  "ferritine": [
+    {
+      "title": "Serum or plasma ferritin concentration as an index of iron deficiency and overload (2021)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34028001/"
+    },
+    {
+      "title": "Iron Deficiency in Adults: A Review (2025)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/40159291/"
+    }
+  ],
+  "fer_serique": [
+    {
+      "title": "Iron deficiency anemia (2007)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/17375513/"
+    },
+    {
+      "title": "Serum or plasma ferritin concentration as an index of iron deficiency and overload (2021)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34028001/"
+    }
+  ],
+  "transferrine_sat": [
+    {
+      "title": "Using transferrin saturation as a diagnostic criterion for iron deficiency: A systematic review (2019)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/31503510/"
+    },
+    {
+      "title": "Iron Deficiency in Adults: A Review (2025)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/40159291/"
+    }
+  ],
+  "vitamine_d": [
+    {
+      "title": "Vitamin D for the Prevention of Disease: An Endocrine Society Clinical Practice Guideline (2024)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/38828931/"
+    },
+    {
+      "title": "Evaluation, treatment, and prevention of vitamin D deficiency: an Endocrine Society clinical practice guideline (2011)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/21646368/"
+    }
+  ],
+  "b12": [
+    {
+      "title": "Vitamin B12 deficiency - A 21st century perspective (2015)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25824066/"
+    },
+    {
+      "title": "Clinical practice. Vitamin B12 deficiency (2013)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23301732/"
+    }
+  ],
+  "folate": [
+    {
+      "title": "Guidelines for the diagnosis and treatment of cobalamin and folate disorders (2014)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24942828/"
+    },
+    {
+      "title": "Megaloblastic Anemias: Nutritional and Other Causes (2017)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/28189172/"
+    }
+  ],
+  "magnesium_rbc": [
+    {
+      "title": "Interpreting magnesium status to enhance clinical care: key indicators (2017)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/28806179/"
+    },
+    {
+      "title": "Magnesium Deficiency and Proton-Pump Inhibitor Use: A Clinical Review (2016)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/26582556/"
+    }
+  ],
+  "zinc": [
+    {
+      "title": "Reference Value for Serum Zinc Level of Adult Population in Bangladesh (2020)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/32549879/"
+    },
+    {
+      "title": "Discovery of human zinc deficiency: its impact on human health and disease (2013)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23493534/"
+    }
+  ],
+  "alt": [
+    {
+      "title": "Evaluation of abnormal liver-enzyme results in asymptomatic patients (2000)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/10781624/"
+    },
+    {
+      "title": "Physiological and biochemical basis of clinical liver function tests: a review (2013)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/22836216/"
+    }
+  ],
+  "ast": [
+    {
+      "title": "Evaluation of abnormal liver-enzyme results in asymptomatic patients (2000)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/10781624/"
+    },
+    {
+      "title": "Physiological and biochemical basis of clinical liver function tests: a review (2013)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/22836216/"
+    }
+  ],
+  "ggt": [
+    {
+      "title": "Serum gamma-glutamyl transpeptidase: its clinical significance (1976)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23644/"
+    },
+    {
+      "title": "Evaluation of abnormal liver function tests (2016)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/26842972/"
+    }
+  ],
+  "creatinine": [
+    {
+      "title": "Reference intervals for serum creatinine concentrations: assessment of available data for global application (2008)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/18202155/"
+    },
+    {
+      "title": "Adult reference ranges for serum cystatin C, creatinine and predicted creatinine clearance (2000)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/10672373/"
+    }
+  ],
+  "egfr": [
+    {
+      "title": "A new equation to estimate glomerular filtration rate (2009)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/19414839/"
+    },
+    {
+      "title": "Evaluation and management of chronic kidney disease: synopsis of the kidney disease: improving global outcomes 2012 clinical practice guideline (2013)",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23732715/"
+    }
+  ]
+} as const;
+
 export const BIOMARKER_DETAILS: Record<string, BiomarkerDetail> = {
   testosterone_total: {
     definition:

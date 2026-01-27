@@ -26,7 +26,7 @@ import { StatusIndicator } from "@/components/blood/StatusIndicator";
 import { AnimatedNumber } from "@/components/blood/AnimatedNumber";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BIOMARKER_DETAILS, buildDefaultBiomarkerDetail } from "@/data/bloodBiomarkerDetails";
+import { BIOMARKER_DETAILS, buildDefaultBiomarkerDetail, MARKER_CITATIONS } from "@/data/bloodBiomarkerDetails";
 import { BLOOD_PANEL_CITATIONS } from "@/data/bloodPanelCitations";
 import { type PatientContext } from "@/lib/biomarkerCorrelations";
 import { getPercentileRank } from "@/lib/biomarkerPercentiles";
@@ -253,10 +253,49 @@ const diabetesRisk = (markers: BloodTestDetail["markers"]) => {
   return { score, level, gly, a1c, insulin, homa };
 };
 
+const buildRangeNote = (marker: BloodTestDetail["markers"][number]) => {
+  const hasNormal = marker.refMin !== null && marker.refMax !== null;
+  const hasOptimal = marker.optimalMin !== null && marker.optimalMax !== null;
+  const unit = marker.unit ? ` ${marker.unit}` : "";
+  if (hasNormal && hasOptimal) {
+    return `Range labo ${marker.refMin}-${marker.refMax}${unit}. Zone performance ${marker.optimalMin}-${marker.optimalMax}${unit}.`;
+  }
+  if (hasNormal) {
+    return `Range labo ${marker.refMin}-${marker.refMax}${unit}.`;
+  }
+  if (hasOptimal) {
+    return `Zone performance ${marker.optimalMin}-${marker.optimalMax}${unit}.`;
+  }
+  return "";
+};
+
+const buildStatusNote = (status: MarkerStatus) => {
+  switch (status) {
+    case "critical":
+      return "Niveau critique: priorite haute pour corriger les causes principales.";
+    case "suboptimal":
+      return "Sous-optimal: marges claires d'optimisation avec ajustements cibles.";
+    case "normal":
+      return "Dans la norme labo, mais l'optimal depend du contexte performance.";
+    case "optimal":
+      return "Zone optimale: niveau coherent avec performance et recuperation.";
+    default:
+      return "";
+  }
+};
+
 const getMarkerDetail = (marker: BloodTestDetail["markers"][number]) => {
-  const detail = BIOMARKER_DETAILS[marker.code];
-  if (detail) return detail;
-  return buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
+  const base = BIOMARKER_DETAILS[marker.code] || buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
+  const rangeNote = buildRangeNote(marker);
+  const statusNote = buildStatusNote(marker.status);
+  const citations = MARKER_CITATIONS[marker.code] || base.citations || [];
+  return {
+    ...base,
+    definition: `${base.definition}${rangeNote ? ` ${rangeNote}` : ""}`.trim(),
+    mechanism: `${base.mechanism}${statusNote ? ` ${statusNote}` : ""}`.trim(),
+    impact: `${base.impact} Le contexte clinique, la tendance dans le temps et les autres marqueurs modulent l'interpretation.`.trim(),
+    citations,
+  };
 };
 
 const buildScoreReflection = (marker: BloodTestDetail["markers"][number], percentile: number | null) => {
@@ -1143,7 +1182,11 @@ function BloodAnalysisReportInner() {
                               </div>
                               <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
                                 <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Ce que reflète ton score</p>
-                                <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{scoreReflection}</p>
+                                <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.mechanism}</p>
+                                {marker.interpretation ? (
+                                  <p className="mt-3 text-sm blood-text-secondary leading-relaxed">{marker.interpretation}</p>
+                                ) : null}
+                                <p className="mt-3 text-xs blood-text-tertiary">{scoreReflection}</p>
                               </div>
                               <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
                                 <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Impacts sur ton corps</p>
