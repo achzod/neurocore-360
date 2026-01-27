@@ -14,9 +14,7 @@ const BloodThemeContext = createContext<BloodThemeContextValue | undefined>(unde
 
 export function BloodThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = window.localStorage.getItem("blood-theme-mode");
-    return saved === "light" || saved === "dark" ? saved : "dark";
+    return "dark";
   });
 
   const theme = useMemo(() => BLOOD_THEMES[mode], [mode]);
@@ -27,8 +25,8 @@ export function BloodThemeProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("blood-theme-mode", mode);
-  }, [mode]);
+    window.localStorage.setItem("blood-theme-mode", "dark");
+  }, []);
 
   return (
     <BloodThemeContext.Provider value={{ theme, mode, toggleTheme, setMode }}>

@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
 import { useBloodTheme } from "@/components/blood/BloodThemeContext";
-import { ThemeToggle } from "@/components/blood/ThemeToggle";
 
 export default function BloodHeader({ credits }: { credits: number }) {
   const [, navigate] = useLocation();
@@ -46,7 +45,6 @@ export default function BloodHeader({ credits }: { credits: number }) {
               Acheter des credits
             </Button>
           </Link>
-          <ThemeToggle />
           <Button
             variant="ghost"
             className="hover:opacity-80"
