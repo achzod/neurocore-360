@@ -14,6 +14,9 @@ import {
   HeartPulse,
   Dna,
   Target,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle2,
 } from "lucide-react";
 
 import BloodHeader from "@/components/blood/BloodHeader";
@@ -115,37 +118,37 @@ const PANEL_META: Record<
   hormonal: {
     label: "Hormones",
     bullets: ["Testosterone, SHBG, estradiol", "LH/FSH, prolactine", "Cortisol, IGF-1, DHEA-S"],
-    impact: "Impact direct sur prise de muscle, libido, recuperation.",
+    impact: "ta prise de muscle, ta libido et ta recuperation",
     icon: Flame,
   },
   thyroid: {
     label: "Thyroide",
     bullets: ["TSH, T3, T4", "Anti-TPO, T3 reverse", "Conversion et regulation"],
-    impact: "Levier majeur sur metabolismes et perte de gras.",
+    impact: "ton metabolisme, ta thermogenese et ta perte de gras",
     icon: Activity,
   },
   metabolic: {
     label: "Metabolisme",
     bullets: ["Glycemie, HbA1c, HOMA-IR", "Lipides (TG/HDL/LDL)", "ApoB, Lp(a)"],
-    impact: "Determine ton aptitude a bruler la graisse.",
+    impact: "ta sensibilite a l'insuline et ta capacite a bruler la graisse",
     icon: HeartPulse,
   },
   inflammatory: {
     label: "Inflammation",
     bullets: ["CRP-us, homocysteine", "Ferritine, fer serique", "Saturation transferrine"],
-    impact: "Inflammation haute = recuperation ralentie.",
+    impact: "ta recuperation, ton anabolisme et ton risque cardio",
     icon: ShieldAlert,
   },
   vitamins: {
     label: "Vitamines",
     bullets: ["Vitamine D, B12, folate", "Magnesium RBC", "Zinc"],
-    impact: "Micronutriments = performance et energie.",
+    impact: "ta production hormonale, ton energie et ton immunite",
     icon: Dna,
   },
   liver_kidney: {
     label: "Foie/Rein",
     bullets: ["ALT/AST/GGT", "Creatinine/eGFR", "Lecture hepatique + renale"],
-    impact: "Detox, metabolisme des hormones.",
+    impact: "ta detox, le metabolisme de tes hormones et ton elimination",
     icon: Target,
   },
 };
@@ -283,6 +286,12 @@ const diabetesRisk = (markers: BloodTestDetail["markers"]) => {
   return { score, level, gly, a1c, insulin, homa };
 };
 
+const getMarkerDetail = (marker: BloodTestDetail["markers"][number]) => {
+  const detail = BIOMARKER_DETAILS[marker.code];
+  if (detail) return detail;
+  return buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
+};
+
 const getMarkerNarrative = (marker: BloodTestDetail["markers"][number], panel: PanelKey) => {
   const statusTone =
     marker.status === "critical"
@@ -293,26 +302,16 @@ const getMarkerNarrative = (marker: BloodTestDetail["markers"][number], panel: P
       ? "normal"
       : "optimal";
 
-  const definition = `Ta valeur (${marker.value} ${marker.unit}) est ${statusTone}. ${marker.interpretation ? marker.interpretation : `Je l'analyse dans le contexte ${PANEL_META[panel].label.toLowerCase()}.`}`;
-  const mechanism = `Quand ${marker.name} est ${statusTone}, l'impact est direct sur ${PANEL_META[panel].impact.toLowerCase()}`;
-  const optimization =
-    panel === "hormonal"
-      ? "Je commence par optimiser sommeil, entrainement et lipides essentiels pour remonter l'anabolisme."
-      : panel === "metabolic"
-      ? "Je stabilise la glycemie, j'ameliore la sensibilite a l'insuline et je structure le timing glucidique."
-      : panel === "thyroid"
-      ? "Je securise la conversion T4 → T3 et je reduis les freins inflammatoires."
-      : panel === "vitamins"
-      ? "Je corrige les deficits micronutriments pour restaurer energie et recuperation."
-      : "Je corrige les fondamentaux (sommeil, inflammation, nutriments) avant d'aller plus loin.";
+  const detail = getMarkerDetail(marker);
+  const definition = `Ta valeur (${marker.value} ${marker.unit}) est ${statusTone}. ${
+    marker.interpretation ? marker.interpretation : `Je l'analyse dans le contexte ${PANEL_META[panel].label.toLowerCase()}.`
+  }`;
+  const mechanism = `Quand ${marker.name} est ${statusTone}, cela impacte directement ${PANEL_META[panel].impact}.`;
+  const optimization = detail?.protocol?.length
+    ? detail.protocol[0]
+    : "Je corrige les fondamentaux (sommeil, inflammation, nutriments) avant d'aller plus loin.";
 
   return { definition, mechanism, optimization };
-};
-
-const getMarkerDetail = (marker: BloodTestDetail["markers"][number]) => {
-  const detail = BIOMARKER_DETAILS[marker.code];
-  if (detail) return detail;
-  return buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
 };
 
 const buildLifestyleCorrelations = (
@@ -903,7 +902,9 @@ function BloodAnalysisReportInner() {
                   <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Hormonal & anabolic index</p>
                   <p className="mt-2 text-sm blood-text-secondary">Levier majeur prise de muscle / perte de gras.</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="text-3xl font-semibold blood-text-primary">{anabolicIndex ?? "N/A"}</div>
+                    <div className="text-3xl font-semibold blood-text-primary">
+                      {typeof anabolicIndex === "number" ? <AnimatedNumber value={anabolicIndex} decimals={0} /> : "N/A"}
+                    </div>
                     {typeof anabolicIndex === "number" && <StatusBadge status={scoreToStatus(anabolicIndex)} />}
                   </div>
                   <p className="mt-3 text-sm blood-text-secondary">
@@ -917,7 +918,9 @@ function BloodAnalysisReportInner() {
                   <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Body recomp readiness</p>
                   <p className="mt-2 text-sm blood-text-secondary">Synthese hormones + thyroide + metabolisme.</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="text-3xl font-semibold blood-text-primary">{recompReadiness ?? "N/A"}</div>
+                    <div className="text-3xl font-semibold blood-text-primary">
+                      {typeof recompReadiness === "number" ? <AnimatedNumber value={recompReadiness} decimals={0} /> : "N/A"}
+                    </div>
                     {typeof recompReadiness === "number" && <StatusBadge status={scoreToStatus(recompReadiness)} />}
                   </div>
                   <p className="mt-3 text-sm blood-text-secondary">
@@ -933,7 +936,9 @@ function BloodAnalysisReportInner() {
                   {diabetes ? (
                     <>
                       <div className="mt-4 flex items-center justify-between">
-                        <div className="text-3xl font-semibold blood-text-primary">{diabetes.score}/100</div>
+                        <div className="text-3xl font-semibold blood-text-primary">
+                          <AnimatedNumber value={diabetes.score} decimals={0} />/100
+                        </div>
                         <StatusBadge status={diabetes.score >= 75 ? "critical" : diabetes.score >= 55 ? "suboptimal" : "normal"} />
                       </div>
                       <p className="mt-3 text-sm blood-text-secondary">
@@ -1107,19 +1112,66 @@ function BloodAnalysisReportInner() {
                                     optimalLabel="Optimal performance"
                                   />
                                 </div>
-                                <div className="mt-4 space-y-2 text-sm blood-text-secondary">
-                                  <p>
-                                    <span className="font-semibold blood-text-primary">Ce que ca dit :</span>{" "}
-                                    {narrativeBlocks.definition}
-                                  </p>
-                                  <p>
-                                    <span className="font-semibold blood-text-primary">Impact performance :</span>{" "}
-                                    {narrativeBlocks.mechanism}
-                                  </p>
-                                  <p>
-                                    <span className="font-semibold blood-text-primary">Prochaine etape :</span>{" "}
-                                    {narrativeBlocks.optimization}
-                                  </p>
+                                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                                  <div
+                                    className="rounded-lg border p-3"
+                                    style={{
+                                      borderLeftWidth: "2px",
+                                      borderLeftColor: theme.primaryBlue,
+                                      borderColor: theme.borderDefault,
+                                      backgroundColor: mode === "dark" ? "rgba(2,121,232,0.05)" : theme.surface,
+                                    }}
+                                  >
+                                    <div className="mb-2 flex items-center gap-2">
+                                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
+                                      <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: theme.textSecondary }}>
+                                        Definition
+                                      </span>
+                                    </div>
+                                    <p className="text-sm leading-relaxed" style={{ color: theme.textPrimary }}>
+                                      {narrativeBlocks.definition}
+                                    </p>
+                                  </div>
+
+                                  <div
+                                    className="rounded-lg border p-3"
+                                    style={{
+                                      borderLeftWidth: "2px",
+                                      borderLeftColor: "#F59E0B",
+                                      borderColor: theme.borderDefault,
+                                      backgroundColor: mode === "dark" ? "rgba(245,158,11,0.05)" : theme.surface,
+                                    }}
+                                  >
+                                    <div className="mb-2 flex items-center gap-2">
+                                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#F59E0B" }} />
+                                      <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: theme.textSecondary }}>
+                                        Impact
+                                      </span>
+                                    </div>
+                                    <p className="text-sm leading-relaxed" style={{ color: theme.textPrimary }}>
+                                      {narrativeBlocks.mechanism}
+                                    </p>
+                                  </div>
+
+                                  <div
+                                    className="rounded-lg border p-3"
+                                    style={{
+                                      borderLeftWidth: "2px",
+                                      borderLeftColor: "#10B981",
+                                      borderColor: theme.borderDefault,
+                                      backgroundColor: mode === "dark" ? "rgba(16,185,129,0.05)" : theme.surface,
+                                    }}
+                                  >
+                                    <div className="mb-2 flex items-center gap-2">
+                                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#10B981" }} />
+                                      <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: theme.textSecondary }}>
+                                        Action
+                                      </span>
+                                    </div>
+                                    <p className="text-sm leading-relaxed" style={{ color: theme.textPrimary }}>
+                                      {narrativeBlocks.optimization}
+                                    </p>
+                                  </div>
                                 </div>
                                 {patientContext && correlations.length > 0 && (
                                   <div className="mt-4 space-y-2">
@@ -1245,11 +1297,54 @@ function BloodAnalysisReportInner() {
                                   normalLabel="Normal labo"
                                   optimalLabel="Optimal performance"
                                 />
-                                {(deltaText || percentile) && (
-                                  <p className="mt-2 text-xs blood-text-tertiary">
-                                    {deltaText}
-                                    {percentile ? ` · Top ${100 - percentile}% (${patientContext?.age} ans)` : ""}
-                                  </p>
+                                {(deltaText || percentile || (marker.optimalMin !== null && marker.optimalMax !== null)) && (
+                                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                                    {deltaText && (
+                                      <div className="flex items-center gap-2">
+                                        {deltaText.includes("sous") ? (
+                                          <TrendingDown size={18} style={{ color: "#F59E0B" }} />
+                                        ) : deltaText.includes("au-dessus") ? (
+                                          <TrendingUp size={18} style={{ color: "#10B981" }} />
+                                        ) : (
+                                          <CheckCircle2 size={18} style={{ color: theme.primaryBlue }} />
+                                        )}
+                                        <span
+                                          className="text-sm font-semibold"
+                                          style={{
+                                            color: deltaText.includes("sous")
+                                              ? "#F59E0B"
+                                              : deltaText.includes("au-dessus")
+                                              ? "#10B981"
+                                              : theme.primaryBlue,
+                                          }}
+                                        >
+                                          {deltaText}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {percentile && (
+                                      <div className="flex items-center gap-1.5 text-sm" style={{ color: theme.textSecondary }}>
+                                        <span className="font-medium">·</span>
+                                        <span>
+                                          Top{" "}
+                                          <span className="font-semibold" style={{ color: theme.primaryBlue }}>
+                                            {100 - percentile}%
+                                          </span>
+                                        </span>
+                                        <span className="text-xs" style={{ color: theme.textTertiary }}>
+                                          ({patientContext?.age} ans)
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {marker.optimalMin !== null && marker.optimalMax !== null && (
+                                      <div className="text-xs" style={{ color: theme.textTertiary }}>
+                                        <span className="font-medium">Cible:</span> {marker.optimalMin}-{marker.optimalMax}{" "}
+                                        {marker.unit}
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
                                 {patientContext && correlations.length > 0 && (
                                   <div className="mt-4 space-y-2">
