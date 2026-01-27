@@ -248,7 +248,12 @@ export function registerBloodTestsRoutes(app: Express): void {
   app.post("/api/admin/blood-tests/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
-      const body = (req.body || {}) as { email?: string; files?: string[]; includeAI?: boolean };
+      const body = (req.body || {}) as {
+        email?: string;
+        files?: string[];
+        includeAI?: boolean;
+        asyncAI?: boolean;
+      };
       const seedEmail = (
         String(body.email || "").trim() ||
         (process.env.ADMIN_EMAILS || "").split(",")[0]?.trim() ||
@@ -313,7 +318,8 @@ export function registerBloodTestsRoutes(app: Express): void {
 
           let aiAnalysis = "";
           const includeAI = body.includeAI !== false;
-          if (includeAI && process.env.ANTHROPIC_API_KEY) {
+          const asyncAI = body.asyncAI === true;
+          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
             try {
               aiAnalysis = await generateAIBloodAnalysis(
                 analysisResult,
@@ -396,6 +402,37 @@ export function registerBloodTestsRoutes(app: Express): void {
             createdAt: new Date(),
             completedAt: new Date(),
           });
+
+          if (includeAI && asyncAI && process.env.ANTHROPIC_API_KEY) {
+            setImmediate(async () => {
+              try {
+                const enriched = await generateAIBloodAnalysis(
+                  analysisResult,
+                  {
+                    gender: patientProfile.gender as "homme" | "femme",
+                    age,
+                    prenom: patientProfile.prenom,
+                    nom: patientProfile.nom,
+                    poids: patientProfile.poids,
+                    taille: patientProfile.taille,
+                    sleepHours: patientProfile.sleepHours,
+                    trainingHours: patientProfile.trainingHours,
+                    calorieDeficit: patientProfile.calorieDeficit,
+                    alcoholWeekly: patientProfile.alcoholWeekly,
+                    stressLevel: patientProfile.stressLevel,
+                  },
+                  knowledgeContext
+                );
+                const updatedAnalysis = {
+                  ...analysisPayload,
+                  aiAnalysis: enriched,
+                };
+                await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
+              } catch (err) {
+                console.error("[BloodTests] async AI seed failed:", err);
+              }
+            });
+          }
 
           created.push({
             id: createdRecord.id,
