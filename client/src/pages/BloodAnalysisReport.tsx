@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -18,17 +18,20 @@ import {
 
 import BloodHeader from "@/components/blood/BloodHeader";
 import BloodShell from "@/components/blood/BloodShell";
-import { BLOOD_THEME } from "@/components/blood/bloodTheme";
+import { BloodThemeProvider, useBloodTheme } from "@/components/blood/BloodThemeContext";
 import { BloodRadar } from "@/components/blood/BloodRadar";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
 import { StatusIndicator } from "@/components/blood/StatusIndicator";
+import { AnimatedNumber } from "@/components/blood/AnimatedNumber";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BIOMARKER_DETAILS, buildDefaultBiomarkerDetail } from "@/data/bloodBiomarkerDetails";
 import { BLOOD_PANEL_CITATIONS } from "@/data/bloodPanelCitations";
+import { getCorrelationInsights, type PatientContext } from "@/lib/biomarkerCorrelations";
+import { getPercentileRank } from "@/lib/biomarkerPercentiles";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -47,6 +50,8 @@ type BloodTestDetail = {
       email?: string;
       gender?: string;
       dob?: string;
+      poids?: number;
+      taille?: number;
       sleepHours?: number;
       trainingHours?: number;
       calorieDeficit?: number;
@@ -86,6 +91,8 @@ type BloodTestDetail = {
       email?: string;
       gender?: string;
       dob?: string;
+      poids?: number;
+      taille?: number;
       sleepHours?: number;
       trainingHours?: number;
       calorieDeficit?: number;
@@ -219,6 +226,21 @@ const statusLabel = (status: MarkerStatus): string => {
   if (status === "normal") return "normal";
   if (status === "suboptimal") return "sous-optimal";
   return "critique";
+};
+
+const deltaFromOptimal = (marker: BloodTestDetail["markers"][number]) => {
+  if (marker.optimalMin === null || marker.optimalMax === null) return null;
+  const optimalMid = (marker.optimalMin + marker.optimalMax) / 2;
+  if (!optimalMid) return null;
+  if (marker.value < marker.optimalMin) {
+    const pct = Math.abs(((marker.value - marker.optimalMin) / marker.optimalMin) * 100);
+    return `${pct.toFixed(0)}% sous l'optimal`;
+  }
+  if (marker.value > marker.optimalMax) {
+    const pct = ((marker.value - marker.optimalMax) / marker.optimalMax) * 100;
+    return `${pct.toFixed(0)}% au-dessus de l'optimal`;
+  }
+  return "Dans la zone optimale";
 };
 
 const average = (values: Array<number | null>) => {
@@ -397,18 +419,18 @@ const buildLifestyleCorrelations = (
   return items.slice(0, 3);
 };
 
-function ScoreDonut({ score }: { score: number }) {
+function ScoreDonut({ score, primary, muted, textPrimary, textTertiary }: { score: number; primary: string; muted: string; textPrimary: string; textTertiary: string }) {
   const circumference = 2 * Math.PI * 56;
   const dash = (score / 100) * circumference;
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg className="h-36 w-36 -rotate-90">
-        <circle cx="72" cy="72" r="56" stroke="rgba(15, 23, 42, 0.12)" strokeWidth="10" fill="none" />
+        <circle cx="72" cy="72" r="56" stroke={muted} strokeWidth="10" fill="none" />
         <circle
           cx="72"
           cy="72"
           r="56"
-          stroke={BLOOD_THEME.primaryBlue}
+          stroke={primary}
           strokeWidth="10"
           fill="none"
           strokeDasharray={`${dash} ${circumference}`}
@@ -416,17 +438,21 @@ function ScoreDonut({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-4xl font-semibold tracking-tight text-white">{score}</div>
-        <div className="text-xs tracking-[0.2em] uppercase text-white/50">{scoreLabel(score)}</div>
+        <div className="text-4xl font-semibold tracking-tight" style={{ color: textPrimary }}>
+          <AnimatedNumber value={score} decimals={0} />
+        </div>
+        <div className="text-xs tracking-[0.2em] uppercase" style={{ color: textTertiary }}>{scoreLabel(score)}</div>
       </div>
     </div>
   );
 }
 
-export default function BloodAnalysisReport() {
+function BloodAnalysisReportInner() {
   const params = useParams<{ id: string }>();
   const reportId = params.id;
   const [, navigate] = useLocation();
+  const { theme, mode } = useBloodTheme();
+  const [isExporting, setIsExporting] = useState(false);
   const adminKey = useMemo(() => {
     if (typeof window === "undefined") return "";
     const value = new URLSearchParams(window.location.search).get("key");
@@ -518,6 +544,40 @@ export default function BloodAnalysisReport() {
   const patient = data?.bloodTest?.patient || data?.analysis?.patient || null;
   const displayName = patient?.prenom || (me?.user?.email ? me.user.email.split("@")[0] : "toi");
   const patientAge = patient?.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
+
+  const handleExportPDF = async () => {
+    if (!reportId) return;
+    setIsExporting(true);
+    try {
+      const token = localStorage.getItem("apexlabs_token");
+      const res = await fetch(`/api/blood-tests/${reportId}/export/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error("Export PDF indisponible.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const name = patient?.prenom ? `Blood_Analysis_${patient.prenom}_${new Date().toISOString().slice(0, 10)}.pdf` : `Blood_Analysis_${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.href = url;
+      a.download = name;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'export PDF.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  const patientContext: PatientContext | null = useMemo(() => {
+    if (!patient?.dob || !patient?.gender || !patient?.poids || !patient?.taille) return null;
+    const age = Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000);
+    const bmi = patient.poids / Math.pow(patient.taille / 100, 2);
+    if (!Number.isFinite(age) || !Number.isFinite(bmi)) return null;
+    const sexe =
+      patient.gender === "femme" ? "femme" : patient.gender === "homme" ? "homme" : "autre";
+    return { age, sexe, poids: patient.poids, taille: patient.taille, bmi };
+  }, [patient?.dob, patient?.gender, patient?.poids, patient?.taille]);
   const genderLabel = patient?.gender === "femme" ? "Femme" : patient?.gender === "homme" ? "Homme" : "N/A";
 
   const anabolicIndex = panelScores.hormonal;
@@ -558,7 +618,7 @@ export default function BloodAnalysisReport() {
     return (
       <BloodShell>
         <BloodHeader credits={credits} />
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24 text-white/70">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24 blood-text-secondary">
           <Loader2 className="mr-3 h-5 w-5 animate-spin" />
           Chargement du rapport...
         </div>
@@ -573,21 +633,26 @@ export default function BloodAnalysisReport() {
         <BloodHeader credits={credits} />
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-6 py-24 text-center">
           <AlertTriangle className="h-8 w-8 text-rose-500" />
-          <div className="text-lg font-semibold text-white">
+          <div className="text-lg font-semibold blood-text-primary">
             {isUnauthorized ? "Connexion requise." : "Rapport introuvable."}
           </div>
-          <div className="text-sm text-white/70">
+          <div className="text-sm blood-text-secondary">
             {isUnauthorized ? "Connecte-toi pour ouvrir ce rapport." : "Le lien est invalide ou le rapport n'est pas accessible."}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button
-              className="text-white"
-              style={{ backgroundColor: BLOOD_THEME.primaryBlue }}
+              className="blood-text-primary"
+              style={{ backgroundColor: theme.primaryBlue }}
               onClick={() => navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`)}
             >
               Se connecter
             </Button>
-            <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/blood-dashboard")}>
+            <Button
+              variant="outline"
+              className="hover:bg-transparent"
+              style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
+              onClick={() => navigate("/blood-dashboard")}
+            >
               Retour dashboard
             </Button>
           </div>
@@ -601,19 +666,27 @@ export default function BloodAnalysisReport() {
       <BloodShell>
         <BloodHeader credits={credits} />
         <div className="mx-auto max-w-3xl px-6 py-24">
-          <Card className="border border-white/13 bg-[#0a0a0a] p-8 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/13 bg-[#0a0a0a]">
-              <Loader2 className="h-6 w-6 animate-spin" style={{ color: BLOOD_THEME.primaryBlue }} />
+          <Card className="border p-8 text-center" style={{ backgroundColor: theme.surface, borderColor: theme.borderDefault }}>
+            <div
+              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border"
+              style={{ borderColor: theme.borderDefault, backgroundColor: theme.surfaceMuted }}
+            >
+              <Loader2 className="h-6 w-6 animate-spin" style={{ color: theme.primaryBlue }} />
             </div>
-            <h1 className="mt-6 text-2xl font-semibold tracking-tight text-white">Analyse en cours</h1>
-            <p className="mt-3 text-sm text-white/70">
+            <h1 className="mt-6 text-2xl font-semibold tracking-tight blood-text-primary">Analyse en cours</h1>
+            <p className="mt-3 text-sm blood-text-secondary">
               J'extrais tes biomarqueurs et je construis le rapport. La page se met a jour automatiquement.
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <Button className="text-white" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} onClick={() => refetch()}>
+              <Button className="text-white" style={{ backgroundColor: theme.primaryBlue }} onClick={() => refetch()}>
                 Rafraichir
               </Button>
-              <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/blood-dashboard")}>
+              <Button
+                variant="outline"
+                className="hover:bg-transparent"
+                style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
+                onClick={() => navigate("/blood-dashboard")}
+              >
                 Retour dashboard
               </Button>
             </div>
@@ -630,95 +703,126 @@ export default function BloodAnalysisReport() {
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Blood Analysis</p>
-            <h1 className="mt-3 blood-h1 text-white">
+            <p className="text-xs uppercase tracking-[0.3em] blood-text-tertiary">Blood Analysis</p>
+            <h1 className="mt-3 blood-h1 blood-text-primary">
               {displayName}, voici ton bilan sanguin expert.
             </h1>
-            <p className="mt-3 max-w-2xl text-white/70 leading-relaxed blood-body">
+            <p className="mt-3 max-w-2xl blood-text-secondary leading-relaxed blood-body">
               Je compare tes ranges labo (normaux) aux ranges optimaux (performance/longévité), je detecte les patterns,
               puis je te donne une trajectoire claire.
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-white/50">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs blood-text-tertiary">
+              <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
                 <FileText className="h-3.5 w-3.5" />
                 {data.bloodTest.fileName}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
+              <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
                 {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
+              <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
                 {data.markers.length} biomarqueurs
               </span>
               {data.analysis.temporalRisk && (
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
+                <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
                   Risque: {data.analysis.temporalRisk.level} ({data.analysis.temporalRisk.score}/100)
                 </span>
               )}
             </div>
-            <div className="mt-4 grid gap-3 text-xs text-white/50 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Patient</span>
-                <div className="mt-1 text-sm text-white">
+            <div className="mt-4 grid gap-3 text-xs blood-text-tertiary sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Patient</span>
+                <div className="mt-1 text-sm blood-text-primary">
                   {patient?.prenom || ""} {patient?.nom || ""}
                 </div>
               </div>
-              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Sexe</span>
-                <div className="mt-1 text-sm text-white">{genderLabel}</div>
+              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Sexe</span>
+                <div className="mt-1 text-sm blood-text-primary">{genderLabel}</div>
               </div>
-              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Age</span>
-                <div className="mt-1 text-sm text-white">{patientAge ?? "N/A"} {patientAge ? "ans" : ""}</div>
+              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Age</span>
+                <div className="mt-1 text-sm blood-text-primary">{patientAge ?? "N/A"} {patientAge ? "ans" : ""}</div>
               </div>
-              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Email</span>
-                <div className="mt-1 text-sm text-white">{patient?.email || "N/A"}</div>
+              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Email</span>
+                <div className="mt-1 text-sm blood-text-primary">{patient?.email || "N/A"}</div>
               </div>
             </div>
           </div>
 
-          <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/blood-dashboard")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              className="hover:opacity-80"
+              style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
+              onClick={() => navigate("/blood-dashboard")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour
+            </Button>
+            <Button
+              className="text-white hover:opacity-90"
+              style={{ backgroundColor: theme.primaryBlue }}
+              onClick={handleExportPDF}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Export en cours
+                </>
+              ) : (
+                <>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         <div className="mt-10">
           <Tabs defaultValue="overview">
-            <TabsList className="border border-white/13 bg-[#0a0a0a]/80 p-1">
-              <TabsTrigger value="overview" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+            <TabsList className="blood-tabs border p-1">
+              <TabsTrigger value="overview" className="blood-text-secondary">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="systems" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+              <TabsTrigger value="systems" className="blood-text-secondary">
                 Systemes
               </TabsTrigger>
-              <TabsTrigger value="markers" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+              <TabsTrigger value="markers" className="blood-text-secondary">
                 Biomarqueurs
               </TabsTrigger>
-              <TabsTrigger value="insights" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+              <TabsTrigger value="insights" className="blood-text-secondary">
                 Insights
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-6">
               <div className="grid gap-6 lg:grid-cols-[0.45fr_0.55fr]">
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                <Card className="border blood-border-default blood-surface p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-white/50">Score global</p>
-                      <p className="mt-2 text-sm text-white/70">Lecture multi-systemes sur 100.</p>
+                      <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Score global</p>
+                      <p className="mt-2 text-sm blood-text-secondary">Lecture multi-systemes sur 100.</p>
                     </div>
                     <StatusIndicator status={scoreToStatus(globalScore)} />
                   </div>
                   <div className="mt-6 flex justify-center">
-                    <ScoreDonut score={globalScore} />
+                    <ScoreDonut
+                      score={globalScore}
+                      primary={theme.primaryBlue}
+                      muted={theme.borderSubtle}
+                      textPrimary={theme.textPrimary}
+                      textTertiary={theme.textTertiary}
+                    />
                   </div>
                   <div className="mt-6 grid gap-3">
                     {(Object.keys(PANEL_META) as PanelKey[]).map((key) => {
                       const score = panelScores[key];
                       return (
-                        <div key={key} className="flex items-center justify-between rounded-lg border border-white/13 bg-[#0a0a0a] px-4 py-3">
-                          <div className="text-sm font-medium text-white">{PANEL_META[key].label}</div>
+                        <div key={key} className="flex items-center justify-between rounded-lg border blood-border-default blood-surface px-4 py-3">
+                          <div className="text-sm font-medium blood-text-primary">{PANEL_META[key].label}</div>
                           <div className="flex items-center gap-2">
                             {score === null ? (
                               <StatusBadge status="normal" label="N/A" className="opacity-70" />
@@ -732,33 +836,33 @@ export default function BloodAnalysisReport() {
                   </div>
                 </Card>
 
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                <Card className="border blood-border-default blood-surface p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-white/50">Balance systemique</p>
-                      <p className="mt-2 text-sm text-white/70">6 panels, score 0-100.</p>
+                      <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Balance systemique</p>
+                      <p className="mt-2 text-sm blood-text-secondary">6 panels, score 0-100.</p>
                     </div>
-                    <div className="inline-flex items-center gap-2 text-xs text-white/50">
-                      <ShieldAlert className="h-4 w-4" style={{ color: BLOOD_THEME.primaryBlue }} />
+                    <div className="inline-flex items-center gap-2 text-xs blood-text-tertiary">
+                      <ShieldAlert className="h-4 w-4" style={{ color: theme.primaryBlue }} />
                       Optimal vs normal
                     </div>
                   </div>
                   <div className="mt-6">
-                    <BloodRadar data={radarData} height={320} accentColor={BLOOD_THEME.primaryBlue} />
+                    <BloodRadar data={radarData} height={320} accentColor={theme.primaryBlue} />
                   </div>
                   <div className="mt-6 grid gap-4 md:grid-cols-2">
                     {patterns.length ? (
                       patterns.slice(0, 2).map((pattern) => (
-                        <div key={pattern.name} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
+                        <div key={pattern.name} className="rounded-xl border blood-border-default blood-surface p-4">
                           <div className="flex items-start justify-between gap-3">
-                            <div className="text-sm font-semibold text-white">{pattern.name}</div>
+                            <div className="text-sm font-semibold blood-text-primary">{pattern.name}</div>
                             <StatusBadge status="suboptimal" />
                           </div>
                           {!!pattern.causes?.length && (
-                            <ul className="mt-3 space-y-1 text-xs text-white/70">
+                            <ul className="mt-3 space-y-1 text-xs blood-text-secondary">
                               {pattern.causes.slice(0, 3).map((cause) => (
                                 <li key={cause} className="flex items-start gap-2">
-                              <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/30" />
+                                <span className="mt-1 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.borderStrong }} />
                                   <span>{cause}</span>
                                 </li>
                               ))}
@@ -767,23 +871,23 @@ export default function BloodAnalysisReport() {
                         </div>
                       ))
                     ) : (
-                      <div className="text-sm text-white/70">Aucun pattern majeur detecte.</div>
+                      <div className="text-sm blood-text-secondary">Aucun pattern majeur detecte.</div>
                     )}
                   </div>
                 </Card>
               </div>
 
-              <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/50">Sources scientifiques</p>
+              <Card className="mt-6 border blood-border-default blood-surface p-6">
+                <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Sources scientifiques</p>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
-                    <div key={key} className="rounded-xl border border-white/13 bg-black/40 p-4">
-                      <div className="text-sm font-semibold text-white">{PANEL_META[key].label}</div>
-                      <ul className="mt-3 space-y-2 text-xs text-white/60">
+                    <div key={key} className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                      <div className="text-sm font-semibold blood-text-primary">{PANEL_META[key].label}</div>
+                      <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
                         {(BLOOD_PANEL_CITATIONS[key] || []).map((citation) => (
                           <li key={citation.url}>
                             →{" "}
-                            <a className="underline hover:text-white" href={citation.url} target="_blank" rel="noreferrer">
+                            <a className="underline" style={{ color: theme.textSecondary }} href={citation.url} target="_blank" rel="noreferrer">
                               {citation.title}
                             </a>
                           </li>
@@ -795,108 +899,108 @@ export default function BloodAnalysisReport() {
               </Card>
 
               <div className="mt-6 grid gap-6 lg:grid-cols-3">
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Hormonal & anabolic index</p>
-                  <p className="mt-2 text-sm text-white/70">Levier majeur prise de muscle / perte de gras.</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Hormonal & anabolic index</p>
+                  <p className="mt-2 text-sm blood-text-secondary">Levier majeur prise de muscle / perte de gras.</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="text-3xl font-semibold text-white">{anabolicIndex ?? "N/A"}</div>
+                    <div className="text-3xl font-semibold blood-text-primary">{anabolicIndex ?? "N/A"}</div>
                     {typeof anabolicIndex === "number" && <StatusBadge status={scoreToStatus(anabolicIndex)} />}
                   </div>
-                  <p className="mt-3 text-sm text-white/70">
+                  <p className="mt-3 text-sm blood-text-secondary">
                     {typeof anabolicIndex === "number"
                       ? "Si ce score est bas, tes resultats stagnent meme avec un entrainement dur."
                       : "Pas assez de donnees pour conclure sur l'axe anabolique."}
                   </p>
                 </Card>
 
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Body recomp readiness</p>
-                  <p className="mt-2 text-sm text-white/70">Synthese hormones + thyroide + metabolisme.</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Body recomp readiness</p>
+                  <p className="mt-2 text-sm blood-text-secondary">Synthese hormones + thyroide + metabolisme.</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="text-3xl font-semibold text-white">{recompReadiness ?? "N/A"}</div>
+                    <div className="text-3xl font-semibold blood-text-primary">{recompReadiness ?? "N/A"}</div>
                     {typeof recompReadiness === "number" && <StatusBadge status={scoreToStatus(recompReadiness)} />}
                   </div>
-                  <p className="mt-3 text-sm text-white/70">
+                  <p className="mt-3 text-sm blood-text-secondary">
                     {typeof recompReadiness === "number"
                       ? "Plus ce score est haut, plus ta recomposition est realiste."
                       : "Donnees insuffisantes pour estimer la recomposition."}
                   </p>
                 </Card>
 
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Diabetes risk assessment</p>
-                  <p className="mt-2 text-sm text-white/70">Lecture glycémie, HbA1c, insuline, HOMA-IR.</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Diabetes risk assessment</p>
+                  <p className="mt-2 text-sm blood-text-secondary">Lecture glycémie, HbA1c, insuline, HOMA-IR.</p>
                   {diabetes ? (
                     <>
                       <div className="mt-4 flex items-center justify-between">
-                        <div className="text-3xl font-semibold text-white">{diabetes.score}/100</div>
+                        <div className="text-3xl font-semibold blood-text-primary">{diabetes.score}/100</div>
                         <StatusBadge status={diabetes.score >= 75 ? "critical" : diabetes.score >= 55 ? "suboptimal" : "normal"} />
                       </div>
-                      <p className="mt-3 text-sm text-white/70">
+                      <p className="mt-3 text-sm blood-text-secondary">
                         Risque {diabetes.level}. Priorite: stabiliser la glycemie et l'insuline.
                       </p>
                     </>
                   ) : (
-                    <p className="mt-4 text-sm text-white/70">Donnees insuffisantes pour estimer le risque.</p>
+                    <p className="mt-4 text-sm blood-text-secondary">Donnees insuffisantes pour estimer le risque.</p>
                   )}
                 </Card>
               </div>
 
               <div className="mt-6">
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Lecture humaine</p>
-                  <p className="mt-3 text-sm text-white/80 leading-relaxed">{narrative}</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Lecture humaine</p>
+                  <p className="mt-3 text-sm blood-text-secondary leading-relaxed">{narrative}</p>
                 </Card>
               </div>
 
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Correlations lifestyle</p>
-                  <p className="mt-2 text-sm text-white/70">
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Correlations lifestyle</p>
+                  <p className="mt-2 text-sm blood-text-secondary">
                     J'estime les liens entre tes marqueurs et tes habitudes (sommeil, stress, nutrition).
                   </p>
                   <div className="mt-4 grid gap-3">
                     {lifestyleCorrelations.length ? (
                       lifestyleCorrelations.map((item) => (
-                        <div key={item.factor} className="rounded-xl border border-white/13 bg-black/40 p-4">
-                          <div className="text-sm font-semibold text-white">{item.factor}</div>
-                          <p className="mt-1 text-xs text-white/50">{item.current}</p>
-                          <p className="mt-3 text-xs text-[rgb(2,121,232)]">Impact: {item.impact}</p>
-                          <p className="mt-2 text-xs text-white/70">→ {item.recommendation}</p>
+                        <div key={item.factor} className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                          <div className="text-sm font-semibold blood-text-primary">{item.factor}</div>
+                          <p className="mt-1 text-xs blood-text-tertiary">{item.current}</p>
+                          <p className="mt-3 text-xs" style={{ color: theme.primaryBlue }}>Impact: {item.impact}</p>
+                          <p className="mt-2 text-xs blood-text-secondary">→ {item.recommendation}</p>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-white/60">Pas assez d'informations pour estimer les correlations lifestyle.</p>
+                      <p className="text-sm blood-text-secondary">Pas assez d'informations pour estimer les correlations lifestyle.</p>
                     )}
                   </div>
                 </Card>
 
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Cas reels (reference)</p>
-                  <p className="mt-2 text-sm text-white/70">
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Cas reels (reference)</p>
+                  <p className="mt-2 text-sm blood-text-secondary">
                     Exemples de progressions observees apres protocoles appliques.
                   </p>
                   <div className="mt-4 grid gap-4">
                     {CASE_STUDIES.map((story) => (
-                      <div key={story.id} className="rounded-xl border border-white/13 bg-black/40 p-4">
+                      <div key={story.id} className="rounded-xl border blood-border-default blood-surface-muted p-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full border border-white/13 bg-white/10 flex items-center justify-center text-xs font-semibold text-white">
+                          <div className="h-9 w-9 rounded-full border blood-border-default blood-surface-muted flex items-center justify-center text-xs font-semibold blood-text-primary">
                             {story.initials}
                           </div>
                           <div>
-                            <div className="text-sm font-semibold text-white">{story.name}</div>
-                            <div className="text-xs text-white/50">
+                            <div className="text-sm font-semibold blood-text-primary">{story.name}</div>
+                            <div className="text-xs blood-text-tertiary">
                               {story.age} ans · {story.role}
                             </div>
                           </div>
                         </div>
-                        <div className="mt-3 space-y-2 text-xs text-white/70">
+                        <div className="mt-3 space-y-2 text-xs blood-text-secondary">
                           <div>
-                            <span className="text-white/50 uppercase">Baseline</span>
+                            <span className="blood-text-tertiary uppercase">Baseline</span>
                             <p className="mt-1">{story.baseline}</p>
                           </div>
                           <div>
-                            <span className="text-white/50 uppercase">Protocole</span>
+                            <span className="blood-text-tertiary uppercase">Protocole</span>
                             <ul className="mt-1 space-y-1">
                               {story.protocol.map((item) => (
                                 <li key={item}>→ {item}</li>
@@ -904,10 +1008,10 @@ export default function BloodAnalysisReport() {
                             </ul>
                           </div>
                           <div>
-                            <span className="text-white/50 uppercase">Resultat</span>
+                            <span className="blood-text-tertiary uppercase">Resultat</span>
                             <p className="mt-1">{story.result}</p>
                           </div>
-                          <blockquote className="border-l-2 border-[rgb(2,121,232)] pl-3 text-white/80 italic">
+                          <blockquote className="border-l-2 pl-3 blood-text-secondary italic" style={{ borderColor: theme.primaryBlue }}>
                             "{story.quote}"
                           </blockquote>
                         </div>
@@ -927,12 +1031,12 @@ export default function BloodAnalysisReport() {
                   const intro = `Je lis ton systeme ${PANEL_META[key].label.toLowerCase()} comme un levier direct sur ta performance.`;
                   const highlights = markers.filter((marker) => marker.status !== "optimal").slice(0, 3);
                   return (
-                    <Card key={key} className="border border-white/13 bg-[#0a0a0a] p-6">
+                    <Card key={key} className="border blood-border-default blood-surface p-6">
                       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="text-xs uppercase tracking-[0.22em] text-white/50">Systeme</p>
-                          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-white">{PANEL_META[key].label}</h3>
-                          <p className="mt-2 text-sm text-white/70">{intro}</p>
+                          <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Systeme</p>
+                          <h3 className="mt-2 text-2xl font-semibold tracking-tight blood-text-primary">{PANEL_META[key].label}</h3>
+                          <p className="mt-2 text-sm blood-text-secondary">{intro}</p>
                         </div>
                         <div className="flex items-center gap-3">
                           {typeof score === "number" ? (
@@ -944,32 +1048,32 @@ export default function BloodAnalysisReport() {
                       </div>
 
                       <div className="mt-6 grid gap-4 md:grid-cols-2">
-                        <div className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
-                          <p className="text-xs uppercase tracking-[0.22em] text-white/50">Lecture rapide</p>
-                          <p className="mt-2 text-sm text-white/70">{PANEL_META[key].impact}</p>
-                          <ul className="mt-3 space-y-2 text-xs text-white/70">
+                        <div className="rounded-xl border blood-border-default blood-surface p-4">
+                          <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Lecture rapide</p>
+                          <p className="mt-2 text-sm blood-text-secondary">{PANEL_META[key].impact}</p>
+                          <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
                             {PANEL_META[key].bullets.map((bullet) => (
                               <li key={bullet} className="flex items-start gap-2">
-                                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/40" />
+                                <span className="mt-1 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.borderStrong }} />
                                 <span>{bullet}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
 
-                        <div className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
-                          <p className="text-xs uppercase tracking-[0.22em] text-white/50">Points d'attention</p>
+                        <div className="rounded-xl border blood-border-default blood-surface p-4">
+                          <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Points d'attention</p>
                           {highlights.length ? (
-                            <ul className="mt-3 space-y-2 text-sm text-white/80">
+                            <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
                               {highlights.map((marker) => (
                                 <li key={marker.code} className="flex items-center justify-between gap-3">
-                                  <span className="font-medium text-white">{marker.name}</span>
+                                  <span className="font-medium blood-text-primary">{marker.name}</span>
                                   <StatusBadge status={marker.status} label={`${marker.value} ${marker.unit}`} />
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="mt-3 text-sm text-white/70">Pas de signal critique sur ce systeme.</p>
+                            <p className="mt-3 text-sm blood-text-secondary">Pas de signal critique sur ce systeme.</p>
                           )}
                         </div>
                       </div>
@@ -978,12 +1082,15 @@ export default function BloodAnalysisReport() {
                         {markers.length ? (
                           markers.map((marker) => {
                             const narrativeBlocks = getMarkerNarrative(marker, key);
+                            const correlations = patientContext
+                              ? getCorrelationInsights(marker.code, marker.value, marker.unit, patientContext)
+                              : [];
                             return (
-                              <div key={marker.code} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
+                              <div key={marker.code} className="rounded-xl border blood-border-default blood-surface p-4">
                                 <div className="flex items-start justify-between gap-4">
                                   <div>
-                                    <div className="text-sm font-semibold text-white">{marker.name}</div>
-                                    <div className="text-xs text-white/50">{marker.code}</div>
+                                    <div className="text-sm font-semibold blood-text-primary">{marker.name}</div>
+                                    <div className="text-xs blood-text-tertiary">{marker.code}</div>
                                   </div>
                                   <StatusBadge status={marker.status} />
                                 </div>
@@ -1000,25 +1107,53 @@ export default function BloodAnalysisReport() {
                                     optimalLabel="Optimal performance"
                                   />
                                 </div>
-                                <div className="mt-4 space-y-2 text-sm text-white/70">
+                                <div className="mt-4 space-y-2 text-sm blood-text-secondary">
                                   <p>
-                                    <span className="font-semibold text-white">Ce que ca dit :</span>{" "}
+                                    <span className="font-semibold blood-text-primary">Ce que ca dit :</span>{" "}
                                     {narrativeBlocks.definition}
                                   </p>
                                   <p>
-                                    <span className="font-semibold text-white">Impact performance :</span>{" "}
+                                    <span className="font-semibold blood-text-primary">Impact performance :</span>{" "}
                                     {narrativeBlocks.mechanism}
                                   </p>
                                   <p>
-                                    <span className="font-semibold text-white">Prochaine etape :</span>{" "}
+                                    <span className="font-semibold blood-text-primary">Prochaine etape :</span>{" "}
                                     {narrativeBlocks.optimization}
                                   </p>
                                 </div>
+                                {patientContext && correlations.length > 0 && (
+                                  <div className="mt-4 space-y-2">
+                                    {correlations.map((insight, idx) => {
+                                      const bg =
+                                        insight.type === "warning"
+                                          ? "rgba(245,158,11,0.12)"
+                                          : insight.type === "success"
+                                          ? "rgba(16,185,129,0.12)"
+                                          : "rgba(59,130,246,0.12)";
+                                      return (
+                                        <div
+                                          key={`${marker.code}-corr-${idx}`}
+                                          className="rounded-lg border p-3 text-xs"
+                                          style={{
+                                            backgroundColor: mode === "dark" ? bg : theme.surfaceMuted,
+                                            borderColor: theme.borderDefault,
+                                            color: theme.textSecondary,
+                                          }}
+                                        >
+                                          <div className="font-semibold blood-text-primary">{insight.message}</div>
+                                          {insight.recommendation && (
+                                            <div className="mt-1">→ {insight.recommendation}</div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
                             );
                           })
                         ) : (
-                          <div className="text-sm text-white/70">Aucun marqueur pour ce systeme.</div>
+                          <div className="text-sm blood-text-secondary">Aucun marqueur pour ce systeme.</div>
                         )}
                       </div>
                     </Card>
@@ -1029,24 +1164,24 @@ export default function BloodAnalysisReport() {
 
             <TabsContent value="markers" className="mt-6">
               <div className="grid gap-6 lg:grid-cols-[0.33fr_0.67fr]">
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Panels</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Panels</p>
                   <div className="mt-5 space-y-3">
                     {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
-                      <div key={key} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
+                      <div key={key} className="rounded-xl border blood-border-default blood-surface p-4">
                         <div className="flex items-center justify-between">
-                          <div className="text-sm font-semibold text-white">{PANEL_META[key].label}</div>
+                          <div className="text-sm font-semibold blood-text-primary">{PANEL_META[key].label}</div>
                           {panelScores[key] === null ? (
                             <StatusBadge status="normal" label="N/A" className="opacity-70" />
                           ) : (
                             <StatusBadge status={scoreToStatus(panelScores[key]!)} label={`${panelScores[key]}/100`} />
                           )}
                         </div>
-                        <p className="mt-2 text-xs text-white/70">{PANEL_META[key].impact}</p>
-                        <ul className="mt-3 space-y-1 text-xs text-white/70">
+                        <p className="mt-2 text-xs blood-text-secondary">{PANEL_META[key].impact}</p>
+                        <ul className="mt-3 space-y-1 text-xs blood-text-secondary">
                           {PANEL_META[key].bullets.map((bullet) => (
                             <li key={bullet} className="flex items-start gap-2">
-                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-white/30" />
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.borderStrong }} />
                               <span>{bullet}</span>
                             </li>
                           ))}
@@ -1056,9 +1191,9 @@ export default function BloodAnalysisReport() {
                   </div>
                 </Card>
 
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Biomarqueurs</p>
-                  <p className="mt-2 text-sm text-white/70">
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Biomarqueurs</p>
+                  <p className="mt-2 text-sm blood-text-secondary">
                     Chaque biomarqueur a son range normal, son range optimal, et une lecture orientee performance/sante.
                   </p>
 
@@ -1070,21 +1205,29 @@ export default function BloodAnalysisReport() {
                           const citations = detail.citations.length
                             ? detail.citations
                             : BLOOD_PANEL_CITATIONS[panelKey] || [];
+                          const deltaText = deltaFromOptimal(marker);
+                          const percentile =
+                            patientContext
+                              ? getPercentileRank(marker.code, marker.value, patientContext.age, patientContext.sexe)
+                              : null;
+                          const correlations = patientContext
+                            ? getCorrelationInsights(marker.code, marker.value, marker.unit, patientContext)
+                            : [];
                           return (
                             <AccordionItem
                               key={`${panelKey}:${marker.code}`}
                               value={`${panelKey}:${marker.code}`}
-                              className="rounded-xl border border-white/13 bg-[#0a0a0a] px-4"
+                              className="rounded-xl border blood-border-default blood-surface px-4"
                             >
                               <AccordionTrigger className="py-4 text-left hover:no-underline">
                                 <div className="flex w-full items-start justify-between gap-4">
                                   <div>
-                                    <div className="text-sm font-semibold text-white">{marker.name}</div>
-                                    <div className="mt-1 text-xs text-white/50">{PANEL_META[panelKey].label}</div>
+                                    <div className="text-sm font-semibold blood-text-primary">{marker.name}</div>
+                                    <div className="mt-1 text-xs blood-text-tertiary">{PANEL_META[panelKey].label}</div>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <div className="text-sm font-semibold text-white">
-                                      {marker.value} {marker.unit}
+                                    <div className="text-sm font-semibold blood-text-primary">
+                                      <AnimatedNumber value={marker.value} decimals={1} /> {marker.unit}
                                     </div>
                                     <StatusBadge status={marker.status} />
                                   </div>
@@ -1102,48 +1245,82 @@ export default function BloodAnalysisReport() {
                                   normalLabel="Normal labo"
                                   optimalLabel="Optimal performance"
                                 />
+                                {(deltaText || percentile) && (
+                                  <p className="mt-2 text-xs blood-text-tertiary">
+                                    {deltaText}
+                                    {percentile ? ` · Top ${100 - percentile}% (${patientContext?.age} ans)` : ""}
+                                  </p>
+                                )}
+                                {patientContext && correlations.length > 0 && (
+                                  <div className="mt-4 space-y-2">
+                                    {correlations.map((insight, idx) => {
+                                      const bg =
+                                        insight.type === "warning"
+                                          ? "rgba(245,158,11,0.12)"
+                                          : insight.type === "success"
+                                          ? "rgba(16,185,129,0.12)"
+                                          : "rgba(59,130,246,0.12)";
+                                      return (
+                                        <div
+                                          key={`${marker.code}-corr-${idx}`}
+                                          className="rounded-lg border p-3 text-xs"
+                                          style={{
+                                            backgroundColor: mode === "dark" ? bg : theme.surfaceMuted,
+                                            borderColor: theme.borderDefault,
+                                            color: theme.textSecondary,
+                                          }}
+                                        >
+                                          <div className="font-semibold blood-text-primary">{insight.message}</div>
+                                          {insight.recommendation && (
+                                            <div className="mt-1">→ {insight.recommendation}</div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                                 <div className="mt-4 grid gap-3 md:grid-cols-3">
-                                  <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Definition</div>
-                                    <p className="mt-2 text-sm text-white/70 leading-relaxed">{detail.definition}</p>
+                                  <div className="rounded-lg border blood-border-default blood-surface p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Definition</div>
+                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.definition}</p>
                                   </div>
-                                  <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Mecanisme</div>
-                                    <p className="mt-2 text-sm text-white/70 leading-relaxed">{detail.mechanism}</p>
+                                  <div className="rounded-lg border blood-border-default blood-surface p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Mecanisme</div>
+                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.mechanism}</p>
                                   </div>
-                                  <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Impact & optimisation</div>
-                                    <p className="mt-2 text-sm text-white/70 leading-relaxed">{detail.impact}</p>
+                                  <div className="rounded-lg border blood-border-default blood-surface p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Impact & optimisation</div>
+                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.impact}</p>
                                   </div>
                                 </div>
 
-                                <div className="mt-4 rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Protocole</div>
-                                  <ul className="mt-3 space-y-2 text-sm text-white/70">
+                                <div className="mt-4 rounded-lg border blood-border-default blood-surface p-4">
+                                  <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Protocole</div>
+                                  <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
                                     {detail.protocol.map((item) => (
                                       <li key={item} className="flex items-start gap-2">
-                                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[rgb(2,121,232)]" />
+                                        <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
                                         <span>{item}</span>
                                       </li>
                                     ))}
                                   </ul>
                                 </div>
 
-                                <div className="mt-4 rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Recherche</div>
+                                <div className="mt-4 rounded-lg border blood-border-default blood-surface p-4">
+                                  <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Recherche</div>
                                   {citations.length ? (
-                                    <ul className="mt-3 space-y-2 text-xs text-white/60">
+                                    <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
                                       {citations.map((item) => (
                                         <li key={item.url}>
                                           →{" "}
-                                          <a className="underline hover:text-white" href={item.url} target="_blank" rel="noreferrer">
+                                          <a className="underline" style={{ color: theme.textSecondary }} href={item.url} target="_blank" rel="noreferrer">
                                             {item.title}
                                           </a>
                                         </li>
                                       ))}
                                     </ul>
                                   ) : (
-                                    <p className="mt-3 text-xs text-white/50">Aucune source specifique associee.</p>
+                                    <p className="mt-3 text-xs blood-text-tertiary">Aucune source specifique associee.</p>
                                   )}
                                 </div>
                               </AccordionContent>
@@ -1159,17 +1336,17 @@ export default function BloodAnalysisReport() {
 
             <TabsContent value="insights" className="mt-6">
               <div className="grid gap-6 lg:grid-cols-[0.45fr_0.55fr]">
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Patterns detectes</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Patterns detectes</p>
                   <div className="mt-6 space-y-4">
                     {patterns.length ? (
                       patterns.map((pattern) => (
-                        <div key={pattern.name} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-5">
+                        <div key={pattern.name} className="rounded-xl border blood-border-default blood-surface p-5">
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <div className="text-sm font-semibold text-white">{pattern.name}</div>
+                              <div className="text-sm font-semibold blood-text-primary">{pattern.name}</div>
                               {!!pattern.causes?.length && (
-                                <div className="mt-2 text-xs text-white/70">
+                                <div className="mt-2 text-xs blood-text-secondary">
                                   Causes: {pattern.causes.slice(0, 3).join(" · ")}
                                 </div>
                               )}
@@ -1178,11 +1355,11 @@ export default function BloodAnalysisReport() {
                           </div>
                           {!!pattern.protocol?.length && (
                             <div className="mt-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Protocole</div>
-                              <ul className="mt-3 space-y-2 text-sm text-white/70">
+                              <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Protocole</div>
+                              <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
                                 {pattern.protocol.slice(0, 6).map((item) => (
                                   <li key={item} className="flex items-start gap-2">
-                                    <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} />
+                                    <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
                                     <span>{item}</span>
                                   </li>
                                 ))}
@@ -1192,17 +1369,17 @@ export default function BloodAnalysisReport() {
                         </div>
                       ))
                     ) : (
-                      <div className="text-sm text-white/70">Aucun pattern majeur detecte.</div>
+                      <div className="text-sm blood-text-secondary">Aucun pattern majeur detecte.</div>
                     )}
                   </div>
                 </Card>
 
-                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Diabetes Risk Assessment</p>
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Diabetes Risk Assessment</p>
                   {diabetes ? (
-                    <div className="mt-4 space-y-3 text-sm text-white/70">
+                    <div className="mt-4 space-y-3 text-sm blood-text-secondary">
                       <p>
-                        Score: <span className="font-semibold text-white">{diabetes.score}/100</span> (risque {diabetes.level}).
+                        Score: <span className="font-semibold blood-text-primary">{diabetes.score}/100</span> (risque {diabetes.level}).
                       </p>
                       <ul className="space-y-1">
                         {diabetes.gly !== null && <li>Glycemie a jeun: {diabetes.gly} mg/dL</li>}
@@ -1210,9 +1387,9 @@ export default function BloodAnalysisReport() {
                         {diabetes.insulin !== null && <li>Insuline: {diabetes.insulin} µIU/mL</li>}
                         {diabetes.homa !== null && <li>HOMA-IR: {diabetes.homa}</li>}
                       </ul>
-                      <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-white/50">Protocole rapide</div>
-                        <ul className="mt-2 space-y-2 text-sm text-white/70">
+                      <div className="rounded-lg border blood-border-default blood-surface p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Protocole rapide</div>
+                        <ul className="mt-2 space-y-2 text-sm blood-text-secondary">
                           <li>Reduire sucres rapides + repas ultra transformes.</li>
                           <li>Augmenter fibres + proteines a chaque repas.</li>
                           <li>Marche post-prandiale 10-15 min.</li>
@@ -1221,12 +1398,12 @@ export default function BloodAnalysisReport() {
                       </div>
                     </div>
                   ) : (
-                    <p className="mt-4 text-sm text-white/70">Donnees insuffisantes pour estimer le risque.</p>
+                    <p className="mt-4 text-sm blood-text-secondary">Donnees insuffisantes pour estimer le risque.</p>
                   )}
 
-                  <div className="mt-6 rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Muscle & performance protocol</div>
-                    <p className="mt-2 text-sm text-white/70">
+                  <div className="mt-6 rounded-lg border blood-border-default blood-surface p-4">
+                    <div className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Muscle & performance protocol</div>
+                    <p className="mt-2 text-sm blood-text-secondary">
                       Priorite: sommeil profond, deficit calorique maitrise, entrainement lourd structure, micronutriments cles (vitamine D, zinc, magnesium).
                     </p>
                   </div>
@@ -1234,25 +1411,25 @@ export default function BloodAnalysisReport() {
               </div>
 
               {aiAnalysis ? (
-                <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Analyse detaillee</p>
-                  <div className="prose mt-4 max-w-none prose-p:text-white/80 prose-li:text-white/80 prose-strong:text-white">
+                <Card className="mt-6 border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Analyse detaillee</p>
+                  <div className="prose mt-4 max-w-none prose-p:blood-text-secondary prose-li:blood-text-secondary prose-strong:blood-text-primary">
                     <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                   </div>
                 </Card>
               ) : null}
 
               {protocolPhases.length > 0 && (
-                <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Protocoles en 3 phases</p>
+                <Card className="mt-6 border blood-border-default blood-surface p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Protocoles en 3 phases</p>
                   <div className="mt-6 grid gap-4 md:grid-cols-3">
                     {protocolPhases.map((phase) => (
-                      <div key={phase.id} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
-                        <div className="text-sm font-semibold text-white">{phase.title}</div>
-                        <ul className="mt-3 space-y-2 text-xs text-white/70">
+                      <div key={phase.id} className="rounded-xl border blood-border-default blood-surface p-4">
+                        <div className="text-sm font-semibold blood-text-primary">{phase.title}</div>
+                        <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
                           {phase.items.slice(0, 4).map((item) => (
                             <li key={item} className="flex items-start gap-2">
-                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} />
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
                               <span>{item}</span>
                             </li>
                           ))}
@@ -1263,27 +1440,32 @@ export default function BloodAnalysisReport() {
                 </Card>
               )}
 
-              <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/50">Actions immediates</p>
+              <Card className="mt-6 border blood-border-default blood-surface p-6">
+                <p className="text-xs uppercase tracking-[0.22em] blood-text-tertiary">Actions immediates</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
                   {topMarkers.length ? (
                     topMarkers.map((marker) => (
-                      <div key={marker.code} className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
-                        <div className="text-sm font-semibold text-white">{marker.name}</div>
-                        <p className="mt-2 text-xs text-white/70">
+                      <div key={marker.code} className="rounded-lg border blood-border-default blood-surface p-4">
+                        <div className="text-sm font-semibold blood-text-primary">{marker.name}</div>
+                        <p className="mt-2 text-xs blood-text-secondary">
                           Je priorise {marker.name.toLowerCase()} avec un protocole cible (sommeil, nutrition, supplements).
                         </p>
                       </div>
                     ))
                   ) : (
-                    <div className="text-sm text-white/70">Aucune action urgente detectee.</div>
+                    <div className="text-sm blood-text-secondary">Aucune action urgente detectee.</div>
                   )}
                 </div>
               </Card>
 
-              <div className="mt-6 flex items-center justify-between text-xs text-white/50">
+              <div className="mt-6 flex items-center justify-between text-xs blood-text-tertiary">
                 <span>Educationnel · Ne remplace pas un avis medical.</span>
-                <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/offers/blood-analysis")}>
+                <Button
+                  variant="outline"
+                  className="hover:opacity-80"
+                  style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
+                  onClick={() => navigate("/offers/blood-analysis")}
+                >
                   Acheter des credits
                 </Button>
               </div>
@@ -1292,5 +1474,13 @@ export default function BloodAnalysisReport() {
         </div>
       </div>
     </BloodShell>
+  );
+}
+
+export default function BloodAnalysisReport() {
+  return (
+    <BloodThemeProvider>
+      <BloodAnalysisReportInner />
+    </BloodThemeProvider>
   );
 }

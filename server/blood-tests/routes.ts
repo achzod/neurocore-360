@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import pdf from "pdf-parse";
+import puppeteer from "puppeteer";
 import {
   analyzeBloodwork,
   extractPatientInfoFromPdfText,
@@ -247,7 +248,12 @@ export function registerBloodTestsRoutes(app: Express): void {
   app.post("/api/admin/blood-tests/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     try {
-      const body = (req.body || {}) as { email?: string; files?: string[]; includeAI?: boolean };
+      const body = (req.body || {}) as {
+        email?: string;
+        files?: string[];
+        includeAI?: boolean;
+        asyncAI?: boolean;
+      };
       const seedEmail = (
         String(body.email || "").trim() ||
         (process.env.ADMIN_EMAILS || "").split(",")[0]?.trim() ||
@@ -288,6 +294,13 @@ export function registerBloodTestsRoutes(app: Express): void {
             nom: pdfProfile.nom,
             gender: pdfProfile.gender || "homme",
             dob: pdfProfile.dob,
+            poids: parseNumber(body.poids),
+            taille: parseNumber(body.taille),
+            sleepHours: parseNumber(body.sleepHours),
+            trainingHours: parseNumber(body.trainingHours),
+            calorieDeficit: parseNumber(body.calorieDeficit),
+            alcoholWeekly: parseNumber(body.alcoholWeekly),
+            stressLevel: parseNumber(body.stressLevel),
           };
 
           const age = getAgeFromDob(patientProfile.dob);
@@ -305,7 +318,8 @@ export function registerBloodTestsRoutes(app: Express): void {
 
           let aiAnalysis = "";
           const includeAI = body.includeAI !== false;
-          if (includeAI && process.env.ANTHROPIC_API_KEY) {
+          const asyncAI = body.asyncAI === true;
+          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
             try {
               aiAnalysis = await generateAIBloodAnalysis(
                 analysisResult,
@@ -314,6 +328,8 @@ export function registerBloodTestsRoutes(app: Express): void {
                   age,
                   prenom: patientProfile.prenom,
                   nom: patientProfile.nom,
+                  poids: patientProfile.poids,
+                  taille: patientProfile.taille,
                   sleepHours: patientProfile.sleepHours,
                   trainingHours: patientProfile.trainingHours,
                   calorieDeficit: patientProfile.calorieDeficit,
@@ -386,6 +402,37 @@ export function registerBloodTestsRoutes(app: Express): void {
             createdAt: new Date(),
             completedAt: new Date(),
           });
+
+          if (includeAI && asyncAI && process.env.ANTHROPIC_API_KEY) {
+            setImmediate(async () => {
+              try {
+                const enriched = await generateAIBloodAnalysis(
+                  analysisResult,
+                  {
+                    gender: patientProfile.gender as "homme" | "femme",
+                    age,
+                    prenom: patientProfile.prenom,
+                    nom: patientProfile.nom,
+                    poids: patientProfile.poids,
+                    taille: patientProfile.taille,
+                    sleepHours: patientProfile.sleepHours,
+                    trainingHours: patientProfile.trainingHours,
+                    calorieDeficit: patientProfile.calorieDeficit,
+                    alcoholWeekly: patientProfile.alcoholWeekly,
+                    stressLevel: patientProfile.stressLevel,
+                  },
+                  knowledgeContext
+                );
+                const updatedAnalysis = {
+                  ...analysisPayload,
+                  aiAnalysis: enriched,
+                };
+                await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
+              } catch (err) {
+                console.error("[BloodTests] async AI seed failed:", err);
+              }
+            });
+          }
 
           created.push({
             id: createdRecord.id,
@@ -481,6 +528,8 @@ export function registerBloodTestsRoutes(app: Express): void {
         nom: String(req.body.nom || pdfProfile.nom || "").trim() || undefined,
         gender: normalizedGender || pdfProfile.gender || "homme",
         dob: String(req.body.dob || pdfProfile.dob || "").trim() || undefined,
+        poids: parseNumber(req.body.poids),
+        taille: parseNumber(req.body.taille),
         sleepHours: parseNumber(req.body.sleepHours),
         trainingHours: parseNumber(req.body.trainingHours),
         calorieDeficit: parseNumber(req.body.calorieDeficit),
@@ -493,6 +542,8 @@ export function registerBloodTestsRoutes(app: Express): void {
       if (!profile.email) missingProfile.push("email");
       if (!profile.dob) missingProfile.push("date de naissance");
       if (!profile.gender) missingProfile.push("sexe");
+      if (!profile.poids) missingProfile.push("poids");
+      if (!profile.taille) missingProfile.push("taille");
       if (missingProfile.length > 0) {
         const updated = await storage.updateBloodTest(baseRecord.id, {
           status: "error",
@@ -529,6 +580,8 @@ export function registerBloodTestsRoutes(app: Express): void {
               age,
               prenom: profile.prenom,
               nom: profile.nom,
+              poids: profile.poids,
+              taille: profile.taille,
               sleepHours: profile.sleepHours,
               trainingHours: profile.trainingHours,
               calorieDeficit: profile.calorieDeficit,
@@ -680,7 +733,53 @@ export function registerBloodTestsRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/blood-tests/:id/export/pdf", requireAuth, async (_req, res) => {
-    res.status(501).json({ error: "Export PDF indisponible pour le moment." });
+  app.get("/api/blood-tests/:id/export/pdf", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const auth = (req as any).auth as { userId: string };
+      const test = await storage.getBloodTest(id);
+      if (!test) {
+        res.status(404).json({ error: "Rapport introuvable." });
+        return;
+      }
+      if (auth.userId !== "admin" && test.userId !== auth.userId) {
+        res.status(403).json({ error: "Acces interdit." });
+        return;
+      }
+
+      const baseUrl =
+        process.env.PUBLIC_BASE_URL ||
+        process.env.RENDER_EXTERNAL_URL ||
+        `${req.protocol}://${req.get("host")}`;
+      const adminKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+      const url = `${baseUrl}/analysis/${id}${adminKey ? `?key=${adminKey}` : ""}`;
+
+      const browser = await puppeteer.launch({
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+      });
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+      await page.emulateMediaType("screen");
+      await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+      await page.waitForTimeout(1500);
+
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: { top: "16mm", right: "12mm", bottom: "16mm", left: "12mm" },
+      });
+
+      await browser.close();
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=Blood_Analysis_${id}.pdf`
+      );
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("[Blood Export] PDF error:", error);
+      res.status(500).json({ error: "Erreur generation PDF" });
+    }
   });
 }

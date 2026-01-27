@@ -115,6 +115,64 @@
   line-height: 1.6;
 }
 
+.blood-uh .blood-bg {
+  background-color: var(--blood-bg);
+}
+
+.blood-uh .blood-surface {
+  background-color: var(--blood-surface);
+}
+
+.blood-uh .blood-surface-muted {
+  background-color: var(--blood-surface-muted);
+}
+
+.blood-uh .blood-surface-elevated {
+  background-color: var(--blood-surface-elevated);
+}
+
+.blood-uh .blood-text-primary {
+  color: var(--blood-text-primary);
+}
+
+.blood-uh .blood-text-secondary {
+  color: var(--blood-text-secondary);
+}
+
+.blood-uh .blood-text-tertiary {
+  color: var(--blood-text-tertiary);
+}
+
+.blood-uh .blood-border-subtle {
+  border-color: var(--blood-border-subtle);
+}
+
+.blood-uh .blood-border-default {
+  border-color: var(--blood-border-default);
+}
+
+.blood-uh .blood-border-strong {
+  border-color: var(--blood-border-strong);
+}
+
+.blood-uh .blood-shadow-hover {
+  box-shadow: 0 8px 30px rgba(2, 121, 232, 0.18);
+}
+
+.blood-uh .blood-tabs {
+  background-color: var(--blood-surface);
+  border-color: var(--blood-border-default);
+}
+
+.blood-uh .blood-tabs [data-state="active"] {
+  background-color: var(--blood-surface-muted);
+  color: var(--blood-text-primary);
+}
+
+.blood-uh .blood-tabs [data-state="inactive"] {
+  color: var(--blood-text-secondary);
+}
+
 @media (max-width: 768px) {
   .blood-uh .blood-hero {
     font-size: 48px;
