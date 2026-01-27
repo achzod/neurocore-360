@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
-import { BloodThemeProvider, useBloodTheme } from "@/components/blood/BloodThemeContext";
+import { useBloodTheme } from "@/components/blood/BloodThemeContext";
 
-function BloodShellFrame({ children }: PropsWithChildren) {
+export default function BloodShell({ children }: PropsWithChildren) {
   const { theme } = useBloodTheme();
 
   return (
@@ -40,13 +40,5 @@ function BloodShellFrame({ children }: PropsWithChildren) {
       />
       <div className="relative">{children}</div>
     </div>
-  );
-}
-
-export default function BloodShell({ children }: PropsWithChildren) {
-  return (
-    <BloodThemeProvider>
-      <BloodShellFrame>{children}</BloodShellFrame>
-    </BloodThemeProvider>
   );
 }

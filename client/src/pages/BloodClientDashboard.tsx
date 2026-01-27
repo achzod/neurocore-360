@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 
 import BloodHeader from "@/components/blood/BloodHeader";
 import BloodShell from "@/components/blood/BloodShell";
-import { useBloodTheme } from "@/components/blood/BloodThemeContext";
+import { BloodThemeProvider, useBloodTheme } from "@/components/blood/BloodThemeContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,7 +75,7 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
 };
 
-export default function BloodClientDashboard() {
+function BloodClientDashboardInner() {
   const [, navigate] = useLocation();
   const { theme, mode } = useBloodTheme();
   const queryClient = useQueryClient();
@@ -645,5 +645,13 @@ export default function BloodClientDashboard() {
         </motion.section>
       </motion.main>
     </BloodShell>
+  );
+}
+
+export default function BloodClientDashboard() {
+  return (
+    <BloodThemeProvider>
+      <BloodClientDashboardInner />
+    </BloodThemeProvider>
   );
 }

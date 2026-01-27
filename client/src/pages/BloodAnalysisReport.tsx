@@ -18,7 +18,7 @@ import {
 
 import BloodHeader from "@/components/blood/BloodHeader";
 import BloodShell from "@/components/blood/BloodShell";
-import { useBloodTheme } from "@/components/blood/BloodThemeContext";
+import { BloodThemeProvider, useBloodTheme } from "@/components/blood/BloodThemeContext";
 import { BloodRadar } from "@/components/blood/BloodRadar";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
@@ -447,7 +447,7 @@ function ScoreDonut({ score, primary, muted, textPrimary, textTertiary }: { scor
   );
 }
 
-export default function BloodAnalysisReport() {
+function BloodAnalysisReportInner() {
   const params = useParams<{ id: string }>();
   const reportId = params.id;
   const [, navigate] = useLocation();
@@ -1474,5 +1474,13 @@ export default function BloodAnalysisReport() {
         </div>
       </div>
     </BloodShell>
+  );
+}
+
+export default function BloodAnalysisReport() {
+  return (
+    <BloodThemeProvider>
+      <BloodAnalysisReportInner />
+    </BloodThemeProvider>
   );
 }
