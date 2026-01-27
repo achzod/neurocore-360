@@ -6,831 +6,664 @@ export type BiomarkerDetail = {
   citations: Array<{ title: string; url: string }>;
 };
 
+const HORMONE_CITATIONS = [
+  {
+    title: "Sleep restriction reduces testosterone (JAMA, 2011)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
+  },
+  {
+    title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
+  },
+];
+
+const THYROID_CITATIONS = [
+  {
+    title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
+  },
+  {
+    title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
+  },
+];
+
+const METABOLIC_CITATIONS = [
+  {
+    title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
+  },
+  {
+    title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
+  },
+];
+
+const INFLAMMATORY_CITATIONS = [
+  {
+    title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
+  },
+  {
+    title: "Homocysteine and vascular risk (NEJM, 2002)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
+  },
+];
+
+const VITAMIN_CITATIONS = [
+  {
+    title: "Vitamin D status and muscle function (J Clin Endocrinol Metab, 2011)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
+  },
+  {
+    title: "Magnesium status and performance (Nutrients, 2017)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
+  },
+];
+
+const LIVER_KIDNEY_CITATIONS = [
+  {
+    title: "ALT/AST and metabolic risk (Hepatology, 2011)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
+  },
+  {
+    title: "eGFR and cardiovascular outcomes (JASN, 2010)",
+    url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
+  },
+];
+
 export const BIOMARKER_DETAILS: Record<string, BiomarkerDetail> = {
   testosterone_total: {
-    definition: "Hormone steroide cle de la performance et de la masse musculaire.",
-    mechanism: "Valeur basse = hypogonadisme fonctionnel, souvent lie au stress, au sommeil et au deficit calorique. Valeur haute doit etre re-verifiee selon contexte.",
-    impact: "Sous 500 ng/dL, progression musculaire et libido chutent. Range optimal = recuperation plus rapide et force stable.",
+    definition:
+      "Androgene majeur produit par les testicules. Il regle masse musculaire, densite osseuse, libido et production de globules rouges.",
+    mechanism:
+      "Une valeur basse traduit souvent une inhibition de l axe HPG (sommeil court, stress, deficit calorique, surentrainement). Une valeur haute doit etre confirmee et lue avec LH/FSH et testosterone libre.",
+    impact:
+      "Testosterone basse reduit la synthese proteique et la force. Elle baisse libido, humeur et drive. Elle augmente le risque de prise de gras abdominal et d insulino resistance.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
+      "Sommeil 7h30-8h30, horaires stables.",
+      "Lipides de qualite a chaque repas (oeufs, huile d olive, poissons gras).",
+      "Vitamine D3 2000-4000 UI/jour si bas.",
       "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Mouvements composes lourds 3-4x/sem + deload regulier.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   testosterone_libre: {
-    definition: "Fraction active de la testosterone qui agit sur tes tissus.",
-    mechanism: "Baisse typique quand la SHBG est elevee ou quand l'insuline est basse. Elle explique souvent fatigue et stagnation malgre une testosterone totale correcte.",
-    impact: "Libre basse = moins de drive, moins de force et baisse de motivation a l'entrainement.",
+    definition:
+      "Fraction active non liee aux proteines, celle qui entre dans les tissus et declenche les effets androgeniques.",
+    mechanism:
+      "Basse quand SHBG est elevee ou quand la testosterone totale est insuffisante. Haute avec SHBG basse ou exposition androgenique.",
+    impact:
+      "Libre basse signifie moins d activation androgenique malgre une T totale correcte. Elle reduit la recuperation et la tolerance a l entrainement. Elle affecte libido et energie matinale.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Equilibrer apports glucidiques et lipidiques pour eviter SHBG trop haute.",
+      "Sommeil 7h30-8h30 et reduction du stress chronique.",
+      "Apport proteique 1.6-2.2 g/kg pour soutenir l axe HPG.",
+      "Zinc 25-30 mg/jour et vitamine D si bas.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   shbg: {
-    definition: "Proteine qui transporte la testosterone et module sa disponibilite.",
-    mechanism: "SHBG haute capte la testosterone et baisse la fraction libre. SHBG basse peut signaler insulino-resistance.",
-    impact: "SHBG desequilibree = perte de libido et difficulte a progresser meme avec une T totale correcte.",
+    definition:
+      "Glycoproteine hepatique qui transporte testosterone et estradiol et module la fraction libre.",
+    mechanism:
+      "SHBG haute diminue la testosterone libre (souvent hyperthyroidie, deficit calorique, faible insuline). SHBG basse est frequente dans l insulino resistance ou steatose hepatique.",
+    impact:
+      "SHBG trop haute donne des symptomes de T basse. SHBG trop basse s associe a un profil metabolique a risque. Un niveau modere stabilise l axe hormonal.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Eviter deficit calorique agressif et sous alimentation chronique.",
+      "Stabiliser glycemie via fibres et musculation reguliere.",
+      "Limiter alcool et sucres liquides pour proteger le foie.",
+      "Verifier thyroide si SHBG tres elevee.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   estradiol: {
-    definition: "Hormone essentielle a la libido, au sommeil et a la sante osseuse.",
-    mechanism: "Trop bas = rigidite, fatigue; trop haut = retention et baisse du tonus. Dependant de la conversion de la testosterone.",
-    impact: "Un estradiol stable maintient la recuperation et l'anabolisme sans effets secondaires.",
+    definition:
+      "Estrogene issu de l aromatisation de la testosterone, essentiel pour libido, sommeil et sante vasculaire.",
+    mechanism:
+      "Trop bas quand aromatase est inhibee ou T basse. Trop haut avec adiposite, inflammation ou T tres elevee.",
+    impact:
+      "E2 bas entraine douleurs articulaires et baisse de libido. E2 haut favorise retention et variations d humeur. Un E2 stable soutient recuperation et performance.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Stabiliser masse grasse et eviter fluctuations rapides de poids.",
+      "Limiter alcool et surconsommation de sucre.",
+      "Legumes cruciferes 4-5x/sem pour equilibrer l aromatase.",
+      "Eviter suppression agressive d aromatase sans suivi clinique.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   lh: {
-    definition: "Signal hypophysaire qui stimule la production testiculaire.",
-    mechanism: "LH basse = suppression centrale (stress, calories basses). LH haute = testicules peu repondants.",
-    impact: "Impact direct sur production de testosterone et fertilite.",
+    definition:
+      "Gonadotrophine hypophysaire qui stimule les cellules de Leydig a produire la testosterone.",
+    mechanism:
+      "LH basse indique une suppression centrale (stress, calories basses, manque de sommeil). LH haute avec T basse suggere une reponse testiculaire insuffisante.",
+    impact:
+      "LH basse bloque la production de testosterone. LH haute peut signaler un probleme gonadique. Ces profils reduisent le potentiel anabolique et la fertilite.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Remonter l energie disponible (calories et lipides suffisants).",
+      "Sommeil de qualite et reduction du stress chronique.",
+      "Reduire surentrainement et volume excessif.",
+      "Verifier prolactine et deficit en vitamine D.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   fsh: {
-    definition: "Regule la spermatogenese et l'equilibre de l'axe gonadique.",
-    mechanism: "FSH basse ou haute signale un desequilibre de l'axe HPG ou une reserve alteree.",
-    impact: "Affecte surtout fertilite et qualite spermatique.",
+    definition:
+      "Gonadotrophine qui soutient la spermatogenese et la fonction des cellules de Sertoli.",
+    mechanism:
+      "FSH basse suggere suppression centrale. FSH haute peut indiquer reserve testiculaire reduite.",
+    impact:
+      "FSH anormale peut signaler une fertilite alteree. Elle accompagne souvent des symptomes de baisse hormonale. Elle aide a lire l axe HPG global.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Stabiliser sommeil et eviter deficit calorique prolonge.",
+      "Micronutriments clefs: zinc, selenium, vitamine D.",
+      "Limiter chaleur excessive (sauna prolonge, ordinateurs sur cuisses).",
+      "Recheck LH/FSH si symptomes persistants.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   prolactine: {
-    definition: "Hormone de regulation qui peut freiner la testosterone si elevee.",
-    mechanism: "Stress, manque de sommeil et certains medicaments peuvent l'augmenter.",
-    impact: "Prolactine elevee = libido basse, erection moins stable.",
+    definition:
+      "Hormone pituitaire qui module la reproduction et la dopamine.",
+    mechanism:
+      "Elevee par stress, manque de sommeil, certains medicaments ou adenome. Basse est rare mais peut signaler une dysfonction hypophysaire.",
+    impact:
+      "Prolactine elevee baisse libido et erection. Elle reduit la secretion de GnRH et donc la testosterone. Elle s associe a une baisse de motivation.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Sommeil profond regulier et reduction du stress mental.",
+      "Limiter cafeine tardive et alcool.",
+      "Vitamine B6 10-25 mg/jour si carence suspectee.",
+      "Verifier medicaments ou facteurs endocriniens si elevee.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   dhea_s: {
-    definition: "Precurseur d'androgenes, marqueur de reserve surrenalienne.",
-    mechanism: "Basse en stress chronique ou fatigue surrenalienne. Haute chez certains profils androgeniques.",
-    impact: "DHEA-S bas = energie et recuperation en baisse.",
+    definition:
+      "Reserve androgenique surrenalienne avec demi vie longue, reflet de resilience.",
+    mechanism:
+      "Basse en stress chronique, sommeil pauvre ou restriction calorique. Haute dans profils androgeniques ou stress aigu.",
+    impact:
+      "DHEA-S basse reduit l energie et la recuperation. Elle s associe a humeur instable et faible anabolisme. Une reserve adequate soutient la performance.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Sommeil 7h30-8h30 et rythme circadien stable.",
+      "Reequilibrer l apport calorique et glucidique.",
+      "Reduire surentrainement et augmenter les jours de recuperation.",
+      "Omega-3 2-3 g/jour et gestion du stress quotidien.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   cortisol: {
-    definition: "Hormone de stress, utile le matin mais catabolique si elevee.",
-    mechanism: "Eleve chronique = perte musculaire, stockage abdominal, sommeil degrade.",
-    impact: "Cortisol haut = recuperation lente et stagnation musculaire.",
+    definition:
+      "Hormone de stress qui suit un rythme circadien avec pic matinal.",
+    mechanism:
+      "Cortisol haut chronique = stress, inflammation, surentrainement. Cortisol bas le matin = fatigue surrenalienne ou burnout.",
+    impact:
+      "Cortisol haut accelere catabolisme musculaire et stockage abdominal. Il degrade le sommeil et augmente les cravings. Cortisol bas cause faible energie matinale et baisse de drive.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Aligner heure de coucher et exposition a la lumiere matinale.",
+      "Reduire volume d entrainement et ajouter jours off.",
+      "Magnesium glycinate 300-400 mg le soir.",
+      "Respiration, NSDR ou marche lente 10-20 min/jour.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   igf1: {
-    definition: "Mediateur anabolique lie a l'hormone de croissance.",
-    mechanism: "Bas si sommeil pauvre, apport proteique faible ou stress chronique.",
-    impact: "IGF-1 faible = progression musculaire lente et blessures plus frequentes.",
+    definition:
+      "Mediator hepatique de l hormone de croissance implique dans l anabolisme.",
+    mechanism:
+      "IGF-1 bas en sous alimentation, sommeil court ou stress chronique. IGF-1 haut en surplus calorique ou stimulation hormonale.",
+    impact:
+      "IGF-1 bas ralentit la reparation musculaire et tendineuse. Il limite l hypertrophie et la densite osseuse. Un IGF-1 modere soutient la performance et la recuperation.",
     protocol: [
-      "Sommeil 7h30-8h30, meme horaires.",
-      "Lipides essentiels a chaque repas (oeufs, poissons gras, huile d'olive).",
-      "Zinc 25-30 mg le soir + magnesium 300-400 mg.",
-      "Entrainer lourd 3-4x/sem (mouvements composes).",
+      "Apport proteique 1.6-2.2 g/kg et leucine a chaque repas.",
+      "Sommeil profond 7h30+ pour secretion GH.",
+      "Musculation reguliere avec surcharge progressive.",
+      "Eviter deficit calorique trop agressif.",
     ],
-    citations: [
-      {
-        title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-      },
-      {
-        title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-      },
-    ],
+    citations: HORMONE_CITATIONS,
   },
   tsh: {
-    definition: "Signal central qui commande la thyroide.",
-    mechanism: "TSH elevee = thyroide qui force. TSH trop basse = suractivation ou suppression.",
-    impact: "Desequilibre TSH = fatigue, ralentissement metabolique ou nervosite.",
+    definition:
+      "Signal central de la thyroide. Il augmente quand la thyroide force pour produire T4.",
+    mechanism:
+      "TSH elevee signale une thyroide sous active ou une conversion T4->T3 insuffisante. TSH trop basse peut indiquer suractivation ou suppression.",
+    impact:
+      "TSH elevee s associe a fatigue, frilosite et perte de gras lente. TSH trop basse peut donner nervosite et troubles du sommeil. Un TSH modere soutient un metabolisme stable.",
     protocol: [
-      "Apport proteique suffisant (1.6-2.2 g/kg).",
-      "Selenium 100-200 mcg + iode alimentaire modere.",
-      "Reduire deficit calorique agressif.",
-      "Stabiliser sommeil et stress chronique.",
+      "Apport proteique suffisant et calories stables.",
+      "Selenium 100-200 mcg/jour si carence probable.",
+      "Iode alimentaire modere (poissons, algues en petite dose).",
+      "Eviter deficits caloriques prolonges.",
     ],
-    citations: [
-      {
-        title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
-      },
-      {
-        title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
-      },
-    ],
+    citations: THYROID_CITATIONS,
   },
   t4_libre: {
-    definition: "Hormone precurseur qui alimente la conversion en T3.",
-    mechanism: "T4 basse limite la production de T3; T4 haute sans T3 = conversion faible.",
-    impact: "T4 basse = energie basse et difficulte a perdre du gras.",
+    definition:
+      "Hormone precurseur produite par la thyroide, convertie en T3 active.",
+    mechanism:
+      "T4 basse = production insuffisante. T4 normale avec T3 basse = conversion limitee par stress, inflammation ou deficit calorique.",
+    impact:
+      "T4 basse reduit la production d energie et la thermogenese. Elle ralentit la recuperation et la perte de gras. Une T4 stable soutient un metabolisme fiable.",
     protocol: [
-      "Apport proteique suffisant (1.6-2.2 g/kg).",
-      "Selenium 100-200 mcg + iode alimentaire modere.",
-      "Reduire deficit calorique agressif.",
-      "Stabiliser sommeil et stress chronique.",
+      "Sommeil regulier et reduction du stress chronique.",
+      "Apport proteique et calorique adequat.",
+      "Selenium 100-200 mcg/jour et zinc 20-30 mg/jour.",
+      "Eviter jeunes prolonges trop frequents.",
     ],
-    citations: [
-      {
-        title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
-      },
-      {
-        title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
-      },
-    ],
+    citations: THYROID_CITATIONS,
   },
   t3_libre: {
-    definition: "Hormone active qui pilote la depense energetique.",
-    mechanism: "Baisse lors de deficit calorique, stress ou inflammation.",
-    impact: "T3 basse = thermogenese faible et recuperation lente.",
+    definition:
+      "Hormone active qui pilote la depense energetique et la thermogenese.",
+    mechanism:
+      "Basse lors de deficit calorique, stress ou inflammation. Peut etre normale avec T4 adequate si conversion optimale.",
+    impact:
+      "T3 basse entraine fatigue et perte de gras lente. Elle reduit la performance a l effort et la motivation. Un T3 optimal soutient l energie quotidienne.",
     protocol: [
-      "Apport proteique suffisant (1.6-2.2 g/kg).",
-      "Selenium 100-200 mcg + iode alimentaire modere.",
-      "Reduire deficit calorique agressif.",
-      "Stabiliser sommeil et stress chronique.",
+      "Remonter calories et glucides si deficit prolonge.",
+      "Reduire stress et optimiser sommeil.",
+      "Selenium 100-200 mcg/jour, fer adequat.",
+      "Eviter surentrainement chronique.",
     ],
-    citations: [
-      {
-        title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
-      },
-      {
-        title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
-      },
-    ],
+    citations: THYROID_CITATIONS,
   },
   t3_reverse: {
-    definition: "Forme inactive qui augmente en stress ou deficit.",
-    mechanism: "Un taux eleve bloque l'action de la T3.",
-    impact: "T3 reverse haute = metabolisme freine malgre T4 correcte.",
+    definition:
+      "Forme inactive de T3 produite en stress ou restriction energetique.",
+    mechanism:
+      "T3 reverse elevee indique une conversion bloquee vers la T3 active. Souvent liee a stress, inflammation ou deficit calorique.",
+    impact:
+      "T3 reverse haute freine le metabolisme malgre T4 correcte. Elle favorise fatigue, frilosite et stagnation. C est un signal de priorite recuperation.",
     protocol: [
-      "Apport proteique suffisant (1.6-2.2 g/kg).",
-      "Selenium 100-200 mcg + iode alimentaire modere.",
-      "Reduire deficit calorique agressif.",
-      "Stabiliser sommeil et stress chronique.",
+      "Augmenter l energie disponible et reduire le stress.",
+      "Sommeil profond 7h30+ et rythme circadien stable.",
+      "Eviter deficits calories prolonges.",
+      "Support micronutriments: selenium, fer, zinc.",
     ],
-    citations: [
-      {
-        title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
-      },
-      {
-        title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
-      },
-    ],
+    citations: THYROID_CITATIONS,
   },
   anti_tpo: {
-    definition: "Anticorps qui signalent une inflammation thyroidienne.",
-    mechanism: "Eleves = risque d'auto-immunite ou inflammation chronique.",
-    impact: "Impact sur energie, humeur et stabilite metabolique.",
+    definition:
+      "Anticorps diriges contre la peroxydase thyroidienne, marqueur auto-immun.",
+    mechanism:
+      "Anti-TPO eleves signalent une inflammation thyroidienne (Hashimoto) ou une susceptibilite auto-immune.",
+    impact:
+      "Anti-TPO hauts peuvent preceder une hypothyroidie. Ils s associent a fatigue, humeur instable et prise de poids. Une reduction de l inflammation est prioritaire.",
     protocol: [
-      "Apport proteique suffisant (1.6-2.2 g/kg).",
-      "Selenium 100-200 mcg + iode alimentaire modere.",
-      "Reduire deficit calorique agressif.",
-      "Stabiliser sommeil et stress chronique.",
+      "Selenium 100-200 mcg/jour, verifier iode sans exces.",
+      "Regime anti-inflammatoire: omega-3, legumes, moins de sucres.",
+      "Gestion du stress et sommeil regulier.",
+      "Recontrole TSH/T3/T4 a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
-      },
-      {
-        title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
-      },
-    ],
+    citations: THYROID_CITATIONS,
   },
   glycemie_jeun: {
-    definition: "Reflet direct de la sensibilite a l'insuline.",
-    mechanism: "Elevee = surcharge glucidique, stress ou sommeil pauvre.",
-    impact: "Glycemie elevee = energie instable et stockage plus facile.",
+    definition:
+      "Glucose sanguin a jeun, reflet direct de la regulation insulinique.",
+    mechanism:
+      "Elevee = insulinore sistance, stress ou sommeil insuffisant. Basse peut signaler restriction calorique ou hypoglycemie reactionnelle.",
+    impact:
+      "Glycemie elevee stabilise mal l energie et favorise le stockage. Elle augmente le risque cardiometabolique. Une glycemie stable aide la recomp musculaire.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Marche 10-15 min apres repas pour vider le glucose.",
+      "Glucides complexes et fibres 25-35 g/jour.",
+      "Musculation 3-4x/sem et NEAT quotidien.",
+      "Sommeil 7h30+ et reduction du stress.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   hba1c: {
-    definition: "Moyenne glycemique sur 8-12 semaines.",
-    mechanism: "Au-dessus de 5.6% = tendance prediabete et inflammation metabolique.",
-    impact: "HbA1c elevee = perte de gras plus lente et fatigue.",
+    definition:
+      "Moyenne glycemique sur 8-12 semaines via hemoglobine glyquee.",
+    mechanism:
+      "Au-dessus de 5.6% suggere une dysregulation glycemique chronique. En dessous de 5.3% = controle fin.",
+    impact:
+      "HbA1c elevee predit une baisse de longevite metabolique. Elle ralentit la perte de gras et la recuperation. Un taux bas soutient la performance globale.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Prioriser fibres et proteines a chaque repas.",
+      "Limitation des glucides liquides et sucres rapides.",
+      "Entrainement de force + marche post-prandiale.",
+      "Fenetre alimentaire nocturne 12-14h.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   insuline_jeun: {
-    definition: "Plus elle monte, plus la resistance s'installe.",
-    mechanism: "Elevee = stockage accelere et signal d'insulino-resistance.",
-    impact: "Insuline haute = difficulte a secher et faim reactive.",
+    definition:
+      "Insuline a jeun, marqueur sensible de la resistance insulinique.",
+    mechanism:
+      "Elevee indique un pancreas qui force pour maintenir la glycemie. Basse avec glycemie elevee = risque de dysfonction beta.",
+    impact:
+      "Insuline haute bloque la lipolyse et augmente les cravings. Elle favorise prise de gras abdominal. Un niveau bas-modere facilite la recomp.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Reduction des glucides raffines et augmentation des fibres.",
+      "Musculation + activite quotidienne pour ameliorer GLUT4.",
+      "Gestion du stress et du sommeil.",
+      "Berberine 500 mg x2 si besoin (apres avis).",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   homa_ir: {
-    definition: "Index global de resistance a l'insuline.",
-    mechanism: "HOMA eleve = metabolisme bloque et inflammation latente.",
-    impact: "HOMA eleve = recomposition corporelle ralentie.",
+    definition:
+      "Indice combine glycemie et insuline, reflet de la resistance insulinique.",
+    mechanism:
+      "HOMA eleve = signal precoce d insulino resistance. HOMA bas = bonne sensibilite.",
+    impact:
+      "HOMA eleve rend la perte de gras plus difficile. Il augmente la fatigue post-prandiale et l inflammation metabolique. Un HOMA bas soutient la recomp.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Augmenter la masse musculaire et l activite quotidienne.",
+      "Glucides majoritairement complexes et riches en fibres.",
+      "Sommeil et gestion du stress prioritaires.",
+      "Limiter alcool et snacks tardifs.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   triglycerides: {
-    definition: "Marqueur cle du stockage et du risque metabolique.",
-    mechanism: "Eleves = surplus glucidique ou alcool, souvent lie a un HDL bas.",
-    impact: "Triglycerides hauts = risque cardiometabolique + fatigue post-prandiale.",
+    definition:
+      "Lipides circulants refletant l equilibre entre apport calorique, foie et activite.",
+    mechanism:
+      "Eleves = surplus glucidique, alcool, steatose hepatique ou resistance insulinique. Bas = profil metabolique propre.",
+    impact:
+      "Triglycerides hauts augmentent le risque cardiometabolique. Ils degradent la composition corporelle. Des valeurs basses indiquent une bonne utilisation des graisses.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Reduire sucres rapides et alcool.",
+      "Omega-3 2-3 g/jour (EPA dominant).",
+      "Marche post-prandiale et musculation reguliere.",
+      "Ameliorer sommeil et gestion du stress.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   hdl: {
-    definition: "Cholesterol protecteur associe a un bon profil metabolique.",
-    mechanism: "Bas = sante metabolique affaiblie et inflammation possible.",
-    impact: "HDL haut = meilleur transport lipidique et recuperation.",
+    definition:
+      "Cholesterol protecteur qui participe au transport inverse du cholesterol.",
+    mechanism:
+      "HDL bas est associe a un profil metabolique degrade et inflammation. HDL haut est souvent lie a activite physique et bons lipides.",
+    impact:
+      "HDL bas augmente le risque cardiometabolique. HDL optimal soutient l endurance et la sante vasculaire. Il indique un metabolisme lipidique efficace.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Entrainement d endurance + musculation 3-4x/sem.",
+      "Graisses de qualite (huile d olive, poissons gras, noix).",
+      "Arret du tabac et reduction de l alcool.",
+      "Stabiliser l insulinore sistance.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   ldl: {
-    definition: "Transporteur de lipides, a lire avec ApoB et inflammation.",
-    mechanism: "LDL eleve sans ApoB haut = interpretation nuancee.",
-    impact: "LDL eleve + ApoB haut = risque cardio accru.",
+    definition:
+      "Transporteur de cholesterol. Son interpretation doit tenir compte d ApoB et inflammation.",
+    mechanism:
+      "LDL eleve avec ApoB haut = risque cardio. LDL eleve avec ApoB normal peut etre moins problematique.",
+    impact:
+      "LDL haut et ApoB haut augmentent le risque atherogene. LDL bien controle aide la performance cardio. La qualite du LDL compte autant que le chiffre.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Augmenter fibres solubles (avoine, legumes, psyllium).",
+      "Limiter graisses trans et ultra transformes.",
+      "Omega-3 2-3 g/jour et activite physique reguliere.",
+      "Surveiller ApoB pour affiner le risque.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   apob: {
-    definition: "Nombre de particules atherogenes, meilleur predicteur que LDL.",
-    mechanism: "ApoB eleve = risque cardio plus precis.",
-    impact: "ApoB haut = priorite a la correction metabolique.",
+    definition:
+      "Nombre de particules atherogenes (LDL, VLDL, IDL). Meilleur marqueur que LDL seul.",
+    mechanism:
+      "ApoB eleve indique plus de particules capables de penetrer la paroi arterielle.",
+    impact:
+      "ApoB haut augmente le risque cardiovasculaire a long terme. Il est sensible a l insulinore sistance. Le ramener bas est prioritaire.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Reduction du surplus calorique et perte de gras visceral.",
+      "Fibres 30-40 g/jour et legumes a chaque repas.",
+      "Omega-3 2-3 g/jour.",
+      "Activite physique quotidienne.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   lpa: {
-    definition: "Facteur genetique de risque cardiovasculaire.",
-    mechanism: "Peu modifiable, mais le risque se compense avec un profil metabolique propre.",
-    impact: "Lp(a) elevee = vigilance cardio et inflammation basse.",
+    definition:
+      "Lipoproteine(a), facteur genetique de risque cardiovasculaire.",
+    mechanism:
+      "Peu modifiable par le lifestyle, mais son impact depend du contexte inflammatoire et lipidique.",
+    impact:
+      "Lp(a) elevee augmente le risque de maladie vasculaire. Un profil metabolique propre reduit ce risque relatif. La priorite est d optimiser inflammation et ApoB.",
     protocol: [
-      "Marche 10-15 min apres repas.",
-      "Glucides complexes, fibres 25-35 g/jour.",
-      "Renforcement musculaire 3-4x/sem.",
-      "Fenetre alimentaire plus stricte (12-14h de jeune nocturne).",
+      "Reduction de l inflammation (omega-3, sommeil, gestion du stress).",
+      "Optimiser ApoB, glycemie et tension arterielle.",
+      "Eviter tabac et exces d alcool.",
+      "Recontrole regulier pour suivre le risque.",
     ],
-    citations: [
-      {
-        title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-      },
-      {
-        title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-      },
-    ],
+    citations: METABOLIC_CITATIONS,
   },
   crp_us: {
-    definition: "Marqueur d'inflammation chronique bas grade.",
-    mechanism: "Elevee = stress systemique, infections, surpoids ou surentrainement.",
-    impact: "CRP haute = recuperation lente et anabolisme freine.",
+    definition:
+      "Marqueur d inflammation systemique de bas grade (hs-CRP).",
+    mechanism:
+      "Elevee = stress systemique, infection, surpoids ou surentrainement. Tres basse = inflammation bien controlee.",
+    impact:
+      "CRP elevee ralentit la recuperation et l anabolisme. Elle augmente le risque cardio. Une CRP basse favorise performance et longevite.",
     protocol: [
-      "Omega-3 (EPA dominant) 2-3 g/jour.",
-      "Curcumine 500 mg + piperine.",
-      "Reduire sucres rapides et alcool.",
-      "Sommeil profond + gestion du stress.",
+      "Omega-3 2-3 g/jour et regime anti inflammatoire.",
+      "Sommeil 7h30+ et gestion du stress.",
+      "Limiter alcool, sucres et aliments ultra transformes.",
+      "Surveillance infections ou blessures chroniques.",
     ],
-    citations: [
-      {
-        title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
-      },
-      {
-        title: "Homocysteine and vascular risk (NEJM, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
-      },
-    ],
+    citations: INFLAMMATORY_CITATIONS,
   },
   homocysteine: {
-    definition: "Indicateur de stress vasculaire et methylation.",
-    mechanism: "Elevee = deficit B vitamins ou stress oxydatif.",
-    impact: "Homocysteine haute = risque cardio et fatigue neurologique.",
+    definition:
+      "Acide amine lie a la methylation et au risque vasculaire.",
+    mechanism:
+      "Elevee en deficit de B12, folate ou B6, ou en stress oxydatif.",
+    impact:
+      "Homocysteine elevee augmente le risque cardiovasculaire. Elle signale une methylation inefficace. Un taux bas soutient la sante neuro et vasculaire.",
     protocol: [
-      "Omega-3 (EPA dominant) 2-3 g/jour.",
-      "Curcumine 500 mg + piperine.",
-      "Reduire sucres rapides et alcool.",
-      "Sommeil profond + gestion du stress.",
+      "B12 methylcobalamine 1000 mcg/jour si bas.",
+      "Folate 400-800 mcg/jour via aliments ou supplement.",
+      "B6 10-25 mg/jour si besoin.",
+      "Alimentation riche en legumes verts.",
     ],
-    citations: [
-      {
-        title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
-      },
-      {
-        title: "Homocysteine and vascular risk (NEJM, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
-      },
-    ],
+    citations: INFLAMMATORY_CITATIONS,
   },
   ferritine: {
-    definition: "Stock de fer, mais aussi marqueur inflammatoire.",
-    mechanism: "Trop bas = anemie latente; trop haut = inflammation ou surcharge.",
-    impact: "Ferritine basse = endurance et energie en baisse.",
+    definition:
+      "Proteine de stockage du fer. Monte aussi en contexte inflammatoire.",
+    mechanism:
+      "Basse = reserve de fer faible. Haute = inflammation, surcharge fer ou syndrome metabolique.",
+    impact:
+      "Ferritine basse reduit endurance et immunite. Ferritine haute peut cacher une inflammation. Un niveau modere soutient performance et recuperation.",
     protocol: [
-      "Omega-3 (EPA dominant) 2-3 g/jour.",
-      "Curcumine 500 mg + piperine.",
-      "Reduire sucres rapides et alcool.",
-      "Sommeil profond + gestion du stress.",
+      "Si basse: fer bisglycinate 25 mg + vitamine C.",
+      "Si haute: reduire alcool, sucres et inflammation.",
+      "Verifier CRP et fer serique pour contexte.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
-      },
-      {
-        title: "Homocysteine and vascular risk (NEJM, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
-      },
-    ],
+    citations: INFLAMMATORY_CITATIONS,
   },
   fer_serique: {
-    definition: "Disponibilite immediate du fer circulant.",
-    mechanism: "Bas = deficit ou mauvaise absorption.",
-    impact: "Fer bas = fatigue, baisse de performance.",
+    definition:
+      "Fer circulant disponible pour la production d hemoglobine.",
+    mechanism:
+      "Bas = apport insuffisant ou malabsorption. Haut = surcharge ou inflammation.",
+    impact:
+      "Fer bas diminue l oxygene et l endurance. Fer haut peut augmenter le stress oxydatif. L equilibre est cle pour la performance.",
     protocol: [
-      "Omega-3 (EPA dominant) 2-3 g/jour.",
-      "Curcumine 500 mg + piperine.",
-      "Reduire sucres rapides et alcool.",
-      "Sommeil profond + gestion du stress.",
+      "Si bas: fer bisglycinate 25 mg + vitamine C.",
+      "Espacer cafe et the autour des repas riches en fer.",
+      "Surveiller ferritine et transferrine sat.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
-      },
-      {
-        title: "Homocysteine and vascular risk (NEJM, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
-      },
-    ],
+    citations: INFLAMMATORY_CITATIONS,
   },
   transferrine_sat: {
-    definition: "Capacite a transporter le fer.",
-    mechanism: "Basse = deficit de fer utilisable.",
-    impact: "Saturation basse = baisse de VO2 et endurance.",
+    definition:
+      "Pourcentage de transferrine saturee en fer, reflet de l utilisation du fer.",
+    mechanism:
+      "Basse = carence fonctionnelle. Haute = surcharge ou inflammation.",
+    impact:
+      "Saturation basse limite l endurance et la concentration. Saturation trop haute augmente le stress oxydatif. Une zone intermediaire soutient l oxygenation.",
     protocol: [
-      "Omega-3 (EPA dominant) 2-3 g/jour.",
-      "Curcumine 500 mg + piperine.",
-      "Reduire sucres rapides et alcool.",
-      "Sommeil profond + gestion du stress.",
+      "Optimiser apport en fer et vitamine C.",
+      "Eviter supplements fer si saturation deja haute.",
+      "Verifier ferritine et CRP pour contexte.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
-      },
-      {
-        title: "Homocysteine and vascular risk (NEJM, 2002)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
-      },
-    ],
+    citations: INFLAMMATORY_CITATIONS,
   },
   vitamine_d: {
-    definition: "Hormone immuno-metabolique qui influence force et humeur.",
-    mechanism: "Basse = inflammation, baisse de force et risque d'infection.",
-    impact: "D basse = recuperation lente et humeur instable.",
+    definition:
+      "Hormone steroide qui regule immunite, hormones et sensibilite musculaire.",
+    mechanism:
+      "Basse par manque d exposition solaire ou malabsorption. Haute seulement avec supplementation excessive.",
+    impact:
+      "Vitamine D basse affecte force, humeur et immunite. Elle limite la production hormonale. Un taux optimal soutient performance et recuperation.",
     protocol: [
-      "Vitamine D3 3000-5000 UI selon bilan.",
-      "Magnesium glycinate 300-400 mg soir.",
-      "Zinc 25-30 mg soir, cycles de 8-12 semaines.",
-      "B12/folate si deficit documente.",
+      "Exposition solaire 15-20 min/jour si possible.",
+      "Vitamine D3 2000-4000 UI/jour avec lipides.",
+      "Associer vitamine K2 si supplement long terme.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "Vitamin D status and muscle function (JCEM, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
-      },
-      {
-        title: "Magnesium status and performance (Nutrients, 2017)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
-      },
-    ],
+    citations: VITAMIN_CITATIONS,
   },
   b12: {
-    definition: "Cofacteur neurologique et hematologique.",
-    mechanism: "B12 basse = fatigue, brouillard mental, baisse de performance.",
-    impact: "Optimale = energie nerveuse et recuperation.",
+    definition:
+      "Vitamine essentielle a la production d energie et aux globules rouges.",
+    mechanism:
+      "Basse en alimentation pauvre en produits animaux ou malabsorption. Haute souvent liee a supplementation.",
+    impact:
+      "B12 basse cause fatigue, brouillard mental et baisse de performance. Elle peut augmenter l homocysteine. Un niveau optimal soutient l endurance.",
     protocol: [
-      "Vitamine D3 3000-5000 UI selon bilan.",
-      "Magnesium glycinate 300-400 mg soir.",
-      "Zinc 25-30 mg soir, cycles de 8-12 semaines.",
-      "B12/folate si deficit documente.",
+      "B12 methylcobalamine 1000 mcg/jour si bas.",
+      "Apport en produits animaux ou equivalents.",
+      "Verifier folate et fer simultanement.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "Vitamin D status and muscle function (JCEM, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
-      },
-      {
-        title: "Magnesium status and performance (Nutrients, 2017)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
-      },
-    ],
+    citations: VITAMIN_CITATIONS,
   },
   folate: {
-    definition: "Cofacteur methylation et synthese ADN.",
-    mechanism: "Baisse = probleme de regeneration cellulaire.",
-    impact: "Folate bas = energie et humeur en baisse.",
+    definition:
+      "Vitamine B9 essentielle a la methylation et a la division cellulaire.",
+    mechanism:
+      "Basse par alimentation pauvre en legumes verts ou malabsorption. Haute souvent via supplementation.",
+    impact:
+      "Folate bas augmente homocysteine et fatigue. Il impacte la recuperation et la production de globules rouges. Un taux optimal soutient la performance.",
     protocol: [
-      "Vitamine D3 3000-5000 UI selon bilan.",
-      "Magnesium glycinate 300-400 mg soir.",
-      "Zinc 25-30 mg soir, cycles de 8-12 semaines.",
-      "B12/folate si deficit documente.",
+      "Legumes verts 2-3 portions/jour.",
+      "Folate 400-800 mcg/jour si bas.",
+      "Associer B12 pour une methylation efficace.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "Vitamin D status and muscle function (JCEM, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
-      },
-      {
-        title: "Magnesium status and performance (Nutrients, 2017)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
-      },
-    ],
+    citations: VITAMIN_CITATIONS,
   },
   magnesium_rbc: {
-    definition: "Reflet des reserves intracellulaires de magnesium.",
-    mechanism: "Bas = crampes, stress eleve, sommeil degrade.",
-    impact: "Magnesium optimal = meilleure recuperation neuromusculaire.",
+    definition:
+      "Magnesium intracellulaire, reflet plus fiable que le serum.",
+    mechanism:
+      "Bas en stress chronique, entrainement intensif ou apport insuffisant.",
+    impact:
+      "Magnesium bas augmente crampes, stress et mauvais sommeil. Il reduit la recuperation neuromusculaire. Un niveau optimal stabilise le systeme nerveux.",
     protocol: [
-      "Vitamine D3 3000-5000 UI selon bilan.",
-      "Magnesium glycinate 300-400 mg soir.",
-      "Zinc 25-30 mg soir, cycles de 8-12 semaines.",
-      "B12/folate si deficit documente.",
+      "Magnesium glycinate 300-400 mg le soir.",
+      "Hydratation et apport en aliments riches en magnesium.",
+      "Reduction du stress et du surentrainement.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "Vitamin D status and muscle function (JCEM, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
-      },
-      {
-        title: "Magnesium status and performance (Nutrients, 2017)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
-      },
-    ],
+    citations: VITAMIN_CITATIONS,
   },
   zinc: {
-    definition: "Mineral cle pour hormones et immunite.",
-    mechanism: "Bas = testosterone basse et immunite fragilisee.",
-    impact: "Zinc optimal = support anabolique et immunitaire.",
+    definition:
+      "Oligoelement cle pour l immunite, la testosterone et la cicatrisation.",
+    mechanism:
+      "Bas en alimentation pauvre ou pertes par transpiration. Haut en sur-supplementation prolongee.",
+    impact:
+      "Zinc bas reduit la testosterone et l immunite. Il ralentit la recuperation. Un zinc optimal soutient performance et resilience.",
     protocol: [
-      "Vitamine D3 3000-5000 UI selon bilan.",
-      "Magnesium glycinate 300-400 mg soir.",
-      "Zinc 25-30 mg soir, cycles de 8-12 semaines.",
-      "B12/folate si deficit documente.",
+      "Zinc 20-30 mg/jour avec repas.",
+      "Apports alimentaires via viande, fruits de mer, graines.",
+      "Eviter surdosage chronique sans suivi.",
+      "Associer cuivre si supplementation longue.",
     ],
-    citations: [
-      {
-        title: "Vitamin D status and muscle function (JCEM, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
-      },
-      {
-        title: "Magnesium status and performance (Nutrients, 2017)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
-      },
-    ],
+    citations: VITAMIN_CITATIONS,
   },
   alt: {
-    definition: "Enzyme hepatique sensible a la surcharge metabolique.",
-    mechanism: "Elevee = steatose, alcool ou stress hepatique.",
-    impact: "ALT elevee = metabolisme des hormones perturbe.",
+    definition:
+      "Enzyme hepatique sensible a la surcharge metabolique et aux medicaments.",
+    mechanism:
+      "ALT elevee = stress hepatique, steatose ou alcool. ALT tres basse n est pas un probleme.",
+    impact:
+      "ALT haute signale un foie sous pression, ce qui perturbe la regulation hormonale. Elle peut limiter la recomposition corporelle. Un foie sain aide la performance globale.",
     protocol: [
-      "Hydratation 2-3 L/jour.",
-      "Limiter alcool et toxines hepatique.",
-      "Proteines ajuste a l'activite et au rein.",
-      "Recontrole a 8-12 semaines si valeurs hautes.",
+      "Reduire alcool et sucres liquides.",
+      "Perte de gras visceral progressive.",
+      "Omega-3 et alimentation anti inflammatoire.",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "ALT/AST and metabolic risk (Hepatology, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
-      },
-      {
-        title: "eGFR and cardiovascular outcomes (JASN, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
-      },
-    ],
+    citations: LIVER_KIDNEY_CITATIONS,
   },
   ast: {
-    definition: "Enzyme hepatique et musculaire, a lire avec ALT.",
-    mechanism: "AST elevee isolée = stress musculaire ou hepatique.",
-    impact: "AST haute = surcharge ou recuperation incomplete.",
+    definition:
+      "Enzyme presente dans le foie et le muscle. A interpreter avec ALT.",
+    mechanism:
+      "AST elevee peut venir d un entrainement intense ou d un stress hepatique. Le ratio AST/ALT aide a lire le contexte.",
+    impact:
+      "AST haute associee a ALT haute signale un foie sous pression. AST haute seule peut refleter un volume d entrainement trop agressif. Un ratio stable indique recuperation correcte.",
     protocol: [
-      "Hydratation 2-3 L/jour.",
+      "Deload si entrainements tres intenses recentes.",
       "Limiter alcool et toxines hepatique.",
-      "Proteines ajuste a l'activite et au rein.",
-      "Recontrole a 8-12 semaines si valeurs hautes.",
+      "Hydratation et sommeil adequats.",
+      "Recontrole apres 1-2 semaines de recuperation.",
     ],
-    citations: [
-      {
-        title: "ALT/AST and metabolic risk (Hepatology, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
-      },
-      {
-        title: "eGFR and cardiovascular outcomes (JASN, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
-      },
-    ],
+    citations: LIVER_KIDNEY_CITATIONS,
   },
   ggt: {
-    definition: "Marqueur de stress hepatique et alcool.",
-    mechanism: "GGT elevee = surcharge toxique ou alcool.",
-    impact: "GGT haute = fatigue et inflammation hepatique.",
+    definition:
+      "Enzyme hepatique liee au stress oxydatif et a la charge alcool.",
+    mechanism:
+      "GGT elevee suggere stress oxydatif, alcool ou steatose. Elle monte avant ALT/AST.",
+    impact:
+      "GGT elevee signale une surcharge metabolique qui freine la performance. Elle s associe a inflammation systemique. La reduire ameliore la sante hepatique.",
     protocol: [
-      "Hydratation 2-3 L/jour.",
-      "Limiter alcool et toxines hepatique.",
-      "Proteines ajuste a l'activite et au rein.",
-      "Recontrole a 8-12 semaines si valeurs hautes.",
+      "Reduire alcool et fructose.",
+      "Augmenter activite physique et perte de gras.",
+      "Antioxydants alimentaires (legumes, baies).",
+      "Recontrole a 8-12 semaines.",
     ],
-    citations: [
-      {
-        title: "ALT/AST and metabolic risk (Hepatology, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
-      },
-      {
-        title: "eGFR and cardiovascular outcomes (JASN, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
-      },
-    ],
+    citations: LIVER_KIDNEY_CITATIONS,
   },
   creatinine: {
-    definition: "Marqueur de filtration renale et masse musculaire.",
-    mechanism: "Creatinine elevee peut refleter masse musculaire ou deshydration.",
-    impact: "Creatinine elevee persistante = a surveiller avec eGFR.",
+    definition:
+      "Dechet musculaire elimine par le rein, influence par la masse musculaire.",
+    mechanism:
+      "Creatinine elevee peut signifier filtration renale reduite ou masse musculaire elevee. Basse peut indiquer faible masse musculaire.",
+    impact:
+      "Creatinine trop haute avec eGFR bas indique un risque renale. Creatinine stable avec eGFR normal est rassurante. L hydration influence fortement la valeur.",
     protocol: [
-      "Hydratation 2-3 L/jour.",
-      "Limiter alcool et toxines hepatique.",
-      "Proteines ajuste a l'activite et au rein.",
-      "Recontrole a 8-12 semaines si valeurs hautes.",
+      "Hydratation 2-3 L/jour selon activite.",
+      "Eviter NSAIDs chroniques et exces proteique.",
+      "Recontrole eGFR si creatinine persistante haute.",
+      "Adapter protein intake au contexte renale.",
     ],
-    citations: [
-      {
-        title: "ALT/AST and metabolic risk (Hepatology, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
-      },
-      {
-        title: "eGFR and cardiovascular outcomes (JASN, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
-      },
-    ],
+    citations: LIVER_KIDNEY_CITATIONS,
   },
   egfr: {
-    definition: "Estimation de la fonction de filtration renale.",
-    mechanism: "eGFR bas = filtration reduite a surveiller.",
-    impact: "eGFR faible = ajuster proteines et hydratation.",
+    definition:
+      "Estimation de la filtration renale, ajustee sur age et creatinine.",
+    mechanism:
+      "eGFR bas = filtration reduite ou dehydration. eGFR haut est rare et souvent benign.",
+    impact:
+      "eGFR faible limite la tolerance a l entrainement et aux supplements. Il demande une surveillance proteique. Un eGFR stable protege la performance a long terme.",
     protocol: [
-      "Hydratation 2-3 L/jour.",
-      "Limiter alcool et toxines hepatique.",
-      "Proteines ajuste a l'activite et au rein.",
-      "Recontrole a 8-12 semaines si valeurs hautes.",
+      "Hydratation reguliere et sodium adequat.",
+      "Eviter surplus proteique inutile.",
+      "Limiter alcool et medicaments nephrotoxiques.",
+      "Recontrole a 8-12 semaines si bas.",
     ],
-    citations: [
-      {
-        title: "ALT/AST and metabolic risk (Hepatology, 2011)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
-      },
-      {
-        title: "eGFR and cardiovascular outcomes (JASN, 2010)",
-        url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
-      },
-    ],
+    citations: LIVER_KIDNEY_CITATIONS,
   },
 };
 
 export const buildDefaultBiomarkerDetail = (markerName: string, statusLabel: string): BiomarkerDetail => ({
   definition: `${markerName} est un biomarqueur cle pour evaluer ta sante et ta performance.`,
-  mechanism: `Quand il est ${statusLabel}, cela modifie directement la recuperation, l'energie et la capacite a progresser.`,
+  mechanism: `Quand il est ${statusLabel}, cela modifie directement la recuperation, l energie et la capacite a progresser.`,
   impact: `Plus il se rapproche du range optimal, plus tes resultats deviennent stables et previsibles.`,
   protocol: [
     "Sommeil 7h30-8h30.",

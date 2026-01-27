@@ -12,6 +12,7 @@ import {
   getBloodworkKnowledgeContext,
   BIOMARKER_RANGES,
   buildFallbackAnalysis,
+  buildLifestyleCorrelations,
 } from "../blood-analysis";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
@@ -343,7 +344,17 @@ export function registerBloodTestsRoutes(app: Express): void {
             }
           }
           if (!aiAnalysis) {
-            aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: patientProfile.gender as "homme" | "femme", age });
+            aiAnalysis = buildFallbackAnalysis(analysisResult, {
+              gender: patientProfile.gender as "homme" | "femme",
+              age,
+              sleepHours: patientProfile.sleepHours,
+              trainingHours: patientProfile.trainingHours,
+              calorieDeficit: patientProfile.calorieDeficit,
+              alcoholWeekly: patientProfile.alcoholWeekly,
+              stressLevel: patientProfile.stressLevel,
+              poids: patientProfile.poids,
+              taille: patientProfile.taille,
+            });
           }
 
           const markers = analysisResult.markers.map((marker) => {
@@ -384,6 +395,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             alerts: analysisResult.alerts,
             aiAnalysis,
             protocolPhases,
+            lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
             patient: patientProfile,
           };
 
@@ -595,7 +607,17 @@ export function registerBloodTestsRoutes(app: Express): void {
         }
       }
       if (!aiAnalysis) {
-        aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: profile.gender as "homme" | "femme", age });
+        aiAnalysis = buildFallbackAnalysis(analysisResult, {
+          gender: profile.gender as "homme" | "femme",
+          age,
+          sleepHours: profile.sleepHours,
+          trainingHours: profile.trainingHours,
+          calorieDeficit: profile.calorieDeficit,
+          alcoholWeekly: profile.alcoholWeekly,
+          stressLevel: profile.stressLevel,
+          poids: profile.poids,
+          taille: profile.taille,
+        });
       }
 
       const markers = analysisResult.markers.map((marker) => {
@@ -636,6 +658,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         alerts: analysisResult.alerts,
         aiAnalysis,
         protocolPhases,
+        lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
         patient: profile,
       };
 

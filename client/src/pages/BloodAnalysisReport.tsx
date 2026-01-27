@@ -83,6 +83,13 @@ type BloodTestDetail = {
     };
     protocolPhases?: Array<{ id: string; title: string; items: string[] }>;
     aiAnalysis?: string;
+    lifestyleCorrelations?: Array<{
+      factor: string;
+      current: string;
+      impact: string;
+      recommendation: string;
+      evidence?: string;
+    }>;
     patient?: {
       prenom?: string;
       nom?: string;
@@ -266,6 +273,84 @@ const buildScoreReflection = (marker: BloodTestDetail["markers"][number], percen
   }
   const percentileNote = percentile ? ` Tu te situes autour du ${percentile}e percentile pour ce profil.` : "";
   return `${base}${optimalNote}${percentileNote}`.trim();
+};
+
+const buildCriticalAlerts = (markers: BloodTestDetail["markers"]) => {
+  const lookup = (code: string) => markers.find((m) => m.code === code);
+  const alerts: Array<{ title: string; detail: string; action: string }> = [];
+
+  const homa = lookup("homa_ir");
+  if (homa && homa.value >= 3.5) {
+    alerts.push({
+      title: "Resistance a l'insuline probable",
+      detail: `HOMA-IR ${homa.value} (seuil critique >= 3.5).`,
+      action: "Priorite: stabiliser glycemie, reduire sucres rapides, augmenter activite post-repas.",
+    });
+  }
+
+  const tg = lookup("triglycerides");
+  if (tg && tg.value >= 500) {
+    alerts.push({
+      title: "Hypertriglyceridemie severe",
+      detail: `Triglycerides ${tg.value} mg/dL (risque pancreatite).`,
+      action: "Action rapide: reduire alcool/sucres, revoir lipides, bilan medical conseille.",
+    });
+  } else if (tg && tg.value >= 200) {
+    alerts.push({
+      title: "Triglycerides eleves",
+      detail: `Triglycerides ${tg.value} mg/dL.`,
+      action: "Optimiser insuline, omega-3, fibres et activite cardio moderee.",
+    });
+  }
+
+  const crp = lookup("crp_us");
+  if (crp && crp.value >= 3) {
+    alerts.push({
+      title: "Inflammation systemique elevee",
+      detail: `CRP-us ${crp.value} (>= 3).`,
+      action: "Priorite: sommeil, reduction inflammation, verifier sources d'inflammation.",
+    });
+  }
+
+  const a1c = lookup("hba1c");
+  if (a1c && a1c.value >= 6.5) {
+    alerts.push({
+      title: "HbA1c tres elevee",
+      detail: `HbA1c ${a1c.value}% (>= 6.5).`,
+      action: "Action rapide: suivi medical + correction nutrition/entrainement.",
+    });
+  }
+
+  const gly = lookup("glycemie_jeun");
+  if (gly && gly.value >= 126) {
+    alerts.push({
+      title: "Glycemie a jeun critique",
+      detail: `Glycemie a jeun ${gly.value} mg/dL (>= 126).`,
+      action: "Priorite: stabiliser glucose et revoir strategie alimentaire.",
+    });
+  }
+
+  if (!alerts.length) {
+    const fallback = markers
+      .filter((m) => m.status === "critical")
+      .slice(0, 3)
+      .map((m) => ({
+        title: `${m.name} critique`,
+        detail: `${m.value} ${m.unit}`,
+        action: "A traiter en priorite cette semaine.",
+      }));
+    return fallback;
+  }
+
+  return alerts.slice(0, 4);
+};
+
+const trimLongText = (text: string, maxChars = 18000) => {
+  if (!text) return "";
+  if (text.length <= maxChars) return text.trim();
+  const sliced = text.slice(0, maxChars);
+  const lastBreak = sliced.lastIndexOf("\n\n");
+  return (lastBreak > 1000 ? sliced.slice(0, lastBreak) : sliced).trim();
 };
 
 
@@ -528,7 +613,9 @@ function BloodAnalysisReportInner() {
 
   const patterns = data?.analysis?.patterns || [];
   const aiAnalysis = data?.analysis?.aiAnalysis || "";
+  const aiAnalysisDisplay = useMemo(() => trimLongText(aiAnalysis), [aiAnalysis]);
   const protocolPhases = data?.analysis?.protocolPhases || [];
+  const lifestyleCorrelations = data?.analysis?.lifestyleCorrelations || [];
 
   const summaryCounts = useMemo(() => {
     const markers = data?.markers || [];
@@ -540,6 +627,8 @@ function BloodAnalysisReportInner() {
       critical: markers.filter((m) => m.status === "critical").length,
     };
   }, [data?.markers]);
+
+  const criticalAlerts = useMemo(() => buildCriticalAlerts(data?.markers || []), [data?.markers]);
 
   const urgentMarkers = useMemo(() => {
     return (data?.markers || []).filter((m) => m.status === "critical").slice(0, 4);
@@ -749,6 +838,20 @@ function BloodAnalysisReportInner() {
                     Critiques {summaryCounts.critical}
                   </span>
                 </div>
+                {criticalAlerts.length > 0 && (
+                  <Card className="mt-6 border border-rose-500/40 bg-rose-500/10 p-5">
+                    <p className="text-[12px] uppercase tracking-[0.2em] text-rose-200">Alertes prioritaires</p>
+                    <ul className="mt-4 space-y-3 text-sm text-rose-100">
+                      {criticalAlerts.map((alert) => (
+                        <li key={alert.title}>
+                          <div className="font-semibold">{alert.title}</div>
+                          <div className="mt-1 text-xs text-rose-100/80">{alert.detail}</div>
+                          <div className="mt-1 text-xs text-rose-200">Action: {alert.action}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
                 <div className="mt-6">
                   <a
                     href="#systems"
@@ -796,6 +899,53 @@ function BloodAnalysisReportInner() {
               </Card>
             </div>
           </motion.section>
+
+          {lifestyleCorrelations.length > 0 && (
+            <motion.section
+              id="correlations"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={fadeUp}
+            >
+              <Card className="border blood-border-default blood-surface p-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Correlations lifestyle</p>
+                    <h2 className="mt-3 blood-h2 blood-text-primary">Ce qui relie tes habitudes aux marqueurs</h2>
+                    <p className="mt-2 text-sm blood-text-secondary">
+                      Base sur les informations renseignees avant l upload. Ajuste ces leviers pour corriger les marqueurs prioritaires.
+                    </p>
+                  </div>
+                  <a
+                    href="#biomarkers"
+                    className="rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.2em] transition hover:border-white/40"
+                    style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
+                  >
+                    Voir marqueurs
+                  </a>
+                </div>
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {lifestyleCorrelations.map((item) => (
+                    <div key={item.factor} className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold blood-text-primary">{item.factor}</p>
+                          <p className="mt-1 text-xs blood-text-tertiary">{item.current}</p>
+                        </div>
+                        <StatusIndicator status="suboptimal" />
+                      </div>
+                      <p className="mt-3 text-sm blood-text-secondary">{item.impact}</p>
+                      <p className="mt-3 text-xs blood-text-secondary">
+                        Action: <span className="font-semibold blood-text-primary">{item.recommendation}</span>
+                      </p>
+                      {item.evidence && <p className="mt-2 text-xs blood-text-tertiary">{item.evidence}</p>}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.section>
+          )}
 
           <motion.section
             id="systems"
@@ -1134,11 +1284,11 @@ function BloodAnalysisReportInner() {
               </Card>
             </div>
 
-            {aiAnalysis ? (
+            {aiAnalysisDisplay ? (
               <Card className="border blood-border-default blood-surface p-6">
                 <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Analyse detaillee</p>
                 <div className="prose mt-4 max-w-none prose-p:blood-text-secondary prose-li:blood-text-secondary prose-strong:blood-text-primary">
-                  <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
+                  <ReactMarkdown>{aiAnalysisDisplay}</ReactMarkdown>
                 </div>
               </Card>
             ) : null}
