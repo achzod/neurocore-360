@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { BIOMARKER_DETAILS, buildDefaultBiomarkerDetail } from "@/data/bloodBiomarkerDetails";
+import { BLOOD_PANEL_CITATIONS } from "@/data/bloodPanelCitations";
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -45,6 +47,11 @@ type BloodTestDetail = {
       email?: string;
       gender?: string;
       dob?: string;
+      sleepHours?: number;
+      trainingHours?: number;
+      calorieDeficit?: number;
+      alcoholWeekly?: number;
+      stressLevel?: number;
     } | null;
   };
   markers: Array<{
@@ -79,6 +86,11 @@ type BloodTestDetail = {
       email?: string;
       gender?: string;
       dob?: string;
+      sleepHours?: number;
+      trainingHours?: number;
+      calorieDeficit?: number;
+      alcoholWeekly?: number;
+      stressLevel?: number;
     };
   };
 };
@@ -131,6 +143,42 @@ const PANEL_META: Record<
   },
 };
 
+const CASE_STUDIES = [
+  {
+    id: "marc",
+    initials: "MD",
+    name: "Marc D.",
+    age: 34,
+    role: "Entrepreneur",
+    baseline: "Testosterone 420 ng/dL (sous-optimal)",
+    protocol: ["Sommeil 8h30", "Ashwagandha 600 mg", "Zinc 30 mg", "Deficit -15%"],
+    result: "Testosterone 680 ng/dL (+62%)",
+    quote: "Energie revenue, libido stable, progression plus rapide.",
+  },
+  {
+    id: "ines",
+    initials: "IB",
+    name: "Ines B.",
+    age: 29,
+    role: "Athlete",
+    baseline: "Ferritine 22 ng/mL (basse)",
+    protocol: ["Fer bisglycinate 25 mg", "Vitamine C 500 mg", "Check menstruations"],
+    result: "Ferritine 58 ng/mL (optimal)",
+    quote: "Moins de fatigue, meilleure endurance a l'entrainement.",
+  },
+  {
+    id: "samir",
+    initials: "SK",
+    name: "Samir K.",
+    age: 41,
+    role: "Cadre",
+    baseline: "HbA1c 5.7% (pre-diabete)",
+    protocol: ["Marche post-repas", "Suppression sucres liquides", "Training 3x/sem"],
+    result: "HbA1c 5.1% (optimal)",
+    quote: "Energie plus stable, perte de gras enclenchee.",
+  },
+];
+
 class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -164,6 +212,13 @@ const scoreLabel = (score: number): string => {
   if (score >= 70) return "Bon";
   if (score >= 55) return "A optimiser";
   return "Prioritaire";
+};
+
+const statusLabel = (status: MarkerStatus): string => {
+  if (status === "optimal") return "optimal";
+  if (status === "normal") return "normal";
+  if (status === "suboptimal") return "sous-optimal";
+  return "critique";
 };
 
 const average = (values: Array<number | null>) => {
@@ -232,6 +287,116 @@ const getMarkerNarrative = (marker: BloodTestDetail["markers"][number], panel: P
   return { definition, mechanism, optimization };
 };
 
+const getMarkerDetail = (marker: BloodTestDetail["markers"][number]) => {
+  const detail = BIOMARKER_DETAILS[marker.code];
+  if (detail) return detail;
+  return buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
+};
+
+const buildLifestyleCorrelations = (
+  markers: BloodTestDetail["markers"],
+  lifestyle?: {
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
+  }
+) => {
+  const lookup = (code: string) => markers.find((m) => m.code === code);
+  const cortisol = lookup("cortisol");
+  const testo = lookup("testosterone_total");
+  const a1c = lookup("hba1c");
+  const insulin = lookup("insuline_jeun");
+
+  const items: Array<{ factor: string; current: string; impact: string; recommendation: string }> = [];
+
+  if (lifestyle?.sleepHours && lifestyle.sleepHours < 7) {
+    items.push({
+      factor: "Sommeil",
+      current: `${lifestyle.sleepHours} h/nuit`,
+      impact: "Cortisol plus eleve + testosterone plus basse.",
+      recommendation: "Viser 7h30-8h30, coucher regulier, limiter cafeine apres 14h.",
+    });
+  }
+
+  if (lifestyle?.trainingHours && lifestyle.trainingHours > 10) {
+    items.push({
+      factor: "Volume d'entrainement",
+      current: `${lifestyle.trainingHours} h/sem`,
+      impact: "Risque de recuperation incomplete et cortisol eleve.",
+      recommendation: "Structurer 3-4 seances fortes + 1-2 seances legeres.",
+    });
+  }
+
+  if (lifestyle?.calorieDeficit && lifestyle.calorieDeficit > 25) {
+    items.push({
+      factor: "Deficit calorique",
+      current: `${lifestyle.calorieDeficit}%`,
+      impact: "Baisse de T3 et de la testosterone libre.",
+      recommendation: "Rester entre 10-20% pour preserver hormones et performance.",
+    });
+  }
+
+  if (lifestyle?.stressLevel && lifestyle.stressLevel >= 7) {
+    items.push({
+      factor: "Stress percu",
+      current: `${lifestyle.stressLevel}/10`,
+      impact: "Inflammation plus haute, sommeil plus fragile.",
+      recommendation: "Respiration 10 min/jour + deload et sommeil prioritaire.",
+    });
+  }
+
+  if (lifestyle?.alcoholWeekly && lifestyle.alcoholWeekly >= 5) {
+    items.push({
+      factor: "Alcool",
+      current: `${lifestyle.alcoholWeekly} verres/sem`,
+      impact: "Risque hepatique et baisse de recuperation.",
+      recommendation: "Objectif <3 verres/sem sur la phase 1.",
+    });
+  }
+
+  if (items.length >= 3) return items.slice(0, 3);
+
+  if (cortisol && (cortisol.status === "suboptimal" || cortisol.status === "critical")) {
+    items.push({
+      factor: "Stress / sommeil",
+      current: `Cortisol ${cortisol.value} ${cortisol.unit}`,
+      impact: "Recuperation plus lente + stockage plus facile.",
+      recommendation: "Sommeil 7h30-8h30 + reduction cafeine + 10 min de respiration quotidienne.",
+    });
+  }
+
+  if (testo && (testo.status === "suboptimal" || testo.status === "critical")) {
+    items.push({
+      factor: "Sommeil / nutrition",
+      current: `Testosterone ${testo.value} ${testo.unit}`,
+      impact: "Progression musculaire freinee.",
+      recommendation: "Reequilibrer calories, lipides essentiels et charge d'entrainement.",
+    });
+  }
+
+  if (a1c && (a1c.status === "suboptimal" || a1c.status === "critical")) {
+    items.push({
+      factor: "Nutrition / activite",
+      current: `HbA1c ${a1c.value}${a1c.unit}`,
+      impact: "Risque insulinique accru.",
+      recommendation: "Marche post-repas + reduction sucres rapides + priorite a la musculation.",
+    });
+  }
+
+  if (insulin && (insulin.status === "suboptimal" || insulin.status === "critical")) {
+    items.push({
+      factor: "Timing glucidique",
+      current: `Insuline ${insulin.value} ${insulin.unit}`,
+      impact: "Stockage accelere + energie instable.",
+      recommendation: "Fenetre alimentaire plus stricte et glucides surtout autour des entrainements.",
+    });
+  }
+
+  return items.slice(0, 3);
+};
+
 function ScoreDonut({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 56;
   const dash = (score / 100) * circumference;
@@ -251,8 +416,8 @@ function ScoreDonut({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-4xl font-semibold tracking-tight text-slate-900">{score}</div>
-        <div className="text-xs tracking-[0.2em] uppercase text-slate-500">{scoreLabel(score)}</div>
+        <div className="text-4xl font-semibold tracking-tight text-white">{score}</div>
+        <div className="text-xs tracking-[0.2em] uppercase text-white/50">{scoreLabel(score)}</div>
       </div>
     </div>
   );
@@ -365,6 +530,10 @@ export default function BloodAnalysisReport() {
       .slice(0, 3);
   }, [data?.markers]);
 
+  const lifestyleCorrelations = useMemo(() => {
+    return data?.markers ? buildLifestyleCorrelations(data.markers, patient || undefined) : [];
+  }, [data?.markers, patient]);
+
   const narrative = useMemo(() => {
     if (!data?.markers?.length) return "";
     const criticalCount = data.markers.filter((m) => m.status === "critical").length;
@@ -389,7 +558,7 @@ export default function BloodAnalysisReport() {
     return (
       <BloodShell>
         <BloodHeader credits={credits} />
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24 text-slate-600">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24 text-white/70">
           <Loader2 className="mr-3 h-5 w-5 animate-spin" />
           Chargement du rapport...
         </div>
@@ -404,10 +573,10 @@ export default function BloodAnalysisReport() {
         <BloodHeader credits={credits} />
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-6 py-24 text-center">
           <AlertTriangle className="h-8 w-8 text-rose-500" />
-          <div className="text-lg font-semibold text-slate-900">
+          <div className="text-lg font-semibold text-white">
             {isUnauthorized ? "Connexion requise." : "Rapport introuvable."}
           </div>
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-white/70">
             {isUnauthorized ? "Connecte-toi pour ouvrir ce rapport." : "Le lien est invalide ou le rapport n'est pas accessible."}
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -418,7 +587,7 @@ export default function BloodAnalysisReport() {
             >
               Se connecter
             </Button>
-            <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/blood-dashboard")}>
+            <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/blood-dashboard")}>
               Retour dashboard
             </Button>
           </div>
@@ -432,19 +601,19 @@ export default function BloodAnalysisReport() {
       <BloodShell>
         <BloodHeader credits={credits} />
         <div className="mx-auto max-w-3xl px-6 py-24">
-          <Card className="border border-slate-200 bg-white p-8 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-slate-50">
+          <Card className="border border-white/13 bg-[#0a0a0a] p-8 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/13 bg-[#0a0a0a]">
               <Loader2 className="h-6 w-6 animate-spin" style={{ color: BLOOD_THEME.primaryBlue }} />
             </div>
-            <h1 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900">Analyse en cours</h1>
-            <p className="mt-3 text-sm text-slate-600">
+            <h1 className="mt-6 text-2xl font-semibold tracking-tight text-white">Analyse en cours</h1>
+            <p className="mt-3 text-sm text-white/70">
               J'extrais tes biomarqueurs et je construis le rapport. La page se met a jour automatiquement.
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <Button className="text-white" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} onClick={() => refetch()}>
                 Rafraichir
               </Button>
-              <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/blood-dashboard")}>
+              <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/blood-dashboard")}>
                 Retour dashboard
               </Button>
             </div>
@@ -461,54 +630,54 @@ export default function BloodAnalysisReport() {
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Blood Analysis</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Blood Analysis</p>
+            <h1 className="mt-3 blood-h1 text-white">
               {displayName}, voici ton bilan sanguin expert.
             </h1>
-            <p className="mt-3 max-w-2xl text-slate-600 leading-relaxed">
+            <p className="mt-3 max-w-2xl text-white/70 leading-relaxed blood-body">
               Je compare tes ranges labo (normaux) aux ranges optimaux (performance/longévité), je detecte les patterns,
               puis je te donne une trajectoire claire.
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-white/50">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
                 <FileText className="h-3.5 w-3.5" />
                 {data.bloodTest.fileName}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
                 {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
                 {data.markers.length} biomarqueurs
               </span>
               {data.analysis.temporalRisk && (
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/13 bg-[#0a0a0a] px-3 py-1">
                   Risque: {data.analysis.temporalRisk.level} ({data.analysis.temporalRisk.score}/100)
                 </span>
               )}
             </div>
-            <div className="mt-4 grid gap-3 text-xs text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Patient</span>
-                <div className="mt-1 text-sm text-slate-800">
+            <div className="mt-4 grid gap-3 text-xs text-white/50 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Patient</span>
+                <div className="mt-1 text-sm text-white">
                   {patient?.prenom || ""} {patient?.nom || ""}
                 </div>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Sexe</span>
-                <div className="mt-1 text-sm text-slate-800">{genderLabel}</div>
+              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Sexe</span>
+                <div className="mt-1 text-sm text-white">{genderLabel}</div>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Age</span>
-                <div className="mt-1 text-sm text-slate-800">{patientAge ?? "N/A"} {patientAge ? "ans" : ""}</div>
+              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Age</span>
+                <div className="mt-1 text-sm text-white">{patientAge ?? "N/A"} {patientAge ? "ans" : ""}</div>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Email</span>
-                <div className="mt-1 text-sm text-slate-800">{patient?.email || "N/A"}</div>
+              <div className="rounded-lg border border-white/13 bg-[#0a0a0a] px-3 py-2">
+                <span className="text-[11px] uppercase tracking-[0.2em] text-white/40">Email</span>
+                <div className="mt-1 text-sm text-white">{patient?.email || "N/A"}</div>
               </div>
             </div>
           </div>
 
-          <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/blood-dashboard")}>
+          <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/blood-dashboard")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour
           </Button>
@@ -516,28 +685,28 @@ export default function BloodAnalysisReport() {
 
         <div className="mt-10">
           <Tabs defaultValue="overview">
-            <TabsList className="border border-slate-200 bg-white/80 p-1">
-              <TabsTrigger value="overview" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+            <TabsList className="border border-white/13 bg-[#0a0a0a]/80 p-1">
+              <TabsTrigger value="overview" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="systems" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+              <TabsTrigger value="systems" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
                 Systemes
               </TabsTrigger>
-              <TabsTrigger value="markers" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+              <TabsTrigger value="markers" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
                 Biomarqueurs
               </TabsTrigger>
-              <TabsTrigger value="insights" className="text-slate-600 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900">
+              <TabsTrigger value="insights" className="text-white/70 data-[state=active]:bg-white/10 data-[state=active]:text-white">
                 Insights
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-6">
               <div className="grid gap-6 lg:grid-cols-[0.45fr_0.55fr]">
-                <Card className="border border-slate-200 bg-white p-6">
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Score global</p>
-                      <p className="mt-2 text-sm text-slate-600">Lecture multi-systemes sur 100.</p>
+                      <p className="text-xs uppercase tracking-[0.22em] text-white/50">Score global</p>
+                      <p className="mt-2 text-sm text-white/70">Lecture multi-systemes sur 100.</p>
                     </div>
                     <StatusIndicator status={scoreToStatus(globalScore)} />
                   </div>
@@ -548,8 +717,8 @@ export default function BloodAnalysisReport() {
                     {(Object.keys(PANEL_META) as PanelKey[]).map((key) => {
                       const score = panelScores[key];
                       return (
-                        <div key={key} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                          <div className="text-sm font-medium text-slate-900">{PANEL_META[key].label}</div>
+                        <div key={key} className="flex items-center justify-between rounded-lg border border-white/13 bg-[#0a0a0a] px-4 py-3">
+                          <div className="text-sm font-medium text-white">{PANEL_META[key].label}</div>
                           <div className="flex items-center gap-2">
                             {score === null ? (
                               <StatusBadge status="normal" label="N/A" className="opacity-70" />
@@ -563,13 +732,13 @@ export default function BloodAnalysisReport() {
                   </div>
                 </Card>
 
-                <Card className="border border-slate-200 bg-white p-6">
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Balance systemique</p>
-                      <p className="mt-2 text-sm text-slate-600">6 panels, score 0-100.</p>
+                      <p className="text-xs uppercase tracking-[0.22em] text-white/50">Balance systemique</p>
+                      <p className="mt-2 text-sm text-white/70">6 panels, score 0-100.</p>
                     </div>
-                    <div className="inline-flex items-center gap-2 text-xs text-slate-500">
+                    <div className="inline-flex items-center gap-2 text-xs text-white/50">
                       <ShieldAlert className="h-4 w-4" style={{ color: BLOOD_THEME.primaryBlue }} />
                       Optimal vs normal
                     </div>
@@ -580,16 +749,16 @@ export default function BloodAnalysisReport() {
                   <div className="mt-6 grid gap-4 md:grid-cols-2">
                     {patterns.length ? (
                       patterns.slice(0, 2).map((pattern) => (
-                        <div key={pattern.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div key={pattern.name} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
                           <div className="flex items-start justify-between gap-3">
-                            <div className="text-sm font-semibold text-slate-900">{pattern.name}</div>
+                            <div className="text-sm font-semibold text-white">{pattern.name}</div>
                             <StatusBadge status="suboptimal" />
                           </div>
                           {!!pattern.causes?.length && (
-                            <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                            <ul className="mt-3 space-y-1 text-xs text-white/70">
                               {pattern.causes.slice(0, 3).map((cause) => (
                                 <li key={cause} className="flex items-start gap-2">
-                                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-300" />
+                              <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/30" />
                                   <span>{cause}</span>
                                 </li>
                               ))}
@@ -598,64 +767,153 @@ export default function BloodAnalysisReport() {
                         </div>
                       ))
                     ) : (
-                      <div className="text-sm text-slate-600">Aucun pattern majeur detecte.</div>
+                      <div className="text-sm text-white/70">Aucun pattern majeur detecte.</div>
                     )}
                   </div>
                 </Card>
               </div>
 
+              <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
+                <p className="text-xs uppercase tracking-[0.22em] text-white/50">Sources scientifiques</p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
+                    <div key={key} className="rounded-xl border border-white/13 bg-black/40 p-4">
+                      <div className="text-sm font-semibold text-white">{PANEL_META[key].label}</div>
+                      <ul className="mt-3 space-y-2 text-xs text-white/60">
+                        {(BLOOD_PANEL_CITATIONS[key] || []).map((citation) => (
+                          <li key={citation.url}>
+                            →{" "}
+                            <a className="underline hover:text-white" href={citation.url} target="_blank" rel="noreferrer">
+                              {citation.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
               <div className="mt-6 grid gap-6 lg:grid-cols-3">
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Hormonal & anabolic index</p>
-                  <p className="mt-2 text-sm text-slate-600">Levier majeur prise de muscle / perte de gras.</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Hormonal & anabolic index</p>
+                  <p className="mt-2 text-sm text-white/70">Levier majeur prise de muscle / perte de gras.</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="text-3xl font-semibold text-slate-900">{anabolicIndex ?? "N/A"}</div>
+                    <div className="text-3xl font-semibold text-white">{anabolicIndex ?? "N/A"}</div>
                     {typeof anabolicIndex === "number" && <StatusBadge status={scoreToStatus(anabolicIndex)} />}
                   </div>
-                  <p className="mt-3 text-sm text-slate-600">
+                  <p className="mt-3 text-sm text-white/70">
                     {typeof anabolicIndex === "number"
                       ? "Si ce score est bas, tes resultats stagnent meme avec un entrainement dur."
                       : "Pas assez de donnees pour conclure sur l'axe anabolique."}
                   </p>
                 </Card>
 
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Body recomp readiness</p>
-                  <p className="mt-2 text-sm text-slate-600">Synthese hormones + thyroide + metabolisme.</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Body recomp readiness</p>
+                  <p className="mt-2 text-sm text-white/70">Synthese hormones + thyroide + metabolisme.</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="text-3xl font-semibold text-slate-900">{recompReadiness ?? "N/A"}</div>
+                    <div className="text-3xl font-semibold text-white">{recompReadiness ?? "N/A"}</div>
                     {typeof recompReadiness === "number" && <StatusBadge status={scoreToStatus(recompReadiness)} />}
                   </div>
-                  <p className="mt-3 text-sm text-slate-600">
+                  <p className="mt-3 text-sm text-white/70">
                     {typeof recompReadiness === "number"
                       ? "Plus ce score est haut, plus ta recomposition est realiste."
                       : "Donnees insuffisantes pour estimer la recomposition."}
                   </p>
                 </Card>
 
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Diabetes risk assessment</p>
-                  <p className="mt-2 text-sm text-slate-600">Lecture glycémie, HbA1c, insuline, HOMA-IR.</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Diabetes risk assessment</p>
+                  <p className="mt-2 text-sm text-white/70">Lecture glycémie, HbA1c, insuline, HOMA-IR.</p>
                   {diabetes ? (
                     <>
                       <div className="mt-4 flex items-center justify-between">
-                        <div className="text-3xl font-semibold text-slate-900">{diabetes.score}/100</div>
+                        <div className="text-3xl font-semibold text-white">{diabetes.score}/100</div>
                         <StatusBadge status={diabetes.score >= 75 ? "critical" : diabetes.score >= 55 ? "suboptimal" : "normal"} />
                       </div>
-                      <p className="mt-3 text-sm text-slate-600">
+                      <p className="mt-3 text-sm text-white/70">
                         Risque {diabetes.level}. Priorite: stabiliser la glycemie et l'insuline.
                       </p>
                     </>
                   ) : (
-                    <p className="mt-4 text-sm text-slate-600">Donnees insuffisantes pour estimer le risque.</p>
+                    <p className="mt-4 text-sm text-white/70">Donnees insuffisantes pour estimer le risque.</p>
                   )}
                 </Card>
               </div>
 
               <div className="mt-6">
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Lecture humaine</p>
-                  <p className="mt-3 text-sm text-slate-700 leading-relaxed">{narrative}</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Lecture humaine</p>
+                  <p className="mt-3 text-sm text-white/80 leading-relaxed">{narrative}</p>
+                </Card>
+              </div>
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Correlations lifestyle</p>
+                  <p className="mt-2 text-sm text-white/70">
+                    J'estime les liens entre tes marqueurs et tes habitudes (sommeil, stress, nutrition).
+                  </p>
+                  <div className="mt-4 grid gap-3">
+                    {lifestyleCorrelations.length ? (
+                      lifestyleCorrelations.map((item) => (
+                        <div key={item.factor} className="rounded-xl border border-white/13 bg-black/40 p-4">
+                          <div className="text-sm font-semibold text-white">{item.factor}</div>
+                          <p className="mt-1 text-xs text-white/50">{item.current}</p>
+                          <p className="mt-3 text-xs text-[rgb(2,121,232)]">Impact: {item.impact}</p>
+                          <p className="mt-2 text-xs text-white/70">→ {item.recommendation}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-white/60">Pas assez d'informations pour estimer les correlations lifestyle.</p>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Cas reels (reference)</p>
+                  <p className="mt-2 text-sm text-white/70">
+                    Exemples de progressions observees apres protocoles appliques.
+                  </p>
+                  <div className="mt-4 grid gap-4">
+                    {CASE_STUDIES.map((story) => (
+                      <div key={story.id} className="rounded-xl border border-white/13 bg-black/40 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full border border-white/13 bg-white/10 flex items-center justify-center text-xs font-semibold text-white">
+                            {story.initials}
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-white">{story.name}</div>
+                            <div className="text-xs text-white/50">
+                              {story.age} ans · {story.role}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-2 text-xs text-white/70">
+                          <div>
+                            <span className="text-white/50 uppercase">Baseline</span>
+                            <p className="mt-1">{story.baseline}</p>
+                          </div>
+                          <div>
+                            <span className="text-white/50 uppercase">Protocole</span>
+                            <ul className="mt-1 space-y-1">
+                              {story.protocol.map((item) => (
+                                <li key={item}>→ {item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <span className="text-white/50 uppercase">Resultat</span>
+                            <p className="mt-1">{story.result}</p>
+                          </div>
+                          <blockquote className="border-l-2 border-[rgb(2,121,232)] pl-3 text-white/80 italic">
+                            "{story.quote}"
+                          </blockquote>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </Card>
               </div>
             </TabsContent>
@@ -669,12 +927,12 @@ export default function BloodAnalysisReport() {
                   const intro = `Je lis ton systeme ${PANEL_META[key].label.toLowerCase()} comme un levier direct sur ta performance.`;
                   const highlights = markers.filter((marker) => marker.status !== "optimal").slice(0, 3);
                   return (
-                    <Card key={key} className="border border-slate-200 bg-white p-6">
+                    <Card key={key} className="border border-white/13 bg-[#0a0a0a] p-6">
                       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Systeme</p>
-                          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{PANEL_META[key].label}</h3>
-                          <p className="mt-2 text-sm text-slate-600">{intro}</p>
+                          <p className="text-xs uppercase tracking-[0.22em] text-white/50">Systeme</p>
+                          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-white">{PANEL_META[key].label}</h3>
+                          <p className="mt-2 text-sm text-white/70">{intro}</p>
                         </div>
                         <div className="flex items-center gap-3">
                           {typeof score === "number" ? (
@@ -686,32 +944,32 @@ export default function BloodAnalysisReport() {
                       </div>
 
                       <div className="mt-6 grid gap-4 md:grid-cols-2">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Lecture rapide</p>
-                          <p className="mt-2 text-sm text-slate-600">{PANEL_META[key].impact}</p>
-                          <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                        <div className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
+                          <p className="text-xs uppercase tracking-[0.22em] text-white/50">Lecture rapide</p>
+                          <p className="mt-2 text-sm text-white/70">{PANEL_META[key].impact}</p>
+                          <ul className="mt-3 space-y-2 text-xs text-white/70">
                             {PANEL_META[key].bullets.map((bullet) => (
                               <li key={bullet} className="flex items-start gap-2">
-                                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/40" />
                                 <span>{bullet}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
 
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Points d'attention</p>
+                        <div className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
+                          <p className="text-xs uppercase tracking-[0.22em] text-white/50">Points d'attention</p>
                           {highlights.length ? (
-                            <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                            <ul className="mt-3 space-y-2 text-sm text-white/80">
                               {highlights.map((marker) => (
                                 <li key={marker.code} className="flex items-center justify-between gap-3">
-                                  <span className="font-medium text-slate-900">{marker.name}</span>
+                                  <span className="font-medium text-white">{marker.name}</span>
                                   <StatusBadge status={marker.status} label={`${marker.value} ${marker.unit}`} />
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="mt-3 text-sm text-slate-600">Pas de signal critique sur ce systeme.</p>
+                            <p className="mt-3 text-sm text-white/70">Pas de signal critique sur ce systeme.</p>
                           )}
                         </div>
                       </div>
@@ -721,11 +979,11 @@ export default function BloodAnalysisReport() {
                           markers.map((marker) => {
                             const narrativeBlocks = getMarkerNarrative(marker, key);
                             return (
-                              <div key={marker.code} className="rounded-xl border border-slate-200 bg-white p-4">
+                              <div key={marker.code} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
                                 <div className="flex items-start justify-between gap-4">
                                   <div>
-                                    <div className="text-sm font-semibold text-slate-900">{marker.name}</div>
-                                    <div className="text-xs text-slate-500">{marker.code}</div>
+                                    <div className="text-sm font-semibold text-white">{marker.name}</div>
+                                    <div className="text-xs text-white/50">{marker.code}</div>
                                   </div>
                                   <StatusBadge status={marker.status} />
                                 </div>
@@ -738,19 +996,21 @@ export default function BloodAnalysisReport() {
                                     normalMax={marker.refMax ?? undefined}
                                     optimalMin={marker.optimalMin ?? undefined}
                                     optimalMax={marker.optimalMax ?? undefined}
+                                    normalLabel="Normal labo"
+                                    optimalLabel="Optimal performance"
                                   />
                                 </div>
-                                <div className="mt-4 space-y-2 text-sm text-slate-600">
+                                <div className="mt-4 space-y-2 text-sm text-white/70">
                                   <p>
-                                    <span className="font-semibold text-slate-900">Ce que ca dit :</span>{" "}
+                                    <span className="font-semibold text-white">Ce que ca dit :</span>{" "}
                                     {narrativeBlocks.definition}
                                   </p>
                                   <p>
-                                    <span className="font-semibold text-slate-900">Impact performance :</span>{" "}
+                                    <span className="font-semibold text-white">Impact performance :</span>{" "}
                                     {narrativeBlocks.mechanism}
                                   </p>
                                   <p>
-                                    <span className="font-semibold text-slate-900">Prochaine etape :</span>{" "}
+                                    <span className="font-semibold text-white">Prochaine etape :</span>{" "}
                                     {narrativeBlocks.optimization}
                                   </p>
                                 </div>
@@ -758,7 +1018,7 @@ export default function BloodAnalysisReport() {
                             );
                           })
                         ) : (
-                          <div className="text-sm text-slate-600">Aucun marqueur pour ce systeme.</div>
+                          <div className="text-sm text-white/70">Aucun marqueur pour ce systeme.</div>
                         )}
                       </div>
                     </Card>
@@ -769,24 +1029,24 @@ export default function BloodAnalysisReport() {
 
             <TabsContent value="markers" className="mt-6">
               <div className="grid gap-6 lg:grid-cols-[0.33fr_0.67fr]">
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panels</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Panels</p>
                   <div className="mt-5 space-y-3">
                     {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
-                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div key={key} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
                         <div className="flex items-center justify-between">
-                          <div className="text-sm font-semibold text-slate-900">{PANEL_META[key].label}</div>
+                          <div className="text-sm font-semibold text-white">{PANEL_META[key].label}</div>
                           {panelScores[key] === null ? (
                             <StatusBadge status="normal" label="N/A" className="opacity-70" />
                           ) : (
                             <StatusBadge status={scoreToStatus(panelScores[key]!)} label={`${panelScores[key]}/100`} />
                           )}
                         </div>
-                        <p className="mt-2 text-xs text-slate-600">{PANEL_META[key].impact}</p>
-                        <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                        <p className="mt-2 text-xs text-white/70">{PANEL_META[key].impact}</p>
+                        <ul className="mt-3 space-y-1 text-xs text-white/70">
                           {PANEL_META[key].bullets.map((bullet) => (
                             <li key={bullet} className="flex items-start gap-2">
-                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-300" />
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-white/30" />
                               <span>{bullet}</span>
                             </li>
                           ))}
@@ -796,9 +1056,9 @@ export default function BloodAnalysisReport() {
                   </div>
                 </Card>
 
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Biomarqueurs</p>
-                  <p className="mt-2 text-sm text-slate-600">
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Biomarqueurs</p>
+                  <p className="mt-2 text-sm text-white/70">
                     Chaque biomarqueur a son range normal, son range optimal, et une lecture orientee performance/sante.
                   </p>
 
@@ -806,21 +1066,24 @@ export default function BloodAnalysisReport() {
                     <Accordion type="multiple" className="space-y-3">
                       {(Object.keys(PANEL_META) as PanelKey[]).flatMap((panelKey) => {
                         return markersByPanel[panelKey].map((marker) => {
-                          const narrative = getMarkerNarrative(marker, panelKey);
+                          const detail = getMarkerDetail(marker);
+                          const citations = detail.citations.length
+                            ? detail.citations
+                            : BLOOD_PANEL_CITATIONS[panelKey] || [];
                           return (
                             <AccordionItem
                               key={`${panelKey}:${marker.code}`}
                               value={`${panelKey}:${marker.code}`}
-                              className="rounded-xl border border-slate-200 bg-slate-50 px-4"
+                              className="rounded-xl border border-white/13 bg-[#0a0a0a] px-4"
                             >
                               <AccordionTrigger className="py-4 text-left hover:no-underline">
                                 <div className="flex w-full items-start justify-between gap-4">
                                   <div>
-                                    <div className="text-sm font-semibold text-slate-900">{marker.name}</div>
-                                    <div className="mt-1 text-xs text-slate-500">{PANEL_META[panelKey].label}</div>
+                                    <div className="text-sm font-semibold text-white">{marker.name}</div>
+                                    <div className="mt-1 text-xs text-white/50">{PANEL_META[panelKey].label}</div>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <div className="text-sm font-semibold text-slate-900">
+                                    <div className="text-sm font-semibold text-white">
                                       {marker.value} {marker.unit}
                                     </div>
                                     <StatusBadge status={marker.status} />
@@ -836,27 +1099,53 @@ export default function BloodAnalysisReport() {
                                   normalMax={marker.refMax ?? undefined}
                                   optimalMin={marker.optimalMin ?? undefined}
                                   optimalMax={marker.optimalMax ?? undefined}
+                                  normalLabel="Normal labo"
+                                  optimalLabel="Optimal performance"
                                 />
                                 <div className="mt-4 grid gap-3 md:grid-cols-3">
-                                  <div className="rounded-lg border border-slate-200 bg-white p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Definition</div>
-                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{narrative.definition}</p>
+                                  <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Definition</div>
+                                    <p className="mt-2 text-sm text-white/70 leading-relaxed">{detail.definition}</p>
                                   </div>
-                                  <div className="rounded-lg border border-slate-200 bg-white p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Ce que ca revele</div>
-                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{narrative.mechanism}</p>
+                                  <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Mecanisme</div>
+                                    <p className="mt-2 text-sm text-white/70 leading-relaxed">{detail.mechanism}</p>
                                   </div>
-                                  <div className="rounded-lg border border-slate-200 bg-white p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Optimisation</div>
-                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{narrative.optimization}</p>
+                                  <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Impact & optimisation</div>
+                                    <p className="mt-2 text-sm text-white/70 leading-relaxed">{detail.impact}</p>
                                   </div>
                                 </div>
-                                {marker.interpretation && (
-                                  <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-                                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Lecture experte</div>
-                                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">{marker.interpretation}</p>
-                                  </div>
-                                )}
+
+                                <div className="mt-4 rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Protocole</div>
+                                  <ul className="mt-3 space-y-2 text-sm text-white/70">
+                                    {detail.protocol.map((item) => (
+                                      <li key={item} className="flex items-start gap-2">
+                                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[rgb(2,121,232)]" />
+                                        <span>{item}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+
+                                <div className="mt-4 rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Recherche</div>
+                                  {citations.length ? (
+                                    <ul className="mt-3 space-y-2 text-xs text-white/60">
+                                      {citations.map((item) => (
+                                        <li key={item.url}>
+                                          →{" "}
+                                          <a className="underline hover:text-white" href={item.url} target="_blank" rel="noreferrer">
+                                            {item.title}
+                                          </a>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <p className="mt-3 text-xs text-white/50">Aucune source specifique associee.</p>
+                                  )}
+                                </div>
                               </AccordionContent>
                             </AccordionItem>
                           );
@@ -870,17 +1159,17 @@ export default function BloodAnalysisReport() {
 
             <TabsContent value="insights" className="mt-6">
               <div className="grid gap-6 lg:grid-cols-[0.45fr_0.55fr]">
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Patterns detectes</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Patterns detectes</p>
                   <div className="mt-6 space-y-4">
                     {patterns.length ? (
                       patterns.map((pattern) => (
-                        <div key={pattern.name} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <div key={pattern.name} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-5">
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <div className="text-sm font-semibold text-slate-900">{pattern.name}</div>
+                              <div className="text-sm font-semibold text-white">{pattern.name}</div>
                               {!!pattern.causes?.length && (
-                                <div className="mt-2 text-xs text-slate-600">
+                                <div className="mt-2 text-xs text-white/70">
                                   Causes: {pattern.causes.slice(0, 3).join(" · ")}
                                 </div>
                               )}
@@ -889,8 +1178,8 @@ export default function BloodAnalysisReport() {
                           </div>
                           {!!pattern.protocol?.length && (
                             <div className="mt-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Protocole</div>
-                              <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Protocole</div>
+                              <ul className="mt-3 space-y-2 text-sm text-white/70">
                                 {pattern.protocol.slice(0, 6).map((item) => (
                                   <li key={item} className="flex items-start gap-2">
                                     <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} />
@@ -903,17 +1192,17 @@ export default function BloodAnalysisReport() {
                         </div>
                       ))
                     ) : (
-                      <div className="text-sm text-slate-600">Aucun pattern majeur detecte.</div>
+                      <div className="text-sm text-white/70">Aucun pattern majeur detecte.</div>
                     )}
                   </div>
                 </Card>
 
-                <Card className="border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Diabetes Risk Assessment</p>
+                <Card className="border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Diabetes Risk Assessment</p>
                   {diabetes ? (
-                    <div className="mt-4 space-y-3 text-sm text-slate-600">
+                    <div className="mt-4 space-y-3 text-sm text-white/70">
                       <p>
-                        Score: <span className="font-semibold text-slate-900">{diabetes.score}/100</span> (risque {diabetes.level}).
+                        Score: <span className="font-semibold text-white">{diabetes.score}/100</span> (risque {diabetes.level}).
                       </p>
                       <ul className="space-y-1">
                         {diabetes.gly !== null && <li>Glycemie a jeun: {diabetes.gly} mg/dL</li>}
@@ -921,9 +1210,9 @@ export default function BloodAnalysisReport() {
                         {diabetes.insulin !== null && <li>Insuline: {diabetes.insulin} µIU/mL</li>}
                         {diabetes.homa !== null && <li>HOMA-IR: {diabetes.homa}</li>}
                       </ul>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Protocole rapide</div>
-                        <ul className="mt-2 space-y-2 text-sm text-slate-600">
+                      <div className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                        <div className="text-xs uppercase tracking-[0.22em] text-white/50">Protocole rapide</div>
+                        <ul className="mt-2 space-y-2 text-sm text-white/70">
                           <li>Reduire sucres rapides + repas ultra transformes.</li>
                           <li>Augmenter fibres + proteines a chaque repas.</li>
                           <li>Marche post-prandiale 10-15 min.</li>
@@ -932,12 +1221,12 @@ export default function BloodAnalysisReport() {
                       </div>
                     </div>
                   ) : (
-                    <p className="mt-4 text-sm text-slate-600">Donnees insuffisantes pour estimer le risque.</p>
+                    <p className="mt-4 text-sm text-white/70">Donnees insuffisantes pour estimer le risque.</p>
                   )}
 
-                  <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
-                    <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Muscle & performance protocol</div>
-                    <p className="mt-2 text-sm text-slate-600">
+                  <div className="mt-6 rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                    <div className="text-xs uppercase tracking-[0.22em] text-white/50">Muscle & performance protocol</div>
+                    <p className="mt-2 text-sm text-white/70">
                       Priorite: sommeil profond, deficit calorique maitrise, entrainement lourd structure, micronutriments cles (vitamine D, zinc, magnesium).
                     </p>
                   </div>
@@ -945,22 +1234,22 @@ export default function BloodAnalysisReport() {
               </div>
 
               {aiAnalysis ? (
-                <Card className="mt-6 border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Analyse detaillee</p>
-                  <div className="prose mt-4 max-w-none prose-p:text-slate-700 prose-li:text-slate-700 prose-strong:text-slate-900">
+                <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Analyse detaillee</p>
+                  <div className="prose mt-4 max-w-none prose-p:text-white/80 prose-li:text-white/80 prose-strong:text-white">
                     <ReactMarkdown>{aiAnalysis}</ReactMarkdown>
                   </div>
                 </Card>
               ) : null}
 
               {protocolPhases.length > 0 && (
-                <Card className="mt-6 border border-slate-200 bg-white p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Protocoles en 3 phases</p>
+                <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/50">Protocoles en 3 phases</p>
                   <div className="mt-6 grid gap-4 md:grid-cols-3">
                     {protocolPhases.map((phase) => (
-                      <div key={phase.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <div className="text-sm font-semibold text-slate-900">{phase.title}</div>
-                        <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                      <div key={phase.id} className="rounded-xl border border-white/13 bg-[#0a0a0a] p-4">
+                        <div className="text-sm font-semibold text-white">{phase.title}</div>
+                        <ul className="mt-3 space-y-2 text-xs text-white/70">
                           {phase.items.slice(0, 4).map((item) => (
                             <li key={item} className="flex items-start gap-2">
                               <span className="mt-1.5 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: BLOOD_THEME.primaryBlue }} />
@@ -974,27 +1263,27 @@ export default function BloodAnalysisReport() {
                 </Card>
               )}
 
-              <Card className="mt-6 border border-slate-200 bg-slate-50 p-6">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Actions immediates</p>
+              <Card className="mt-6 border border-white/13 bg-[#0a0a0a] p-6">
+                <p className="text-xs uppercase tracking-[0.22em] text-white/50">Actions immediates</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
                   {topMarkers.length ? (
                     topMarkers.map((marker) => (
-                      <div key={marker.code} className="rounded-lg border border-slate-200 bg-white p-4">
-                        <div className="text-sm font-semibold text-slate-900">{marker.name}</div>
-                        <p className="mt-2 text-xs text-slate-600">
+                      <div key={marker.code} className="rounded-lg border border-white/13 bg-[#0a0a0a] p-4">
+                        <div className="text-sm font-semibold text-white">{marker.name}</div>
+                        <p className="mt-2 text-xs text-white/70">
                           Je priorise {marker.name.toLowerCase()} avec un protocole cible (sommeil, nutrition, supplements).
                         </p>
                       </div>
                     ))
                   ) : (
-                    <div className="text-sm text-slate-600">Aucune action urgente detectee.</div>
+                    <div className="text-sm text-white/70">Aucune action urgente detectee.</div>
                   )}
                 </div>
               </Card>
 
-              <div className="mt-6 flex items-center justify-between text-xs text-slate-500">
+              <div className="mt-6 flex items-center justify-between text-xs text-white/50">
                 <span>Educationnel · Ne remplace pas un avis medical.</span>
-                <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50" onClick={() => navigate("/offers/blood-analysis")}>
+                <Button variant="outline" className="border-white/13 text-white/80 hover:bg-[#0a0a0a]" onClick={() => navigate("/offers/blood-analysis")}>
                   Acheter des credits
                 </Button>
               </div>

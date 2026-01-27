@@ -237,6 +237,12 @@ const requireAdmin = (req: Request, res: Response): boolean => {
   return true;
 };
 
+const parseNumber = (value: unknown): number | undefined => {
+  if (value === null || value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 export function registerBloodTestsRoutes(app: Express): void {
   app.post("/api/admin/blood-tests/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
@@ -303,7 +309,17 @@ export function registerBloodTestsRoutes(app: Express): void {
             try {
               aiAnalysis = await generateAIBloodAnalysis(
                 analysisResult,
-                { gender: patientProfile.gender as "homme" | "femme", age },
+                {
+                  gender: patientProfile.gender as "homme" | "femme",
+                  age,
+                  prenom: patientProfile.prenom,
+                  nom: patientProfile.nom,
+                  sleepHours: patientProfile.sleepHours,
+                  trainingHours: patientProfile.trainingHours,
+                  calorieDeficit: patientProfile.calorieDeficit,
+                  alcoholWeekly: patientProfile.alcoholWeekly,
+                  stressLevel: patientProfile.stressLevel,
+                },
                 knowledgeContext
               );
             } catch {
@@ -465,6 +481,11 @@ export function registerBloodTestsRoutes(app: Express): void {
         nom: String(req.body.nom || pdfProfile.nom || "").trim() || undefined,
         gender: normalizedGender || pdfProfile.gender || "homme",
         dob: String(req.body.dob || pdfProfile.dob || "").trim() || undefined,
+        sleepHours: parseNumber(req.body.sleepHours),
+        trainingHours: parseNumber(req.body.trainingHours),
+        calorieDeficit: parseNumber(req.body.calorieDeficit),
+        alcoholWeekly: parseNumber(req.body.alcoholWeekly),
+        stressLevel: parseNumber(req.body.stressLevel),
       };
       const missingProfile: string[] = [];
       if (!profile.prenom) missingProfile.push("prenom");
@@ -503,7 +524,17 @@ export function registerBloodTestsRoutes(app: Express): void {
         try {
           aiAnalysis = await generateAIBloodAnalysis(
             analysisResult,
-            { gender: profile.gender as "homme" | "femme", age },
+            {
+              gender: profile.gender as "homme" | "femme",
+              age,
+              prenom: profile.prenom,
+              nom: profile.nom,
+              sleepHours: profile.sleepHours,
+              trainingHours: profile.trainingHours,
+              calorieDeficit: profile.calorieDeficit,
+              alcoholWeekly: profile.alcoholWeekly,
+              stressLevel: profile.stressLevel,
+            },
             knowledgeContext
           );
         } catch {
