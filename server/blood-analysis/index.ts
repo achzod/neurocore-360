@@ -464,6 +464,7 @@ export interface LifestyleCorrelation {
   current: string;
   impact: string;
   recommendation: string;
+  status: MarkerAnalysis["status"];
   evidence?: string;
 }
 
@@ -1449,7 +1450,16 @@ export const buildLifestyleCorrelations = (
     taille?: number;
   }
 ): LifestyleCorrelation[] => {
-  const correlations: LifestyleCorrelation[] = [];
+  const correlations: Array<LifestyleCorrelation & { rank: number }> = [];
+  const rankMap: Record<MarkerAnalysis["status"], number> = {
+    critical: 3,
+    suboptimal: 2,
+    normal: 1,
+    optimal: 0,
+  };
+  const pushCorrelation = (payload: LifestyleCorrelation) => {
+    correlations.push({ ...payload, rank: rankMap[payload.status] });
+  };
   const getMarker = (id: string) => markers.find((marker) => marker.markerId === id);
   const sleepHours = profile.sleepHours;
   const trainingHours = profile.trainingHours;
@@ -1467,14 +1477,24 @@ export const buildLifestyleCorrelations = (
     const impactBits = [];
     if (isFlaggedStatus(testosterone?.status)) impactBits.push("testosterone suboptimale");
     if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol desequilibre");
-    correlations.push({
+    pushCorrelation({
       factor: "Sommeil",
       current: `${sleepHours} h/nuit`,
       impact: impactBits.length
         ? `Sommeil court associe a ${impactBits.join(" et ")}.`
         : "Sommeil court fragilise l axe hormonal et la recuperation.",
       recommendation: "Vise 7h30-8h30 et des horaires stables sur 14 jours.",
+      status: sleepHours < 6.5 ? "critical" : "suboptimal",
       evidence: "Sommeil <7h baisse la testosterone et augmente le stress physiologique.",
+    });
+  } else if (typeof sleepHours === "number") {
+    pushCorrelation({
+      factor: "Sommeil",
+      current: `${sleepHours} h/nuit`,
+      impact: sleepHours >= 7.5 ? "Sommeil aligne avec une recuperation optimale." : "Sommeil correct mais perfectible pour la performance.",
+      recommendation: sleepHours >= 7.5 ? "Garde cette regularite sur 3-4 semaines." : "Vise +30 min et couche-toi plus regulierement.",
+      status: sleepHours >= 7.5 ? "optimal" : "normal",
+      evidence: "Sommeil stable = meilleure regulation hormonale et inflammatoire.",
     });
   }
 
@@ -1484,14 +1504,24 @@ export const buildLifestyleCorrelations = (
     const impactBits = [];
     if (isFlaggedStatus(crp?.status)) impactBits.push("inflammation elevee");
     if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol eleve");
-    correlations.push({
+    pushCorrelation({
       factor: "Training",
       current: `${trainingHours} h/sem`,
       impact: impactBits.length
         ? `Volume eleve associe a ${impactBits.join(" et ")}.`
         : "Volume eleve peut limiter la recuperation et l anabolisme.",
       recommendation: "Reduis a 6-8 h/sem et planifie un deload toutes les 4-6 semaines.",
+      status: "suboptimal",
       evidence: "Surentrainement chronique augmente inflammation et catabolisme.",
+    });
+  } else if (typeof trainingHours === "number") {
+    pushCorrelation({
+      factor: "Training",
+      current: `${trainingHours} h/sem`,
+      impact: trainingHours >= 4 ? "Volume coherent avec performance et recuperation." : "Volume faible peut ralentir les adaptations.",
+      recommendation: trainingHours >= 4 ? "Maintiens 3-5 seances bien reparties." : "Passe progressivement a 3 seances/sem.",
+      status: trainingHours >= 4 ? "optimal" : "normal",
+      evidence: "Frequence reguliere = meilleure sensibilite a l insuline et composition corporelle.",
     });
   }
 
@@ -1501,14 +1531,24 @@ export const buildLifestyleCorrelations = (
     const impactBits = [];
     if (isFlaggedStatus(t3?.status)) impactBits.push("thyroide ralentit");
     if (isFlaggedStatus(igf1?.status)) impactBits.push("anabolisme faible");
-    correlations.push({
+    pushCorrelation({
       factor: "Deficit calorique",
       current: `${calorieDeficit}%`,
       impact: impactBits.length
         ? `Deficit eleve associe a ${impactBits.join(" et ")}.`
         : "Deficit eleve peut ralentir le metabolisme et la recuperation.",
       recommendation: "Reste sous 15-20% de deficit et integre 1 refeed hebdo.",
+      status: "suboptimal",
       evidence: "Deficits agressifs baissent T3 et IGF-1 chez les sportifs.",
+    });
+  } else if (typeof calorieDeficit === "number") {
+    pushCorrelation({
+      factor: "Deficit calorique",
+      current: `${calorieDeficit}%`,
+      impact: calorieDeficit <= 20 ? "Deficit modere, soutenable pour la performance." : "Deficit eleve a surveiller.",
+      recommendation: calorieDeficit <= 20 ? "Continue avec un deficit stable." : "Reviens sous 20% pour preserver la thyroide.",
+      status: calorieDeficit <= 20 ? "optimal" : "normal",
+      evidence: "Deficit modere = meilleure adherence et maintien hormonal.",
     });
   }
 
@@ -1518,14 +1558,24 @@ export const buildLifestyleCorrelations = (
     const impactBits = [];
     if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol desequilibre");
     if (isFlaggedStatus(crp?.status)) impactBits.push("inflammation elevee");
-    correlations.push({
+    pushCorrelation({
       factor: "Stress",
       current: `${stressLevel}/10`,
       impact: impactBits.length
         ? `Stress eleve associe a ${impactBits.join(" et ")}.`
         : "Stress eleve perturbe sommeil, glycemie et recuperation.",
       recommendation: "Integre 10-15 min/jour de respiration, marche lente ou NSDR.",
+      status: stressLevel >= 8 ? "critical" : "suboptimal",
       evidence: "Stress chronique eleve cortisol et degrade la sensibilite a l insuline.",
+    });
+  } else if (typeof stressLevel === "number") {
+    pushCorrelation({
+      factor: "Stress",
+      current: `${stressLevel}/10`,
+      impact: stressLevel <= 4 ? "Stress bien gere, bon signal pour la recuperation." : "Stress modere, garde un rituel quotidien.",
+      recommendation: stressLevel <= 4 ? "Continue routines de decharge." : "Ajoute 5-10 min de respiration le soir.",
+      status: stressLevel <= 4 ? "optimal" : "normal",
+      evidence: "Stress bas = meilleur sommeil et variabilite cardiaque.",
     });
   }
 
@@ -1535,14 +1585,24 @@ export const buildLifestyleCorrelations = (
     const impactBits = [];
     if (isFlaggedStatus(ggt?.status)) impactBits.push("stress hepatique");
     if (isFlaggedStatus(triglycerides?.status)) impactBits.push("triglycerides hauts");
-    correlations.push({
+    pushCorrelation({
       factor: "Alcool",
       current: `${alcoholWeekly} verres/sem`,
       impact: impactBits.length
         ? `Alcool associe a ${impactBits.join(" et ")}.`
         : "Alcool freine la lipolyse et surcharge le foie.",
       recommendation: "Passe sous 2-3 verres/sem pendant 4 semaines.",
+      status: "suboptimal",
       evidence: "L alcool eleve GGT et triglycerides chez les profils a risque.",
+    });
+  } else if (typeof alcoholWeekly === "number") {
+    pushCorrelation({
+      factor: "Alcool",
+      current: `${alcoholWeekly} verres/sem`,
+      impact: alcoholWeekly <= 3 ? "Charge alcool faible, effet metabolique limite." : "Charge alcool moderee, a surveiller.",
+      recommendation: alcoholWeekly <= 3 ? "Garde cette limite." : "Vise 2-3 verres/sem.",
+      status: alcoholWeekly <= 3 ? "optimal" : "normal",
+      evidence: "Moins d alcool = meilleure sensibilite a l insuline et GGT stable.",
     });
   }
 
@@ -1552,18 +1612,31 @@ export const buildLifestyleCorrelations = (
     const impactBits = [];
     if (isFlaggedStatus(homa?.status)) impactBits.push("insulino resistance");
     if (isFlaggedStatus(triglycerides?.status)) impactBits.push("profil lipidique degrade");
-    correlations.push({
+    pushCorrelation({
       factor: "IMC",
       current: formatNumber(bmi),
       impact: impactBits.length
         ? `IMC eleve associe a ${impactBits.join(" et ")}.`
         : "IMC eleve augmente la charge metabolique globale.",
       recommendation: "Objectif: -5 a -10% de poids sur 8-12 semaines.",
+      status: bmi >= 30 ? "critical" : "suboptimal",
       evidence: "Perte de gras visceral ameliore glycemie, lipides et inflammation.",
+    });
+  } else if (typeof bmi === "number") {
+    pushCorrelation({
+      factor: "IMC",
+      current: formatNumber(bmi),
+      impact: bmi >= 20 && bmi <= 25 ? "IMC dans une zone stable pour la sante metabolique." : "IMC a surveiller selon le contexte.",
+      recommendation: bmi >= 20 && bmi <= 25 ? "Maintiens cette zone via nutrition stable." : "Affiner selon composition corporelle.",
+      status: bmi >= 20 && bmi <= 25 ? "optimal" : "normal",
+      evidence: "IMC stable + composition corporelle ok = meilleur profil cardio-metabolique.",
     });
   }
 
-  return correlations.slice(0, 4);
+  return correlations
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, 4)
+    .map(({ rank, ...item }) => item);
 };
 
 export async function generateAIBloodAnalysis(

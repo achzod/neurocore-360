@@ -88,6 +88,7 @@ type BloodTestDetail = {
       current: string;
       impact: string;
       recommendation: string;
+      status: MarkerStatus;
       evidence?: string;
     }>;
     patient?: {
@@ -972,7 +973,7 @@ function BloodAnalysisReportInner() {
                           <p className="text-sm font-semibold blood-text-primary">{item.factor}</p>
                           <p className="mt-1 text-xs blood-text-tertiary">{item.current}</p>
                         </div>
-                        <StatusIndicator status="suboptimal" />
+                        <StatusIndicator status={item.status} />
                       </div>
                       <p className="mt-3 text-sm blood-text-secondary">{item.impact}</p>
                       <p className="mt-3 text-xs blood-text-secondary">
