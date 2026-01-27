@@ -1416,6 +1416,8 @@ export async function generateAIBloodAnalysis(
     medications?: string;
     prenom?: string;
     nom?: string;
+    poids?: number;
+    taille?: number;
     sleepHours?: number;
     trainingHours?: number;
     calorieDeficit?: number;
@@ -1435,7 +1437,11 @@ export async function generateAIBloodAnalysis(
     `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
   ).join("\n\n");
 
-  const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "N/A"} h/nuit | Training: ${userProfile.trainingHours ?? "N/A"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "N/A"}% | Alcool: ${userProfile.alcoholWeekly ?? "N/A"} verres/sem | Stress: ${userProfile.stressLevel ?? "N/A"}/10`;
+  const bmi =
+    typeof userProfile.poids === "number" && typeof userProfile.taille === "number" && userProfile.taille > 0
+      ? (userProfile.poids / Math.pow(userProfile.taille / 100, 2)).toFixed(1)
+      : "N/A";
+  const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "N/A"} h/nuit | Training: ${userProfile.trainingHours ?? "N/A"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "N/A"}% | Alcool: ${userProfile.alcoholWeekly ?? "N/A"} verres/sem | Stress: ${userProfile.stressLevel ?? "N/A"}/10 | Poids: ${userProfile.poids ?? "N/A"} kg | Taille: ${userProfile.taille ?? "N/A"} cm | IMC: ${bmi}`;
 
   const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
 Objectifs: ${userProfile.objectives || "Performance et santé"}

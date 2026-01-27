@@ -1,4 +1,5 @@
 import { getBiomarkerStatusColor, getBiomarkerStatusLabel, normalizeBiomarkerStatus } from "@/lib/biomarker-colors";
+import { useBloodTheme } from "@/components/blood/BloodThemeContext";
 
 interface BiomarkerRangeIndicatorProps {
   value: number;
@@ -27,6 +28,7 @@ export function BiomarkerRangeIndicator({
   optimalLabel,
   className = "",
 }: BiomarkerRangeIndicatorProps) {
+  const { theme } = useBloodTheme();
   const normalized = normalizeBiomarkerStatus(status);
   const colors = getBiomarkerStatusColor(normalized);
 
@@ -44,13 +46,13 @@ export function BiomarkerRangeIndicator({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <div className="flex items-center justify-between text-[11px] text-white/50">
+      <div className="flex items-center justify-between text-[11px]" style={{ color: theme.textTertiary }}>
         <span>
           {normalLabel || (hasRange ? `Normal: ${normalMin}-${normalMax}` : "Normal: N/A")}
         </span>
         <span>{optimalLabel || (optimalMin !== undefined && optimalMax !== undefined ? `Optimal: ${optimalMin}-${optimalMax}` : "Optimal: N/A")}</span>
       </div>
-      <div className="relative h-2 rounded-full overflow-hidden bg-white/10">
+      <div className="relative h-2 rounded-full overflow-hidden" style={{ backgroundColor: theme.borderSubtle }}>
         {optimalStart !== null && optimalWidth !== null && (
           <div
             className="absolute top-0 h-full rounded-full"
@@ -73,7 +75,7 @@ export function BiomarkerRangeIndicator({
         <span className="font-semibold" style={{ color: colors.primary }}>
           {value} {unit}
         </span>
-        <span className="text-[11px] text-white/50">
+        <span className="text-[11px]" style={{ color: theme.textTertiary }}>
           {getBiomarkerStatusLabel(normalized)}
         </span>
       </div>

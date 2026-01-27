@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
-import { BLOOD_THEME } from "@/components/blood/bloodTheme";
+import { useBloodTheme } from "@/components/blood/BloodThemeContext";
+import { ThemeToggle } from "@/components/blood/ThemeToggle";
 
 export default function BloodHeader({ credits }: { credits: number }) {
   const [, navigate] = useLocation();
+  const { theme } = useBloodTheme();
 
   const handleLogout = () => {
     localStorage.removeItem("apexlabs_token");
@@ -13,25 +15,44 @@ export default function BloodHeader({ credits }: { credits: number }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-[#0a0a0a]/80 backdrop-blur" style={{ borderColor: BLOOD_THEME.borderSubtle }}>
+    <header
+      className="sticky top-0 z-40 border-b backdrop-blur"
+      style={{
+        backgroundColor: `${theme.background}CC`,
+        borderColor: theme.borderSubtle,
+      }}
+    >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/blood-dashboard" className="text-sm font-semibold tracking-[0.2em] text-white">
+        <Link href="/blood-dashboard" className="text-sm font-semibold tracking-[0.2em] blood-text-primary">
           APEXLABS
         </Link>
-        <div className="flex items-center gap-4">
-          <Badge className="border" style={{ backgroundColor: BLOOD_THEME.surfaceMuted, color: BLOOD_THEME.textSecondary, borderColor: BLOOD_THEME.borderSubtle }}>
+        <div className="flex items-center gap-3">
+          <Badge
+            className="border"
+            style={{
+              backgroundColor: theme.surfaceMuted,
+              color: theme.textSecondary,
+              borderColor: theme.borderSubtle,
+            }}
+          >
             Credits: {credits}
           </Badge>
           <Link href="/offers/blood-analysis">
             <Button
               variant="secondary"
-              className="text-white hover:opacity-90"
-              style={{ backgroundColor: BLOOD_THEME.primaryBlue, borderColor: BLOOD_THEME.primaryBlue }}
+              className="hover:opacity-90"
+              style={{ backgroundColor: theme.primaryBlue, borderColor: theme.primaryBlue, color: "white" }}
             >
               Acheter des credits
             </Button>
           </Link>
-          <Button variant="ghost" className="text-white/60 hover:text-white" onClick={handleLogout}>
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            className="hover:opacity-80"
+            style={{ color: theme.textSecondary }}
+            onClick={handleLogout}
+          >
             Deconnexion
           </Button>
         </div>

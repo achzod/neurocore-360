@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import type { BiomarkerStatus } from "@/lib/biomarker-colors";
 import { getBiomarkerStatusColor } from "@/lib/biomarker-colors";
-import { BLOOD_THEME } from "@/components/blood/bloodTheme";
+import { useBloodTheme } from "@/components/blood/BloodThemeContext";
 
 type RadarPoint = {
   key: string;
@@ -34,8 +34,10 @@ export function BloodRadar({
   data,
   height = 350,
   outerRadius = "80%",
-  accentColor = BLOOD_THEME.primaryBlue,
+  accentColor,
 }: BloodRadarProps) {
+  const { theme } = useBloodTheme();
+  const accent = accentColor ?? theme.primaryBlue;
   const metaByLabel = new Map(data.map((item) => [item.label, { status: item.status, muted: !!item.muted }]));
 
   return (
@@ -50,7 +52,7 @@ export function BloodRadar({
         >
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius={outerRadius} data={data}>
-              <PolarGrid stroke="rgba(255, 255, 255, 0.18)" strokeOpacity={0.7} />
+              <PolarGrid stroke={theme.borderDefault} strokeOpacity={0.7} />
               <PolarAngleAxis
                 dataKey="label"
                 tick={({ payload, x, y, textAnchor }) => {
@@ -74,9 +76,9 @@ export function BloodRadar({
               <Radar
                 name="Score"
                 dataKey="score"
-                stroke={accentColor}
+                stroke={accent}
                 strokeWidth={3}
-                fill={accentColor}
+                fill={accent}
                 fillOpacity={0.35}
                 dot={({ payload }) => {
                   const colors = getBiomarkerStatusColor(payload.status);
@@ -84,7 +86,7 @@ export function BloodRadar({
                     <circle
                       r={4}
                       fill={payload.muted ? "rgba(255, 255, 255, 0.35)" : colors.primary}
-                      stroke="#ffffff"
+                      stroke={theme.textPrimary}
                       strokeWidth={1}
                     />
                   );
