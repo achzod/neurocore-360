@@ -780,6 +780,46 @@ const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
   b12: { min: 100, max: 3000 },
 };
 
+const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
+  testosterone_libre: { min: 2.5, max: 35 },
+  testosterone_total: { min: 150, max: 1500 },
+  estradiol: { min: 5, max: 80 },
+  lh: { min: 0.5, max: 12 },
+  fsh: { min: 0.5, max: 15 },
+  prolactine: { min: 2, max: 30 },
+  dhea_s: { min: 40, max: 700 },
+  cortisol: { min: 3, max: 35 },
+  igf1: { min: 60, max: 450 },
+  tsh: { min: 0.2, max: 6 },
+  t4_libre: { min: 0.5, max: 2.5 },
+  t3_libre: { min: 2, max: 6 },
+  t3_reverse: { min: 0, max: 50 },
+  glycemie_jeun: { min: 50, max: 200 },
+  hba1c: { min: 3.5, max: 10 },
+  insuline_jeun: { min: 1, max: 50 },
+  homa_ir: { min: 0.1, max: 10 },
+  triglycerides: { min: 20, max: 1000 },
+  hdl: { min: 20, max: 120 },
+  ldl: { min: 30, max: 250 },
+  apob: { min: 40, max: 200 },
+  lpa: { min: 0, max: 300 },
+  crp_us: { min: 0, max: 30 },
+  homocysteine: { min: 3, max: 40 },
+  ferritine: { min: 5, max: 500 },
+  fer_serique: { min: 20, max: 250 },
+  transferrine_sat: { min: 5, max: 80 },
+  vitamine_d: { min: 5, max: 150 },
+  b12: { min: 150, max: 2000 },
+  folate: { min: 2, max: 30 },
+  magnesium_rbc: { min: 3, max: 8 },
+  zinc: { min: 40, max: 200 },
+  alt: { min: 5, max: 200 },
+  ast: { min: 5, max: 200 },
+  ggt: { min: 5, max: 300 },
+  creatinine: { min: 0.3, max: 3 },
+  egfr: { min: 15, max: 200 },
+};
+
 const isPlausibleMarkerValue = (markerId: string, value: number): boolean => {
   if (!Number.isFinite(value)) return false;
   const range = BIOMARKER_RANGES[markerId];
@@ -792,6 +832,8 @@ const isPlausibleMarkerValue = (markerId: string, value: number): boolean => {
   const min = override?.min ?? baseMin;
   const max = override?.max ?? baseMax;
   if (value < min || value > max) return false;
+  const validation = MARKER_VALIDATION_RANGES[markerId];
+  if (validation && (value < validation.min || value > validation.max)) return false;
   if (value > 1000 && maxRange < 200) return false;
   return true;
 };
