@@ -254,6 +254,17 @@ export function registerBloodTestsRoutes(app: Express): void {
         files?: string[];
         includeAI?: boolean;
         asyncAI?: boolean;
+        prenom?: string;
+        nom?: string;
+        gender?: string;
+        dob?: string;
+        poids?: number;
+        taille?: number;
+        sleepHours?: number;
+        trainingHours?: number;
+        calorieDeficit?: number;
+        alcoholWeekly?: number;
+        stressLevel?: number;
       };
       const seedEmail = (
         String(body.email || "").trim() ||
@@ -289,12 +300,19 @@ export function registerBloodTestsRoutes(app: Express): void {
           }
 
           const pdfProfile = extractPatientInfoFromPdfText(pdfText);
+          const bodyGender = String(body.gender || "").trim().toLowerCase();
+          const normalizedGender =
+            bodyGender.startsWith("f")
+              ? "femme"
+              : bodyGender.startsWith("h") || bodyGender.startsWith("m")
+              ? "homme"
+              : undefined;
           const patientProfile = {
-            email: pdfProfile.email || seedEmail,
-            prenom: pdfProfile.prenom,
-            nom: pdfProfile.nom,
-            gender: pdfProfile.gender || "homme",
-            dob: pdfProfile.dob,
+            email: String(body.email || pdfProfile.email || seedEmail || "").trim() || undefined,
+            prenom: String(body.prenom || pdfProfile.prenom || "").trim() || undefined,
+            nom: String(body.nom || pdfProfile.nom || "").trim() || undefined,
+            gender: normalizedGender || pdfProfile.gender || "homme",
+            dob: String(body.dob || pdfProfile.dob || "").trim() || undefined,
             poids: parseNumber(body.poids),
             taille: parseNumber(body.taille),
             sleepHours: parseNumber(body.sleepHours),
