@@ -1336,9 +1336,102 @@ Pour 3-4 marqueurs max (les plus critiques / sous-optimaux):
 ## Sources scientifiques
 - 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)`;
 
+const PANEL_CITATIONS: Record<string, Array<{ title: string; url: string }>> = {
+  Hormonal: [
+    {
+      title: "Sleep restriction reduces testosterone (JAMA, 2011)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
+    },
+    {
+      title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
+    },
+  ],
+  Thyroide: [
+    {
+      title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
+    },
+    {
+      title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
+    },
+  ],
+  Metabolique: [
+    {
+      title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
+    },
+    {
+      title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
+    },
+  ],
+  Inflammation: [
+    {
+      title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
+    },
+    {
+      title: "Homocysteine and vascular risk (NEJM, 2002)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
+    },
+  ],
+  "Vitamines & mineraux": [
+    {
+      title: "Vitamin D status and muscle function (J Clin Endocrinol Metab, 2011)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
+    },
+    {
+      title: "Magnesium status and performance (Nutrients, 2017)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
+    },
+  ],
+  "Foie & rein": [
+    {
+      title: "ALT/AST and metabolic risk (Hepatology, 2011)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
+    },
+    {
+      title: "eGFR and cardiovascular outcomes (JASN, 2010)",
+      url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
+    },
+  ],
+};
+
+const buildSourcesSection = (): string => {
+  const lines: string[] = [];
+  for (const [panel, citations] of Object.entries(PANEL_CITATIONS)) {
+    lines.push(`### ${panel}`);
+    for (const item of citations) {
+      lines.push(`- ${item.title} ${item.url}`);
+    }
+  }
+  return lines.join("\n");
+};
+
+const ensureSourcesSection = (text: string): string => {
+  if (!text) return "";
+  if (text.includes("## Sources scientifiques")) {
+    return text.trim();
+  }
+  return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
+};
+
 const trimAiAnalysis = (text: string, maxChars = 12000): string => {
   if (!text) return "";
   if (text.length <= maxChars) return text.trim();
+  const sourcesIndex = text.indexOf("## Sources scientifiques");
+  if (sourcesIndex !== -1) {
+    const sources = text.slice(sourcesIndex).trim();
+    const keepBudget = maxChars - sources.length - 2;
+    if (keepBudget > 1000) {
+      const head = text.slice(0, keepBudget);
+      const lastBreak = head.lastIndexOf("\n\n");
+      const safeHead = lastBreak > 1000 ? head.slice(0, lastBreak).trim() : head.trim();
+      return `${safeHead}\n\n${sources}`;
+    }
+  }
   const sliced = text.slice(0, maxChars);
   const lastBreak = sliced.lastIndexOf("\n\n");
   if (lastBreak > 1000) {
@@ -1748,7 +1841,8 @@ Génère une analyse complète selon le format demandé.`;
   });
 
   const textContent = response.content.find(c => c.type === "text");
-  return trimAiAnalysis(textContent?.text || "");
+  const withSources = ensureSourcesSection(textContent?.text || "");
+  return trimAiAnalysis(withSources);
 }
 
 // ============================================
