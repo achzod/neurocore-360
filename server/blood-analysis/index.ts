@@ -1267,11 +1267,12 @@ REGLES DE STYLE:
 - Liens PubMed autorises.
 - Utilise les ranges optimaux en priorite.
 - Reste structure, pedagogique, conversationnel.
-- Adresse-toi directement au client avec "tu/ta/ton".
+- Adresse-toi directement au client, mais evite la repetition du prenom et les possessifs en boucle.
+- Prefere des formulations neutres: "Ce marqueur indique...", "La valeur suggere...".
 - Jamais "patient" ou "utilisateur".
 - Ne fais pas d'hypotheses sur les ressentis. Utilise "symptomes associes" si besoin.
 - Pas de repetition: chaque section apporte une information nouvelle.
-- Longueur cible: 900-1200 mots, maximum 18 000 caracteres.
+- Longueur cible: 650-850 mots, maximum 9 000 caracteres.
 - Chaque recommandation contient: action + dosage + timing + duree + objectif.
 - Si une donnee manque, dis-le clairement et continue.
 
@@ -1288,33 +1289,33 @@ FORMAT DE REPONSE (respecte STRICTEMENT les titres):
 
 ## Lecture systeme par systeme
 ### Hormonal
-- Lecture clinique & impact performance: [5-6 phrases]
-- Protocole cle: [2-3 actions]
+- Lecture clinique & impact performance: [3-4 phrases]
+- Protocole cle: [2 actions]
 ### Thyroide
-- Lecture clinique & impact performance: [5-6 phrases]
-- Protocole cle: [2-3 actions]
+- Lecture clinique & impact performance: [3-4 phrases]
+- Protocole cle: [2 actions]
 ### Metabolique
-- Lecture clinique & impact performance: [5-6 phrases]
-- Protocole cle: [2-3 actions]
+- Lecture clinique & impact performance: [3-4 phrases]
+- Protocole cle: [2 actions]
 ### Inflammation
-- Lecture clinique & impact performance: [5-6 phrases]
-- Protocole cle: [2-3 actions]
+- Lecture clinique & impact performance: [3-4 phrases]
+- Protocole cle: [2 actions]
 ### Vitamines & mineraux
-- Lecture clinique & impact performance: [5-6 phrases]
-- Protocole cle: [2-3 actions]
+- Lecture clinique & impact performance: [3-4 phrases]
+- Protocole cle: [2 actions]
 ### Foie & rein
-- Lecture clinique & impact performance: [5-6 phrases]
-- Protocole cle: [2-3 actions]
+- Lecture clinique & impact performance: [3-4 phrases]
+- Protocole cle: [2 actions]
 
 ## Interconnexions majeures
 - [Marqueur A] + [Marqueur B] -> [impact physiologique en 1-2 phrases]
 - Donne 2 a 4 correlations maximum.
 
 ## Deep dive marqueurs prioritaires
-Pour 6 marqueurs max (les plus critiques / sous-optimaux):
+Pour 4-5 marqueurs max (les plus critiques / sous-optimaux):
 - Verdict (1 ligne)
-- Ce que ca veut dire (3-4 phrases, factuel)
-- Symptomes associes (1-2 phrases)
+- Ce que ca veut dire (2-3 phrases, factuel)
+- Symptomes associes (1 phrase)
 - Protocole exact (actions + dosages + timing + duree)
 
 ## Plan 90 jours
@@ -1333,7 +1334,7 @@ Pour 6 marqueurs max (les plus critiques / sous-optimaux):
 ## Sources scientifiques
 - 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)`;
 
-const trimAiAnalysis = (text: string, maxChars = 18000): string => {
+const trimAiAnalysis = (text: string, maxChars = 9000): string => {
   if (!text) return "";
   if (text.length <= maxChars) return text.trim();
   const sliced = text.slice(0, maxChars);
@@ -1739,7 +1740,7 @@ Génère une analyse complète selon le format demandé.`;
 
   const response = await anthropic.messages.create({
     model: "claude-opus-4-5-20251101",
-    max_tokens: 4500,
+    max_tokens: 8000,
     system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }]
   });
