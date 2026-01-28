@@ -26,6 +26,8 @@ import { StatusIndicator } from "@/components/blood/StatusIndicator";
 import { AnimatedNumber } from "@/components/blood/AnimatedNumber";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BIOMARKER_DETAILS, buildDefaultBiomarkerDetail, MARKER_CITATIONS } from "@/data/bloodBiomarkerDetails";
 import { BLOOD_PANEL_CITATIONS } from "@/data/bloodPanelCitations";
 import { type PatientContext } from "@/lib/biomarkerCorrelations";
@@ -501,6 +503,8 @@ function BloodAnalysisReportInner() {
   const [, navigate] = useLocation();
   const { theme } = useBloodTheme();
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [insightsTab, setInsightsTab] = useState("patterns");
   const adminKey = useMemo(() => {
     if (typeof window === "undefined") return "";
     const value = new URLSearchParams(window.location.search).get("key");
@@ -852,8 +856,32 @@ function BloodAnalysisReportInner() {
           </div>
         </div>
 
-        <div className="mt-10 space-y-16">
-          <motion.section
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10">
+          <div
+            className="sticky top-20 z-20 -mx-6 border-b px-6 py-3 backdrop-blur"
+            style={{ backgroundColor: `${theme.background}E6`, borderColor: theme.borderSubtle }}
+          >
+            <TabsList className="blood-tabs flex w-full flex-wrap gap-2 rounded-2xl border p-2">
+              <TabsTrigger value="overview" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="systems" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                Systemes
+              </TabsTrigger>
+              <TabsTrigger value="biomarkers" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                Marqueurs
+              </TabsTrigger>
+              <TabsTrigger value="protocols" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                Protocoles
+              </TabsTrigger>
+              <TabsTrigger value="insights" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                Insights
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="overview" className="mt-10 space-y-16">
+            <motion.section
             id="overview"
             initial="hidden"
             animate="show"
@@ -893,13 +921,14 @@ function BloodAnalysisReportInner() {
                   </Card>
                 )}
                 <div className="mt-6">
-                  <a
-                    href="#systems"
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("systems")}
                     className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[12px] uppercase tracking-[0.2em] transition hover:border-white/40"
                     style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
                   >
                     Voir le detail
-                  </a>
+                  </button>
                 </div>
               </div>
 
@@ -940,8 +969,8 @@ function BloodAnalysisReportInner() {
             </div>
           </motion.section>
 
-          {lifestyleCorrelations.length > 0 && (
-            <motion.section
+            {lifestyleCorrelations.length > 0 && (
+              <motion.section
               id="correlations"
               initial="hidden"
               whileInView="show"
@@ -957,13 +986,14 @@ function BloodAnalysisReportInner() {
                       Base sur les informations renseignees avant l upload. Ajuste ces leviers pour corriger les marqueurs prioritaires.
                     </p>
                   </div>
-                  <a
-                    href="#biomarkers"
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("biomarkers")}
                     className="rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.2em] transition hover:border-white/40"
                     style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
                   >
                     Voir marqueurs
-                  </a>
+                  </button>
                 </div>
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                   {lifestyleCorrelations.map((item) => (
@@ -984,10 +1014,12 @@ function BloodAnalysisReportInner() {
                   ))}
                 </div>
               </Card>
-            </motion.section>
-          )}
+              </motion.section>
+            )}
+          </TabsContent>
 
-          <motion.section
+          <TabsContent value="systems" className="mt-10 space-y-16">
+            <motion.section
             id="systems"
             initial="hidden"
             whileInView="show"
@@ -1099,9 +1131,11 @@ function BloodAnalysisReportInner() {
                 </Card>
               </div>
             </div>
-          </motion.section>
+            </motion.section>
+          </TabsContent>
 
-          <section id="biomarkers" className="space-y-12">
+          <TabsContent value="biomarkers" className="mt-10 space-y-12">
+            <section id="biomarkers" className="space-y-12">
             {(Object.keys(PANEL_META) as PanelKey[]).map((panelKey) => {
               const markers = markersByPanel[panelKey];
               const panelScore = panelScores[panelKey];
@@ -1127,115 +1161,121 @@ function BloodAnalysisReportInner() {
                     initial="hidden"
                     whileInView="show"
                     viewport={{ once: true, amount: 0.2 }}
-                    className="grid gap-6"
+                    className="space-y-4"
                   >
                     {markers.length ? (
-                      markers.map((marker) => {
-                        const detail = getMarkerDetail(marker);
-                        const citations = detail.citations.length
-                          ? detail.citations
-                          : BLOOD_PANEL_CITATIONS[panelKey] || [];
-                        const percentile =
-                          patientContext
-                            ? getPercentileRank(marker.code, marker.value, patientContext.age, patientContext.sexe)
-                            : null;
-                        const scoreReflection = buildScoreReflection(marker, percentile);
-                        const impactItems = detail.impact
-                          .split(". ")
-                          .map((item) => item.trim())
-                          .filter(Boolean);
-                        return (
-                          <motion.div
-                            key={marker.code}
-                            variants={fadeUp}
-                            className="rounded-2xl border blood-border-default blood-surface p-6 transition hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(0,0,0,0.35)]"
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-4">
-                              <div>
-                                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">{marker.code}</p>
-                                <div className="mt-2 text-lg font-semibold blood-text-primary">{marker.name}</div>
-                                <p className="mt-1 text-xs blood-text-tertiary">{PANEL_META[panelKey].label}</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-2xl font-semibold blood-text-primary">
-                                  <AnimatedNumber value={marker.value} decimals={1} /> {marker.unit}
+                      <Accordion type="multiple" className="space-y-4">
+                        {markers.map((marker) => {
+                          const detail = getMarkerDetail(marker);
+                          const citations = detail.citations.length
+                            ? detail.citations
+                            : BLOOD_PANEL_CITATIONS[panelKey] || [];
+                          const percentile =
+                            patientContext
+                              ? getPercentileRank(marker.code, marker.value, patientContext.age, patientContext.sexe)
+                              : null;
+                          const scoreReflection = buildScoreReflection(marker, percentile);
+                          const impactItems = detail.impact
+                            .split(". ")
+                            .map((item) => item.trim())
+                            .filter(Boolean);
+                          return (
+                            <AccordionItem
+                              key={marker.code}
+                              value={marker.code}
+                              className="rounded-2xl border blood-border-default blood-surface px-6"
+                            >
+                              <AccordionTrigger className="no-underline hover:no-underline">
+                                <div className="flex w-full flex-wrap items-center justify-between gap-4 py-2 text-left">
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">{marker.code}</p>
+                                    <div className="mt-2 text-base font-semibold blood-text-primary">{marker.name}</div>
+                                    <p className="mt-1 text-xs blood-text-tertiary">{PANEL_META[panelKey].label}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-xl font-semibold blood-text-primary">
+                                      <AnimatedNumber value={marker.value} decimals={1} /> {marker.unit}
+                                    </div>
+                                    <StatusBadge status={marker.status} />
+                                  </div>
                                 </div>
-                                <StatusBadge status={marker.status} />
-                              </div>
-                            </div>
-                            <div className="mt-4">
-                              <BiomarkerRangeIndicator
-                                value={marker.value}
-                                unit={marker.unit}
-                                status={marker.status}
-                                normalMin={marker.refMin ?? undefined}
-                                normalMax={marker.refMax ?? undefined}
-                                optimalMin={marker.optimalMin ?? undefined}
-                                optimalMax={marker.optimalMax ?? undefined}
-                                normalLabel="Normal labo"
-                                optimalLabel="Optimal performance"
-                              />
-                            </div>
-                            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                              <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">C'est quoi</p>
-                                <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.definition}</p>
-                              </div>
-                              <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Ce que reflète ton score</p>
-                                <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.mechanism}</p>
-                                {marker.interpretation ? (
-                                  <p className="mt-3 text-sm blood-text-secondary leading-relaxed">{marker.interpretation}</p>
-                                ) : null}
-                                <p className="mt-3 text-xs blood-text-tertiary">{scoreReflection}</p>
-                              </div>
-                              <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Impacts sur ton corps</p>
-                                {impactItems.length > 1 ? (
-                                  <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
-                                    {impactItems.slice(0, 4).map((item) => (
-                                      <li key={item} className="flex items-start gap-2">
-                                        <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                                        <span>{item}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.impact}</p>
-                                )}
-                              </div>
-                              <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole recommande</p>
-                                <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
-                                  {detail.protocol.map((item) => (
-                                    <li key={item} className="flex items-start gap-2">
-                                      <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                                      <span>{item}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                            <div className="mt-5 rounded-xl border blood-border-default blood-surface-muted p-4">
-                              <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Sources</p>
-                              {citations.length ? (
-                                <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
-                                  {citations.map((item) => (
-                                    <li key={item.url}>
-                                      →{" "}
-                                      <a className="underline" style={{ color: theme.textSecondary }} href={item.url} target="_blank" rel="noreferrer">
-                                        {item.title}
-                                      </a>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <p className="mt-2 text-xs blood-text-tertiary">Aucune source specifique associee.</p>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-6">
+                                <div className="mt-2">
+                                  <BiomarkerRangeIndicator
+                                    value={marker.value}
+                                    unit={marker.unit}
+                                    status={marker.status}
+                                    normalMin={marker.refMin ?? undefined}
+                                    normalMax={marker.refMax ?? undefined}
+                                    optimalMin={marker.optimalMin ?? undefined}
+                                    optimalMax={marker.optimalMax ?? undefined}
+                                    normalLabel="Normal labo"
+                                    optimalLabel="Optimal performance"
+                                  />
+                                </div>
+                                <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Definition clinique</p>
+                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.definition}</p>
+                                  </div>
+                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Lecture biologique</p>
+                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.mechanism}</p>
+                                    {marker.interpretation ? (
+                                      <p className="mt-3 text-sm blood-text-secondary leading-relaxed">{marker.interpretation}</p>
+                                    ) : null}
+                                    <p className="mt-3 text-xs blood-text-tertiary">{scoreReflection}</p>
+                                  </div>
+                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Impact physiologique</p>
+                                    {impactItems.length > 1 ? (
+                                      <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
+                                        {impactItems.slice(0, 4).map((item) => (
+                                          <li key={item} className="flex items-start gap-2">
+                                            <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
+                                            <span>{item}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.impact}</p>
+                                    )}
+                                  </div>
+                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole recommande</p>
+                                    <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
+                                      {detail.protocol.map((item) => (
+                                        <li key={item} className="flex items-start gap-2">
+                                          <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
+                                          <span>{item}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                                <div className="mt-5 rounded-xl border blood-border-default blood-surface-muted p-4">
+                                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Sources</p>
+                                  {citations.length ? (
+                                    <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
+                                      {citations.map((item) => (
+                                        <li key={item.url}>
+                                          →{" "}
+                                          <a className="underline" style={{ color: theme.textSecondary }} href={item.url} target="_blank" rel="noreferrer">
+                                            {item.title}
+                                          </a>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <p className="mt-2 text-xs blood-text-tertiary">Aucune source specifique associee.</p>
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
                     ) : (
                       <p className="text-sm blood-text-secondary">Aucun biomarqueur renseigne pour ce systeme.</p>
                     )}
@@ -1244,210 +1284,218 @@ function BloodAnalysisReportInner() {
               );
             })}
           </section>
+          </TabsContent>
 
-          <motion.section
-            id="patterns"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeUp}
-            className="space-y-6"
-          >
-            <div>
-              <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Patterns & insights</p>
-              <h2 className="mt-3 blood-h2 blood-text-primary">Lecture croisee de tes marqueurs</h2>
-              <p className="mt-2 text-sm blood-text-secondary">
-                Je recoupe tes biomarqueurs pour identifier des syndromes fonctionnels et des priorites cliniques.
-              </p>
-            </div>
-            <div className="grid gap-6 lg:grid-cols-[0.55fr_0.45fr]">
-              <Card className="border blood-border-default blood-surface p-6">
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Patterns detectes</p>
-                <div className="mt-6 space-y-4">
-                  {patterns.length ? (
-                    patterns.map((pattern) => (
-                      <div key={pattern.name} className="rounded-xl border blood-border-default blood-surface-muted p-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="text-sm font-semibold blood-text-primary">{pattern.name}</div>
-                            {!!pattern.causes?.length && (
-                              <div className="mt-2 text-xs blood-text-secondary">
-                                Causes: {pattern.causes.slice(0, 3).join(" · ")}
-                              </div>
-                            )}
-                          </div>
-                          <StatusBadge status="suboptimal" />
-                        </div>
-                        {!!pattern.protocol?.length && (
-                          <div className="mt-4">
-                            <div className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole</div>
-                            <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
-                              {pattern.protocol.slice(0, 6).map((item) => (
-                                <li key={item} className="flex items-start gap-2">
-                                  <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                                  <span>{item}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm blood-text-secondary">Aucun pattern majeur detecte.</div>
-                  )}
-                </div>
-              </Card>
-
-              <Card className="border blood-border-default blood-surface p-6">
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Diabetes Risk Assessment</p>
-                {diabetes ? (
-                  <div className="mt-4 space-y-3 text-sm blood-text-secondary">
-                    <p>
-                      Score: <span className="font-semibold blood-text-primary">{diabetes.score}/100</span> (risque {diabetes.level}).
-                    </p>
-                    <ul className="space-y-1">
-                      {diabetes.gly !== null && <li>Glycemie a jeun: {diabetes.gly} mg/dL</li>}
-                      {diabetes.a1c !== null && <li>HbA1c: {diabetes.a1c}%</li>}
-                      {diabetes.insulin !== null && <li>Insuline: {diabetes.insulin} µIU/mL</li>}
-                      {diabetes.homa !== null && <li>HOMA-IR: {diabetes.homa}</li>}
-                    </ul>
-                    <div className="rounded-lg border blood-border-default blood-surface-muted p-4">
-                      <div className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole rapide</div>
-                      <ul className="mt-2 space-y-2 text-sm blood-text-secondary">
-                        <li>Reduire sucres rapides + repas ultra transformes.</li>
-                        <li>Augmenter fibres + proteines a chaque repas.</li>
-                        <li>Marche post-prandiale 10-15 min.</li>
-                        <li>Sommeil 7-9h pour stabiliser l'insuline.</li>
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm blood-text-secondary">Donnees insuffisantes pour estimer le risque.</p>
-                )}
-              </Card>
-            </div>
-
-            {aiAnalysisDisplay ? (
-              <Card className="border blood-border-default blood-surface p-6">
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Analyse detaillee</p>
-                <div className="prose mt-4 max-w-none prose-p:blood-text-secondary prose-li:blood-text-secondary prose-strong:blood-text-primary">
-                  <ReactMarkdown>{aiAnalysisDisplay}</ReactMarkdown>
-                </div>
-              </Card>
-            ) : null}
-          </motion.section>
-
-          <motion.section
-            id="action-plan"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeUp}
-            className="space-y-6"
-          >
-            <div>
-              <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Action plan</p>
-              <h2 className="mt-3 blood-h2 blood-text-primary">Plan d'action personnalise</h2>
-              <p className="mt-2 text-sm blood-text-secondary">
-                Priorites immediates, protocole court terme et retest planifie.
-              </p>
-            </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              <Card className="border border-rose-500/40 bg-rose-500/10 p-6">
-                <p className="text-[12px] uppercase tracking-[0.2em] text-rose-200">Urgent cette semaine</p>
-                {urgentMarkers.length ? (
-                  <ul className="mt-4 space-y-2 text-sm text-rose-100">
-                    {urgentMarkers.map((marker) => (
-                      <li key={marker.code} className="flex items-start gap-2">
-                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-rose-300" />
-                        <span>{marker.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-4 text-sm text-rose-100">Pas de marqueur critique detecte.</p>
-                )}
-              </Card>
-
-              <Card className="border blood-border-default blood-surface p-6">
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Court terme (1 mois)</p>
-                {protocolPhases[0]?.items?.length ? (
-                  <ul className="mt-4 space-y-2 text-sm blood-text-secondary">
-                    {protocolPhases[0].items.slice(0, 5).map((item) => (
-                      <li key={item} className="flex items-start gap-2">
-                        <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-4 text-sm blood-text-secondary">Focus: sommeil, nutrition, stabilite metabolique.</p>
-                )}
-              </Card>
-
-              <Card className="border blood-border-default blood-surface p-6">
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Moyen terme (3 mois)</p>
-                {protocolPhases[1]?.items?.length ? (
-                  <ul className="mt-4 space-y-2 text-sm blood-text-secondary">
-                    {protocolPhases[1].items.slice(0, 5).map((item) => (
-                      <li key={item} className="flex items-start gap-2">
-                        <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-4 text-sm blood-text-secondary">Retest conseille a 3-6 mois.</p>
-                )}
-              </Card>
-            </div>
-          </motion.section>
-
-          <motion.section
-            id="sources"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeUp}
-            className="space-y-6"
-          >
-            <div>
-              <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Sources</p>
-              <h2 className="mt-3 blood-h2 blood-text-primary">References scientifiques</h2>
-            </div>
-            <Card className="border blood-border-default blood-surface p-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
-                  <div key={key} className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                    <div className="text-sm font-semibold blood-text-primary">{PANEL_META[key].label}</div>
-                    <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
-                      {(BLOOD_PANEL_CITATIONS[key] || []).map((citation) => (
-                        <li key={citation.url}>
-                          →{" "}
-                          <a className="underline" style={{ color: theme.textSecondary }} href={citation.url} target="_blank" rel="noreferrer">
-                            {citation.title}
-                          </a>
+          <TabsContent value="protocols" className="mt-10 space-y-16">
+            <motion.section
+              id="action-plan"
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={fadeUp}
+              className="space-y-6"
+            >
+              <div>
+                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Action plan</p>
+                <h2 className="mt-3 blood-h2 blood-text-primary">Plan d'action personnalise</h2>
+                <p className="mt-2 text-sm blood-text-secondary">
+                  Priorites immediates, protocole court terme et retest planifie.
+                </p>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-3">
+                <Card className="border border-rose-500/40 bg-rose-500/10 p-6">
+                  <p className="text-[12px] uppercase tracking-[0.2em] text-rose-200">Urgent cette semaine</p>
+                  {urgentMarkers.length ? (
+                    <ul className="mt-4 space-y-2 text-sm text-rose-100">
+                      {urgentMarkers.map((marker) => (
+                        <li key={marker.code} className="flex items-start gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-rose-300" />
+                          <span>{marker.name}</span>
                         </li>
                       ))}
                     </ul>
-                  </div>
-                ))}
+                  ) : (
+                    <p className="mt-4 text-sm text-rose-100">Pas de marqueur critique detecte.</p>
+                  )}
+                </Card>
+
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Court terme (1 mois)</p>
+                  {protocolPhases[0]?.items?.length ? (
+                    <ul className="mt-4 space-y-2 text-sm blood-text-secondary">
+                      {protocolPhases[0].items.slice(0, 5).map((item) => (
+                        <li key={item} className="flex items-start gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-4 text-sm blood-text-secondary">Focus: sommeil, nutrition, stabilite metabolique.</p>
+                  )}
+                </Card>
+
+                <Card className="border blood-border-default blood-surface p-6">
+                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Moyen terme (3 mois)</p>
+                  {protocolPhases[1]?.items?.length ? (
+                    <ul className="mt-4 space-y-2 text-sm blood-text-secondary">
+                      {protocolPhases[1].items.slice(0, 5).map((item) => (
+                        <li key={item} className="flex items-start gap-2">
+                          <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-4 text-sm blood-text-secondary">Retest conseille a 3-6 mois.</p>
+                  )}
+                </Card>
               </div>
-            </Card>
-            <div className="flex items-center justify-between text-xs blood-text-tertiary">
-              <span>Educationnel · Ne remplace pas un avis medical.</span>
-              <Button
-                variant="outline"
-                className="hover:opacity-80"
-                style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-                onClick={() => navigate("/offers/blood-analysis")}
-              >
-                Acheter des credits
-              </Button>
+            </motion.section>
+          </TabsContent>
+
+          <TabsContent value="insights" className="mt-10 space-y-10">
+            <div>
+              <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Insights</p>
+              <h2 className="mt-3 blood-h2 blood-text-primary">Lecture avancee du bilan</h2>
+              <p className="mt-2 text-sm blood-text-secondary">
+                Synthese des patterns, analyse detaillee et references scientifiques.
+              </p>
             </div>
-          </motion.section>
-        </div>
+
+            <Tabs value={insightsTab} onValueChange={setInsightsTab} className="space-y-6">
+              <TabsList className="blood-tabs flex w-full flex-wrap gap-2 rounded-2xl border p-2">
+                <TabsTrigger value="patterns" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                  Patterns
+                </TabsTrigger>
+                <TabsTrigger value="analysis" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                  Analyse detaillee
+                </TabsTrigger>
+                <TabsTrigger value="sources" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
+                  Sources
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="patterns" className="space-y-6">
+                <div className="grid gap-6 lg:grid-cols-[0.55fr_0.45fr]">
+                  <Card className="border blood-border-default blood-surface p-6">
+                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Patterns detectes</p>
+                    <div className="mt-6 space-y-4">
+                      {patterns.length ? (
+                        patterns.map((pattern) => (
+                          <div key={pattern.name} className="rounded-xl border blood-border-default blood-surface-muted p-5">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <div className="text-sm font-semibold blood-text-primary">{pattern.name}</div>
+                                {!!pattern.causes?.length && (
+                                  <div className="mt-2 text-xs blood-text-secondary">
+                                    Causes: {pattern.causes.slice(0, 3).join(" · ")}
+                                  </div>
+                                )}
+                              </div>
+                              <StatusBadge status="suboptimal" />
+                            </div>
+                            {!!pattern.protocol?.length && (
+                              <div className="mt-4">
+                                <div className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole</div>
+                                <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
+                                  {pattern.protocol.slice(0, 6).map((item) => (
+                                    <li key={item} className="flex items-start gap-2">
+                                      <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
+                                      <span>{item}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm blood-text-secondary">Aucun pattern majeur detecte.</div>
+                      )}
+                    </div>
+                  </Card>
+
+                  <Card className="border blood-border-default blood-surface p-6">
+                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Diabetes Risk Assessment</p>
+                    {diabetes ? (
+                      <div className="mt-4 space-y-3 text-sm blood-text-secondary">
+                        <p>
+                          Score: <span className="font-semibold blood-text-primary">{diabetes.score}/100</span> (risque {diabetes.level}).
+                        </p>
+                        <ul className="space-y-1">
+                          {diabetes.gly !== null && <li>Glycemie a jeun: {diabetes.gly} mg/dL</li>}
+                          {diabetes.a1c !== null && <li>HbA1c: {diabetes.a1c}%</li>}
+                          {diabetes.insulin !== null && <li>Insuline: {diabetes.insulin} µIU/mL</li>}
+                          {diabetes.homa !== null && <li>HOMA-IR: {diabetes.homa}</li>}
+                        </ul>
+                        <div className="rounded-lg border blood-border-default blood-surface-muted p-4">
+                          <div className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole rapide</div>
+                          <ul className="mt-2 space-y-2 text-sm blood-text-secondary">
+                            <li>Reduire sucres rapides + repas ultra transformes.</li>
+                            <li>Augmenter fibres + proteines a chaque repas.</li>
+                            <li>Marche post-prandiale 10-15 min.</li>
+                            <li>Sommeil 7-9h pour stabiliser l'insuline.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-4 text-sm blood-text-secondary">Donnees insuffisantes pour estimer le risque.</p>
+                    )}
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="analysis" className="space-y-6">
+                {aiAnalysisDisplay ? (
+                  <Card className="border blood-border-default blood-surface p-6">
+                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Analyse detaillee</p>
+                    <div className="prose mt-4 max-w-none prose-p:blood-text-secondary prose-li:blood-text-secondary prose-strong:blood-text-primary">
+                      <ReactMarkdown>{aiAnalysisDisplay}</ReactMarkdown>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="border blood-border-default blood-surface p-6">
+                    <p className="text-sm blood-text-secondary">Analyse detaillee indisponible pour ce rapport.</p>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="sources" className="space-y-6">
+                <Card className="border blood-border-default blood-surface p-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
+                      <div key={key} className="rounded-xl border blood-border-default blood-surface-muted p-4">
+                        <div className="text-sm font-semibold blood-text-primary">{PANEL_META[key].label}</div>
+                        <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
+                          {(BLOOD_PANEL_CITATIONS[key] || []).map((citation) => (
+                            <li key={citation.url}>
+                              →{" "}
+                              <a className="underline" style={{ color: theme.textSecondary }} href={citation.url} target="_blank" rel="noreferrer">
+                                {citation.title}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+                <div className="flex items-center justify-between text-xs blood-text-tertiary">
+                  <span>Educationnel · Ne remplace pas un avis medical.</span>
+                  <Button
+                    variant="outline"
+                    className="hover:opacity-80"
+                    style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
+                    onClick={() => navigate("/offers/blood-analysis")}
+                  >
+                    Acheter des credits
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+        </Tabs>
       </div>
     </BloodShell>
   );
