@@ -12,6 +12,7 @@ import {
   getBloodworkKnowledgeContext,
   BIOMARKER_RANGES,
   buildFallbackAnalysis,
+  buildLifestyleCorrelations,
 } from "../blood-analysis";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
@@ -253,6 +254,17 @@ export function registerBloodTestsRoutes(app: Express): void {
         files?: string[];
         includeAI?: boolean;
         asyncAI?: boolean;
+        prenom?: string;
+        nom?: string;
+        gender?: string;
+        dob?: string;
+        poids?: number;
+        taille?: number;
+        sleepHours?: number;
+        trainingHours?: number;
+        calorieDeficit?: number;
+        alcoholWeekly?: number;
+        stressLevel?: number;
       };
       const seedEmail = (
         String(body.email || "").trim() ||
@@ -288,12 +300,19 @@ export function registerBloodTestsRoutes(app: Express): void {
           }
 
           const pdfProfile = extractPatientInfoFromPdfText(pdfText);
+          const bodyGender = String(body.gender || "").trim().toLowerCase();
+          const normalizedGender =
+            bodyGender.startsWith("f")
+              ? "femme"
+              : bodyGender.startsWith("h") || bodyGender.startsWith("m")
+              ? "homme"
+              : undefined;
           const patientProfile = {
-            email: pdfProfile.email || seedEmail,
-            prenom: pdfProfile.prenom,
-            nom: pdfProfile.nom,
-            gender: pdfProfile.gender || "homme",
-            dob: pdfProfile.dob,
+            email: String(body.email || pdfProfile.email || seedEmail || "").trim() || undefined,
+            prenom: String(body.prenom || pdfProfile.prenom || "").trim() || undefined,
+            nom: String(body.nom || pdfProfile.nom || "").trim() || undefined,
+            gender: normalizedGender || pdfProfile.gender || "homme",
+            dob: String(body.dob || pdfProfile.dob || "").trim() || undefined,
             poids: parseNumber(body.poids),
             taille: parseNumber(body.taille),
             sleepHours: parseNumber(body.sleepHours),
@@ -343,7 +362,17 @@ export function registerBloodTestsRoutes(app: Express): void {
             }
           }
           if (!aiAnalysis) {
-            aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: patientProfile.gender as "homme" | "femme", age });
+            aiAnalysis = buildFallbackAnalysis(analysisResult, {
+              gender: patientProfile.gender as "homme" | "femme",
+              age,
+              sleepHours: patientProfile.sleepHours,
+              trainingHours: patientProfile.trainingHours,
+              calorieDeficit: patientProfile.calorieDeficit,
+              alcoholWeekly: patientProfile.alcoholWeekly,
+              stressLevel: patientProfile.stressLevel,
+              poids: patientProfile.poids,
+              taille: patientProfile.taille,
+            });
           }
 
           const markers = analysisResult.markers.map((marker) => {
@@ -384,6 +413,7 @@ export function registerBloodTestsRoutes(app: Express): void {
             alerts: analysisResult.alerts,
             aiAnalysis,
             protocolPhases,
+            lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
             patient: patientProfile,
           };
 
@@ -595,7 +625,17 @@ export function registerBloodTestsRoutes(app: Express): void {
         }
       }
       if (!aiAnalysis) {
-        aiAnalysis = buildFallbackAnalysis(analysisResult, { gender: profile.gender as "homme" | "femme", age });
+        aiAnalysis = buildFallbackAnalysis(analysisResult, {
+          gender: profile.gender as "homme" | "femme",
+          age,
+          sleepHours: profile.sleepHours,
+          trainingHours: profile.trainingHours,
+          calorieDeficit: profile.calorieDeficit,
+          alcoholWeekly: profile.alcoholWeekly,
+          stressLevel: profile.stressLevel,
+          poids: profile.poids,
+          taille: profile.taille,
+        });
       }
 
       const markers = analysisResult.markers.map((marker) => {
@@ -636,6 +676,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         alerts: analysisResult.alerts,
         aiAnalysis,
         protocolPhases,
+        lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
         patient: profile,
       };
 

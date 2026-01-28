@@ -459,6 +459,15 @@ export interface BloodAnalysisResult {
   alerts: string[];
 }
 
+export interface LifestyleCorrelation {
+  factor: string;
+  current: string;
+  impact: string;
+  recommendation: string;
+  status: MarkerAnalysis["status"];
+  evidence?: string;
+}
+
 const extractJsonArray = (raw: string): unknown[] => {
   const trimmed = raw.trim();
   if (!trimmed) return [];
@@ -1216,45 +1225,44 @@ REGLES DE STYLE:
 - Liens PubMed autorises.
 - Utilise les ranges optimaux en priorite.
 - Reste structure, pedagogique, conversationnel.
-- Adresse-toi directement au client avec \"tu/ta/ton\" partout.
-- Jamais \"patient\" ou \"utilisateur\".
-- Chaque section doit contenir des phrases completes (pas uniquement des listes).
-- Longueur cible: 1200-1800 mots (pas moins).
+- Adresse-toi directement au client avec "tu/ta/ton".
+- Jamais "patient" ou "utilisateur".
+- Ne fais pas d'hypotheses sur les ressentis. Utilise "symptomes associes" si besoin.
+- Pas de repetition: chaque section apporte une information nouvelle.
+- Longueur cible: 900-1200 mots, maximum 18 000 caracteres.
 - Chaque recommandation contient: action + dosage + timing + duree + objectif.
 - Si une donnee manque, dis-le clairement et continue.
 
 FORMAT DE REPONSE (respecte STRICTEMENT les titres):
 ## Synthese executive
+- Alertes prioritaires: [liste concise ou "Aucune"]
 - Optimal: [liste concise]
 - A surveiller: [liste concise]
 - Action requise: [liste concise]
-- Lecture globale: [6-8 phrases, ton clinique + performance]
+- Lecture globale: [4-6 phrases, ton clinique + performance]
+
+## Alertes prioritaires (si critique)
+- [Marqueur]: valeur + risque + action immediate (1-2 phrases)
 
 ## Lecture systeme par systeme
 ### Hormonal
-- Points cles: [3-4 puces factuelles]
-- Analyse: [5-7 phrases]
-- Impact performance: [2-3 phrases]
+- Lecture clinique & impact performance: [5-6 phrases]
+- Protocole cle: [2-3 actions]
 ### Thyroide
-- Points cles: [3-4 puces factuelles]
-- Analyse: [5-7 phrases]
-- Impact performance: [2-3 phrases]
+- Lecture clinique & impact performance: [5-6 phrases]
+- Protocole cle: [2-3 actions]
 ### Metabolique
-- Points cles: [3-4 puces factuelles]
-- Analyse: [5-7 phrases]
-- Impact performance: [2-3 phrases]
+- Lecture clinique & impact performance: [5-6 phrases]
+- Protocole cle: [2-3 actions]
 ### Inflammation
-- Points cles: [3-4 puces factuelles]
-- Analyse: [5-7 phrases]
-- Impact performance: [2-3 phrases]
+- Lecture clinique & impact performance: [5-6 phrases]
+- Protocole cle: [2-3 actions]
 ### Vitamines & mineraux
-- Points cles: [3-4 puces factuelles]
-- Analyse: [5-7 phrases]
-- Impact performance: [2-3 phrases]
+- Lecture clinique & impact performance: [5-6 phrases]
+- Protocole cle: [2-3 actions]
 ### Foie & rein
-- Points cles: [3-4 puces factuelles]
-- Analyse: [5-7 phrases]
-- Impact performance: [2-3 phrases]
+- Lecture clinique & impact performance: [5-6 phrases]
+- Protocole cle: [2-3 actions]
 
 ## Interconnexions majeures
 - [Marqueur A] + [Marqueur B] -> [impact physiologique en 1-2 phrases]
@@ -1263,33 +1271,36 @@ FORMAT DE REPONSE (respecte STRICTEMENT les titres):
 ## Deep dive marqueurs prioritaires
 Pour 6 marqueurs max (les plus critiques / sous-optimaux):
 - Verdict (1 ligne)
-- Ce que ca veut dire pour toi (3-4 phrases)
-- Pourquoi c'est important (2-3 phrases)
+- Ce que ca veut dire (3-4 phrases, factuel)
+- Symptomes associes (1-2 phrases)
 - Protocole exact (actions + dosages + timing + duree)
 
-## Protocoles 180 jours
+## Plan 90 jours
 ### Jours 1-30
 - [action + dosage + timing + duree + objectif]
 ### Jours 31-90
 - [action + dosage + timing + duree + objectif]
-### Jours 91-180
-- [action + dosage + timing + duree + objectif]
 
 ## Nutrition & entrainement
-- Nutrition (4-6 phrases)
-- Entrainement (4-6 phrases)
+- Nutrition (3-5 phrases)
+- Entrainement (3-5 phrases)
 
 ## Supplements & stack
-- Liste 6-10 supplements MAX avec: dosage, timing, duree, objectif.
+- Liste 6-8 supplements MAX avec: dosage, timing, duree, objectif.
 
 ## Sources scientifiques
-- 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)
+- 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)`;
 
-## Controles a prevoir
-- [test] - [delai] - [objectif]
-
-## Vigilance
-- [alerte medicale si necessaire, 2-3 phrases]`;
+const trimAiAnalysis = (text: string, maxChars = 18000): string => {
+  if (!text) return "";
+  if (text.length <= maxChars) return text.trim();
+  const sliced = text.slice(0, maxChars);
+  const lastBreak = sliced.lastIndexOf("\n\n");
+  if (lastBreak > 1000) {
+    return sliced.slice(0, lastBreak).trim();
+  }
+  return sliced.trim();
+};
 
 export function buildFallbackAnalysis(
   analysisResult: BloodAnalysisResult,
@@ -1298,6 +1309,13 @@ export function buildFallbackAnalysis(
     age?: string;
     objectives?: string;
     medications?: string;
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
+    poids?: number;
+    taille?: number;
   }
 ): string {
   const formatList = (items: string[], emptyLabel: string) =>
@@ -1312,13 +1330,22 @@ export function buildFallbackAnalysis(
     (item) => `- ${item.test} - ${item.delay} - ${item.objective}`
   );
   const alerts = analysisResult.alerts.map((alert) => `- ${alert}`);
+  const correlations = buildLifestyleCorrelations(analysisResult.markers, userProfile);
+  const correlationLines = correlations.length
+    ? correlations.map(
+        (item) => `- ${item.factor} (${item.current}): ${item.impact} Action: ${item.recommendation}`
+      )
+    : ["- Donnees lifestyle insuffisantes pour calculer des correlations."];
 
   return [
     "## Synthese executive",
     `- Optimal: ${summary.optimal.join(", ") || "Aucun"}`,
     `- A surveiller: ${summary.watch.join(", ") || "Aucun"}`,
     `- Action requise: ${summary.action.join(", ") || "Aucune"}`,
-    `- Lecture globale: Ton profil ${userProfile.gender}${userProfile.age ? ` (${userProfile.age} ans)` : ""} montre ${critical.length} alerte(s) critique(s) et ${suboptimal.length} zone(s) a optimiser.`,
+    `- Lecture globale: Profil ${userProfile.gender}${userProfile.age ? " (" + userProfile.age + " ans)" : ""} avec ${critical.length} alerte(s) critique(s) et ${suboptimal.length} zone(s) a optimiser.`,
+    "",
+    "## Alertes prioritaires",
+    alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
     "",
     "## Systeme par systeme",
     `### Hormonal\n- Points cles: ${formatList(
@@ -1339,13 +1366,13 @@ export function buildFallbackAnalysis(
         )
         .map((m) => `${m.name} (${m.status})`),
       "Aucun signal prioritaire"
-    )}\n- Impact: Ton axe hormonal conditionne energie, libido et composition corporelle.`,
+    )}\n- Impact: Axe hormonal = energie, libido et composition corporelle.`,
     `### Thyroide\n- Points cles: ${formatList(
       analysisResult.markers
         .filter((m) => ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId))
         .map((m) => `${m.name} (${m.status})`),
-      "Rien d'urgent"
-    )}\n- Impact: La thyroide pilote ton metabolisme et ta temperature interne.`,
+      "Rien d urgent"
+    )}\n- Impact: La thyroide pilote metabolisme et thermogenese.`,
     `### Metabolique\n- Points cles: ${formatList(
       analysisResult.markers
         .filter((m) =>
@@ -1363,7 +1390,7 @@ export function buildFallbackAnalysis(
         )
         .map((m) => `${m.name} (${m.status})`),
       "Profil metabolique stable"
-    )}\n- Impact: C'est la base de ton energie et de ta gestion du gras.`,
+    )}\n- Impact: Base de la perte de gras et de l energie.`,
     `### Inflammation\n- Points cles: ${formatList(
       analysisResult.markers
         .filter((m) =>
@@ -1373,31 +1400,28 @@ export function buildFallbackAnalysis(
         )
         .map((m) => `${m.name} (${m.status})`),
       "Inflammation controlee"
-    )}\n- Impact: Une inflammation basse accelere la recuperation et l'anabolisme.`,
+    )}\n- Impact: Inflammation basse = recuperation plus rapide.`,
     `### Vitamines\n- Points cles: ${formatList(
       analysisResult.markers
         .filter((m) => ["vitamine_d", "b12", "folate", "magnesium_rbc", "zinc"].includes(m.markerId))
         .map((m) => `${m.name} (${m.status})`),
       "Couverture micronutriments correcte"
-    )}\n- Impact: Micronutriments = production hormonale et immunite.`,
+    )}\n- Impact: Micronutriments = hormones, immunite, energie.`,
     `### Foie & rein\n- Points cles: ${formatList(
       analysisResult.markers
         .filter((m) => ["alt", "ast", "ggt", "creatinine", "egfr"].includes(m.markerId))
         .map((m) => `${m.name} (${m.status})`),
       "Fonctions hepatiques et renales stables"
-    )}\n- Impact: Detox, elimination et tolerance au stress metabolique.`,
+    )}\n- Impact: Detox et elimination conditionnent la performance.`,
     "",
-    "## Interconnexions majeures",
-    ...analysisResult.patterns.map((pattern) => `- ${pattern.name}: ${pattern.causes.join(", ")}`),
-    analysisResult.patterns.length ? "" : "- Aucune correlation critique detectee pour le moment.",
+    "## Correlations lifestyle",
+    ...correlationLines,
     "",
-    "## Protocoles 180 jours",
+    "## Protocoles 90 jours",
     "### Jours 1-30",
     formatList(priority1, "Stabiliser sommeil, hydratation, apport proteique."),
     "### Jours 31-90",
-    formatList(priority2, "Optimiser activite et nutrition ciblee."),
-    "### Jours 91-180",
-    formatList(["Consolider les routines, re-tester les marqueurs clefs."], "Consolider les routines"),
+    formatList(priority2, "Optimiser activite, nutrition et supplementation."),
     "",
     "## Controles a prevoir",
     followUp.length ? followUp.join("\n") : "- Aucun controle prioritaire",
@@ -1406,6 +1430,214 @@ export function buildFallbackAnalysis(
     alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
   ].join("\n");
 }
+
+const isFlaggedStatus = (status?: MarkerStatus): boolean => status === "suboptimal" || status === "critical";
+
+const formatNumber = (value?: number, suffix = ""): string => {
+  if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
+  return `${value}${suffix}`;
+};
+
+export const buildLifestyleCorrelations = (
+  markers: MarkerAnalysis[],
+  profile: {
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
+    poids?: number;
+    taille?: number;
+  }
+): LifestyleCorrelation[] => {
+  const correlations: Array<LifestyleCorrelation & { rank: number }> = [];
+  const rankMap: Record<MarkerAnalysis["status"], number> = {
+    critical: 3,
+    suboptimal: 2,
+    normal: 1,
+    optimal: 0,
+  };
+  const pushCorrelation = (payload: LifestyleCorrelation) => {
+    correlations.push({ ...payload, rank: rankMap[payload.status] });
+  };
+  const getMarker = (id: string) => markers.find((marker) => marker.markerId === id);
+  const sleepHours = profile.sleepHours;
+  const trainingHours = profile.trainingHours;
+  const calorieDeficit = profile.calorieDeficit;
+  const alcoholWeekly = profile.alcoholWeekly;
+  const stressLevel = profile.stressLevel;
+  const bmi =
+    typeof profile.poids === "number" && typeof profile.taille === "number" && profile.taille > 0
+      ? Math.round((profile.poids / Math.pow(profile.taille / 100, 2)) * 10) / 10
+      : undefined;
+
+  if (typeof sleepHours === "number" && sleepHours < 7) {
+    const testosterone = getMarker("testosterone_total");
+    const cortisol = getMarker("cortisol");
+    const impactBits = [];
+    if (isFlaggedStatus(testosterone?.status)) impactBits.push("testosterone suboptimale");
+    if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol desequilibre");
+    pushCorrelation({
+      factor: "Sommeil",
+      current: `${sleepHours} h/nuit`,
+      impact: impactBits.length
+        ? `Sommeil court associe a ${impactBits.join(" et ")}.`
+        : "Sommeil court fragilise l axe hormonal et la recuperation.",
+      recommendation: "Vise 7h30-8h30 et des horaires stables sur 14 jours.",
+      status: sleepHours < 6.5 ? "critical" : "suboptimal",
+      evidence: "Sommeil <7h baisse la testosterone et augmente le stress physiologique.",
+    });
+  } else if (typeof sleepHours === "number") {
+    pushCorrelation({
+      factor: "Sommeil",
+      current: `${sleepHours} h/nuit`,
+      impact: sleepHours >= 7.5 ? "Sommeil aligne avec une recuperation optimale." : "Sommeil correct mais perfectible pour la performance.",
+      recommendation: sleepHours >= 7.5 ? "Garde cette regularite sur 3-4 semaines." : "Vise +30 min et couche-toi plus regulierement.",
+      status: sleepHours >= 7.5 ? "optimal" : "normal",
+      evidence: "Sommeil stable = meilleure regulation hormonale et inflammatoire.",
+    });
+  }
+
+  if (typeof trainingHours === "number" && trainingHours >= 10) {
+    const crp = getMarker("crp_us");
+    const cortisol = getMarker("cortisol");
+    const impactBits = [];
+    if (isFlaggedStatus(crp?.status)) impactBits.push("inflammation elevee");
+    if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol eleve");
+    pushCorrelation({
+      factor: "Training",
+      current: `${trainingHours} h/sem`,
+      impact: impactBits.length
+        ? `Volume eleve associe a ${impactBits.join(" et ")}.`
+        : "Volume eleve peut limiter la recuperation et l anabolisme.",
+      recommendation: "Reduis a 6-8 h/sem et planifie un deload toutes les 4-6 semaines.",
+      status: "suboptimal",
+      evidence: "Surentrainement chronique augmente inflammation et catabolisme.",
+    });
+  } else if (typeof trainingHours === "number") {
+    pushCorrelation({
+      factor: "Training",
+      current: `${trainingHours} h/sem`,
+      impact: trainingHours >= 4 ? "Volume coherent avec performance et recuperation." : "Volume faible peut ralentir les adaptations.",
+      recommendation: trainingHours >= 4 ? "Maintiens 3-5 seances bien reparties." : "Passe progressivement a 3 seances/sem.",
+      status: trainingHours >= 4 ? "optimal" : "normal",
+      evidence: "Frequence reguliere = meilleure sensibilite a l insuline et composition corporelle.",
+    });
+  }
+
+  if (typeof calorieDeficit === "number" && calorieDeficit >= 25) {
+    const t3 = getMarker("t3_libre");
+    const igf1 = getMarker("igf1");
+    const impactBits = [];
+    if (isFlaggedStatus(t3?.status)) impactBits.push("thyroide ralentit");
+    if (isFlaggedStatus(igf1?.status)) impactBits.push("anabolisme faible");
+    pushCorrelation({
+      factor: "Deficit calorique",
+      current: `${calorieDeficit}%`,
+      impact: impactBits.length
+        ? `Deficit eleve associe a ${impactBits.join(" et ")}.`
+        : "Deficit eleve peut ralentir le metabolisme et la recuperation.",
+      recommendation: "Reste sous 15-20% de deficit et integre 1 refeed hebdo.",
+      status: "suboptimal",
+      evidence: "Deficits agressifs baissent T3 et IGF-1 chez les sportifs.",
+    });
+  } else if (typeof calorieDeficit === "number") {
+    pushCorrelation({
+      factor: "Deficit calorique",
+      current: `${calorieDeficit}%`,
+      impact: calorieDeficit <= 20 ? "Deficit modere, soutenable pour la performance." : "Deficit eleve a surveiller.",
+      recommendation: calorieDeficit <= 20 ? "Continue avec un deficit stable." : "Reviens sous 20% pour preserver la thyroide.",
+      status: calorieDeficit <= 20 ? "optimal" : "normal",
+      evidence: "Deficit modere = meilleure adherence et maintien hormonal.",
+    });
+  }
+
+  if (typeof stressLevel === "number" && stressLevel >= 7) {
+    const cortisol = getMarker("cortisol");
+    const crp = getMarker("crp_us");
+    const impactBits = [];
+    if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol desequilibre");
+    if (isFlaggedStatus(crp?.status)) impactBits.push("inflammation elevee");
+    pushCorrelation({
+      factor: "Stress",
+      current: `${stressLevel}/10`,
+      impact: impactBits.length
+        ? `Stress eleve associe a ${impactBits.join(" et ")}.`
+        : "Stress eleve perturbe sommeil, glycemie et recuperation.",
+      recommendation: "Integre 10-15 min/jour de respiration, marche lente ou NSDR.",
+      status: stressLevel >= 8 ? "critical" : "suboptimal",
+      evidence: "Stress chronique eleve cortisol et degrade la sensibilite a l insuline.",
+    });
+  } else if (typeof stressLevel === "number") {
+    pushCorrelation({
+      factor: "Stress",
+      current: `${stressLevel}/10`,
+      impact: stressLevel <= 4 ? "Stress bien gere, bon signal pour la recuperation." : "Stress modere, garde un rituel quotidien.",
+      recommendation: stressLevel <= 4 ? "Continue routines de decharge." : "Ajoute 5-10 min de respiration le soir.",
+      status: stressLevel <= 4 ? "optimal" : "normal",
+      evidence: "Stress bas = meilleur sommeil et variabilite cardiaque.",
+    });
+  }
+
+  if (typeof alcoholWeekly === "number" && alcoholWeekly >= 6) {
+    const ggt = getMarker("ggt");
+    const triglycerides = getMarker("triglycerides");
+    const impactBits = [];
+    if (isFlaggedStatus(ggt?.status)) impactBits.push("stress hepatique");
+    if (isFlaggedStatus(triglycerides?.status)) impactBits.push("triglycerides hauts");
+    pushCorrelation({
+      factor: "Alcool",
+      current: `${alcoholWeekly} verres/sem`,
+      impact: impactBits.length
+        ? `Alcool associe a ${impactBits.join(" et ")}.`
+        : "Alcool freine la lipolyse et surcharge le foie.",
+      recommendation: "Passe sous 2-3 verres/sem pendant 4 semaines.",
+      status: "suboptimal",
+      evidence: "L alcool eleve GGT et triglycerides chez les profils a risque.",
+    });
+  } else if (typeof alcoholWeekly === "number") {
+    pushCorrelation({
+      factor: "Alcool",
+      current: `${alcoholWeekly} verres/sem`,
+      impact: alcoholWeekly <= 3 ? "Charge alcool faible, effet metabolique limite." : "Charge alcool moderee, a surveiller.",
+      recommendation: alcoholWeekly <= 3 ? "Garde cette limite." : "Vise 2-3 verres/sem.",
+      status: alcoholWeekly <= 3 ? "optimal" : "normal",
+      evidence: "Moins d alcool = meilleure sensibilite a l insuline et GGT stable.",
+    });
+  }
+
+  if (typeof bmi === "number" && bmi >= 27) {
+    const homa = getMarker("homa_ir");
+    const triglycerides = getMarker("triglycerides");
+    const impactBits = [];
+    if (isFlaggedStatus(homa?.status)) impactBits.push("insulino resistance");
+    if (isFlaggedStatus(triglycerides?.status)) impactBits.push("profil lipidique degrade");
+    pushCorrelation({
+      factor: "IMC",
+      current: formatNumber(bmi),
+      impact: impactBits.length
+        ? `IMC eleve associe a ${impactBits.join(" et ")}.`
+        : "IMC eleve augmente la charge metabolique globale.",
+      recommendation: "Objectif: -5 a -10% de poids sur 8-12 semaines.",
+      status: bmi >= 30 ? "critical" : "suboptimal",
+      evidence: "Perte de gras visceral ameliore glycemie, lipides et inflammation.",
+    });
+  } else if (typeof bmi === "number") {
+    pushCorrelation({
+      factor: "IMC",
+      current: formatNumber(bmi),
+      impact: bmi >= 20 && bmi <= 25 ? "IMC dans une zone stable pour la sante metabolique." : "IMC a surveiller selon le contexte.",
+      recommendation: bmi >= 20 && bmi <= 25 ? "Maintiens cette zone via nutrition stable." : "Affiner selon composition corporelle.",
+      status: bmi >= 20 && bmi <= 25 ? "optimal" : "normal",
+      evidence: "IMC stable + composition corporelle ok = meilleur profil cardio-metabolique.",
+    });
+  }
+
+  return correlations
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, 4)
+    .map(({ rank, ...item }) => item);
+};
 
 export async function generateAIBloodAnalysis(
   analysisResult: BloodAnalysisResult,
@@ -1465,13 +1697,13 @@ Génère une analyse complète selon le format demandé.`;
 
   const response = await anthropic.messages.create({
     model: "claude-opus-4-5-20251101",
-    max_tokens: 8000,
+    max_tokens: 4500,
     system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }]
   });
 
   const textContent = response.content.find(c => c.type === "text");
-  return textContent?.text || "";
+  return trimAiAnalysis(textContent?.text || "");
 }
 
 // ============================================
