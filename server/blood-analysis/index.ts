@@ -1285,6 +1285,8 @@ REGLES DE STYLE:
 - Si une donnee manque, dis-le clairement et continue.
 
 FORMAT DE REPONSE (respecte STRICTEMENT les titres):
+- Tu DOIS inclure EXACTEMENT toutes les sections et sous-sections ci-dessous, sans changement de titre ni ordre.
+- Toute omission de section (notamment "## Plan 90 jours" et ses sous-sections) rend la reponse invalide.
 ## Synthese executive
 - Alertes prioritaires: [liste concise ou "Aucune"]
 - Optimal: [liste concise]
