@@ -429,8 +429,7 @@ export async function generateScientificContext(
       const articles = await searchKnowledgeForMarker(marker.markerId, 2);
       for (const article of articles) {
         // Extract key insight (first 500 chars of relevant content)
-        const snippet = article.content.substring(0, 500)
-          .replace(/\b(huberman|attia|examine|mpmd)\b/gi, "recherche")
+        const snippet = article.content.substring(0, 2000)
           .trim();
         insights.push(snippet);
       }
@@ -446,14 +445,13 @@ export async function generateScientificContext(
   for (const risk of criticalRisks.slice(0, 3)) { // Limit to top 3 risks
     const articles = await searchKnowledgeForRisk(risk, 2);
     for (const article of articles) {
-      const snippet = article.content.substring(0, 400)
-        .replace(/\b(huberman|attia|examine|mpmd)\b/gi, "études")
+      const snippet = article.content.substring(0, 2000)
         .trim();
       insights.push(snippet);
     }
   }
 
-  return insights.slice(0, 10); // Return max 10 insights
+  return insights.slice(0, 20); // Return max 20 insights
 }
 
 // ============================================
