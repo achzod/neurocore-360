@@ -92,8 +92,8 @@ export interface Supplement {
   brand: string | null;
   markers: string[];
   studies: string[];
-  citations?: string[];  // Expert citations (MPMD, Huberman, Attia)
-  mechanism?: string;    // How it works
+  citations: string[];  // Expert citations (MPMD, Huberman, Attia)
+  mechanism?: string | null;    // How it works
 }
 
 export interface Citation {

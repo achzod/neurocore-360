@@ -126,27 +126,43 @@ function BloodClientDashboardInner() {
     if (!token) navigate("/auth/login?next=/blood-dashboard");
   }, [navigate]);
 
-  const { data: me } = useQuery({
+  const { data: me, error: meError } = useQuery<MeResponse, Error>({
     queryKey: ["/api/me"],
     queryFn: () => fetcher<MeResponse>("/api/me"),
-    onSuccess: (data) => setCredits(data.user.credits ?? 0),
-    onError: () => navigate("/auth/login?next=/blood-dashboard"),
+    retry: false,
   });
+
+  useEffect(() => {
+    if (me?.user) {
+      setCredits(me.user.credits ?? 0);
+    }
+  }, [me]);
+
+  useEffect(() => {
+    if (meError) {
+      navigate("/auth/login?next=/blood-dashboard");
+    }
+  }, [meError, navigate]);
 
   useEffect(() => {
     if (me?.user?.email && !email) setEmail(me.user.email);
   }, [me?.user?.email, email]);
 
-  const { data: tests } = useQuery({
+  const { data: tests, error: testsError } = useQuery<BloodTestsResponse, Error>({
     queryKey: ["/api/blood-tests"],
     queryFn: () => fetcher<BloodTestsResponse>("/api/blood-tests"),
-    onError: () => setError("Impossible de charger l'historique."),
     refetchInterval: (query) => {
       const current = query.state.data as BloodTestsResponse | undefined;
       const hasProcessing = current?.bloodTests?.some((test) => test.status === "processing");
       return hasProcessing ? 5000 : false;
     },
   });
+
+  useEffect(() => {
+    if (testsError) {
+      setError("Impossible de charger l'historique.");
+    }
+  }, [testsError]);
 
   const orderedTests = useMemo(() => {
     return (tests?.bloodTests || [])

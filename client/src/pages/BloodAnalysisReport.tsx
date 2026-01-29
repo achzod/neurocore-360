@@ -1,37 +1,48 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
-import { motion } from "framer-motion";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  FileText,
-  Loader2,
-  ShieldAlert,
-  Activity,
-  Flame,
-  HeartPulse,
-  Dna,
-  Target,
-} from "lucide-react";
+import { Menu } from "lucide-react";
 
 import BloodHeader from "@/components/blood/BloodHeader";
 import BloodShell from "@/components/blood/BloodShell";
+import BloodSidebar from "@/components/blood/BloodSidebar";
+import BloodTabs, { TabKey } from "@/components/blood/BloodTabs";
 import { BloodThemeProvider, useBloodTheme } from "@/components/blood/BloodThemeContext";
-import { BloodRadar } from "@/components/blood/BloodRadar";
-import { StatusBadge } from "@/components/blood/StatusBadge";
-import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
-import { StatusIndicator } from "@/components/blood/StatusIndicator";
-import { AnimatedNumber } from "@/components/blood/AnimatedNumber";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BIOMARKER_DETAILS, buildDefaultBiomarkerDetail, MARKER_CITATIONS } from "@/data/bloodBiomarkerDetails";
+import LoadingSpinner from "@/components/blood/shared/LoadingSpinner";
 import { BLOOD_PANEL_CITATIONS } from "@/data/bloodPanelCitations";
-import { type PatientContext } from "@/lib/biomarkerCorrelations";
-import { getPercentileRank } from "@/lib/biomarkerPercentiles";
+import {
+  calculateAnabolicIndex,
+  calculateDiabetesRisk,
+  calculateGlobalScore,
+  calculateInflammationScore,
+  calculateMarkerScore,
+  calculatePanelScore,
+  calculateRecompReadiness,
+} from "@/lib/bloodScores";
+import { calculatePercentile } from "@/lib/percentileCalculator";
+import { buildProtocolSteps, buildSupplements } from "@/lib/protocolGenerator";
+import type { BloodReportData, BloodMarker, PanelKey, CorrelationInsight } from "@/types/blood";
+
+class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const fetcher = async <T,>(url: string, adminKey?: string): Promise<T> => {
+  const token = localStorage.getItem("apexlabs_token");
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (adminKey) headers["x-admin-key"] = adminKey;
+  const res = await fetch(url, { headers: Object.keys(headers).length ? headers : undefined });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new ApiError(res.status, `${res.status} ${text}`);
+  }
+  return res.json();
+};
 
 type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
 
@@ -83,6 +94,10 @@ type BloodTestDetail = {
       priority1?: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
       priority2?: Array<{ action: string; dosage?: string; timing?: string; why: string }>;
     };
+    comprehensiveData?: {
+      supplements?: Array<any>;
+      protocols?: Array<any>;
+    };
     protocolPhases?: Array<{ id: string; title: string; items: string[] }>;
     aiAnalysis?: string;
     lifestyleCorrelations?: Array<{
@@ -114,412 +129,172 @@ type MeResponse = {
   user: { id: string; email: string; credits: number };
 };
 
-type PanelKey = "hormonal" | "thyroid" | "metabolic" | "inflammatory" | "vitamins" | "liver_kidney";
+const PANEL_KEYS: PanelKey[] = [
+  "hormonal",
+  "thyroid",
+  "metabolic",
+  "inflammatory",
+  "vitamins",
+  "liver_kidney",
+];
 
-const PANEL_META: Record<
-  PanelKey,
-  { label: string; bullets: string[]; impact: string; icon: typeof Activity }
-> = {
-  hormonal: {
-    label: "Hormones",
-    bullets: ["Testosterone, SHBG, estradiol", "LH/FSH, prolactine", "Cortisol, IGF-1, DHEA-S"],
-    impact: "ta prise de muscle, ta libido et ta recuperation",
-    icon: Flame,
-  },
-  thyroid: {
-    label: "Thyroide",
-    bullets: ["TSH, T3, T4", "Anti-TPO, T3 reverse", "Conversion et regulation"],
-    impact: "ton metabolisme, ta thermogenese et ta perte de gras",
-    icon: Activity,
-  },
-  metabolic: {
-    label: "Metabolisme",
-    bullets: ["Glycemie, HbA1c, HOMA-IR", "Lipides (TG/HDL/LDL)", "ApoB, Lp(a)"],
-    impact: "ta sensibilite a l'insuline et ta capacite a bruler la graisse",
-    icon: HeartPulse,
-  },
-  inflammatory: {
-    label: "Inflammation",
-    bullets: ["CRP-us, homocysteine", "Ferritine, fer serique", "Saturation transferrine"],
-    impact: "ta recuperation, ton anabolisme et ton risque cardio",
-    icon: ShieldAlert,
-  },
-  vitamins: {
-    label: "Vitamines",
-    bullets: ["Vitamine D, B12, folate", "Magnesium RBC", "Zinc"],
-    impact: "ta production hormonale, ton energie et ton immunite",
-    icon: Dna,
-  },
-  liver_kidney: {
-    label: "Foie/Rein",
-    bullets: ["ALT/AST/GGT", "Creatinine/eGFR", "Lecture hepatique + renale"],
-    impact: "ta detox, le metabolisme de tes hormones et ton elimination",
-    icon: Target,
-  },
+const toPanelKey = (panel: string): PanelKey => {
+  if (PANEL_KEYS.includes(panel as PanelKey)) return panel as PanelKey;
+  return "metabolic";
 };
 
-
-class ApiError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-const fetcher = async <T,>(url: string, adminKey?: string): Promise<T> => {
-  const token = localStorage.getItem("apexlabs_token");
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  if (adminKey) headers["x-admin-key"] = adminKey;
-  const res = await fetch(url, { headers: Object.keys(headers).length ? headers : undefined });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, `${res.status} ${text}`);
-  }
-  return res.json();
+const getPatientAge = (dob?: string): number | null => {
+  if (!dob) return null;
+  const parsed = new Date(dob);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const age = Math.floor((Date.now() - parsed.getTime()) / 31557600000);
+  return Number.isFinite(age) ? age : null;
 };
 
-const scoreToStatus = (score: number): MarkerStatus => {
-  if (score >= 85) return "optimal";
-  if (score >= 70) return "normal";
-  if (score >= 55) return "suboptimal";
-  return "critical";
+const getPatientSex = (gender?: string): "male" | "female" | "unknown" => {
+  if (gender === "homme") return "male";
+  if (gender === "femme") return "female";
+  return "unknown";
 };
 
-const scoreLabel = (score: number): string => {
-  if (score >= 85) return "Excellent";
-  if (score >= 70) return "Bon";
-  if (score >= 55) return "A optimiser";
-  return "Prioritaire";
+const buildCorrelations = (
+  correlations: BloodTestDetail["analysis"]["lifestyleCorrelations"]
+): CorrelationInsight[] => {
+  if (!correlations?.length) return [];
+  return correlations.map((item) => ({
+    markerCode: item.factor.toLowerCase().replace(/\s+/g, "_"),
+    insight: item.impact,
+    recommendation: item.recommendation || null,
+    confidence: item.status === "critical" ? "high" : item.status === "suboptimal" ? "medium" : "low",
+  }));
 };
 
-const statusLabel = (status: MarkerStatus): string => {
-  if (status === "optimal") return "optimal";
-  if (status === "normal") return "normal";
-  if (status === "suboptimal") return "sous-optimal";
-  return "critique";
+const buildSources = (): BloodReportData["sources"] => {
+  const sources: BloodReportData["sources"] = [];
+  Object.entries(BLOOD_PANEL_CITATIONS).forEach(([panel, items]) => {
+    if (!PANEL_KEYS.includes(panel as PanelKey)) return;
+    items.forEach((item) => {
+      sources.push({
+        panel: panel as PanelKey,
+        text: item.title,
+        url: item.url,
+      });
+    });
+  });
+  return sources;
 };
 
-const deltaFromOptimal = (marker: BloodTestDetail["markers"][number]) => {
-  if (marker.optimalMin === null || marker.optimalMax === null) return null;
-  const optimalMid = (marker.optimalMin + marker.optimalMax) / 2;
-  if (!optimalMid) return null;
-  if (marker.value < marker.optimalMin) {
-    const pct = Math.abs(((marker.value - marker.optimalMin) / marker.optimalMin) * 100);
-    return `${pct.toFixed(0)}% sous l'optimal`;
-  }
-  if (marker.value > marker.optimalMax) {
-    const pct = ((marker.value - marker.optimalMax) / marker.optimalMax) * 100;
-    return `${pct.toFixed(0)}% au-dessus de l'optimal`;
-  }
-  return "Dans la zone optimale";
-};
+const mapReportData = (data: BloodTestDetail, reportId: string): BloodReportData => {
+  const patient = data.bloodTest.patient || data.analysis.patient || null;
+  const patientName = [patient?.prenom, patient?.nom].filter(Boolean).join(" ").trim();
+  const patientAge = getPatientAge(patient?.dob);
+  const patientSex = getPatientSex(patient?.gender);
 
-const average = (values: Array<number | null>) => {
-  const filtered = values.filter((v): v is number => typeof v === "number");
-  if (!filtered.length) return null;
-  return Math.round(filtered.reduce((sum, v) => sum + v, 0) / filtered.length);
-};
+  const markers: BloodMarker[] = (data.markers || []).map((marker) => {
+    const panel = toPanelKey(marker.category);
+    const percentile =
+      patientAge !== null && patientSex !== "unknown"
+        ? calculatePercentile(marker.code, marker.value, patientAge, patientSex)
+        : null;
 
-const markerStatusRank: Record<MarkerStatus, number> = {
-  critical: 0,
-  suboptimal: 1,
-  normal: 2,
-  optimal: 3,
-};
+    return {
+      code: marker.code,
+      name: marker.name,
+      value: marker.value,
+      unit: marker.unit,
+      status: marker.status,
+      score: calculateMarkerScore(marker),
+      optimalMin: marker.optimalMin,
+      optimalMax: marker.optimalMax,
+      normalMin: marker.refMin,
+      normalMax: marker.refMax,
+      panel,
+      percentile: percentile ?? undefined,
+    };
+  });
 
-const getMarkerValue = (markers: BloodTestDetail["markers"], code: string) => {
-  const found = markers.find((m) => m.code === code);
-  return found ? found.value : null;
-};
+  const panelScores = PANEL_KEYS.map((panel) => {
+    const panelMarkers = markers.filter((marker) => marker.panel === panel);
+    return {
+      panel,
+      score: calculatePanelScore(markers, panel),
+      markersCount: panelMarkers.length,
+      criticalCount: panelMarkers.filter((marker) => marker.status === "critical").length,
+      suboptimalCount: panelMarkers.filter((marker) => marker.status === "suboptimal").length,
+    };
+  });
 
-const diabetesRisk = (markers: BloodTestDetail["markers"]) => {
-  const gly = getMarkerValue(markers, "glycemie_jeun");
-  const a1c = getMarkerValue(markers, "hba1c");
-  const insulin = getMarkerValue(markers, "insuline_jeun");
-  const homa = getMarkerValue(markers, "homa_ir");
+  const globalScore = markers.length ? calculateGlobalScore(markers) : data.analysis.globalScore ?? 0;
 
-  if (gly === null && a1c === null && insulin === null && homa === null) return null;
+  const patientContext = {
+    age: patientAge,
+    sex: patientSex,
+    bmi:
+      typeof patient?.poids === "number" && typeof patient?.taille === "number" && patient.taille > 0
+        ? Math.round((patient.poids / Math.pow(patient.taille / 100, 2)) * 10) / 10
+        : null,
+    sleep: typeof patient?.sleepHours === "number" ? `${patient.sleepHours} h/nuit` : null,
+    training: typeof patient?.trainingHours === "number" ? `${patient.trainingHours} h/sem` : null,
+    calories: typeof patient?.calorieDeficit === "number" ? `${patient.calorieDeficit} kcal` : null,
+    alcohol: typeof patient?.alcoholWeekly === "number" ? `${patient.alcoholWeekly} verres/sem` : null,
+    stress: typeof patient?.stressLevel === "number" ? `${patient.stressLevel}/10` : null,
+    supplements: null,
+  };
 
-  let score = 20;
-  if (a1c !== null && a1c >= 6.5) score = Math.max(score, 90);
-  if (gly !== null && gly >= 126) score = Math.max(score, 90);
-  if (a1c !== null && a1c >= 5.7) score = Math.max(score, 60);
-  if (gly !== null && gly >= 100) score = Math.max(score, 60);
-  if (homa !== null && homa >= 3.5) score = Math.max(score, 80);
-  if (homa !== null && homa >= 2.5) score = Math.max(score, 65);
-  if (insulin !== null && insulin >= 25) score = Math.max(score, 75);
-  if (insulin !== null && insulin >= 15) score = Math.max(score, 60);
-
-  const level = score >= 75 ? "eleve" : score >= 55 ? "modere" : "faible";
-  return { score, level, gly, a1c, insulin, homa };
-};
-
-const buildRangeNote = (marker: BloodTestDetail["markers"][number]) => {
-  const hasNormal = marker.refMin !== null && marker.refMax !== null;
-  const hasOptimal = marker.optimalMin !== null && marker.optimalMax !== null;
-  const unit = marker.unit ? ` ${marker.unit}` : "";
-  if (hasNormal && hasOptimal) {
-    return `Range labo ${marker.refMin}-${marker.refMax}${unit}. Zone performance ${marker.optimalMin}-${marker.optimalMax}${unit}.`;
-  }
-  if (hasNormal) {
-    return `Range labo ${marker.refMin}-${marker.refMax}${unit}.`;
-  }
-  if (hasOptimal) {
-    return `Zone performance ${marker.optimalMin}-${marker.optimalMax}${unit}.`;
-  }
-  return "";
-};
-
-const buildStatusNote = (status: MarkerStatus) => {
-  switch (status) {
-    case "critical":
-      return "Niveau critique: priorite haute pour corriger les causes principales.";
-    case "suboptimal":
-      return "Sous-optimal: marges claires d'optimisation avec ajustements cibles.";
-    case "normal":
-      return "Dans la norme labo, mais l'optimal depend du contexte performance.";
-    case "optimal":
-      return "Zone optimale: niveau coherent avec performance et recuperation.";
-    default:
-      return "";
-  }
-};
-
-const getMarkerDetail = (marker: BloodTestDetail["markers"][number]) => {
-  const base = BIOMARKER_DETAILS[marker.code] || buildDefaultBiomarkerDetail(marker.name, statusLabel(marker.status));
-  const rangeNote = buildRangeNote(marker);
-  const statusNote = buildStatusNote(marker.status);
-  const citations = MARKER_CITATIONS[marker.code] || base.citations || [];
   return {
-    ...base,
-    definition: `${base.definition}${rangeNote ? ` ${rangeNote}` : ""}`.trim(),
-    mechanism: `${base.mechanism}${statusNote ? ` ${statusNote}` : ""}`.trim(),
-    impact: `${base.impact} Le contexte clinique, la tendance dans le temps et les autres marqueurs modulent l'interpretation.`.trim(),
-    citations,
+    reportId,
+    patientName: patientName || "Patient",
+    patientAge,
+    patientSex,
+    createdAt: data.bloodTest.uploadedAt,
+    globalScore,
+    panelScores,
+    markers,
+    derivedMetrics: {
+      anabolicIndex: calculateAnabolicIndex(markers),
+      recompReadiness: calculateRecompReadiness(markers),
+      diabetesRisk: calculateDiabetesRisk(markers),
+      inflammationScore: calculateInflammationScore(markers),
+    },
+    patientContext,
+    aiAnalysis: data.analysis.aiAnalysis || "",
+    correlations: buildCorrelations(data.analysis.lifestyleCorrelations),
+    protocolSteps: buildProtocolSteps(data.analysis.protocolPhases),
+    supplements: buildSupplements(data.analysis.recommendations, data.analysis.comprehensiveData),
+    sources: buildSources(),
   };
 };
-
-const buildScoreReflection = (marker: BloodTestDetail["markers"][number], percentile: number | null) => {
-  const base = `Ta valeur de ${marker.value} ${marker.unit} est ${statusLabel(marker.status)}.`;
-  let optimalNote = "";
-  if (marker.optimalMin !== null && marker.optimalMax !== null) {
-    if (marker.value < marker.optimalMin) {
-      optimalNote = ` Tu es sous la zone optimale (${marker.optimalMin}-${marker.optimalMax} ${marker.unit}).`;
-    } else if (marker.value > marker.optimalMax) {
-      optimalNote = ` Tu es au-dessus de la zone optimale (${marker.optimalMin}-${marker.optimalMax} ${marker.unit}).`;
-    } else {
-      optimalNote = ` Tu es dans la zone optimale (${marker.optimalMin}-${marker.optimalMax} ${marker.unit}).`;
-    }
-  }
-  const percentileNote = percentile ? ` Tu te situes autour du ${percentile}e percentile pour ce profil.` : "";
-  return `${base}${optimalNote}${percentileNote}`.trim();
-};
-
-const buildCriticalAlerts = (markers: BloodTestDetail["markers"]) => {
-  const lookup = (code: string) => markers.find((m) => m.code === code);
-  const alerts: Array<{ title: string; detail: string; action: string }> = [];
-
-  const homa = lookup("homa_ir");
-  if (homa && homa.value >= 3.5) {
-    alerts.push({
-      title: "Resistance a l'insuline probable",
-      detail: `HOMA-IR ${homa.value} (seuil critique >= 3.5).`,
-      action: "Priorite: stabiliser glycemie, reduire sucres rapides, augmenter activite post-repas.",
-    });
-  }
-
-  const tg = lookup("triglycerides");
-  if (tg && tg.value >= 500) {
-    alerts.push({
-      title: "Hypertriglyceridemie severe",
-      detail: `Triglycerides ${tg.value} mg/dL (risque pancreatite).`,
-      action: "Action rapide: reduire alcool/sucres, revoir lipides, bilan medical conseille.",
-    });
-  } else if (tg && tg.value >= 200) {
-    alerts.push({
-      title: "Triglycerides eleves",
-      detail: `Triglycerides ${tg.value} mg/dL.`,
-      action: "Optimiser insuline, omega-3, fibres et activite cardio moderee.",
-    });
-  }
-
-  const crp = lookup("crp_us");
-  if (crp && crp.value >= 3) {
-    alerts.push({
-      title: "Inflammation systemique elevee",
-      detail: `CRP-us ${crp.value} (>= 3).`,
-      action: "Priorite: sommeil, reduction inflammation, verifier sources d'inflammation.",
-    });
-  }
-
-  const a1c = lookup("hba1c");
-  if (a1c && a1c.value >= 6.5) {
-    alerts.push({
-      title: "HbA1c tres elevee",
-      detail: `HbA1c ${a1c.value}% (>= 6.5).`,
-      action: "Action rapide: suivi medical + correction nutrition/entrainement.",
-    });
-  }
-
-  const gly = lookup("glycemie_jeun");
-  if (gly && gly.value >= 126) {
-    alerts.push({
-      title: "Glycemie a jeun critique",
-      detail: `Glycemie a jeun ${gly.value} mg/dL (>= 126).`,
-      action: "Priorite: stabiliser glucose et revoir strategie alimentaire.",
-    });
-  }
-
-  if (!alerts.length) {
-    const fallback = markers
-      .filter((m) => m.status === "critical")
-      .slice(0, 3)
-      .map((m) => ({
-        title: `${m.name} critique`,
-        detail: `${m.value} ${m.unit}`,
-        action: "A traiter en priorite cette semaine.",
-      }));
-    return fallback;
-  }
-
-  return alerts.slice(0, 4);
-};
-
-const trimLongText = (text: string, maxChars = 18000) => {
-  if (!text) return "";
-  if (text.length <= maxChars) return text.trim();
-  const sliced = text.slice(0, maxChars);
-  const lastBreak = sliced.lastIndexOf("\n\n");
-  return (lastBreak > 1000 ? sliced.slice(0, lastBreak) : sliced).trim();
-};
-
-
-function scoreToRingColors(score: number) {
-  if (score < 50) return { start: "#F43F5E", end: "#EF4444" };
-  if (score < 70) return { start: "#FB923C", end: "#F59E0B" };
-  if (score < 85) return { start: "#34D399", end: "#10B981" };
-  return { start: "#00E5FF", end: "#38BDF8" };
-}
-
-function ScoreDonut({ score, muted, textPrimary, textTertiary }: { score: number; muted: string; textPrimary: string; textTertiary: string }) {
-  const circumference = 2 * Math.PI * 56;
-  const clampedScore = Math.max(0, Math.min(100, score));
-  const dash = (clampedScore / 100) * circumference;
-  const dashOffset = circumference - dash;
-  const { start, end } = scoreToRingColors(clampedScore);
-  const gradientId = useId();
-  const glowId = useId();
-  return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg className="h-36 w-36 -rotate-90">
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={start} />
-            <stop offset="100%" stopColor={end} />
-          </linearGradient>
-          <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <circle cx="72" cy="72" r="56" stroke={muted} strokeWidth="10" fill="none" />
-        <motion.circle
-          cx="72"
-          cy="72"
-          r="56"
-          stroke={`url(#${gradientId})`}
-          strokeWidth="10"
-          fill="none"
-          strokeDasharray={circumference}
-          strokeLinecap="round"
-          strokeDashoffset={circumference}
-          filter={`url(#${glowId})`}
-          animate={{ strokeDashoffset: dashOffset }}
-          transition={{ duration: 1.15, ease: "easeOut" }}
-        />
-      </svg>
-      <motion.div
-        className="pointer-events-none absolute h-36 w-36 rounded-full"
-        animate={{
-          boxShadow: [
-            `0 0 0 rgba(0,229,255,0.0)`,
-            `0 0 24px rgba(0,229,255,0.35)`,
-            `0 0 0 rgba(0,229,255,0.0)`,
-          ],
-        }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-[80px] font-semibold leading-none tracking-tight" style={{ color: textPrimary }}>
-          <AnimatedNumber value={score} decimals={0} />
-        </div>
-        <div className="text-xs tracking-[0.2em] uppercase" style={{ color: textTertiary }}>{scoreLabel(score)}</div>
-      </div>
-    </div>
-  );
-}
-
-function MiniScoreRing({ score }: { score: number }) {
-  const circumference = 2 * Math.PI * 20;
-  const clamped = Math.max(0, Math.min(100, score));
-  const dash = (clamped / 100) * circumference;
-  const dashOffset = circumference - dash;
-  const { start, end } = scoreToRingColors(clamped);
-  const gradientId = useId();
-  return (
-    <svg className="h-12 w-12 -rotate-90">
-      <defs>
-        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={start} />
-          <stop offset="100%" stopColor={end} />
-        </linearGradient>
-      </defs>
-      <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.12)" strokeWidth="4" fill="none" />
-      <motion.circle
-        cx="24"
-        cy="24"
-        r="20"
-        stroke={`url(#${gradientId})`}
-        strokeWidth="4"
-        fill="none"
-        strokeDasharray={circumference}
-        strokeLinecap="round"
-        strokeDashoffset={circumference}
-        animate={{ strokeDashoffset: dashOffset }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
-      />
-    </svg>
-  );
-}
 
 function BloodAnalysisReportInner() {
   const params = useParams<{ id: string }>();
   const reportId = params.id;
   const [, navigate] = useLocation();
   const { theme } = useBloodTheme();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [isExporting, setIsExporting] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
-  const [insightsTab, setInsightsTab] = useState("patterns");
+
   const adminKey = useMemo(() => {
     if (typeof window === "undefined") return "";
     const value = new URLSearchParams(window.location.search).get("key");
     return value ? value.trim() : "";
   }, []);
 
-  const { data: me } = useQuery({
+  const { data: me, error: meError } = useQuery<MeResponse, ApiError>({
     queryKey: ["/api/me"],
     queryFn: () => fetcher<MeResponse>("/api/me", adminKey || undefined),
     retry: false,
     enabled: !adminKey,
-    onError: () => navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`),
   });
 
-  const { data, isLoading, error, refetch } = useQuery({
+  useEffect(() => {
+    if (adminKey) return;
+    if (meError) {
+      navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
+    }
+  }, [adminKey, meError, navigate, reportId]);
+
+  const { data, isLoading, error, refetch } = useQuery<BloodTestDetail, ApiError>({
     queryKey: ["/api/blood-tests", reportId],
     queryFn: () => fetcher<BloodTestDetail>(`/api/blood-tests/${reportId}`, adminKey || undefined),
     retry: false,
@@ -528,77 +303,27 @@ function BloodAnalysisReportInner() {
       const status = current?.bloodTest?.status;
       return status === "processing" ? 5000 : false;
     },
-    onError: (err) => {
-      if (err instanceof ApiError && err.status === 401 && !adminKey) {
-        navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
-      }
-    },
   });
+
+  useEffect(() => {
+    if (adminKey) return;
+    if (error instanceof ApiError && error.status === 401) {
+      navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
+    }
+  }, [adminKey, error, navigate, reportId]);
 
   const credits = adminKey ? 0 : me?.user?.credits ?? 0;
 
-  const markersByPanel = useMemo(() => {
-    const groups: Record<PanelKey, BloodTestDetail["markers"]> = {
-      hormonal: [],
-      thyroid: [],
-      metabolic: [],
-      inflammatory: [],
-      vitamins: [],
-      liver_kidney: [],
-    };
-    for (const marker of data?.markers || []) {
-      const category = marker.category as PanelKey;
-      if (category in groups) groups[category].push(marker);
-    }
-    (Object.keys(groups) as PanelKey[]).forEach((key) => {
-      groups[key].sort((a, b) => {
-        if (markerStatusRank[a.status] !== markerStatusRank[b.status]) {
-          return markerStatusRank[a.status] - markerStatusRank[b.status];
-        }
-        return a.name.localeCompare(b.name);
-      });
-    });
-    return groups;
-  }, [data?.markers]);
+  const reportData = useMemo(() => {
+    if (!data || !reportId) return null;
+    return mapReportData(data, reportId);
+  }, [data, reportId]);
 
-  const panelScores = useMemo(() => {
-    const raw = data?.analysis?.categoryScores || {};
-    const scoreByStatus: Record<MarkerStatus, number> = { optimal: 100, normal: 80, suboptimal: 55, critical: 30 };
-
-    const fallbackAvg = (panelKey: PanelKey): number | null => {
-      const markers = markersByPanel[panelKey];
-      if (!markers.length) return null;
-      const avg = markers.reduce((sum, marker) => sum + scoreByStatus[marker.status], 0) / markers.length;
-      return Math.round(avg);
-    };
-
-    return {
-      hormonal: raw.hormonal ?? fallbackAvg("hormonal"),
-      thyroid: raw.thyroid ?? fallbackAvg("thyroid"),
-      metabolic: raw.metabolic ?? fallbackAvg("metabolic"),
-      inflammatory: raw.inflammatory ?? fallbackAvg("inflammatory"),
-      vitamins: raw.vitamins ?? fallbackAvg("vitamins"),
-      liver_kidney: raw.liver_kidney ?? fallbackAvg("liver_kidney"),
-    } satisfies Record<PanelKey, number | null>;
-  }, [data?.analysis?.categoryScores, markersByPanel]);
-
-  const radarData = useMemo(() => {
-    const targetScore = 85;
-    return (Object.keys(PANEL_META) as PanelKey[]).map((key) => {
-      const score = panelScores[key];
-      if (score === null) {
-        return { key, label: PANEL_META[key].label, score: 0, target: 0, status: "normal" as MarkerStatus, muted: true };
-      }
-      return { key, label: PANEL_META[key].label, score, target: targetScore, status: scoreToStatus(score) };
-    });
-  }, [panelScores]);
-
-  const globalScore = data?.analysis?.globalScore ?? data?.bloodTest?.globalScore ?? 0;
-  const patient = data?.bloodTest?.patient || data?.analysis?.patient || null;
-  const patientName = [patient?.prenom, patient?.nom].filter(Boolean).join(" ").trim();
-  const displayName = patient?.prenom || patient?.nom || patientName || "Patient";
-  const patientAgeRaw = patient?.dob ? Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000) : null;
-  const patientAge = Number.isFinite(patientAgeRaw) ? patientAgeRaw : null;
+  const progress = useMemo(() => {
+    if (!reportData) return 0;
+    const targetCount = 39;
+    return Math.min(100, Math.round((reportData.markers.length / targetCount) * 100));
+  }, [reportData]);
 
   const handleExportPDF = async () => {
     if (!reportId) return;
@@ -612,9 +337,9 @@ function BloodAnalysisReportInner() {
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const name = patient?.prenom ? `Blood_Analysis_${patient.prenom}_${new Date().toISOString().slice(0, 10)}.pdf` : `Blood_Analysis_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const baseName = reportData?.patientName ? `Blood_Analysis_${reportData.patientName}` : "Blood_Analysis";
       a.href = url;
-      a.download = name;
+      a.download = `${baseName}_${new Date().toISOString().slice(0, 10)}.pdf`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
@@ -624,112 +349,30 @@ function BloodAnalysisReportInner() {
       setIsExporting(false);
     }
   };
-  const patientContext: PatientContext | null = useMemo(() => {
-    if (!patient?.dob || !patient?.gender || !patient?.poids || !patient?.taille) return null;
-    const age = Math.floor((Date.now() - new Date(patient.dob).getTime()) / 31557600000);
-    const bmi = patient.poids / Math.pow(patient.taille / 100, 2);
-    if (!Number.isFinite(age) || !Number.isFinite(bmi)) return null;
-    const sexe =
-      patient.gender === "femme" ? "femme" : patient.gender === "homme" ? "homme" : "autre";
-    return { age, sexe, poids: patient.poids, taille: patient.taille, bmi };
-  }, [patient?.dob, patient?.gender, patient?.poids, patient?.taille]);
-  const genderLabel = patient?.gender === "femme" ? "Femme" : patient?.gender === "homme" ? "Homme" : "N/A";
-
-  const anabolicIndex = panelScores.hormonal;
-  const recompReadiness = average([panelScores.hormonal, panelScores.thyroid, panelScores.metabolic]);
-  const diabetes = data?.markers ? diabetesRisk(data.markers) : null;
-
-  const narrative = useMemo(() => {
-    if (!data?.markers?.length) return "";
-    const criticalCount = data.markers.filter((m) => m.status === "critical").length;
-    const subCount = data.markers.filter((m) => m.status === "suboptimal").length;
-    const headline = `Tu as ${criticalCount} marqueur(s) critique(s) et ${subCount} sous-optimaux.`;
-    const hormonalNote =
-      typeof anabolicIndex === "number"
-        ? `Ton index hormonal est a ${anabolicIndex}/100, ce qui influence directement ta prise de muscle et ta perte de gras.`
-        : "Ton panel hormonal manque de donnees pour conclure.";
-    const metabolicNote =
-      typeof panelScores.metabolic === "number"
-        ? `Ton metabolisme est a ${panelScores.metabolic}/100. C'est un signal cle pour ta recomposition corporelle.`
-        : "Ton panel metabolique manque de donnees.";
-    return `${headline} ${hormonalNote} ${metabolicNote}`;
-  }, [data?.markers, anabolicIndex, panelScores.metabolic]);
-
-  const patterns = data?.analysis?.patterns || [];
-  const aiAnalysis = data?.analysis?.aiAnalysis || "";
-  const aiAnalysisDisplay = useMemo(() => trimLongText(aiAnalysis), [aiAnalysis]);
-  const protocolPhases = data?.analysis?.protocolPhases || [];
-  const lifestyleCorrelations = data?.analysis?.lifestyleCorrelations || [];
-
-  const summaryCounts = useMemo(() => {
-    const markers = data?.markers || [];
-    return {
-      total: markers.length,
-      optimal: markers.filter((m) => m.status === "optimal").length,
-      normal: markers.filter((m) => m.status === "normal").length,
-      suboptimal: markers.filter((m) => m.status === "suboptimal").length,
-      critical: markers.filter((m) => m.status === "critical").length,
-    };
-  }, [data?.markers]);
-
-  const criticalAlerts = useMemo(() => buildCriticalAlerts(data?.markers || []), [data?.markers]);
-
-  const urgentMarkers = useMemo(() => {
-    return (data?.markers || []).filter((m) => m.status === "critical").slice(0, 4);
-  }, [data?.markers]);
-
-  const staggerContainer = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.08 } },
-  };
-
-  const fadeUp = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
-  };
 
   if (isLoading) {
     return (
       <BloodShell>
-        <BloodHeader credits={credits} />
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24 blood-text-secondary">
-          <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-          Chargement du rapport...
+        <BloodHeader credits={credits} title="Analyse Sanguine" subtitle="Chargement" showShare={false} />
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-24">
+          <LoadingSpinner label="Chargement du rapport" />
         </div>
       </BloodShell>
     );
   }
 
-  if (error || !data) {
+  if (error || !data || !reportData) {
     const isUnauthorized = error instanceof ApiError && error.status === 401;
     return (
       <BloodShell>
-        <BloodHeader credits={credits} />
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 px-6 py-24 text-center">
-          <AlertTriangle className="h-8 w-8 text-rose-500" />
-          <div className="text-lg font-semibold blood-text-primary">
-            {isUnauthorized ? "Connexion requise." : "Rapport introuvable."}
+        <BloodHeader credits={credits} title="Analyse Sanguine" subtitle="Acces" showShare={false} />
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <div className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
+            {isUnauthorized ? "Connexion requise" : "Rapport introuvable"}
           </div>
-          <div className="text-sm blood-text-secondary">
-            {isUnauthorized ? "Connecte-toi pour ouvrir ce rapport." : "Le lien est invalide ou le rapport n'est pas accessible."}
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button
-              className="blood-text-primary"
-              style={{ backgroundColor: theme.primaryBlue }}
-              onClick={() => navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`)}
-            >
-              Se connecter
-            </Button>
-            <Button
-              variant="outline"
-              className="hover:bg-transparent"
-              style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-              onClick={() => navigate("/blood-dashboard")}
-            >
-              Retour dashboard
-            </Button>
-          </div>
+          <p className="mt-2 text-sm" style={{ color: theme.textSecondary }}>
+            {isUnauthorized ? "Connecte-toi pour ouvrir ce rapport." : "Le lien est invalide ou le rapport est indisponible."}
+          </p>
         </div>
       </BloodShell>
     );
@@ -738,33 +381,21 @@ function BloodAnalysisReportInner() {
   if (data.bloodTest.status === "processing") {
     return (
       <BloodShell>
-        <BloodHeader credits={credits} />
-        <div className="mx-auto max-w-3xl px-6 py-24">
-          <Card className="border p-8 text-center" style={{ backgroundColor: theme.surface, borderColor: theme.borderDefault }}>
-            <div
-              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border"
-              style={{ borderColor: theme.borderDefault, backgroundColor: theme.surfaceMuted }}
-            >
-              <Loader2 className="h-6 w-6 animate-spin" style={{ color: theme.primaryBlue }} />
-            </div>
-            <h1 className="mt-6 text-2xl font-semibold tracking-tight blood-text-primary">Analyse en cours</h1>
-            <p className="mt-3 text-sm blood-text-secondary">
-              J'extrais tes biomarqueurs et je construis le rapport. La page se met a jour automatiquement.
-            </p>
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <Button className="text-white" style={{ backgroundColor: theme.primaryBlue }} onClick={() => refetch()}>
-                Rafraichir
-              </Button>
-              <Button
-                variant="outline"
-                className="hover:bg-transparent"
-                style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-                onClick={() => navigate("/blood-dashboard")}
-              >
-                Retour dashboard
-              </Button>
-            </div>
-          </Card>
+        <BloodHeader credits={credits} title="Analyse Sanguine" subtitle="En cours" showShare={false} />
+        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
+          <div className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
+            Analyse en cours
+          </div>
+          <p className="mt-2 text-sm" style={{ color: theme.textSecondary }}>
+            Je prepare ton rapport, la page se met a jour automatiquement.
+          </p>
+          <button
+            className="mt-6 rounded-md px-4 py-2 text-sm"
+            style={{ backgroundColor: theme.primaryBlue, color: "white" }}
+            onClick={() => refetch()}
+          >
+            Rafraichir
+          </button>
         </div>
       </BloodShell>
     );
@@ -772,731 +403,57 @@ function BloodAnalysisReportInner() {
 
   return (
     <BloodShell>
-      <BloodHeader credits={credits} />
+      <div className="flex min-h-screen">
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 transform transition-transform lg:translate-x-0 ${
+            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <BloodSidebar
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              setMobileSidebarOpen(false);
+            }}
+            score={reportData.globalScore}
+            progress={progress}
+            patientName={reportData.patientName}
+          />
+        </aside>
 
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] blood-text-tertiary">Blood Analysis</p>
-            <h1 className="mt-3 text-xl font-semibold blood-text-primary">Dossier patient</h1>
-            <p className="mt-2 max-w-2xl text-sm blood-text-secondary">
-              Resume clinique et performance base sur tes biomarqueurs sanguins.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs blood-text-tertiary">
-              <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
-                <FileText className="h-3.5 w-3.5" />
-                {data.bloodTest.fileName}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
-                {new Date(data.bloodTest.uploadedAt).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
-                {data.markers.length} biomarqueurs
-              </span>
-              {data.analysis.temporalRisk && (
-                <span className="inline-flex items-center gap-2 rounded-full border blood-border-default blood-surface px-3 py-1">
-                  Risque: {data.analysis.temporalRisk.level} ({data.analysis.temporalRisk.score}/100)
-                </span>
-              )}
-            </div>
-            <div className="mt-4 grid gap-3 text-xs blood-text-tertiary sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Patient</span>
-                <div className="mt-1 text-sm blood-text-primary">
-                  {patientName || "Patient"}
-                </div>
-              </div>
-              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Sexe</span>
-                <div className="mt-1 text-sm blood-text-primary">{genderLabel}</div>
-              </div>
-              {patientAge !== null && (
-                <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
-                  <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Age</span>
-                  <div className="mt-1 text-sm blood-text-primary">{patientAge} ans</div>
-                </div>
-              )}
-              <div className="rounded-lg border blood-border-default blood-surface px-3 py-2">
-                <span className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">Email</span>
-                <div className="mt-1 text-sm blood-text-primary truncate" title={patient?.email || ""}>
-                  {patient?.email || "N/A"}
-                </div>
-              </div>
-            </div>
-          </div>
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setMobileSidebarOpen(false)} />
+        )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="outline"
-              className="hover:opacity-80"
-              style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-              onClick={() => navigate("/blood-dashboard")}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Button>
-            <Button
-              className="text-white hover:opacity-90"
-              style={{ backgroundColor: theme.primaryBlue }}
-              onClick={handleExportPDF}
-              disabled={isExporting}
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Export en cours
-                </>
-              ) : (
-                <>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Export PDF
-                </>
-              )}
-            </Button>
+        <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-60">
+          <BloodHeader
+            credits={credits}
+            title={`Analyse Sanguine - ${reportData.patientName}`}
+            subtitle={new Date(reportData.createdAt).toLocaleDateString("fr-FR", { dateStyle: "medium" })}
+            showShare
+            onShare={handleExportPDF}
+            showAccountActions={!adminKey}
+          />
+
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="fixed left-4 top-4 z-50 rounded-lg p-2 lg:hidden"
+            style={{ backgroundColor: theme.surface, color: theme.textPrimary }}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
+            <BloodTabs reportData={reportData} activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
         </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10">
-          <div
-            className="sticky top-20 z-20 -mx-6 border-b px-6 py-3 backdrop-blur"
-            style={{ backgroundColor: `${theme.background}E6`, borderColor: theme.borderSubtle }}
-          >
-            <TabsList className="blood-tabs flex w-full flex-wrap gap-2 rounded-2xl border p-2">
-              <TabsTrigger value="overview" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="systems" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                Systemes
-              </TabsTrigger>
-              <TabsTrigger value="biomarkers" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                Marqueurs
-              </TabsTrigger>
-              <TabsTrigger value="protocols" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                Protocoles
-              </TabsTrigger>
-              <TabsTrigger value="insights" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                Insights
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="overview" className="mt-10 space-y-16">
-            <motion.section
-            id="overview"
-            initial="hidden"
-            animate="show"
-            variants={fadeUp}
-          >
-            <div className="grid gap-8 lg:grid-cols-[0.58fr_0.42fr]">
-              <div>
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Synthese globale</p>
-                <h2 className="mt-3 blood-hero blood-text-primary">{displayName}, voici ton bilan sanguin expert.</h2>
-                <p className="mt-4 text-base blood-text-secondary">{narrative}</p>
-                <div className="mt-6 flex flex-wrap gap-3 text-xs">
-                  <span className="rounded-full border blood-border-default blood-surface px-3 py-1 text-xs blood-text-secondary">
-                    Optimal {summaryCounts.optimal}
-                  </span>
-                  <span className="rounded-full border blood-border-default blood-surface px-3 py-1 text-xs blood-text-secondary">
-                    Normal {summaryCounts.normal}
-                  </span>
-                  <span className="rounded-full border blood-border-default blood-surface px-3 py-1 text-xs blood-text-secondary">
-                    A surveiller {summaryCounts.suboptimal}
-                  </span>
-                  <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-3 py-1 text-xs text-rose-300">
-                    Critiques {summaryCounts.critical}
-                  </span>
-                </div>
-                {criticalAlerts.length > 0 && (
-                  <Card className="mt-6 border border-rose-500/40 bg-rose-500/10 p-5">
-                    <p className="text-[12px] uppercase tracking-[0.2em] text-rose-200">Alertes prioritaires</p>
-                    <ul className="mt-4 space-y-3 text-sm text-rose-100">
-                      {criticalAlerts.map((alert) => (
-                        <li key={alert.title}>
-                          <div className="font-semibold">{alert.title}</div>
-                          <div className="mt-1 text-xs text-rose-100/80">{alert.detail}</div>
-                          <div className="mt-1 text-xs text-rose-200">Action: {alert.action}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
-                <div className="mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("systems")}
-                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[12px] uppercase tracking-[0.2em] transition hover:border-white/40"
-                    style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-                  >
-                    Voir le detail
-                  </button>
-                </div>
-              </div>
-
-              <Card className="border blood-border-default blood-surface p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Score global</p>
-                    <p className="mt-2 text-sm blood-text-secondary">Lecture multi-systemes sur 100.</p>
-                  </div>
-                  <StatusIndicator status={scoreToStatus(globalScore)} />
-                </div>
-                <div className="mt-6 flex justify-center">
-                  <ScoreDonut
-                    score={globalScore}
-                    muted={theme.borderSubtle}
-                    textPrimary={theme.textPrimary}
-                    textTertiary={theme.textTertiary}
-                  />
-                </div>
-                <div className="mt-6 grid gap-3">
-                  {(Object.keys(PANEL_META) as PanelKey[]).map((key) => {
-                    const score = panelScores[key];
-                    return (
-                      <div key={key} className="flex items-center justify-between rounded-lg border blood-border-default blood-surface px-4 py-3">
-                        <div className="text-sm font-medium blood-text-primary">{PANEL_META[key].label}</div>
-                        <div className="flex items-center gap-2">
-                          {score === null ? (
-                            <StatusBadge status="normal" label="N/A" className="opacity-70" />
-                          ) : (
-                            <StatusBadge status={scoreToStatus(score)} label={`${score}/100`} />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </div>
-          </motion.section>
-
-            {lifestyleCorrelations.length > 0 && (
-              <motion.section
-              id="correlations"
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.2 }}
-              variants={fadeUp}
-            >
-              <Card className="border blood-border-default blood-surface p-6">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Correlations lifestyle</p>
-                    <h2 className="mt-3 blood-h2 blood-text-primary">Ce qui relie tes habitudes aux marqueurs</h2>
-                    <p className="mt-2 text-sm blood-text-secondary">
-                      Base sur les informations renseignees avant l upload. Ajuste ces leviers pour corriger les marqueurs prioritaires.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("biomarkers")}
-                    className="rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.2em] transition hover:border-white/40"
-                    style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-                  >
-                    Voir marqueurs
-                  </button>
-                </div>
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  {lifestyleCorrelations.map((item) => (
-                    <div key={item.factor} className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold blood-text-primary">{item.factor}</p>
-                          <p className="mt-1 text-xs blood-text-tertiary">{item.current}</p>
-                        </div>
-                        <StatusIndicator status={item.status} />
-                      </div>
-                      <p className="mt-3 text-sm blood-text-secondary">{item.impact}</p>
-                      <p className="mt-3 text-xs blood-text-secondary">
-                        Action: <span className="font-semibold blood-text-primary">{item.recommendation}</span>
-                      </p>
-                      {item.evidence && <p className="mt-2 text-xs blood-text-tertiary">{item.evidence}</p>}
-                    </div>
-                  ))}
-                </div>
-              </Card>
-              </motion.section>
-            )}
-          </TabsContent>
-
-          <TabsContent value="systems" className="mt-10 space-y-16">
-            <motion.section
-            id="systems"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={fadeUp}
-          >
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Systemes</p>
-                <h2 className="mt-3 blood-h2 blood-text-primary">Cartographie par systeme</h2>
-                <p className="mt-2 text-sm blood-text-secondary">
-                  Clique sur un systeme pour descendre directement a ses biomarqueurs.
-                </p>
-              </div>
-              <div className="text-xs blood-text-tertiary">6 systemes critiques pour performance & sante</div>
-            </div>
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.2 }}
-              className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-            >
-              {(Object.keys(PANEL_META) as PanelKey[]).map((key) => {
-                const score = panelScores[key] ?? 0;
-                const markers = markersByPanel[key];
-                const critical = markers.filter((m) => m.status === "critical").length;
-                const suboptimal = markers.filter((m) => m.status === "suboptimal").length;
-                return (
-                  <motion.a
-                    key={key}
-                    variants={fadeUp}
-                    href={`#system-${key}`}
-                    className="group rounded-2xl border blood-border-default blood-surface p-5 transition hover:-translate-y-1 hover:border-white/30 hover:shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-semibold blood-text-primary">{PANEL_META[key].label}</div>
-                        <div className="mt-1 text-xs blood-text-tertiary">
-                          {markers.length} marqueurs · {critical} critiques · {suboptimal} a surveiller
-                        </div>
-                      </div>
-                      <MiniScoreRing score={score} />
-                    </div>
-                    <p className="mt-4 text-xs blood-text-secondary">{PANEL_META[key].impact}</p>
-                    <div className="mt-4 inline-flex items-center gap-2 text-xs blood-text-tertiary">
-                      <ShieldAlert className="h-4 w-4" style={{ color: theme.primaryBlue }} />
-                      {score}/100
-                    </div>
-                  </motion.a>
-                );
-              })}
-            </motion.div>
-            <div className="mt-8 grid gap-6 lg:grid-cols-[0.6fr_0.4fr]">
-              <Card className="border blood-border-default blood-surface p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Radar systemique</p>
-                    <p className="mt-2 text-sm blood-text-secondary">Equilibre global des 6 axes cles.</p>
-                  </div>
-                  <div className="inline-flex items-center gap-2 text-xs blood-text-tertiary">
-                    <ShieldAlert className="h-4 w-4" style={{ color: theme.primaryBlue }} />
-                    Optimal cible
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <BloodRadar data={radarData} height={320} accentColor={theme.primaryBlue} />
-                </div>
-              </Card>
-
-              <div className="grid gap-4">
-                <Card className="border blood-border-default blood-surface p-5">
-                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Hormonal index</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-2xl font-semibold blood-text-primary">
-                      {typeof anabolicIndex === "number" ? <AnimatedNumber value={anabolicIndex} decimals={0} /> : "N/A"}
-                    </div>
-                    {typeof anabolicIndex === "number" && <StatusBadge status={scoreToStatus(anabolicIndex)} />}
-                  </div>
-                  <p className="mt-2 text-xs blood-text-secondary">Levier majeur pour prise de muscle et libido.</p>
-                </Card>
-
-                <Card className="border blood-border-default blood-surface p-5">
-                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Recomp readiness</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-2xl font-semibold blood-text-primary">
-                      {typeof recompReadiness === "number" ? <AnimatedNumber value={recompReadiness} decimals={0} /> : "N/A"}
-                    </div>
-                    {typeof recompReadiness === "number" && <StatusBadge status={scoreToStatus(recompReadiness)} />}
-                  </div>
-                  <p className="mt-2 text-xs blood-text-secondary">Capacite a perdre du gras sans perdre du muscle.</p>
-                </Card>
-
-                <Card className="border blood-border-default blood-surface p-5">
-                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Diabetes risk</p>
-                  {diabetes ? (
-                    <>
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="text-2xl font-semibold blood-text-primary">
-                          <AnimatedNumber value={diabetes.score} decimals={0} />/100
-                        </div>
-                        <StatusBadge status={diabetes.score >= 75 ? "critical" : diabetes.score >= 55 ? "suboptimal" : "normal"} />
-                      </div>
-                      <p className="mt-2 text-xs blood-text-secondary">Risque {diabetes.level}. Stabiliser glycemie & insuline.</p>
-                    </>
-                  ) : (
-                    <p className="mt-3 text-xs blood-text-secondary">Donnees insuffisantes.</p>
-                  )}
-                </Card>
-              </div>
-            </div>
-            </motion.section>
-          </TabsContent>
-
-          <TabsContent value="biomarkers" className="mt-10 space-y-12">
-            <section id="biomarkers" className="space-y-12">
-            {(Object.keys(PANEL_META) as PanelKey[]).map((panelKey) => {
-              const markers = markersByPanel[panelKey];
-              const panelScore = panelScores[panelKey];
-              return (
-                <div key={panelKey} id={`system-${panelKey}`} className="scroll-mt-24 space-y-6">
-                  <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                      <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Systeme</p>
-                      <h3 className="mt-2 text-2xl font-semibold tracking-tight blood-text-primary">{PANEL_META[panelKey].label}</h3>
-                      <p className="mt-2 text-sm blood-text-secondary">{PANEL_META[panelKey].impact}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {panelScore === null ? (
-                        <StatusBadge status="normal" label="N/A" className="opacity-70" />
-                      ) : (
-                        <StatusBadge status={scoreToStatus(panelScore)} label={`${panelScore}/100`} />
-                      )}
-                    </div>
-                  </div>
-
-                  <motion.div
-                    variants={staggerContainer}
-                    initial="hidden"
-                    whileInView="show"
-                    viewport={{ once: true, amount: 0.2 }}
-                    className="space-y-4"
-                  >
-                    {markers.length ? (
-                      <Accordion type="multiple" className="space-y-4">
-                        {markers.map((marker) => {
-                          const detail = getMarkerDetail(marker);
-                          const citations = detail.citations.length
-                            ? detail.citations
-                            : BLOOD_PANEL_CITATIONS[panelKey] || [];
-                          const percentile =
-                            patientContext
-                              ? getPercentileRank(marker.code, marker.value, patientContext.age, patientContext.sexe)
-                              : null;
-                          const scoreReflection = buildScoreReflection(marker, percentile);
-                          const impactItems = detail.impact
-                            .split(". ")
-                            .map((item) => item.trim())
-                            .filter(Boolean);
-                          return (
-                            <AccordionItem
-                              key={marker.code}
-                              value={marker.code}
-                              className="rounded-2xl border blood-border-default blood-surface px-6"
-                            >
-                              <AccordionTrigger className="no-underline hover:no-underline">
-                                <div className="flex w-full flex-wrap items-center justify-between gap-4 py-2 text-left">
-                                  <div>
-                                    <p className="text-[11px] uppercase tracking-[0.2em] blood-text-tertiary">{marker.code}</p>
-                                    <div className="mt-2 text-base font-semibold blood-text-primary">{marker.name}</div>
-                                    <p className="mt-1 text-xs blood-text-tertiary">{PANEL_META[panelKey].label}</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-xl font-semibold blood-text-primary">
-                                      <AnimatedNumber value={marker.value} decimals={1} /> {marker.unit}
-                                    </div>
-                                    <StatusBadge status={marker.status} />
-                                  </div>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="pb-6">
-                                <div className="mt-2">
-                                  <BiomarkerRangeIndicator
-                                    value={marker.value}
-                                    unit={marker.unit}
-                                    status={marker.status}
-                                    normalMin={marker.refMin ?? undefined}
-                                    normalMax={marker.refMax ?? undefined}
-                                    optimalMin={marker.optimalMin ?? undefined}
-                                    optimalMax={marker.optimalMax ?? undefined}
-                                    normalLabel="Normal labo"
-                                    optimalLabel="Optimal performance"
-                                  />
-                                </div>
-                                <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Definition clinique</p>
-                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.definition}</p>
-                                  </div>
-                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Lecture biologique</p>
-                                    <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.mechanism}</p>
-                                    {marker.interpretation ? (
-                                      <p className="mt-3 text-sm blood-text-secondary leading-relaxed">{marker.interpretation}</p>
-                                    ) : null}
-                                    <p className="mt-3 text-xs blood-text-tertiary">{scoreReflection}</p>
-                                  </div>
-                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Impact physiologique</p>
-                                    {impactItems.length > 1 ? (
-                                      <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
-                                        {impactItems.slice(0, 4).map((item) => (
-                                          <li key={item} className="flex items-start gap-2">
-                                            <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                                            <span>{item}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    ) : (
-                                      <p className="mt-2 text-sm blood-text-secondary leading-relaxed">{detail.impact}</p>
-                                    )}
-                                  </div>
-                                  <div className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole recommande</p>
-                                    <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
-                                      {detail.protocol.map((item) => (
-                                        <li key={item} className="flex items-start gap-2">
-                                          <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                                          <span>{item}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                </div>
-                                <div className="mt-5 rounded-xl border blood-border-default blood-surface-muted p-4">
-                                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Sources</p>
-                                  {citations.length ? (
-                                    <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
-                                      {citations.map((item) => (
-                                        <li key={item.url}>
-                                          →{" "}
-                                          <a className="underline" style={{ color: theme.textSecondary }} href={item.url} target="_blank" rel="noreferrer">
-                                            {item.title}
-                                          </a>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  ) : (
-                                    <p className="mt-2 text-xs blood-text-tertiary">Aucune source specifique associee.</p>
-                                  )}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          );
-                        })}
-                      </Accordion>
-                    ) : (
-                      <p className="text-sm blood-text-secondary">Aucun biomarqueur renseigne pour ce systeme.</p>
-                    )}
-                  </motion.div>
-                </div>
-              );
-            })}
-          </section>
-          </TabsContent>
-
-          <TabsContent value="protocols" className="mt-10 space-y-16">
-            <motion.section
-              id="action-plan"
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.2 }}
-              variants={fadeUp}
-              className="space-y-6"
-            >
-              <div>
-                <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Action plan</p>
-                <h2 className="mt-3 blood-h2 blood-text-primary">Plan d'action personnalise</h2>
-                <p className="mt-2 text-sm blood-text-secondary">
-                  Priorites immediates, protocole court terme et retest planifie.
-                </p>
-              </div>
-              <div className="grid gap-6 lg:grid-cols-3">
-                <Card className="border border-rose-500/40 bg-rose-500/10 p-6">
-                  <p className="text-[12px] uppercase tracking-[0.2em] text-rose-200">Urgent cette semaine</p>
-                  {urgentMarkers.length ? (
-                    <ul className="mt-4 space-y-2 text-sm text-rose-100">
-                      {urgentMarkers.map((marker) => (
-                        <li key={marker.code} className="flex items-start gap-2">
-                          <span className="mt-2 h-1.5 w-1.5 rounded-full bg-rose-300" />
-                          <span>{marker.name}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-4 text-sm text-rose-100">Pas de marqueur critique detecte.</p>
-                  )}
-                </Card>
-
-                <Card className="border blood-border-default blood-surface p-6">
-                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Court terme (1 mois)</p>
-                  {protocolPhases[0]?.items?.length ? (
-                    <ul className="mt-4 space-y-2 text-sm blood-text-secondary">
-                      {protocolPhases[0].items.slice(0, 5).map((item) => (
-                        <li key={item} className="flex items-start gap-2">
-                          <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-4 text-sm blood-text-secondary">Focus: sommeil, nutrition, stabilite metabolique.</p>
-                  )}
-                </Card>
-
-                <Card className="border blood-border-default blood-surface p-6">
-                  <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Moyen terme (3 mois)</p>
-                  {protocolPhases[1]?.items?.length ? (
-                    <ul className="mt-4 space-y-2 text-sm blood-text-secondary">
-                      {protocolPhases[1].items.slice(0, 5).map((item) => (
-                        <li key={item} className="flex items-start gap-2">
-                          <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="mt-4 text-sm blood-text-secondary">Retest conseille a 3-6 mois.</p>
-                  )}
-                </Card>
-              </div>
-            </motion.section>
-          </TabsContent>
-
-          <TabsContent value="insights" className="mt-10 space-y-10">
-            <div>
-              <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Insights</p>
-              <h2 className="mt-3 blood-h2 blood-text-primary">Lecture avancee du bilan</h2>
-              <p className="mt-2 text-sm blood-text-secondary">
-                Synthese des patterns, analyse detaillee et references scientifiques.
-              </p>
-            </div>
-
-            <Tabs value={insightsTab} onValueChange={setInsightsTab} className="space-y-6">
-              <TabsList className="blood-tabs flex w-full flex-wrap gap-2 rounded-2xl border p-2">
-                <TabsTrigger value="patterns" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                  Patterns
-                </TabsTrigger>
-                <TabsTrigger value="analysis" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                  Analyse detaillee
-                </TabsTrigger>
-                <TabsTrigger value="sources" className="rounded-xl px-4 py-2 text-[11px] uppercase tracking-[0.2em]">
-                  Sources
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="patterns" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-[0.55fr_0.45fr]">
-                  <Card className="border blood-border-default blood-surface p-6">
-                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Patterns detectes</p>
-                    <div className="mt-6 space-y-4">
-                      {patterns.length ? (
-                        patterns.map((pattern) => (
-                          <div key={pattern.name} className="rounded-xl border blood-border-default blood-surface-muted p-5">
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <div className="text-sm font-semibold blood-text-primary">{pattern.name}</div>
-                                {!!pattern.causes?.length && (
-                                  <div className="mt-2 text-xs blood-text-secondary">
-                                    Causes: {pattern.causes.slice(0, 3).join(" · ")}
-                                  </div>
-                                )}
-                              </div>
-                              <StatusBadge status="suboptimal" />
-                            </div>
-                            {!!pattern.protocol?.length && (
-                              <div className="mt-4">
-                                <div className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole</div>
-                                <ul className="mt-3 space-y-2 text-sm blood-text-secondary">
-                                  {pattern.protocol.slice(0, 6).map((item) => (
-                                    <li key={item} className="flex items-start gap-2">
-                                      <span className="mt-2 h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.primaryBlue }} />
-                                      <span>{item}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm blood-text-secondary">Aucun pattern majeur detecte.</div>
-                      )}
-                    </div>
-                  </Card>
-
-                  <Card className="border blood-border-default blood-surface p-6">
-                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Diabetes Risk Assessment</p>
-                    {diabetes ? (
-                      <div className="mt-4 space-y-3 text-sm blood-text-secondary">
-                        <p>
-                          Score: <span className="font-semibold blood-text-primary">{diabetes.score}/100</span> (risque {diabetes.level}).
-                        </p>
-                        <ul className="space-y-1">
-                          {diabetes.gly !== null && <li>Glycemie a jeun: {diabetes.gly} mg/dL</li>}
-                          {diabetes.a1c !== null && <li>HbA1c: {diabetes.a1c}%</li>}
-                          {diabetes.insulin !== null && <li>Insuline: {diabetes.insulin} µIU/mL</li>}
-                          {diabetes.homa !== null && <li>HOMA-IR: {diabetes.homa}</li>}
-                        </ul>
-                        <div className="rounded-lg border blood-border-default blood-surface-muted p-4">
-                          <div className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Protocole rapide</div>
-                          <ul className="mt-2 space-y-2 text-sm blood-text-secondary">
-                            <li>Reduire sucres rapides + repas ultra transformes.</li>
-                            <li>Augmenter fibres + proteines a chaque repas.</li>
-                            <li>Marche post-prandiale 10-15 min.</li>
-                            <li>Sommeil 7-9h pour stabiliser l'insuline.</li>
-                          </ul>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="mt-4 text-sm blood-text-secondary">Donnees insuffisantes pour estimer le risque.</p>
-                    )}
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="analysis" className="space-y-6">
-                {aiAnalysisDisplay ? (
-                  <Card className="border blood-border-default blood-surface p-6">
-                    <p className="text-[12px] uppercase tracking-[0.2em] blood-text-tertiary">Analyse detaillee</p>
-                    <div className="prose mt-4 max-w-none prose-p:blood-text-secondary prose-li:blood-text-secondary prose-strong:blood-text-primary">
-                      <ReactMarkdown>{aiAnalysisDisplay}</ReactMarkdown>
-                    </div>
-                  </Card>
-                ) : (
-                  <Card className="border blood-border-default blood-surface p-6">
-                    <p className="text-sm blood-text-secondary">Analyse detaillee indisponible pour ce rapport.</p>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="sources" className="space-y-6">
-                <Card className="border blood-border-default blood-surface p-6">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {(Object.keys(PANEL_META) as PanelKey[]).map((key) => (
-                      <div key={key} className="rounded-xl border blood-border-default blood-surface-muted p-4">
-                        <div className="text-sm font-semibold blood-text-primary">{PANEL_META[key].label}</div>
-                        <ul className="mt-3 space-y-2 text-xs blood-text-secondary">
-                          {(BLOOD_PANEL_CITATIONS[key] || []).map((citation) => (
-                            <li key={citation.url}>
-                              →{" "}
-                              <a className="underline" style={{ color: theme.textSecondary }} href={citation.url} target="_blank" rel="noreferrer">
-                                {citation.title}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-                <div className="flex items-center justify-between text-xs blood-text-tertiary">
-                  <span>Educationnel · Ne remplace pas un avis medical.</span>
-                  <Button
-                    variant="outline"
-                    className="hover:opacity-80"
-                    style={{ borderColor: theme.borderDefault, color: theme.textSecondary }}
-                    onClick={() => navigate("/offers/blood-analysis")}
-                  >
-                    Acheter des credits
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-        </Tabs>
       </div>
+
+      {isExporting && (
+        <div className="fixed bottom-6 right-6 rounded-full px-4 py-2 text-xs" style={{ backgroundColor: theme.surfaceMuted }}>
+          Export PDF en cours...
+        </div>
+      )}
     </BloodShell>
   );
 }

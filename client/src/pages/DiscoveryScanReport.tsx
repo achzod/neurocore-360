@@ -91,9 +91,9 @@ const DiscoveryScanReport: React.FC = () => {
     displayMetrics.length > 0
       ? displayMetrics.reduce((acc, metric) => acc + metric.value, 0) / displayMetrics.length
       : null;
-  const rawGlobalScore = reportData?.globalScore;
+  const rawGlobalScore = typeof reportData?.globalScore === "number" ? reportData.globalScore : null;
   const normalizedGlobalScore = (() => {
-    if (!Number.isFinite(rawGlobalScore)) {
+    if (rawGlobalScore === null || !Number.isFinite(rawGlobalScore)) {
       return metricsAverage ?? 0;
     }
     const score10 = rawGlobalScore > 10 ? rawGlobalScore / 10 : rawGlobalScore;

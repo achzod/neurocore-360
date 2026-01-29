@@ -521,7 +521,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
     sectionScores.length > 0
       ? Math.round(sectionScores.reduce((acc, score) => acc + score, 0) / sectionScores.length)
       : 0;
-  const rawGlobalScore = Number.isFinite(report?.global) ? report.global : derivedGlobalScore;
+  const rawGlobalScore = report && Number.isFinite(report.global) ? report.global : derivedGlobalScore;
   const globalScore =
     rawGlobalScore <= 10 && derivedGlobalScore >= 20 ? derivedGlobalScore : rawGlobalScore;
   const safeGlobalScore = Number.isFinite(globalScore) ? globalScore : 60;
@@ -1114,7 +1114,7 @@ const UltimateScanReportInner: React.FC<UltimateScanReportProps> = ({ auditId })
         );
       }
 
-      const rawPhoto = report.photoAnalysis as Record<string, unknown>;
+      const rawPhoto = report.photoAnalysis as unknown as Record<string, unknown>;
       const normalizedPhoto = {
         summary: normalizeTextInput(rawPhoto.summary) || normalizeTextInput(rawPhoto.medicalObservations),
         posture: normalizeTextInput(rawPhoto.postureAnalysis) || normalizeTextInput(rawPhoto.posture),

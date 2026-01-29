@@ -770,94 +770,98 @@ export default function PeptidesEnginePage() {
               </Card>
 
               <div className="space-y-6">
-                {currentSection.questions.map((question, qi) => (
-                  <Card key={question.id} className="bg-white/5 border-white/10">
-                    <CardContent className="p-4">
-                      <p className="font-medium mb-3">
-                        {qi + 1}. {question.text}
-                      </p>
-                      {question.helper && (
-                        <p className="text-xs text-gray-400 mb-3">{question.helper}</p>
-                      )}
+                {currentSection.questions.map((question, qi) => {
+                  const responseValue = responses[question.id];
+                  const responseString = typeof responseValue === "string" ? responseValue : "";
+                  return (
+                    <Card key={question.id} className="bg-white/5 border-white/10">
+                      <CardContent className="p-4">
+                        <p className="font-medium mb-3">
+                          {qi + 1}. {question.text}
+                        </p>
+                        {question.helper && (
+                          <p className="text-xs text-gray-400 mb-3">{question.helper}</p>
+                        )}
 
-                      {question.type === "select" && question.options && (
-                        <RadioGroup
-                          value={typeof responses[question.id] === "string" ? responses[question.id] : ""}
-                          onValueChange={(value) => handleResponse(question.id, value)}
-                          className="flex flex-wrap gap-2"
-                        >
-                          {question.options.map((option) => (
-                            <div key={option.value} className="flex items-center">
-                              <RadioGroupItem
-                                value={option.value}
-                                id={`${question.id}-${option.value}`}
-                                className="peer sr-only"
-                              />
-                              <Label
-                                htmlFor={`${question.id}-${option.value}`}
-                                className="px-4 py-2 rounded-full border border-white/10 cursor-pointer transition-colors peer-data-[state=checked]:bg-amber-500 peer-data-[state=checked]:text-black peer-data-[state=checked]:border-amber-500 hover:bg-white/10"
-                              >
-                                {option.label}
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      )}
-
-                      {question.type === "multiselect" && question.options && (
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          {question.options.map((option) => {
-                            const selected = Array.isArray(responses[question.id])
-                              ? responses[question.id].includes(option.value)
-                              : false;
-                            return (
-                              <label
-                                key={option.value}
-                                className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
-                                  selected ? "border-amber-500 bg-amber-500/10" : "border-white/10"
-                                }`}
-                              >
-                                <Checkbox
-                                  checked={selected}
-                                  onCheckedChange={() => toggleMulti(question.id, option.value)}
+                        {question.type === "select" && question.options && (
+                          <RadioGroup
+                            value={responseString}
+                            onValueChange={(value) => handleResponse(question.id, value)}
+                            className="flex flex-wrap gap-2"
+                          >
+                            {question.options.map((option) => (
+                              <div key={option.value} className="flex items-center">
+                                <RadioGroupItem
+                                  value={option.value}
+                                  id={`${question.id}-${option.value}`}
+                                  className="peer sr-only"
                                 />
-                                <span className="text-sm">{option.label}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
+                                <Label
+                                  htmlFor={`${question.id}-${option.value}`}
+                                  className="px-4 py-2 rounded-full border border-white/10 cursor-pointer transition-colors peer-data-[state=checked]:bg-amber-500 peer-data-[state=checked]:text-black peer-data-[state=checked]:border-amber-500 hover:bg-white/10"
+                                >
+                                  {option.label}
+                                </Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        )}
 
-                      {question.type === "text" && (
-                        <Input
-                          value={typeof responses[question.id] === "string" ? responses[question.id] : ""}
-                          onChange={(e) => handleResponse(question.id, e.target.value)}
-                          placeholder={question.placeholder}
-                          className="bg-black/30 border-white/10"
-                        />
-                      )}
+                        {question.type === "multiselect" && question.options && (
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            {question.options.map((option) => {
+                              const selected = Array.isArray(responseValue)
+                                ? responseValue.includes(option.value)
+                                : false;
+                              return (
+                                <label
+                                  key={option.value}
+                                  className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                                    selected ? "border-amber-500 bg-amber-500/10" : "border-white/10"
+                                  }`}
+                                >
+                                  <Checkbox
+                                    checked={selected}
+                                    onCheckedChange={() => toggleMulti(question.id, option.value)}
+                                  />
+                                  <span className="text-sm">{option.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
 
-                      {question.type === "number" && (
-                        <Input
-                          type="number"
-                          value={typeof responses[question.id] === "string" ? responses[question.id] : ""}
-                          onChange={(e) => handleResponse(question.id, e.target.value)}
-                          placeholder={question.placeholder}
-                          className="bg-black/30 border-white/10"
-                        />
-                      )}
+                        {question.type === "text" && (
+                          <Input
+                            value={responseString}
+                            onChange={(e) => handleResponse(question.id, e.target.value)}
+                            placeholder={question.placeholder}
+                            className="bg-black/30 border-white/10"
+                          />
+                        )}
 
-                      {question.type === "textarea" && (
-                        <Textarea
-                          value={typeof responses[question.id] === "string" ? responses[question.id] : ""}
-                          onChange={(e) => handleResponse(question.id, e.target.value)}
-                          placeholder={question.placeholder}
-                          className="bg-black/30 border-white/10 min-h-[110px]"
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        {question.type === "number" && (
+                          <Input
+                            type="number"
+                            value={responseString}
+                            onChange={(e) => handleResponse(question.id, e.target.value)}
+                            placeholder={question.placeholder}
+                            className="bg-black/30 border-white/10"
+                          />
+                        )}
+
+                        {question.type === "textarea" && (
+                          <Textarea
+                            value={responseString}
+                            onChange={(e) => handleResponse(question.id, e.target.value)}
+                            placeholder={question.placeholder}
+                            className="bg-black/30 border-white/10 min-h-[110px]"
+                          />
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
 
               <div className="flex justify-between mt-8">
