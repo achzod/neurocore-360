@@ -1466,14 +1466,27 @@ const trimAiAnalysis = (text: string, maxChars = 20000): string => {
   if (!text) return "";
   if (text.length <= maxChars) return text.trim();
   const sourcesIndex = text.indexOf("## Sources scientifiques");
-  if (sourcesIndex !== -1) {
-    const sources = text.slice(sourcesIndex).trim();
-    const keepBudget = maxChars - sources.length - 2;
+  const planIndex = text.indexOf("## Plan 90 jours");
+  const sources = sourcesIndex !== -1 ? text.slice(sourcesIndex).trim() : "";
+  const plan = planIndex !== -1 ? extractPlan90Section(text) : "";
+
+  if (sources || plan) {
+    const reserveSections = [plan, sources].filter(Boolean);
+    const reserveLen =
+      reserveSections.reduce((sum, section) => sum + section.length, 0) +
+      (reserveSections.length > 0 ? (reserveSections.length - 1) * 2 : 0);
+    const keepBudget = maxChars - reserveLen - 2;
+
     if (keepBudget > 1000) {
-      const head = text.slice(0, keepBudget);
+      let headEnd = keepBudget;
+      const cutPoints = [planIndex, sourcesIndex].filter((idx) => idx !== -1);
+      if (cutPoints.length > 0) {
+        headEnd = Math.min(headEnd, ...cutPoints);
+      }
+      const head = text.slice(0, headEnd);
       const lastBreak = head.lastIndexOf("\n\n");
       const safeHead = lastBreak > 1000 ? head.slice(0, lastBreak).trim() : head.trim();
-      return `${safeHead}\n\n${sources}`;
+      return [safeHead, plan, sources].filter(Boolean).join("\n\n").trim();
     }
   }
   const sliced = text.slice(0, maxChars);
