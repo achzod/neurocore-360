@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import pdf from "pdf-parse";
+import pdf from "pdf-parse/lib/pdf-parse.js";
 import puppeteer from "puppeteer";
 import {
   analyzeBloodwork,
@@ -14,6 +14,8 @@ import {
   buildFallbackAnalysis,
   buildLifestyleCorrelations,
 } from "../blood-analysis";
+import { generateComprehensiveBloodReport } from "../blood-analysis/recommendations-engine";
+import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores";
 import { storage } from "../storage";
 import { getAuthPayload } from "../auth";
 
@@ -753,6 +755,51 @@ export function registerBloodTestsRoutes(app: Express): void {
         return;
       }
 
+      const resolvedMarkers = Array.isArray(test.markers)
+        ? (test.markers as Array<{ code?: string; markerId?: string; value?: number }>)
+            .map((marker) => ({
+              markerId: marker.code || marker.markerId,
+              value: marker.value,
+            }))
+            .filter(
+              (marker): marker is { markerId: string; value: number } =>
+                typeof marker.markerId === "string" && typeof marker.value === "number"
+            )
+        : [];
+
+      const baseProfile = (test.patientProfile || {}) as Record<string, unknown>;
+      const normalizedGender = baseProfile.gender === "femme" ? "femme" : "homme";
+      const ageFromDob = typeof baseProfile.dob === "string" ? getAgeFromDob(baseProfile.dob) : undefined;
+      const profileWithAge: any = { ...baseProfile, gender: normalizedGender, age: ageFromDob };
+
+      const analysis = await analyzeBloodwork(resolvedMarkers, {
+        gender: normalizedGender,
+        age: ageFromDob,
+        objectives: undefined,
+        medications: undefined,
+      });
+
+      const riskProfile = resolvedMarkers.length
+        ? generateComprehensiveRiskProfile(resolvedMarkers, profileWithAge)
+        : null;
+
+      // Fetch comprehensive report with citations
+      let comprehensiveData = null;
+      try {
+        const comprehensiveReport = await generateComprehensiveBloodReport(
+          resolvedMarkers,
+          analysis,
+          riskProfile || generateComprehensiveRiskProfile(resolvedMarkers, profileWithAge),
+          profileWithAge
+        );
+        comprehensiveData = {
+          supplements: comprehensiveReport.supplements,
+          protocols: comprehensiveReport.protocols
+        };
+      } catch (err) {
+        console.error("[BloodTest] Failed to generate comprehensive data:", err);
+      }
+
       res.json({
         bloodTest: {
           id: test.id,
@@ -767,7 +814,10 @@ export function registerBloodTestsRoutes(app: Express): void {
         markers: test.markers,
         derivedMetrics: {},
         patterns: (test.analysis as any)?.patterns || [],
-        analysis: test.analysis || {},
+        analysis: {
+          ...(test.analysis || {}),
+          comprehensiveData
+        },
       });
     } catch (error) {
       res.status(500).json({ error: "Erreur serveur" });
@@ -802,7 +852,7 @@ export function registerBloodTestsRoutes(app: Express): void {
       await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
       await page.emulateMediaType("screen");
       await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
-      await page.waitForTimeout(1500);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const pdfBuffer = await page.pdf({
         format: "A4",

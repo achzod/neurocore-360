@@ -715,6 +715,7 @@ export function generateSupplementRecommendations(
           priority,
           targetMarkers,
           mechanism: base.mechanism || "",
+          citations: base.citations,
           contraindications: base.contraindications,
           brands: base.brands,
         });
