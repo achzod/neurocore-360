@@ -439,9 +439,12 @@ export interface MarkerAnalysis {
   unit: string;
   normalRange: string;
   optimalRange: string;
+  category?: string;
   status: "optimal" | "normal" | "suboptimal" | "critical";
   interpretation: string;
 }
+
+type MarkerStatus = MarkerAnalysis["status"];
 
 export interface BloodAnalysisResult {
   summary: {
@@ -1263,7 +1266,10 @@ const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es un expert en analyse de bilans sangu
 REGLES DE STYLE:
 - Ton clinique, precis, premium, sans emojis.
 - Pas de mention d'IA.
-- Cite des sources scientifiques dans une section dediee.
+- Cite DIRECTEMENT les experts dans le texte: Derek de MPMD, Dr. Andrew Huberman, Dr. Peter Attia, Dr. Chris Masterjohn, Examine.com.
+- Format: "Derek de MPMD mentionne que...", "Dr. Huberman (Huberman Lab Ep. 127) explique...", "Selon Examine.com..."
+- Inclus minimum 8-12 citations d'experts dans le rapport (dans les sections, pas juste la section Sources).
+- Cite des sources scientifiques supplémentaires dans la section dédiée.
 - Liens PubMed autorises.
 - Utilise les ranges optimaux en priorite.
 - Reste structure, pedagogique, conversationnel.
@@ -1273,7 +1279,7 @@ REGLES DE STYLE:
 - Jamais "patient" ou "utilisateur".
 - Ne fais pas d'hypotheses sur les ressentis. Utilise "symptomes associes" si besoin.
 - Pas de repetition: chaque section apporte une information nouvelle.
-- Longueur cible: 700-900 mots, maximum 12 000 caracteres.
+- Longueur cible: 2000-3000 mots minimum, maximum 20 000 caracteres.
 - Si tu dois raccourcir, reduis le nombre de marqueurs en deep dive et les phrases par section, mais garde toutes les sections, y compris "Sources scientifiques".
 - Chaque recommandation contient: action + dosage + timing + duree + objectif.
 - Si une donnee manque, dis-le clairement et continue.
@@ -1314,17 +1320,24 @@ FORMAT DE REPONSE (respecte STRICTEMENT les titres):
 - Donne 2 a 4 correlations maximum.
 
 ## Deep dive marqueurs prioritaires
-Pour 3-4 marqueurs max (les plus critiques / sous-optimaux):
+Pour 4-6 marqueurs max (les plus critiques / sous-optimaux):
 - Verdict (1 ligne)
-- Ce que ca veut dire (2 phrases, factuel)
+- Ce que ca veut dire (3-4 phrases, factuel avec mécanismes physiologiques)
+- Citations d'experts (1-2 citations Derek/Huberman/Attia avec dosages précis)
 - Symptomes associes (1 phrase)
-- Protocole exact (actions + dosages + timing + duree)
+- Protocole exact en 3 phases:
+  * Phase 1 - Lifestyle: [actions + timing + science derrière]
+  * Phase 2 - Supplements: [nom + dosage exact + timing + marques recommandées + citation expert]
+  * Phase 3 - Retest: [délai + marqueurs à retest + expected outcomes chiffrés]
 
 ## Plan 90 jours
-### Jours 1-30
-- [action + dosage + timing + duree + objectif]
-### Jours 31-90
-- [action + dosage + timing + duree + objectif]
+### Jours 1-30 (Phase d'Attaque)
+- [action + dosage précis + timing exact + citation expert + objectif chiffré]
+- Exemple: "Berbérine 500mg 3x/jour avant repas (Derek: "aussi efficace que metformine") - objectif: réduire glycémie 15-20%"
+### Jours 31-90 (Phase d'Optimisation)
+- [action + dosage précis + timing exact + citation expert + objectif chiffré]
+### Retest à J+90
+- [Marqueurs prioritaires à retest + ranges cibles + expected improvements %]
 
 ## Nutrition & entrainement
 - Nutrition (3-5 phrases)
@@ -1418,7 +1431,7 @@ const ensureSourcesSection = (text: string): string => {
   return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
 };
 
-const trimAiAnalysis = (text: string, maxChars = 12000): string => {
+const trimAiAnalysis = (text: string, maxChars = 20000): string => {
   if (!text) return "";
   if (text.length <= maxChars) return text.trim();
   const sourcesIndex = text.indexOf("## Sources scientifiques");
@@ -1835,7 +1848,7 @@ Génère une analyse complète selon le format demandé.`;
 
   const response = await anthropic.messages.create({
     model: "claude-opus-4-5-20251101",
-    max_tokens: 8000,
+    max_tokens: 16000,
     system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }]
   });
