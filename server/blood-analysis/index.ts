@@ -1433,6 +1433,35 @@ const ensureSourcesSection = (text: string): string => {
   return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
 };
 
+const extractPlan90Section = (text: string): string => {
+  if (!text) return "";
+  const start = text.indexOf("## Plan 90 jours");
+  if (start === -1) return "";
+  const rest = text.slice(start);
+  const nextHeadingIndex = rest.slice(1).search(/\n##\s+/);
+  if (nextHeadingIndex !== -1) {
+    return rest.slice(0, nextHeadingIndex + 1).trim();
+  }
+  return rest.trim();
+};
+
+const insertPlan90Section = (text: string, planSection: string): string => {
+  if (!text) return planSection.trim();
+  if (!planSection) return text.trim();
+  if (text.includes("## Plan 90 jours")) return text.trim();
+
+  const anchors = ["## Nutrition & entrainement", "## Supplements & stack", "## Sources scientifiques"];
+  for (const anchor of anchors) {
+    const idx = text.indexOf(anchor);
+    if (idx !== -1) {
+      const head = text.slice(0, idx).trim();
+      const tail = text.slice(idx).trim();
+      return `${head}\n\n${planSection.trim()}\n\n${tail}`.trim();
+    }
+  }
+  return `${text.trim()}\n\n${planSection.trim()}`.trim();
+};
+
 const trimAiAnalysis = (text: string, maxChars = 20000): string => {
   if (!text) return "";
   if (text.length <= maxChars) return text.trim();
@@ -1856,7 +1885,30 @@ Génère une analyse complète selon le format demandé.`;
   });
 
   const textContent = response.content.find(c => c.type === "text");
-  const withSources = ensureSourcesSection(textContent?.text || "");
+  let output = textContent?.text || "";
+
+  if (!output.includes("## Plan 90 jours")) {
+    const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan 90 jours" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan 90 jours\n  ### Jours 1-30 (Phase d'Attaque)\n  ### Jours 31-90 (Phase d'Optimisation)\n  ### Retest à J+90\n- Chaque ligne doit inclure: action + dosage precis + timing exact + citation expert (Derek/Huberman/Attia/Examine) + objectif chiffre.\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
+
+    try {
+      const planResponse = await anthropic.messages.create({
+        model: "claude-opus-4-5-20251101",
+        max_tokens: 1500,
+        system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
+        messages: [{ role: "user", content: planPrompt }]
+      });
+      const planText = extractPlan90Section(
+        planResponse.content.find(c => c.type === "text")?.text || ""
+      );
+      if (planText) {
+        output = insertPlan90Section(output, planText);
+      }
+    } catch (err) {
+      console.error("[BloodAnalysis] Plan 90 jours fallback failed:", err);
+    }
+  }
+
+  const withSources = ensureSourcesSection(output);
   return trimAiAnalysis(withSources);
 }
 
