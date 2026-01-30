@@ -2096,32 +2096,61 @@ Génère une analyse complète selon le format demandé.`;
   let bestCandidate = "";
   let bestScore = -1;
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // Timeout wrapper for API calls (45s max per attempt to stay under Render's 60s limit)
+  const API_TIMEOUT_MS = 45000;
+  const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("API_TIMEOUT")), ms)
+      )
+    ]);
+  };
+
+  // Reduce retries to 1 for faster response, with timeout protection
+  const maxAttempts = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" ? 1 : 2;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const retryNote =
       attempt === 1
         ? ""
         : `\nATTENTION: Ta reponse precedente etait trop generique ou ne respectait pas les sections deep dive. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies. Chaque biomarqueur doit contenir les 4 sous-sections avec au moins 2 citations d'experts.\n`;
     const prompt = `${userPrompt}\n${retryNote}`;
 
-    const response = await anthropic.messages.create({
-      model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-      max_tokens: 16000,
-      system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }]
-    });
+    try {
+      const response = await withTimeout(
+        anthropic.messages.create({
+          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+          max_tokens: 12000, // Reduced from 16000 for faster response
+          system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }]
+        }),
+        API_TIMEOUT_MS
+      );
 
-    const textContent = response.content.find(c => c.type === "text");
-    const candidate = textContent?.text || "";
-    const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
+      const textContent = response.content.find(c => c.type === "text");
+      const candidate = textContent?.text || "";
+      const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
 
-    const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
-    if (score > bestScore) {
-      bestScore = score;
-      bestCandidate = candidate;
-    }
-    if (deepDiveCheck.ok) {
-      output = candidate;
-      break;
+      const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
+      if (deepDiveCheck.ok) {
+        output = candidate;
+        break;
+      }
+    } catch (err: any) {
+      if (err.message === "API_TIMEOUT") {
+        console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
+        if (attempt === maxAttempts) {
+          console.log("[BloodAnalysis] All attempts timed out, using fallback");
+          return buildFallbackAnalysis(analysisResult, userProfile);
+        }
+      } else {
+        throw err;
+      }
     }
   }
 
@@ -2133,20 +2162,27 @@ Génère une analyse complète selon le format demandé.`;
     const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan 90 jours" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan 90 jours\n  ### Jours 1-30 (Phase d'Attaque)\n  ### Jours 31-90 (Phase d'Optimisation)\n  ### Retest à J+90\n- Chaque ligne doit inclure: action + dosage precis + timing exact + citation expert (Derek/Huberman/Attia/Examine) + objectif chiffre.\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
 
     try {
-      const planResponse = await anthropic.messages.create({
-        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-        max_tokens: 1500,
-        system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
-        messages: [{ role: "user", content: planPrompt }]
-      });
+      const planResponse = await withTimeout(
+        anthropic.messages.create({
+          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+          max_tokens: 1500,
+          system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
+          messages: [{ role: "user", content: planPrompt }]
+        }),
+        15000 // 15s timeout for Plan 90 section
+      );
       const planText = extractPlan90Section(
         planResponse.content.find(c => c.type === "text")?.text || ""
       );
       if (planText) {
         output = insertPlan90Section(output, planText);
       }
-    } catch (err) {
-      console.error("[BloodAnalysis] Plan 90 jours fallback failed:", err);
+    } catch (err: any) {
+      if (err.message === "API_TIMEOUT") {
+        console.warn("[BloodAnalysis] Plan 90 jours timed out, skipping");
+      } else {
+        console.error("[BloodAnalysis] Plan 90 jours fallback failed:", err);
+      }
     }
   }
 
