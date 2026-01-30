@@ -271,7 +271,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/blood-analysis/submit", async (req, res) => {
     try {
-      const { userId, email, markers, profile, pdfBase64, pdfName, sessionId } = req.body as {
+      const { userId, email, markers, profile, pdfBase64, pdfName, sessionId, asyncAI, includeAI } = req.body as {
         userId?: string;
         email?: string;
         markers: BloodMarkerInput[];
@@ -284,6 +284,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         pdfBase64?: string;
         pdfName?: string;
         sessionId?: string;
+        asyncAI?: boolean;
+        includeAI?: boolean;
       };
 
       const recipientEmail = email || userId;
@@ -353,12 +355,16 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      // Generate AI report
-      const aiAnalysis = await generateAIBloodAnalysis(
-        analysisResult,
-        profile,
-        knowledgeContext
-      );
+      const shouldIncludeAI = includeAI !== false;
+      const shouldAsyncAI = asyncAI !== false;
+      let aiAnalysis = "";
+      if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
+        aiAnalysis = await generateAIBloodAnalysis(
+          analysisResult,
+          profile,
+          knowledgeContext
+        );
+      }
 
       const reportRecord = await storage.createBloodReport({
         email: recipientEmail,
@@ -371,6 +377,21 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiReport: aiAnalysis,
       });
 
+      if (shouldIncludeAI && shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
+        setImmediate(async () => {
+          try {
+            const enriched = await generateAIBloodAnalysis(
+              analysisResult,
+              profile,
+              knowledgeContext
+            );
+            await storage.updateBloodReport(reportRecord.id, { aiReport: enriched });
+          } catch (err) {
+            console.error("[BloodAnalysis] async AI failed:", err);
+          }
+        });
+      }
+
       const baseUrl = getBaseUrl();
       const emailSent = await sendReportReadyEmail(recipientEmail, reportRecord.id, "BLOOD_ANALYSIS", baseUrl);
       if (emailSent) {
@@ -381,11 +402,86 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         success: true,
         reportId: reportRecord.id,
         analysis: analysisResult,
-        aiReport: aiAnalysis
+        aiReport: aiAnalysis,
+        status: shouldIncludeAI && shouldAsyncAI ? "processing" : "completed"
       });
     } catch (error) {
       console.error("[BloodAnalysis] Submit error:", error);
       res.status(500).json({ error: "Erreur lors de l'analyse" });
+    }
+  });
+
+  /**
+   * POST /api/admin/blood-analysis/report/:id/regenerate
+   * Regenerate AI report for a stored blood report (admin only)
+   */
+  app.post("/api/admin/blood-analysis/report/:id/regenerate", async (req, res) => {
+    try {
+      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+      if (!validKey || adminKey !== validKey) {
+        res.status(401).json({ error: "Unauthorized - admin key required" });
+        return;
+      }
+
+      const report = await storage.getBloodReport(req.params.id);
+      if (!report) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      const profile = (report.profile || {}) as Record<string, unknown>;
+      let computedAge: string | undefined;
+      if (typeof profile.dob === "string") {
+        const dobDate = new Date(profile.dob);
+        if (!Number.isNaN(dobDate.getTime())) {
+          const ageYears = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          computedAge = String(ageYears);
+        }
+      }
+
+      const resolvedMarkers = ((report.markers || []) as Array<Record<string, unknown>>)
+        .map((marker) => ({
+          markerId: normalizeMarkerName(String(marker.markerId || marker.name || "")),
+          value: Number(marker.value),
+          unit: marker.unit as string | undefined,
+        }))
+        .filter((marker) => marker.markerId && Number.isFinite(marker.value));
+
+      if (!resolvedMarkers.length) {
+        res.status(400).json({ error: "Aucun biomarqueur detecte" });
+        return;
+      }
+
+      const normalizedProfile = {
+        ...profile,
+        age: computedAge,
+      } as any;
+
+      const analysisResult = await analyzeBloodwork(resolvedMarkers, {
+        gender: (normalizedProfile.gender as "homme" | "femme") || "homme",
+        age: computedAge,
+        objectives: undefined,
+        medications: undefined,
+      });
+
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        analysisResult.markers,
+        analysisResult.patterns
+      );
+
+      const aiReport = await generateAIBloodAnalysis(
+        analysisResult,
+        normalizedProfile,
+        knowledgeContext
+      );
+
+      await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+
+      res.json({ success: true, reportId: report.id });
+    } catch (error) {
+      console.error("[BloodAnalysis] Regenerate error:", error);
+      res.status(500).json({ error: "Erreur regeneration" });
     }
   });
 
@@ -433,6 +529,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         const rawMarkerId = (m.markerId || m.name || "") as string;
         const markerId = normalizeMarkerName(rawMarkerId);
         const range = BIOMARKER_RANGES[markerId];
+        const analysisMarker = (analysis.markers as any[])?.find((am: any) =>
+          (am.markerId || am.name || am.id) === markerId
+        );
         return {
           name: range?.name || markerId,
           code: markerId,
@@ -443,8 +542,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           refMax: range?.normalMax ?? null,
           optimalMin: range?.optimalMin ?? null,
           optimalMax: range?.optimalMax ?? null,
-          status: (analysis.markers as any[])?.find((am: any) => am.id === markerId)?.status || "normal",
-          interpretation: (analysis.markers as any[])?.find((am: any) => am.id === markerId)?.interpretation || "",
+          status: analysisMarker?.status || "normal",
+          interpretation: analysisMarker?.interpretation || "",
         };
       });
 

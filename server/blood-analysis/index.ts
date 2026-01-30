@@ -1202,10 +1202,12 @@ export async function extractMarkersFromPdfText(
   const textExtracted = extractMarkersFromText(cleaned);
   const unique = new Map<string, BloodMarkerInput>();
   for (const item of lineExtracted) {
+    if (!item.markerId) continue;
     if (!isPlausibleMarkerValue(item.markerId, item.value)) continue;
     unique.set(item.markerId, item);
   }
   for (const item of textExtracted) {
+    if (!item.markerId) continue;
     if (unique.has(item.markerId)) continue;
     if (!isPlausibleMarkerValue(item.markerId, item.value)) continue;
     unique.set(item.markerId, item);
@@ -1259,7 +1261,7 @@ ${cleaned.slice(0, 12000)}`;
     }))
     .filter((item) => item.markerId && !Number.isNaN(item.value))
     .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
-    .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
+    .filter((item) => Boolean(item.markerId) && isPlausibleMarkerValue(item.markerId!, item.value));
 
   for (const item of extracted) {
     if (!hasMarkerValueInText(cleaned, item.markerId)) continue;
@@ -2271,8 +2273,9 @@ Génère une analyse complète selon le format demandé.`;
   let bestCandidate = "";
   let bestScore = -1;
 
-  // Timeout wrapper for API calls (45s max per attempt to stay under Render's 60s limit)
-  const API_TIMEOUT_MS = 45000;
+  // Timeout wrapper for API calls (fast mode keeps shorter limits; full mode allows longer responses)
+  const fastMode = process.env.BLOOD_ANALYSIS_FAST_MODE === "true";
+  const API_TIMEOUT_MS = fastMode ? 45000 : 180000;
   const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
     return Promise.race([
       promise,
@@ -2282,8 +2285,8 @@ Génère une analyse complète selon le format demandé.`;
     ]);
   };
 
-  // Reduce retries to 1 for faster response, with timeout protection
-  const maxAttempts = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" ? 1 : 2;
+  const maxAttempts = fastMode ? 1 : 3;
+  const minChars = fastMode ? 6000 : 10000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const retryNote =
@@ -2296,7 +2299,7 @@ Génère une analyse complète selon le format demandé.`;
       const response = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 12000, // Reduced from 16000 for faster response
+          max_tokens: 16000,
           system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
           messages: [{ role: "user", content: prompt }]
         }),
@@ -2312,7 +2315,7 @@ Génère une analyse complète selon le format demandé.`;
         bestScore = score;
         bestCandidate = candidate;
       }
-      if (deepDiveCheck.ok) {
+      if (deepDiveCheck.ok && candidate.length >= minChars) {
         output = candidate;
         break;
       }
@@ -2344,7 +2347,7 @@ Génère une analyse complète selon le format demandé.`;
           system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
           messages: [{ role: "user", content: planPrompt }]
         }),
-        15000 // 15s timeout for Plan 90 section
+        fastMode ? 15000 : 60000
       );
       const planText = extractPlan90Section(
         planResponse.content.find(c => c.type === "text")?.text || ""

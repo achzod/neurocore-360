@@ -189,6 +189,7 @@ export interface IStorage {
 
   createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord>;
   getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
+  updateBloodReport(id: string, data: Partial<BloodReportRecord>): Promise<BloodReportRecord | undefined>;
   getAllBloodReports(): Promise<BloodReportRecord[]>;
 
   createBloodTest(input: Omit<BloodTestRecord, "id" | "createdAt"> & { createdAt?: Date }): Promise<BloodTestRecord>;
@@ -563,6 +564,20 @@ export class MemStorage implements IStorage {
 
   async getBloodReport(id: string): Promise<BloodReportRecord | undefined> {
     return this.bloodReports.get(id);
+  }
+
+  async updateBloodReport(
+    id: string,
+    data: Partial<BloodReportRecord>
+  ): Promise<BloodReportRecord | undefined> {
+    const existing = this.bloodReports.get(id);
+    if (!existing) return undefined;
+    const updated: BloodReportRecord = {
+      ...existing,
+      ...data,
+    };
+    this.bloodReports.set(id, updated);
+    return updated;
   }
 
   async getAllBloodReports(): Promise<BloodReportRecord[]> {
@@ -1456,6 +1471,46 @@ export class PgStorage implements IStorage {
   async getBloodReport(id: string): Promise<BloodReportRecord | undefined> {
     await this.ensureBloodReportsTable();
     const result = await pool.query("SELECT * FROM blood_reports WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      email: row.email,
+      profile: row.profile || {},
+      markers: row.markers || [],
+      analysis: row.analysis || {},
+      aiReport: row.ai_report || "",
+      createdAt: row.created_at,
+    };
+  }
+
+  async updateBloodReport(
+    id: string,
+    data: Partial<BloodReportRecord>
+  ): Promise<BloodReportRecord | undefined> {
+    await this.ensureBloodReportsTable();
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let index = 1;
+
+    const push = (field: string, value: unknown) => {
+      updates.push(`${field} = $${index++}`);
+      values.push(value);
+    };
+
+    if (data.email !== undefined) push("email", data.email);
+    if (data.profile !== undefined) push("profile", JSON.stringify(data.profile));
+    if (data.markers !== undefined) push("markers", JSON.stringify(data.markers));
+    if (data.analysis !== undefined) push("analysis", JSON.stringify(data.analysis));
+    if (data.aiReport !== undefined) push("ai_report", data.aiReport ?? "");
+
+    if (updates.length === 0) return this.getBloodReport(id);
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE blood_reports SET ${updates.join(", ")} WHERE id = $${index} RETURNING *`,
+      values
+    );
     if (result.rows.length === 0) return undefined;
     const row = result.rows[0];
     return {

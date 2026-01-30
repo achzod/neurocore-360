@@ -516,6 +516,7 @@ export async function generateScientificContext(
 
   // Search for each critical/suboptimal marker
   for (const marker of markers) {
+    if (!marker.markerId) continue;
     const range = BIOMARKER_RANGES[marker.markerId];
     if (!range) continue;
 
