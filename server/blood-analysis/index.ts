@@ -6,6 +6,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { searchArticles, searchFullText } from "../knowledge/storage";
+import type { ScrapedArticle } from "../knowledge/storage";
 
 // ============================================
 // BIOMARKERS - OPTIMAL RANGES
@@ -1158,6 +1159,195 @@ function detectPatterns(markers: MarkerAnalysis[]): DiagnosticPattern[] {
   return detectedPatterns;
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  huberman: "Huberman Lab",
+  peter_attia: "Dr. Peter Attia",
+  mpmd: "Derek de MPMD",
+  chris_masterjohn: "Dr. Chris Masterjohn",
+  examine: "Examine.com",
+  marek_health: "Marek Health",
+  sbs: "Stronger by Science",
+};
+
+const EXPERT_NAME_REGEX = /(Derek(?: de MPMD)?|MPMD|Huberman|Attia|Masterjohn|Examine(?:\.com)?)/gi;
+const GENERIC_PHRASES = [
+  "renseigne sur ta sante",
+  "renseigne sur votre sante",
+  "aspect precis",
+  "indique un aspect",
+  "marqueur de ta sante",
+  "marqueur de votre sante",
+];
+
+const formatPercentDelta = (value: number, min: number, max: number) => {
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) return "N/A";
+  if (value < min) {
+    const pct = Math.round(((min - value) / min) * 100);
+    return `-${pct}% (sous la limite)`;
+  }
+  if (value > max) {
+    const pct = Math.round(((value - max) / max) * 100);
+    return `+${pct}% (au-dessus de la limite)`;
+  }
+  return "0% (dans la plage)";
+};
+
+const selectDeepDiveMarkers = (markers: MarkerAnalysis[]) => {
+  const weight: Record<string, number> = { critical: 0, suboptimal: 1, normal: 2, optimal: 3 };
+  return [...markers]
+    .filter((marker) => marker.status !== "optimal")
+    .map((marker) => {
+      const range = BIOMARKER_RANGES[marker.markerId];
+      const diff =
+        range && marker.value !== undefined
+          ? Math.max(
+              marker.value < range.optimalMin
+                ? (range.optimalMin - marker.value) / range.optimalMin
+                : 0,
+              marker.value > range.optimalMax
+                ? (marker.value - range.optimalMax) / range.optimalMax
+                : 0
+            )
+          : 0;
+      return { marker, diff };
+    })
+    .sort((a, b) => {
+      const statusA = weight[a.marker.status] ?? 4;
+      const statusB = weight[b.marker.status] ?? 4;
+      if (statusA !== statusB) return statusA - statusB;
+      return b.diff - a.diff;
+    })
+    .map((entry) => entry.marker)
+    .slice(0, 6);
+};
+
+const buildSourceExcerpt = (article: ScrapedArticle) => {
+  const label = SOURCE_LABELS[article.source] || article.source;
+  const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 420);
+  return `- ${label}: "${excerpt}${excerpt.length >= 420 ? "..." : ""}"`;
+};
+
+const normalizePlain = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+async function getBiomarkerDeepDiveContext(
+  markers: MarkerAnalysis[],
+  userProfile: { prenom?: string; nom?: string; age?: string }
+): Promise<{ context: string; markerNames: string[] }> {
+  const deepDiveMarkers = selectDeepDiveMarkers(markers);
+  if (!deepDiveMarkers.length) return { context: "", markerNames: [] };
+
+  const patientName = [userProfile.prenom, userProfile.nom].filter(Boolean).join(" ").trim() || "le client";
+
+  const sections: string[] = [];
+  for (const marker of deepDiveMarkers) {
+    const range = BIOMARKER_RANGES[marker.markerId];
+    const normalMin = range?.normalMin ?? null;
+    const normalMax = range?.normalMax ?? null;
+    const optimalMin = range?.optimalMin ?? null;
+    const optimalMax = range?.optimalMax ?? null;
+
+    const keywords = [marker.name.toLowerCase(), marker.markerId];
+    const articles = await searchArticles(keywords, 4, [
+      "huberman",
+      "peter_attia",
+      "mpmd",
+      "chris_masterjohn",
+      "examine",
+      "marek_health",
+      "sbs",
+    ]);
+    const sourceLines = articles.slice(0, 3).map(buildSourceExcerpt);
+
+    sections.push(
+      [
+        `### ${marker.name}`,
+        `Patient: ${patientName}, ${userProfile.age || "N/A"} ans`,
+        `Valeur mesuree: ${marker.value} ${marker.unit}`,
+        `Range labo normal: ${normalMin ?? "N/A"} - ${normalMax ?? "N/A"} ${marker.unit || ""}`,
+        `Range optimal performance: ${optimalMin ?? "N/A"} - ${optimalMax ?? "N/A"} ${marker.unit || ""}`,
+        `Ecart vs normal: ${normalMin !== null && normalMax !== null ? formatPercentDelta(marker.value, normalMin, normalMax) : "N/A"}`,
+        `Ecart vs optimal: ${
+          optimalMin !== null && optimalMax !== null ? formatPercentDelta(marker.value, optimalMin, optimalMax) : "N/A"
+        }`,
+        `Statut: ${marker.status}`,
+        "SOURCES DISPONIBLES (tu DOIS citer au moins 2 experts):",
+        sourceLines.length ? sourceLines.join("\n") : "- Aucune source fournie pour ce marqueur.",
+      ].join("\n")
+    );
+  }
+
+  return {
+    context: sections.join("\n\n"),
+    markerNames: deepDiveMarkers.map((marker) => marker.name),
+  };
+}
+
+const extractSection = (text: string, title: string): string => {
+  const startIdx = text.indexOf(title);
+  if (startIdx === -1) return "";
+  const nextIdx = text.indexOf("\n## ", startIdx + title.length);
+  return text.slice(startIdx, nextIdx === -1 ? undefined : nextIdx);
+};
+
+const countMatches = (text: string, regex: RegExp) => {
+  if (!text) return 0;
+  return (text.match(regex) || []).length;
+};
+
+const hasGenericPhrases = (text: string) => {
+  const normalized = normalizePlain(text);
+  return GENERIC_PHRASES.some((phrase) => normalized.includes(phrase));
+};
+
+const validateDeepDive = (output: string, markerNames: string[]) => {
+  if (!markerNames.length) return { ok: true, reason: "" };
+  const deepDive = extractSection(output, "## Deep dive marqueurs prioritaires");
+  if (!deepDive) return { ok: false, reason: "missing_deep_dive" };
+
+  const normalizedDeepDive = normalizePlain(deepDive);
+  const missingMarkers = markerNames.filter(
+    (name) => !normalizedDeepDive.includes(normalizePlain(name))
+  );
+  if (missingMarkers.length) {
+    return { ok: false, reason: `missing_markers:${missingMarkers.join(",")}` };
+  }
+
+  const requiredCount = markerNames.length;
+  if (countMatches(deepDive, /C'?est quoi\s*\?/gi) < requiredCount) {
+    return { ok: false, reason: "missing_cest_quoi" };
+  }
+  if (countMatches(deepDive, /Ton analyse personnalisee/gi) < requiredCount) {
+    return { ok: false, reason: "missing_analyse_perso" };
+  }
+  if (countMatches(deepDive, /Impacts sur ton corps/gi) < requiredCount) {
+    return { ok: false, reason: "missing_impacts" };
+  }
+  if (countMatches(deepDive, /Protocole recommande/gi) < requiredCount) {
+    return { ok: false, reason: "missing_protocole" };
+  }
+  const expertMentions = countMatches(deepDive, EXPERT_NAME_REGEX);
+  if (expertMentions < requiredCount * 2) {
+    return { ok: false, reason: "missing_expert_mentions" };
+  }
+  if (!/Huberman/i.test(deepDive) || !/Attia/i.test(deepDive) || !/Derek|MPMD/i.test(deepDive)) {
+    return { ok: false, reason: "missing_key_experts" };
+  }
+  if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(deepDive)) {
+    return { ok: false, reason: "emoji_present" };
+  }
+  if (/(^|\n)-\s+/.test(deepDive)) {
+    return { ok: false, reason: "bullet_list_present" };
+  }
+  if (hasGenericPhrases(deepDive)) {
+    return { ok: false, reason: "generic_phrases" };
+  }
+  return { ok: true, reason: "" };
+};
+
 export async function analyzeBloodwork(
   markers: BloodMarkerInput[],
   userProfile: {
@@ -1269,6 +1459,7 @@ REGLES DE STYLE:
 - Cite DIRECTEMENT les experts dans le texte: Derek de MPMD, Dr. Andrew Huberman, Dr. Peter Attia, Dr. Chris Masterjohn, Examine.com.
 - Format: "Derek de MPMD mentionne que...", "Dr. Huberman (Huberman Lab Ep. 127) explique...", "Selon Examine.com..."
 - Inclus minimum 8-12 citations d'experts dans le rapport (dans les sections, pas juste la section Sources).
+- Dans le deep dive, cite au moins 2 experts par biomarqueur.
 - Cite des sources scientifiques supplémentaires dans la section dédiée.
 - Liens PubMed autorises.
 - Utilise les ranges optimaux en priorite.
@@ -1279,6 +1470,8 @@ REGLES DE STYLE:
 - Jamais "patient" ou "utilisateur".
 - Ne fais pas d'hypotheses sur les ressentis. Utilise "symptomes associes" si besoin.
 - Pas de repetition: chaque section apporte une information nouvelle.
+- Interdit: phrases generiques vides (ex: "renseigne sur ta sante", "aspect precis").
+- Interdit: emojis, puces ou listes dans les sections deep dive (tout doit etre en phrases completes).
 - Longueur cible: 2000-3000 mots minimum, maximum 20 000 caracteres.
 - Si tu dois raccourcir, reduis le nombre de marqueurs en deep dive et les phrases par section, mais garde toutes les sections, y compris "Sources scientifiques".
 - Chaque recommandation contient: action + dosage + timing + duree + objectif.
@@ -1323,14 +1516,11 @@ FORMAT DE REPONSE (respecte STRICTEMENT les titres):
 
 ## Deep dive marqueurs prioritaires
 Pour 4-6 marqueurs max (les plus critiques / sous-optimaux):
-- Verdict (1 ligne)
-- Ce que ca veut dire (3-4 phrases, factuel avec mécanismes physiologiques)
-- Citations d'experts (1-2 citations Derek/Huberman/Attia avec dosages précis)
-- Symptomes associes (1 phrase)
-- Protocole exact en 3 phases:
-  * Phase 1 - Lifestyle: [actions + timing + science derrière]
-  * Phase 2 - Supplements: [nom + dosage exact + timing + marques recommandées + citation expert]
-  * Phase 3 - Retest: [délai + marqueurs à retest + expected outcomes chiffrés]
+### [Nom marqueur] — [valeur] [unite] ([statut])
+**C'est quoi ?** (3-4 phrases, role physiologique precis, production/metabolisme/elimination, pourquoi chez un athlete)
+**Ton analyse personnalisee** (4-5 phrases, utilise les valeurs et ecarts, causes possibles, cite >=2 experts par nom)
+**Impacts sur ton corps et ta performance** (3-4 phrases, consequences specifiques, recuperation/energie/gains/sommeil/libido si pertinent)
+**Protocole recommande** (4-5 phrases, prose fluide, pas de bullets; inclure Phase 1/Phase 2/Phase 3 avec actions, dosages, timing, re-test)
 
 ## Plan 90 jours
 ### Jours 1-30 (Phase d'Attaque)
@@ -1433,6 +1623,11 @@ const ensureSourcesSection = (text: string): string => {
   return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
 };
 
+const stripEmojis = (text: string): string => {
+  if (!text) return "";
+  return text.replace(/[\p{Extended_Pictographic}\uFE0F]/gu, "");
+};
+
 const extractPlan90Section = (text: string): string => {
   if (!text) return "";
   const start = text.indexOf("## Plan 90 jours");
@@ -1464,7 +1659,8 @@ const insertPlan90Section = (text: string, planSection: string): string => {
 
 const trimAiAnalysis = (text: string, maxChars = 20000): string => {
   if (!text) return "";
-  if (text.length <= maxChars) return text.trim();
+  const cleaned = stripEmojis(text).trim();
+  if (cleaned.length <= maxChars) return cleaned;
   const sourcesIndex = text.indexOf("## Sources scientifiques");
   const planIndex = text.indexOf("## Plan 90 jours");
   const sources = sourcesIndex !== -1 ? text.slice(sourcesIndex).trim() : "";
@@ -1486,15 +1682,15 @@ const trimAiAnalysis = (text: string, maxChars = 20000): string => {
       const head = text.slice(0, headEnd);
       const lastBreak = head.lastIndexOf("\n\n");
       const safeHead = lastBreak > 1000 ? head.slice(0, lastBreak).trim() : head.trim();
-      return [safeHead, plan, sources].filter(Boolean).join("\n\n").trim();
+      return stripEmojis([safeHead, plan, sources].filter(Boolean).join("\n\n")).trim();
     }
   }
   const sliced = text.slice(0, maxChars);
   const lastBreak = sliced.lastIndexOf("\n\n");
   if (lastBreak > 1000) {
-    return sliced.slice(0, lastBreak).trim();
+    return stripEmojis(sliced.slice(0, lastBreak)).trim();
   }
-  return sliced.trim();
+  return stripEmojis(sliced).trim();
 };
 
 export function buildFallbackAnalysis(
@@ -1869,6 +2065,11 @@ export async function generateAIBloodAnalysis(
       ? (userProfile.poids / Math.pow(userProfile.taille / 100, 2)).toFixed(1)
       : "N/A";
   const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "N/A"} h/nuit | Training: ${userProfile.trainingHours ?? "N/A"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "N/A"}% | Alcool: ${userProfile.alcoholWeekly ?? "N/A"} verres/sem | Stress: ${userProfile.stressLevel ?? "N/A"}/10 | Poids: ${userProfile.poids ?? "N/A"} kg | Taille: ${userProfile.taille ?? "N/A"} cm | IMC: ${bmi}`;
+  const deepDivePayload = await getBiomarkerDeepDiveContext(analysisResult.markers, {
+    prenom: userProfile.prenom,
+    nom: userProfile.nom,
+    age: userProfile.age,
+  });
 
   const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
 Objectifs: ${userProfile.objectives || "Performance et santé"}
@@ -1886,26 +2087,54 @@ RÉSUMÉ:
 - À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
 - Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
 
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
+${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR (OBLIGATOIRE):\n${deepDivePayload.context}` : ""}
+${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
 
 Génère une analyse complète selon le format demandé.`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-opus-4-5-20251101",
-    max_tokens: 16000,
-    system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }]
-  });
+  let output = "";
+  let bestCandidate = "";
+  let bestScore = -1;
 
-  const textContent = response.content.find(c => c.type === "text");
-  let output = textContent?.text || "";
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const retryNote =
+      attempt === 1
+        ? ""
+        : `\nATTENTION: Ta reponse precedente etait trop generique ou ne respectait pas les sections deep dive. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies. Chaque biomarqueur doit contenir les 4 sous-sections avec au moins 2 citations d'experts.\n`;
+    const prompt = `${userPrompt}\n${retryNote}`;
+
+    const response = await anthropic.messages.create({
+      model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+      max_tokens: 16000,
+      system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }]
+    });
+
+    const textContent = response.content.find(c => c.type === "text");
+    const candidate = textContent?.text || "";
+    const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
+
+    const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestCandidate = candidate;
+    }
+    if (deepDiveCheck.ok) {
+      output = candidate;
+      break;
+    }
+  }
+
+  if (!output) {
+    output = bestCandidate;
+  }
 
   if (!output.includes("## Plan 90 jours")) {
     const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan 90 jours" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan 90 jours\n  ### Jours 1-30 (Phase d'Attaque)\n  ### Jours 31-90 (Phase d'Optimisation)\n  ### Retest à J+90\n- Chaque ligne doit inclure: action + dosage precis + timing exact + citation expert (Derek/Huberman/Attia/Examine) + objectif chiffre.\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
 
     try {
       const planResponse = await anthropic.messages.create({
-        model: "claude-opus-4-5-20251101",
+        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
         max_tokens: 1500,
         system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
         messages: [{ role: "user", content: planPrompt }]
