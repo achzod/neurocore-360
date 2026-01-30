@@ -1,13 +1,19 @@
-import { useEffect, useMemo } from "react";
+import { Suspense, lazy, useEffect, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
-import { FileText, AlertTriangle, CheckCircle2, Info, Target, BookOpen } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import FileText from "lucide-react/dist/esm/icons/file-text";
+import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
+import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2";
+import Info from "lucide-react/dist/esm/icons/info";
+import Target from "lucide-react/dist/esm/icons/target";
+import BookOpen from "lucide-react/dist/esm/icons/book-open";
+import { AnimatedGradientMesh } from "@/components/AnimatedGradientMesh";
+import { BiometricProgressCircle } from "@/components/BiometricProgressCircle";
+import { BiomarkerCardPremium } from "@/components/BiomarkerCardPremium";
+import { highlightText, parseAISections } from "@/lib/markdown-utils";
 
-import {
-  calculateGlobalScore,
-  calculateMarkerScore,
-} from "@/lib/bloodScores";
+import { calculateGlobalScore, calculateMarkerScore } from "@/lib/bloodScores";
 import { calculatePercentile } from "@/lib/percentileCalculator";
 import type { BloodMarker, PanelKey } from "@/types/blood";
 
@@ -147,127 +153,17 @@ const getPatientAge = (dob?: string): number | null => {
   return Number.isFinite(age) ? age : null;
 };
 
-const normalizeText = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+const MarkdownBlock = lazy(() =>
+  import("@/components/MarkdownBlock").then((m) => ({ default: m.MarkdownBlock }))
+);
 
-const EXPERT_REGEX = /(Derek(?: de MPMD)?|MPMD|Huberman|Attia|Masterjohn|Examine(?:\.com)?)/gi;
-
-const highlightText = (text: string) => {
-  const parts = text.split(EXPERT_REGEX);
-  return parts.map((part, idx) => {
-    if (part.match(EXPERT_REGEX)) {
-      return (
-        <span
-          key={`expert-${idx}-${part}`}
-          className="rounded-sm bg-blue-50 px-1 font-semibold text-blue-700"
-        >
-          {part}
-        </span>
-      );
-    }
-    return <span key={`text-${idx}`}>{part}</span>;
-  });
-};
-
-const renderWithHighlights = (children: React.ReactNode) => {
-  return (Array.isArray(children) ? children : [children]).map((child, idx) => {
-    if (typeof child === "string") {
-      return <span key={`hl-${idx}`}>{highlightText(child)}</span>;
-    }
-    return child;
-  });
-};
-
-const MarkdownBlock = ({ content }: { content: string }) => {
+const MarkdownSection = ({ content }: { content: string }) => {
   if (!content) return null;
   return (
-    <ReactMarkdown
-      components={{
-        h2: ({ children }) => (
-          <h2 className="mt-6 text-xl font-semibold" style={{ color: "#0f172a" }}>
-            {renderWithHighlights(children)}
-          </h2>
-        ),
-        h3: ({ children }) => (
-          <h3 className="mt-4 text-lg font-semibold" style={{ color: "#0f172a" }}>
-            {renderWithHighlights(children)}
-          </h3>
-        ),
-        p: ({ children }) => (
-          <p className="mt-3 text-sm leading-7 text-slate-700">
-            {renderWithHighlights(children)}
-          </p>
-        ),
-        li: ({ children }) => (
-          <li className="mt-2 text-sm leading-6 text-slate-700">
-            {renderWithHighlights(children)}
-          </li>
-        ),
-        strong: ({ children }) => (
-          <strong className="font-semibold text-slate-900">
-            {renderWithHighlights(children)}
-          </strong>
-        ),
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+    <Suspense fallback={<div className="h-20 animate-pulse rounded bg-[--bg-tertiary]" />}>
+      <MarkdownBlock content={content} />
+    </Suspense>
   );
-};
-
-type AISection = { title: string; content: string };
-
-type AISections = {
-  synthesis?: AISection;
-  alerts?: AISection;
-  systems?: AISection;
-  interconnections?: AISection;
-  deepDive?: AISection;
-  plan90?: AISection;
-  nutrition?: AISection;
-  supplements?: AISection;
-  sources?: AISection;
-};
-
-const parseAISections = (markdown: string): AISections => {
-  const sections: AISection[] = [];
-  const matches = Array.from(
-    markdown.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=^##\s+|\s*$)/gm)
-  );
-  matches.forEach((match) => {
-    const title = match[1]?.trim() ?? "";
-    const content = match[2]?.trim() ?? "";
-    if (title) sections.push({ title, content });
-  });
-
-  const getBy = (keyword: string) =>
-    sections.find((section) => normalizeText(section.title).includes(keyword));
-
-  return {
-    synthesis: getBy("synthese"),
-    alerts: getBy("alertes"),
-    systems: getBy("systeme"),
-    interconnections: getBy("interconnexion"),
-    deepDive: getBy("deep dive"),
-    plan90: getBy("plan 90"),
-    nutrition: getBy("nutrition"),
-    supplements: getBy("supplements"),
-    sources: getBy("sources scientifiques"),
-  };
-};
-
-const parseSubsections = (content: string): AISection[] => {
-  if (!content) return [];
-  const matches = Array.from(
-    content.matchAll(/^###\s+(.+)\n([\s\S]*?)(?=^###\s+|\s*$)/gm)
-  );
-  return matches.map((match) => ({
-    title: match[1]?.trim() ?? "",
-    content: match[2]?.trim() ?? "",
-  }));
 };
 
 const formatPercentDiff = (value: number, ref: number) => {
@@ -276,10 +172,10 @@ const formatPercentDiff = (value: number, ref: number) => {
 };
 
 const getScoreLabel = (score: number) => {
-  if (score < 50) return { label: "Zone rouge", color: "text-red-600" };
-  if (score < 70) return { label: "Zone orange", color: "text-amber-600" };
-  if (score < 85) return { label: "Zone verte", color: "text-emerald-600" };
-  return { label: "Zone bleue", color: "text-blue-600" };
+  if (score < 50) return { label: "Zone rouge", color: "text-rose-400" };
+  if (score < 70) return { label: "Zone orange", color: "text-amber-400" };
+  if (score < 85) return { label: "Zone verte", color: "text-emerald-400" };
+  return { label: "Zone bleue", color: "text-cyan-400" };
 };
 
 const buildPatientName = (patient: BloodTestDetail["bloodTest"]["patient"]) => {
@@ -355,6 +251,25 @@ const SECTION_NAV = [
   { id: "sources", label: "Sources" },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: "easeOut" },
+  },
+};
+
 function BloodAnalysisReportInner() {
   const params = useParams<{ id: string }>();
   const reportId = params.id;
@@ -366,12 +281,33 @@ function BloodAnalysisReportInner() {
     return value ? value.trim() : "";
   }, []);
 
-  const { data: me, error: meError } = useQuery<MeResponse, ApiError>({
-    queryKey: ["/api/me"],
-    queryFn: () => fetcher<MeResponse>("/api/me", adminKey || undefined),
-    retry: false,
-    enabled: !adminKey,
+  const [meQuery, bloodTestQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["/api/me"],
+        queryFn: () => fetcher<MeResponse>("/api/me", adminKey || undefined),
+        retry: false,
+        enabled: !adminKey,
+      },
+      {
+        queryKey: ["/api/blood-tests", reportId],
+        queryFn: () => fetcher<BloodTestDetail>(`/api/blood-tests/${reportId}`, adminKey || undefined),
+        retry: false,
+        refetchInterval: (query: any) => {
+          const current = query.state.data as BloodTestDetail | undefined;
+          const status = current?.bloodTest?.status;
+          return status === "processing" ? 5000 : false;
+        },
+      },
+    ],
   });
+
+  const me = meQuery.data as MeResponse | undefined;
+  const meError = meQuery.error as ApiError | null;
+  const data = bloodTestQuery.data as BloodTestDetail | undefined;
+  const isLoading = bloodTestQuery.isLoading;
+  const error = bloodTestQuery.error as ApiError | null;
+  const refetch = bloodTestQuery.refetch;
 
   useEffect(() => {
     if (adminKey) return;
@@ -380,43 +316,7 @@ function BloodAnalysisReportInner() {
     }
   }, [adminKey, meError, navigate, reportId]);
 
-  // Force light theme for blood report (white background only)
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-
-    // Remove dark class and add light
-    root.classList.remove("dark");
-    root.classList.add("light");
-
-    // Force white background with inline style (overrides all CSS)
-    const previousBodyBg = body.style.backgroundColor;
-    const previousBodyColor = body.style.color;
-    body.style.backgroundColor = "#ffffff";
-    body.style.color = "#0f172a"; // slate-900
-
-    return () => {
-      // Restore previous theme and styles on unmount
-      const storedTheme = localStorage.getItem("neurocore-theme");
-      root.classList.remove("light");
-      if (storedTheme === "dark") {
-        root.classList.add("dark");
-      }
-      body.style.backgroundColor = previousBodyBg;
-      body.style.color = previousBodyColor;
-    };
-  }, []);
-
-  const { data, isLoading, error, refetch } = useQuery<BloodTestDetail, ApiError>({
-    queryKey: ["/api/blood-tests", reportId],
-    queryFn: () => fetcher<BloodTestDetail>(`/api/blood-tests/${reportId}`, adminKey || undefined),
-    retry: false,
-    refetchInterval: (query) => {
-      const current = query.state.data as BloodTestDetail | undefined;
-      const status = current?.bloodTest?.status;
-      return status === "processing" ? 5000 : false;
-    },
-  });
+  // Blood report uses its own theme palette; no global override needed.
 
   useEffect(() => {
     if (adminKey) return;
@@ -472,27 +372,29 @@ function BloodAnalysisReportInner() {
     };
   }, [data, reportId]);
 
-  const aiSections = useMemo(() => parseAISections(reportData?.aiAnalysis || ""), [reportData?.aiAnalysis]);
-  const hasAISections = useMemo(
-    () => Object.values(aiSections).some((section) => Boolean(section?.content)),
-    [aiSections]
-  );
-  const deepDiveItems = useMemo(
-    () => parseSubsections(aiSections.deepDive?.content || ""),
-    [aiSections.deepDive?.content]
-  );
+  const aiData = useMemo(() => {
+    const sections = parseAISections(reportData?.aiAnalysis || "");
+    const hasContent = Object.values(sections).some((section) => Boolean(section?.content));
+    return { sections, hasContent };
+  }, [reportData?.aiAnalysis]);
 
-  const criticalMarkers = useMemo(() => {
-    if (!reportData) return [];
+  const aiSections = aiData.sections;
+  const hasAISections = aiData.hasContent;
+
+  const markerBuckets = useMemo(() => {
+    if (!reportData) return { critical: [], strong: [] };
     const critical = reportData.markers.filter((marker) => marker.status === "critical");
-    if (critical.length) return critical.slice(0, 4);
-    return reportData.markers.filter((marker) => marker.status === "suboptimal").slice(0, 4);
-  }, [reportData]);
+    const fallback = reportData.markers.filter((marker) => marker.status === "suboptimal");
+    const strong = reportData.markers.filter((marker) => marker.status === "optimal").slice(0, 4);
 
-  const strongMarkers = useMemo(() => {
-    if (!reportData) return [];
-    return reportData.markers.filter((marker) => marker.status === "optimal").slice(0, 4);
-  }, [reportData]);
+    return {
+      critical: (critical.length ? critical : fallback).slice(0, 4),
+      strong,
+    };
+  }, [reportData?.markers]);
+
+  const criticalMarkers = markerBuckets.critical;
+  const strongMarkers = markerBuckets.strong;
 
   const supplements = reportData?.comprehensiveData?.supplements || [];
   const protocols = reportData?.comprehensiveData?.protocols || [];
@@ -521,11 +423,11 @@ function BloodAnalysisReportInner() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white text-slate-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-center px-6 py-24">
-          <div className="rounded-xl border border-slate-200 px-6 py-8 text-center">
-            <div className="text-lg font-semibold">Chargement du rapport</div>
-            <div className="mt-2 text-sm text-slate-600">Analyse en cours, merci de patienter.</div>
+      <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-100">
+        <div className="mx-auto flex max-w-5xl items-center justify-center px-6 py-24 font-body">
+          <div className="rounded-xl border border-[--border-primary] bg-[--bg-secondary] px-6 py-8 text-center">
+            <div className="text-lg font-semibold text-slate-100">Chargement du rapport</div>
+            <div className="mt-2 text-sm text-slate-400">Analyse en cours, merci de patienter.</div>
           </div>
         </div>
       </div>
@@ -535,12 +437,12 @@ function BloodAnalysisReportInner() {
   if (error || !data || !reportData) {
     const isUnauthorized = error instanceof ApiError && error.status === 401;
     return (
-      <div className="min-h-screen bg-white text-slate-900">
-        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-          <div className="text-lg font-semibold">
+      <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-100">
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center font-body">
+          <div className="text-lg font-semibold text-slate-100">
             {isUnauthorized ? "Connexion requise" : "Rapport introuvable"}
           </div>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-slate-400">
             {isUnauthorized
               ? "Connecte-toi pour ouvrir ce rapport."
               : "Le lien est invalide ou le rapport est indisponible."}
@@ -552,14 +454,14 @@ function BloodAnalysisReportInner() {
 
   if (data.bloodTest.status === "processing") {
     return (
-      <div className="min-h-screen bg-white text-slate-900">
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <div className="text-lg font-semibold">Analyse en cours</div>
-          <p className="mt-2 text-sm text-slate-600">
+      <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-100">
+        <div className="mx-auto max-w-3xl px-6 py-24 text-center font-body">
+          <div className="text-lg font-semibold text-slate-100">Analyse en cours</div>
+          <p className="mt-2 text-sm text-slate-400">
             Je prepare ton rapport, la page se met a jour automatiquement.
           </p>
           <button
-            className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-sm text-white"
+            className="mt-6 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-100"
             onClick={() => refetch()}
           >
             Rafraichir
@@ -573,26 +475,27 @@ function BloodAnalysisReportInner() {
   const targetScore = Math.min(85, Math.max(reportData.globalScore + 15, 78));
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-100">
+      <header className="sticky top-0 z-20 border-b border-[--border-primary] bg-[--bg-secondary]/90 backdrop-blur relative overflow-hidden">
+        <AnimatedGradientMesh />
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4 font-body">
           <div className="flex items-center gap-3">
-            <div className="rounded-full bg-blue-600 p-2 text-white">
+            <div className="rounded-full bg-cyan-500 p-2 text-slate-100">
               <FileText className="h-4 w-4" />
             </div>
             <div>
-              <div className="text-sm uppercase tracking-[0.2em] text-slate-500">ApexLabs</div>
-              <div className="text-lg font-semibold">Rapport sanguin premium</div>
+              <div className="text-sm uppercase tracking-[0.2em] text-slate-400">ApexLabs</div>
+              <div className="text-lg font-semibold text-slate-100">Rapport sanguin premium</div>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm font-semibold">{reportData.patientName}</div>
-              <div className="text-xs text-slate-500">{new Date(reportData.createdAt).toLocaleDateString("fr-FR")}</div>
+              <div className="text-sm font-semibold text-slate-100">{reportData.patientName}</div>
+              <div className="text-xs text-slate-400">{new Date(reportData.createdAt).toLocaleDateString("fr-FR")}</div>
             </div>
             <button
               onClick={handleExportPDF}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-md border border-[--border-primary] px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-[--bg-tertiary]"
             >
               Export PDF
             </button>
@@ -600,16 +503,16 @@ function BloodAnalysisReportInner() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-6xl gap-10 px-6 py-10">
+      <div className="mx-auto flex max-w-6xl gap-10 px-6 py-10 font-body">
         <aside className="hidden w-60 flex-shrink-0 lg:block">
-          <div className="sticky top-28 rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Navigation</div>
+          <div className="sticky top-28 rounded-xl border border-[--border-primary] bg-[--bg-secondary] p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Navigation</div>
             <nav className="mt-4 space-y-2 text-sm">
               {SECTION_NAV.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="block rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  className="block rounded-md px-2 py-1 text-slate-300 hover:bg-[--bg-tertiary] hover:text-slate-100"
                 >
                   {section.label}
                 </a>
@@ -618,41 +521,44 @@ function BloodAnalysisReportInner() {
           </div>
         </aside>
 
-        <main
-          className="w-full max-w-[900px]"
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif", lineHeight: 1.8 }}
+        <motion.main
+          className="w-full max-w-[900px] font-body"
+          style={{ lineHeight: 1.8 }}
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <section id="introduction" className="scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="introduction" className="scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Info className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Introduction & guide de lecture
                 </h2>
               </div>
-              <p className="mt-4 text-sm text-slate-700">
+              <p className="mt-4 text-sm text-slate-300">
                 Bonjour {reportData.patientName},
               </p>
-              <p className="mt-3 text-sm text-slate-700">
+              <p className="mt-3 text-sm text-slate-300">
                 Ce rapport analyse tes {reportData.markers.length} marqueurs sanguins pour identifier ce qui
                 fonctionne bien et ce qui nécessite une optimisation. Il a été généré par ApexLabs, plateforme
                 d'analyse de bilans sanguins orientée santé, performance et composition corporelle.
               </p>
-              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+              <div className="mt-5 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                <div className="text-sm font-semibold text-slate-100 font-display">
                   Notre approche combine
                 </div>
-                <ul className="mt-3 list-disc pl-5 text-sm text-slate-700">
+                <ul className="mt-3 list-disc pl-5 text-sm text-slate-300">
                   <li>Analyse de tes marqueurs vs ranges optimaux (pas juste "normaux")</li>
                   <li>Protocoles basés sur la science et citations d'experts (Derek, Huberman, Attia)</li>
                   <li>Plan d'action personnalisé 90 jours avec résultats attendus chiffrés</li>
                 </ul>
               </div>
               <div className="mt-6">
-                <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="text-sm font-semibold text-slate-100 font-display">
                   Comment lire ce rapport
                 </div>
-                <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+                <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-300">
                   <li>Vue d'ensemble: score global, priorités absolues, forces.</li>
                   <li>Analyse détaillée: explication de chaque marqueur et impact sur toi.</li>
                   <li>Protocole personnalisé: plan 90 jours, suppléments, lifestyle, retests.</li>
@@ -660,46 +566,59 @@ function BloodAnalysisReportInner() {
                 </ol>
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="overview" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="overview" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Target className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Target className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Score global expliqué
                 </h2>
               </div>
               {aiSections.synthesis?.content ? (
-                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="mt-5 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
                     Synthèse exécutive personnalisée
                   </div>
-                  <MarkdownBlock content={aiSections.synthesis.content} />
+                  <MarkdownSection content={aiSections.synthesis.content} />
+                </div>
+              ) : null}
+              {aiSections.quality?.content ? (
+                <div className="mt-4 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
+                    Qualité des données & limites
+                  </div>
+                  <MarkdownSection content={aiSections.quality.content} />
+                </div>
+              ) : null}
+              {aiSections.potential?.content ? (
+                <div className="mt-4 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
+                    Potentiel recomposition
+                  </div>
+                  <MarkdownSection content={aiSections.potential.content} />
                 </div>
               ) : null}
               <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Score global</div>
-                  <div className="mt-2 text-4xl font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                    {reportData.globalScore}/100
-                  </div>
-                  <div className={`mt-2 text-sm font-semibold ${scoreLabel.color}`}>{scoreLabel.label}</div>
-                  <p className="mt-4 text-sm text-slate-700">
+                <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-6 grain-texture text-center">
+                  <BiometricProgressCircle score={reportData.globalScore} size={220} />
+                  <div className={`mt-4 text-sm font-semibold ${scoreLabel.color}`}>{scoreLabel.label}</div>
+                  <p className="mt-4 text-sm text-slate-300">
                     Un score de {reportData.globalScore}/100 te place dans la catégorie
                     {" "}
-                    <span className="font-semibold text-slate-900">{scoreLabel.label.toLowerCase()}</span>.
+                    <span className="font-semibold text-slate-100">{scoreLabel.label.toLowerCase()}</span>.
                     L'objectif réaliste sur 90 jours est d'atteindre {targetScore}/100.
                   </p>
-                  <div className="mt-4 text-xs text-slate-500">
+                  <div className="mt-4 text-xs text-slate-400">
                     0-50: Zone rouge · 50-70: Zone orange · 70-85: Zone verte · 85-100: Zone bleue
                   </div>
                 </div>
-                <div className="rounded-xl border border-slate-200 p-5">
-                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="rounded-xl border border-[--border-primary] bg-[--bg-secondary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
                     Tes infos personnelles
                   </div>
-                  <div className="mt-4 grid gap-2 text-sm text-slate-700">
+                  <div className="mt-4 grid gap-2 text-sm text-slate-300">
                     <div>Nom: {reportData.patientName}</div>
                     <div>Age: {reportData.patientAge ?? "Non renseigné"}</div>
                     <div>Poids: {reportData.patient?.poids ? `${reportData.patient.poids} kg` : "Non renseigné"}</div>
@@ -711,238 +630,202 @@ function BloodAnalysisReportInner() {
                 </div>
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="alerts" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="alerts" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <AlertTriangle className="h-5 w-5 text-rose-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Alertes prioritaires (ce qui nécessite une action rapide)
                 </h2>
               </div>
-              <p className="mt-3 text-sm text-slate-700">
+              <p className="mt-3 text-sm text-slate-300">
                 Voici les marqueurs qui demandent ton attention immédiate. Chaque alerte est expliquée pour que tu
                 comprennes quoi faire, pourquoi, et avec quel impact attendu.
               </p>
               <div className="mt-6 space-y-6">
                 {aiSections.alerts?.content ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                    <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                      Synthèse des alertes
+                  <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                    <div className="text-sm font-semibold text-slate-100 font-display">
+                      Tableau de bord (scores & priorités)
                     </div>
-                    <MarkdownBlock content={aiSections.alerts.content} />
+                    <MarkdownSection content={aiSections.alerts.content} />
                   </div>
                 ) : null}
                 {criticalMarkers.length ? (
-                  criticalMarkers.map((marker, idx) => {
-                  const deepDive = deepDiveItems.find((item) =>
-                    normalizeText(item.title).includes(normalizeText(marker.name))
-                  );
-                  const diffNormal =
-                    marker.normalMax !== null && marker.value > marker.normalMax
-                      ? formatPercentDiff(marker.value, marker.normalMax)
-                      : null;
-                  const diffOptimal =
-                    marker.optimalMax !== null && marker.value > marker.optimalMax
-                      ? formatPercentDiff(marker.value, marker.optimalMax)
-                      : null;
-
-                  return (
-                    <div key={`${marker.code}-${idx}`} className="rounded-2xl border border-slate-200 p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="text-lg font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                          🚨 Alerte #{idx + 1}: {marker.name.toUpperCase()}
-                        </div>
-                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-                          {marker.status.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="mt-4 grid gap-4 text-sm text-slate-700 sm:grid-cols-2">
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Ta valeur</div>
-                          <div className="mt-1 font-semibold text-slate-900">{formatValue(marker.value, marker.unit)}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Range normal</div>
-                          <div className="mt-1 font-semibold text-slate-900">
-                            {marker.normalMin ?? "-"} - {marker.normalMax ?? "-"} {marker.unit}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Range optimal</div>
-                          <div className="mt-1 font-semibold text-slate-900">
-                            {marker.optimalMin ?? "-"} - {marker.optimalMax ?? "-"} {marker.unit}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Ton statut</div>
-                          <div className="mt-1 font-semibold text-slate-900">
-                            {diffNormal !== null ? `${diffNormal}% au-dessus du normal` : "Hors optimal"}
-                            {diffOptimal !== null ? ` · ${diffOptimal}% au-dessus de l'optimal` : ""}
-                          </div>
-                        </div>
-                      </div>
-                      {deepDive?.content ? (
-                        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                            Analyse personnalisée
-                          </div>
-                          <MarkdownBlock content={deepDive.content} />
-                        </div>
-                      ) : (
-                        <div className="mt-4 text-sm text-slate-600">
-                          Analyse détaillée indisponible pour ce marqueur.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {criticalMarkers.map((marker) => (
+                      <BiomarkerCardPremium
+                        key={marker.code}
+                        marker={{
+                          name: marker.name,
+                          value: marker.value,
+                          unit: marker.unit,
+                          status: marker.status,
+                          normalMin: marker.normalMin,
+                          normalMax: marker.normalMax,
+                        }}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
+                  <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 text-sm text-slate-300">
                     Aucun marqueur critique détecté. Le rapport complet détaille les optimisations possibles.
                   </div>
                 )}
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="strengths" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="strengths" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Tes forces (ce qui fonctionne déjà)
                 </h2>
               </div>
-              <p className="mt-3 text-sm text-slate-700">
+              <p className="mt-3 text-sm text-slate-300">
                 Ces marqueurs sont solides. On va s'appuyer dessus pour accélérer le reste de ta progression.
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 {strongMarkers.length ? (
                   strongMarkers.map((marker) => (
-                    <div key={marker.code} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                    <div key={marker.code} className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 grain-texture">
+                      <div className="text-sm font-semibold text-slate-100 font-display">
                         {marker.name} ({formatValue(marker.value, marker.unit)})
                       </div>
-                      <p className="mt-2 text-sm text-slate-700">
+                      <p className="mt-2 text-sm text-slate-300">
                         Ton {marker.name.toLowerCase()} est dans la zone optimale. Continue tes habitudes actuelles
                         pour maintenir ce point fort.
                       </p>
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                  <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 text-sm text-slate-300">
                     Tes marqueurs forts seront détaillés dans l'analyse complète.
                   </div>
                 )}
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="systems" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="systems" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Info className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Analyse système par système
                 </h2>
               </div>
-              <MarkdownBlock content={aiSections.systems?.content || ""} />
+              <MarkdownSection content={aiSections.systems?.content || ""} />
               {!aiSections.systems?.content && (
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-4 text-sm text-slate-400">
                   Analyse détaillée en cours de génération. Consulte le rapport complet ci-dessous pour le texte intégral.
                 </p>
               )}
               {aiSections.deepDive?.content ? (
-                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="mt-6 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
                     Deep dive (explications détaillées)
                   </div>
-                  <MarkdownBlock content={aiSections.deepDive.content} />
+                  <MarkdownSection content={aiSections.deepDive.content} />
                 </div>
               ) : null}
             </div>
-          </section>
+          </motion.section>
 
-          <section id="interconnections" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="interconnections" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Info className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Interconnexions clés
                 </h2>
               </div>
-              <MarkdownBlock content={aiSections.interconnections?.content || ""} />
+              <MarkdownSection content={aiSections.interconnections?.content || ""} />
               {!aiSections.interconnections?.content && (
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-4 text-sm text-slate-400">
                   Les interconnexions détaillées sont disponibles dans le rapport complet.
                 </p>
               )}
             </div>
-          </section>
+          </motion.section>
 
-          <section id="protocol" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="protocol" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Target className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <Target className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Protocole 90 jours (phase par phase)
                 </h2>
               </div>
-              <MarkdownBlock content={aiSections.plan90?.content || ""} />
+              <MarkdownSection content={aiSections.plan90?.content || ""} />
               {!aiSections.plan90?.content && (
-                <p className="mt-4 text-sm text-slate-600">
+                <p className="mt-4 text-sm text-slate-400">
                   Le plan 90 jours est en cours de génération et apparaît dans le rapport complet.
                 </p>
               )}
 
               {aiSections.nutrition?.content ? (
-                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="mt-6 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
                     Nutrition & lifestyle
                   </div>
-                  <MarkdownBlock content={aiSections.nutrition.content} />
+                  <MarkdownSection content={aiSections.nutrition.content} />
                 </div>
               ) : null}
 
               {aiSections.supplements?.content ? (
-                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="mt-6 rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-5 grain-texture">
+                  <div className="text-sm font-semibold text-slate-100 font-display">
                     Suppléments (contexte scientifique)
                   </div>
-                  <MarkdownBlock content={aiSections.supplements.content} />
+                  <MarkdownSection content={aiSections.supplements.content} />
                 </div>
               ) : null}
 
               <div className="mt-8">
-                <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                <div className="text-sm font-semibold text-slate-100 font-display">
                   Recommandations supplements (format actionnable)
                 </div>
                 <div className="mt-4 space-y-4">
                   {supplements.length ? (
                     supplements.map((supp: any, idx: number) => (
-                      <div key={`${supp.name}-${idx}`} className="rounded-xl border border-slate-200 p-4">
-                        <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                      <div key={`${supp.name}-${idx}`} className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 grain-texture">
+                        <div className="text-sm font-semibold text-slate-100 font-display">
                           {supp.name}
                         </div>
-                        <div className="mt-2 text-sm text-slate-700">
-                          <div>✅ QUOI: {supp.name}</div>
-                          <div>🎯 POURQUOI: {supp.mechanism || "Optimiser tes marqueurs prioritaires."}</div>
+                        <div className="mt-2 text-sm text-slate-300">
                           <div>
-                            📊 COMMENT: {supp.dosage} · {supp.timing}
+                            <span className="font-semibold text-slate-100">QUOI:</span> {supp.name}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">POURQUOI:</span>{" "}
+                            {supp.mechanism || "Optimiser tes marqueurs prioritaires."}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">COMMENT:</span> {supp.dosage} · {supp.timing}
                             {supp.brand ? ` · Marque: ${supp.brand}` : ""}
                           </div>
-                          <div>🕐 QUAND: {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}</div>
-                          <div>📈 IMPACT: Amélioration attendue sur marqueurs ciblés.</div>
                           <div>
-                            💬 EXPERT: {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
+                            <span className="font-semibold text-slate-100">QUAND:</span>{" "}
+                            {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">IMPACT:</span>{" "}
+                            Amélioration attendue sur marqueurs ciblés.
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">EXPERT:</span>{" "}
+                            {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                    <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 text-sm text-slate-300">
                       Aucun supplément recommandé pour ce profil.
                     </div>
                   )}
@@ -951,28 +834,38 @@ function BloodAnalysisReportInner() {
 
               {protocols.length ? (
                 <div className="mt-8">
-                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                  <div className="text-sm font-semibold text-slate-100 font-display">
                     Protocoles lifestyle & training
                   </div>
                   <div className="mt-4 space-y-4">
                     {protocols.map((protocol: any, idx: number) => (
-                      <div key={`${protocol.name}-${idx}`} className="rounded-xl border border-slate-200 p-4">
-                        <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                      <div key={`${protocol.name}-${idx}`} className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 grain-texture">
+                        <div className="text-sm font-semibold text-slate-100 font-display">
                           {protocol.name}
                         </div>
-                        <div className="mt-2 text-sm text-slate-700">
-                          <div>✅ QUOI: {protocol.description || protocol.name}</div>
+                        <div className="mt-2 text-sm text-slate-300">
                           <div>
-                            🎯 POURQUOI: {protocol.scienceContext || protocol.expectedOutcome || "Optimiser tes marqueurs."}
+                            <span className="font-semibold text-slate-100">QUOI:</span>{" "}
+                            {protocol.description || protocol.name}
                           </div>
                           <div>
-                            📊 COMMENT:{" "}
+                            <span className="font-semibold text-slate-100">POURQUOI:</span>{" "}
+                            {protocol.scienceContext || protocol.expectedOutcome || "Optimiser tes marqueurs."}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">COMMENT:</span>{" "}
                             {protocol.steps && protocol.steps.length ? protocol.steps.join(" · ") : protocol.frequency}
                           </div>
-                          <div>🕐 QUAND: {protocol.duration || "Phase actuelle"}</div>
-                          <div>📈 IMPACT: {protocol.expectedOutcome || "Amélioration attendue sur tes objectifs."}</div>
                           <div>
-                            💬 EXPERT:{" "}
+                            <span className="font-semibold text-slate-100">QUAND:</span>{" "}
+                            {protocol.duration || "Phase actuelle"}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">IMPACT:</span>{" "}
+                            {protocol.expectedOutcome || "Amélioration attendue sur tes objectifs."}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-100">EXPERT:</span>{" "}
                             {protocol.citations && protocol.citations.length
                               ? highlightText(protocol.citations[0])
                               : "-"}
@@ -984,76 +877,78 @@ function BloodAnalysisReportInner() {
                 </div>
               ) : null}
             </div>
-          </section>
+          </motion.section>
 
-          <section id="full-report" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="full-report" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <FileText className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Rapport complet (texte intégral)
                 </h2>
               </div>
               {hasAISections ? (
-                <div className="mt-4 space-y-6 text-sm text-slate-700">
-                  {aiSections.synthesis?.content && <MarkdownBlock content={aiSections.synthesis.content} />}
-                  {aiSections.alerts?.content && <MarkdownBlock content={aiSections.alerts.content} />}
-                  {aiSections.systems?.content && <MarkdownBlock content={aiSections.systems.content} />}
-                  {aiSections.interconnections?.content && <MarkdownBlock content={aiSections.interconnections.content} />}
-                  {aiSections.deepDive?.content && <MarkdownBlock content={aiSections.deepDive.content} />}
-                  {aiSections.plan90?.content && <MarkdownBlock content={aiSections.plan90.content} />}
-                  {aiSections.nutrition?.content && <MarkdownBlock content={aiSections.nutrition.content} />}
-                  {aiSections.supplements?.content && <MarkdownBlock content={aiSections.supplements.content} />}
-                  {aiSections.sources?.content && <MarkdownBlock content={aiSections.sources.content} />}
+                <div className="mt-4 space-y-6 text-sm text-slate-300">
+                  {aiSections.synthesis?.content && <MarkdownSection content={aiSections.synthesis.content} />}
+                  {aiSections.alerts?.content && <MarkdownSection content={aiSections.alerts.content} />}
+                  {aiSections.systems?.content && <MarkdownSection content={aiSections.systems.content} />}
+                  {aiSections.interconnections?.content && (
+                    <MarkdownSection content={aiSections.interconnections.content} />
+                  )}
+                  {aiSections.deepDive?.content && <MarkdownSection content={aiSections.deepDive.content} />}
+                  {aiSections.plan90?.content && <MarkdownSection content={aiSections.plan90.content} />}
+                  {aiSections.nutrition?.content && <MarkdownSection content={aiSections.nutrition.content} />}
+                  {aiSections.supplements?.content && <MarkdownSection content={aiSections.supplements.content} />}
+                  {aiSections.sources?.content && <MarkdownSection content={aiSections.sources.content} />}
                 </div>
               ) : (
-                <MarkdownBlock content={reportData.aiAnalysis} />
+                <MarkdownSection content={reportData.aiAnalysis} />
               )}
             </div>
-          </section>
+          </motion.section>
 
-          <section id="glossary" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="glossary" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                <BookOpen className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Glossaire & explications
                 </h2>
               </div>
-              <p className="mt-3 text-sm text-slate-700">
+              <p className="mt-3 text-sm text-slate-300">
                 Ce glossaire vulgarise les termes techniques utilisés dans ton rapport.
               </p>
               <div className="mt-6 space-y-4">
                 {glossaryEntries.map((entry) => (
-                  <div key={entry.term} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                  <div key={entry.term} className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 grain-texture">
+                    <div className="text-sm font-semibold text-slate-100 font-display">
                       {entry.term}
                     </div>
-                    <p className="mt-2 text-sm text-slate-700">{entry.definition}</p>
+                    <p className="mt-2 text-sm text-slate-300">{entry.definition}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </section>
+          </motion.section>
 
-          <section id="sources" className="mt-10 scroll-mt-24">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <motion.section id="sources" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
+            <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
-                  Sources scientifiques
+                <BookOpen className="h-5 w-5 text-cyan-400" />
+                <h2 className="text-2xl font-semibold font-display text-slate-100">
+                  Sources (bibliothèque)
                 </h2>
               </div>
               {aiSections.sources?.content ? (
-                <MarkdownBlock content={aiSections.sources.content} />
+                <MarkdownSection content={aiSections.sources.content} />
               ) : (
-                <p className="mt-3 text-sm text-slate-700">
+                <p className="mt-3 text-sm text-slate-300">
                   Sources disponibles dans la base scientifique ApexLabs.
                 </p>
               )}
             </div>
-          </section>
-        </main>
+          </motion.section>
+        </motion.main>
       </div>
     </div>
   );

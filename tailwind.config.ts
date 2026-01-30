@@ -94,7 +94,9 @@ export default {
         serif: ["var(--font-serif)"],
         mono: ["JetBrains Mono", "var(--font-mono)", "monospace"],
         heading: ["Inter", "Helvetica Neue", "sans-serif"],
-        display: ["Inter", "sans-serif"],
+        display: ["JetBrains Mono", "monospace"],
+        body: ["IBM Plex Sans", "sans-serif"],
+        data: ["JetBrains Mono", "monospace"],
       },
       keyframes: {
         "accordion-down": {
