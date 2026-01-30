@@ -11,6 +11,7 @@ import {
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
   buildFallbackAnalysis,
+  normalizeMarkerName,
   BIOMARKER_RANGES,
   DIAGNOSTIC_PATTERNS,
   BloodMarkerInput
@@ -429,7 +430,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       // Build markers in frontend expected format
       const formattedMarkers = markers.map((m: Record<string, unknown>) => {
-        const markerId = (m.markerId || m.name || "") as string;
+        const rawMarkerId = (m.markerId || m.name || "") as string;
+        const markerId = normalizeMarkerName(rawMarkerId);
         const range = BIOMARKER_RANGES[markerId];
         return {
           name: range?.name || markerId,

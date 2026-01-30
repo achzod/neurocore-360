@@ -436,7 +436,7 @@ const MARKER_ALIASES: Record<string, string> = {
  * Normalizes a marker name to its BIOMARKER_RANGES key.
  * Handles case-insensitivity and common aliases.
  */
-function normalizeMarkerName(name: string): string {
+export function normalizeMarkerName(name: string): string {
   if (!name) return "";
 
   // First, try direct lookup in BIOMARKER_RANGES (case-sensitive)
