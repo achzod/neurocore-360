@@ -421,8 +421,10 @@ export const DIAGNOSTIC_PATTERNS: DiagnosticPattern[] = [
 // ============================================
 
 export interface BloodMarkerInput {
-  markerId: string;
+  markerId?: string;
+  name?: string;  // Alternative to markerId
   value: number;
+  unit?: string;  // Optional unit from input
 }
 
 export interface PatientInfo {
@@ -1364,7 +1366,11 @@ export async function analyzeBloodwork(
   const action: string[] = [];
 
   for (const input of markers) {
-    const range = BIOMARKER_RANGES[input.markerId];
+    // Support both markerId and name as lookup key
+    const markerId = input.markerId || input.name;
+    if (!markerId) continue;
+
+    const range = BIOMARKER_RANGES[markerId];
     if (!range) continue;
 
     // Skip gender-specific markers for wrong gender
@@ -1372,7 +1378,7 @@ export async function analyzeBloodwork(
 
     const status = getMarkerStatus(input.value, range);
     const analysis: MarkerAnalysis = {
-      markerId: input.markerId,
+      markerId: markerId,
       name: range.name,
       value: input.value,
       unit: range.unit,
