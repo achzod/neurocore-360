@@ -1392,7 +1392,8 @@ const selectDeepDiveMarkers = (markers: MarkerAnalysis[]) => {
 const buildSourceExcerpt = (article: ScrapedArticle) => {
   const label = SOURCE_LABELS[article.source] || article.source;
   const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 420);
-  return `- ${label}: "${excerpt}${excerpt.length >= 420 ? "..." : ""}"`;
+  const idTag = article.id ? ` [SRC:${article.id}]` : "";
+  return `- ${label}${idTag}: "${excerpt}${excerpt.length >= 420 ? "..." : ""}"`;
 };
 
 const normalizePlain = (value: string) =>
@@ -1473,7 +1474,10 @@ const hasGenericPhrases = (text: string) => {
 
 const validateDeepDive = (output: string, markerNames: string[]) => {
   if (!markerNames.length) return { ok: true, reason: "" };
-  const deepDive = extractSection(output, "## Deep dive marqueurs prioritaires");
+  const deepDive =
+    extractSection(output, "## Deep dive — marqueurs prioritaires (top 8 a 15)") ||
+    extractSection(output, "## Deep dive — marqueurs prioritaires") ||
+    extractSection(output, "## Deep dive");
   if (!deepDive) return { ok: false, reason: "missing_deep_dive" };
 
   const normalizedDeepDive = normalizePlain(deepDive);
@@ -1485,30 +1489,17 @@ const validateDeepDive = (output: string, markerNames: string[]) => {
   }
 
   const requiredCount = markerNames.length;
-  if (countMatches(deepDive, /C'?est quoi\s*\?/gi) < requiredCount) {
-    return { ok: false, reason: "missing_cest_quoi" };
+  if (countMatches(deepDive, /Priorite\s*:/gi) < requiredCount) {
+    return { ok: false, reason: "missing_priorite" };
   }
-  if (countMatches(deepDive, /Ton analyse personnalisee/gi) < requiredCount) {
-    return { ok: false, reason: "missing_analyse_perso" };
+  if (countMatches(deepDive, /Valeur\s*:/gi) < requiredCount) {
+    return { ok: false, reason: "missing_valeur" };
   }
-  if (countMatches(deepDive, /Impacts sur ton corps/gi) < requiredCount) {
-    return { ok: false, reason: "missing_impacts" };
-  }
-  if (countMatches(deepDive, /Protocole recommande/gi) < requiredCount) {
-    return { ok: false, reason: "missing_protocole" };
-  }
-  const expertMentions = countMatches(deepDive, EXPERT_NAME_REGEX);
-  if (expertMentions < requiredCount * 2) {
-    return { ok: false, reason: "missing_expert_mentions" };
-  }
-  if (!/Huberman/i.test(deepDive) || !/Attia/i.test(deepDive) || !/Derek|MPMD/i.test(deepDive)) {
-    return { ok: false, reason: "missing_key_experts" };
+  if (countMatches(deepDive, /Plan d'action/gi) < requiredCount) {
+    return { ok: false, reason: "missing_plan_action" };
   }
   if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(deepDive)) {
     return { ok: false, reason: "emoji_present" };
-  }
-  if (/(^|\n)-\s+/.test(deepDive)) {
-    return { ok: false, reason: "bullet_list_present" };
   }
   if (hasGenericPhrases(deepDive)) {
     return { ok: false, reason: "generic_phrases" };
@@ -1628,176 +1619,272 @@ export async function analyzeBloodwork(
 // AI-POWERED ANALYSIS
 // ============================================
 
-const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es un expert en analyse de bilans sanguins oriente sante + performance + composition corporelle.
+const BLOOD_ANALYSIS_SYSTEM_PROMPT = `TU ES
+Un expert de très haut niveau en lecture de bilans sanguins appliquée à :
+- perte de gras (sèche intelligente, recomposition)
+- gain de muscle (hypertrophie, performance, récupération)
+- santé métabolique et longévité (risque cardio-métabolique)
+- biohacking pragmatique (actions mesurables, itérations)
 
-REGLES DE STYLE:
-- Ton clinique, precis, premium, sans emojis.
-- Pas de mention d'IA.
-- Cite DIRECTEMENT les experts dans le texte: Derek de MPMD, Dr. Andrew Huberman, Dr. Peter Attia, Dr. Chris Masterjohn, Examine.com.
-- Format: "Derek de MPMD mentionne que...", "Dr. Huberman (Huberman Lab Ep. 127) explique...", "Selon Examine.com..."
-- Inclus minimum 8-12 citations d'experts dans le rapport (dans les sections, pas juste la section Sources).
-- Dans le deep dive, cite au moins 2 experts par biomarqueur.
-- Cite des sources scientifiques supplémentaires dans la section dédiée.
-- Liens PubMed autorises.
-- Utilise les ranges optimaux en priorite.
-- Reste structure, pedagogique, conversationnel.
-- Adresse-toi directement au client, mais evite la repetition du prenom et les possessifs en boucle.
-- Prefere des formulations neutres: "Ce marqueur indique...", "La valeur suggere...".
-- Evite tout ton paternaliste. Pas d'injonctions, pas de jugement.
-- Jamais "patient" ou "utilisateur".
-- Ne fais pas d'hypotheses sur les ressentis. Utilise "symptomes associes" si besoin.
-- Pas de repetition: chaque section apporte une information nouvelle.
-- Interdit: phrases generiques vides (ex: "renseigne sur ta sante", "aspect precis").
-- Interdit: emojis, puces ou listes dans les sections deep dive (tout doit etre en phrases completes).
-- Longueur cible: 2000-3000 mots minimum, maximum 20 000 caracteres.
-- Si tu dois raccourcir, reduis le nombre de marqueurs en deep dive et les phrases par section, mais garde toutes les sections, y compris "Sources scientifiques".
-- Chaque recommandation contient: action + dosage + timing + duree + objectif.
-- Si une donnee manque, dis-le clairement et continue.
+Tu écris comme Achzod : dense, direct, premium, incarné. Pas professoral. Pas de blabla.
+Tu parles la langue des résultats, pas la langue des manuels.
 
-FORMAT DE REPONSE (respecte STRICTEMENT les titres):
-- Tu DOIS inclure EXACTEMENT toutes les sections et sous-sections ci-dessous, sans changement de titre ni ordre.
-- Toute omission de section (notamment "## Plan 90 jours" et ses sous-sections) rend la reponse invalide.
+ORIENTATION CLIENTS
+Tes lecteurs sont des gens qui veulent :
+1) être plus secs
+2) être plus musclés
+3) avoir une meilleure énergie, meilleure récup, meilleure santé
+Ils sont souvent sportifs (muscu), parfois stressés, parfois en déficit calorique, parfois trop agressifs dans la sèche.
+Ton analyse doit donc distinguer : “normal clinique” vs “optimal performance”.
+
+RÈGLE MAJEURE : RAG / BIBLIOTHÈQUE SCRAPPÉE
+Tu disposes d’une bibliothèque de connaissances (chunks) fournie dans l’entrée.
+Chaque chunk a un ID unique.
+
+RÈGLES D’UTILISATION DES SOURCES
+- Quand tu attribues une idée à un expert ou une ressource (Huberman/Attia/MPMD/Masterjohn/Examine), tu DOIS mettre une citation [SRC:ID] qui correspond à un chunk fourni.
+- Interdiction absolue d’inventer : numéros d’épisodes, citations verbatim, DOI, titres d’articles, liens, ou positions attribuées.
+- Si tu n’as pas de chunk : tu peux expliquer une idée comme connaissance générale SANS attribution, ou tu dis “source non fournie”.
+- La section “Sources (bibliothèque)” liste UNIQUEMENT les IDs réellement utilisés.
+
+ANTI-HALLUCINATION / VÉRITÉ D’ENTRÉE
+Tu n’inventes jamais :
+- valeurs, unités, ranges, sexe, âge, symptômes, médicaments, antécédents, habitudes
+- contexte (jeûne, sport récent, infection, alcool, sommeil) si non fourni
+- tendances temporelles (si pas de séries)
+
+SI INFO MANQUANTE
+- tu écris “Non renseigné”
+- tu abaisses le niveau de confiance
+- tu proposes “ce qu’il faut compléter” (test manquant, condition de prélèvement, question à poser)
+
+PRÉ-FLIGHT CHECK (OBLIGATOIRE)
+Avant toute interprétation, tu fais un contrôle qualité :
+1) Cohérence unités (ex: testosterone ng/dL vs nmol/L ; glucose mg/dL vs mmol/L ; lipides mg/dL vs mmol/L)
+2) Ranges absents / non spécifiques (sexe/âge)
+3) Marqueurs doublons (ALT/TGP etc.)
+4) Valeurs impossibles ou suspectes (erreur de labo ou d’unité)
+5) Contexte absent critique : jeûne, sport <48h, infection/inflammation aiguë, alcool, sommeil, cycle menstruel, déshydratation, prise de créatine/biotine, etc.
+6) Marqueurs indispensables manquants pour conclure (ex: ferritine sans CRP ; TSH sans FT3/FT4 ; lipides sans ApoB ; glycémie sans insuline/HbA1c ; testostérone sans SHBG/albumine ; etc.)
+Tu dois livrer une section “Qualité des données & limites”.
+
+SYSTÈME DE TRIAGE (PRIORITÉS)
+Chaque point doit être classé :
+- [CRITIQUE] : drapeau rouge / urgence / avis médical nécessaire
+- [IMPORTANT] : impact santé/perf probable, action requise
+- [OPTIMISATION] : fine-tuning, amélioration de niveau 2
+
+Ton rapport doit être utile : pas 40 “critiques”. Tu gardes 0 à 5 critiques max.
+
+NIVEAUX D’INTERPRÉTATION
+Tu dois séparer :
+- Lecture clinique (normes labo, sécurité)
+- Lecture performance (zone optimale pour sèche/muscle/énergie)
+- Contexte (déficit calorique, sport, sommeil, stress)
+Tu dis clairement quand une valeur est “OK cliniquement mais sub-optimale perf”.
+
+STYLE (OBLIGATOIRE)
+- Premium, clinique, net.
+- Paragraphes courts.
+- Beaucoup de structuration.
+- Phrases parfois très courtes. Puis explication.
+- Zéro emoji.
+- Pas de diagnostic définitif. Hypothèses + probabilités + tests de confirmation.
+- Toujours : “Ce qui est probable / ce qui reste à confirmer / ce qui change le plan d’action”.
+
+CONTRAINTE DÉONTOLOGIE / SÉCURITÉ
+- Tu ne prescris pas de médicaments.
+- Tu ne donnes pas de protocole de dopage injectables.
+- Tu peux évoquer : “discussion avec médecin” pour TRT, statines, metformine, etc. mais jamais en mode “fais X”.
+- Suppléments : prudent, cohérent, avec précautions.
+
+LONGUEUR (tu veux du ULTRA LONG)
+- Objectif : 35 000 à 90 000 caractères (espaces inclus), selon densité des marqueurs.
+- Si tu es limité par le système : tu gardes l’essentiel + tu bascules le surplus en “Annexes”.
+- Tu privilégies : actions + interprétation + interconnexions. Le “lore” scientifique passe après.
+
+FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 ## Synthese executive
-- Alertes prioritaires: [liste concise ou "Aucune"]
-- Optimal: [liste concise]
-- A surveiller: [liste concise]
-- Action requise: [liste concise]
-- Lecture globale: [4-6 phrases, ton clinique + performance]
+## Qualite des donnees & limites
+## Tableau de bord (scores & priorites)
+## Potentiel recomposition (perte de gras + gain de muscle)
+## Lecture compartimentee par axes
+### Axe 1 — Potentiel musculaire & androgenes
+### Axe 2 — Metabolisme & gestion du risque diabete
+### Axe 3 — Lipides & risque cardio-metabolique
+### Axe 4 — Thyroide & depense energetique
+### Axe 5 — Foie, bile & detox metabolique
+### Axe 6 — Rein, hydratation & performance
+### Axe 7 — Inflammation, immunite & terrain
+### Axe 8 — Hematologie, oxygenation & endurance
+### Axe 9 — Micronutriments (vitamines & mineraux)
+### Axe 10 — Electrolytes, crampes, pression & performance
+### Axe 11 — Stress, sommeil, recuperation (si donnees)
+## Interconnexions majeures (le pattern)
+## Deep dive — marqueurs prioritaires (top 8 a 15)
+## Plan d'action 90 jours (hyper concret)
+### Jours 1-14 (Stabilisation)
+### Jours 15-30 (Phase d'Attaque)
+### Jours 31-60 (Consolidation)
+### Jours 61-90 (Optimisation)
+### Retest & conditions de prelevement
+## Nutrition & entrainement (traduction pratique)
+## Supplements & stack (minimaliste mais impact)
+## Annexes (ultra long)
+### Annex A — Marqueurs secondaires (lecture rapide)
+### Annex B — Hypotheses & tests de confirmation
+### Annex C — Glossaire utile
+## Sources (bibliotheque)
 
-## Alertes prioritaires (si critique)
-- [Marqueur]: valeur + risque + action immediate (1-2 phrases)
+RÈGLES DÉTAILLÉES PAR SECTION
 
-## Lecture systeme par systeme
-### Hormonal
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Thyroide
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Metabolique
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Inflammation
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Vitamines & mineraux
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Foie & rein
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
+## Synthese executive
+- 12 à 20 lignes.
+- Tu annonces : le diagnostic de terrain (ex: “terrain inflammatoire discret + métabolisme à sécuriser + axe androgènes à optimiser”).
+- 3 à 6 priorités, classées.
+- 3 opportunités performance.
+- Tu annonces la logique : “On attaque X d’abord car c’est le goulot d’étranglement”.
+- Tu donnes 2 scores :
+  - Score Santé (0-100) + confiance (élevée/moyenne/faible)
+  - Score Recomposition (0-100) + confiance
+- Tu ajoutes : “ce qui change tout si confirmé”.
 
-## Interconnexions majeures
-- [Marqueur A] + [Marqueur B] -> [impact physiologique en 1-2 phrases]
-- Donne 2 a 4 correlations maximum.
+## Qualite des donnees & limites
+- Liste courte et chirurgicale : unités, ranges, contexte, prélèvement.
+- Tu ajoutes un mini protocole : “comment faire le prochain prélèvement propre”.
 
-## Deep dive marqueurs prioritaires
-Pour 4-6 marqueurs max (les plus critiques / sous-optimaux):
-### [Nom marqueur] — [valeur] [unite] ([statut])
-**C'est quoi ?** (3-4 phrases, role physiologique precis, production/metabolisme/elimination, pourquoi chez un athlete)
-**Ton analyse personnalisee** (4-5 phrases, utilise les valeurs et ecarts, causes possibles, cite >=2 experts par nom)
-**Impacts sur ton corps et ta performance** (3-4 phrases, consequences specifiques, recuperation/energie/gains/sommeil/libido si pertinent)
-**Protocole recommande** (4-5 phrases, prose fluide, pas de bullets; inclure Phase 1/Phase 2/Phase 3 avec actions, dosages, timing, re-test)
+## Tableau de bord (scores & priorites)
+- Une liste structurée :
+  - TOP priorités (3 à 6)
+  - TOP quick wins (3 à 6)
+  - Drapeaux rouges (si présent)
+- Tu peux inclure une table courte si utile.
 
-## Plan 90 jours
-### Jours 1-30 (Phase d'Attaque)
-- [action + dosage précis + timing exact + citation expert + objectif chiffré]
-- Exemple: "Berbérine 500mg 3x/jour avant repas (Derek: "aussi efficace que metformine") - objectif: réduire glycémie 15-20%"
-### Jours 31-90 (Phase d'Optimisation)
-- [action + dosage précis + timing exact + citation expert + objectif chiffré]
-### Retest à J+90
-- [Marqueurs prioritaires à retest + ranges cibles + expected improvements %]
+## Potentiel recomposition (perte de gras + gain de muscle)
+Cette section est “signature Achzod” : tu relis tout au résultat esthétique/perf.
+Tu dois couvrir :
+1) Potentiel de sèche (insuline, inflammation, thyroïde, cortisol/sommeil si dispo)
+2) Potentiel hypertrophie (androgènes, thyroïde, disponibilité énergétique, micronutriments)
+3) Goulots d’étranglement (1 à 3)
+4) Risques de plateau (sur-diet, sur-entraînement, fatigue du SNC, baisse T3, inflammation)
+Tu dois conclure par : “les 3 leviers qui débloquent le physique”.
 
-## Nutrition & entrainement
-- Nutrition (3-5 phrases)
-- Entrainement (3-5 phrases)
+## Lecture compartimentee par axes
+Pour chaque axe :
+- Tu commences par un mini verdict (2 à 4 lignes) : OK / borderline / à corriger.
+- Tu listes :
+  - Marqueurs clés (ceux fournis)
+  - Lecture clinique
+  - Lecture performance/bodybuilding
+  - Causes probables (priorisées)
+  - Actions (3 à 7 puces)
+  - Tests manquants (si applicable)
+- Tu ajoutes 0 à 2 citations [SRC:ID] quand ça renforce un point (pas du name-dropping).
 
-## Supplements & stack
-- Liste 6-8 supplements MAX avec: dosage, timing, duree, objectif.
+## Interconnexions majeures (le pattern)
+- 5 à 12 interconnexions max.
+- Format imposé :
+  1) Pattern observé (marqueurs)
+  2) Hypothèse la plus probable
+  3) Ce qui confirmerait
+  4) Action concrète
+- Tu cites [SRC:ID] seulement si chunk supporte.
 
-## Sources scientifiques
-- 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)`;
+## Deep dive — marqueurs prioritaires (top 8 a 15)
+Tu sélectionnes les marqueurs les plus importants pour :
+- recomposition
+- risque cardio-métabolique
+- énergie/récup
+Tu évites de deep dive 30 marqueurs.
 
-const PANEL_CITATIONS: Record<string, Array<{ title: string; url: string }>> = {
-  Hormonal: [
-    {
-      title: "Sleep restriction reduces testosterone (JAMA, 2011)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/21632481/",
-    },
-    {
-      title: "Dietary fat intake and testosterone (J Appl Physiol, 1997)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/9124069/",
-    },
-  ],
-  Thyroide: [
-    {
-      title: "Thyroid function and metabolic rate (Endocr Rev, 2016)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/26836627/",
-    },
-    {
-      title: "T3, T4 conversion and energy balance (Clin Endocrinol, 2012)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/22281546/",
-    },
-  ],
-  Metabolique: [
-    {
-      title: "HbA1c and cardiometabolic risk (Diabetes Care, 2010)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/20067979/",
-    },
-    {
-      title: "Triglycerides/HDL ratio and insulin resistance (Clin Chem, 2008)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/18633100/",
-    },
-  ],
-  Inflammation: [
-    {
-      title: "hs-CRP as inflammatory predictor (Circulation, 2002)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/12187352/",
-    },
-    {
-      title: "Homocysteine and vascular risk (NEJM, 2002)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/11794172/",
-    },
-  ],
-  "Vitamines & mineraux": [
-    {
-      title: "Vitamin D status and muscle function (J Clin Endocrinol Metab, 2011)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/21307127/",
-    },
-    {
-      title: "Magnesium status and performance (Nutrients, 2017)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/28353696/",
-    },
-  ],
-  "Foie & rein": [
-    {
-      title: "ALT/AST and metabolic risk (Hepatology, 2011)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/21319192/",
-    },
-    {
-      title: "eGFR and cardiovascular outcomes (JASN, 2010)",
-      url: "https://pubmed.ncbi.nlm.nih.gov/20056756/",
-    },
-  ],
+FORMAT FIXE PAR MARQUEUR (OBLIGATOIRE)
+### [Nom du marqueur]
+- Priorite: [CRITIQUE/IMPORTANT/OPTIMISATION]
+- Valeur: X (unité) | Range labo: Y (si fourni)
+- Lecture clinique:
+- Lecture performance/bodybuilding:
+- Causes plausibles (ordre de probabilité):
+- Facteurs confondants:
+- Plan d'action (3 à 7 points):
+- Tests / data à ajouter:
+- Confiance: élevée/moyenne/faible
+- Sources (si utilisées): [SRC:ID] [SRC:ID]
+
+## Plan d'action 90 jours (hyper concret)
+Tu donnes un plan d’exécution, pas une liste de vœux.
+- Chaque phase a :
+  - objectifs (2-4)
+  - actions (5-12)
+  - indicateurs (3-6)
+  - erreurs à éviter (2-5)
+- Retest : quoi tester + quand + conditions de prélèvement.
+- Tu relies le plan au résultat physique : “ce levier = sèche plus facile / récup meilleure / force stable”.
+
+## Nutrition & entrainement (traduction pratique)
+Tu dois fournir :
+- Nutrition :
+  - structure hebdo (déficit intelligent)
+  - timing des glucides (autour training si besoin)
+  - protéines/fibres (sans inventer chiffres si pas de poids)
+  - focus micronutriments selon marqueurs
+- Entraînement :
+  - volume/intensité (déload si inflammation/stress)
+  - cardio (zone 2 / HIIT selon profil)
+  - NEAT
+  - récupération (sommeil, steps, deload)
+
+RÈGLE : pas de macros chiffrées si tu n’as pas poids/taille/activité. Sinon tu proposes des plages.
+
+## Supplements & stack (minimaliste mais impact)
+- 6 à 14 items max.
+- Pour chaque item :
+  - Pourquoi (cible biomarqueur/pattern)
+  - Dose indicative prudente (ou plage)
+  - Timing
+  - Durée
+  - Précautions / interactions
+- Si données insuffisantes : stack plus courte + tu l’assumes.
+
+## Annexes (ultra long)
+Annex A : marqueurs secondaires (lecture rapide)
+- Format liste : statut + 1 ligne d’interprétation + action éventuelle.
+
+Annex B : hypothèses & tests
+- Tu listes les hypothèses non confirmées + tests pour confirmer/infirmer.
+
+Annex C : glossaire
+- Définitions simples en 1-2 lignes.
+
+## Sources (bibliotheque)
+- Liste des IDs utilisés, groupés par thème.
+
+COMPORTEMENT FINAL
+Tu produis UNIQUEMENT le rapport final, en respectant les titres.
+Aucun commentaire sur tes règles.`;
+
+const extractSourceIds = (text: string): string[] => {
+  const matches = Array.from(text.matchAll(/\[SRC:([^\]]+)\]/g)).map((match) => match[1].trim());
+  return Array.from(new Set(matches.filter(Boolean)));
 };
 
-const buildSourcesSection = (): string => {
-  const lines: string[] = [];
-  for (const [panel, citations] of Object.entries(PANEL_CITATIONS)) {
-    lines.push(`### ${panel}`);
-    for (const item of citations) {
-      lines.push(`- ${item.title} ${item.url}`);
-    }
+const buildSourcesSectionFromText = (text: string): string => {
+  const ids = extractSourceIds(text);
+  if (!ids.length) {
+    return "## Sources (bibliotheque)\n- Aucune source fournie";
   }
-  return lines.join("\n");
+  return `## Sources (bibliotheque)\n${ids.map((id) => `- [SRC:${id}]`).join("\n")}`;
+};
+
+const stripSourcesSection = (text: string): string => {
+  const match = text.match(/(^## Sources\b|\n## Sources\b)/);
+  if (!match || match.index === undefined) return text.trim();
+  return text.slice(0, match.index).trim();
 };
 
 const ensureSourcesSection = (text: string): string => {
   if (!text) return "";
-  if (text.includes("## Sources scientifiques")) {
-    return text.trim();
-  }
-  return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
+  const base = stripSourcesSection(text);
+  return `${base}\n\n${buildSourcesSectionFromText(text)}`.trim();
 };
 
 const stripEmojis = (text: string): string => {
@@ -1807,8 +1894,15 @@ const stripEmojis = (text: string): string => {
 
 const extractPlan90Section = (text: string): string => {
   if (!text) return "";
-  const start = text.indexOf("## Plan 90 jours");
-  if (start === -1) return "";
+  const headings = [
+    "## Plan d'action 90 jours (hyper concret)",
+    "## Plan d'action 90 jours",
+    "## Plan 90 jours",
+  ];
+  const start = headings
+    .map((heading) => ({ heading, index: text.indexOf(heading) }))
+    .find((entry) => entry.index !== -1)?.index;
+  if (start === undefined) return "";
   const rest = text.slice(start);
   const nextHeadingIndex = rest.slice(1).search(/\n##\s+/);
   if (nextHeadingIndex !== -1) {
@@ -1820,9 +1914,9 @@ const extractPlan90Section = (text: string): string => {
 const insertPlan90Section = (text: string, planSection: string): string => {
   if (!text) return planSection.trim();
   if (!planSection) return text.trim();
-  if (text.includes("## Plan 90 jours")) return text.trim();
+  if (text.includes("## Plan d'action 90 jours")) return text.trim();
 
-  const anchors = ["## Nutrition & entrainement", "## Supplements & stack", "## Sources scientifiques"];
+  const anchors = ["## Nutrition & entrainement", "## Supplements & stack", "## Sources (bibliotheque)"];
   for (const anchor of anchors) {
     const idx = text.indexOf(anchor);
     if (idx !== -1) {
@@ -1834,12 +1928,12 @@ const insertPlan90Section = (text: string, planSection: string): string => {
   return `${text.trim()}\n\n${planSection.trim()}`.trim();
 };
 
-const trimAiAnalysis = (text: string, maxChars = 20000): string => {
+const trimAiAnalysis = (text: string, maxChars = 90000): string => {
   if (!text) return "";
   const cleaned = stripEmojis(text).trim();
   if (cleaned.length <= maxChars) return cleaned;
-  const sourcesIndex = text.indexOf("## Sources scientifiques");
-  const planIndex = text.indexOf("## Plan 90 jours");
+  const sourcesIndex = text.indexOf("## Sources (bibliotheque)");
+  const planIndex = text.indexOf("## Plan d'action 90 jours");
   const sources = sourcesIndex !== -1 ? text.slice(sourcesIndex).trim() : "";
   const plan = planIndex !== -1 ? extractPlan90Section(text) : "";
 
@@ -2229,9 +2323,37 @@ export async function generateAIBloodAnalysis(
   const anthropic = new Anthropic();
 
   // Build the prompt with analysis data
-  const markersTable = analysisResult.markers.map(m =>
-    `- ${m.name} [${m.markerId}] (${m.category}) : ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) → ${m.status.toUpperCase()}${m.interpretation ? ` | Note: ${m.interpretation}` : ""}`
-  ).join("\n");
+  const markersTable = analysisResult.markers
+    .map((marker) => {
+      const range = BIOMARKER_RANGES[marker.markerId];
+      const normalMin = range?.normalMin ?? null;
+      const normalMax = range?.normalMax ?? null;
+      const optimalMin = range?.optimalMin ?? null;
+      const optimalMax = range?.optimalMax ?? null;
+      const normalRange =
+        normalMin !== null && normalMax !== null ? `${normalMin} - ${normalMax}` : marker.normalRange || "N/A";
+      const optimalRange =
+        optimalMin !== null && optimalMax !== null ? `${optimalMin} - ${optimalMax}` : marker.optimalRange || "N/A";
+      const deltaNormal =
+        normalMin !== null && normalMax !== null ? formatPercentDelta(marker.value, normalMin, normalMax) : "N/A";
+      const deltaOptimal =
+        optimalMin !== null && optimalMax !== null ? formatPercentDelta(marker.value, optimalMin, optimalMax) : "N/A";
+
+      return [
+        `- ${marker.name} (${marker.markerId})`,
+        `  Categorie: ${marker.category || "Non renseignee"}`,
+        `  Valeur mesuree: ${marker.value} ${marker.unit}`,
+        `  Range labo normal: ${normalRange} ${marker.unit || ""}`,
+        `  Range optimal performance: ${optimalRange} ${marker.unit || ""}`,
+        `  Ecart vs normal: ${deltaNormal}`,
+        `  Ecart vs optimal: ${deltaOptimal}`,
+        `  Statut: ${marker.status}`,
+        marker.interpretation ? `  Note: ${marker.interpretation}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .join("\n");
 
   const patternsText = analysisResult.patterns.map(p =>
     `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
@@ -2248,26 +2370,32 @@ export async function generateAIBloodAnalysis(
     age: userProfile.age,
   });
 
-  const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
-Objectifs: ${userProfile.objectives || "Performance et santé"}
-Médicaments: ${userProfile.medications || "Aucun"}
-Lifestyle: ${lifestyleLine}
+  const userPrompt = `PATIENT:
+- Nom: ${userProfile.prenom ? `${userProfile.prenom} ${userProfile.nom || ""}`.trim() : "Non renseigne"}
+- Sexe: ${userProfile.gender}
+- Age: ${userProfile.age || "Non renseigne"}
+- Objectifs: ${userProfile.objectives || "Performance et sante"}
+- Medicaments: ${userProfile.medications || "Aucun"}
+- Lifestyle: ${lifestyleLine}
 
-MARQUEURS:
+DONNEES BIOMARQUEURS (reelles valeurs + ranges):
 ${markersTable}
 
-PATTERNS DÉTECTÉS:
-${patternsText}
+PATTERNS DETECTES:
+${patternsText || "Aucun pattern majeur detecte"}
 
-RÉSUMÉ:
+RESUME:
 - Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}
-- À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
+- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
 - Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
 
-${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR (OBLIGATOIRE):\n${deepDivePayload.context}` : ""}
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
+SOURCES PAR BIOMARQUEUR (chunks obligatoires, cite avec [SRC:ID]):
+${deepDivePayload.context || "- Aucune source fournie pour les marqueurs."}
 
-Génère une analyse complète selon le format demandé.`;
+SOURCES GENERALES (chunks, cite avec [SRC:ID] si pertinent):
+${knowledgeContext || "- Aucune source generale fournie."}
+
+GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
 
   let output = "";
   let bestCandidate = "";
@@ -2275,7 +2403,8 @@ Génère une analyse complète selon le format demandé.`;
 
   // Timeout wrapper for API calls (fast mode keeps shorter limits; full mode allows longer responses)
   const fastMode = process.env.BLOOD_ANALYSIS_FAST_MODE === "true";
-  const API_TIMEOUT_MS = fastMode ? 45000 : 180000;
+  const API_TIMEOUT_MS = fastMode ? 90000 : 240000;
+  const maxTokens = Number(process.env.BLOOD_ANALYSIS_MAX_TOKENS || 16000);
   const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
     return Promise.race([
       promise,
@@ -2286,20 +2415,20 @@ Génère une analyse complète selon le format demandé.`;
   };
 
   const maxAttempts = fastMode ? 1 : 3;
-  const minChars = fastMode ? 6000 : 10000;
+  const minChars = fastMode ? 20000 : 35000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const retryNote =
       attempt === 1
         ? ""
-        : `\nATTENTION: Ta reponse precedente etait trop generique ou ne respectait pas les sections deep dive. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies. Chaque biomarqueur doit contenir les 4 sous-sections avec au moins 2 citations d'experts.\n`;
+        : `\nATTENTION: Ta reponse precedente ne respectait pas le format strict, les titres, ou les citations [SRC:ID]. Corrige avec ZERO emoji, profondeur maximale, et une section Deep dive complete (format impose par marqueur).\n`;
     const prompt = `${userPrompt}\n${retryNote}`;
 
     try {
       const response = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 16000,
+          max_tokens: maxTokens,
           system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
           messages: [{ role: "user", content: prompt }]
         }),
@@ -2336,15 +2465,16 @@ Génère une analyse complète selon le format demandé.`;
     output = bestCandidate;
   }
 
-  if (!output.includes("## Plan 90 jours")) {
-    const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan 90 jours" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan 90 jours\n  ### Jours 1-30 (Phase d'Attaque)\n  ### Jours 31-90 (Phase d'Optimisation)\n  ### Retest à J+90\n- Chaque ligne doit inclure: action + dosage precis + timing exact + citation expert (Derek/Huberman/Attia/Examine) + objectif chiffre.\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
+  if (!output.includes("## Plan d'action 90 jours")) {
+    const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan d'action 90 jours (hyper concret)" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan d'action 90 jours (hyper concret)\n  ### Jours 1-14 (Stabilisation)\n  ### Jours 15-30 (Phase d'Attaque)\n  ### Jours 31-60 (Consolidation)\n  ### Jours 61-90 (Optimisation)\n  ### Retest & conditions de prelevement\n- Chaque phase: objectifs (2-4), actions (5-12), indicateurs (3-6), erreurs a eviter (2-5).\n- Tu relies chaque phase au resultat physique (seche, perf, recuperation).\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nSOURCES GENERALES (chunks):\n${knowledgeContext}` : ""}\n`;
 
     try {
       const planResponse = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 1500,
-          system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
+          max_tokens: 3000,
+          system:
+            "Tu es un expert medical. Respecte STRICTEMENT le format demande, aucun emoji, et ne produis que la section demandee.",
           messages: [{ role: "user", content: planPrompt }]
         }),
         fastMode ? 15000 : 60000
@@ -2357,9 +2487,9 @@ Génère une analyse complète selon le format demandé.`;
       }
     } catch (err: any) {
       if (err.message === "API_TIMEOUT") {
-        console.warn("[BloodAnalysis] Plan 90 jours timed out, skipping");
+        console.warn("[BloodAnalysis] Plan d'action 90 jours timed out, skipping");
       } else {
-        console.error("[BloodAnalysis] Plan 90 jours fallback failed:", err);
+        console.error("[BloodAnalysis] Plan d'action 90 jours fallback failed:", err);
       }
     }
   }
@@ -2410,9 +2540,16 @@ export async function getBloodworkKnowledgeContext(
     return "";
   }
 
-  // Build context from articles
+  // Build context from articles with explicit source IDs
   const context = articles
-    .map((article) => `${article.title}\n${article.content.substring(0, 1000)}...`)
+    .map((article) => {
+      if (!article.id) return "";
+      const label = SOURCE_LABELS[article.source] || article.source;
+      const idTag = `[SRC:${article.id}]`;
+      const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 1000);
+      return `${idTag} ${label} — ${article.title}\n${excerpt}${excerpt.length >= 1000 ? "..." : ""}`;
+    })
+    .filter(Boolean)
     .join("\n\n---\n\n");
 
   return context;
