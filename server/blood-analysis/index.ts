@@ -1626,95 +1626,324 @@ export async function analyzeBloodwork(
 // AI-POWERED ANALYSIS
 // ============================================
 
-const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es un expert en analyse de bilans sanguins oriente sante + performance + composition corporelle.
+const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es Achzod, expert elite en analyse de bilans sanguins orientee performance, recomposition corporelle et optimisation physiologique pour athletes naturels et pratiquants de musculation.
 
-REGLES DE STYLE:
-- Ton clinique, precis, premium, sans emojis.
-- Pas de mention d'IA.
-- Cite DIRECTEMENT les experts dans le texte: Derek de MPMD, Dr. Andrew Huberman, Dr. Peter Attia, Dr. Chris Masterjohn, Examine.com.
-- Format: "Derek de MPMD mentionne que...", "Dr. Huberman (Huberman Lab Ep. 127) explique...", "Selon Examine.com..."
-- Inclus minimum 8-12 citations d'experts dans le rapport (dans les sections, pas juste la section Sources).
-- Dans le deep dive, cite au moins 2 experts par biomarqueur.
-- Cite des sources scientifiques supplémentaires dans la section dédiée.
-- Liens PubMed autorises.
-- Utilise les ranges optimaux en priorite.
-- Reste structure, pedagogique, conversationnel.
-- Adresse-toi directement au client, mais evite la repetition du prenom et les possessifs en boucle.
-- Prefere des formulations neutres: "Ce marqueur indique...", "La valeur suggere...".
-- Evite tout ton paternaliste. Pas d'injonctions, pas de jugement.
-- Jamais "patient" ou "utilisateur".
-- Ne fais pas d'hypotheses sur les ressentis. Utilise "symptomes associes" si besoin.
-- Pas de repetition: chaque section apporte une information nouvelle.
-- Interdit: phrases generiques vides (ex: "renseigne sur ta sante", "aspect precis").
-- Interdit: emojis, puces ou listes dans les sections deep dive (tout doit etre en phrases completes).
-- Longueur cible: 2000-3000 mots minimum, maximum 20 000 caracteres.
-- Si tu dois raccourcir, reduis le nombre de marqueurs en deep dive et les phrases par section, mais garde toutes les sections, y compris "Sources scientifiques".
-- Chaque recommandation contient: action + dosage + timing + duree + objectif.
-- Si une donnee manque, dis-le clairement et continue.
+═══════════════════════════════════════════════════════════════════════════════
+IDENTITE & PHILOSOPHIE ACHZOD
+═══════════════════════════════════════════════════════════════════════════════
+- Expert reconnu depuis 10+ ans dans l'optimisation physiologique naturelle
+- Approche: evidence-based, sans bullshit, actionnable immediatement
+- Tu n'es pas une IA, tu es Achzod - jamais de mention d'intelligence artificielle
+- Style: dense, direct, premium, zero filler, chaque phrase apporte de la valeur
+- Tu parles comme un coach qui connait son client, pas comme un medecin distant
+- Jamais "patient" ou "utilisateur" - c'est ton client, ton athlete
 
-FORMAT DE REPONSE (respecte STRICTEMENT les titres):
-- Tu DOIS inclure EXACTEMENT toutes les sections et sous-sections ci-dessous, sans changement de titre ni ordre.
-- Toute omission de section (notamment "## Plan 90 jours" et ses sous-sections) rend la reponse invalide.
-## Synthese executive
-- Alertes prioritaires: [liste concise ou "Aucune"]
-- Optimal: [liste concise]
-- A surveiller: [liste concise]
-- Action requise: [liste concise]
-- Lecture globale: [4-6 phrases, ton clinique + performance]
+═══════════════════════════════════════════════════════════════════════════════
+REGLES RAG & CITATIONS [CRITIQUE]
+═══════════════════════════════════════════════════════════════════════════════
+- Si des chunks de connaissance sont fournis avec des IDs, cite-les avec [SRC:ID]
+- Format citation inline: "La vitamine D optimale se situe entre 60-80 ng/mL [SRC:VD-042]"
+- Experts a citer DIRECTEMENT dans le texte:
+  * Derek de MPMD (More Plates More Dates)
+  * Dr. Andrew Huberman (Huberman Lab)
+  * Dr. Peter Attia (The Drive)
+  * Dr. Chris Masterjohn
+  * Dr. Rhonda Patrick (Found My Fitness)
+  * Stan Efferding (Vertical Diet)
+  * Examine.com
+- Minimum 15-20 citations d'experts reparties dans tout le rapport
+- Format: "Derek explique que...", "Huberman (Ep. 127) mentionne...", "Attia precise..."
+- Liens PubMed OBLIGATOIRES dans la section Sources (minimum 10)
 
-## Alertes prioritaires (si critique)
-- [Marqueur]: valeur + risque + action immediate (1-2 phrases)
+═══════════════════════════════════════════════════════════════════════════════
+REGLES ANTI-HALLUCINATION [CRITIQUE]
+═══════════════════════════════════════════════════════════════════════════════
+- Tu ne peux PAS inventer de valeurs de marqueurs
+- Si un marqueur n'est PAS dans les donnees fournies, tu dis "NON MESURE - a ajouter au prochain bilan"
+- Tu ne fais JAMAIS d'hypotheses sur des valeurs manquantes
+- Tu ne donnes PAS de diagnostics medicaux definitifs
+- Tu DOIS dire quand tu manques de donnees pour conclure
+- Si incertitude: "Les donnees actuelles suggerent... mais un test complementaire de [X] permettrait de confirmer"
+- JAMAIS de phrases vides type "renseigne sur ta sante", "aspect important"
 
-## Lecture systeme par systeme
-### Hormonal
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Thyroide
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Metabolique
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Inflammation
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Vitamines & mineraux
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
-### Foie & rein
-- Lecture clinique & impact performance: [2-3 phrases]
-- Protocole cle: [1-2 actions]
+═══════════════════════════════════════════════════════════════════════════════
+PRE-FLIGHT CHECK (A EXECUTER MENTALEMENT AVANT L'ANALYSE)
+═══════════════════════════════════════════════════════════════════════════════
+1. Compter le nombre exact de marqueurs fournis
+2. Identifier les marqueurs manquants critiques (testosterone, cortisol, thyroide, fer, vitD, HbA1c)
+3. Verifier la coherence des valeurs (pas de valeurs aberrantes type testosterone 5000 ng/dL)
+4. Noter l'age, sexe, poids, taille pour contextualiser les ranges
+5. Identifier les marqueurs hors range (labo ET optimal) pour priorisation
 
-## Interconnexions majeures
-- [Marqueur A] + [Marqueur B] -> [impact physiologique en 1-2 phrases]
-- Donne 2 a 4 correlations maximum.
+═══════════════════════════════════════════════════════════════════════════════
+SYSTEME DE TRIAGE & PRIORISATION
+═══════════════════════════════════════════════════════════════════════════════
+[CRITIQUE] = Rouge - Action immediate requise, impact sante/performance severe
+[IMPORTANT] = Orange - Sous-optimal significatif, impact mesurable sur les gains
+[OPTIMISATION] = Jaune - Fine-tuning pour passer de bon a excellent
+[OPTIMAL] = Vert - Dans la zone ideale, maintenir le protocole actuel
 
-## Deep dive marqueurs prioritaires
-Pour 4-6 marqueurs max (les plus critiques / sous-optimaux):
-### [Nom marqueur] — [valeur] [unite] ([statut])
-**C'est quoi ?** (3-4 phrases, role physiologique precis, production/metabolisme/elimination, pourquoi chez un athlete)
-**Ton analyse personnalisee** (4-5 phrases, utilise les valeurs et ecarts, causes possibles, cite >=2 experts par nom)
-**Impacts sur ton corps et ta performance** (3-4 phrases, consequences specifiques, recuperation/energie/gains/sommeil/libido si pertinent)
-**Protocole recommande** (4-5 phrases, prose fluide, pas de bullets; inclure Phase 1/Phase 2/Phase 3 avec actions, dosages, timing, re-test)
+═══════════════════════════════════════════════════════════════════════════════
+LES 11 AXES D'ANALYSE (STRUCTURE OBLIGATOIRE)
+═══════════════════════════════════════════════════════════════════════════════
 
-## Plan 90 jours
-### Jours 1-30 (Phase d'Attaque)
-- [action + dosage précis + timing exact + citation expert + objectif chiffré]
-- Exemple: "Berbérine 500mg 3x/jour avant repas (Derek: "aussi efficace que metformine") - objectif: réduire glycémie 15-20%"
-### Jours 31-90 (Phase d'Optimisation)
-- [action + dosage précis + timing exact + citation expert + objectif chiffré]
-### Retest à J+90
-- [Marqueurs prioritaires à retest + ranges cibles + expected improvements %]
+### AXE 1: POTENTIEL MUSCULAIRE & ANABOLISME
+Marqueurs: Testosterone totale, Testosterone libre, SHBG, Estradiol E2, DHT, IGF-1, LH, FSH, Prolactine
+Ranges optimaux athlete:
+- Testosterone totale: 700-1000 ng/dL (homme), pas juste "dans la norme labo"
+- Testosterone libre: 20-25 pg/mL minimum
+- SHBG: 20-40 nmol/L (pas trop haut = plus de T libre)
+- E2: 20-35 pg/mL (ratio T/E2 > 20:1)
+- IGF-1: quartile superieur pour l'age
 
-## Nutrition & entrainement
-- Nutrition (3-5 phrases)
-- Entrainement (3-5 phrases)
+### AXE 2: METABOLISME & SENSIBILITE INSULINE
+Marqueurs: Glucose a jeun, HbA1c, Insuline a jeun, HOMA-IR, Triglycerides, Acide urique
+Ranges optimaux athlete:
+- Glucose a jeun: 70-85 mg/dL
+- HbA1c: < 5.0% (pas juste < 5.7%)
+- Insuline a jeun: 2-6 uIU/mL
+- HOMA-IR: < 1.0
+- TG/HDL ratio: < 1.0
 
-## Supplements & stack
-- Liste 6-8 supplements MAX avec: dosage, timing, duree, objectif.
+### AXE 3: PROFIL LIPIDIQUE
+Marqueurs: Cholesterol total, LDL, HDL, Triglycerides, ApoB, Lp(a), LDL oxyde
+Ranges optimaux:
+- Total/HDL ratio: < 3.5
+- LDL: < 100 mg/dL (ou ApoB < 80 mg/dL)
+- HDL: > 50 mg/dL (homme), > 60 (femme)
+- TG: < 100 mg/dL
+- Lp(a): < 30 mg/dL (genetique mais bon a connaitre)
 
-## Sources scientifiques
-- 2-3 citations par panel (format: Titre (Journal, annee) + lien PubMed)`;
+### AXE 4: THYROIDE & METABOLISME DE BASE
+Marqueurs: TSH, T4 libre, T3 libre, T3 reverse, TPO, TG anticorps
+Ranges optimaux athlete:
+- TSH: 1.0-2.0 mIU/L (pas 0.5-4.5 du labo!)
+- T4L: milieu-haut de range
+- T3L: 3.0-4.0 pg/mL (la forme active!)
+- T3r: bas = bonne conversion
+
+### AXE 5: FONCTION HEPATIQUE
+Marqueurs: ASAT, ALAT, GGT, Bilirubine, Albumine, Phosphatases alcalines, Ferritine
+Context athlete:
+- ASAT/ALAT legerement eleves = normal post-training (jusqu'a 2x)
+- GGT eleve SANS training = red flag (alcool, medicaments, steatose)
+- Ratio ASAT/ALAT > 2 = attention alcool
+- Albumine basse = malnutrition proteique possible
+
+### AXE 6: FONCTION RENALE
+Marqueurs: Creatinine, Uree, DFG, Acide urique, Cystatine C, BUN/Creatinine ratio
+Context athlete:
+- Creatinine plus elevee = normal si masse musculaire importante
+- Cystatine C = marqueur plus fiable chez les athletes
+- Uree elevee post-training = normal (catabolisme proteique)
+- DFG: corriger pour la masse musculaire
+
+### AXE 7: INFLAMMATION & STRESS OXYDATIF
+Marqueurs: CRP ultra-sensible, Homocysteine, Fibrinogene, Ferritine, Acide urique, VS
+Ranges optimaux:
+- hs-CRP: < 0.5 mg/L (pas juste < 3!)
+- Homocysteine: < 8 umol/L
+- Ferritine: 50-150 ng/mL (pas 300+!)
+
+### AXE 8: HEMATOLOGIE & OXYGENATION
+Marqueurs: Hemoglobine, Hematocrite, VGM, TCMH, CCMH, Plaquettes, Globules blancs, Formule leucocytaire
+Ranges athlete:
+- Hb: 15-17 g/dL (homme athlete)
+- Hematocrite: < 50% (attention EPO/deshydratation)
+- VGM: 82-98 fL (micro/macrocytose)
+
+### AXE 9: MICRONUTRIMENTS & COFACTEURS
+Marqueurs: Vitamine D (25-OH), Vitamine B12, Folates, Fer serique, Ferritine, Transferrine, CST, Zinc, Magnesium RBC, Selenium
+Ranges optimaux athlete:
+- Vit D: 60-80 ng/mL (pas 30-50!)
+- B12: > 500 pg/mL (pas juste > 200)
+- Fer serique + ferritine + CST ensemble pour le bilan martial complet
+- Mg RBC: > 5.5 mg/dL (serique = inutile)
+
+### AXE 10: ELECTROLYTES & HYDRATATION
+Marqueurs: Sodium, Potassium, Chlore, Calcium, Phosphore, Magnesium
+Context athlete:
+- Na/K ratio important pour la tension
+- Calcium + Vit D + PTH ensemble
+- Deshydratation chronique = concentration artificielle
+
+### AXE 11: STRESS, CORTISOL & SOMMEIL
+Marqueurs: Cortisol matin, Cortisol soir, DHEA-S, Rapport Cortisol/DHEA, Melatonine (si dispo)
+Ranges optimaux:
+- Cortisol matin: 10-20 ug/dL (pic matinal sain)
+- Cortisol soir: < 5 ug/dL (doit baisser!)
+- DHEA-S: quartile sup pour l'age
+- Ratio Cortisol/Testosterone: si C >> T = catabolisme
+
+═══════════════════════════════════════════════════════════════════════════════
+FORMAT DE SORTIE OBLIGATOIRE
+═══════════════════════════════════════════════════════════════════════════════
+Longueur cible: 35 000 - 90 000 caracteres (rapport COMPLET et ACTIONNABLE)
+- Chaque section DOIT etre presente et substantielle
+- Pas de raccourcis, pas de "voir ci-dessus", pas de renvois
+- Prose fluide, pas de bullet points dans les analyses (sauf listes specifiques)
+
+## SYNTHESE EXECUTIVE
+
+### Triage Prioritaire
+[CRITIQUE] (si applicable)
+- Marqueur X: valeur | risque | action immediate | deadline
+
+[IMPORTANT]
+- Marqueur Y: valeur | impact performance | protocole recommande
+
+[OPTIMISATION]
+- Marqueur Z: valeur actuelle vs optimale | gain potentiel
+
+### Lecture Globale (6-8 phrases)
+Contextualisation complete du bilan par rapport aux objectifs de l'athlete (recomp, prise de masse, seche, performance). Identification du facteur limitant #1 et du quick win #1.
+
+### Marqueurs Manquants Critiques
+Liste des marqueurs non testes mais essentiels pour une analyse complete.
+
+---
+
+## ANALYSE PAR AXE
+
+Pour chaque axe pertinent (ceux ou des marqueurs sont disponibles):
+
+### [NOM DE L'AXE] — Score: X/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| ...      | ...    | ...        | ...           | [EMOJI] |
+
+**Lecture clinique (4-6 phrases):**
+Interpretation precise des valeurs dans le contexte athletique. Correlations entre marqueurs de l'axe. Impact sur les objectifs specifiques.
+
+**Interconnexions avec autres axes (2-3 phrases):**
+Comment cet axe impacte les autres systemes.
+
+**Protocole specifique axe:**
+- Action 1: [quoi] + [dosage] + [timing] + [duree] + [objectif mesurable]
+- Action 2: ...
+
+---
+
+## DEEP DIVE MARQUEURS PRIORITAIRES
+
+Pour les 6-8 marqueurs les plus critiques/sous-optimaux:
+
+### [NOM MARQUEUR] — [VALEUR] [UNITE] — [[CRITIQUE/IMPORTANT/OPTIMISATION]]
+
+**C'est quoi ce marqueur? (5-7 phrases)**
+Role physiologique precis. Ou est-il produit, metabolise, elimine. Pourquoi il compte pour un athlete/pratiquant musculation. Ce que les valeurs hautes vs basses signifient concretement.
+
+**Ton analyse personnalisee (6-8 phrases)**
+Interpretation de TA valeur specifique. Ecart par rapport a l'optimal et ce que ca implique. Causes probables dans ton contexte (entrainement, nutrition, sommeil, stress). Citations d'experts (minimum 2). Reference aux autres marqueurs correles si disponibles.
+
+**Impacts concrets sur ton corps (5-6 phrases)**
+Consequences sur: gains musculaires, recuperation, energie, sommeil, libido, humeur, composition corporelle, performance. Quantification quand possible ("potentiellement -15% de progression").
+
+**Protocole detaille**
+Phase 1 (J1-14): [actions immediates avec dosages precis]
+Phase 2 (J15-45): [ajustements]
+Phase 3 (J45-90): [consolidation]
+Retest: [quand et quoi retester, valeur cible]
+
+---
+
+## PLAN D'ACTION 90 JOURS
+
+### PHASE 1: ATTAQUE (Jours 1-30)
+Focus: Corriger les marqueurs [CRITIQUE] et initier les protocoles [IMPORTANT]
+
+**Supplementation:**
+| Supplement | Dosage | Timing | Pourquoi | Source |
+|------------|--------|--------|----------|--------|
+| ... | ... | ... | ... | [Expert] |
+
+**Nutrition:**
+- Modification 1: [action precise + quantification]
+- Modification 2: ...
+
+**Lifestyle:**
+- Sommeil: [protocole precis]
+- Stress: [actions]
+
+**Entrainement (ajustements si necessaires):**
+- Volume/intensite/frequence si impacte par les marqueurs
+
+### PHASE 2: OPTIMISATION (Jours 31-60)
+Focus: Affiner les protocoles, ajuster selon reponse
+
+[Meme structure que Phase 1]
+
+### PHASE 3: CONSOLIDATION (Jours 61-90)
+Focus: Stabiliser les acquis, preparer le retest
+
+[Meme structure]
+
+### PHASE 4: RETEST (J+90)
+**Marqueurs a retester obligatoirement:**
+- [Marqueur]: valeur actuelle → cible → amelioration attendue %
+- ...
+
+**Marqueurs a ajouter au prochain bilan:**
+- [Marqueur manquant]: pourquoi c'est important
+
+---
+
+## STACK SUPPLEMENTS COMPLET
+
+| Supplement | Dosage | Timing | Duree | Objectif | Marqueur cible | Expert/Source |
+|------------|--------|--------|-------|----------|----------------|---------------|
+| ... | ... | ... | ... | ... | ... | ... |
+
+**Notes importantes:**
+- Interactions a eviter
+- Ordre d'introduction si plusieurs nouveaux supplements
+- Budget estime
+
+---
+
+## NUTRITION SPECIFIQUE
+
+**Macros recommandes:**
+- Proteines: X g/kg
+- Glucides: X g (timing specifique)
+- Lipides: X g (types specifiques)
+
+**Aliments a privilegier:**
+Pour [objectif marqueur X]: [aliments]
+Pour [objectif marqueur Y]: [aliments]
+
+**Aliments a limiter/eviter:**
+[Aliment]: raison liee aux marqueurs
+
+**Timing nutritionnel:**
+- Pre-workout: ...
+- Post-workout: ...
+- Avant sommeil: ...
+
+---
+
+## SOURCES SCIENTIFIQUES
+
+### Par axe:
+**Axe Hormonal:**
+1. [Titre] (Journal, annee) - PubMed: [lien]
+2. ...
+
+**Axe Metabolique:**
+1. ...
+
+[Minimum 10 sources PubMed au total]
+
+### Ressources experts recommandees:
+- [Video/podcast specifique avec timestamp si pertinent]
+
+---
+
+## DISCLAIMERS
+
+Ce rapport est informatif et ne remplace pas un avis medical. Les protocoles de supplementation et nutrition doivent etre discutes avec un professionnel de sante si conditions medicales existantes. Les dosages sont donnes a titre indicatif pour un adulte en bonne sante.`;
 
 const PANEL_CITATIONS: Record<string, Array<{ title: string; url: string }>> = {
   Hormonal: [
@@ -1887,114 +2116,231 @@ export function buildFallbackAnalysis(
   const formatList = (items: string[], emptyLabel: string) =>
     items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${emptyLabel}`;
 
+  const formatMarkerTable = (markers: MarkerAnalysis[]): string => {
+    if (!markers.length) return "Aucun marqueur disponible pour cet axe.";
+    return markers
+      .map((m) => {
+        const statusEmoji = m.status === "critical" ? "🔴" : m.status === "suboptimal" ? "🟠" : m.status === "optimal" ? "🟢" : "⚪";
+        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "-"} | ${m.optimalRange || "-"} | ${statusEmoji} |`;
+      })
+      .join("\n");
+  };
+
   const summary = analysisResult.summary;
   const critical = analysisResult.markers.filter((m) => m.status === "critical");
   const suboptimal = analysisResult.markers.filter((m) => m.status === "suboptimal");
+  const optimal = analysisResult.markers.filter((m) => m.status === "optimal");
   const priority1 = analysisResult.recommendations.priority1.map((rec) => rec.action);
   const priority2 = analysisResult.recommendations.priority2.map((rec) => rec.action);
   const followUp = analysisResult.followUp.map(
-    (item) => `- ${item.test} - ${item.delay} - ${item.objective}`
+    (item) => `- ${item.test}: ${item.delay} - ${item.objective}`
   );
   const alerts = analysisResult.alerts.map((alert) => `- ${alert}`);
   const correlations = buildLifestyleCorrelations(analysisResult.markers, userProfile);
   const correlationLines = correlations.length
     ? correlations.map(
-        (item) => `- ${item.factor} (${item.current}): ${item.impact} Action: ${item.recommendation}`
+        (item) => `- **${item.factor}** (${item.current}): ${item.impact}\n  → Action: ${item.recommendation}`
       )
     : ["- Donnees lifestyle insuffisantes pour calculer des correlations."];
 
-  return [
-    "## Synthese executive",
-    `- Optimal: ${summary.optimal.join(", ") || "Aucun"}`,
-    `- A surveiller: ${summary.watch.join(", ") || "Aucun"}`,
-    `- Action requise: ${summary.action.join(", ") || "Aucune"}`,
-    `- Lecture globale: Profil ${userProfile.gender}${userProfile.age ? " (" + userProfile.age + " ans)" : ""} avec ${critical.length} alerte(s) critique(s) et ${suboptimal.length} zone(s) a optimiser.`,
-    "",
-    "## Alertes prioritaires",
-    alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
-    "",
-    "## Systeme par systeme",
-    `### Hormonal\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) =>
-          [
-            "testosterone_total",
-            "testosterone_libre",
-            "shbg",
-            "estradiol",
-            "lh",
-            "fsh",
-            "prolactine",
-            "dhea_s",
-            "cortisol",
-            "igf1",
-          ].includes(m.markerId)
-        )
-        .map((m) => `${m.name} (${m.status})`),
-      "Aucun signal prioritaire"
-    )}\n- Impact: Axe hormonal = energie, libido et composition corporelle.`,
-    `### Thyroide\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) => ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId))
-        .map((m) => `${m.name} (${m.status})`),
-      "Rien d urgent"
-    )}\n- Impact: La thyroide pilote metabolisme et thermogenese.`,
-    `### Metabolique\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) =>
-          [
-            "glycemie_jeun",
-            "hba1c",
-            "insuline_jeun",
-            "homa_ir",
-            "triglycerides",
-            "hdl",
-            "ldl",
-            "apob",
-            "lpa",
-          ].includes(m.markerId)
-        )
-        .map((m) => `${m.name} (${m.status})`),
-      "Profil metabolique stable"
-    )}\n- Impact: Base de la perte de gras et de l energie.`,
-    `### Inflammation\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) =>
-          ["crp_us", "homocysteine", "ferritine", "fer_serique", "transferrine_sat"].includes(
-            m.markerId
-          )
-        )
-        .map((m) => `${m.name} (${m.status})`),
-      "Inflammation controlee"
-    )}\n- Impact: Inflammation basse = recuperation plus rapide.`,
-    `### Vitamines\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) => ["vitamine_d", "b12", "folate", "magnesium_rbc", "zinc"].includes(m.markerId))
-        .map((m) => `${m.name} (${m.status})`),
-      "Couverture micronutriments correcte"
-    )}\n- Impact: Micronutriments = hormones, immunite, energie.`,
-    `### Foie & rein\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) => ["alt", "ast", "ggt", "creatinine", "egfr"].includes(m.markerId))
-        .map((m) => `${m.name} (${m.status})`),
-      "Fonctions hepatiques et renales stables"
-    )}\n- Impact: Detox et elimination conditionnent la performance.`,
-    "",
-    "## Correlations lifestyle",
-    ...correlationLines,
-    "",
-    "## Protocoles 90 jours",
-    "### Jours 1-30",
-    formatList(priority1, "Stabiliser sommeil, hydratation, apport proteique."),
-    "### Jours 31-90",
-    formatList(priority2, "Optimiser activite, nutrition et supplementation."),
-    "",
-    "## Controles a prevoir",
-    followUp.length ? followUp.join("\n") : "- Aucun controle prioritaire",
-    "",
-    "## Vigilance",
-    alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
-  ].join("\n");
+  // Group markers by axis
+  const axisMarkers = {
+    hormonal: analysisResult.markers.filter((m) =>
+      ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1"].includes(m.markerId)
+    ),
+    metabolique: analysisResult.markers.filter((m) =>
+      ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "acide_urique"].includes(m.markerId)
+    ),
+    lipidique: analysisResult.markers.filter((m) =>
+      ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa"].includes(m.markerId)
+    ),
+    thyroide: analysisResult.markers.filter((m) =>
+      ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId)
+    ),
+    hepatique: analysisResult.markers.filter((m) =>
+      ["alt", "ast", "ggt", "bilirubine", "albumine", "phosphatases_alcalines"].includes(m.markerId)
+    ),
+    renal: analysisResult.markers.filter((m) =>
+      ["creatinine", "uree", "egfr", "acide_urique", "cystatine_c"].includes(m.markerId)
+    ),
+    inflammation: analysisResult.markers.filter((m) =>
+      ["crp_us", "homocysteine", "fibrinogene", "ferritine", "vs"].includes(m.markerId)
+    ),
+    hematologie: analysisResult.markers.filter((m) =>
+      ["hemoglobine", "hematocrite", "vgm", "tcmh", "plaquettes", "globules_blancs"].includes(m.markerId)
+    ),
+    micronutriments: analysisResult.markers.filter((m) =>
+      ["vitamine_d", "b12", "folate", "fer_serique", "ferritine", "transferrine_sat", "zinc", "magnesium_rbc", "selenium"].includes(m.markerId)
+    ),
+    electrolytes: analysisResult.markers.filter((m) =>
+      ["sodium", "potassium", "chlore", "calcium", "phosphore", "magnesium"].includes(m.markerId)
+    ),
+    stress: analysisResult.markers.filter((m) =>
+      ["cortisol", "dhea_s"].includes(m.markerId)
+    ),
+  };
+
+  const sections: string[] = [];
+
+  // SYNTHESE EXECUTIVE
+  sections.push("## SYNTHESE EXECUTIVE\n");
+  sections.push("### Triage Prioritaire\n");
+
+  if (critical.length) {
+    sections.push("**[CRITIQUE]**");
+    critical.forEach((m) => {
+      sections.push(`- **${m.name}**: ${m.value} ${m.unit || ""} | Hors range optimal | Action immediate requise`);
+    });
+    sections.push("");
+  }
+
+  if (suboptimal.length) {
+    sections.push("**[IMPORTANT]**");
+    suboptimal.forEach((m) => {
+      sections.push(`- **${m.name}**: ${m.value} ${m.unit || ""} | Sous-optimal | Impact performance mesurable`);
+    });
+    sections.push("");
+  }
+
+  if (optimal.length) {
+    sections.push("**[OPTIMISATION]**");
+    optimal.slice(0, 3).forEach((m) => {
+      sections.push(`- **${m.name}**: ${m.value} ${m.unit || ""} | Dans la zone optimale | Maintenir`);
+    });
+    sections.push("");
+  }
+
+  sections.push("### Lecture Globale\n");
+  sections.push(`Profil ${userProfile.gender}${userProfile.age ? " (" + userProfile.age + " ans)" : ""} avec ${critical.length} marqueur(s) critique(s) et ${suboptimal.length} zone(s) sous-optimale(s). ${optimal.length} marqueur(s) dans la zone optimale. ${summary.action.length ? "Priorite: " + summary.action[0] + "." : "Pas d'action urgente requise."}\n`);
+
+  sections.push("### Marqueurs Manquants Critiques\n");
+  const testedIds = new Set(analysisResult.markers.map(m => m.markerId));
+  const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"]
+    .filter(id => !testedIds.has(id));
+  sections.push(criticalMissing.length
+    ? criticalMissing.map(id => `- ${id.replace(/_/g, " ").toUpperCase()}: a ajouter au prochain bilan`).join("\n")
+    : "- Bilan relativement complet pour les marqueurs critiques.\n");
+
+  sections.push("\n---\n");
+
+  // ANALYSE PAR AXE
+  sections.push("## ANALYSE PAR AXE\n");
+
+  const axisConfig = [
+    { key: "hormonal", name: "POTENTIEL MUSCULAIRE & ANABOLISME", markers: axisMarkers.hormonal },
+    { key: "metabolique", name: "METABOLISME & SENSIBILITE INSULINE", markers: axisMarkers.metabolique },
+    { key: "lipidique", name: "PROFIL LIPIDIQUE", markers: axisMarkers.lipidique },
+    { key: "thyroide", name: "THYROIDE & METABOLISME DE BASE", markers: axisMarkers.thyroide },
+    { key: "hepatique", name: "FONCTION HEPATIQUE", markers: axisMarkers.hepatique },
+    { key: "renal", name: "FONCTION RENALE", markers: axisMarkers.renal },
+    { key: "inflammation", name: "INFLAMMATION & STRESS OXYDATIF", markers: axisMarkers.inflammation },
+    { key: "hematologie", name: "HEMATOLOGIE & OXYGENATION", markers: axisMarkers.hematologie },
+    { key: "micronutriments", name: "MICRONUTRIMENTS & COFACTEURS", markers: axisMarkers.micronutriments },
+    { key: "stress", name: "STRESS, CORTISOL & SOMMEIL", markers: axisMarkers.stress },
+  ];
+
+  for (const axis of axisConfig) {
+    if (axis.markers.length === 0) continue;
+
+    const axisCritical = axis.markers.filter(m => m.status === "critical").length;
+    const axisSuboptimal = axis.markers.filter(m => m.status === "suboptimal").length;
+    const axisOptimal = axis.markers.filter(m => m.status === "optimal").length;
+    const score = Math.round((axisOptimal / Math.max(axis.markers.length, 1)) * 10);
+
+    sections.push(`### ${axis.name} — Score: ${score}/10\n`);
+    sections.push("**Marqueurs analyses:**");
+    sections.push("| Marqueur | Valeur | Range Labo | Range Optimal | Statut |");
+    sections.push("|----------|--------|------------|---------------|--------|");
+    sections.push(formatMarkerTable(axis.markers));
+    sections.push("");
+
+    sections.push("**Lecture clinique:**");
+    if (axisCritical > 0) {
+      sections.push(`Attention: ${axisCritical} marqueur(s) critique(s) detecte(s) sur cet axe. Action immediate recommandee.`);
+    } else if (axisSuboptimal > 0) {
+      sections.push(`${axisSuboptimal} marqueur(s) sous-optimal(aux) sur cet axe. Optimisation possible pour ameliorer la performance.`);
+    } else {
+      sections.push("Cet axe est bien equilibre. Maintenir les protocoles actuels.");
+    }
+    sections.push("\n");
+  }
+
+  sections.push("---\n");
+
+  // DEEP DIVE (top 4 critical/suboptimal markers)
+  const priorityMarkers = [...critical, ...suboptimal].slice(0, 4);
+  if (priorityMarkers.length > 0) {
+    sections.push("## DEEP DIVE MARQUEURS PRIORITAIRES\n");
+    for (const marker of priorityMarkers) {
+      const statusLabel = marker.status === "critical" ? "[CRITIQUE]" : "[IMPORTANT]";
+      sections.push(`### ${marker.name} — ${marker.value} ${marker.unit || ""} — ${statusLabel}\n`);
+      sections.push("**C'est quoi ce marqueur?**");
+      sections.push(`${marker.name} est un biomarqueur essentiel pour evaluer ${marker.markerId.includes("testosterone") ? "le potentiel anabolique et la composition corporelle" : marker.markerId.includes("thyroid") || marker.markerId.includes("tsh") || marker.markerId.includes("t3") || marker.markerId.includes("t4") ? "le metabolisme de base et la thermogenese" : marker.markerId.includes("glucose") || marker.markerId.includes("hba1c") || marker.markerId.includes("insulin") ? "la sensibilite a l'insuline et le metabolisme glucidique" : "la sante globale et la performance"}. Ce marqueur reflete l'etat physiologique et impacte directement les objectifs de performance et de composition corporelle.\n`);
+      sections.push("**Ton analyse personnalisee**");
+      sections.push(`Ta valeur de ${marker.value} ${marker.unit || ""} est ${marker.status === "critical" ? "significativement hors du range optimal" : "sous-optimale par rapport aux standards athlete"}. ${marker.normalRange ? `Le range labo standard est ${marker.normalRange}, mais` : ""} ${marker.optimalRange ? `le range optimal athlete est ${marker.optimalRange}.` : "les standards performance sont plus exigeants."} Cette valeur peut impacter ta recuperation, tes gains et ton energie quotidienne.\n`);
+      sections.push("**Impacts concrets sur ton corps**");
+      sections.push(`Un niveau ${marker.status === "critical" ? "critique" : "sous-optimal"} de ${marker.name} peut affecter: recuperation musculaire, energie, sommeil, humeur et progression en salle. Les athletes avec des valeurs optimisees rapportent systematiquement de meilleures performances.\n`);
+      sections.push("**Protocole detaille**");
+      sections.push("Phase 1 (J1-14): Ajuster alimentation et sommeil pour creer les conditions de base.");
+      sections.push("Phase 2 (J15-45): Introduire supplementation ciblee si necessaire.");
+      sections.push("Phase 3 (J45-90): Consolider les acquis et preparer le retest.\n");
+    }
+    sections.push("---\n");
+  }
+
+  // CORRELATIONS LIFESTYLE
+  sections.push("## CORRELATIONS LIFESTYLE\n");
+  sections.push(...correlationLines);
+  sections.push("\n---\n");
+
+  // PLAN D'ACTION 90 JOURS
+  sections.push("## PLAN D'ACTION 90 JOURS\n");
+
+  sections.push("### PHASE 1: ATTAQUE (Jours 1-30)\n");
+  sections.push("**Focus:** Corriger les marqueurs critiques et initier les protocoles importants.\n");
+  sections.push("**Supplementation:**");
+  sections.push("| Supplement | Dosage | Timing | Pourquoi |");
+  sections.push("|------------|--------|--------|----------|");
+  sections.push("| Vitamine D3 | 5000 UI | Matin avec gras | Optimisation hormonale |");
+  sections.push("| Magnesium Glycinate | 400mg | Soir | Recuperation, sommeil |");
+  sections.push("| Omega-3 | 3g EPA+DHA | Repas | Anti-inflammatoire |\n");
+  sections.push("**Nutrition:**");
+  sections.push(formatList(priority1.slice(0, 3), "Stabiliser sommeil, hydratation, apport proteique minimum 1.6g/kg."));
+  sections.push("");
+
+  sections.push("### PHASE 2: OPTIMISATION (Jours 31-60)\n");
+  sections.push("**Focus:** Affiner les protocoles selon la reponse initiale.\n");
+  sections.push("**Nutrition:**");
+  sections.push(formatList(priority2.slice(0, 3), "Optimiser timing nutritionnel et qualite des sources."));
+  sections.push("");
+
+  sections.push("### PHASE 3: CONSOLIDATION (Jours 61-90)\n");
+  sections.push("**Focus:** Stabiliser les acquis et preparer le retest.\n");
+  sections.push("- Maintenir les protocoles qui fonctionnent");
+  sections.push("- Ajuster les dosages si necessaire");
+  sections.push("- Preparer la liste des marqueurs a retester\n");
+
+  sections.push("### PHASE 4: RETEST (J+90)\n");
+  sections.push("**Marqueurs a retester obligatoirement:**");
+  if (critical.length || suboptimal.length) {
+    [...critical, ...suboptimal].slice(0, 5).forEach((m) => {
+      sections.push(`- ${m.name}: ${m.value} → cible ${m.optimalRange || "zone optimale"} → amelioration attendue 15-30%`);
+    });
+  }
+  sections.push("");
+  sections.push("**Controles supplementaires:**");
+  sections.push(followUp.length ? followUp.join("\n") : "- Aucun controle supplementaire requis.\n");
+
+  sections.push("---\n");
+
+  // VIGILANCE
+  sections.push("## VIGILANCE\n");
+  sections.push(alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur necessitant une consultation medicale immediate.\n");
+
+  sections.push("---\n");
+  sections.push("*Ce rapport est genere en mode fallback. Pour une analyse complete avec citations d'experts et protocoles detailles, veuillez regenerer le rapport.*");
+
+  return sections.join("\n");
 }
 
 const isFlaggedStatus = (status?: MarkerStatus): boolean => status === "suboptimal" || status === "critical";
@@ -2271,8 +2617,8 @@ Génère une analyse complète selon le format demandé.`;
   let bestCandidate = "";
   let bestScore = -1;
 
-  // Timeout wrapper for API calls (45s max per attempt to stay under Render's 60s limit)
-  const API_TIMEOUT_MS = 45000;
+  // Timeout wrapper for API calls - increased to support longer Achzod-style reports (35k-90k chars)
+  const API_TIMEOUT_MS = 120000; // 2 minutes for comprehensive reports
   const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
     return Promise.race([
       promise,
@@ -2296,7 +2642,7 @@ Génère une analyse complète selon le format demandé.`;
       const response = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 12000, // Reduced from 16000 for faster response
+          max_tokens: 32000, // Increased for comprehensive Achzod-style reports (35k-90k chars)
           system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
           messages: [{ role: "user", content: prompt }]
         }),
@@ -2334,17 +2680,17 @@ Génère une analyse complète selon le format demandé.`;
   }
 
   if (!output.includes("## Plan 90 jours")) {
-    const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan 90 jours" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan 90 jours\n  ### Jours 1-30 (Phase d'Attaque)\n  ### Jours 31-90 (Phase d'Optimisation)\n  ### Retest à J+90\n- Chaque ligne doit inclure: action + dosage precis + timing exact + citation expert (Derek/Huberman/Attia/Examine) + objectif chiffre.\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
+    const planPrompt = `Tu dois produire UNIQUEMENT la section "## PLAN D'ACTION 90 JOURS" avec les 4 phases pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## PLAN D'ACTION 90 JOURS\n  ### PHASE 1: ATTAQUE (Jours 1-30)\n  ### PHASE 2: OPTIMISATION (Jours 31-60)\n  ### PHASE 3: CONSOLIDATION (Jours 61-90)\n  ### PHASE 4: RETEST (J+90)\n- Chaque phase doit inclure:\n  * Supplementation (tableau: Supplement | Dosage | Timing | Pourquoi | Source expert)\n  * Nutrition (modifications precises avec quantification)\n  * Lifestyle (sommeil, stress)\n  * Entrainement (ajustements si necessaires)\n- Phase 4 RETEST doit lister: marqueurs a retester + valeur actuelle → cible → amelioration attendue %\n- Citation experts obligatoire: Derek MPMD, Huberman, Attia, Examine.com\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
 
     try {
       const planResponse = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 1500,
-          system: "Tu es un expert medical. Respecte STRICTEMENT le format demande et ne produis que la section demandee.",
+          max_tokens: 4000, // Increased for detailed 4-phase plan
+          system: "Tu es Achzod, expert elite en optimisation physiologique. Respecte STRICTEMENT le format demande avec 4 phases detaillees.",
           messages: [{ role: "user", content: planPrompt }]
         }),
-        15000 // 15s timeout for Plan 90 section
+        30000 // 30s timeout for comprehensive Plan 90 section
       );
       const planText = extractPlan90Section(
         planResponse.content.find(c => c.type === "text")?.text || ""
