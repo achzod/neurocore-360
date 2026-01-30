@@ -19,12 +19,20 @@ class ApiError extends Error {
   }
 }
 
+const withAdminKey = (url: string, adminKey?: string) => {
+  if (!adminKey) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}key=${encodeURIComponent(adminKey)}`;
+};
+
 const fetcher = async <T,>(url: string, adminKey?: string): Promise<T> => {
   const token = localStorage.getItem("apexlabs_token");
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   if (adminKey) headers["x-admin-key"] = adminKey;
-  const res = await fetch(url, { headers: Object.keys(headers).length ? headers : undefined });
+  const res = await fetch(withAdminKey(url, adminKey), {
+    headers: Object.keys(headers).length ? headers : undefined,
+  });
   if (!res.ok) {
     const text = await res.text();
     throw new ApiError(res.status, `${res.status} ${text}`);
@@ -342,6 +350,7 @@ const SECTION_NAV = [
   { id: "systems", label: "Analyse détaillée" },
   { id: "interconnections", label: "Interconnexions" },
   { id: "protocol", label: "Protocole 90 jours" },
+  { id: "full-report", label: "Rapport complet" },
   { id: "glossary", label: "Glossaire" },
   { id: "sources", label: "Sources" },
 ];
@@ -370,6 +379,33 @@ function BloodAnalysisReportInner() {
       navigate(`/auth/login?next=/analysis/${encodeURIComponent(reportId)}`);
     }
   }, [adminKey, meError, navigate, reportId]);
+
+  // Force light theme for blood report (white background only)
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    // Remove dark class and add light
+    root.classList.remove("dark");
+    root.classList.add("light");
+
+    // Force white background with inline style (overrides all CSS)
+    const previousBodyBg = body.style.backgroundColor;
+    const previousBodyColor = body.style.color;
+    body.style.backgroundColor = "#ffffff";
+    body.style.color = "#0f172a"; // slate-900
+
+    return () => {
+      // Restore previous theme and styles on unmount
+      const storedTheme = localStorage.getItem("neurocore-theme");
+      root.classList.remove("light");
+      if (storedTheme === "dark") {
+        root.classList.add("dark");
+      }
+      body.style.backgroundColor = previousBodyBg;
+      body.style.color = previousBodyColor;
+    };
+  }, []);
 
   const { data, isLoading, error, refetch } = useQuery<BloodTestDetail, ApiError>({
     queryKey: ["/api/blood-tests", reportId],
@@ -437,6 +473,10 @@ function BloodAnalysisReportInner() {
   }, [data, reportId]);
 
   const aiSections = useMemo(() => parseAISections(reportData?.aiAnalysis || ""), [reportData?.aiAnalysis]);
+  const hasAISections = useMemo(
+    () => Object.values(aiSections).some((section) => Boolean(section?.content)),
+    [aiSections]
+  );
   const deepDiveItems = useMemo(
     () => parseSubsections(aiSections.deepDive?.content || ""),
     [aiSections.deepDive?.content]
@@ -455,12 +495,13 @@ function BloodAnalysisReportInner() {
   }, [reportData]);
 
   const supplements = reportData?.comprehensiveData?.supplements || [];
+  const protocols = reportData?.comprehensiveData?.protocols || [];
 
   const handleExportPDF = async () => {
     if (!reportId) return;
     try {
       const token = localStorage.getItem("apexlabs_token");
-      const res = await fetch(`/api/blood-tests/${reportId}/export/pdf`, {
+      const res = await fetch(withAdminKey(`/api/blood-tests/${reportId}/export/pdf`, adminKey || undefined), {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error("Export PDF indisponible.");
@@ -629,6 +670,14 @@ function BloodAnalysisReportInner() {
                   Score global expliqué
                 </h2>
               </div>
+              {aiSections.synthesis?.content ? (
+                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                    Synthèse exécutive personnalisée
+                  </div>
+                  <MarkdownBlock content={aiSections.synthesis.content} />
+                </div>
+              ) : null}
               <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Score global</div>
@@ -677,7 +726,16 @@ function BloodAnalysisReportInner() {
                 comprennes quoi faire, pourquoi, et avec quel impact attendu.
               </p>
               <div className="mt-6 space-y-6">
-                {criticalMarkers.map((marker, idx) => {
+                {aiSections.alerts?.content ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                      Synthèse des alertes
+                    </div>
+                    <MarkdownBlock content={aiSections.alerts.content} />
+                  </div>
+                ) : null}
+                {criticalMarkers.length ? (
+                  criticalMarkers.map((marker, idx) => {
                   const deepDive = deepDiveItems.find((item) =>
                     normalizeText(item.title).includes(normalizeText(marker.name))
                   );
@@ -739,7 +797,12 @@ function BloodAnalysisReportInner() {
                       )}
                     </div>
                   );
-                })}
+                })
+                ) : (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
+                    Aucun marqueur critique détecté. Le rapport complet détaille les optimisations possibles.
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -756,17 +819,23 @@ function BloodAnalysisReportInner() {
                 Ces marqueurs sont solides. On va s'appuyer dessus pour accélérer le reste de ta progression.
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {strongMarkers.map((marker) => (
-                  <div key={marker.code} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                      {marker.name} ({formatValue(marker.value, marker.unit)})
+                {strongMarkers.length ? (
+                  strongMarkers.map((marker) => (
+                    <div key={marker.code} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                        {marker.name} ({formatValue(marker.value, marker.unit)})
+                      </div>
+                      <p className="mt-2 text-sm text-slate-700">
+                        Ton {marker.name.toLowerCase()} est dans la zone optimale. Continue tes habitudes actuelles
+                        pour maintenir ce point fort.
+                      </p>
                     </div>
-                    <p className="mt-2 text-sm text-slate-700">
-                      Ton {marker.name.toLowerCase()} est dans la zone optimale. Continue tes habitudes actuelles
-                      pour maintenir ce point fort.
-                    </p>
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                    Tes marqueurs forts seront détaillés dans l'analyse complète.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </section>
@@ -780,6 +849,19 @@ function BloodAnalysisReportInner() {
                 </h2>
               </div>
               <MarkdownBlock content={aiSections.systems?.content || ""} />
+              {!aiSections.systems?.content && (
+                <p className="mt-4 text-sm text-slate-600">
+                  Analyse détaillée en cours de génération. Consulte le rapport complet ci-dessous pour le texte intégral.
+                </p>
+              )}
+              {aiSections.deepDive?.content ? (
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                    Deep dive (explications détaillées)
+                  </div>
+                  <MarkdownBlock content={aiSections.deepDive.content} />
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -792,6 +874,11 @@ function BloodAnalysisReportInner() {
                 </h2>
               </div>
               <MarkdownBlock content={aiSections.interconnections?.content || ""} />
+              {!aiSections.interconnections?.content && (
+                <p className="mt-4 text-sm text-slate-600">
+                  Les interconnexions détaillées sont disponibles dans le rapport complet.
+                </p>
+              )}
             </div>
           </section>
 
@@ -804,34 +891,124 @@ function BloodAnalysisReportInner() {
                 </h2>
               </div>
               <MarkdownBlock content={aiSections.plan90?.content || ""} />
+              {!aiSections.plan90?.content && (
+                <p className="mt-4 text-sm text-slate-600">
+                  Le plan 90 jours est en cours de génération et apparaît dans le rapport complet.
+                </p>
+              )}
+
+              {aiSections.nutrition?.content ? (
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                    Nutrition & lifestyle
+                  </div>
+                  <MarkdownBlock content={aiSections.nutrition.content} />
+                </div>
+              ) : null}
+
+              {aiSections.supplements?.content ? (
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                    Suppléments (contexte scientifique)
+                  </div>
+                  <MarkdownBlock content={aiSections.supplements.content} />
+                </div>
+              ) : null}
 
               <div className="mt-8">
                 <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
                   Recommandations supplements (format actionnable)
                 </div>
                 <div className="mt-4 space-y-4">
-                  {supplements.map((supp: any, idx: number) => (
-                    <div key={`${supp.name}-${idx}`} className="rounded-xl border border-slate-200 p-4">
-                      <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                        {supp.name}
-                      </div>
-                      <div className="mt-2 text-sm text-slate-700">
-                        <div>✅ QUOI: {supp.name}</div>
-                        <div>🎯 POURQUOI: {supp.mechanism || "Optimiser tes marqueurs prioritaires."}</div>
-                        <div>
-                          📊 COMMENT: {supp.dosage} · {supp.timing}
-                          {supp.brand ? ` · Marque: ${supp.brand}` : ""}
+                  {supplements.length ? (
+                    supplements.map((supp: any, idx: number) => (
+                      <div key={`${supp.name}-${idx}`} className="rounded-xl border border-slate-200 p-4">
+                        <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                          {supp.name}
                         </div>
-                        <div>🕐 QUAND: {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}</div>
-                        <div>📈 IMPACT: Amélioration attendue sur marqueurs ciblés.</div>
-                        <div>
-                          💬 EXPERT: {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
+                        <div className="mt-2 text-sm text-slate-700">
+                          <div>✅ QUOI: {supp.name}</div>
+                          <div>🎯 POURQUOI: {supp.mechanism || "Optimiser tes marqueurs prioritaires."}</div>
+                          <div>
+                            📊 COMMENT: {supp.dosage} · {supp.timing}
+                            {supp.brand ? ` · Marque: ${supp.brand}` : ""}
+                          </div>
+                          <div>🕐 QUAND: {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}</div>
+                          <div>📈 IMPACT: Amélioration attendue sur marqueurs ciblés.</div>
+                          <div>
+                            💬 EXPERT: {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      Aucun supplément recommandé pour ce profil.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
+
+              {protocols.length ? (
+                <div className="mt-8">
+                  <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                    Protocoles lifestyle & training
+                  </div>
+                  <div className="mt-4 space-y-4">
+                    {protocols.map((protocol: any, idx: number) => (
+                      <div key={`${protocol.name}-${idx}`} className="rounded-xl border border-slate-200 p-4">
+                        <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                          {protocol.name}
+                        </div>
+                        <div className="mt-2 text-sm text-slate-700">
+                          <div>✅ QUOI: {protocol.description || protocol.name}</div>
+                          <div>
+                            🎯 POURQUOI: {protocol.scienceContext || protocol.expectedOutcome || "Optimiser tes marqueurs."}
+                          </div>
+                          <div>
+                            📊 COMMENT:{" "}
+                            {protocol.steps && protocol.steps.length ? protocol.steps.join(" · ") : protocol.frequency}
+                          </div>
+                          <div>🕐 QUAND: {protocol.duration || "Phase actuelle"}</div>
+                          <div>📈 IMPACT: {protocol.expectedOutcome || "Amélioration attendue sur tes objectifs."}</div>
+                          <div>
+                            💬 EXPERT:{" "}
+                            {protocol.citations && protocol.citations.length
+                              ? highlightText(protocol.citations[0])
+                              : "-"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <section id="full-report" className="mt-10 scroll-mt-24">
+            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                  Rapport complet (texte intégral)
+                </h2>
+              </div>
+              {hasAISections ? (
+                <div className="mt-4 space-y-6 text-sm text-slate-700">
+                  {aiSections.synthesis?.content && <MarkdownBlock content={aiSections.synthesis.content} />}
+                  {aiSections.alerts?.content && <MarkdownBlock content={aiSections.alerts.content} />}
+                  {aiSections.systems?.content && <MarkdownBlock content={aiSections.systems.content} />}
+                  {aiSections.interconnections?.content && <MarkdownBlock content={aiSections.interconnections.content} />}
+                  {aiSections.deepDive?.content && <MarkdownBlock content={aiSections.deepDive.content} />}
+                  {aiSections.plan90?.content && <MarkdownBlock content={aiSections.plan90.content} />}
+                  {aiSections.nutrition?.content && <MarkdownBlock content={aiSections.nutrition.content} />}
+                  {aiSections.supplements?.content && <MarkdownBlock content={aiSections.supplements.content} />}
+                  {aiSections.sources?.content && <MarkdownBlock content={aiSections.sources.content} />}
+                </div>
+              ) : (
+                <MarkdownBlock content={reportData.aiAnalysis} />
+              )}
             </div>
           </section>
 
