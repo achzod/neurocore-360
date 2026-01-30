@@ -406,6 +406,104 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     }
   });
 
+  /**
+   * GET /api/blood-tests/:id (BRIDGE)
+   * Returns blood-analysis report in blood-tests format for frontend compatibility
+   * This endpoint is registered BEFORE the main blood-tests routes (which require auth)
+   */
+  app.get("/api/blood-tests/:id", async (req, res, next) => {
+    try {
+      // First try blood-analysis report (no auth required for these)
+      const report = await storage.getBloodReport(req.params.id);
+      if (!report) {
+        // Fall through to the authenticated blood-tests route
+        return next();
+      }
+
+      console.log(`[BloodAnalysis] Serving report ${req.params.id} via bridge endpoint`);
+
+      // Transform blood-analysis format to blood-tests format
+      const profile = report.profile as Record<string, unknown> || {};
+      const analysis = report.analysis as Record<string, unknown> || {};
+      const markers = report.markers as Array<Record<string, unknown>> || [];
+
+      // Build markers in frontend expected format
+      const formattedMarkers = markers.map((m: Record<string, unknown>) => {
+        const markerId = (m.markerId || m.name || "") as string;
+        const range = BIOMARKER_RANGES[markerId];
+        return {
+          name: range?.name || markerId,
+          code: markerId,
+          category: "metabolic", // Default category
+          value: m.value as number,
+          unit: (m.unit || range?.unit || "") as string,
+          refMin: range?.normalMin ?? null,
+          refMax: range?.normalMax ?? null,
+          optimalMin: range?.optimalMin ?? null,
+          optimalMax: range?.optimalMax ?? null,
+          status: (analysis.markers as any[])?.find((am: any) => am.id === markerId)?.status || "normal",
+          interpretation: (analysis.markers as any[])?.find((am: any) => am.id === markerId)?.interpretation || "",
+        };
+      });
+
+      // Calculate global score from analysis
+      const analysisMarkers = (analysis.markers || []) as Array<{ status: string }>;
+      const optimalCount = analysisMarkers.filter(m => m.status === "optimal").length;
+      const normalCount = analysisMarkers.filter(m => m.status === "normal").length;
+      const totalMarkers = analysisMarkers.length || 1;
+      const globalScore = Math.round(((optimalCount * 100 + normalCount * 70) / totalMarkers));
+      const globalLevel = globalScore >= 85 ? "excellent" : globalScore >= 70 ? "bon" : globalScore >= 50 ? "moyen" : "faible";
+
+      res.json({
+        bloodTest: {
+          id: report.id,
+          fileName: "blood-analysis-submit",
+          uploadedAt: report.createdAt,
+          status: "completed",
+          error: null,
+          globalScore,
+          globalLevel,
+          patient: {
+            prenom: profile.prenom as string || "",
+            nom: profile.nom as string || "",
+            email: report.email,
+            gender: profile.gender as string || "homme",
+            dob: profile.dob as string || "",
+            poids: profile.poids as number || null,
+            taille: profile.taille as number || null,
+            sleepHours: profile.sleepHours as number || null,
+            trainingHours: profile.trainingHours as number || null,
+            stressLevel: profile.stressLevel as number || null,
+          },
+        },
+        markers: formattedMarkers,
+        derivedMetrics: {},
+        patterns: (analysis.patterns || []) as any[],
+        analysis: {
+          globalScore,
+          globalLevel,
+          patterns: analysis.patterns || [],
+          aiAnalysis: report.aiReport || "",
+          comprehensiveData: {
+            supplements: [],
+            protocols: [],
+          },
+          patient: {
+            prenom: profile.prenom as string || "",
+            nom: profile.nom as string || "",
+            email: report.email,
+            gender: profile.gender as string || "homme",
+            dob: profile.dob as string || "",
+          },
+        },
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Bridge endpoint error:", error);
+      // Fall through to next handler
+      return next();
+    }
+  });
+
   // ============================================
   // RISK ASSESSMENT ROUTES
   // ============================================
