@@ -458,27 +458,44 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         age: computedAge,
       } as any;
 
-      const analysisResult = await analyzeBloodwork(resolvedMarkers, {
-        gender: (normalizedProfile.gender as "homme" | "femme") || "homme",
-        age: computedAge,
-        objectives: undefined,
-        medications: undefined,
-      });
+      const runRegeneration = async () => {
+        const analysisResult = await analyzeBloodwork(resolvedMarkers, {
+          gender: (normalizedProfile.gender as "homme" | "femme") || "homme",
+          age: computedAge,
+          objectives: undefined,
+          medications: undefined,
+        });
 
-      const knowledgeContext = await getBloodworkKnowledgeContext(
-        analysisResult.markers,
-        analysisResult.patterns
-      );
+        const knowledgeContext = await getBloodworkKnowledgeContext(
+          analysisResult.markers,
+          analysisResult.patterns
+        );
 
-      const aiReport = await generateAIBloodAnalysis(
-        analysisResult,
-        normalizedProfile,
-        knowledgeContext
-      );
+        const aiReport = await generateAIBloodAnalysis(
+          analysisResult,
+          normalizedProfile,
+          knowledgeContext
+        );
 
-      await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+        await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+      };
 
-      res.json({ success: true, reportId: report.id });
+      const asyncMode =
+        req.query.async === "true" || (req.body && (req.body as any).async === true);
+
+      if (asyncMode) {
+        setImmediate(() => {
+          runRegeneration().catch((err) => {
+            console.error("[BloodAnalysis] Regenerate async error:", err);
+          });
+        });
+        res.json({ success: true, reportId: report.id, status: "processing" });
+        return;
+      }
+
+      await runRegeneration();
+
+      res.json({ success: true, reportId: report.id, status: "completed" });
     } catch (error) {
       console.error("[BloodAnalysis] Regenerate error:", error);
       res.status(500).json({ error: "Erreur regeneration" });

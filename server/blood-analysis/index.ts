@@ -1982,6 +1982,8 @@ export function buildFallbackAnalysis(
 ): string {
   const formatList = (items: string[], emptyLabel: string) =>
     items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${emptyLabel}`;
+  const formatInline = (items: string[], emptyLabel: string) =>
+    items.length ? items.join(", ") : emptyLabel;
 
   const summary = analysisResult.summary;
   const critical = analysisResult.markers.filter((m) => m.status === "critical");
@@ -1993,103 +1995,230 @@ export function buildFallbackAnalysis(
   );
   const alerts = analysisResult.alerts.map((alert) => `- ${alert}`);
   const correlations = buildLifestyleCorrelations(analysisResult.markers, userProfile);
-  const correlationLines = correlations.length
-    ? correlations.map(
-        (item) => `- ${item.factor} (${item.current}): ${item.impact} Action: ${item.recommendation}`
-      )
-    : ["- Donnees lifestyle insuffisantes pour calculer des correlations."];
+
+  const missingData: string[] = [];
+  if (!userProfile.poids) missingData.push("Poids");
+  if (!userProfile.taille) missingData.push("Taille");
+  if (!userProfile.sleepHours) missingData.push("Sommeil");
+  if (!userProfile.trainingHours) missingData.push("Training");
+  if (!userProfile.stressLevel) missingData.push("Stress");
+
+  const axisVerdict = (ids: string[]) => {
+    const axisMarkers = analysisResult.markers.filter((m) => ids.includes(m.markerId));
+    if (!axisMarkers.length) return "Non renseigne";
+    if (axisMarkers.some((m) => m.status === "critical")) return "A corriger";
+    if (axisMarkers.some((m) => m.status === "suboptimal")) return "Borderline";
+    return "OK";
+  };
+
+  const axisMarkersList = (ids: string[], fallback: string) =>
+    formatInline(
+      analysisResult.markers
+        .filter((m) => ids.includes(m.markerId))
+        .map((m) => `${m.name} (${m.status})`),
+      fallback
+    );
+
+  const axes = [
+    {
+      title: "### Axe 1 — Potentiel musculaire & androgenes",
+      ids: ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "cortisol", "igf1"],
+      fallback: "Aucun marqueur androgene fourni",
+    },
+    {
+      title: "### Axe 2 — Metabolisme & gestion du risque diabete",
+      ids: ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "hdl", "acide_urique"],
+      fallback: "Aucun marqueur metabolique fourni",
+    },
+    {
+      title: "### Axe 3 — Lipides & risque cardio-metabolique",
+      ids: ["ldl", "hdl", "triglycerides", "apob", "non_hdl", "lpa"],
+      fallback: "Aucun marqueur lipidique fourni",
+    },
+    {
+      title: "### Axe 4 — Thyroide & depense energetique",
+      ids: ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"],
+      fallback: "Aucun marqueur thyroidien fourni",
+    },
+    {
+      title: "### Axe 5 — Foie, bile & detox metabolique",
+      ids: ["alt", "ast", "ggt", "bilirubine", "alp"],
+      fallback: "Aucun marqueur hepatique fourni",
+    },
+    {
+      title: "### Axe 6 — Rein, hydratation & performance",
+      ids: ["creatinine", "egfr", "uree", "bun"],
+      fallback: "Aucun marqueur renal fourni",
+    },
+    {
+      title: "### Axe 7 — Inflammation, immunite & terrain",
+      ids: ["crp_us", "homocysteine", "ferritine", "globules_blancs", "neutrophiles", "lymphocytes"],
+      fallback: "Aucun marqueur inflammation fourni",
+    },
+    {
+      title: "### Axe 8 — Hematologie, oxygenation & endurance",
+      ids: ["hemoglobine", "hematocrite", "rbc", "mcv", "mch", "rdw", "fer_serique", "transferrine_sat"],
+      fallback: "Aucun marqueur hematologique fourni",
+    },
+    {
+      title: "### Axe 9 — Micronutriments (vitamines & mineraux)",
+      ids: ["vitamine_d", "b12", "folate", "magnesium_rbc", "zinc", "cuivre"],
+      fallback: "Aucun marqueur micronutriments fourni",
+    },
+    {
+      title: "### Axe 10 — Electrolytes, crampes, pression & performance",
+      ids: ["sodium", "potassium", "calcium", "chlore"],
+      fallback: "Aucun marqueur electrolytes fourni",
+    },
+    {
+      title: "### Axe 11 — Stress, sommeil, recuperation (si donnees)",
+      ids: ["cortisol", "dhea_s"],
+      fallback: "Aucun marqueur stress/sommeil fourni",
+    },
+  ];
+
+  const axesText = axes
+    .map((axis) => {
+      const verdict = axisVerdict(axis.ids);
+      const markersLine = axisMarkersList(axis.ids, axis.fallback);
+      return [
+        axis.title,
+        `${verdict}.`,
+        `- Marqueurs cles: ${markersLine}`,
+        "- Lecture clinique: Non renseigne.",
+        "- Lecture performance/bodybuilding: Non renseigne.",
+        "- Causes probables (priorisees): Non renseigne.",
+        "- Actions (3 a 7): Prioriser sommeil, nutrition, entrainement, puis retest.",
+        "- Tests manquants: Non renseigne.",
+      ].join("\n");
+    })
+    .join("\n\n");
+
+  const deepDiveMarkers = selectDeepDiveMarkers(analysisResult.markers);
+  const deepDiveText = deepDiveMarkers.length
+    ? deepDiveMarkers
+        .map((marker) => {
+          const range = BIOMARKER_RANGES[marker.markerId];
+          const normalRange =
+            range && range.normalMin !== undefined && range.normalMax !== undefined
+              ? `${range.normalMin} - ${range.normalMax}`
+              : marker.normalRange || "N/A";
+          const priority =
+            marker.status === "critical"
+              ? "CRITIQUE"
+              : marker.status === "suboptimal"
+              ? "IMPORTANT"
+              : "OPTIMISATION";
+          return [
+            `### ${marker.name}`,
+            `- Priorite: ${priority}`,
+            `- Valeur: ${marker.value} ${marker.unit} | Range labo: ${normalRange} ${marker.unit || ""}`,
+            `- Lecture clinique: ${marker.interpretation || "Non renseigne"}`,
+            "- Lecture performance/bodybuilding: Non renseigne",
+            "- Causes plausibles (ordre de probabilite): Non renseigne",
+            "- Facteurs confondants: Non renseigne",
+            "- Plan d'action (3 a 7 points):",
+            "  - Suivre le plan d'action 90 jours.",
+            "  - Re-tester dans 6-8 semaines.",
+            "  - Ajuster nutrition et recuperation.",
+            "- Tests / data a ajouter: Non renseigne",
+            `- Confiance: ${missingData.length ? "faible" : "moyenne"}`,
+            "- Sources (si utilisees): Non renseigne",
+          ].join("\n");
+        })
+        .join("\n\n")
+    : "### Aucun marqueur prioritaire";
+
+  const patternLines = analysisResult.patterns.length
+    ? analysisResult.patterns.map((pattern, index) => {
+        return [
+          `${index + 1}) Pattern observe: ${pattern.name}`,
+          `   Hypothese probable: ${pattern.causes.join(", ") || "Non renseigne"}`,
+          "   Ce qui confirmerait: Tests complementaires ou retest.",
+          "   Action concrete: Suivre le plan 90 jours prioritaire.",
+        ].join("\n");
+      })
+    : ["1) Pattern observe: Non renseigne\n   Hypothese probable: Non renseigne\n   Ce qui confirmerait: Non renseigne\n   Action concrete: Non renseigne"];
 
   return [
     "## Synthese executive",
     `- Optimal: ${summary.optimal.join(", ") || "Aucun"}`,
     `- A surveiller: ${summary.watch.join(", ") || "Aucun"}`,
     `- Action requise: ${summary.action.join(", ") || "Aucune"}`,
-    `- Lecture globale: Profil ${userProfile.gender}${userProfile.age ? " (" + userProfile.age + " ans)" : ""} avec ${critical.length} alerte(s) critique(s) et ${suboptimal.length} zone(s) a optimiser.`,
+    `- Lecture globale: Profil ${userProfile.gender}${userProfile.age ? " (" + userProfile.age + " ans)" : ""} avec ${critical.length} critique(s) et ${suboptimal.length} a optimiser.`,
+    "- Ce qui change tout si confirme: Contexte lifestyle complet + retest propre.",
     "",
-    "## Alertes prioritaires",
-    alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
+    "## Qualite des donnees & limites",
+    missingData.length
+      ? `- Donnees manquantes: ${missingData.join(", ")}`
+      : "- Donnees personnelles suffisantes pour ce rapport.",
+    "- Contexte de prelevement: Non renseigne (jeune, entrainement, alcool).",
+    "- Prochain prelevement: matin a jeun, 48h sans entrainement intense, hydratation stable.",
     "",
-    "## Systeme par systeme",
-    `### Hormonal\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) =>
-          [
-            "testosterone_total",
-            "testosterone_libre",
-            "shbg",
-            "estradiol",
-            "lh",
-            "fsh",
-            "prolactine",
-            "dhea_s",
-            "cortisol",
-            "igf1",
-          ].includes(m.markerId)
-        )
-        .map((m) => `${m.name} (${m.status})`),
-      "Aucun signal prioritaire"
-    )}\n- Impact: Axe hormonal = energie, libido et composition corporelle.`,
-    `### Thyroide\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) => ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId))
-        .map((m) => `${m.name} (${m.status})`),
-      "Rien d urgent"
-    )}\n- Impact: La thyroide pilote metabolisme et thermogenese.`,
-    `### Metabolique\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) =>
-          [
-            "glycemie_jeun",
-            "hba1c",
-            "insuline_jeun",
-            "homa_ir",
-            "triglycerides",
-            "hdl",
-            "ldl",
-            "apob",
-            "lpa",
-          ].includes(m.markerId)
-        )
-        .map((m) => `${m.name} (${m.status})`),
-      "Profil metabolique stable"
-    )}\n- Impact: Base de la perte de gras et de l energie.`,
-    `### Inflammation\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) =>
-          ["crp_us", "homocysteine", "ferritine", "fer_serique", "transferrine_sat"].includes(
-            m.markerId
-          )
-        )
-        .map((m) => `${m.name} (${m.status})`),
-      "Inflammation controlee"
-    )}\n- Impact: Inflammation basse = recuperation plus rapide.`,
-    `### Vitamines\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) => ["vitamine_d", "b12", "folate", "magnesium_rbc", "zinc"].includes(m.markerId))
-        .map((m) => `${m.name} (${m.status})`),
-      "Couverture micronutriments correcte"
-    )}\n- Impact: Micronutriments = hormones, immunite, energie.`,
-    `### Foie & rein\n- Points cles: ${formatList(
-      analysisResult.markers
-        .filter((m) => ["alt", "ast", "ggt", "creatinine", "egfr"].includes(m.markerId))
-        .map((m) => `${m.name} (${m.status})`),
-      "Fonctions hepatiques et renales stables"
-    )}\n- Impact: Detox et elimination conditionnent la performance.`,
+    "## Tableau de bord (scores & priorites)",
+    "- TOP priorites:",
+    formatList(summary.action, "Aucune priorite critique."),
+    "- TOP quick wins:",
+    formatList(priority1, "Structurer sommeil, marche post-prandiale, hydratation."),
+    "- Drapeaux rouges:",
+    formatList(critical.map((m) => m.name), "Aucun drapeau rouge majeur."),
     "",
-    "## Correlations lifestyle",
-    ...correlationLines,
+    "## Potentiel recomposition (perte de gras + gain de muscle)",
+    "- Potentiel seche: depend surtout du metabolisme et inflammation.",
+    "- Potentiel hypertrophie: depend des androgens, recuperation, micronutriments.",
+    "- Goulots d etranglement: Non renseigne.",
+    "- Risques de plateau: Non renseigne.",
+    "- Les 3 leviers qui debloquent le physique: sommeil, structure nutrition, entrainement dose.",
     "",
-    "## Protocoles 90 jours",
-    "### Jours 1-30",
-    formatList(priority1, "Stabiliser sommeil, hydratation, apport proteique."),
-    "### Jours 31-90",
-    formatList(priority2, "Optimiser activite, nutrition et supplementation."),
+    "## Lecture compartimentee par axes",
+    axesText,
     "",
-    "## Controles a prevoir",
+    "## Interconnexions majeures (le pattern)",
+    ...patternLines,
+    "",
+    "## Deep dive — marqueurs prioritaires (top 8 a 15)",
+    deepDiveText,
+    "",
+    "## Plan d'action 90 jours (hyper concret)",
+    "### Jours 1-14 (Stabilisation)",
+    "- Objectifs: stabiliser sommeil, hydratation, apports.",
+    "- Actions: prioriser routine sommeil, marche post-prandiale, proteins stables.",
+    "- Indicateurs: energie, digestion, poids stable.",
+    "- Erreurs a eviter: sur-entrainement, deficit agressif.",
+    "### Jours 15-30 (Phase d'Attaque)",
+    formatList(priority1, "Structurer nutrition et activite."),
+    "### Jours 31-60 (Consolidation)",
+    formatList(priority2, "Stabiliser habitudes et suivre la progression."),
+    "### Jours 61-90 (Optimisation)",
+    "- Objectifs: affiner details, corriger residuel.",
+    "- Actions: ajuster nutrition et entrainement.",
+    "- Indicateurs: performances et marqueurs cibles.",
+    "- Erreurs a eviter: multiplier les changements.",
+    "### Retest & conditions de prelevement",
     followUp.length ? followUp.join("\n") : "- Aucun controle prioritaire",
     "",
-    "## Vigilance",
-    alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur.",
+    "## Nutrition & entrainement (traduction pratique)",
+    "- Nutrition: structurer les repas, limiter sucres rapides, prioriser fibres et proteines.",
+    "- Entrainement: force 3x/sem + marche quotidienne, ajuster volume selon fatigue.",
+    "",
+    "## Supplements & stack (minimaliste mais impact)",
+    formatList(priority2, "Non renseigne."),
+    "",
+    "## Annexes (ultra long)",
+    "### Annex A — Marqueurs secondaires (lecture rapide)",
+    formatList(
+      analysisResult.markers
+        .filter((m) => !critical.map((c) => c.markerId).includes(m.markerId))
+        .map((m) => `${m.name} (${m.status})`),
+      "Aucun marqueur secondaire"
+    ),
+    "### Annex B — Hypotheses & tests de confirmation",
+    "- Non renseigne.",
+    "### Annex C — Glossaire utile",
+    "- Non renseigne.",
+    "",
+    "## Sources (bibliotheque)",
+    "- Aucune source fournie",
   ].join("\n");
 }
 
@@ -2402,8 +2531,8 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
   let bestScore = -1;
 
   // Timeout wrapper for API calls (fast mode keeps shorter limits; full mode allows longer responses)
-  const fastMode = process.env.BLOOD_ANALYSIS_FAST_MODE === "true";
-  const API_TIMEOUT_MS = fastMode ? 90000 : 240000;
+  const fastMode = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" && process.env.NODE_ENV !== "production";
+  const API_TIMEOUT_MS = fastMode ? 180000 : 600000;
   const maxTokens = Number(process.env.BLOOD_ANALYSIS_MAX_TOKENS || 16000);
   const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
     return Promise.race([
@@ -2414,7 +2543,7 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
     ]);
   };
 
-  const maxAttempts = fastMode ? 1 : 3;
+  const maxAttempts = fastMode ? 1 : 2;
   const minChars = fastMode ? 20000 : 35000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -2477,7 +2606,7 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
             "Tu es un expert medical. Respecte STRICTEMENT le format demande, aucun emoji, et ne produis que la section demandee.",
           messages: [{ role: "user", content: planPrompt }]
         }),
-        fastMode ? 15000 : 60000
+        fastMode ? 30000 : 120000
       );
       const planText = extractPlan90Section(
         planResponse.content.find(c => c.type === "text")?.text || ""
