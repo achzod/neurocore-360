@@ -313,6 +313,170 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
 };
 
 // ============================================
+// MARKER NAME ALIASES (for normalization)
+// ============================================
+// Maps common English/French names to BIOMARKER_RANGES keys
+const MARKER_ALIASES: Record<string, string> = {
+  // Hormonal - Testosterone
+  "testosterone": "testosterone_total",
+  "total testosterone": "testosterone_total",
+  "testosterone totale": "testosterone_total",
+  "free testosterone": "testosterone_libre",
+  "testosterone libre": "testosterone_libre",
+  "freetestosterone": "testosterone_libre",
+
+  // Hormonal - Others
+  "estradiol": "estradiol",
+  "e2": "estradiol",
+  "prolactin": "prolactine",
+  "prolactine": "prolactine",
+  "dhea-s": "dhea_s",
+  "dheas": "dhea_s",
+  "dhea sulfate": "dhea_s",
+  "cortisol": "cortisol",
+  "morning cortisol": "cortisol",
+  "igf-1": "igf1",
+  "igf1": "igf1",
+  "lh": "lh",
+  "fsh": "fsh",
+  "shbg": "shbg",
+
+  // Thyroid
+  "tsh": "tsh",
+  "free t4": "t4_libre",
+  "t4 libre": "t4_libre",
+  "t4": "t4_libre",
+  "free t3": "t3_libre",
+  "t3 libre": "t3_libre",
+  "t3": "t3_libre",
+  "reverse t3": "t3_reverse",
+  "t3 reverse": "t3_reverse",
+  "anti-tpo": "anti_tpo",
+  "tpo antibodies": "anti_tpo",
+
+  // Metabolic - Glucose
+  "fasting glucose": "glycemie_jeun",
+  "glucose": "glycemie_jeun",
+  "glycémie": "glycemie_jeun",
+  "glycemie": "glycemie_jeun",
+  "blood sugar": "glycemie_jeun",
+  "hba1c": "hba1c",
+  "a1c": "hba1c",
+  "hemoglobin a1c": "hba1c",
+  "fasting insulin": "insuline_jeun",
+  "insulin": "insuline_jeun",
+  "insuline": "insuline_jeun",
+  "homa-ir": "homa_ir",
+  "homa ir": "homa_ir",
+
+  // Lipids
+  "triglycerides": "triglycerides",
+  "triglycérides": "triglycerides",
+  "hdl": "hdl",
+  "hdl cholesterol": "hdl",
+  "hdl-c": "hdl",
+  "ldl": "ldl",
+  "ldl cholesterol": "ldl",
+  "ldl-c": "ldl",
+  "apob": "apob",
+  "apo b": "apob",
+  "apolipoprotein b": "apob",
+  "lp(a)": "lpa",
+  "lpa": "lpa",
+  "lipoprotein(a)": "lpa",
+
+  // Inflammatory
+  "crp": "crp_us",
+  "hs-crp": "crp_us",
+  "crp-us": "crp_us",
+  "c-reactive protein": "crp_us",
+  "homocysteine": "homocysteine",
+  "homocystéine": "homocysteine",
+  "ferritin": "ferritine",
+  "ferritine": "ferritine",
+  "iron": "fer_serique",
+  "serum iron": "fer_serique",
+  "fer": "fer_serique",
+  "transferrin saturation": "transferrine_sat",
+  "transferrin sat": "transferrine_sat",
+  "tsat": "transferrine_sat",
+
+  // Vitamins/Minerals
+  "vitamin d": "vitamine_d",
+  "vitamine d": "vitamine_d",
+  "25-oh vitamin d": "vitamine_d",
+  "vit d": "vitamine_d",
+  "b12": "b12",
+  "vitamin b12": "b12",
+  "vitamine b12": "b12",
+  "cobalamin": "b12",
+  "folate": "folate",
+  "folic acid": "folate",
+  "magnesium": "magnesium_rbc",
+  "magnesium rbc": "magnesium_rbc",
+  "magnésium": "magnesium_rbc",
+  "zinc": "zinc",
+
+  // Liver/Kidney
+  "alt": "alt",
+  "alanine aminotransferase": "alt",
+  "sgpt": "alt",
+  "ast": "ast",
+  "aspartate aminotransferase": "ast",
+  "sgot": "ast",
+  "ggt": "ggt",
+  "gamma-gt": "ggt",
+  "creatinine": "creatinine",
+  "créatinine": "creatinine",
+  "egfr": "egfr",
+  "gfr": "egfr"
+};
+
+/**
+ * Normalizes a marker name to its BIOMARKER_RANGES key.
+ * Handles case-insensitivity and common aliases.
+ */
+export function normalizeMarkerName(name: string): string {
+  if (!name) return "";
+
+  // First, try direct lookup in BIOMARKER_RANGES (case-sensitive)
+  if (BIOMARKER_RANGES[name]) {
+    return name;
+  }
+
+  // Normalize: lowercase, trim whitespace
+  const normalized = name.toLowerCase().trim();
+
+  // Try direct key match in BIOMARKER_RANGES (lowercase)
+  if (BIOMARKER_RANGES[normalized]) {
+    return normalized;
+  }
+
+  // Try alias lookup
+  if (MARKER_ALIASES[normalized]) {
+    return MARKER_ALIASES[normalized];
+  }
+
+  // Try without special characters (spaces, dashes, underscores)
+  const simplified = normalized.replace(/[\s\-_]/g, "");
+  for (const [alias, key] of Object.entries(MARKER_ALIASES)) {
+    if (alias.replace(/[\s\-_]/g, "") === simplified) {
+      return key;
+    }
+  }
+
+  // Last resort: check if any BIOMARKER_RANGES key matches when simplified
+  for (const key of Object.keys(BIOMARKER_RANGES)) {
+    if (key.replace(/_/g, "") === simplified) {
+      return key;
+    }
+  }
+
+  // Return original if no match found
+  return name;
+}
+
+// ============================================
 // DIAGNOSTIC PATTERNS
 // ============================================
 
@@ -1366,12 +1530,17 @@ export async function analyzeBloodwork(
   const action: string[] = [];
 
   for (const input of markers) {
-    // Support both markerId and name as lookup key
-    const markerId = input.markerId || input.name;
-    if (!markerId) continue;
+    // Support both markerId and name as lookup key, with normalization
+    const rawMarkerId = input.markerId || input.name;
+    if (!rawMarkerId) continue;
 
+    // Normalize the marker name to match BIOMARKER_RANGES keys
+    const markerId = normalizeMarkerName(rawMarkerId);
     const range = BIOMARKER_RANGES[markerId];
-    if (!range) continue;
+    if (!range) {
+      console.log(`[analyzeBloodwork] Unknown marker: "${rawMarkerId}" (normalized: "${markerId}")`);
+      continue;
+    }
 
     // Skip gender-specific markers for wrong gender
     if (range.genderSpecific && range.genderSpecific !== userProfile.gender) continue;
