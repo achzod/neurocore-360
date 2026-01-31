@@ -11,6 +11,7 @@ import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndica
 import { BiomarkerTrendChart } from "@/components/blood/BiomarkerTrendChart";
 import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
 import { BloodRadar } from "@/components/blood/BloodRadar";
+import { BloodThemeProvider } from "@/components/blood/BloodThemeContext";
 import ReactMarkdown from 'react-markdown';
 
 // Premium components - direct imports (named exports, not default)
@@ -99,7 +100,7 @@ const scoreToStatus = (score: number): BiomarkerStatus => {
   return "critical";
 };
 
-export default function BloodAnalysisDashboard() {
+function BloodAnalysisDashboardInner() {
   const { reportId } = useParams<{ reportId: string }>();
   const [report, setReport] = useState<BloodAnalysisReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -559,5 +560,13 @@ export default function BloodAnalysisDashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function BloodAnalysisDashboard() {
+  return (
+    <BloodThemeProvider>
+      <BloodAnalysisDashboardInner />
+    </BloodThemeProvider>
   );
 }
