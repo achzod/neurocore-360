@@ -40,7 +40,7 @@ export function BiometricProgressCircle({
             <path
               d="M 10 0 L 0 0 0 10"
               fill="none"
-              stroke="rgba(6, 182, 212, 0.1)"
+              stroke="rgba(15, 23, 42, 0.08)"
               strokeWidth="0.5"
             />
           </pattern>
@@ -55,7 +55,7 @@ export function BiometricProgressCircle({
           cy={size / 2}
           r={radius}
           fill="url(#grid)"
-          stroke="rgba(255, 255, 255, 0.05)"
+          stroke="rgba(15, 23, 42, 0.12)"
           strokeWidth={strokeWidth}
         />
 
@@ -72,16 +72,16 @@ export function BiometricProgressCircle({
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 2, ease: "easeOut" }}
           style={{
-            filter: "drop-shadow(0 0 10px rgba(6, 182, 212, 0.6))",
+            filter: "drop-shadow(0 6px 12px rgba(6, 182, 212, 0.25))",
           }}
         />
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.div className="font-data text-5xl font-bold text-cyan-400">
+        <motion.div className="font-data text-5xl font-bold text-cyan-700">
           {rounded}
         </motion.div>
-        <div className="font-body text-xs uppercase tracking-widest text-slate-400">
+        <div className="font-body text-xs uppercase tracking-widest text-slate-600">
           SCORE GLOBAL
         </div>
       </div>

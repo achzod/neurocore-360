@@ -13,31 +13,31 @@ interface BiomarkerCardProps {
 
 const STATUS_STYLES = {
   optimal: {
-    bg: "bg-cyan-900/20",
-    border: "border-cyan-500/30",
-    glow: "shadow-[0_0_20px_rgba(6,182,212,0.4)]",
-    text: "text-cyan-400",
+    bg: "bg-cyan-50",
+    border: "border-cyan-200",
+    glow: "shadow-[0_12px_30px_rgba(6,182,212,0.15)]",
+    text: "text-cyan-700",
     icon: "▲",
   },
   normal: {
-    bg: "bg-blue-900/20",
-    border: "border-blue-500/30",
-    glow: "shadow-[0_0_15px_rgba(59,130,246,0.3)]",
-    text: "text-blue-400",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+    glow: "shadow-[0_10px_24px_rgba(59,130,246,0.14)]",
+    text: "text-blue-700",
     icon: "●",
   },
   suboptimal: {
-    bg: "bg-amber-900/20",
-    border: "border-amber-500/30",
-    glow: "shadow-[0_0_25px_rgba(245,158,11,0.4)]",
-    text: "text-amber-400",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    glow: "shadow-[0_12px_30px_rgba(245,158,11,0.18)]",
+    text: "text-amber-700",
     icon: "▼",
   },
   critical: {
-    bg: "bg-rose-900/20",
-    border: "border-rose-500/30",
-    glow: "shadow-[0_0_30px_rgba(244,63,94,0.5)]",
-    text: "text-rose-400",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    glow: "shadow-[0_14px_34px_rgba(244,63,94,0.2)]",
+    text: "text-rose-700",
     icon: "⚠",
   },
 } as const;
@@ -55,7 +55,7 @@ export function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
     >
       <div className="relative z-10">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-sm font-bold uppercase tracking-wide text-slate-200">
+          <h3 className="font-display text-sm font-bold uppercase tracking-wide text-slate-900">
             {marker.name}
           </h3>
           <span className={`text-2xl ${styles.text}`} aria-hidden="true">
@@ -67,11 +67,11 @@ export function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
           <span className={`font-data text-4xl font-bold ${styles.text}`}>
             {marker.value}
           </span>
-          <span className="font-data text-lg text-slate-400">{marker.unit}</span>
+          <span className="font-data text-lg text-slate-600">{marker.unit}</span>
         </div>
 
         {marker.normalMin !== null && marker.normalMax !== null && (
-          <div className="mt-3 font-body text-xs text-slate-400">
+          <div className="mt-3 font-body text-xs text-slate-600">
             Normal: {marker.normalMin} - {marker.normalMax} {marker.unit}
           </div>
         )}

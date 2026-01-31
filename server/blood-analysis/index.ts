@@ -1867,6 +1867,28 @@ const extractSourceIds = (text: string): string[] => {
   return Array.from(new Set(matches.filter(Boolean)));
 };
 
+const REQUIRED_HEADINGS = [
+  "## Synthese executive",
+  "## Qualite des donnees & limites",
+  "## Tableau de bord (scores & priorites)",
+  "## Potentiel recomposition (perte de gras + gain de muscle)",
+  "## Lecture compartimentee par axes",
+  "## Interconnexions majeures (le pattern)",
+  "## Deep dive — marqueurs prioritaires (top 8 a 15)",
+  "## Plan d'action 90 jours (hyper concret)",
+  "## Nutrition & entrainement (traduction pratique)",
+  "## Supplements & stack (minimaliste mais impact)",
+  "## Annexes (ultra long)",
+  "## Sources (bibliotheque)",
+];
+
+const REQUIRED_HEADINGS_NO_SOURCES = REQUIRED_HEADINGS.filter(
+  (heading) => heading !== "## Sources (bibliotheque)"
+);
+
+const getMissingHeadings = (text: string, headings: string[]) =>
+  headings.filter((heading) => !text.includes(heading));
+
 const buildSourcesSectionFromText = (text: string): string => {
   const ids = extractSourceIds(text);
   if (!ids.length) {
@@ -1885,6 +1907,13 @@ const ensureSourcesSection = (text: string): string => {
   if (!text) return "";
   const base = stripSourcesSection(text);
   return `${base}\n\n${buildSourcesSectionFromText(text)}`.trim();
+};
+
+const insertMissingSections = (text: string, missing: string): string => {
+  if (!missing.trim()) return text.trim();
+  const base = stripSourcesSection(text);
+  const merged = `${base}\n\n${missing.trim()}`.trim();
+  return ensureSourcesSection(merged);
 };
 
 const stripEmojis = (text: string): string => {
@@ -1934,11 +1963,13 @@ const trimAiAnalysis = (text: string, maxChars = 90000): string => {
   if (cleaned.length <= maxChars) return cleaned;
   const sourcesIndex = text.indexOf("## Sources (bibliotheque)");
   const planIndex = text.indexOf("## Plan d'action 90 jours");
+  const nutritionIndex = text.indexOf("## Nutrition & entrainement");
   const sources = sourcesIndex !== -1 ? text.slice(sourcesIndex).trim() : "";
   const plan = planIndex !== -1 ? extractPlan90Section(text) : "";
+  const tail = nutritionIndex !== -1 ? text.slice(nutritionIndex).trim() : "";
 
-  if (sources || plan) {
-    const reserveSections = [plan, sources].filter(Boolean);
+  if (sources || plan || tail) {
+    const reserveSections = [plan, tail || sources].filter(Boolean);
     const reserveLen =
       reserveSections.reduce((sum, section) => sum + section.length, 0) +
       (reserveSections.length > 0 ? (reserveSections.length - 1) * 2 : 0);
@@ -1946,14 +1977,14 @@ const trimAiAnalysis = (text: string, maxChars = 90000): string => {
 
     if (keepBudget > 1000) {
       let headEnd = keepBudget;
-      const cutPoints = [planIndex, sourcesIndex].filter((idx) => idx !== -1);
+      const cutPoints = [planIndex, nutritionIndex, sourcesIndex].filter((idx) => idx !== -1);
       if (cutPoints.length > 0) {
         headEnd = Math.min(headEnd, ...cutPoints);
       }
       const head = text.slice(0, headEnd);
       const lastBreak = head.lastIndexOf("\n\n");
       const safeHead = lastBreak > 1000 ? head.slice(0, lastBreak).trim() : head.trim();
-      return stripEmojis([safeHead, plan, sources].filter(Boolean).join("\n\n")).trim();
+      return stripEmojis([safeHead, plan, tail || sources].filter(Boolean).join("\n\n")).trim();
     }
   }
   const sliced = text.slice(0, maxChars);
@@ -2498,6 +2529,14 @@ export async function generateAIBloodAnalysis(
     nom: userProfile.nom,
     age: userProfile.age,
   });
+  const availableSourceIds = new Set([
+    ...extractSourceIds(deepDivePayload.context || ""),
+    ...extractSourceIds(knowledgeContext || ""),
+  ]);
+  const minSources = availableSourceIds.size ? Math.min(8, availableSourceIds.size) : 0;
+  const citationsRule = minSources
+    ? `- Tu dois utiliser au moins ${minSources} IDs [SRC:ID] uniques dans le rapport.`
+    : "- Si aucune source n'est fournie, ecris clairement \"source non fournie\" quand tu attribues.";
 
   const userPrompt = `PATIENT:
 - Nom: ${userProfile.prenom ? `${userProfile.prenom} ${userProfile.nom || ""}`.trim() : "Non renseigne"}
@@ -2524,6 +2563,10 @@ ${deepDivePayload.context || "- Aucune source fournie pour les marqueurs."}
 SOURCES GENERALES (chunks, cite avec [SRC:ID] si pertinent):
 ${knowledgeContext || "- Aucune source generale fournie."}
 
+OBLIGATIONS FORMAT:
+- Tu dois inclure TOUTES les sections avec les titres EXACTS (aucune omission).
+${citationsRule}
+
 GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
 
   let output = "";
@@ -2543,14 +2586,16 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
     ]);
   };
 
-  const maxAttempts = fastMode ? 1 : 2;
+  const maxAttempts = fastMode ? 1 : 3;
   const minChars = fastMode ? 20000 : 35000;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const retryNote =
       attempt === 1
         ? ""
-        : `\nATTENTION: Ta reponse precedente ne respectait pas le format strict, les titres, ou les citations [SRC:ID]. Corrige avec ZERO emoji, profondeur maximale, et une section Deep dive complete (format impose par marqueur).\n`;
+        : `\nATTENTION: Ta reponse precedente ne respectait pas le format strict. Corrige avec ZERO emoji, profondeur maximale, et une section Deep dive complete (format impose par marqueur). Rappels: sections obligatoires (${REQUIRED_HEADINGS_NO_SOURCES.join(
+            " | "
+          )}) et ${citationsRule}\n`;
     const prompt = `${userPrompt}\n${retryNote}`;
 
     try {
@@ -2567,13 +2612,21 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
       const textContent = response.content.find(c => c.type === "text");
       const candidate = textContent?.text || "";
       const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
+      const missingHeadings = getMissingHeadings(candidate, REQUIRED_HEADINGS_NO_SOURCES);
+      const uniqueSources = extractSourceIds(candidate).length;
+      const citationsOk = uniqueSources >= minSources;
+      const requiredOk = missingHeadings.length === 0;
 
-      const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
+      const score =
+        candidate.length +
+        (deepDiveCheck.ok ? 10000 : 0) +
+        (requiredOk ? 15000 : 0) +
+        (citationsOk ? 8000 : 0);
       if (score > bestScore) {
         bestScore = score;
         bestCandidate = candidate;
       }
-      if (deepDiveCheck.ok && candidate.length >= minChars) {
+      if (deepDiveCheck.ok && candidate.length >= minChars && requiredOk && citationsOk) {
         output = candidate;
         break;
       }
@@ -2623,6 +2676,36 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
     }
   }
 
+  const missingAfter = getMissingHeadings(output, REQUIRED_HEADINGS_NO_SOURCES);
+  if (missingAfter.length) {
+    const missingPrompt = `Tu dois produire UNIQUEMENT les sections manquantes suivantes (titres EXACTS, dans cet ordre):\n${missingAfter.join(
+      "\n"
+    )}\n\nCONTRAINTES:\n- Aucun autre texte ou section\n- Pas d'emojis\n- Style premium, tutoiement, actionable\n${citationsRule}\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nSOURCES PAR BIOMARQUEUR (chunks):\n${deepDivePayload.context || "- Aucune source fournie."}\n\nSOURCES GENERALES (chunks):\n${knowledgeContext || "- Aucune source generale fournie."}\n`;
+
+    try {
+      const missingResponse = await withTimeout(
+        anthropic.messages.create({
+          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+          max_tokens: 6000,
+          system:
+            "Tu es un expert medical. Respecte STRICTEMENT le format demande, aucun emoji, et ne produis que les sections demandees.",
+          messages: [{ role: "user", content: missingPrompt }]
+        }),
+        fastMode ? 60000 : 180000
+      );
+      const missingText = missingResponse.content.find(c => c.type === "text")?.text || "";
+      if (missingText.trim()) {
+        output = insertMissingSections(output, missingText);
+      }
+    } catch (err: any) {
+      if (err.message === "API_TIMEOUT") {
+        console.warn("[BloodAnalysis] Missing sections generation timed out, skipping");
+      } else {
+        console.error("[BloodAnalysis] Missing sections generation failed:", err);
+      }
+    }
+  }
+
   const withSources = ensureSourcesSection(output);
   return trimAiAnalysis(withSources);
 }
@@ -2653,7 +2736,7 @@ export async function getBloodworkKnowledgeContext(
   keywords.push("bloodwork", "biomarker", "optimal range");
 
   // Search knowledge base
-  const articles = await searchArticles(keywords, 6, [
+  const articles = await searchArticles(keywords, 12, [
     "huberman",
     "sbs",
     "applied_metabolics",
@@ -2675,8 +2758,8 @@ export async function getBloodworkKnowledgeContext(
       if (!article.id) return "";
       const label = SOURCE_LABELS[article.source] || article.source;
       const idTag = `[SRC:${article.id}]`;
-      const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 1000);
-      return `${idTag} ${label} — ${article.title}\n${excerpt}${excerpt.length >= 1000 ? "..." : ""}`;
+      const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 700);
+      return `${idTag} ${label} — ${article.title}\n${excerpt}${excerpt.length >= 700 ? "..." : ""}`;
     })
     .filter(Boolean)
     .join("\n\n---\n\n");
