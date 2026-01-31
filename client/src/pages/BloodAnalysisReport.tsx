@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo } from "react";
+import { Suspense, lazy, memo, useEffect, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueries } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -11,6 +11,11 @@ import BookOpen from "lucide-react/dist/esm/icons/book-open";
 import { AnimatedGradientMesh } from "@/components/AnimatedGradientMesh";
 import { BiometricProgressCircle } from "@/components/BiometricProgressCircle";
 import { BiomarkerCardPremium } from "@/components/BiomarkerCardPremium";
+import { BiometricProgressCircleSkeleton } from "@/components/BiometricProgressCircleSkeleton";
+import { BiomarkerCardPremiumSkeleton } from "@/components/BiomarkerCardPremiumSkeleton";
+import { GlossaryItem } from "@/components/GlossaryItem";
+import { SupplementCard } from "@/components/SupplementCard";
+import { ReportErrorBoundary } from "@/components/ReportErrorBoundary";
 import { highlightText, parseAISections } from "@/lib/markdown-utils";
 
 import { calculateGlobalScore, calculateMarkerScore } from "@/lib/bloodScores";
@@ -153,18 +158,18 @@ const getPatientAge = (dob?: string): number | null => {
   return Number.isFinite(age) ? age : null;
 };
 
-const MarkdownBlock = lazy(() =>
-  import("@/components/MarkdownBlock").then((m) => ({ default: m.MarkdownBlock }))
-);
+const MarkdownBlock = lazy(() => import("@/components/MarkdownBlock"));
 
-const MarkdownSection = ({ content }: { content: string }) => {
+const MarkdownSection = memo(({ content }: { content: string }) => {
   if (!content) return null;
   return (
     <Suspense fallback={<div className="h-20 animate-pulse rounded bg-[--bg-tertiary]" />}>
       <MarkdownBlock content={content} />
     </Suspense>
   );
-};
+});
+
+MarkdownSection.displayName = "MarkdownSection";
 
 const formatPercentDiff = (value: number, ref: number) => {
   if (!Number.isFinite(value) || !Number.isFinite(ref) || ref === 0) return null;
@@ -372,6 +377,12 @@ function BloodAnalysisReportInner() {
     };
   }, [data, reportId]);
 
+  const isLoadingReport = isLoading || !reportData;
+  const displayName = reportData?.patientName ?? "Chargement...";
+  const displayCreatedAt = reportData?.createdAt ?? new Date().toISOString();
+  const displayScore = reportData?.globalScore ?? 0;
+  const displayMarkersCount = reportData?.markers.length ?? 0;
+
   const aiData = useMemo(() => {
     const sections = parseAISections(reportData?.aiAnalysis || "");
     const hasContent = Object.values(sections).some((section) => Boolean(section?.content));
@@ -410,7 +421,7 @@ function BloodAnalysisReportInner() {
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const baseName = reportData?.patientName ? `Blood_Analysis_${reportData.patientName}` : "Blood_Analysis";
+      const baseName = reportData?.patientName ? `Blood_Analysis_${displayName}` : "Blood_Analysis";
       a.href = url;
       a.download = `${baseName}_${new Date().toISOString().slice(0, 10)}.pdf`;
       a.click();
@@ -421,20 +432,7 @@ function BloodAnalysisReportInner() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-center px-6 py-24 font-body">
-          <div className="rounded-xl border border-[--border-primary] bg-[--bg-secondary] px-6 py-8 text-center">
-            <div className="text-lg font-semibold text-slate-900">Chargement du rapport</div>
-            <div className="mt-2 text-sm text-slate-600">Analyse en cours, merci de patienter.</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data || !reportData) {
+  if (!isLoading && (error || !data || !reportData)) {
     const isUnauthorized = error instanceof ApiError && error.status === 401;
     return (
       <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-900">
@@ -452,7 +450,7 @@ function BloodAnalysisReportInner() {
     );
   }
 
-  if (data.bloodTest.status === "processing") {
+  if (data?.bloodTest?.status === "processing") {
     return (
       <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-900">
         <div className="mx-auto max-w-3xl px-6 py-24 text-center font-body">
@@ -471,8 +469,8 @@ function BloodAnalysisReportInner() {
     );
   }
 
-  const scoreLabel = getScoreLabel(reportData.globalScore);
-  const targetScore = Math.min(85, Math.max(reportData.globalScore + 15, 78));
+  const scoreLabel = getScoreLabel(displayScore);
+  const targetScore = Math.min(85, Math.max(displayScore + 15, 78));
 
   return (
     <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-900">
@@ -496,8 +494,8 @@ function BloodAnalysisReportInner() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm font-semibold text-slate-900">{reportData.patientName}</div>
-              <div className="text-xs text-slate-600">{new Date(reportData.createdAt).toLocaleDateString("fr-FR")}</div>
+              <div className="text-sm font-semibold text-slate-900">{displayName}</div>
+              <div className="text-xs text-slate-600">{new Date(displayCreatedAt).toLocaleDateString("fr-FR")}</div>
             </div>
             <button
               onClick={handleExportPDF}
@@ -538,15 +536,15 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <Info className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Introduction & guide de lecture
                 </h2>
               </div>
               <p className="mt-4 text-sm text-slate-700">
-                Bonjour {reportData.patientName},
+                Bonjour {displayName},
               </p>
               <p className="mt-3 text-sm text-slate-700">
-                Ce rapport analyse tes {reportData.markers.length} marqueurs sanguins pour identifier ce qui
+                Ce rapport analyse tes {displayMarkersCount} marqueurs sanguins pour identifier ce qui
                 fonctionne bien et ce qui nécessite une optimisation. Il a été généré par ApexLabs, plateforme
                 d'analyse de bilans sanguins orientée santé, performance et composition corporelle.
               </p>
@@ -578,7 +576,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <Target className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Score global expliqué
                 </h2>
               </div>
@@ -608,30 +606,45 @@ function BloodAnalysisReportInner() {
               ) : null}
               <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
                 <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-6 grain-texture text-center">
-                  <BiometricProgressCircle score={reportData.globalScore} size={220} />
-                  <div className={`mt-4 text-sm font-semibold ${scoreLabel.color}`}>{scoreLabel.label}</div>
-                  <p className="mt-4 text-sm text-slate-700">
-                    Un score de {reportData.globalScore}/100 te place dans la catégorie
-                    {" "}
-                    <span className="font-semibold text-slate-900">{scoreLabel.label.toLowerCase()}</span>.
-                    L'objectif réaliste sur 90 jours est d'atteindre {targetScore}/100.
-                  </p>
-                  <div className="mt-4 text-xs text-slate-600">
-                    0-50: Zone rouge · 50-70: Zone orange · 70-85: Zone verte · 85-100: Zone bleue
-                  </div>
+                  {isLoadingReport ? (
+                    <BiometricProgressCircleSkeleton />
+                  ) : (
+                    <BiometricProgressCircle score={displayScore} size={220} />
+                  )}
+                  {isLoadingReport ? (
+                    <div className="mt-4 text-sm font-semibold text-slate-600">Score en cours de calcul</div>
+                  ) : (
+                    <div className={`mt-4 text-sm font-semibold ${scoreLabel.color}`}>{scoreLabel.label}</div>
+                  )}
+                  {isLoadingReport ? (
+                    <p className="mt-4 text-sm text-slate-700">
+                      Les indicateurs se chargent. Le score final sera disponible dans quelques secondes.
+                    </p>
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-700">
+                      Un score de {displayScore}/100 te place dans la catégorie{" "}
+                      <span className="font-semibold text-slate-900">{scoreLabel.label.toLowerCase()}</span>.
+                      L'objectif réaliste sur 90 jours est d'atteindre {targetScore}/100.
+                    </p>
+                  )}
+                  {!isLoadingReport && (
+                    <div className="mt-4 text-xs text-slate-600">
+                      0-50: Zone rouge · 50-70: Zone orange · 70-85: Zone verte · 85-100: Zone bleue
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-xl border border-[--border-primary] bg-[--bg-secondary] p-5 grain-texture">
                   <div className="text-sm font-semibold text-slate-900 font-display">
                     Tes infos personnelles
                   </div>
                   <div className="mt-4 grid gap-2 text-sm text-slate-700">
-                    <div>Nom: {reportData.patientName}</div>
-                    <div>Age: {reportData.patientAge ?? "Non renseigné"}</div>
-                    <div>Poids: {reportData.patient?.poids ? `${reportData.patient.poids} kg` : "Non renseigné"}</div>
-                    <div>Taille: {reportData.patient?.taille ? `${reportData.patient.taille} cm` : "Non renseigné"}</div>
-                    <div>Sommeil: {reportData.patient?.sleepHours ? `${reportData.patient.sleepHours} h/nuit` : "Non renseigné"}</div>
-                    <div>Training: {reportData.patient?.trainingHours ? `${reportData.patient.trainingHours} h/sem` : "Non renseigné"}</div>
-                    <div>Stress: {reportData.patient?.stressLevel ? `${reportData.patient.stressLevel}/10` : "Non renseigné"}</div>
+                    <div>Nom: {displayName}</div>
+                    <div>Age: {reportData?.patientAge ?? "Non renseigné"}</div>
+                    <div>Poids: {reportData?.patient?.poids ? `${reportData.patient.poids} kg` : "Non renseigné"}</div>
+                    <div>Taille: {reportData?.patient?.taille ? `${reportData.patient.taille} cm` : "Non renseigné"}</div>
+                    <div>Sommeil: {reportData?.patient?.sleepHours ? `${reportData.patient.sleepHours} h/nuit` : "Non renseigné"}</div>
+                    <div>Training: {reportData?.patient?.trainingHours ? `${reportData.patient.trainingHours} h/sem` : "Non renseigné"}</div>
+                    <div>Stress: {reportData?.patient?.stressLevel ? `${reportData.patient.stressLevel}/10` : "Non renseigné"}</div>
                   </div>
                 </div>
               </div>
@@ -642,7 +655,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-rose-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Alertes prioritaires (ce qui nécessite une action rapide)
                 </h2>
               </div>
@@ -659,7 +672,13 @@ function BloodAnalysisReportInner() {
                     <MarkdownSection content={aiSections.alerts.content} />
                   </div>
                 ) : null}
-                {criticalMarkers.length ? (
+                {isLoadingReport ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <BiomarkerCardPremiumSkeleton key={`skeleton-${idx}`} />
+                    ))}
+                  </div>
+                ) : criticalMarkers.length ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     {criticalMarkers.map((marker) => (
                       <BiomarkerCardPremium
@@ -688,7 +707,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Tes forces (ce qui fonctionne déjà)
                 </h2>
               </div>
@@ -721,7 +740,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <Info className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Analyse système par système
                 </h2>
               </div>
@@ -746,7 +765,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <Info className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Interconnexions clés
                 </h2>
               </div>
@@ -763,7 +782,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <Target className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Protocole 90 jours (phase par phase)
                 </h2>
               </div>
@@ -799,36 +818,16 @@ function BloodAnalysisReportInner() {
                 <div className="mt-4 space-y-4">
                   {supplements.length ? (
                     supplements.map((supp: any, idx: number) => (
-                      <div key={`${supp.name}-${idx}`} className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 grain-texture">
-                        <div className="text-sm font-semibold text-slate-900 font-display">
-                          {supp.name}
-                        </div>
-                        <div className="mt-2 text-sm text-slate-700">
-                          <div>
-                            <span className="font-semibold text-slate-900">QUOI:</span> {supp.name}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-slate-900">POURQUOI:</span>{" "}
-                            {supp.mechanism || "Optimiser tes marqueurs prioritaires."}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-slate-900">COMMENT:</span> {supp.dosage} · {supp.timing}
-                            {supp.brand ? ` · Marque: ${supp.brand}` : ""}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-slate-900">QUAND:</span>{" "}
-                            {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-slate-900">IMPACT:</span>{" "}
-                            Amélioration attendue sur marqueurs ciblés.
-                          </div>
-                          <div>
-                            <span className="font-semibold text-slate-900">EXPERT:</span>{" "}
-                            {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
-                          </div>
-                        </div>
-                      </div>
+                      <SupplementCard
+                        key={`${supp.name}-${idx}`}
+                        supp={{
+                          name: supp.name,
+                          mechanism: supp.mechanism || "Optimiser tes marqueurs prioritaires.",
+                          dosage: [supp.dosage, supp.timing].filter(Boolean).join(" · "),
+                          priority: supp.priority || 2,
+                          citations: supp.citations,
+                        }}
+                      />
                     ))
                   ) : (
                     <div className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 text-sm text-slate-700">
@@ -889,7 +888,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Rapport complet (texte intégral)
                 </h2>
               </div>
@@ -908,7 +907,7 @@ function BloodAnalysisReportInner() {
                   {aiSections.sources?.content && <MarkdownSection content={aiSections.sources.content} />}
                 </div>
               ) : (
-                <MarkdownSection content={reportData.aiAnalysis} />
+                <MarkdownSection content={reportData?.aiAnalysis ?? ""} />
               )}
             </div>
           </motion.section>
@@ -917,7 +916,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <BookOpen className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Glossaire & explications
                 </h2>
               </div>
@@ -926,12 +925,7 @@ function BloodAnalysisReportInner() {
               </p>
               <div className="mt-6 space-y-4">
                 {glossaryEntries.map((entry) => (
-                  <div key={entry.term} className="rounded-xl border border-[--border-primary] bg-[--bg-tertiary] p-4 grain-texture">
-                    <div className="text-sm font-semibold text-slate-900 font-display">
-                      {entry.term}
-                    </div>
-                    <p className="mt-2 text-sm text-slate-700">{entry.definition}</p>
-                  </div>
+                  <GlossaryItem key={entry.term} term={entry.term} definition={entry.definition} />
                 ))}
               </div>
             </div>
@@ -941,7 +935,7 @@ function BloodAnalysisReportInner() {
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
                 <BookOpen className="h-5 w-5 text-cyan-600" aria-hidden="true" />
-                <h2 className="text-2xl font-semibold font-display text-slate-900">
+                <h2 className="blood-h2 text-2xl font-semibold font-display text-slate-900">
                   Sources (bibliothèque)
                 </h2>
               </div>
@@ -961,5 +955,9 @@ function BloodAnalysisReportInner() {
 }
 
 export default function BloodAnalysisReport() {
-  return <BloodAnalysisReportInner />;
+  return (
+    <ReportErrorBoundary>
+      <BloodAnalysisReportInner />
+    </ReportErrorBoundary>
+  );
 }

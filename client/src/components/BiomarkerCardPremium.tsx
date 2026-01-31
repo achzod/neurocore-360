@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { memo } from "react";
 
 interface BiomarkerCardProps {
   marker: {
@@ -42,7 +43,7 @@ const STATUS_STYLES = {
   },
 } as const;
 
-export function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
+export const BiomarkerCardPremium = memo(function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
   const styles = STATUS_STYLES[marker.status];
 
   return (
@@ -51,7 +52,7 @@ export function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-      className={`relative overflow-hidden rounded-xl border p-6 ${styles.bg} ${styles.border} ${styles.glow} transition-all duration-300 grain-texture`}
+      className={`BiomarkerCardPremium relative overflow-hidden rounded-xl border p-6 ${styles.bg} ${styles.border} ${styles.glow} transition-all duration-300 grain-texture`}
     >
       <div className="relative z-10">
         <div className="flex items-center justify-between">
@@ -84,4 +85,6 @@ export function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
       </div>
     </motion.div>
   );
-}
+});
+
+BiomarkerCardPremium.displayName = "BiomarkerCardPremium";

@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { renderWithHighlights } from "@/lib/markdown-utils";
 
 const MARKDOWN_COMPONENTS = {
   h2: ({ children }: { children?: ReactNode }) => (
-    <h2 className="mt-6 text-xl font-semibold font-display text-slate-900">
+    <h2 className="blood-h2 mt-6 text-xl font-semibold font-display text-slate-900">
       {children ? renderWithHighlights(children) : null}
     </h2>
   ),
@@ -30,7 +30,11 @@ const MARKDOWN_COMPONENTS = {
   ),
 } as const;
 
-export function MarkdownBlock({ content }: { content: string }) {
+export const MarkdownBlock = memo(function MarkdownBlock({ content }: { content: string }) {
   if (!content) return null;
   return <ReactMarkdown components={MARKDOWN_COMPONENTS}>{content}</ReactMarkdown>;
-}
+});
+
+MarkdownBlock.displayName = "MarkdownBlock";
+
+export default MarkdownBlock;

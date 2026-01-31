@@ -1,5 +1,5 @@
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 
 interface BiometricProgressCircleProps {
   score: number;
@@ -7,7 +7,7 @@ interface BiometricProgressCircleProps {
   strokeWidth?: number;
 }
 
-export function BiometricProgressCircle({
+export const BiometricProgressCircle = memo(function BiometricProgressCircle({
   score,
   size = 200,
   strokeWidth = 12,
@@ -30,7 +30,7 @@ export function BiometricProgressCircle({
 
   return (
     <div
-      className="relative inline-flex items-center justify-center"
+      className="BiometricProgressCircle relative inline-flex items-center justify-center"
       role="img"
       aria-label={`Score global: ${Math.round(score)} sur 100`}
     >
@@ -87,4 +87,6 @@ export function BiometricProgressCircle({
       </div>
     </div>
   );
-}
+});
+
+BiometricProgressCircle.displayName = "BiometricProgressCircle";
