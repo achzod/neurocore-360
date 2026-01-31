@@ -89,7 +89,7 @@ function Router() {
       <Route path="/peptides/:auditId" component={PeptidesEngineReport} />
 
       <Route path="/dashboard" component={DashboardRouter} />
-      <Route path="/analysis/:id" component={BloodAnalysisReport} />
+      <Route path="/analysis/:reportId" component={BloodAnalysisDashboard} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard/:auditId" component={AuditDetail} />
       <Route path="/auth/login" component={Login} />
