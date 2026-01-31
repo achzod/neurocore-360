@@ -34,6 +34,9 @@ import {
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
+// Force light theme - find "Claude Creme" or "Titanium Light"
+const DEFAULT_THEME = THEMES.find(t => t.id === "metabolic") || THEMES.find(t => t.type === "light") || THEMES[1];
+
 const PANEL_ICONS: Record<string, LucideIcon> = {
   hormonal: TrendingUp,
   thyroid: Activity,
@@ -100,7 +103,7 @@ export default function BloodAnalysisDashboard() {
   const [report, setReport] = useState<BloodAnalysisReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES[0]);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(DEFAULT_THEME);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
