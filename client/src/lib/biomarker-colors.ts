@@ -6,23 +6,23 @@ export const BIOMARKER_STATUS_COLORS: Record<
 > = {
   optimal: {
     primary: "#10B981",
-    bg: "rgba(16, 185, 129, 0.12)",
-    border: "rgba(16, 185, 129, 0.3)",
+    bg: "rgba(16, 185, 129, 0.20)",
+    border: "rgba(16, 185, 129, 0.4)",
   },
   normal: {
     primary: "#3B82F6",
-    bg: "rgba(59, 130, 246, 0.12)",
-    border: "rgba(59, 130, 246, 0.3)",
+    bg: "rgba(59, 130, 246, 0.20)",
+    border: "rgba(59, 130, 246, 0.4)",
   },
   suboptimal: {
     primary: "#F59E0B",
-    bg: "rgba(245, 158, 11, 0.12)",
-    border: "rgba(245, 158, 11, 0.3)",
+    bg: "rgba(245, 158, 11, 0.20)",
+    border: "rgba(245, 158, 11, 0.4)",
   },
   critical: {
     primary: "#EF4444",
-    bg: "rgba(239, 68, 68, 0.12)",
-    border: "rgba(239, 68, 68, 0.3)",
+    bg: "rgba(239, 68, 68, 0.20)",
+    border: "rgba(239, 68, 68, 0.4)",
   },
 };
 

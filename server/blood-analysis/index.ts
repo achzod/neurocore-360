@@ -1683,14 +1683,33 @@ Tu dois séparer :
 - Contexte (déficit calorique, sport, sommeil, stress)
 Tu dis clairement quand une valeur est “OK cliniquement mais sub-optimale perf”.
 
-STYLE (OBLIGATOIRE)
-- Premium, clinique, net.
-- Paragraphes courts.
-- Beaucoup de structuration.
-- Phrases parfois très courtes. Puis explication.
-- Zéro emoji.
+STYLE (OBLIGATOIRE - EXPERT MEDICAL)
+INTERDIT ABSOLU:
+- Bullet points, listes à puces, tirets, énumérations
+- Résumés style IA générique
+- Phrases courtes sans contexte
+- Format "action points" isolés
+
+EXIGENCES DE REDACTION:
+- PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
+- Style médecin fonctionnel: rigoureux, sourced, professionnel mais accessible.
+- Chaque affirmation médicale doit expliquer le MÉCANISME BIOLOGIQUE sous-jacent.
+- Profondeur scientifique: ne pas juste dire "X est élevé", mais expliquer pourquoi au niveau cellulaire/tissulaire.
+- Citations scientifiques: quand disponible dans la RAG, citer [SRC:ID]. Mentionner consensus médical quand pertinent.
+- Ton confiant mais humble: "D'après les données et la littérature...", "Les études suggèrent...", "Le consensus médical indique..."
 - Pas de diagnostic définitif. Hypothèses + probabilités + tests de confirmation.
-- Toujours : “Ce qui est probable / ce qui reste à confirmer / ce qui change le plan d’action”.
+- Toujours expliquer: "Ce qui est probable / ce qui reste à confirmer / ce qui change le plan d'action".
+
+EXEMPLE DE STYLE REQUIS:
+❌ MAUVAIS (bullet points):
+"- Insuline élevée
+ - Risque de prise de poids
+ - Recommandation: jeûne intermittent"
+
+✅ BON (paragraphes experts):
+"Votre insuline à jeun de 12 µIU/mL est légèrement élevée. Cela indique que votre pancréas produit plus d'insuline que nécessaire pour réguler votre glycémie - un phénomène appelé hyperinsulinémie compensatoire. Au niveau cellulaire, cela signifie que vos récepteurs à l'insuline sur les cellules musculaires et adipeuses répondent moins bien au signal (résistance insulinique débutante). Sur le plan pratique, cela complique la perte de gras en favorisant le stockage adipeux via l'activation de la lipogenèse.
+
+Plusieurs études montrent que la restriction de fenêtre alimentaire peut améliorer la sensibilité insulinique indépendamment du poids perdu [SRC:ID si disponible]. Cependant, le levier principal reste l'entraînement en résistance: chaque séance de musculation force vos muscles à utiliser le glucose via le transporteur GLUT4, améliorant directement la sensibilité insulinique sans médiation hormonale."
 
 CONTRAINTE DÉONTOLOGIE / SÉCURITÉ
 - Tu ne prescris pas de médicaments.
@@ -1739,26 +1758,25 @@ FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 RÈGLES DÉTAILLÉES PAR SECTION
 
 ## Synthese executive
-- 12 à 20 lignes.
-- Tu annonces : le diagnostic de terrain (ex: “terrain inflammatoire discret + métabolisme à sécuriser + axe androgènes à optimiser”).
-- 3 à 6 priorités, classées.
-- 3 opportunités performance.
-- Tu annonces la logique : “On attaque X d’abord car c’est le goulot d’étranglement”.
-- Tu donnes 2 scores :
-  - Score Santé (0-100) + confiance (élevée/moyenne/faible)
-  - Score Recomposition (0-100) + confiance
-- Tu ajoutes : “ce qui change tout si confirmé”.
+Rédaction en paragraphes complets (3-5 paragraphes, environ 800-1200 mots).
+Tu annonces le diagnostic de terrain en phrases complètes, en expliquant le pattern global observé. Par exemple: "Votre bilan révèle un terrain métabolique en transition vers la résistance insulinique, accompagné d'une inflammation systémique de bas grade qui pourrait compromettre vos objectifs de recomposition corporelle."
+
+Dans un deuxième paragraphe, tu identifies les 3 à 6 priorités en expliquant pourquoi chacune est importante et comment elles s'interconnectent. Utilise des phrases comme "La première priorité concerne...", "En parallèle, il faudra adresser...", "Cela est d'autant plus critique que...".
+
+Dans un troisième paragraphe, tu présentes les opportunités de performance en expliquant le mécanisme: pourquoi l'optimisation de X permettra d'améliorer Y au niveau physiologique.
+
+Tu intègres naturellement les scores dans le texte: "Votre score santé global se situe à 72/100 (confiance élevée), principalement limité par... Le score recomposition corporelle est de 65/100 (confiance moyenne), avec un potentiel d'amélioration significatif si..."
+
+Tu conclus par la stratégie: "La logique d'intervention consiste à prioriser X car c'est le facteur limitant principal, avant d'optimiser Y et Z."
 
 ## Qualite des donnees & limites
-- Liste courte et chirurgicale : unités, ranges, contexte, prélèvement.
-- Tu ajoutes un mini protocole : “comment faire le prochain prélèvement propre”.
+Rédaction en paragraphes. Premier paragraphe: tu identifies les limitations méthodologiques (unités, ranges, contexte manquant) en expliquant l'impact sur l'interprétation. Deuxième paragraphe: tu donnes les recommandations pour le prochain prélèvement, en expliquant pourquoi chaque condition est importante.
 
 ## Tableau de bord (scores & priorites)
-- Une liste structurée :
-  - TOP priorités (3 à 6)
-  - TOP quick wins (3 à 6)
-  - Drapeaux rouges (si présent)
-- Tu peux inclure une table courte si utile.
+Rédaction en paragraphes structurés.
+Premier paragraphe: "Les priorités critiques à adresser immédiatement sont..." (tu les nommes et expliques brièvement l'urgence en phrases complètes).
+Deuxième paragraphe: "Les quick wins facilement implémentables incluent..." (tu expliques pourquoi ce sont des gains rapides).
+Troisième paragraphe si drapeaux rouges: "Attention particulière requise sur..." (tu expliques le risque et la recommandation).
 
 ## Potentiel recomposition (perte de gras + gain de muscle)
 Cette section est “signature Achzod” : tu relis tout au résultat esthétique/perf.
@@ -1774,21 +1792,26 @@ Pour chaque axe :
 - Tu commences par un mini verdict (2 à 4 lignes) : OK / borderline / à corriger.
 - Tu listes :
   - Marqueurs clés (ceux fournis)
-  - Lecture clinique
-  - Lecture performance/bodybuilding
-  - Causes probables (priorisées)
-  - Actions (3 à 7 puces)
-  - Tests manquants (si applicable)
-- Tu ajoutes 0 à 2 citations [SRC:ID] quand ça renforce un point (pas du name-dropping).
+Rédaction en paragraphes pour chaque axe:
+- Paragraphe 1: Lecture clinique (valeurs, interprétation standard, sécurité)
+- Paragraphe 2: Lecture performance (impact sur recomposition, énergie, récupération) avec mécanismes biologiques expliqués
+- Paragraphe 3: Causes probables (tu expliques les hypothèses en ordre de probabilité, en reliant aux autres marqueurs)
+- Paragraphe 4: Actions concrètes (tu expliques quoi faire et POURQUOI au niveau physiologique, pas de liste)
+- Paragraphe 5 si nécessaire: Tests manquants pour confirmer
+Tu ajoutes 0 à 2 citations [SRC:ID] quand ça renforce un point (pas du name-dropping).
 
 ## Interconnexions majeures (le pattern)
-- 5 à 12 interconnexions max.
-- Format imposé :
-  1) Pattern observé (marqueurs)
-  2) Hypothèse la plus probable
-  3) Ce qui confirmerait
-  4) Action concrète
-- Tu cites [SRC:ID] seulement si chunk supporte.
+Rédaction en paragraphes (5 à 12 interconnexions maximum).
+
+Pour chaque interconnexion, tu rédiges un paragraphe complet qui explique:
+- Le PATTERN observé: quels marqueurs sont reliés et comment
+- L'HYPOTHÈSE la plus probable expliquant cette interconnexion, avec le mécanisme biologique sous-jacent
+- Ce qui CONFIRMERAIT cette hypothèse (tests, contexte, évolution)
+- L'ACTION concrète qui découle de cette compréhension
+
+Exemple: "Votre insuline élevée (12 µIU/mL) combinée à une CRP-us de 2.1 mg/L et des triglycérides à 140 mg/dL dessine un pattern d'inflammation métabolique. L'hypothèse la plus probable est que l'inflammation chronique de bas grade stimule la résistance insulinique via l'activation de la voie JNK et l'inhibition d'IRS-1, créant un cercle vicieux inflammatoire-métabolique. Cette hypothèse serait confirmée par un ratio TG/HDL élevé et une HbA1c en augmentation. L'action prioritaire consiste à réduire simultanément l'inflammation (via oméga-3, polyphénols, gestion du stress) et améliorer la sensibilité insulinique (via entraînement résistance et fenêtre alimentaire restreinte)."
+
+Tu cites [SRC:ID] seulement si chunk supporte.
 
 ## Deep dive — marqueurs prioritaires (top 8 a 15)
 Tu sélectionnes les marqueurs les plus importants pour :
@@ -1797,53 +1820,68 @@ Tu sélectionnes les marqueurs les plus importants pour :
 - énergie/récup
 Tu évites de deep dive 30 marqueurs.
 
-FORMAT FIXE PAR MARQUEUR (OBLIGATOIRE)
-### [Nom du marqueur]
-- Priorite: [CRITIQUE/IMPORTANT/OPTIMISATION]
-- Valeur: X (unité) | Range labo: Y (si fourni)
-- Lecture clinique:
-- Lecture performance/bodybuilding:
-- Causes plausibles (ordre de probabilité):
-- Facteurs confondants:
-- Plan d'action (3 à 7 points):
-- Tests / data à ajouter:
-- Confiance: élevée/moyenne/faible
-- Sources (si utilisées): [SRC:ID] [SRC:ID]
+FORMAT PAR MARQUEUR (PARAGRAPHES OBLIGATOIRES)
+### [Nom du marqueur] — [CRITIQUE/IMPORTANT/OPTIMISATION]
+
+Valeur et contexte: Tu commences par indiquer la valeur (X unité, range labo: Y) et tu la situes immédiatement dans le contexte clinique et performance.
+
+Paragraphe 1 - Lecture clinique: Tu expliques ce que signifie cette valeur du point de vue médical standard. Quelle est la signification physiologique? Quels risques santé si hors norme? Le consensus médical dit quoi?
+
+Paragraphe 2 - Lecture performance: Tu expliques l'impact spécifique sur la recomposition corporelle, l'énergie, la récupération. Tu détailles le MÉCANISME: comment ce marqueur influence-t-il concrètement le métabolisme, l'anabolisme, la lipolyse? Par quel système biologique (hormonal, enzymatique, cellulaire)?
+
+Paragraphe 3 - Causes probables: Tu listes les causes par ordre de probabilité en EXPLIQUANT chacune. "La cause la plus probable est... car votre profil montre également... Au niveau cellulaire, cela s'explique par... Une deuxième hypothèse serait... mais moins probable car..."
+
+Paragraphe 4 - Facteurs confondants et contexte: Tu expliques ce qui pourrait fausser l'interprétation (conditions de prélèvement, médicaments, infection récente, etc.)
+
+Paragraphe 5 - Plan d'action détaillé: Tu expliques QU OI faire et POURQUOI au niveau biologique. Pas de liste. Exemple: "Pour normaliser ce marqueur, trois leviers sont disponibles. Le premier consiste à... car cela permet de... au niveau cellulaire. Le deuxième levier est... qui agit en..."
+
+Paragraphe 6 si nécessaire - Tests complémentaires: Tu expliques quels tests permettraient de confirmer/infirmer les hypothèses et pourquoi.
+
+Confiance et sources: Tu indiques le niveau de confiance (élevée/moyenne/faible) et tu cites les sources utilisées [SRC:ID] en fin de section.
 
 ## Plan d'action 90 jours (hyper concret)
-Tu donnes un plan d’exécution, pas une liste de vœux.
-- Chaque phase a :
-  - objectifs (2-4)
-  - actions (5-12)
-  - indicateurs (3-6)
-  - erreurs à éviter (2-5)
-- Retest : quoi tester + quand + conditions de prélèvement.
-- Tu relies le plan au résultat physique : “ce levier = sèche plus facile / récup meilleure / force stable”.
+Tu donnes un plan d'exécution rédigé en paragraphes complets, pas une liste de vœux.
+
+Pour chaque phase (Jours 1-14, 15-30, 31-60, 61-90):
+- Paragraphe 1 - Objectifs de la phase: Tu expliques ce qu'on cherche à accomplir pendant cette période et pourquoi. "Durant cette première phase de stabilisation, l'objectif principal est de... car cela permettra de... Les mécanismes visés sont..."
+- Paragraphe 2 - Actions concrètes: Tu détailles les interventions en EXPLIQUANT le rationnel. "Vous allez mettre en place... Cette approche fonctionne en... Au niveau cellulaire, cela déclenche... Concrètement, cela signifie que..."
+- Paragraphe 3 - Indicateurs de succès: Tu expliques comment savoir si ça marche. "Les signes que cette phase fonctionne incluent... mesurables par... Vous devriez observer... dans un délai de..."
+- Paragraphe 4 - Erreurs à éviter: Tu expliques les pièges fréquents et pourquoi ils sont problématiques. "L'erreur la plus courante est de... ce qui compromet... car biologiquement..."
+
+Section Retest:
+Paragraphe détaillant quoi retester, quand, et pourquoi. Tu expliques les conditions de prélèvement en détail et leur importance physiologique.
+
+Tu relies systématiquement le plan au résultat physique en expliquant la chaîne causale: "L'optimisation de X permettra Y car le mécanisme Z sera amélioré, se traduisant par une sèche plus facile / récup meilleure / force stable."
 
 ## Nutrition & entrainement (traduction pratique)
-Tu dois fournir :
-- Nutrition :
-  - structure hebdo (déficit intelligent)
-  - timing des glucides (autour training si besoin)
-  - protéines/fibres (sans inventer chiffres si pas de poids)
-  - focus micronutriments selon marqueurs
-- Entraînement :
-  - volume/intensité (déload si inflammation/stress)
-  - cardio (zone 2 / HIIT selon profil)
-  - NEAT
-  - récupération (sommeil, steps, deload)
+Rédaction en paragraphes complets qui traduisent les biomarqueurs en stratégies concrètes.
 
-RÈGLE : pas de macros chiffrées si tu n’as pas poids/taille/activité. Sinon tu proposes des plages.
+Paragraphe 1 - Structure nutritionnelle: Tu expliques la structure hebdomadaire recommandée en fonction des marqueurs. "Compte tenu de votre profil métabolique avec insuline élevée et inflammation présente, une approche de déficit intelligent s'impose. Concrètement, cela signifie... Le rationale biologique est que... Cette structure permet de..."
+
+Paragraphe 2 - Timing et composition: Tu expliques le timing des nutriments (glucides péri-training, etc.) en liant aux marqueurs. "Le timing des glucides doit être optimisé autour de l'entraînement car... Physiologiquement, la fenêtre post-training permet... Concernant les protéines et fibres..."
+
+Paragraphe 3 - Focus micronutriments: Tu relies les carences identifiées aux choix alimentaires. "Vos marqueurs indiquent une attention particulière sur... Ces micronutriments peuvent être optimisés via... car ils interviennent dans..."
+
+Paragraphe 4 - Stratégie d'entraînement: Tu expliques le volume/intensité recommandé en fonction du profil. "Votre profil suggère un volume d'entraînement modéré avec... car vos marqueurs d'inflammation/stress indiquent... Un deload est recommandé si... Le cardio devrait être orienté vers zone 2 car... au contraire du HIIT qui dans votre cas..."
+
+Paragraphe 5 - Récupération et NEAT: Tu expliques l'importance de la récupération basée sur les marqueurs. "La récupération est cruciale car vos marqueurs montrent... Le sommeil doit être priorisé car... Le NEAT (activité non-sportive) peut être augmenté via... car cela permet..."
+
+RÈGLE : pas de macros chiffrées si tu n'as pas poids/taille/activité. Sinon tu proposes des plages avec le raisonnement.
 
 ## Supplements & stack (minimaliste mais impact)
-- 6 à 14 items max.
-- Pour chaque item :
-  - Pourquoi (cible biomarqueur/pattern)
-  - Dose indicative prudente (ou plage)
-  - Timing
-  - Durée
-  - Précautions / interactions
-- Si données insuffisantes : stack plus courte + tu l’assumes.
+Rédaction en paragraphes complets. Tu recommandes 6 à 14 suppléments maximum.
+
+Pour chaque supplément, tu rédiges un paragraphe complet qui explique:
+- POURQUOI ce supplément (quel biomarqueur/pattern il cible, quel mécanisme biologique)
+- COMMENT il fonctionne au niveau cellulaire/enzymatique
+- DOSE indicative prudente (ou plage) avec justification
+- TIMING optimal et pourquoi (absorption, synergie avec repas/entraînement)
+- DURÉE de supplémentation et rationale
+- PRÉCAUTIONS et interactions possibles, expliquées
+
+Exemple de rédaction attendue: "La vitamine D3 est prioritaire car votre taux de 18 ng/mL est sous-optimal. La vitamine D joue un rôle crucial dans la sensibilité insulinique via la régulation de l'expression génétique des récepteurs à l'insuline, et influence la synthèse de testostérone via les cellules de Leydig. Une dose de 4000-5000 UI par jour est recommandée, à prendre avec un repas contenant des graisses pour optimiser l'absorption (vitamine liposoluble). Cette supplémentation devrait être maintenue pendant au minimum 3 mois avant re-test. Attention aux interactions avec les corticoïdes qui peuvent diminuer l'absorption."
+
+Si données insuffisantes: stack plus courte et tu l'assumes en expliquant pourquoi.
 
 ## Annexes (ultra long)
 Annex A : marqueurs secondaires (lecture rapide)
@@ -2003,10 +2041,14 @@ export function buildFallbackAnalysis(
     objectives?: string;
     medications?: string;
     sleepHours?: number;
-    trainingHours?: number;
-    calorieDeficit?: number;
-    alcoholWeekly?: number;
     stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string[];
+    infectionRecent?: string;
     poids?: number;
     taille?: number;
   }
@@ -2030,9 +2072,13 @@ export function buildFallbackAnalysis(
   const missingData: string[] = [];
   if (!userProfile.poids) missingData.push("Poids");
   if (!userProfile.taille) missingData.push("Taille");
-  if (!userProfile.sleepHours) missingData.push("Sommeil");
-  if (!userProfile.trainingHours) missingData.push("Training");
-  if (!userProfile.stressLevel) missingData.push("Stress");
+  if (!userProfile.sleepHours) missingData.push("Sommeil moyen");
+  if (!userProfile.stressLevel) missingData.push("Stress percu");
+  if (!userProfile.fastingHours) missingData.push("Jeune");
+  if (!userProfile.drawTime) missingData.push("Heure prelevement");
+  if (!userProfile.lastTraining) missingData.push("Dernier training");
+  if (!userProfile.alcoholLast72h) missingData.push("Alcool 72h");
+  if (!userProfile.nutritionPhase) missingData.push("Phase nutrition");
 
   const axisVerdict = (ids: string[]) => {
     const axisMarkers = analysisResult.markers.filter((m) => ids.includes(m.markerId));
@@ -2264,10 +2310,14 @@ export const buildLifestyleCorrelations = (
   markers: MarkerAnalysis[],
   profile: {
     sleepHours?: number;
-    trainingHours?: number;
-    calorieDeficit?: number;
-    alcoholWeekly?: number;
     stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string[];
+    infectionRecent?: string;
     poids?: number;
     taille?: number;
   }
@@ -2284,10 +2334,12 @@ export const buildLifestyleCorrelations = (
   };
   const getMarker = (id: string) => markers.find((marker) => marker.markerId === id);
   const sleepHours = profile.sleepHours;
-  const trainingHours = profile.trainingHours;
-  const calorieDeficit = profile.calorieDeficit;
-  const alcoholWeekly = profile.alcoholWeekly;
   const stressLevel = profile.stressLevel;
+  const fastingHours = profile.fastingHours;
+  const drawTime = profile.drawTime;
+  const lastTraining = profile.lastTraining;
+  const alcoholLast72h = profile.alcoholLast72h;
+  const nutritionPhase = profile.nutritionPhase;
   const bmi =
     typeof profile.poids === "number" && typeof profile.taille === "number" && profile.taille > 0
       ? Math.round((profile.poids / Math.pow(profile.taille / 100, 2)) * 10) / 10
@@ -2320,58 +2372,146 @@ export const buildLifestyleCorrelations = (
     });
   }
 
-  if (typeof trainingHours === "number" && trainingHours >= 10) {
-    const crp = getMarker("crp_us");
-    const cortisol = getMarker("cortisol");
-    const impactBits = [];
-    if (isFlaggedStatus(crp?.status)) impactBits.push("inflammation elevee");
-    if (isFlaggedStatus(cortisol?.status)) impactBits.push("cortisol eleve");
-    pushCorrelation({
-      factor: "Training",
-      current: `${trainingHours} h/sem`,
-      impact: impactBits.length
-        ? `Volume eleve associe a ${impactBits.join(" et ")}.`
-        : "Volume eleve peut limiter la recuperation et l anabolisme.",
-      recommendation: "Reduis a 6-8 h/sem et planifie un deload toutes les 4-6 semaines.",
-      status: "suboptimal",
-      evidence: "Surentrainement chronique augmente inflammation et catabolisme.",
-    });
-  } else if (typeof trainingHours === "number") {
-    pushCorrelation({
-      factor: "Training",
-      current: `${trainingHours} h/sem`,
-      impact: trainingHours >= 4 ? "Volume coherent avec performance et recuperation." : "Volume faible peut ralentir les adaptations.",
-      recommendation: trainingHours >= 4 ? "Maintiens 3-5 seances bien reparties." : "Passe progressivement a 3 seances/sem.",
-      status: trainingHours >= 4 ? "optimal" : "normal",
-      evidence: "Frequence reguliere = meilleure sensibilite a l insuline et composition corporelle.",
-    });
+  if (typeof fastingHours === "number") {
+    if (fastingHours < 8) {
+      pushCorrelation({
+        factor: "Jeune",
+        current: `${fastingHours} h`,
+        impact: "Jeune court peut biaiser glycemie, insuline et triglycerides.",
+        recommendation: "Retest a jeun 10-12h (eau seule) pour une lecture propre.",
+        status: fastingHours < 6 ? "critical" : "suboptimal",
+        evidence: "Jeune <8h perturbe la comparabilite des marqueurs metaboliques.",
+      });
+    } else if (fastingHours > 14) {
+      pushCorrelation({
+        factor: "Jeune",
+        current: `${fastingHours} h`,
+        impact: "Jeune tres long peut modifier cortisol et lipides.",
+        recommendation: "Vise 10-12h pour les prochains bilans.",
+        status: fastingHours > 16 ? "suboptimal" : "normal",
+        evidence: "Jeune tres long modifie certaines hormones matinales.",
+      });
+    } else {
+      pushCorrelation({
+        factor: "Jeune",
+        current: `${fastingHours} h`,
+        impact: "Jeune adequat pour une lecture metabolique fiable.",
+        recommendation: "Garde ce format pour les prochains prelevements.",
+        status: "optimal",
+        evidence: "Jeune 8-12h standardise glucose et lipides.",
+      });
+    }
   }
 
-  if (typeof calorieDeficit === "number" && calorieDeficit >= 25) {
-    const t3 = getMarker("t3_libre");
-    const igf1 = getMarker("igf1");
-    const impactBits = [];
-    if (isFlaggedStatus(t3?.status)) impactBits.push("thyroide ralentit");
-    if (isFlaggedStatus(igf1?.status)) impactBits.push("anabolisme faible");
-    pushCorrelation({
-      factor: "Deficit calorique",
-      current: `${calorieDeficit}%`,
-      impact: impactBits.length
-        ? `Deficit eleve associe a ${impactBits.join(" et ")}.`
-        : "Deficit eleve peut ralentir le metabolisme et la recuperation.",
-      recommendation: "Reste sous 15-20% de deficit et integre 1 refeed hebdo.",
-      status: "suboptimal",
-      evidence: "Deficits agressifs baissent T3 et IGF-1 chez les sportifs.",
-    });
-  } else if (typeof calorieDeficit === "number") {
-    pushCorrelation({
-      factor: "Deficit calorique",
-      current: `${calorieDeficit}%`,
-      impact: calorieDeficit <= 20 ? "Deficit modere, soutenable pour la performance." : "Deficit eleve a surveiller.",
-      recommendation: calorieDeficit <= 20 ? "Continue avec un deficit stable." : "Reviens sous 20% pour preserver la thyroide.",
-      status: calorieDeficit <= 20 ? "optimal" : "normal",
-      evidence: "Deficit modere = meilleure adherence et maintien hormonal.",
-    });
+  if (drawTime) {
+    const drawLabelMap: Record<string, string> = {
+      matin: "Matin (avant 10h)",
+      milieu_journee: "Milieu de journee",
+      apres_midi: "Apres-midi",
+      soir: "Soir",
+    };
+    const drawLabel = drawLabelMap[drawTime] || drawTime;
+    if (drawTime === "apres_midi" || drawTime === "soir") {
+      pushCorrelation({
+        factor: "Heure prelevement",
+        current: drawLabel,
+        impact: "Prelevement tardif peut fausser cortisol, testosterone et glycemie.",
+        recommendation: "Vise un prelevement matin entre 7h et 10h.",
+        status: "suboptimal",
+        evidence: "Les hormones et la glycemie varient fortement dans la journee.",
+      });
+    } else {
+      pushCorrelation({
+        factor: "Heure prelevement",
+        current: drawLabel,
+        impact: "Horaire coherent pour comparer les marqueurs dans le temps.",
+        recommendation: "Garde ce creneau pour les prochains bilans.",
+        status: drawTime === "matin" ? "optimal" : "normal",
+        evidence: "Les bilans du matin sont plus standardises.",
+      });
+    }
+  }
+
+  if (lastTraining) {
+    const trainingLabelMap: Record<string, string> = {
+      "<24h": "< 24h",
+      "24-48h": "24-48h",
+      "48-72h": "48-72h",
+      ">72h": "> 72h",
+    };
+    const trainingLabel = trainingLabelMap[lastTraining] || lastTraining;
+    if (lastTraining === "<24h") {
+      pushCorrelation({
+        factor: "Dernier training",
+        current: trainingLabel,
+        impact: "Training recent peut elever creatinine, CK, CRP et fausser la lecture.",
+        recommendation: "Retest apres 48h de repos si certains marqueurs sont critiques.",
+        status: "suboptimal",
+        evidence: "L effort proche du bilan modifie les marqueurs musculaires et inflammatoires.",
+      });
+    } else if (lastTraining === "24-48h") {
+      pushCorrelation({
+        factor: "Dernier training",
+        current: trainingLabel,
+        impact: "Effort recent possible mais effets encore detectables sur certains marqueurs.",
+        recommendation: "Idealement 48-72h sans training intense avant le prochain bilan.",
+        status: "normal",
+        evidence: "Le repos 48-72h stabilise creatinine et inflammation.",
+      });
+    } else {
+      pushCorrelation({
+        factor: "Dernier training",
+        current: trainingLabel,
+        impact: "Fenetre de repos adequate pour un bilan interpretable.",
+        recommendation: "Conserve cette fenetre avant les prochains bilans.",
+        status: "optimal",
+        evidence: "Un repos suffisant stabilise les marqueurs musculaires.",
+      });
+    }
+  }
+
+  if (nutritionPhase) {
+    const phaseLabelMap: Record<string, string> = {
+      seche: "Seche (deficit)",
+      maintenance: "Maintenance",
+      bulk: "Prise de masse",
+    };
+    const phaseLabel = phaseLabelMap[nutritionPhase] || nutritionPhase;
+    if (nutritionPhase === "seche") {
+      const t3 = getMarker("t3_libre");
+      const igf1 = getMarker("igf1");
+      const impactBits = [];
+      if (isFlaggedStatus(t3?.status)) impactBits.push("thyroide ralentie");
+      if (isFlaggedStatus(igf1?.status)) impactBits.push("anabolisme freine");
+      pushCorrelation({
+        factor: "Phase nutrition",
+        current: phaseLabel,
+        impact: impactBits.length
+          ? `Deficit associe a ${impactBits.join(" et ")}.`
+          : "Deficit peut ralentir la recuperation si trop agressif.",
+        recommendation: "Garde un deficit modere et planifie un refeed si fatigue.",
+        status: impactBits.length ? "suboptimal" : "normal",
+        evidence: "Deficits agressifs baissent T3 et IGF-1 chez les sportifs.",
+      });
+    } else if (nutritionPhase === "bulk") {
+      pushCorrelation({
+        factor: "Phase nutrition",
+        current: phaseLabel,
+        impact: "Surplus aide l anabolisme mais peut impacter glycemie et lipides.",
+        recommendation: "Surveille glucose, triglycerides et HDL durant la prise de masse.",
+        status: "normal",
+        evidence: "Un surplus non maitrise degrade le profil metabolique.",
+      });
+    } else {
+      pushCorrelation({
+        factor: "Phase nutrition",
+        current: phaseLabel,
+        impact: "Maintenance stable, bon point pour lire les marqueurs.",
+        recommendation: "Garde cette base et ajuste selon les objectifs.",
+        status: "optimal",
+        evidence: "Une maintenance stabile facilite l interpretation des bilans.",
+      });
+    }
   }
 
   if (typeof stressLevel === "number" && stressLevel >= 7) {
@@ -2401,30 +2541,59 @@ export const buildLifestyleCorrelations = (
     });
   }
 
-  if (typeof alcoholWeekly === "number" && alcoholWeekly >= 6) {
+  if (alcoholLast72h) {
+    const alcoholLabelMap: Record<string, string> = {
+      "0": "0 verre",
+      "1-2": "1-2 verres",
+      "3-5": "3-5 verres",
+      "6+": "6+ verres",
+    };
+    const alcoholLabel = alcoholLabelMap[alcoholLast72h] || alcoholLast72h;
     const ggt = getMarker("ggt");
     const triglycerides = getMarker("triglycerides");
     const impactBits = [];
     if (isFlaggedStatus(ggt?.status)) impactBits.push("stress hepatique");
     if (isFlaggedStatus(triglycerides?.status)) impactBits.push("triglycerides hauts");
+    if (alcoholLast72h === "6+" || alcoholLast72h === "3-5") {
+      pushCorrelation({
+        factor: "Alcool (72h)",
+        current: alcoholLabel,
+        impact: impactBits.length
+          ? `Alcool recent associe a ${impactBits.join(" et ")}.`
+          : "Alcool recent peut biaiser GGT, triglycerides et glycemie.",
+        recommendation: "Stop alcool 72h avant le prochain bilan.",
+        status: alcoholLast72h === "6+" ? "critical" : "suboptimal",
+        evidence: "L alcool recent perturbe les marqueurs hepatiques et lipidiques.",
+      });
+    } else {
+      pushCorrelation({
+        factor: "Alcool (72h)",
+        current: alcoholLabel,
+        impact: alcoholLast72h === "0" ? "Pas d alcool recent, lecture plus fiable." : "Charge alcool faible, impact limite.",
+        recommendation: "Garde cette discipline avant les bilans.",
+        status: alcoholLast72h === "0" ? "optimal" : "normal",
+        evidence: "Moins d alcool = meilleure sensibilite a l insuline et GGT stable.",
+      });
+    }
+  }
+
+  if (profile.infectionRecent === "oui") {
     pushCorrelation({
-      factor: "Alcool",
-      current: `${alcoholWeekly} verres/sem`,
-      impact: impactBits.length
-        ? `Alcool associe a ${impactBits.join(" et ")}.`
-        : "Alcool freine la lipolyse et surcharge le foie.",
-      recommendation: "Passe sous 2-3 verres/sem pendant 4 semaines.",
+      factor: "Infection recente",
+      current: "Oui",
+      impact: "Inflammation recente peut eleveer CRP, ferritine et globules blancs.",
+      recommendation: "Retest hors infection pour confirmer le terrain.",
       status: "suboptimal",
-      evidence: "L alcool eleve GGT et triglycerides chez les profils a risque.",
+      evidence: "Les infections aiguës faussent les marqueurs inflammatoires.",
     });
-  } else if (typeof alcoholWeekly === "number") {
+  } else if (profile.infectionRecent === "non") {
     pushCorrelation({
-      factor: "Alcool",
-      current: `${alcoholWeekly} verres/sem`,
-      impact: alcoholWeekly <= 3 ? "Charge alcool faible, effet metabolique limite." : "Charge alcool moderee, a surveiller.",
-      recommendation: alcoholWeekly <= 3 ? "Garde cette limite." : "Vise 2-3 verres/sem.",
-      status: alcoholWeekly <= 3 ? "optimal" : "normal",
-      evidence: "Moins d alcool = meilleure sensibilite a l insuline et GGT stable.",
+      factor: "Infection recente",
+      current: "Non",
+      impact: "Pas d infection recente declaree, lecture plus fiable.",
+      recommendation: "A conserver pour les prochains bilans.",
+      status: "optimal",
+      evidence: "Contexte stable = interpretation plus fiable.",
     });
   }
 
@@ -2473,10 +2642,14 @@ export async function generateAIBloodAnalysis(
     poids?: number;
     taille?: number;
     sleepHours?: number;
-    trainingHours?: number;
-    calorieDeficit?: number;
-    alcoholWeekly?: number;
     stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string[];
+    infectionRecent?: string;
   },
   knowledgeContext?: string
 ): Promise<string> {
@@ -2523,7 +2696,44 @@ export async function generateAIBloodAnalysis(
     typeof userProfile.poids === "number" && typeof userProfile.taille === "number" && userProfile.taille > 0
       ? (userProfile.poids / Math.pow(userProfile.taille / 100, 2)).toFixed(1)
       : "N/A";
-  const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "N/A"} h/nuit | Training: ${userProfile.trainingHours ?? "N/A"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "N/A"}% | Alcool: ${userProfile.alcoholWeekly ?? "N/A"} verres/sem | Stress: ${userProfile.stressLevel ?? "N/A"}/10 | Poids: ${userProfile.poids ?? "N/A"} kg | Taille: ${userProfile.taille ?? "N/A"} cm | IMC: ${bmi}`;
+  const lifestyleBits: string[] = [];
+  if (typeof userProfile.sleepHours === "number") {
+    lifestyleBits.push(`Sommeil moyen: ${userProfile.sleepHours} h/nuit`);
+  }
+  if (typeof userProfile.stressLevel === "number") {
+    lifestyleBits.push(`Stress percu: ${userProfile.stressLevel}/10`);
+  }
+  if (typeof userProfile.fastingHours === "number") {
+    lifestyleBits.push(`Jeune avant prelevement: ${userProfile.fastingHours}h`);
+  }
+  if (userProfile.drawTime) {
+    lifestyleBits.push(`Heure prelevement: ${userProfile.drawTime}`);
+  }
+  if (userProfile.lastTraining) {
+    lifestyleBits.push(`Dernier training intense: ${userProfile.lastTraining}`);
+  }
+  if (userProfile.alcoholLast72h) {
+    lifestyleBits.push(`Alcool 72h: ${userProfile.alcoholLast72h}`);
+  }
+  if (userProfile.nutritionPhase) {
+    lifestyleBits.push(`Phase nutrition: ${userProfile.nutritionPhase}`);
+  }
+  if (userProfile.supplementsUsed && userProfile.supplementsUsed.length) {
+    lifestyleBits.push(`Supplements: ${userProfile.supplementsUsed.join(", ")}`);
+  }
+  if (userProfile.infectionRecent) {
+    lifestyleBits.push(`Infection recente: ${userProfile.infectionRecent}`);
+  }
+  if (typeof userProfile.poids === "number") {
+    lifestyleBits.push(`Poids: ${userProfile.poids} kg`);
+  }
+  if (typeof userProfile.taille === "number") {
+    lifestyleBits.push(`Taille: ${userProfile.taille} cm`);
+  }
+  if (bmi !== "N/A") {
+    lifestyleBits.push(`IMC: ${bmi}`);
+  }
+  const lifestyleLine = lifestyleBits.length ? lifestyleBits.join(" | ") : "Non fourni";
   const deepDivePayload = await getBiomarkerDeepDiveContext(analysisResult.markers, {
     prenom: userProfile.prenom,
     nom: userProfile.nom,
