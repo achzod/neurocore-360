@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ElementType } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useParams } from "wouter";
 import { Sidebar } from "@/components/ultrahuman/Sidebar";
 import { RadialProgress } from "@/components/ultrahuman/RadialProgress";
@@ -12,6 +11,12 @@ import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndica
 import { BiomarkerTrendChart } from "@/components/blood/BiomarkerTrendChart";
 import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
 import { BloodRadar } from "@/components/blood/BloodRadar";
+
+// Lazy load premium components for better bundle splitting
+const RadialScoreChart = lazy(() => import("@/components/blood/RadialScoreChart").then(m => ({ default: m.RadialScoreChart })));
+const InteractiveHeatmap = lazy(() => import("@/components/blood/InteractiveHeatmap").then(m => ({ default: m.InteractiveHeatmap })));
+const AnimatedStatCard = lazy(() => import("@/components/blood/AnimatedStatCard").then(m => ({ default: m.AnimatedStatCard })));
+const MetricCard3D = lazy(() => import("@/components/blood/MetricCard3D").then(m => ({ default: m.MetricCard3D })));
 import { getBiomarkerStatusColor, normalizeBiomarkerStatus, BiomarkerStatus } from "@/lib/biomarker-colors";
 import { BLOOD_PANELS, getMarkerById } from "@/lib/blood-questionnaire";
 import {
@@ -24,11 +29,12 @@ import {
   Menu,
   Shield,
   TrendingUp,
+  LucideIcon,
 } from "lucide-react";
 
 const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
-const PANEL_ICONS: Record<string, ElementType> = {
+const PANEL_ICONS: Record<string, LucideIcon> = {
   hormonal: TrendingUp,
   thyroid: Activity,
   metabolic: Flame,
@@ -302,69 +308,81 @@ export default function BloodAnalysisDashboard() {
             <TabsContent value="overview">
               <div className="grid lg:grid-cols-2 gap-8 mb-8">
                 <div
-                  className="flex flex-col items-center justify-center p-8 rounded-sm border"
+                  className="flex flex-col items-center justify-center p-8 rounded-sm border blood-glass blood-grain"
                   style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                 >
-                  <RadialProgress
-                    score={globalScore}
-                    max={100}
-                    subLabel="SCORE GLOBAL"
-                    size={200}
-                    strokeWidth={6}
-                    color={currentTheme.colors.primary}
-                  />
-                  <p className="text-xs mt-3" style={{ color: currentTheme.colors.textMuted }}>
-                    Synthese issue de {normalizedMarkers.length} biomarqueurs saisis.
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center h-[220px]">
+                      <Loader2 className="w-8 h-8 animate-spin" style={{ color: currentTheme.colors.primary }} />
+                    </div>
+                  }>
+                    <RadialScoreChart
+                      score={globalScore}
+                      size={220}
+                      strokeWidth={8}
+                      label="SCORE GLOBAL"
+                      sublabel={`${normalizedMarkers.length} biomarqueurs`}
+                    />
+                  </Suspense>
+                  <p className="text-xs mt-4 text-caption" style={{ color: currentTheme.colors.textMuted }}>
+                    Synthèse issue de {normalizedMarkers.length} biomarqueurs analysés
                   </p>
                 </div>
 
                 <div
-                  className="p-6 rounded-sm border"
+                  className="p-6 rounded-sm border blood-glass blood-grain"
                   style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <Beaker className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
-                    <h2 className="text-lg font-semibold">Radar systemique</h2>
+                    <h2 className="text-heading-4">Heatmap systémique</h2>
                   </div>
-                  <BloodRadar data={radarData} />
-                  <p className="text-xs mt-3" style={{ color: currentTheme.colors.textMuted }}>
-                    Vue d'ensemble des 6 panels clefs.
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center h-[200px]">
+                      <Loader2 className="w-8 h-8 animate-spin" style={{ color: currentTheme.colors.primary }} />
+                    </div>
+                  }>
+                    <InteractiveHeatmap
+                      categories={panelGroups.map((panel) => ({
+                        key: panel.id,
+                        label: panel.title,
+                        score: panel.score,
+                        markerCount: panel.markers.length,
+                        criticalCount: panel.markers.filter(m => m.status === 'critical').length,
+                      }))}
+                      onCategoryClick={(categoryKey) => setActiveTab("biomarkers")}
+                    />
+                  </Suspense>
+                  <p className="text-caption mt-4" style={{ color: currentTheme.colors.textMuted }}>
+                    Cliquez sur une catégorie pour explorer les biomarqueurs
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {panelGroups.map((panel) => {
-                  const status = scoreToStatus(panel.score);
-                  const colors = getBiomarkerStatusColor(status);
-                  const Icon = PANEL_ICONS[panel.id] || Heart;
-                  return (
-                    <div
-                      key={panel.id}
-                      className="rounded p-4 border"
-                      style={{
-                        backgroundColor: currentTheme.colors.surface,
-                        borderColor: currentTheme.colors.border,
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <Icon className="w-5 h-5" style={{ color: colors.primary }} />
-                        <StatusBadge status={status} />
-                      </div>
-                      <div className="text-2xl font-bold mb-1">{panel.score}%</div>
-                      <div className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                        {panel.title}
-                      </div>
-                      <div className="mt-3 h-1.5 rounded-full bg-white/10">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${panel.score}%`, backgroundColor: colors.primary }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <Suspense fallback={
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-32 rounded border animate-pulse" style={{ backgroundColor: currentTheme.colors.surface }} />
+                  ))}
+                </div>
+              }>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {panelGroups.map((panel, index) => {
+                    const status = scoreToStatus(panel.score);
+                    const Icon = PANEL_ICONS[panel.id] || Heart;
+                    return (
+                      <AnimatedStatCard
+                        key={panel.id}
+                        label={panel.title}
+                        value={panel.score}
+                        unit="%"
+                        icon={Icon}
+                        trend={panel.score >= 70 ? { value: '+' + (panel.score - 70), direction: 'up' } : { value: '-' + (70 - panel.score), direction: 'down' }}
+                      />
+                    );
+                  })}
+                </div>
+              </Suspense>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div

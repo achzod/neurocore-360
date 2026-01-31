@@ -1,60 +1,16 @@
 @import url("https://fonts.cdnfonts.com/css/graphik");
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap");
+@import './styles/typography.css';
+@import './styles/blood-theme.css';
+@import './styles/layout.css';
+@import './styles/effects.css';
+@import './styles/accessibility.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ========================================
-   BLOOD REPORT PREMIUM THEME
-   ======================================== */
-
-.blood-report-premium {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-
-  --status-optimal: #06b6d4;
-  --status-normal: #3b82f6;
-  --status-suboptimal: #f59e0b;
-  --status-critical: #f43f5e;
-
-  --glow-optimal: 0 10px 30px rgba(6, 182, 212, 0.18);
-  --glow-critical: 0 12px 36px rgba(244, 63, 94, 0.2);
-
-  --border-primary: rgba(15, 23, 42, 0.12);
-  --border-glow: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.2), transparent);
-}
-
 @layer utilities {
-  .grain-texture {
-    position: relative;
-  }
-
-  .grain-texture::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E");
-    background-size: 200px 200px;
-    animation: grain 8s steps(10) infinite;
-  }
-
-  @keyframes grain {
-    0%, 100% { transform: translate(0, 0); }
-    10% { transform: translate(-5%, -10%); }
-    20% { transform: translate(-15%, 5%); }
-    30% { transform: translate(7%, -25%); }
-    40% { transform: translate(-5%, 25%); }
-    50% { transform: translate(-15%, 10%); }
-    60% { transform: translate(15%, 0%); }
-    70% { transform: translate(0%, 15%); }
-    80% { transform: translate(3%, 25%); }
-    90% { transform: translate(-10%, 10%); }
-  }
-
   .report-section {
     content-visibility: auto;
     contain-intrinsic-size: auto 500px;

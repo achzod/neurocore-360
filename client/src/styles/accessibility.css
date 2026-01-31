@@ -1,0 +1,194 @@
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+
+/* Focus states WCAG AA compliant */
+*:focus {
+  outline: 2px solid var(--blood-optimal);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--blood-optimal);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.2);
+}
+
+/* Enhanced focus for interactive elements */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--blood-optimal);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3);
+  position: relative;
+  z-index: 10;
+}
+
+/* Skip to main content link */
+.skip-to-main {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: var(--blood-bg-elevated);
+  color: var(--blood-text-primary);
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+  border: 2px solid var(--blood-optimal);
+  z-index: 1000;
+  transition: top 0.2s;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .grain-texture::before,
+  .blood-grain::before {
+    animation: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --blood-border-default: rgba(255, 255, 255, 0.3);
+    --blood-border-strong: rgba(255, 255, 255, 0.5);
+  }
+
+  .blood-glass {
+    border-width: 2px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Keyboard navigation helpers */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Improve click target sizes (WCAG 2.1 Level AAA) */
+button,
+a,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 1rem;
+}
+
+/* Exception for icon-only buttons */
+button.icon-only,
+[role="button"].icon-only {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.625rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Color contrast helpers */
+.contrast-safe-text {
+  color: var(--blood-text-primary);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Focus trap for modals */
+[aria-modal="true"] {
+  isolation: isolate;
+}
+
+[aria-modal="true"] ~ * {
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+/* Live region announcements */
+[aria-live="polite"],
+[aria-live="assertive"] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Disabled state accessibility */
+[aria-disabled="true"],
+[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Loading state accessibility */
+[aria-busy="true"] {
+  cursor: wait;
+}
+
+/* Error state accessibility */
+[aria-invalid="true"] {
+  border-color: var(--blood-critical);
+  outline-color: var(--blood-critical);
+}
+
+[aria-invalid="true"]:focus-visible {
+  outline: 2px solid var(--blood-critical);
+  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.3);
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--blood-optimal);
+  color: var(--blood-bg-primary);
+}
+
+::-moz-selection {
+  background-color: var(--blood-optimal);
+  color: var(--blood-bg-primary);
+}

@@ -1,0 +1,62 @@
+/* ===== EFFECTS LIBRARY ===== */
+
+.glassmorphism {
+  background: var(--blood-glass-bg);
+  backdrop-filter: blur(var(--blood-glass-blur));
+  border: 1px solid var(--blood-glass-border);
+}
+
+.grain-texture {
+  position: relative;
+}
+
+.grain-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--blood-grain-opacity);
+  background-image: var(--blood-grain-url);
+  background-size: 200px 200px;
+  animation: grain 8s steps(10) infinite;
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -10%); }
+  20% { transform: translate(-15%, 5%); }
+  30% { transform: translate(7%, -25%); }
+  40% { transform: translate(-5%, 25%); }
+  50% { transform: translate(-15%, 10%); }
+  60% { transform: translate(15%, 0%); }
+  70% { transform: translate(0%, 15%); }
+  80% { transform: translate(3%, 25%); }
+  90% { transform: translate(-10%, 10%); }
+}
+
+.glow-border {
+  position: relative;
+}
+
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.mesh-gradient {
+  background:
+    var(--blood-gradient-mesh-1),
+    var(--blood-gradient-mesh-2),
+    var(--blood-gradient-mesh-3),
+    var(--blood-bg-primary);
+}
+
+.blur-orb {
+  filter: blur(80px);
+  opacity: 0.6;
+}

@@ -1,0 +1,150 @@
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-display: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  --font-body: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+  --font-data: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ===== TYPOGRAPHIC SCALE ===== */
+
+/* Display (Hero elements) */
+.text-display-1 {
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+}
+
+.text-display-2 {
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+/* Headings */
+.text-heading-1 {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.text-heading-2 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.text-heading-3 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.text-heading-4 {
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+/* Body */
+.text-body-lg {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.text-body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.text-body-sm {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+/* Data (Numbers, metrics) */
+.text-data {
+  font-family: var(--font-data);
+  font-feature-settings: 'tnum' on, 'lnum' on, 'zero' on;
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+}
+
+/* Caption */
+.text-caption {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+/* Label (Uppercase) */
+.text-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ===== RESPONSIVE TYPOGRAPHY ===== */
+
+/* Fluid typography using clamp() */
+@media (min-width: 640px) {
+  .text-display-1 {
+    font-size: clamp(48px, 8vw, 96px);
+  }
+
+  .text-display-2 {
+    font-size: clamp(36px, 6vw, 72px);
+  }
+
+  .text-heading-1 {
+    font-size: clamp(28px, 4vw, 48px);
+  }
+
+  .text-heading-2 {
+    font-size: clamp(24px, 3vw, 36px);
+  }
+}
+
+/* ===== FONT FEATURES ===== */
+
+/* OpenType features for data display */
+.font-tabular {
+  font-feature-settings: 'tnum' on;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-slashed-zero {
+  font-feature-settings: 'zero' on;
+  font-variant-numeric: slashed-zero;
+}
+
+.font-lining {
+  font-feature-settings: 'lnum' on;
+  font-variant-numeric: lining-nums;
+}
