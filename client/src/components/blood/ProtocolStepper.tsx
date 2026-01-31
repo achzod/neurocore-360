@@ -20,10 +20,10 @@ interface ProtocolStepperProps {
 }
 
 export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperProps) => {
-  const { theme } = useBloodTheme();
+  const { theme, mode } = useBloodTheme();
   const [expandedPhase, setExpandedPhase] = useState<number | null>(currentPhase);
 
-  const iconTextColor = theme.mode === 'dark' ? '#ffffff' : '#000000';
+  const iconTextColor = mode === 'dark' ? '#ffffff' : '#000000';
 
   return (
     <div className="space-y-8">

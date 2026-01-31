@@ -21,7 +21,7 @@ export const InteractiveHeatmap = ({
   categories,
   onCategoryClick,
 }: InteractiveHeatmapProps) => {
-  const { theme } = useBloodTheme();
+  const { theme, mode } = useBloodTheme();
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -164,7 +164,7 @@ export const InteractiveHeatmap = ({
                   className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
                   style={{
                     background: colors.border,
-                    color: theme.mode === 'dark' ? '#0a0b0d' : '#ffffff',
+                    color: mode === 'dark' ? '#0a0b0d' : '#ffffff',
                   }}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}

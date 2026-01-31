@@ -83,7 +83,7 @@ export const BiomarkerTimeline = ({
                   className="w-4 h-4 rounded-full"
                   style={{
                     background: statusColors[point.status],
-                    border: `2px solid ${theme.border || theme.background}`,
+                    border: `2px solid ${theme.borderDefault}`,
                   }}
                   animate={{
                     boxShadow: [

@@ -26,7 +26,7 @@ const getStatusStyles = (status: string) => {
 };
 
 export default function BiomarkerDetailModal({ marker, isOpen, onClose }: BiomarkerDetailModalProps) {
-  const { theme } = useBloodTheme();
+  const { theme, mode } = useBloodTheme();
   const [activeTab, setActiveTab] = useState<BiomarkerModalTab>("definition");
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function BiomarkerDetailModal({ marker, isOpen, onClose }: Biomar
           <motion.div
             className="fixed inset-0 z-40"
             style={{
-              backgroundColor: theme.mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.3)'
+              backgroundColor: mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.3)'
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

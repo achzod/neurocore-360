@@ -20,7 +20,7 @@ export const ExpandableInsight = ({
   icon,
   variant = 'info',
 }: ExpandableInsightProps) => {
-  const { theme } = useBloodTheme();
+  const { theme, mode } = useBloodTheme();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -63,7 +63,7 @@ export const ExpandableInsight = ({
         className="w-full flex items-center justify-between p-6 text-left transition-colors"
         style={{
           backgroundColor: isHovered
-            ? (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+            ? (mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
             : 'transparent'
         }}
         onClick={() => setIsExpanded(!isExpanded)}
