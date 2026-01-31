@@ -140,7 +140,7 @@ export default function BloodAnalysisDashboard() {
       try {
         const response = await fetch(`/api/blood-analysis/report/${reportId}`);
         const data = await response.json();
-        if (!response.ok || !data?.success) {
+        if (!response.ok || !data?.success || !data?.report) {
           throw new Error(data?.error || "Impossible de charger le rapport");
         }
         if (isMounted) {
@@ -149,6 +149,7 @@ export default function BloodAnalysisDashboard() {
         }
       } catch (err) {
         if (isMounted) {
+          setReport(null);
           setError(err instanceof Error ? err.message : "Erreur de chargement");
         }
       } finally {
@@ -234,10 +235,10 @@ export default function BloodAnalysisDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background }}>
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-white/70 mx-auto mb-3" />
-          <p className="text-white/70 text-sm">Chargement du Blood Analysis...</p>
+          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-3" style={{ color: currentTheme.colors.primary }} />
+          <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>Chargement du Blood Analysis...</p>
         </div>
       </div>
     );
@@ -245,11 +246,11 @@ export default function BloodAnalysisDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background }}>
         <div className="max-w-md text-center space-y-3">
-          <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
-          <p className="text-white text-lg font-semibold">Impossible de charger le rapport</p>
-          <p className="text-white/60 text-sm">{error}</p>
+          <AlertTriangle className="w-10 h-10 mx-auto" style={{ color: currentTheme.colors.primary }} />
+          <p className="text-lg font-semibold" style={{ color: currentTheme.colors.text }}>Impossible de charger le rapport</p>
+          <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>{error}</p>
         </div>
       </div>
     );
