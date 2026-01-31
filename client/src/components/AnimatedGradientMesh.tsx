@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 
 export function AnimatedGradientMesh() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-20">
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden opacity-20"
+      aria-hidden="true"
+    >
       <motion.div
         className="absolute -left-1/4 -top-1/4 h-1/2 w-1/2 rounded-full bg-cyan-500 blur-[100px]"
         animate={{

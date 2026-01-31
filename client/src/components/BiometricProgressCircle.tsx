@@ -29,7 +29,11 @@ export function BiometricProgressCircle({
   const offset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="relative inline-flex items-center justify-center">
+    <div
+      className="relative inline-flex items-center justify-center"
+      role="img"
+      aria-label={`Score global: ${Math.round(score)} sur 100`}
+    >
       <svg width={size} height={size} className="rotate-[-90deg]">
         <defs>
           <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">

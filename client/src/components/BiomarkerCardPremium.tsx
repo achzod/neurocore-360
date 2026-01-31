@@ -58,7 +58,9 @@ export function BiomarkerCardPremium({ marker }: BiomarkerCardProps) {
           <h3 className="font-display text-sm font-bold uppercase tracking-wide text-slate-200">
             {marker.name}
           </h3>
-          <span className={`text-2xl ${styles.text}`}>{styles.icon}</span>
+          <span className={`text-2xl ${styles.text}`} aria-hidden="true">
+            {styles.icon}
+          </span>
         </div>
 
         <div className="mt-4 flex items-baseline gap-2">

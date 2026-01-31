@@ -461,7 +461,7 @@ function BloodAnalysisReportInner() {
             Je prepare ton rapport, la page se met a jour automatiquement.
           </p>
           <button
-            className="mt-6 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-100"
+            className="mt-6 rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
             onClick={() => refetch()}
           >
             Rafraichir
@@ -476,12 +476,18 @@ function BloodAnalysisReportInner() {
 
   return (
     <div className="blood-report-premium min-h-screen bg-[--bg-primary] text-slate-100">
+      <a
+        href="#introduction"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-cyan-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900"
+      >
+        Aller au contenu principal
+      </a>
       <header className="sticky top-0 z-20 border-b border-[--border-primary] bg-[--bg-secondary]/90 backdrop-blur relative overflow-hidden">
         <AnimatedGradientMesh />
         <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4 font-body">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-cyan-500 p-2 text-slate-100">
-              <FileText className="h-4 w-4" />
+              <FileText className="h-4 w-4" aria-hidden="true" />
             </div>
             <div>
               <div className="text-sm uppercase tracking-[0.2em] text-slate-400">ApexLabs</div>
@@ -495,7 +501,7 @@ function BloodAnalysisReportInner() {
             </div>
             <button
               onClick={handleExportPDF}
-              className="rounded-md border border-[--border-primary] px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-[--bg-tertiary]"
+              className="rounded-md border border-[--border-primary] px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-[--bg-tertiary] focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
             >
               Export PDF
             </button>
@@ -512,7 +518,7 @@ function BloodAnalysisReportInner() {
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="block rounded-md px-2 py-1 text-slate-300 hover:bg-[--bg-tertiary] hover:text-slate-100"
+                  className="block rounded-md px-2 py-1 text-slate-300 hover:bg-[--bg-tertiary] hover:text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
                 >
                   {section.label}
                 </a>
@@ -531,7 +537,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="introduction" className="scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-cyan-400" />
+                <Info className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Introduction & guide de lecture
                 </h2>
@@ -571,7 +577,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="overview" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Target className="h-5 w-5 text-cyan-400" />
+                <Target className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Score global expliqué
                 </h2>
@@ -635,7 +641,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="alerts" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-rose-400" />
+                <AlertTriangle className="h-5 w-5 text-rose-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Alertes prioritaires (ce qui nécessite une action rapide)
                 </h2>
@@ -681,7 +687,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="strengths" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Tes forces (ce qui fonctionne déjà)
                 </h2>
@@ -714,7 +720,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="systems" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-cyan-400" />
+                <Info className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Analyse système par système
                 </h2>
@@ -739,7 +745,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="interconnections" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-cyan-400" />
+                <Info className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Interconnexions clés
                 </h2>
@@ -756,7 +762,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="protocol" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <Target className="h-5 w-5 text-cyan-400" />
+                <Target className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Protocole 90 jours (phase par phase)
                 </h2>
@@ -882,7 +888,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="full-report" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-cyan-400" />
+                <FileText className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Rapport complet (texte intégral)
                 </h2>
@@ -910,7 +916,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="glossary" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-cyan-400" />
+                <BookOpen className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Glossaire & explications
                 </h2>
@@ -934,7 +940,7 @@ function BloodAnalysisReportInner() {
           <motion.section id="sources" className="mt-10 scroll-mt-24 report-section" variants={itemVariants}>
             <div className="rounded-2xl border border-[--border-primary] bg-[--bg-secondary] p-8 grain-texture">
               <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-cyan-400" />
+                <BookOpen className="h-5 w-5 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-2xl font-semibold font-display text-slate-100">
                   Sources (bibliothèque)
                 </h2>
