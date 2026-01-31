@@ -54,7 +54,7 @@ export const InteractiveHeatmap = ({
             aria-label={`${category.label}: score ${category.score}%, ${category.markerCount} biomarqueurs, ${category.criticalCount} critiques`}
             aria-pressed={isSelected}
             tabIndex={0}
-            className="relative group text-left"
+            className="relative group text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 focus-visible:outline-offset-2"
             onClick={() => handleClick(category.key)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {

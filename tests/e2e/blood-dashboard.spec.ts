@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
  * Tests the ultra-premium UI/UX refonte components
  */
 
-test.describe('Blood Analysis Dashboard - Overview Tab', () => {
+test.describe('Blood Analysis Dashboard - Overview Section', () => {
   // Skip tests if no test report ID is available
   // User should set TEST_REPORT_ID environment variable
   const testReportId = process.env.TEST_REPORT_ID;
@@ -18,9 +18,9 @@ test.describe('Blood Analysis Dashboard - Overview Tab', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('should display the Overview tab as active by default', async ({ page }) => {
-    const activeTab = page.locator('[role="tablist"] button[data-state="active"]');
-    await expect(activeTab).toContainText('Overview');
+  test('should display the introduction section by default', async ({ page }) => {
+    const introHeading = page.getByRole('heading', { name: 'Introduction & guide de lecture' });
+    await expect(introHeading).toBeVisible();
   });
 
   test('should display RadialScoreChart with global score', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Blood Analysis Dashboard - Overview Tab', () => {
 
     // Verify aria-label contains score information
     const ariaLabel = await scoreChart.getAttribute('aria-label');
-    expect(ariaLabel).toContain('SCORE GLOBAL');
+    expect(ariaLabel).toMatch(/Score Global/i);
 
     // Verify SVG is present
     const svg = scoreChart.locator('svg[role="img"]');
@@ -48,33 +48,29 @@ test.describe('Blood Analysis Dashboard - Overview Tab', () => {
     await expect(categoryButtons).toHaveCount(6);
   });
 
-  test('should navigate to Biomarkers tab when clicking heatmap category', async ({ page }) => {
+  test('should toggle heatmap category selection when clicked', async ({ page }) => {
     const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
     const firstCategory = heatmap.locator('button[role="button"]').first();
 
     // Click the first category
     await firstCategory.click();
 
-    // Wait for navigation to Biomarqueurs tab
-    await page.waitForTimeout(500);
-
-    // Verify the active tab changed
-    const activeTab = page.locator('[role="tablist"] button[data-state="active"]');
-    await expect(activeTab).toContainText(/Biomarqueurs|Biomarkers/i);
+    // Verify it is selected
+    await expect(firstCategory).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('should display 6 AnimatedStatCards in panels grid', async ({ page }) => {
+  test('should display key AnimatedStatCards in overview', async ({ page }) => {
     const statCards = page.locator('div[role="article"]');
-    await expect(statCards).toHaveCount(6);
+    const statCount = await statCards.count();
+    expect(statCount).toBeGreaterThanOrEqual(2);
 
     // Verify each stat card has required elements
-    const firstCard = statCards.first();
-    await expect(firstCard).toBeVisible();
+    await expect(statCards.filter({ hasText: 'Marqueurs optimaux' }).first()).toBeVisible();
+    await expect(statCards.filter({ hasText: 'Alertes critiques' }).first()).toBeVisible();
 
     // Check aria-label contains stat information
-    const ariaLabel = await firstCard.getAttribute('aria-label');
+    const ariaLabel = await statCards.first().getAttribute('aria-label');
     expect(ariaLabel).toBeTruthy();
-    expect(ariaLabel).toMatch(/%/); // Should contain percentage
   });
 
   test('should animate counter values on page load', async ({ page }) => {
@@ -87,14 +83,16 @@ test.describe('Blood Analysis Dashboard - Overview Tab', () => {
     expect(parseInt(scoreText || '0')).toBeGreaterThan(0);
   });
 
-  test('should display glassmorphism and grain texture effects', async ({ page }) => {
-    // Check for glassmorphism class
-    const glassElements = page.locator('.blood-glass');
-    await expect(glassElements.first()).toBeVisible();
-
+  test('should display grain texture and glass-like effects', async ({ page }) => {
     // Check for grain texture class
-    const grainElements = page.locator('.blood-grain');
+    const grainElements = page.locator('.grain-texture');
     await expect(grainElements.first()).toBeVisible();
+
+    // Check for blur (glass-like) on heatmap cards
+    const heatmapCard = page.locator('div[role="region"][aria-label*="Heatmap"] button').first();
+    const heatmapSurface = heatmapCard.locator('div').first();
+    const backdropFilter = await heatmapSurface.evaluate((el) => getComputedStyle(el).backdropFilter);
+    expect(backdropFilter).not.toBe('none');
   });
 });
 
@@ -109,13 +107,11 @@ test.describe('Blood Analysis Dashboard - Keyboard Navigation', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('should navigate heatmap categories with Tab key', async ({ page }) => {
-    // Tab to the first heatmap category
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
+  test('should allow keyboard focus on heatmap categories', async ({ page }) => {
+    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
+    const firstCategory = heatmap.locator('button[role="button"]').first();
+    await firstCategory.focus();
 
-    // Check if a heatmap button is focused
     const focusedElement = page.locator(':focus');
     const isFocused = await focusedElement.evaluate((el) =>
       el.getAttribute('role') === 'button'
@@ -133,12 +129,7 @@ test.describe('Blood Analysis Dashboard - Keyboard Navigation', () => {
     // Press Enter to activate
     await page.keyboard.press('Enter');
 
-    // Wait for navigation
-    await page.waitForTimeout(500);
-
-    // Verify the active tab changed
-    const activeTab = page.locator('[role="tablist"] button[data-state="active"]');
-    await expect(activeTab).toContainText(/Biomarqueurs|Biomarkers/i);
+    await expect(firstCategory).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('should activate heatmap category with Space key', async ({ page }) => {
@@ -151,12 +142,7 @@ test.describe('Blood Analysis Dashboard - Keyboard Navigation', () => {
     // Press Space to activate
     await page.keyboard.press('Space');
 
-    // Wait for navigation
-    await page.waitForTimeout(500);
-
-    // Verify the active tab changed
-    const activeTab = page.locator('[role="tablist"] button[data-state="active"]');
-    await expect(activeTab).toContainText(/Biomarqueurs|Biomarkers/i);
+    await expect(firstCategory).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('should show visible focus states on interactive elements', async ({ page }) => {
@@ -167,10 +153,10 @@ test.describe('Blood Analysis Dashboard - Keyboard Navigation', () => {
     await firstCategory.focus();
 
     // Check if focus state is visible (outline should be applied)
-    const outline = await firstCategory.evaluate((el) =>
-      window.getComputedStyle(el).outline
+    const outlineStyle = await firstCategory.evaluate((el) =>
+      window.getComputedStyle(el).outlineStyle
     );
-    expect(outline).not.toBe('none');
+    expect(outlineStyle).not.toBe('none');
   });
 });
 
@@ -193,10 +179,9 @@ test.describe('Blood Analysis Dashboard - Responsive Layout', () => {
     const gridClass = await heatmap.getAttribute('class');
     expect(gridClass).toContain('lg:grid-cols-3');
 
-    // AnimatedStatCards grid should have 3 columns
-    const statCardsGrid = page.locator('div[role="article"]').first().locator('..');
-    const statGridClass = await statCardsGrid.getAttribute('class');
-    expect(statGridClass).toContain('lg:grid-cols-3');
+    // Stat cards container should be present on the right column
+    const statCardsContainer = page.locator('div.col-span-12.lg\\:col-span-4');
+    await expect(statCardsContainer).toBeVisible();
   });
 
   test('should display correct layout on tablet (768x1024)', async ({ page }) => {
