@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { Check, Circle, ArrowRight } from 'lucide-react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface Phase {
   id: number;
@@ -19,7 +20,10 @@ interface ProtocolStepperProps {
 }
 
 export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperProps) => {
+  const { theme } = useBloodTheme();
   const [expandedPhase, setExpandedPhase] = useState<number | null>(currentPhase);
+
+  const iconTextColor = theme.mode === 'dark' ? '#ffffff' : '#000000';
 
   return (
     <div className="space-y-8">
@@ -70,9 +74,9 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   }}
                 >
                   {isCompleted ? (
-                    <Check className="w-6 h-6 text-white" />
+                    <Check className="w-6 h-6" style={{ color: iconTextColor }} />
                   ) : (
-                    <span className="text-white font-bold">{phase.id}</span>
+                    <span className="font-bold" style={{ color: iconTextColor }}>{phase.id}</span>
                   )}
                 </motion.button>
 
@@ -124,9 +128,9 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   }}
                 >
                   {isCompleted ? (
-                    <Check className="w-5 h-5 text-white" />
+                    <Check className="w-5 h-5" style={{ color: iconTextColor }} />
                   ) : (
-                    <span className="text-white font-bold text-sm">{phase.id}</span>
+                    <span className="font-bold text-sm" style={{ color: iconTextColor }}>{phase.id}</span>
                   )}
                 </div>
               </div>

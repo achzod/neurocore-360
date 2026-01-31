@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { ChevronDown, Lightbulb } from 'lucide-react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface ExpandableInsightProps {
   title: string;
@@ -19,7 +20,9 @@ export const ExpandableInsight = ({
   icon,
   variant = 'info',
 }: ExpandableInsightProps) => {
+  const { theme } = useBloodTheme();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isHovered, setIsHovered] = useState(false);
 
   const variantStyles = {
     info: {
@@ -57,8 +60,15 @@ export const ExpandableInsight = ({
     >
       {/* Header */}
       <button
-        className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between p-6 text-left transition-colors"
+        style={{
+          backgroundColor: isHovered
+            ? (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+            : 'transparent'
+        }}
         onClick={() => setIsExpanded(!isExpanded)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex items-center gap-4">
           {/* Icon */}

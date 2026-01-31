@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface GradientDividerProps {
   label?: string;
@@ -13,6 +14,7 @@ export const GradientDivider = ({
   variant = 'default',
   animated = true,
 }: GradientDividerProps) => {
+  const { theme } = useBloodTheme();
   const variantColors = {
     default: {
       from: '#06b6d4',
@@ -72,7 +74,7 @@ export const GradientDivider = ({
         <motion.div
           className="relative z-10 px-6 text-xs uppercase tracking-widest font-semibold"
           style={{
-            background: '#0a0b0d',
+            background: theme.background,
             color: variantColors.from,
           }}
           initial={{ opacity: 0, scale: 0.9 }}

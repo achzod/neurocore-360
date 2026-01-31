@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface TimelineDataPoint {
   date: string;
@@ -26,6 +27,7 @@ export const BiomarkerTimeline = ({
   optimalMin,
   optimalMax,
 }: BiomarkerTimelineProps) => {
+  const { theme } = useBloodTheme();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const statusColors = {
@@ -81,7 +83,7 @@ export const BiomarkerTimeline = ({
                   className="w-4 h-4 rounded-full"
                   style={{
                     background: statusColors[point.status],
-                    border: '2px solid #0a0b0d',
+                    border: `2px solid ${theme.border || theme.background}`,
                   }}
                   animate={{
                     boxShadow: [

@@ -77,9 +77,10 @@ export function BiomarkerRangeIndicator({
           />
         )}
         <motion.div
-          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 bg-black"
+          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2"
           style={{
             left: `calc(${valuePct}% - 6px)`,
+            backgroundColor: theme.textPrimary || '#000000',
             borderColor: colors.primary,
             boxShadow: `0 0 12px ${colors.primary}`,
           }}

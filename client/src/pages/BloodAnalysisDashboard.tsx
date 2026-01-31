@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "wouter";
 import { Sidebar } from "@/components/ultrahuman/Sidebar";
 import { RadialProgress } from "@/components/ultrahuman/RadialProgress";
@@ -13,11 +13,11 @@ import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
 import { BloodRadar } from "@/components/blood/BloodRadar";
 import ReactMarkdown from 'react-markdown';
 
-// Lazy load premium components for better bundle splitting
-const RadialScoreChart = lazy(() => import("@/components/blood/RadialScoreChart").then(m => ({ default: m.RadialScoreChart })));
-const InteractiveHeatmap = lazy(() => import("@/components/blood/InteractiveHeatmap").then(m => ({ default: m.InteractiveHeatmap })));
-const AnimatedStatCard = lazy(() => import("@/components/blood/AnimatedStatCard").then(m => ({ default: m.AnimatedStatCard })));
-const MetricCard3D = lazy(() => import("@/components/blood/MetricCard3D").then(m => ({ default: m.MetricCard3D })));
+// Premium components - direct imports (named exports, not default)
+import { RadialScoreChart } from "@/components/blood/RadialScoreChart";
+import { InteractiveHeatmap } from "@/components/blood/InteractiveHeatmap";
+import { AnimatedStatCard } from "@/components/blood/AnimatedStatCard";
+import { MetricCard3D } from "@/components/blood/MetricCard3D";
 import { getBiomarkerStatusColor, normalizeBiomarkerStatus, BiomarkerStatus } from "@/lib/biomarker-colors";
 import { BLOOD_PANELS, getMarkerById } from "@/lib/blood-questionnaire";
 import {
@@ -280,7 +280,15 @@ export default function BloodAnalysisDashboard() {
       </aside>
 
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+        <div
+          className="fixed inset-0 z-30 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            backgroundColor: currentTheme.type === 'dark'
+              ? 'rgba(0, 0, 0, 0.5)'
+              : 'rgba(0, 0, 0, 0.2)'
+          }}
+        />
       )}
 
       <main className="flex-1 overflow-y-auto h-screen">
@@ -316,19 +324,13 @@ export default function BloodAnalysisDashboard() {
                   className="flex flex-col items-center justify-center p-8 rounded-sm border blood-glass blood-grain"
                   style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                 >
-                  <Suspense fallback={
-                    <div className="flex items-center justify-center h-[220px]">
-                      <Loader2 className="w-8 h-8 animate-spin" style={{ color: currentTheme.colors.primary }} />
-                    </div>
-                  }>
-                    <RadialScoreChart
-                      score={globalScore}
-                      size={220}
-                      strokeWidth={8}
-                      label="SCORE GLOBAL"
-                      sublabel={`${normalizedMarkers.length} biomarqueurs`}
-                    />
-                  </Suspense>
+                  <RadialScoreChart
+                    score={globalScore}
+                    size={220}
+                    strokeWidth={8}
+                    label="SCORE GLOBAL"
+                    sublabel={`${normalizedMarkers.length} biomarqueurs`}
+                  />
                   <p className="text-xs mt-4 text-caption" style={{ color: currentTheme.colors.textMuted }}>
                     Synthèse issue de {normalizedMarkers.length} biomarqueurs analysés
                   </p>
@@ -342,52 +344,38 @@ export default function BloodAnalysisDashboard() {
                     <Beaker className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
                     <h2 className="text-heading-4">Heatmap systémique</h2>
                   </div>
-                  <Suspense fallback={
-                    <div className="flex items-center justify-center h-[200px]">
-                      <Loader2 className="w-8 h-8 animate-spin" style={{ color: currentTheme.colors.primary }} />
-                    </div>
-                  }>
-                    <InteractiveHeatmap
-                      categories={panelGroups.map((panel) => ({
-                        key: panel.id,
-                        label: panel.title,
-                        score: panel.score,
-                        markerCount: panel.markers.length,
-                        criticalCount: panel.markers.filter(m => m.status === 'critical').length,
-                      }))}
-                      onCategoryClick={(categoryKey) => setActiveTab("biomarkers")}
-                    />
-                  </Suspense>
+                  <InteractiveHeatmap
+                    categories={panelGroups.map((panel) => ({
+                      key: panel.id,
+                      label: panel.title,
+                      score: panel.score,
+                      markerCount: panel.markers.length,
+                      criticalCount: panel.markers.filter(m => m.status === 'critical').length,
+                    }))}
+                    onCategoryClick={(categoryKey) => setActiveTab("biomarkers")}
+                  />
                   <p className="text-caption mt-4" style={{ color: currentTheme.colors.textMuted }}>
                     Cliquez sur une catégorie pour explorer les biomarqueurs
                   </p>
                 </div>
               </div>
 
-              <Suspense fallback={
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="h-32 rounded border animate-pulse" style={{ backgroundColor: currentTheme.colors.surface }} />
-                  ))}
-                </div>
-              }>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                  {panelGroups.map((panel, index) => {
-                    const status = scoreToStatus(panel.score);
-                    const Icon = PANEL_ICONS[panel.id] || Heart;
-                    return (
-                      <AnimatedStatCard
-                        key={panel.id}
-                        label={panel.title}
-                        value={panel.score}
-                        unit="%"
-                        icon={Icon}
-                        trend={panel.score >= 70 ? { value: '+' + (panel.score - 70), direction: 'up' } : { value: '-' + (70 - panel.score), direction: 'down' }}
-                      />
-                    );
-                  })}
-                </div>
-              </Suspense>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {panelGroups.map((panel, index) => {
+                  const status = scoreToStatus(panel.score);
+                  const Icon = PANEL_ICONS[panel.id] || Heart;
+                  return (
+                    <AnimatedStatCard
+                      key={panel.id}
+                      label={panel.title}
+                      value={panel.score}
+                      unit="%"
+                      icon={Icon}
+                      trend={panel.score >= 70 ? { value: '+' + (panel.score - 70), direction: 'up' } : { value: '-' + (70 - panel.score), direction: 'down' }}
+                    />
+                  );
+                })}
+              </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div
@@ -536,12 +524,18 @@ export default function BloodAnalysisDashboard() {
             <TabsContent value="insights">
               {report?.aiReport ? (
                 <div
-                  className="rounded border p-6 prose prose-slate max-w-none markdown-body"
+                  className={`rounded border p-6 max-w-none ${
+                    currentTheme.type === 'dark' ? 'prose prose-slate' : 'prose prose-amber'
+                  }`}
                   style={{
                     backgroundColor: currentTheme.colors.surface,
                     borderColor: currentTheme.colors.border,
-                    color: currentTheme.colors.text
-                  }}
+                    color: currentTheme.colors.text,
+                    '--tw-prose-headings': currentTheme.colors.text,
+                    '--tw-prose-body': currentTheme.colors.text,
+                    '--tw-prose-bold': currentTheme.colors.text,
+                    '--tw-prose-links': currentTheme.colors.primary,
+                  } as React.CSSProperties}
                 >
                   <ReactMarkdown>{report.aiReport}</ReactMarkdown>
                 </div>

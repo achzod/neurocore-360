@@ -144,7 +144,10 @@ export default function BiomarkerDetailModal({ marker, isOpen, onClose }: Biomar
       {isOpen && marker && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-black/60"
+            className="fixed inset-0 z-40"
+            style={{
+              backgroundColor: theme.mode === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.3)'
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
