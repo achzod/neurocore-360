@@ -100,7 +100,7 @@ export interface Audit {
   // Optionnels: utilisés pour cache/traçabilité (peuvent être absents selon stockage)
   reportTxt?: string;
   reportHtml?: string;
-  reportGeneratedAt?: string | Date;
+  reportGeneratedAt?: string | Date | null;
   reportDeliveryStatus: ReportDeliveryStatusEnum;
   reportScheduledFor?: string | Date;
   reportSentAt?: string | Date;

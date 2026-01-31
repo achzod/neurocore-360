@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
 import { pool } from "./db";
@@ -610,6 +610,11 @@ export async function registerRoutes(
 
       if (isJobStale) {
         console.warn(`[Narrative] Job stale for audit ${req.params.id}, relance generation.`);
+        const audit = await storage.getAudit(req.params.id);
+        if (!audit) {
+          res.status(404).json({ error: "Audit non trouvé" });
+          return;
+        }
         await forceRegenerate(req.params.id);
         await storage.updateAudit(req.params.id, { reportDeliveryStatus: "GENERATING" });
         await startReportGeneration(req.params.id, audit.responses, audit.scores || {}, audit.type);
