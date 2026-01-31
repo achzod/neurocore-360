@@ -11,6 +11,7 @@ import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndica
 import { BiomarkerTrendChart } from "@/components/blood/BiomarkerTrendChart";
 import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
 import { BloodRadar } from "@/components/blood/BloodRadar";
+import ReactMarkdown from 'react-markdown';
 
 // Lazy load premium components for better bundle splitting
 const RadialScoreChart = lazy(() => import("@/components/blood/RadialScoreChart").then(m => ({ default: m.RadialScoreChart })));
@@ -532,15 +533,32 @@ export default function BloodAnalysisDashboard() {
             </TabsContent>
 
             <TabsContent value="insights">
-              <div
-                className="rounded border p-6"
-                style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
-              >
-                <h2 className="text-xl font-semibold mb-2">Synthèse Experte</h2>
-                <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
-                  Cette section arrive ensuite. Tu y trouveras la synthèse approfondie, les protocoles et les priorités d'action.
-                </p>
-              </div>
+              {report?.aiReport ? (
+                <div
+                  className="rounded border p-6 prose prose-slate max-w-none markdown-body"
+                  style={{
+                    backgroundColor: currentTheme.colors.surface,
+                    borderColor: currentTheme.colors.border,
+                    color: currentTheme.colors.text
+                  }}
+                >
+                  <ReactMarkdown>{report.aiReport}</ReactMarkdown>
+                </div>
+              ) : (
+                <div
+                  className="rounded border p-6"
+                  style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+                >
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: currentTheme.colors.primary }} />
+                    <h2 className="text-xl font-semibold mb-2">Génération du rapport AI en cours...</h2>
+                    <p className="text-sm text-center max-w-md" style={{ color: currentTheme.colors.textMuted }}>
+                      L'analyse approfondie de vos biomarqueurs est en cours de génération par notre IA médicale.
+                      Rechargez la page dans quelques minutes.
+                    </p>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
