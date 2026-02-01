@@ -2653,6 +2653,11 @@ export async function generateAIBloodAnalysis(
   },
   knowledgeContext?: string
 ): Promise<string> {
+  console.log(`\n[BloodAnalysis] 🩸 DÉBUT GÉNÉRATION RAPPORT EXPERT`);
+  console.log(`[BloodAnalysis] 📊 Nombre de marqueurs: ${analysisResult.markers.length}`);
+  console.log(`[BloodAnalysis] 📚 Taille contexte RAG: ${knowledgeContext?.length || 0} chars`);
+  console.log(`[BloodAnalysis] 👤 Profil: ${userProfile.gender}, ${userProfile.age || 'N/A'}ans`);
+
   const anthropic = new Anthropic();
 
   // Build the prompt with analysis data
@@ -2809,6 +2814,13 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
     const prompt = `${userPrompt}\n${retryNote}`;
 
     try {
+      console.log(`[BloodAnalysis] 🚀 Tentative ${attempt}/${maxAttempts} - Génération principale...`);
+      console.log(`[BloodAnalysis] ⚙️  Model: ${process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101"}`);
+      console.log(`[BloodAnalysis] ⚙️  Max tokens: ${maxTokens}`);
+      console.log(`[BloodAnalysis] ⚙️  Timeout: ${API_TIMEOUT_MS / 1000}s`);
+      console.log(`[BloodAnalysis] ⚙️  Prompt size: ${prompt.length} chars`);
+
+      const startTime = Date.now();
       const response = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
@@ -2818,14 +2830,24 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
         }),
         API_TIMEOUT_MS
       );
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      console.log(`[BloodAnalysis] ✅ Réponse reçue en ${duration}s`);
 
       const textContent = response.content.find(c => c.type === "text");
       const candidate = textContent?.text || "";
+      console.log(`[BloodAnalysis] 📊 Longueur réponse: ${candidate.length} chars (min: ${minChars})`);
+
       const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
       const missingHeadings = getMissingHeadings(candidate, REQUIRED_HEADINGS_NO_SOURCES);
       const uniqueSources = extractSourceIds(candidate).length;
       const citationsOk = uniqueSources >= minSources;
       const requiredOk = missingHeadings.length === 0;
+
+      console.log(`[BloodAnalysis] 🔍 Validation:`);
+      console.log(`   - Deep dive: ${deepDiveCheck.ok ? '✅' : '❌'} ${deepDiveCheck.ok ? '' : `(raison: ${deepDiveCheck.reason})`}`);
+      console.log(`   - Sections requises: ${requiredOk ? '✅' : '❌'} ${requiredOk ? '' : `(manque: ${missingHeadings.join(', ')})`}`);
+      console.log(`   - Citations: ${citationsOk ? '✅' : '❌'} (${uniqueSources}/${minSources})`);
+      console.log(`   - Longueur: ${candidate.length >= minChars ? '✅' : '⚠️'} (${candidate.length}/${minChars})`);
 
       const score =
         candidate.length +
@@ -2835,10 +2857,14 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
       if (score > bestScore) {
         bestScore = score;
         bestCandidate = candidate;
+        console.log(`[BloodAnalysis] 📈 Nouveau meilleur score: ${score}`);
       }
       if (deepDiveCheck.ok && candidate.length >= minChars && requiredOk && citationsOk) {
         output = candidate;
+        console.log(`[BloodAnalysis] 🎉 Rapport complet validé!`);
         break;
+      } else {
+        console.log(`[BloodAnalysis] ⚠️  Validation incomplète, tentative suivante...`);
       }
     } catch (err: any) {
       if (err.message === "API_TIMEOUT") {
@@ -2858,9 +2884,64 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
   }
 
   if (!output.includes("## Plan d'action 90 jours")) {
-    const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan d'action 90 jours (hyper concret)" (avec les sous-sections exactes) pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## Plan d'action 90 jours (hyper concret)\n  ### Jours 1-14 (Stabilisation)\n  ### Jours 15-30 (Phase d'Attaque)\n  ### Jours 31-60 (Consolidation)\n  ### Jours 61-90 (Optimisation)\n  ### Retest & conditions de prelevement\n- Chaque phase: objectifs (2-4), actions (5-12), indicateurs (3-6), erreurs a eviter (2-5).\n- Tu relies chaque phase au resultat physique (seche, perf, recuperation).\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nSOURCES GENERALES (chunks):\n${knowledgeContext}` : ""}\n`;
+    console.log(`[BloodAnalysis] 🔧 Fallback: Génération Plan 90 jours...`);
+    const planPrompt = `Tu dois produire UNIQUEMENT la section "## Plan d'action 90 jours (hyper concret)" (avec les sous-sections exactes) pour ce bilan.
+
+STYLE (OBLIGATOIRE - EXPERT MEDICAL):
+INTERDIT ABSOLU:
+- Bullet points, listes à puces, tirets, énumérations
+- Format "action points" isolés
+- Résumés style IA générique
+
+EXIGENCES DE REDACTION:
+- PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
+- Style médecin fonctionnel: rigoureux, actionable, professionnel mais accessible.
+- Chaque recommandation doit expliquer le POURQUOI (mécanisme) et le COMMENT (mise en pratique).
+- Ton confiant mais humble: "D'après les données...", "Il est recommandé de...", "Cela permettra de..."
+
+EXEMPLE DE STYLE REQUIS:
+❌ MAUVAIS (bullet points):
+"Objectifs:
+- Stabiliser la glycémie
+- Réduire HOMA-IR
+Actions:
+- Jeûne intermittent
+- Marche 10000 pas"
+
+✅ BON (paragraphes experts):
+"Les 14 premiers jours constituent la phase de stabilisation métabolique. L'objectif principal est de stabiliser votre glycémie à jeun en la réduisant progressivement de 162 mg/dL vers 130 mg/dL, tout en améliorant votre HOMA-IR de 3.2 vers 2.5. Cela s'obtient en établissant une fenêtre alimentaire de 10 heures (exemple: 10h-20h) qui permet des périodes de jeûne suffisamment longues pour améliorer la sensibilité insulinique sans créer de stress métabolique excessif. En parallèle, vous allez marcher 10000 pas quotidiens répartis sur la journée, car cette activité de basse intensité active le transporteur GLUT4 musculaire de manière indépendante de l'insuline, améliorant la clairance du glucose."
+
+CONTRAINTES STRUCTURELLES:
+- Titres EXACTS et dans l'ordre:
+  ## Plan d'action 90 jours (hyper concret)
+  ### Jours 1-14 (Stabilisation)
+  ### Jours 15-30 (Phase d'Attaque)
+  ### Jours 31-60 (Consolidation)
+  ### Jours 61-90 (Optimisation)
+  ### Retest & conditions de prelevement
+- Pour chaque phase, rédige 3 à 5 PARAGRAPHES COMPLETS couvrant: les objectifs métaboliques/hormonaux, les actions concrètes quotidiennes avec timing et mécanismes, les indicateurs de progrès à surveiller, et les erreurs à éviter.
+- Relie systématiquement chaque phase au résultat physique (sèche, performance, récupération).
+- Aucun autre texte ou section en dehors du plan 90 jours.
+
+CONTEXTE:
+Client: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}ans)
+Lifestyle: ${lifestyleLine}
+
+MARQUEURS:
+${markersTable}
+
+PATTERNS DETECTES:
+${patternsText}
+
+RESUME:
+Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}
+À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
+Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
+
+${knowledgeContext ? `SOURCES GENERALES (chunks):\n${knowledgeContext}` : ""}\n`;
 
     try {
+      const planStartTime = Date.now();
       const planResponse = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
@@ -2871,6 +2952,8 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
         }),
         fastMode ? 30000 : 120000
       );
+      const planDuration = Math.round((Date.now() - planStartTime) / 1000);
+      console.log(`[BloodAnalysis] ✅ Plan 90j généré en ${planDuration}s`);
       const planText = extractPlan90Section(
         planResponse.content.find(c => c.type === "text")?.text || ""
       );
@@ -2888,11 +2971,46 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
 
   const missingAfter = getMissingHeadings(output, REQUIRED_HEADINGS_NO_SOURCES);
   if (missingAfter.length) {
-    const missingPrompt = `Tu dois produire UNIQUEMENT les sections manquantes suivantes (titres EXACTS, dans cet ordre):\n${missingAfter.join(
-      "\n"
-    )}\n\nCONTRAINTES:\n- Aucun autre texte ou section\n- Pas d'emojis\n- Style premium, tutoiement, actionable\n${citationsRule}\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nSOURCES PAR BIOMARQUEUR (chunks):\n${deepDivePayload.context || "- Aucune source fournie."}\n\nSOURCES GENERALES (chunks):\n${knowledgeContext || "- Aucune source generale fournie."}\n`;
+    console.log(`[BloodAnalysis] 🔧 Fallback: Génération sections manquantes (${missingAfter.length}): ${missingAfter.join(', ')}`);
+    const missingPrompt = `Tu dois produire UNIQUEMENT les sections manquantes suivantes (titres EXACTS, dans cet ordre):
+${missingAfter.join("\n")}
+
+STYLE (OBLIGATOIRE - EXPERT MEDICAL):
+INTERDIT ABSOLU:
+- Bullet points, listes à puces, tirets, énumérations
+- Résumés style IA générique
+- Format "action points" isolés
+
+EXIGENCES DE REDACTION:
+- PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
+- Style médecin fonctionnel: rigoureux, actionable, professionnel mais accessible.
+- Chaque recommandation doit expliquer le POURQUOI (mécanisme) et le COMMENT (mise en pratique).
+- ${citationsRule}
+
+CONTRAINTES:
+- Aucun autre texte ou section en dehors des sections demandées
+- Pas d'emojis
+- Ton confiant mais humble
+
+CONTEXTE:
+Client: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}ans)
+Lifestyle: ${lifestyleLine}
+
+MARQUEURS:
+${markersTable}
+
+PATTERNS DETECTES:
+${patternsText}
+
+SOURCES PAR BIOMARQUEUR (chunks):
+${deepDivePayload.context || "- Aucune source fournie."}
+
+SOURCES GENERALES (chunks):
+${knowledgeContext || "- Aucune source generale fournie."}
+`;
 
     try {
+      const missingStartTime = Date.now();
       const missingResponse = await withTimeout(
         anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
@@ -2903,6 +3021,8 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
         }),
         fastMode ? 60000 : 180000
       );
+      const missingDuration = Math.round((Date.now() - missingStartTime) / 1000);
+      console.log(`[BloodAnalysis] ✅ Sections manquantes générées en ${missingDuration}s`);
       const missingText = missingResponse.content.find(c => c.type === "text")?.text || "";
       if (missingText.trim()) {
         output = insertMissingSections(output, missingText);
@@ -2917,7 +3037,14 @@ GENERE le rapport final en respectant STRICTEMENT les titres du format.`;
   }
 
   const withSources = ensureSourcesSection(output);
-  return trimAiAnalysis(withSources);
+  const finalReport = trimAiAnalysis(withSources);
+
+  console.log(`[BloodAnalysis] 🎉 RAPPORT FINAL GÉNÉRÉ`);
+  console.log(`[BloodAnalysis] 📏 Longueur totale: ${finalReport.length} chars`);
+  console.log(`[BloodAnalysis] 📚 Nombre de citations: ${extractSourceIds(finalReport).length}`);
+  console.log(`[BloodAnalysis] ✅ Sections manquantes: ${getMissingHeadings(finalReport, REQUIRED_HEADINGS_NO_SOURCES).join(', ') || 'aucune'}\n`);
+
+  return finalReport;
 }
 
 // ============================================
