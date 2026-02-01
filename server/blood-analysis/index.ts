@@ -1692,6 +1692,7 @@ INTERDIT ABSOLU:
 
 EXIGENCES DE REDACTION:
 - PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
+- TUTOIEMENT OBLIGATOIRE. Tu t'adresses directement au client (ton, ta, tes, tu).
 - Style médecin fonctionnel: rigoureux, sourced, professionnel mais accessible.
 - Chaque affirmation médicale doit expliquer le MÉCANISME BIOLOGIQUE sous-jacent.
 - Profondeur scientifique: ne pas juste dire "X est élevé", mais expliquer pourquoi au niveau cellulaire/tissulaire.
@@ -1706,10 +1707,10 @@ EXEMPLE DE STYLE REQUIS:
  - Risque de prise de poids
  - Recommandation: jeûne intermittent"
 
-✅ BON (paragraphes experts):
-"Votre insuline à jeun de 12 µIU/mL est légèrement élevée. Cela indique que votre pancréas produit plus d'insuline que nécessaire pour réguler votre glycémie - un phénomène appelé hyperinsulinémie compensatoire. Au niveau cellulaire, cela signifie que vos récepteurs à l'insuline sur les cellules musculaires et adipeuses répondent moins bien au signal (résistance insulinique débutante). Sur le plan pratique, cela complique la perte de gras en favorisant le stockage adipeux via l'activation de la lipogenèse.
+✅ BON (paragraphes experts avec tutoiement):
+"Ton insuline à jeun de 12 µIU/mL est légèrement élevée. Cela indique que ton pancréas produit plus d'insuline que nécessaire pour réguler ta glycémie - un phénomène appelé hyperinsulinémie compensatoire. Au niveau cellulaire, cela signifie que tes récepteurs à l'insuline sur les cellules musculaires et adipeuses répondent moins bien au signal (résistance insulinique débutante). Sur le plan pratique, cela complique la perte de gras en favorisant le stockage adipeux via l'activation de la lipogenèse.
 
-Plusieurs études montrent que la restriction de fenêtre alimentaire peut améliorer la sensibilité insulinique indépendamment du poids perdu [SRC:ID si disponible]. Cependant, le levier principal reste l'entraînement en résistance: chaque séance de musculation force vos muscles à utiliser le glucose via le transporteur GLUT4, améliorant directement la sensibilité insulinique sans médiation hormonale."
+Plusieurs études montrent que la restriction de fenêtre alimentaire peut améliorer la sensibilité insulinique indépendamment du poids perdu [SRC:ID si disponible]. Cependant, le levier principal reste l'entraînement en résistance: chaque séance de musculation force tes muscles à utiliser le glucose via le transporteur GLUT4, améliorant directement la sensibilité insulinique sans médiation hormonale."
 
 CONTRAINTE DÉONTOLOGIE / SÉCURITÉ
 - Tu ne prescris pas de médicaments.
@@ -2895,6 +2896,7 @@ INTERDIT ABSOLU:
 
 EXIGENCES DE REDACTION:
 - PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
+- TUTOIEMENT OBLIGATOIRE. Tu t'adresses directement au client (ton, ta, tes, tu).
 - Style médecin fonctionnel: rigoureux, actionable, professionnel mais accessible.
 - Chaque recommandation doit expliquer le POURQUOI (mécanisme) et le COMMENT (mise en pratique).
 - Ton confiant mais humble: "D'après les données...", "Il est recommandé de...", "Cela permettra de..."
@@ -2908,8 +2910,8 @@ Actions:
 - Jeûne intermittent
 - Marche 10000 pas"
 
-✅ BON (paragraphes experts):
-"Les 14 premiers jours constituent la phase de stabilisation métabolique. L'objectif principal est de stabiliser votre glycémie à jeun en la réduisant progressivement de 162 mg/dL vers 130 mg/dL, tout en améliorant votre HOMA-IR de 3.2 vers 2.5. Cela s'obtient en établissant une fenêtre alimentaire de 10 heures (exemple: 10h-20h) qui permet des périodes de jeûne suffisamment longues pour améliorer la sensibilité insulinique sans créer de stress métabolique excessif. En parallèle, vous allez marcher 10000 pas quotidiens répartis sur la journée, car cette activité de basse intensité active le transporteur GLUT4 musculaire de manière indépendante de l'insuline, améliorant la clairance du glucose."
+✅ BON (paragraphes experts avec tutoiement):
+"Les 14 premiers jours constituent la phase de stabilisation métabolique. L'objectif principal est de stabiliser ta glycémie à jeun en la réduisant progressivement de 162 mg/dL vers 130 mg/dL, tout en améliorant ton HOMA-IR de 3.2 vers 2.5. Cela s'obtient en établissant une fenêtre alimentaire de 10 heures (exemple: 10h-20h) qui permet des périodes de jeûne suffisamment longues pour améliorer la sensibilité insulinique sans créer de stress métabolique excessif. En parallèle, tu vas marcher 10000 pas quotidiens répartis sur la journée, car cette activité de basse intensité active le transporteur GLUT4 musculaire de manière indépendante de l'insuline, améliorant la clairance du glucose."
 
 CONTRAINTES STRUCTURELLES:
 - Titres EXACTS et dans l'ordre:
@@ -2983,6 +2985,7 @@ INTERDIT ABSOLU:
 
 EXIGENCES DE REDACTION:
 - PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
+- TUTOIEMENT OBLIGATOIRE. Tu t'adresses directement au client (ton, ta, tes, tu).
 - Style médecin fonctionnel: rigoureux, actionable, professionnel mais accessible.
 - Chaque recommandation doit expliquer le POURQUOI (mécanisme) et le COMMENT (mise en pratique).
 - ${citationsRule}
