@@ -935,6 +935,10 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     const end = start + match[0].length;
     const beforeChar = snippet[start - 1] || "";
     const afterChar = snippet[end] || "";
+
+    // CRITICAL FIX: Ignore numbers in parentheses like (1), (2), (3) - lab notations
+    if (beforeChar === "(" && afterChar === ")") continue;
+
     if (/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) continue;
     if (dateMatches.some((range) => start >= range.start && end <= range.end)) continue;
     if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
