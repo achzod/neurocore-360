@@ -7,11 +7,12 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] `npm run check` passes (local)
 - [x] `npm run build` passes (local)
 - [ ] No TypeScript errors in CI
-- [x] Bundle size warnings addressed (blog data externalized; app entry chunk ~98KB)
+- [ ] Bundle size warnings addressed (current largest chunk ~515KB)
 
 ## 2) CI/CD Workflow
 - [x] GitHub Actions CI for typecheck + build (`.github/workflows/ci.yml`)
 - [x] Manual smoke workflow for offers (`.github/workflows/smoke-offers.yml`)
+- [x] Manual UI smoke workflow against Render (`.github/workflows/smoke-ui.yml`)
 - [ ] CI run green on latest main
 
 ## 3) Report Generation (Server)
@@ -34,6 +35,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 ## 6) E2E Coverage (Minimal)
 - [x] Add smoke tests for Discovery/Anabolic/Ultimate offer pages
 - [ ] Run offer smoke tests locally (requires DATABASE_URL for dev server)
+- [ ] Run offer smoke tests against Render (E2E_BASE_URL) after latest deploy
 - [ ] Verify CTA links and report rendering
 
 ## 7) Observability

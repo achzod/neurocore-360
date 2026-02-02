@@ -1,0 +1,28 @@
+name: smoke-ui
+
+on:
+  workflow_dispatch:
+
+jobs:
+  offers-ui:
+    runs-on: ubuntu-latest
+    env:
+      E2E_BASE_URL: ${{ secrets.RENDER_EXTERNAL_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Run offer page smoke tests
+        run: npx playwright test tests/e2e/offers.spec.ts
