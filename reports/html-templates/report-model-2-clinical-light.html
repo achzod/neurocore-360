@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rapport sanguin — Modèle clinique</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0ea5e9;
+      --good: #10b981;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: "Georgia", "Times New Roman", serif; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 36px 20px 60px; }
+    .header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .title { font-size: 26px; font-weight: 700; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+    .grid { display: grid; gap: 18px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .section { margin-top: 28px; }
+    .section h2 { font-size: 18px; margin: 0 0 12px; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+    .pill.bad { background: #fee2e2; color: #991b1b; }
+    .pill.good { background: #d1fae5; color: #065f46; }
+    .list { margin: 0; padding-left: 18px; color: var(--muted); }
+    .kpi { font-size: 34px; font-weight: 700; }
+    .row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 820px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <div class="title">Rapport sanguin premium</div>
+        <div class="subtitle">BloodAI_PRD_v2.pdf • 22 marqueurs</div>
+      </div>
+      <div class="subtitle">Client: achkou • 31/01/2026</div>
+    </div>
+
+    <div class="section">
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>Score global</h2>
+          <div class="kpi">64/100</div>
+          <span class="pill warn">Zone orange</span>
+          <div class="row"><span>Objectif 90 jours</span><span>79/100</span></div>
+        </div>
+        <div class="card">
+          <h2>Résumé rapide</h2>
+          <ul class="list">
+            <li>Résistance à l’insuline détectée</li>
+            <li>Androgènes à optimiser (SHBG / testo libre)</li>
+            <li>Lipides: ApoB + TG à surveiller</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Alertes prioritaires</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="pill bad">Critique</span>
+          <h3>Glycémie à jeun — 162 mg/dL</h3>
+          <p>Risque métabolique élevé. Impact direct sur énergie, sèche et récupération.</p>
+        </div>
+        <div class="card">
+          <span class="pill bad">Critique</span>
+          <h3>HOMA‑IR — 3.2</h3>
+          <p>Insulino‑résistance probable. Priorité #1 du plan 90 jours.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Forces</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>HDL 85</strong><div class="subtitle">Protection cardio</div></div>
+        <div class="card"><strong>GGT 25</strong><div class="subtitle">Stress oxydatif contrôlé</div></div>
+        <div class="card"><strong>Vitamine D 60.8</strong><div class="subtitle">Zone optimale performance</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Plan 90 jours</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Jours 1‑14</h3>
+          <ul class="list">
+            <li>Réduction glucides raffinés</li>
+            <li>Marche post‑prandiale 15‑20 min</li>
+            <li>Sommeil strict 7h30</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Jours 15‑30</h3>
+          <ul class="list">
+            <li>Musculation 3x/semaine</li>
+            <li>Berbérine 500 mg x2/j</li>
+            <li>Cardio zone 2 2x/semaine</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Supplements</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>Berbérine</strong><div class="subtitle">500 mg x2/j</div></div>
+        <div class="card"><strong>Oméga‑3</strong><div class="subtitle">2‑3 g/j</div></div>
+        <div class="card"><strong>Vit D3 + K2</strong><div class="subtitle">4000‑6000 IU/j</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

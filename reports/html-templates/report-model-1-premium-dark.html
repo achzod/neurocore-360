@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ApexLabs — Rapport sanguin premium</title>
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --bg-elev: #12151c;
+      --bg-soft: #191d27;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --accent-2: #8b5cf6;
+      --good: #10b981;
+      --warn: #f59e0b;
+      --bad: #f43f5e;
+      --border: rgba(148, 163, 184, 0.18);
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(34,211,238,0.12), transparent 60%),
+                  radial-gradient(1200px 600px at 90% 10%, rgba(139,92,246,0.10), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.7;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+    .header {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(139,92,246,0.08));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px 26px;
+      box-shadow: var(--shadow);
+    }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: rgba(34,211,238,0.15); color: var(--accent); font-size: 12px; font-weight: 600; }
+    .title { font-size: 22px; font-weight: 700; margin: 8px 0 0; }
+    .subtitle { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; gap: 20px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      background: var(--bg-elev); border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+    .card h3 { margin: 0 0 10px; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .score {
+      display: flex; align-items: center; gap: 18px;
+    }
+    .score-ring {
+      width: 120px; height: 120px; border-radius: 50%;
+      border: 8px solid rgba(34,211,238,0.25);
+      display: grid; place-items: center;
+      box-shadow: 0 0 30px rgba(34,211,238,0.2);
+    }
+    .score-ring strong { font-size: 32px; }
+    .pill { display: inline-flex; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .pill.good { background: rgba(16,185,129,0.2); color: #34d399; }
+    .pill.warn { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .pill.bad { background: rgba(244,63,94,0.2); color: #fb7185; }
+    .section-title { margin: 32px 0 14px; font-size: 18px; font-weight: 700; }
+    .list { margin: 0; padding-left: 18px; color: var(--muted); }
+    .alert {
+      border-left: 4px solid var(--bad); background: rgba(244,63,94,0.08);
+      padding: 14px 16px; border-radius: 12px; margin-bottom: 10px;
+    }
+    .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); }
+    .tag { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+    .quote { color: #7dd3fc; }
+    .footer { margin-top: 40px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 860px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .score { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <div class="badge">APEXLABS • Rapport premium</div>
+        <div class="title">Bilan sanguin — Test Report (BloodAI_PRD_v2.pdf)</div>
+        <div class="subtitle">Généré le 31 janvier 2026 • 22 marqueurs</div>
+      </div>
+      <div class="subtitle">Client: achkou • Objectif: recomposition</div>
+    </div>
+
+    <div class="section-title">Synthèse exécutive</div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Score global</h3>
+        <div class="score">
+          <div class="score-ring"><strong>64</strong></div>
+          <div>
+            <div class="pill warn">Zone orange</div>
+            <div class="subtitle">Objectif 90 jours: 79/100</div>
+            <div class="row"><span>Score santé</span><span>61/100 (confiance moyenne)</span></div>
+            <div class="row"><span>Score recomposition</span><span>67/100 (confiance moyenne)</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Priorités</h3>
+        <ul class="list">
+          <li>[CRITIQUE] Résistance à l’insuline (glycémie + HOMA-IR)</li>
+          <li>[IMPORTANT] Androgènes utilisables à optimiser (SHBG / testo libre)</li>
+          <li>[IMPORTANT] Axe foie/reins à surveiller</li>
+          <li>[OPTIMISATION] Lipides: ApoB + TG</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-title">Alertes prioritaires</div>
+    <div class="alert">
+      <div class="tag">[CRITIQUE]</div>
+      <strong>Glycémie à jeun 162 mg/dL</strong>
+      <div class="row"><span>Pourquoi</span><span>Risque métabolique élevé</span></div>
+      <div class="row"><span>Impact</span><span>Récup + composition corporelle</span></div>
+      <div class="row"><span>Expert</span><span class="quote">Derek (MPMD)</span></div>
+    </div>
+    <div class="alert">
+      <div class="tag">[CRITIQUE]</div>
+      <strong>HOMA-IR 3.2</strong>
+      <div class="row"><span>Pourquoi</span><span>Insulino‑résistance probable</span></div>
+      <div class="row"><span>Impact</span><span>Sèche + énergie</span></div>
+      <div class="row"><span>Expert</span><span class="quote">Huberman</span></div>
+    </div>
+
+    <div class="section-title">Forces</div>
+    <div class="grid grid-3">
+      <div class="card"><h3>HDL</h3><strong>85 mg/dL</strong><div class="subtitle">Protection cardio</div></div>
+      <div class="card"><h3>GGT</h3><strong>25 U/L</strong><div class="subtitle">Stress oxydatif maîtrisé</div></div>
+      <div class="card"><h3>Vitamine D</h3><strong>60.8 ng/mL</strong><div class="subtitle">Zone optimale performance</div></div>
+    </div>
+
+    <div class="section-title">Plan 90 jours (hyper concret)</div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Jours 1‑14 — Stabilisation</h3>
+        <ul class="list">
+          <li>Réduire glucides raffinés</li>
+          <li>Marche post‑prandiale 15‑20 min</li>
+          <li>Sommeil 7h30 min strict</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Jours 15‑30 — Attaque</h3>
+        <ul class="list">
+          <li>Musculation 3x/semaine</li>
+          <li>Berbérine 500 mg x2/j</li>
+          <li>Deload si fatigue nerveuse</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-title">Supplements & stack</div>
+    <div class="grid grid-3">
+      <div class="card">
+        <h3>Berbérine</h3>
+        <div class="subtitle">Pourquoi: glycémie + HOMA‑IR</div>
+        <div class="subtitle">Dose: 500 mg x2 / jour</div>
+        <div class="subtitle">Expert: <span class="quote">Attia</span></div>
+      </div>
+      <div class="card">
+        <h3>Oméga‑3</h3>
+        <div class="subtitle">Pourquoi: lipides, inflammation</div>
+        <div class="subtitle">Dose: 2‑3 g / jour</div>
+        <div class="subtitle">Expert: <span class="quote">Huberman</span></div>
+      </div>
+      <div class="card">
+        <h3>Vitamine D3 + K2</h3>
+        <div class="subtitle">Pourquoi: hormones + immunité</div>
+        <div class="subtitle">Dose: 4000‑6000 IU / jour</div>
+        <div class="subtitle">Expert: <span class="quote">Masterjohn</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Sources</div>
+    <div class="card">
+      <ul class="list">
+        <li>[SRC:huberman_metabolism_01]</li>
+        <li>[SRC:attia_glucose_07]</li>
+        <li>[SRC:mpmd_bloodwork_03]</li>
+      </ul>
+    </div>
+
+    <div class="footer">Ce rapport est informatif. Toute décision médicale doit être validée par un professionnel de santé.</div>
+  </div>
+</body>
+</html>

@@ -85,9 +85,9 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
   },
   cortisol: {
     name: "Cortisol matin",
-    unit: "µg/dL",
-    normalMin: 5, normalMax: 25,
-    optimalMin: 12, optimalMax: 18,
+    unit: "nmol/L",  // Changed from µg/dL to match French labs (1 µg/dL = 27.59 nmol/L)
+    normalMin: 102, normalMax: 535,  // 102-535 nmol/L (French standard)
+    optimalMin: 250, optimalMax: 450,  // ~9-16 µg/dL optimal zone
     context: "Trop haut ou bas = problème"
   },
   igf1: {
@@ -150,6 +150,13 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     optimalMin: 0, optimalMax: 5.3,
     context: "Moyenne 3 mois"
   },
+  fructosamine: {
+    name: "Fructosamine",
+    unit: "µmol/L",
+    normalMin: 205, normalMax: 285,  // Sujet sain
+    optimalMin: 205, optimalMax: 250,
+    context: "Glycémie moyenne 2-3 semaines"
+  },
   insuline_jeun: {
     name: "Insuline à jeun",
     unit: "µIU/mL",
@@ -191,6 +198,13 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     normalMin: 0, normalMax: 100,
     optimalMin: 0, optimalMax: 80,
     context: "Meilleur que LDL"
+  },
+  apoa1: {
+    name: "ApoA1",
+    unit: "mg/dL",
+    normalMin: 125, normalMax: 999,  // >125 mg/dL
+    optimalMin: 150, optimalMax: 999,
+    context: "HDL carrier, protection CV"
   },
   lpa: {
     name: "Lp(a)",
@@ -785,12 +799,14 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   anti_tpo: [/anti[-\s]?tpo/i, /anti[-\s]?thyro/i],
   glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i, /glyc[ée]mie\s*à\s*jeun/i],
   hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i],
+  fructosamine: [/fructosamine/i],
   insuline_jeun: [/insuline.*je[uû]n/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
   triglycerides: [/triglyc[ée]rides/i],
   hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
   ldl: [/cholest[ée]rol\s*l\.?d\.?l/i, /\bl\.?d\.?l\b/i, /\bldl[-\s]?c\b/i],
   apob: [/apo\s*b/i],
+  apoa1: [/apo.*a\s*1/i, /apo.*a1/i, /apolipoproteine.*a\s*1/i],
   lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
   crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
   homocysteine: [/homocyst[ée]ine/i],
@@ -1180,6 +1196,9 @@ const hasMarkerValueInText = (text: string, markerId: string): boolean => {
 
 const addComputedMarkers = (markers: BloodMarkerInput[]): BloodMarkerInput[] => {
   const map = new Map(markers.map((marker) => [marker.markerId, marker]));
+
+  // CRITICAL: Only calculate HOMA-IR if NOT present in PDF
+  // Always prefer PDF value over calculated value
   if (!map.has("homa_ir")) {
     const gly = map.get("glycemie_jeun");
     const insulin = map.get("insuline_jeun");
@@ -1188,6 +1207,7 @@ const addComputedMarkers = (markers: BloodMarkerInput[]): BloodMarkerInput[] => 
       map.set("homa_ir", { markerId: "homa_ir", value: homa });
     }
   }
+
   return Array.from(map.values());
 };
 
@@ -1233,12 +1253,28 @@ Regles:
 - Utilise seulement les markerId de la liste autorisee.
 - Convertis dans l'unite attendue (celle de la liste autorisee).
 
+ATTENTION CRITIQUE - Notations laboratoire:
+- IGNORE les notations (1), (2), (3), etc. qui indiquent le labo executant
+- Exemple: "Insuline à jeun (1) 49,1 mUI/L" → value = 49.1, PAS 1
+- La VRAIE valeur est le nombre AVANT l'unite (mUI/L, ng/mL, etc.)
+- Si plusieurs nombres: prends celui qui precede directement l'unite
+
+ATTENTION CRITIQUE - HOMA-IR et Indice de HOMA:
+- "Indice de HOMA" dans le PDF = markerId "homa_ir"
+- TOUJOURS extraire la valeur si presente dans le PDF
+- Ne JAMAIS la calculer toi-meme
+
+ATTENTION - Cortisol:
+- "Cortisol du matin" = markerId "cortisol"
+- Unite: nmol/L (pas de conversion necessaire)
+
 Conversions utiles:
 - Cholesterol / HDL / LDL / ApoB / Lp(a): mmol/L -> mg/dL (x38.67), g/L -> mg/dL (x100)
 - Triglycerides: mmol/L -> mg/dL (x88.57), g/L -> mg/dL (x100)
-- Glycemie: mmol/L -> mg/dL (x18)
-- Vitamine D: nmol/L -> ng/mL (÷2.5)
+- Glycemie: mmol/L -> mg/dL (x18), g/L -> mg/dL (x100)
+- Vitamine D: nmol/L -> ng/mL (÷2.5) - ATTENTION: prends la valeur en ng/mL si les deux sont presentes
 - Creatinine: µmol/L -> mg/dL (÷88.4)
+- Insuline: si en pmol/L -> µIU/mL (÷6.945)
 
 TEXTE PDF:
 ${cleaned.slice(0, 12000)}`;
@@ -1270,7 +1306,69 @@ ${cleaned.slice(0, 12000)}`;
     }
   }
 
-  return addComputedMarkers(Array.from(unique.values()));
+  const allMarkers = addComputedMarkers(Array.from(unique.values()));
+
+  // CRITICAL: Coherence validation to detect extraction errors
+  validateMarkersCoherence(allMarkers, fileName);
+
+  return allMarkers;
+}
+
+/**
+ * Validates coherence between extracted markers to detect extraction errors
+ * Logs warnings but does not fail - allows medical review
+ */
+function validateMarkersCoherence(markers: BloodMarkerInput[], fileName: string): void {
+  const map = new Map(markers.map(m => [m.markerId, m.value]));
+
+  // Rule 1: Insulin vs HOMA-IR coherence
+  const insulin = map.get("insuline_jeun");
+  const homa = map.get("homa_ir");
+  if (insulin !== undefined && homa !== undefined) {
+    // If insulin is very low (<5) but HOMA-IR is high (>5), something is wrong
+    if (insulin < 5 && homa > 5) {
+      console.warn(`[COHERENCE ERROR] ${fileName}: Insulin ${insulin} µIU/mL is low but HOMA-IR ${homa} is high - extraction error likely`);
+    }
+    // If insulin is very high (>30) but HOMA-IR is optimal (<1.5), something is wrong
+    if (insulin > 30 && homa < 1.5) {
+      console.warn(`[COHERENCE ERROR] ${fileName}: Insulin ${insulin} µIU/mL is high but HOMA-IR ${homa} is optimal - extraction error likely`);
+    }
+  }
+
+  // Rule 2: Testosterone libre vs totale
+  const testoLibre = map.get("testosterone_libre");
+  const testoTotal = map.get("testosterone_total");
+  if (testoLibre !== undefined && testoTotal !== undefined) {
+    // Free testosterone cannot be higher than total (free is ~2-3% of total in pg/mL vs ng/dL)
+    // Convert: testoTotal in ng/dL, testoLibre in pg/mL → testoTotal * 10 should be >> testoLibre
+    if (testoLibre > testoTotal * 10) {
+      console.warn(`[COHERENCE ERROR] ${fileName}: Free testosterone ${testoLibre} pg/mL > total ${testoTotal} ng/dL - units may be swapped`);
+    }
+  }
+
+  // Rule 3: Cortisol = 0 is likely extraction error
+  const cortisol = map.get("cortisol");
+  if (cortisol !== undefined && cortisol === 0) {
+    console.warn(`[COHERENCE ERROR] ${fileName}: Cortisol = 0 - likely extraction error`);
+  }
+
+  // Rule 4: Triglycerides vs HDL ratio (TG/HDL > 50 is impossible, likely units error)
+  const tg = map.get("triglycerides");
+  const hdl = map.get("hdl");
+  if (tg !== undefined && hdl !== undefined && hdl > 0) {
+    const ratio = tg / hdl;
+    if (ratio > 50) {
+      console.warn(`[COHERENCE ERROR] ${fileName}: TG/HDL ratio ${ratio.toFixed(1)} > 50 - likely units error (TG: ${tg}, HDL: ${hdl})`);
+    }
+  }
+
+  // Rule 5: Glycémie vs HOMA-IR (if glycémie is low <70 but HOMA high >3, error)
+  const glycemie = map.get("glycemie_jeun");
+  if (glycemie !== undefined && homa !== undefined) {
+    if (glycemie < 70 && homa > 3) {
+      console.warn(`[COHERENCE ERROR] ${fileName}: Glycémie ${glycemie} mg/dL is low but HOMA-IR ${homa} is high - extraction error likely`);
+    }
+  }
 }
 
 function getMarkerStatus(value: number, range: BiomarkerRange): "optimal" | "normal" | "suboptimal" | "critical" {
@@ -1684,22 +1782,32 @@ Tu dois séparer :
 Tu dis clairement quand une valeur est “OK cliniquement mais sub-optimale perf”.
 
 STYLE (OBLIGATOIRE - EXPERT MEDICAL)
-INTERDIT ABSOLU:
-- Bullet points, listes à puces, tirets, énumérations
-- Résumés style IA générique
-- Phrases courtes sans contexte
-- Format "action points" isolés
 
-EXIGENCES DE REDACTION:
+RÈGLES PAR TYPE DE SECTION:
+
+SECTIONS NARRATIVES (Synthèse executive, Deep dive, Interconnexions, etc.):
 - PARAGRAPHES COMPLETS UNIQUEMENT. Chaque idée développée en phrases complètes avec sujet-verbe-complément.
-- TUTOIEMENT OBLIGATOIRE. Tu t'adresses directement au client (ton, ta, tes, tu).
-- Style médecin fonctionnel: rigoureux, sourced, professionnel mais accessible.
+- PAS de bullet points dans ces sections narratives
 - Chaque affirmation médicale doit expliquer le MÉCANISME BIOLOGIQUE sous-jacent.
 - Profondeur scientifique: ne pas juste dire "X est élevé", mais expliquer pourquoi au niveau cellulaire/tissulaire.
+
+SECTIONS ACTIONABLES (Dashboard, Quick Start, Plan 90j, Tableau de bord):
+- BULLET POINTS AUTORISÉS pour clarté et lisibilité
+- Format concis acceptable (ex: "- Semaine 1-2: Vitamine D 10,000 IU/jour")
+- Tableaux ASCII autorisés pour scores visuels
+
+EXIGENCES GÉNÉRALES:
+- TUTOIEMENT OBLIGATOIRE. Tu t'adresses directement au client (ton, ta, tes, tu).
+- Style médecin fonctionnel: rigoureux, sourced, professionnel mais accessible.
 - Citations scientifiques: quand disponible dans la RAG, citer [SRC:ID]. Mentionner consensus médical quand pertinent.
 - Ton confiant mais humble: "D'après les données et la littérature...", "Les études suggèrent...", "Le consensus médical indique..."
 - Pas de diagnostic définitif. Hypothèses + probabilités + tests de confirmation.
 - Toujours expliquer: "Ce qui est probable / ce qui reste à confirmer / ce qui change le plan d'action".
+
+INTERDITS (toutes sections):
+- Résumés style IA générique
+- Phrases courtes sans contexte dans sections narratives
+- Emojis excessifs
 
 EXEMPLE DE STYLE REQUIS:
 ❌ MAUVAIS (bullet points):
@@ -1767,7 +1875,14 @@ Dans un deuxième paragraphe, tu identifies les 3 à 6 priorités en expliquant 
 
 Dans un troisième paragraphe, tu présentes les opportunités de performance en expliquant le mécanisme: pourquoi l'optimisation de X permettra d'améliorer Y au niveau physiologique.
 
+SCORING - RÈGLE CRITIQUE:
 Tu intègres naturellement les scores dans le texte: "Votre score santé global se situe à 72/100 (confiance élevée), principalement limité par... Le score recomposition corporelle est de 65/100 (confiance moyenne), avec un potentiel d'amélioration significatif si..."
+
+ATTENTION: NE JAMAIS pénaliser le score à cause de marqueurs absents du panel.
+- Évalue UNIQUEMENT sur les marqueurs PRÉSENTS
+- Si un marqueur est absent, mentionne-le dans "Marqueurs manquants" mais n'affecte PAS le score
+- Exemple: Si le bilan n'a pas de thyroïde, ne baisse pas le score "santé globale" - indique juste "confiance modérée car thyroïde non mesurée"
+- Un bilan avec 10 marqueurs parfaits = score élevé, même si 20 autres marqueurs sont absents
 
 Tu conclus par la stratégie: "La logique d'intervention consiste à prioriser X car c'est le facteur limitant principal, avant d'optimiser Y et Z."
 

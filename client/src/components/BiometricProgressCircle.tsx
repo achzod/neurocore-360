@@ -40,13 +40,13 @@ export const BiometricProgressCircle = memo(function BiometricProgressCircle({
             <path
               d="M 10 0 L 0 0 0 10"
               fill="none"
-              stroke="rgba(15, 23, 42, 0.08)"
+              stroke="rgba(255, 255, 255, 0.05)"
               strokeWidth="0.5"
             />
           </pattern>
           <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#06b6d4" />
-            <stop offset="100%" stopColor="#3b82f6" />
+            <stop offset="0%" stopColor="var(--blood-optimal)" />
+            <stop offset="100%" stopColor="var(--blood-normal)" />
           </linearGradient>
         </defs>
 
@@ -55,7 +55,7 @@ export const BiometricProgressCircle = memo(function BiometricProgressCircle({
           cy={size / 2}
           r={radius}
           fill="url(#grid)"
-          stroke="rgba(15, 23, 42, 0.12)"
+          stroke="rgba(255, 255, 255, 0.06)"
           strokeWidth={strokeWidth}
         />
 
@@ -78,10 +78,10 @@ export const BiometricProgressCircle = memo(function BiometricProgressCircle({
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.div className="font-data text-5xl font-bold text-cyan-700">
+        <motion.div className="font-data text-5xl font-bold text-cyan-300">
           {rounded}
         </motion.div>
-        <div className="font-body text-xs uppercase tracking-widest text-slate-600">
+        <div className="font-body text-xs uppercase tracking-widest text-slate-400">
           SCORE GLOBAL
         </div>
       </div>

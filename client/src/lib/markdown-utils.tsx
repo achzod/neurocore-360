@@ -80,7 +80,7 @@ export const highlightText = (text: string) => {
   const result = parts.map((part, idx) => {
     if (part.match(EXPERT_REGEX)) {
       return (
-        <span key={`hl-${idx}`} className="font-semibold text-cyan-700">
+        <span key={`hl-${idx}`} className="font-semibold text-cyan-300">
           {part}
         </span>
       );

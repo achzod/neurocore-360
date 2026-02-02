@@ -36,10 +36,15 @@ type BloodTestSummary = {
     poids?: number;
     taille?: number;
     sleepHours?: number;
-    trainingHours?: number;
-    calorieDeficit?: number;
-    alcoholWeekly?: number;
     stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string[] | string;
+    medications?: string;
+    infectionRecent?: string;
   } | null;
 };
 
@@ -93,10 +98,38 @@ function BloodClientDashboardInner() {
   const [poids, setPoids] = useState("");
   const [taille, setTaille] = useState("");
   const [sleepHours, setSleepHours] = useState("");
-  const [trainingHours, setTrainingHours] = useState("");
-  const [calorieDeficit, setCalorieDeficit] = useState("");
-  const [alcoholWeekly, setAlcoholWeekly] = useState("");
   const [stressLevel, setStressLevel] = useState("");
+  const [fastingHours, setFastingHours] = useState("");
+  const [drawTime, setDrawTime] = useState("");
+  const [lastTraining, setLastTraining] = useState("");
+  const [alcoholLast72h, setAlcoholLast72h] = useState("");
+  const [nutritionPhase, setNutritionPhase] = useState("");
+  const [supplementsUsed, setSupplementsUsed] = useState<string[]>([]);
+  const [medications, setMedications] = useState("");
+  const [infectionRecent, setInfectionRecent] = useState("");
+
+  const supplementOptions = [
+    { id: "creatine", label: "Creatine" },
+    { id: "biotine", label: "Biotine" },
+    { id: "vitamine_d", label: "Vitamine D" },
+    { id: "omega_3", label: "Omega-3" },
+    { id: "nac", label: "NAC" },
+    { id: "magnesium", label: "Magnesium" },
+    { id: "zinc", label: "Zinc" },
+  ];
+
+  const toggleSupplement = (id: string) => {
+    setSupplementsUsed((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const selectStyle = useMemo(
+    () => ({
+      backgroundColor: theme.surface,
+      borderColor: theme.borderDefault,
+      color: theme.textSecondary,
+    }),
+    [theme]
+  );
 
   const bmi = useMemo(() => {
     const weight = Number(poids);
@@ -187,11 +220,43 @@ function BloodClientDashboardInner() {
     }
     if (latestPatient?.email && !email) setEmail(latestPatient.email);
     if (latestPatient?.sleepHours && !sleepHours) setSleepHours(String(latestPatient.sleepHours));
-    if (latestPatient?.trainingHours && !trainingHours) setTrainingHours(String(latestPatient.trainingHours));
-    if (latestPatient?.calorieDeficit && !calorieDeficit) setCalorieDeficit(String(latestPatient.calorieDeficit));
-    if (latestPatient?.alcoholWeekly && !alcoholWeekly) setAlcoholWeekly(String(latestPatient.alcoholWeekly));
     if (latestPatient?.stressLevel && !stressLevel) setStressLevel(String(latestPatient.stressLevel));
-  }, [latestPatient, prenom, nom, dob, email, sleepHours, trainingHours, calorieDeficit, alcoholWeekly, stressLevel]);
+    if (latestPatient?.fastingHours && !fastingHours) setFastingHours(String(latestPatient.fastingHours));
+    if (latestPatient?.drawTime && !drawTime) setDrawTime(latestPatient.drawTime);
+    if (latestPatient?.lastTraining && !lastTraining) setLastTraining(latestPatient.lastTraining);
+    if (latestPatient?.alcoholLast72h && !alcoholLast72h) setAlcoholLast72h(latestPatient.alcoholLast72h);
+    if (latestPatient?.nutritionPhase && !nutritionPhase) setNutritionPhase(latestPatient.nutritionPhase);
+    if (latestPatient?.medications && !medications) setMedications(latestPatient.medications);
+    if (latestPatient?.infectionRecent && !infectionRecent) setInfectionRecent(latestPatient.infectionRecent);
+    if (!supplementsUsed.length && latestPatient?.supplementsUsed) {
+      if (Array.isArray(latestPatient.supplementsUsed)) {
+        setSupplementsUsed(latestPatient.supplementsUsed);
+      } else if (typeof latestPatient.supplementsUsed === "string") {
+        setSupplementsUsed(
+          latestPatient.supplementsUsed
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        );
+      }
+    }
+  }, [
+    latestPatient,
+    prenom,
+    nom,
+    dob,
+    email,
+    sleepHours,
+    stressLevel,
+    fastingHours,
+    drawTime,
+    lastTraining,
+    alcoholLast72h,
+    nutritionPhase,
+    medications,
+    infectionRecent,
+    supplementsUsed.length,
+  ]);
 
   const stats = useMemo(() => {
     const total = orderedTests.length;
@@ -250,10 +315,15 @@ function BloodClientDashboardInner() {
       form.append("poids", poids);
       form.append("taille", taille);
       if (sleepHours) form.append("sleepHours", sleepHours);
-      if (trainingHours) form.append("trainingHours", trainingHours);
-      if (calorieDeficit) form.append("calorieDeficit", calorieDeficit);
-      if (alcoholWeekly) form.append("alcoholWeekly", alcoholWeekly);
       if (stressLevel) form.append("stressLevel", stressLevel);
+      if (fastingHours) form.append("fastingHours", fastingHours);
+      if (drawTime) form.append("drawTime", drawTime);
+      if (lastTraining) form.append("lastTraining", lastTraining);
+      if (alcoholLast72h) form.append("alcoholLast72h", alcoholLast72h);
+      if (nutritionPhase) form.append("nutritionPhase", nutritionPhase);
+      if (supplementsUsed.length) form.append("supplementsUsed", JSON.stringify(supplementsUsed));
+      if (medications.trim()) form.append("medications", medications.trim());
+      if (infectionRecent) form.append("infectionRecent", infectionRecent);
       const res = await fetch("/api/blood-tests/upload", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -393,7 +463,7 @@ function BloodClientDashboardInner() {
                 </div>
               )}
               <div className="space-y-2">
-                <label className="text-xs font-medium blood-text-secondary">Sommeil (h/nuit)</label>
+                <label className="text-xs font-medium blood-text-secondary">Sommeil moyen 7 jours (h/nuit)</label>
                 <Input
                   type="number"
                   min="3"
@@ -405,42 +475,6 @@ function BloodClientDashboardInner() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium blood-text-secondary">Training (h/sem)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="30"
-                  step="1"
-                  value={trainingHours}
-                  onChange={(e) => setTrainingHours(e.target.value)}
-                  placeholder="Ex: 6"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-medium blood-text-secondary">Deficit calorique (%)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="50"
-                  step="1"
-                  value={calorieDeficit}
-                  onChange={(e) => setCalorieDeficit(e.target.value)}
-                  placeholder="Ex: 15"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-medium blood-text-secondary">Alcool (verres/sem)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="30"
-                  step="1"
-                  value={alcoholWeekly}
-                  onChange={(e) => setAlcoholWeekly(e.target.value)}
-                  placeholder="Ex: 3"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
                 <label className="text-xs font-medium blood-text-secondary">Stress percu (0-10)</label>
                 <Input
                   type="number"
@@ -450,6 +484,115 @@ function BloodClientDashboardInner() {
                   value={stressLevel}
                   onChange={(e) => setStressLevel(e.target.value)}
                   placeholder="Ex: 6"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium blood-text-secondary">Jeune avant prelevement (heures)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="1"
+                  value={fastingHours}
+                  onChange={(e) => setFastingHours(e.target.value)}
+                  placeholder="Ex: 12"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium blood-text-secondary">Heure du prelevement</label>
+                <select
+                  value={drawTime}
+                  onChange={(e) => setDrawTime(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={selectStyle}
+                >
+                  <option value="">Selectionner</option>
+                  <option value="matin">Matin (avant 10h)</option>
+                  <option value="milieu_journee">Milieu de journee</option>
+                  <option value="apres_midi">Apres-midi</option>
+                  <option value="soir">Soir</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium blood-text-secondary">Dernier training intense</label>
+                <select
+                  value={lastTraining}
+                  onChange={(e) => setLastTraining(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={selectStyle}
+                >
+                  <option value="">Selectionner</option>
+                  <option value="<24h">&lt; 24h</option>
+                  <option value="24-48h">24-48h</option>
+                  <option value="48-72h">48-72h</option>
+                  <option value=">72h">&gt; 72h</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium blood-text-secondary">Alcool (72h avant)</label>
+                <select
+                  value={alcoholLast72h}
+                  onChange={(e) => setAlcoholLast72h(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={selectStyle}
+                >
+                  <option value="">Selectionner</option>
+                  <option value="0">0 verre</option>
+                  <option value="1-2">1-2 verres</option>
+                  <option value="3-5">3-5 verres</option>
+                  <option value="6+">6+ verres</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium blood-text-secondary">Phase nutrition</label>
+                <select
+                  value={nutritionPhase}
+                  onChange={(e) => setNutritionPhase(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={selectStyle}
+                >
+                  <option value="">Selectionner</option>
+                  <option value="seche">Seche (deficit)</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="bulk">Prise de masse</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium blood-text-secondary">Infection / inflammation recente</label>
+                <select
+                  value={infectionRecent}
+                  onChange={(e) => setInfectionRecent(e.target.value)}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  style={selectStyle}
+                >
+                  <option value="">Selectionner</option>
+                  <option value="non">Non</option>
+                  <option value="oui">Oui</option>
+                </select>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-medium blood-text-secondary">Supplements pris recemment</label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {supplementOptions.map((supp) => (
+                    <label key={supp.id} className="flex items-center gap-2 text-sm blood-text-secondary">
+                      <input
+                        type="checkbox"
+                        checked={supplementsUsed.includes(supp.id)}
+                        onChange={() => toggleSupplement(supp.id)}
+                        className="h-4 w-4 rounded border"
+                        style={{ borderColor: theme.borderDefault }}
+                      />
+                      {supp.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-medium blood-text-secondary">Medicaments / hormones</label>
+                <Input
+                  value={medications}
+                  onChange={(e) => setMedications(e.target.value)}
+                  placeholder="Ex: statines, TRT, metformine"
                 />
               </div>
             </div>

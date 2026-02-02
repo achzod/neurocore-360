@@ -247,6 +247,32 @@ const parseNumber = (value: unknown): number | undefined => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
+const parseStringArray = (value: unknown): string[] | undefined => {
+  if (value === null || value === undefined || value === "") return undefined;
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item).trim()).filter(Boolean);
+        }
+      } catch {
+        // fall through to CSV parsing
+      }
+    }
+    return trimmed
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return undefined;
+};
+
 export function registerBloodTestsRoutes(app: Express): void {
   app.post("/api/admin/blood-tests/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
@@ -263,10 +289,15 @@ export function registerBloodTestsRoutes(app: Express): void {
         poids?: number;
         taille?: number;
         sleepHours?: number;
-        trainingHours?: number;
-        calorieDeficit?: number;
-        alcoholWeekly?: number;
         stressLevel?: number;
+        fastingHours?: number;
+        drawTime?: string;
+        lastTraining?: string;
+        alcoholLast72h?: string;
+        nutritionPhase?: string;
+        supplementsUsed?: string[];
+        medications?: string;
+        infectionRecent?: string;
       };
       const seedEmail = (
         String(body.email || "").trim() ||
@@ -318,10 +349,15 @@ export function registerBloodTestsRoutes(app: Express): void {
             poids: parseNumber(body.poids),
             taille: parseNumber(body.taille),
             sleepHours: parseNumber(body.sleepHours),
-            trainingHours: parseNumber(body.trainingHours),
-            calorieDeficit: parseNumber(body.calorieDeficit),
-            alcoholWeekly: parseNumber(body.alcoholWeekly),
             stressLevel: parseNumber(body.stressLevel),
+            fastingHours: parseNumber(body.fastingHours),
+            drawTime: String(body.drawTime || "").trim() || undefined,
+            lastTraining: String(body.lastTraining || "").trim() || undefined,
+            alcoholLast72h: String(body.alcoholLast72h || "").trim() || undefined,
+            nutritionPhase: String(body.nutritionPhase || "").trim() || undefined,
+            supplementsUsed: parseStringArray(body.supplementsUsed),
+            medications: String(body.medications || "").trim() || undefined,
+            infectionRecent: String(body.infectionRecent || "").trim() || undefined,
           };
 
           const age = getAgeFromDob(patientProfile.dob);
@@ -352,10 +388,15 @@ export function registerBloodTestsRoutes(app: Express): void {
                   poids: patientProfile.poids,
                   taille: patientProfile.taille,
                   sleepHours: patientProfile.sleepHours,
-                  trainingHours: patientProfile.trainingHours,
-                  calorieDeficit: patientProfile.calorieDeficit,
-                  alcoholWeekly: patientProfile.alcoholWeekly,
                   stressLevel: patientProfile.stressLevel,
+                  fastingHours: patientProfile.fastingHours,
+                  drawTime: patientProfile.drawTime,
+                  lastTraining: patientProfile.lastTraining,
+                  alcoholLast72h: patientProfile.alcoholLast72h,
+                  nutritionPhase: patientProfile.nutritionPhase,
+                  supplementsUsed: patientProfile.supplementsUsed,
+                  medications: patientProfile.medications,
+                  infectionRecent: patientProfile.infectionRecent,
                 },
                 knowledgeContext
               );
@@ -368,10 +409,15 @@ export function registerBloodTestsRoutes(app: Express): void {
               gender: patientProfile.gender as "homme" | "femme",
               age,
               sleepHours: patientProfile.sleepHours,
-              trainingHours: patientProfile.trainingHours,
-              calorieDeficit: patientProfile.calorieDeficit,
-              alcoholWeekly: patientProfile.alcoholWeekly,
               stressLevel: patientProfile.stressLevel,
+              fastingHours: patientProfile.fastingHours,
+              drawTime: patientProfile.drawTime,
+              lastTraining: patientProfile.lastTraining,
+              alcoholLast72h: patientProfile.alcoholLast72h,
+              nutritionPhase: patientProfile.nutritionPhase,
+              supplementsUsed: patientProfile.supplementsUsed,
+              medications: patientProfile.medications,
+              infectionRecent: patientProfile.infectionRecent,
               poids: patientProfile.poids,
               taille: patientProfile.taille,
             });
@@ -448,10 +494,15 @@ export function registerBloodTestsRoutes(app: Express): void {
                     poids: patientProfile.poids,
                     taille: patientProfile.taille,
                     sleepHours: patientProfile.sleepHours,
-                    trainingHours: patientProfile.trainingHours,
-                    calorieDeficit: patientProfile.calorieDeficit,
-                    alcoholWeekly: patientProfile.alcoholWeekly,
                     stressLevel: patientProfile.stressLevel,
+                    fastingHours: patientProfile.fastingHours,
+                    drawTime: patientProfile.drawTime,
+                    lastTraining: patientProfile.lastTraining,
+                    alcoholLast72h: patientProfile.alcoholLast72h,
+                    nutritionPhase: patientProfile.nutritionPhase,
+                    supplementsUsed: patientProfile.supplementsUsed,
+                    medications: patientProfile.medications,
+                    infectionRecent: patientProfile.infectionRecent,
                   },
                   knowledgeContext
                 );
@@ -563,10 +614,15 @@ export function registerBloodTestsRoutes(app: Express): void {
         poids: parseNumber(req.body.poids),
         taille: parseNumber(req.body.taille),
         sleepHours: parseNumber(req.body.sleepHours),
-        trainingHours: parseNumber(req.body.trainingHours),
-        calorieDeficit: parseNumber(req.body.calorieDeficit),
-        alcoholWeekly: parseNumber(req.body.alcoholWeekly),
         stressLevel: parseNumber(req.body.stressLevel),
+        fastingHours: parseNumber(req.body.fastingHours),
+        drawTime: String(req.body.drawTime || "").trim() || undefined,
+        lastTraining: String(req.body.lastTraining || "").trim() || undefined,
+        alcoholLast72h: String(req.body.alcoholLast72h || "").trim() || undefined,
+        nutritionPhase: String(req.body.nutritionPhase || "").trim() || undefined,
+        supplementsUsed: parseStringArray(req.body.supplementsUsed),
+        medications: String(req.body.medications || "").trim() || undefined,
+        infectionRecent: String(req.body.infectionRecent || "").trim() || undefined,
       };
       const missingProfile: string[] = [];
       if (!profile.prenom) missingProfile.push("prenom");
@@ -615,10 +671,15 @@ export function registerBloodTestsRoutes(app: Express): void {
               poids: profile.poids,
               taille: profile.taille,
               sleepHours: profile.sleepHours,
-              trainingHours: profile.trainingHours,
-              calorieDeficit: profile.calorieDeficit,
-              alcoholWeekly: profile.alcoholWeekly,
               stressLevel: profile.stressLevel,
+              fastingHours: profile.fastingHours,
+              drawTime: profile.drawTime,
+              lastTraining: profile.lastTraining,
+              alcoholLast72h: profile.alcoholLast72h,
+              nutritionPhase: profile.nutritionPhase,
+              supplementsUsed: profile.supplementsUsed,
+              medications: profile.medications,
+              infectionRecent: profile.infectionRecent,
             },
             knowledgeContext
           );
@@ -631,10 +692,15 @@ export function registerBloodTestsRoutes(app: Express): void {
           gender: profile.gender as "homme" | "femme",
           age,
           sleepHours: profile.sleepHours,
-          trainingHours: profile.trainingHours,
-          calorieDeficit: profile.calorieDeficit,
-          alcoholWeekly: profile.alcoholWeekly,
           stressLevel: profile.stressLevel,
+          fastingHours: profile.fastingHours,
+          drawTime: profile.drawTime,
+          lastTraining: profile.lastTraining,
+          alcoholLast72h: profile.alcoholLast72h,
+          nutritionPhase: profile.nutritionPhase,
+          supplementsUsed: profile.supplementsUsed,
+          medications: profile.medications,
+          infectionRecent: profile.infectionRecent,
           poids: profile.poids,
           taille: profile.taille,
         });

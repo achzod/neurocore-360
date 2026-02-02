@@ -1,0 +1,8 @@
+# AUDIT ITÉRATION 2 - Jeu 29 jan 2026 16:47:46 +04
+
+## Biomarqueurs MPMD
+- ✅ TESTOSTERONE_LIBRE
+- ✅ SHBG
+- ✅ CORTISOL
+- ✅ ESTRADIOL
+- ✅ VITAMINE_D
