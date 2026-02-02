@@ -36,7 +36,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] Add smoke tests for Discovery/Anabolic/Ultimate offer pages
 - [ ] Run offer smoke tests locally (requires DATABASE_URL for dev server)
 - [x] Run offer smoke tests against Render (E2E_BASE_URL)
-- [ ] Verify CTA links and report rendering
+- [x] Verify CTA links and report rendering
 
 ## 7) Observability
 - [ ] Error tracking configured (Sentry or equivalent)
