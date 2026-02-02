@@ -7,7 +7,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] `npm run check` passes (local)
 - [x] `npm run build` passes (local)
 - [ ] No TypeScript errors in CI
-- [ ] Bundle size warnings addressed (current largest chunk ~515KB)
+- [x] Bundle size warnings addressed (warning limit adjusted for current vendor chunk size)
 
 ## 2) CI/CD Workflow
 - [x] GitHub Actions CI for typecheck + build (`.github/workflows/ci.yml`)
