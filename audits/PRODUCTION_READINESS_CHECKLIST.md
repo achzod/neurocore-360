@@ -32,7 +32,8 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [ ] Review follow-up email sends
 
 ## 6) E2E Coverage (Minimal)
-- [ ] Add or run smoke tests for Discovery/Anabolic/Ultimate pages
+- [x] Add smoke tests for Discovery/Anabolic/Ultimate offer pages
+- [ ] Run offer smoke tests locally (requires DATABASE_URL for dev server)
 - [ ] Verify CTA links and report rendering
 
 ## 7) Observability
