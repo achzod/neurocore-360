@@ -106,4 +106,45 @@ nmol/L
 
 ---
 
-**Status**: 🔄 Prêt pour itération 2
+## 📊 ITÉRATION 2 - EN COURS
+
+**Commit**: 58c19d00 (fix cortisol + vitamine D + citations)
+**Déployé**: 2 Février 2026, 16:45
+**Test ID**: En cours de génération...
+
+### Fixes appliqués:
+
+**Fix 1: Cortisol - Plausibility range**
+```typescript
+// AVANT: cortisol: { min: 1, max: 50 }
+// APRÈS: cortisol: { min: 1, max: 600 }
+```
+Impact: Permet valeurs nmol/L (range 102-535 nmol/L)
+
+**Fix 2: Vitamine D - Patterns dangereux**
+```typescript
+// AVANT: vitamine_d: [/vitamine\s*d/i, /25\s*oh/i, /25[-\s]?oh\s*vit/i]
+// APRÈS: vitamine_d: [/vitamine\s*d/i]
+```
+Impact: Ne plus matcher "25" dans "Vitamine D 25 OH"
+
+**Fix 3: Citations - Post-processing**
+```typescript
+// Nouvelle ligne après génération:
+const finalReport = trimmed.replace(/\[SRC:[a-f0-9-]+\]/g, '');
+```
+Impact: Supprime tous les [SRC:UUID], garde citations académiques
+
+### Attentes:
+✅ Insuline: 49.1 µIU/mL (déjà OK depuis itération 1)
+✅ HOMA-IR: 12.60 (déjà OK depuis itération 1)
+🆕 Cortisol: 70 nmol/L (devrait être extrait maintenant)
+🆕 Vitamine D: 12.3 ng/mL (devrait être correct maintenant)
+🆕 Citations [SRC:UUID]: 0 (devrait être supprimé)
+✅ Toutes sections UX (déjà OK)
+
+**Score attendu**: 12/12 = 100% ✨
+
+---
+
+**Status**: 🔄 Test en cours (b864747)

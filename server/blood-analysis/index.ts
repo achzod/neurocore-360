@@ -939,6 +939,10 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     // CRITICAL FIX: Ignore numbers in parentheses like (1), (2), (3) - lab notations
     if (beforeChar === "(" && afterChar === ")") continue;
 
+    // ITERATION 3 FIX: Ignore "25" in "Vitamine D 25 OH" - it's part of the technical name
+    const afterText = snippet.slice(end, end + 5).trim();
+    if (/^(OH|OHD|[\s\-]?OH)/i.test(afterText)) continue;
+
     if (/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) continue;
     if (dateMatches.some((range) => start >= range.start && end <= range.end)) continue;
     if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
@@ -978,7 +982,7 @@ const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
   fsh: { min: 0.5, max: 15 },
   prolactine: { min: 2, max: 30 },
   dhea_s: { min: 40, max: 700 },
-  cortisol: { min: 3, max: 35 },
+  cortisol: { min: 3, max: 600 }, // Increased for nmol/L - French labs use nmol/L (range 102-535)
   igf1: { min: 60, max: 450 },
   tsh: { min: 0.2, max: 6 },
   t4_libre: { min: 0.5, max: 2.5 },
