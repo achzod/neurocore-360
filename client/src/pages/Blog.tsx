@@ -1,41 +1,80 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ArrowRight, Clock, Calendar, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  BLOG_ARTICLES,
-  BLOG_CATEGORIES,
-  getFeaturedArticles,
-  getArticlesByCategory,
-  getArticleCountByCategory,
-} from "@/data/blogArticles";
+import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 
 export default function Blog() {
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "popular">("popular");
 
-  const featuredArticles = getFeaturedArticles();
-  let categoryArticles = getArticlesByCategory(activeCategory);
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    fetch("/blog-articles.json")
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("Impossible de charger les articles.");
+        }
+        const data = (await res.json()) as BlogArticle[];
+        if (active) {
+          setArticles(data);
+          setLoadError(null);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setLoadError(err instanceof Error ? err.message : "Erreur chargement.");
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const featuredArticles = useMemo(
+    () => articles.filter((article) => article.featured).slice(0, 6),
+    [articles]
+  );
+
+  const categoryArticles = useMemo(() => {
+    if (activeCategory === "all") return articles;
+    return articles.filter((article) => article.category === activeCategory);
+  }, [activeCategory, articles]);
 
   // Sorting
-  categoryArticles = [...categoryArticles].sort((a, b) => {
-    if (sortBy === "popular") {
-      return ((b as any).priority || 0) - ((a as any).priority || 0);
-    }
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
-  });
+  const sortedArticles = useMemo(() => {
+    return [...categoryArticles].sort((a, b) => {
+      if (sortBy === "popular") {
+        return ((b as any).priority || 0) - ((a as any).priority || 0);
+      }
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }, [categoryArticles, sortBy]);
 
   // Filter by search query
   const filteredArticles = searchQuery.trim()
-    ? categoryArticles.filter(
+    ? sortedArticles.filter(
         (article) =>
           article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : categoryArticles;
+    : sortedArticles;
+
+  const getArticleCountByCategory = (categoryId: string) => {
+    if (categoryId === "all") return articles.length;
+    return articles.filter((article) => article.category === categoryId).length;
+  };
 
   return (
     <div className="min-h-screen bg-[#050505]">
@@ -222,58 +261,66 @@ export default function Blog() {
                 : BLOG_CATEGORIES.find((c) => c.id === activeCategory)?.label}
             </h2>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredArticles.map((article, index) => (
-                <motion.div
-                  key={article.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: (index % 6) * 0.05 }}
-                >
-                  <Link href={`/blog/${article.slug}`}>
-                    <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
-                      <div className="aspect-video overflow-hidden">
-                        <img
-                          src={article.image}
-                          alt={article.title}
-                          className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="p-5">
-                        <span className="inline-block mb-3 px-2 py-1 text-xs font-mono uppercase tracking-wider text-[#FCDD00] bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm">
-                          {BLOG_CATEGORIES.find((c) => c.id === article.category)?.label || article.category}
-                        </span>
-                        <h3 className="mb-2 text-lg font-bold text-white line-clamp-2 group-hover:text-[#FCDD00] transition-colors">
-                          {article.title}
-                        </h3>
-                        <p className="mb-4 text-sm text-white/50 line-clamp-2">
-                          {article.excerpt}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-xs text-white/40">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {article.readTime}
-                            </span>
+            {isLoading ? (
+              <div className="text-center py-12 text-white/60">Chargement des articles...</div>
+            ) : loadError ? (
+              <div className="text-center py-12 text-rose-400">{loadError}</div>
+            ) : (
+              <>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredArticles.map((article, index) => (
+                    <motion.div
+                      key={article.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: (index % 6) * 0.05 }}
+                    >
+                      <Link href={`/blog/${article.slug}`}>
+                        <div className="group h-full cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] border border-white/10 hover:border-[#FCDD00]/30 transition-all duration-300 hover:-translate-y-1">
+                          <div className="aspect-video overflow-hidden">
+                            <img
+                              src={article.image}
+                              alt={article.title}
+                              className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
+                            />
                           </div>
-                          <span className="flex items-center gap-1 text-sm font-medium text-[#FCDD00] opacity-0 group-hover:opacity-100 transition-opacity">
-                            Lire <ArrowRight className="h-3 w-3" />
-                          </span>
+                          <div className="p-5">
+                            <span className="inline-block mb-3 px-2 py-1 text-xs font-mono uppercase tracking-wider text-[#FCDD00] bg-[#FCDD00]/10 border border-[#FCDD00]/20 rounded-sm">
+                              {BLOG_CATEGORIES.find((c) => c.id === article.category)?.label || article.category}
+                            </span>
+                            <h3 className="mb-2 text-lg font-bold text-white line-clamp-2 group-hover:text-[#FCDD00] transition-colors">
+                              {article.title}
+                            </h3>
+                            <p className="mb-4 text-sm text-white/50 line-clamp-2">
+                              {article.excerpt}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-xs text-white/40">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {article.readTime}
+                                </span>
+                              </div>
+                              <span className="flex items-center gap-1 text-sm font-medium text-[#FCDD00] opacity-0 group-hover:opacity-100 transition-opacity">
+                                Lire <ArrowRight className="h-3 w-3" />
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
 
-            {filteredArticles.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-white/50">
-                  Aucun article dans cette catégorie pour le moment.
-                </p>
-              </div>
+                {filteredArticles.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-white/50">
+                      Aucun article dans cette catégorie pour le moment.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

@@ -12,19 +12,49 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  getArticleBySlug,
-  BLOG_ARTICLES,
-  BLOG_CATEGORIES,
-  type BlogArticle,
-} from "@/data/blogArticles";
+import { BLOG_CATEGORIES, type BlogArticle } from "@/data/blogTypes";
 import ReactMarkdown from "react-markdown";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function BlogArticlePage() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
-  const article = getArticleBySlug(params.slug || "");
+  const [articles, setArticles] = useState<BlogArticle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    fetch("/blog-articles.json")
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("Impossible de charger les articles.");
+        }
+        const data = (await res.json()) as BlogArticle[];
+        if (active) {
+          setArticles(data);
+          setLoadError(null);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setLoadError(err instanceof Error ? err.message : "Erreur chargement.");
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const article = useMemo(
+    () => articles.find((entry) => entry.slug === (params.slug || "")) || null,
+    [articles, params.slug]
+  );
 
   useEffect(() => {
     if (article) {
@@ -56,6 +86,34 @@ export default function BlogArticlePage() {
     }
   }, [article]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#050505]">
+        <Header />
+        <main className="py-24">
+          <div className="mx-auto max-w-2xl px-4 text-center text-white/60">
+            Chargement de l'article...
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#050505]">
+        <Header />
+        <main className="py-24">
+          <div className="mx-auto max-w-2xl px-4 text-center text-rose-400">
+            {loadError}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!article) {
     return (
       <div className="min-h-screen bg-[#050505]">
@@ -80,7 +138,7 @@ export default function BlogArticlePage() {
   }
 
   // Get related articles (same category, excluding current)
-  const relatedArticles = BLOG_ARTICLES.filter(
+  const relatedArticles = articles.filter(
     (a) => a.category === article.category && a.id !== article.id
   ).slice(0, 3);
 

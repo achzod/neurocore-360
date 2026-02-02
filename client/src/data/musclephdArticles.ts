@@ -1,6 +1,6 @@
 // ACHZOD 
 
-import { BlogArticle } from "./blogArticles";
+import { BlogArticle } from "./blogTypes";
 
 export const ACHZOD_ARTICLES: BlogArticle[] = [
   {  id: "mph-1",

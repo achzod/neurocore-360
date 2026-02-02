@@ -1,4 +1,4 @@
-import type { BlogArticle } from "./blogArticles";
+import type { BlogArticle } from "./blogTypes";
 
 export const ACHZODArticles: BlogArticle[] = [
   {

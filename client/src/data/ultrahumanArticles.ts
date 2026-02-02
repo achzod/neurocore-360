@@ -1,3 +1,3 @@
-import type { BlogArticle } from "./blogArticles";
+import type { BlogArticle } from "./blogTypes";
 
 export const ultrahuman_ARTICLES: BlogArticle[] = [];
