@@ -115,6 +115,8 @@ const DiscoveryScanReport: React.FC = () => {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [hasExistingReview, setHasExistingReview] = useState(false);
 
+  const maxRegenAttempts = 60;
+
   // Fetch report data
   useEffect(() => {
     let cancelled = false;
@@ -139,7 +141,7 @@ const DiscoveryScanReport: React.FC = () => {
           const nextAttempt = attempt + 1;
           setRegenAttempts(nextAttempt);
 
-          if (nextAttempt <= 60) {
+          if (nextAttempt <= maxRegenAttempts) {
             regenTimer.current = window.setTimeout(() => fetchReport(nextAttempt), 3500);
           } else {
             setError("Regeneration en attente trop longue. Clique sur Recalculer ou reessaie plus tard.");
@@ -330,7 +332,7 @@ const DiscoveryScanReport: React.FC = () => {
           </p>
           {isRegenerating && (
             <p className="text-xs text-white/50 mt-2">
-              Tentative {regenAttempts}/12
+              Tentative {regenAttempts}/{maxRegenAttempts}
             </p>
           )}
         </div>
