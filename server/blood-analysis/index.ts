@@ -813,7 +813,7 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   ferritine: [/ferritine/i],
   fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i],
   transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i],
-  vitamine_d: [/vitamine\s*d/i, /25\s*oh/i, /25[-\s]?oh\s*vit/i],
+  vitamine_d: [/vitamine\s*d/i], // Removed /25\s*oh/i patterns - they match "25" in name "Vitamine D 25 OH"
   b12: [/vitamine\s*b12/i, /cobalamine/i],
   folate: [/folate/i, /vitamine\s*b9/i],
   magnesium_rbc: [/magn[eé]sium.*rbc/i, /magn[eé]sium.*intra/i],
@@ -965,7 +965,7 @@ const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
   insuline_jeun: { min: 0.2, max: 200 },
   testosterone_total: { min: 100, max: 2000 },
   testosterone_libre: { min: 1, max: 60 },
-  cortisol: { min: 1, max: 50 },
+  cortisol: { min: 1, max: 600 }, // Increased for nmol/L values (normal range 102-535 nmol/L)
   vitamine_d: { min: 5, max: 200 },
   b12: { min: 100, max: 3000 },
 };
@@ -3279,7 +3279,11 @@ ${knowledgeContext || "- Aucune source generale fournie."}
   }
 
   const withSources = ensureSourcesSection(output);
-  const finalReport = trimAiAnalysis(withSources);
+  const trimmed = trimAiAnalysis(withSources);
+
+  // ITERATION 2 FIX: Remove [SRC:UUID] citations - replace with empty string
+  // Keep only academic-style citations ("Selon les études...", etc.)
+  const finalReport = trimmed.replace(/\[SRC:[a-f0-9-]+\]/g, '');
 
   console.log(`[BloodAnalysis] 🎉 RAPPORT FINAL GÉNÉRÉ`);
   console.log(`[BloodAnalysis] 📏 Longueur totale: ${finalReport.length} chars`);
