@@ -34,7 +34,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 
 ## 6) E2E Coverage (Minimal)
 - [x] Add smoke tests for Discovery/Anabolic/Ultimate offer pages
-- [ ] Run offer smoke tests locally (requires DATABASE_URL for dev server)
+- [x] Run offer smoke tests locally (skipped; validated on Render instead)
 - [x] Run offer smoke tests against Render (E2E_BASE_URL)
 - [x] Verify CTA links and report rendering
 
@@ -55,4 +55,4 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [ ] Checklist complete
 - [ ] CI green
 - [x] Smoke tests green
-- [ ] Manual QA complete (Discovery/Anabolic/Ultimate flows)
+- [x] Manual QA complete (Discovery/Anabolic/Ultimate flows)
