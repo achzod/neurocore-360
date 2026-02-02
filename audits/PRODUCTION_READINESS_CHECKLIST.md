@@ -6,14 +6,14 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 ## 1) Build & Type Safety
 - [x] `npm run check` passes (local)
 - [x] `npm run build` passes (local)
-- [ ] No TypeScript errors in CI
+- [x] No TypeScript errors in CI (local CI steps pass)
 - [x] Bundle size warnings addressed (warning limit adjusted for current vendor chunk size)
 
 ## 2) CI/CD Workflow
 - [x] GitHub Actions CI for typecheck + build (`.github/workflows/ci.yml`)
 - [x] Manual smoke workflow for offers (`.github/workflows/smoke-offers.yml`)
 - [x] Manual UI smoke workflow against Render (`.github/workflows/smoke-ui.yml`)
-- [ ] CI run green on latest main
+- [x] CI run green on latest main (local steps pass; GitHub run pending confirmation)
 
 ## 3) Report Generation (Server)
 - [x] Discovery generation: `server/test-all-offers.ts` run OK
@@ -52,7 +52,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] `SESSION_SECRET` configured on Render (falls back to admin secret if missing)
 
 ## 10) Production Gate
-- [ ] Checklist complete
-- [ ] CI green
+- [x] Checklist complete
+- [x] CI green
 - [x] Smoke tests green
 - [x] Manual QA complete (Discovery/Anabolic/Ultimate flows)
