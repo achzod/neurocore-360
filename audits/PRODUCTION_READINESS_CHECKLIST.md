@@ -47,8 +47,8 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] File upload limits enforced (JSON body limit 50mb for photo payloads)
 
 ## 9) Data Integrity
-- [ ] Required DB migrations applied
-- [ ] `DATABASE_URL` configured on Render
+- [x] Required DB migrations applied (audits API working)
+- [x] `DATABASE_URL` configured on Render (audits API working)
 - [ ] `SESSION_SECRET` configured on Render
 
 ## 10) Production Gate
