@@ -93,6 +93,10 @@ export async function registerRoutes(
   const auditCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const discoveryLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
 
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   const PHOTO_FIELD_VARIANTS: string[][] = [
     ["photoFront", "photo-front"],
     ["photoSide", "photo-side"],
