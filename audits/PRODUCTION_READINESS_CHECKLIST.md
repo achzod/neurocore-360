@@ -16,16 +16,16 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [ ] CI run green on latest main
 
 ## 3) Report Generation (Server)
-- [ ] Discovery generation: `server/test-all-offers.ts` run OK
-- [ ] Anabolic generation: `server/test-all-offers.ts` run OK
-- [ ] Ultimate generation: `server/test-all-offers.ts` run OK (set `ULTIMATE_AUDIT_ID`)
+- [x] Discovery generation: `server/test-all-offers.ts` run OK
+- [x] Anabolic generation: `server/test-all-offers.ts` run OK
+- [x] Ultimate generation: `server/test-all-offers.ts` run OK (set `ULTIMATE_AUDIT_ID`)
 - [ ] No AI fallback loops or timeouts in logs
 
 ## 4) Public Routes & Access
-- [ ] `/offers/discovery-scan` renders
-- [ ] `/offers/anabolic-bioscan` renders
-- [ ] `/offers/ultimate-scan` renders
-- [ ] `/audit/:id` pages render for each tier
+- [x] `/offers/discovery-scan` renders
+- [x] `/offers/anabolic-bioscan` renders
+- [x] `/offers/ultimate-scan` renders
+- [x] `/audit/:id` pages render for each tier
 
 ## 5) Email Workflow
 - [ ] Confirmation email sends for each tier
