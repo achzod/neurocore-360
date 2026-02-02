@@ -1253,26 +1253,49 @@ Regles:
 - Utilise seulement les markerId de la liste autorisee.
 - Convertis dans l'unite attendue (celle de la liste autorisee).
 
-ATTENTION CRITIQUE - Notations laboratoire:
-- IGNORE les notations (1), (2), (3), etc. qui indiquent le labo executant
-- Exemple: "Insuline à jeun (1) 49,1 mUI/L" → value = 49.1, PAS 1
-- La VRAIE valeur est le nombre AVANT l'unite (mUI/L, ng/mL, etc.)
-- Si plusieurs nombres: prends celui qui precede directement l'unite
+🚨 RÈGLE CRITIQUE #1 - Structure multi-lignes des résultats:
+Les résultats sont formatés ainsi (chaque élément sur une ligne séparée):
+  Nom du marqueur
+  (1) ou (2) ou (3)  ← NOTATION LABO À IGNORER COMPLÈTEMENT
+  49,1               ← VRAIE VALEUR (celle-ci seulement!)
+  mUI/L              ← Unité
+
+RÈGLE ABSOLUE: Si tu vois un nombre entre parenthèses (1), (2), (3) etc. sur sa propre ligne, ce n'est JAMAIS la valeur du marqueur. C'est toujours une notation de laboratoire.
+La valeur RÉELLE est le nombre qui précède directement l'unité de mesure (mUI/L, ng/mL, g/L, etc.).
+
+Exemples CONCRETS du PDF:
+1) "Insuline à jeun\n(1)\n49,1\nmUI/L" → value = 49.1 (PAS 1!)
+2) "Fructosamine\n(1)\n216\nμmol/L" → value = 216 (PAS 1!)
+3) "CRP\n(2)\n8,6\nmg/L" → value = 8.6 (PAS 2!)
 
 ATTENTION CRITIQUE - HOMA-IR et Indice de HOMA:
 - "Indice de HOMA" dans le PDF = markerId "homa_ir"
 - TOUJOURS extraire la valeur si presente dans le PDF
 - Ne JAMAIS la calculer toi-meme
 
+🚨 RÈGLE CRITIQUE #3 - Vitamine D 25 OH piège:
+Le marqueur "Vitamine D 25 OH (D2 + D3)" contient "25" dans son NOM TECHNIQUE.
+Le "25" est juste le nom du test (25-hydroxyvitamine), PAS la valeur du résultat!
+Structure type:
+  Vitamine D 25 OH (D2 + D3)  ← "25" fait partie du nom, IGNORE-LE
+  **
+  12,3                         ← VRAIE VALEUR (cette ligne!)
+  ng/mL
+  30,8                         ← Conversion nmol/L
+  nmol/L
+
+Valeur à extraire: 12.3 ng/mL (le nombre avant "ng/mL"), PAS le "25" du nom!
+
 ATTENTION - Cortisol:
 - "Cortisol du matin" = markerId "cortisol"
 - Unite: nmol/L (pas de conversion necessaire)
+- Ignore les symboles "**" avant la valeur
 
 Conversions utiles:
 - Cholesterol / HDL / LDL / ApoB / Lp(a): mmol/L -> mg/dL (x38.67), g/L -> mg/dL (x100)
 - Triglycerides: mmol/L -> mg/dL (x88.57), g/L -> mg/dL (x100)
 - Glycemie: mmol/L -> mg/dL (x18), g/L -> mg/dL (x100)
-- Vitamine D: nmol/L -> ng/mL (÷2.5) - ATTENTION: prends la valeur en ng/mL si les deux sont presentes
+- Vitamine D: cherche la valeur avant "ng/mL" OU convertis nmol/L en ng/mL (÷2.5) si nécessaire
 - Creatinine: µmol/L -> mg/dL (÷88.4)
 - Insuline: si en pmol/L -> µIU/mL (÷6.945)
 

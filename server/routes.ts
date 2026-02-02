@@ -40,7 +40,7 @@ import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { getAuthPayload, signAuthToken } from "./auth";
-import { registerPeptidesRoutes } from "./peptides-engine";
+// import { registerPeptidesRoutes } from "./peptides-engine"; // Temporarily commented - file missing
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import {
   scrapeArticleFromUrl,
@@ -3551,7 +3551,7 @@ export async function registerRoutes(
   registerBloodTestsRoutes(app);
 
   // ==================== PEPTIDES ENGINE ROUTES ====================
-  registerPeptidesRoutes(app);
+  // registerPeptidesRoutes(app); // Temporarily commented - file missing
 
   return httpServer;
 }
