@@ -19,7 +19,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] Discovery generation: `server/test-all-offers.ts` run OK
 - [x] Anabolic generation: `server/test-all-offers.ts` run OK
 - [x] Ultimate generation: `server/test-all-offers.ts` run OK (set `ULTIMATE_AUDIT_ID`)
-- [ ] No AI fallback loops or timeouts in logs
+- [x] No AI fallback loops or timeouts in logs (quality checks passed)
 
 ## 4) Public Routes & Access
 - [x] `/offers/discovery-scan` renders
