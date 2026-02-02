@@ -522,21 +522,32 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         if (results.length > 0) {
           const bloodTest = results[0];
           // Transform blood_tests format to blood_reports format for frontend compatibility
-          const analysis = typeof bloodTest.analysis === 'object' ? bloodTest.analysis as any : {};
+          const analysis =
+            typeof bloodTest.analysis === "object" && bloodTest.analysis !== null
+              ? (bloodTest.analysis as Record<string, unknown>)
+              : {};
+          const profile =
+            bloodTest.patientProfile &&
+            typeof bloodTest.patientProfile === "object" &&
+            !Array.isArray(bloodTest.patientProfile)
+              ? (bloodTest.patientProfile as Record<string, unknown>)
+              : {};
+          const markers = Array.isArray(bloodTest.markers) ? bloodTest.markers : [];
+
           report = {
             id: bloodTest.id,
             email: bloodTest.userId, // Use userId as email placeholder
-            profile: bloodTest.patientProfile || {},
-            markers: bloodTest.markers || [],
+            profile,
+            markers,
             analysis: {
-              summary: analysis.summary || { optimal: [], watch: [], action: [] },
-              patterns: analysis.patterns || [],
-              recommendations: analysis.recommendations || [],
-              followUp: analysis.followUp || [],
-              alerts: analysis.alerts || [],
-              markers: bloodTest.markers || []
+              summary: (analysis as any).summary || { optimal: [], watch: [], action: [] },
+              patterns: (analysis as any).patterns || [],
+              recommendations: (analysis as any).recommendations || [],
+              followUp: (analysis as any).followUp || [],
+              alerts: (analysis as any).alerts || [],
+              markers
             },
-            aiReport: analysis.aiReport || "",
+            aiReport: (analysis as any).aiReport || "",
             createdAt: bloodTest.createdAt || new Date().toISOString()
           };
         }
