@@ -28,9 +28,9 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] `/audit/:id` pages render for each tier
 
 ## 5) Email Workflow
-- [ ] Confirmation email sends for each tier
-- [ ] CTA upsell from Discovery to Anabolic
-- [ ] Review follow-up email sends
+- [x] Confirmation email sends for each tier
+- [x] CTA upsell from Discovery to Anabolic
+- [x] Review follow-up email sends
 
 ## 6) E2E Coverage (Minimal)
 - [x] Add smoke tests for Discovery/Anabolic/Ultimate offer pages
