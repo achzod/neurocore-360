@@ -1,0 +1,36 @@
+name: smoke-offers
+
+on:
+  workflow_dispatch:
+    inputs:
+      ultimate_audit_id:
+        description: "Optional Ultimate Scan audit ID to validate"
+        required: false
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      RENDER_EXTERNAL_URL: ${{ secrets.RENDER_EXTERNAL_URL }}
+      ULTIMATE_AUDIT_ID: ${{ inputs.ultimate_audit_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run offer smoke tests
+        run: node --loader tsx server/test-all-offers.ts

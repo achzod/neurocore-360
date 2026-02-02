@@ -41,6 +41,7 @@ import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { getAuthPayload, signAuthToken } from "./auth";
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
+import { createRateLimiter } from "./middleware/rateLimit";
 import {
   scrapeArticleFromUrl,
   translateArticleToFrench,
@@ -88,6 +89,9 @@ export async function registerRoutes(
     }
     return `http://localhost:${process.env.PORT || 5000}`;
   }
+
+  const auditCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
+  const discoveryLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
 
   const PHOTO_FIELD_VARIANTS: string[][] = [
     ["photoFront", "photo-front"],
@@ -365,7 +369,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/audit/create", async (req, res) => {
+  app.post("/api/audit/create", auditCreateLimiter, async (req, res) => {
     try {
       const data = createAuditBodySchema.parse(req.body);
       if (data.type === "GRATUIT") {
@@ -2898,7 +2902,7 @@ export async function registerRoutes(
   // ==================== DISCOVERY SCAN ROUTES ====================
 
   // Analyze Discovery Scan (free tier) - returns NarrativeReport format for dashboard
-  app.post("/api/discovery-scan/analyze", async (req, res) => {
+  app.post("/api/discovery-scan/analyze", discoveryLimiter, async (req, res) => {
     try {
       const { responses } = req.body;
 
@@ -2927,7 +2931,7 @@ export async function registerRoutes(
   });
 
   // Create Discovery Scan audit and generate report
-  app.post("/api/discovery-scan/create", async (req, res) => {
+  app.post("/api/discovery-scan/create", discoveryLimiter, async (req, res) => {
     try {
       const { email, responses } = req.body;
 
