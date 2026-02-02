@@ -22,6 +22,8 @@ services:
       # - DATABASE_URL (copie depuis Replit ou crée une DB sur Render)
       # - GEMINI_API_KEY (AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk)
       # - SESSION_SECRET (généré automatiquement ou random string)
+      # - SENTRY_DSN (optionnel)
+      # - VITE_SENTRY_DSN (optionnel)
       # - SMTP_USER (ton email SendPulse)
       # - SMTP_PASS (ton pass SendPulse)
       # - STRIPE_PEPTIDES_PRICE_ID (price_id Stripe pour Peptides Engine)

@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import * as Sentry from "@sentry/node";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -6,6 +7,15 @@ import { resumePendingJobs } from "./reportJobManager";
 
 const app = express();
 const httpServer = createServer(app);
+const sentryDsn = process.env.SENTRY_DSN;
+const sentryEnabled = Boolean(sentryDsn);
+
+if (sentryEnabled) {
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 0.1,
+  });
+}
 
 declare module "http" {
   interface IncomingMessage {
@@ -65,6 +75,9 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    if (sentryEnabled) {
+      Sentry.captureException(err);
+    }
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 

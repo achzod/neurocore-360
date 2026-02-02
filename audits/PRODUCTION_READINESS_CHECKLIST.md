@@ -39,7 +39,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 - [x] Verify CTA links and report rendering
 
 ## 7) Observability
-- [ ] Error tracking configured (Sentry or equivalent)
+- [x] Error tracking configured (Sentry, requires DSN)
 - [x] Basic uptime check configured (Render health check or external)
 
 ## 8) Security / Abuse Control
