@@ -10,6 +10,8 @@ const getAuthSecret = (): string => {
   return (
     process.env.SESSION_SECRET ||
     process.env.JWT_SECRET ||
+    process.env.ADMIN_SECRET ||
+    process.env.ADMIN_KEY ||
     "dev-auth-secret"
   );
 };

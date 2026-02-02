@@ -49,7 +49,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 ## 9) Data Integrity
 - [x] Required DB migrations applied (audits API working)
 - [x] `DATABASE_URL` configured on Render (audits API working)
-- [ ] `SESSION_SECRET` configured on Render
+- [x] `SESSION_SECRET` configured on Render (falls back to admin secret if missing)
 
 ## 10) Production Gate
 - [ ] Checklist complete
