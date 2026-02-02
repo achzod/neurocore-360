@@ -4,9 +4,13 @@ import { sql } from "drizzle-orm";
 export const users = pgTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }),
   name: varchar("name", { length: 255 }),
+  emailVerified: timestamp("emailVerified"),
+  image: varchar("image", { length: 512 }),
   credits: integer("credits").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export const audits = pgTable("audits", {
@@ -52,40 +56,58 @@ export const waitlistSubscribers = pgTable("waitlist_subscribers", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Blood Tests - Existing table
+export const bloodTests = pgTable("blood_tests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  fileName: text("file_name"),
+  fileType: text("file_type"),
+  fileSize: integer("file_size"),
+  status: varchar("status", { length: 255 }),
+  error: text("error"),
+  markers: jsonb("markers"),
+  analysis: jsonb("analysis"),
+  globalScore: integer("global_score"),
+  globalLevel: text("global_level"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  patientProfile: jsonb("patient_profile"),
+});
+
 // Blood Analysis - Full product
 export const bloodAnalysisReports = pgTable("blood_analysis_reports", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id),
+  userId: varchar("userId", { length: 36 }).notNull().references(() => users.id),
 
   // Upload files
-  uploadedFiles: jsonb("uploaded_files"), // {name, url, size}[]
+  uploadedFiles: jsonb("uploadedFiles"), // {name, url, size}[]
 
   // OCR extraction
-  extractedBiomarkers: jsonb("extracted_biomarkers"), // Record<string, {value, unit}>
-  missingBiomarkers: jsonb("missing_biomarkers"), // string[]
-  ocrConfidence: jsonb("ocr_confidence"), // Record<string, number>
+  extractedBiomarkers: jsonb("extractedBiomarkers"), // Record<string, {value, unit}>
+  missingBiomarkers: jsonb("missingBiomarkers"), // string[]
+  ocrConfidence: jsonb("ocrConfidence"), // Record<string, number>
 
   // Questionnaire
-  questionnaireData: jsonb("questionnaire_data"),
+  questionnaireData: jsonb("questionnaireData"),
 
   // Analysis (full JSON from Claude Opus 4.5)
   analysis: jsonb("analysis"),
 
   // PDF
-  pdfUrl: text("pdf_url"),
+  pdfUrl: text("pdfUrl"),
 
   // Metadata
-  processingStatus: varchar("processing_status", { length: 20 }).notNull().default("pending"), // pending | processing | completed | failed
-  processingError: text("processing_error"),
-  aiModel: varchar("ai_model", { length: 50 }).default("claude-opus-4-5"),
+  processingStatus: varchar("processingStatus", { length: 20 }).notNull().default("pending"), // pending | processing | completed | failed
+  processingError: text("processingError"),
+  aiModel: varchar("aiModel", { length: 50 }).default("claude-opus-4-5"),
 
   // Timestamps
-  testDate: timestamp("test_date"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  completedAt: timestamp("completed_at"),
+  testDate: timestamp("testDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
 
   // For future comparisons
-  previousReportId: varchar("previous_report_id", { length: 36 }).references((): any => bloodAnalysisReports.id),
+  previousReportId: varchar("previousReportId", { length: 36 }).references((): any => bloodAnalysisReports.id),
 });
 
 // Blood Analysis Purchases (Stripe)

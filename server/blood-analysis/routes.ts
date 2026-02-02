@@ -508,7 +508,40 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.get("/api/blood-analysis/report/:id", async (req, res) => {
     try {
-      const report = await storage.getBloodReport(req.params.id);
+      // First try blood_reports table (legacy storage)
+      let report = await storage.getBloodReport(req.params.id);
+
+      // If not found, try blood_tests table (new direct DB storage)
+      if (!report) {
+        const { db } = await import("../db.js");
+        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+        const { eq } = await import("drizzle-orm");
+
+        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, req.params.id));
+
+        if (results.length > 0) {
+          const bloodTest = results[0];
+          // Transform blood_tests format to blood_reports format for frontend compatibility
+          const analysis = typeof bloodTest.analysis === 'object' ? bloodTest.analysis as any : {};
+          report = {
+            id: bloodTest.id,
+            email: bloodTest.userId, // Use userId as email placeholder
+            profile: bloodTest.patientProfile || {},
+            markers: bloodTest.markers || [],
+            analysis: {
+              summary: analysis.summary || { optimal: [], watch: [], action: [] },
+              patterns: analysis.patterns || [],
+              recommendations: analysis.recommendations || [],
+              followUp: analysis.followUp || [],
+              alerts: analysis.alerts || [],
+              markers: bloodTest.markers || []
+            },
+            aiReport: analysis.aiReport || "",
+            createdAt: bloodTest.createdAt || new Date().toISOString()
+          };
+        }
+      }
+
       if (!report) {
         res.status(404).json({ error: "Rapport introuvable" });
         return;
@@ -590,8 +623,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             poids: profile.poids as number || null,
             taille: profile.taille as number || null,
             sleepHours: profile.sleepHours as number || null,
-            trainingHours: profile.trainingHours as number || null,
             stressLevel: profile.stressLevel as number || null,
+            fastingHours: profile.fastingHours as number || null,
+            drawTime: profile.drawTime as string || null,
+            lastTraining: profile.lastTraining as string || null,
+            alcoholLast72h: profile.alcoholLast72h as string || null,
+            nutritionPhase: profile.nutritionPhase as string || null,
+            supplementsUsed: Array.isArray(profile.supplementsUsed) ? profile.supplementsUsed : null,
+            medications: profile.medications as string || null,
+            infectionRecent: profile.infectionRecent as string || null,
           },
         },
         markers: formattedMarkers,
