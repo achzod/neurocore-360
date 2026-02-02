@@ -1904,20 +1904,16 @@ Exemple:
 Format: TABLEAU ASCII + BULLET POINTS AUTORISÉS
 Tu crées un tableau visuel avec les scores par catégorie.
 
-Format:
-```
-┌────────────────────────────────────────────────┐
-│ SANTÉ GLOBALE              45/100  🔴 CRITIQUE │
-│ ├─ Métabolique             20/100  🔴 CRITIQUE │
-│ ├─ Cardiovasculaire        30/100  🔴 CRITIQUE │
-│ ├─ Hormonal                55/100  🟡 MODÉRÉ   │
-│ ├─ Inflammatoire           15/100  🔴 CRITIQUE │
-│ └─ Micronutriments         40/100  🟡 MODÉRÉ   │
-│                                                │
-│ RECOMPOSITION              25/100  🔴 DIFFICILE│
-│ Confiance: Moyenne (panel incomplet)          │
-└────────────────────────────────────────────────┘
-```
+Exemple de format:
+SANTE GLOBALE              45/100  🔴 CRITIQUE
+  +- Metabolique             20/100  🔴 CRITIQUE
+  +- Cardiovasculaire        30/100  🔴 CRITIQUE
+  +- Hormonal                55/100  🟡 MODERE
+  +- Inflammatoire           15/100  🔴 CRITIQUE
+  +- Micronutriments         40/100  🟡 MODERE
+
+RECOMPOSITION              25/100  🔴 DIFFICILE
+Confiance: Moyenne (panel incomplet)
 
 Puis 3-4 bullets pour interpréter:
 - 🔴 **Priorité #1**: Syndrome métabolique (HOMA 12.6, TG 530, HDL 26)
