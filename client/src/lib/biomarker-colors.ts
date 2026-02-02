@@ -10,9 +10,9 @@ export const BIOMARKER_STATUS_COLORS: Record<
     border: "rgba(16, 185, 129, 0.4)",
   },
   normal: {
-    primary: "#3B82F6",
-    bg: "rgba(59, 130, 246, 0.20)",
-    border: "rgba(59, 130, 246, 0.4)",
+    primary: "#0891B2", // Cyan plus visible sur fond clair
+    bg: "rgba(8, 145, 178, 0.20)",
+    border: "rgba(8, 145, 178, 0.5)",
   },
   suboptimal: {
     primary: "#F59E0B",

@@ -1726,6 +1726,7 @@ LONGUEUR (tu veux du ULTRA LONG)
 FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 ## Synthese executive
 ## Qualite des donnees & limites
+## Marqueurs manquants & recommandations de tests
 ## Tableau de bord (scores & priorites)
 ## Potentiel recomposition (perte de gras + gain de muscle)
 ## Lecture compartimentee par axes
@@ -1772,6 +1773,29 @@ Tu conclus par la stratégie: "La logique d'intervention consiste à prioriser X
 
 ## Qualite des donnees & limites
 Rédaction en paragraphes. Premier paragraphe: tu identifies les limitations méthodologiques (unités, ranges, contexte manquant) en expliquant l'impact sur l'interprétation. Deuxième paragraphe: tu donnes les recommandations pour le prochain prélèvement, en expliquant pourquoi chaque condition est importante.
+
+## Marqueurs manquants & recommandations de tests
+SECTION CRITIQUE - OBLIGATOIRE.
+Rédaction en paragraphes complets (4-6 paragraphes, environ 1000-1500 mots).
+
+Premier paragraphe: Tu analyses les marqueurs ABSENTS du bilan qui seraient critiques pour affiner le diagnostic. Tu expliques en détail pourquoi chaque marqueur manquant est important dans le contexte du profil observé. Par exemple: "L'absence de dosage de l'insuline à jeun est problématique car ta glycémie isolée ne permet pas de détecter une résistance insulinique débutante. Tu peux avoir une glycémie normale avec une insuline élevée, ce qui indique que ton pancréas compense en surproduction."
+
+Deuxième paragraphe: Pour CHAQUE marqueur manquant critique, tu expliques:
+- Le mécanisme biologique qu'il permet de mesurer
+- Ce qu'on rate en ne l'ayant pas
+- Comment ça change l'interprétation des autres marqueurs
+- L'impact sur les recommandations
+
+Troisième paragraphe: Tu identifies les PATTERNS incomplets. Par exemple: "Pour confirmer le profil thyroïdien, il manque T3 libre et anticorps anti-TPO. Sans T3, on ne peut pas distinguer une hypothyroïdie subclinique d'un problème de conversion T4→T3. Sans anticorps, on rate une thyroïdite auto-immune qui changerait complètement le protocole."
+
+Quatrième paragraphe: Tu priorises les tests manquants en 3 niveaux:
+- PRIORITÉ 1 (urgents): Les marqueurs qui bloquent l'interprétation ou cachent un risque médical
+- PRIORITÉ 2 (recommandés): Les marqueurs qui affineraient significativement le protocole
+- PRIORITÉ 3 (nice-to-have): Les marqueurs pour l'optimisation avancée
+
+Cinquième paragraphe: Tu donnes le panel de tests COMPLET à demander au prochain bilan, en expliquant la logique du panel. Par exemple: "Pour le prochain bilan, je recommande un panel métabolique complet incluant: insuline à jeun (HOMA-IR), HbA1c (glycémie sur 3 mois), hs-CRP (inflammation), homocystéine (méthylation), vitamine D (immunité), ferritine (réserves fer). Ce panel permettra de..."
+
+Sixième paragraphe: Tu expliques les conditions de prélèvement spécifiques pour chaque test manquant critique. Certains marqueurs nécessitent un jeûne strict, d'autres doivent être prélevés le matin, etc.
 
 ## Tableau de bord (scores & priorites)
 Rédaction en paragraphes structurés.

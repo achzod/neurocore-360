@@ -222,10 +222,105 @@ function BloodAnalysisDashboardInner() {
 
   const summary = report?.analysis?.summary || { optimal: [], watch: [], action: [] };
 
+  // Function to render specific sections of the report
+  const renderReportSection = (sectionIds: string[]) => {
+    if (!report?.aiReport) {
+      return (
+        <div
+          className="rounded border p-6"
+          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+        >
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: currentTheme.colors.primary }} />
+            <h2 className="text-xl font-semibold mb-2">Génération du rapport AI en cours...</h2>
+            <p className="text-sm text-center max-w-md" style={{ color: currentTheme.colors.textMuted }}>
+              L'analyse approfondie de tes biomarqueurs est en cours de génération.
+              Recharge la page dans quelques minutes.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const sectionsToShow = reportSections.filter(section =>
+      sectionIds.some(id => section.id.includes(id) || id.includes(section.id))
+    );
+
+    if (sectionsToShow.length === 0) {
+      return (
+        <div
+          className="rounded border p-6"
+          style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+        >
+          <p style={{ color: currentTheme.colors.textMuted }}>
+            Cette section sera disponible une fois le rapport complet généré.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`rounded border p-6 max-w-none ${
+          currentTheme.type === 'dark' ? 'prose prose-slate' : 'prose prose-amber'
+        }`}
+        style={{
+          backgroundColor: currentTheme.colors.surface,
+          borderColor: currentTheme.colors.border,
+          color: currentTheme.colors.text,
+          '--tw-prose-headings': currentTheme.colors.text,
+          '--tw-prose-body': currentTheme.colors.text,
+          '--tw-prose-bold': currentTheme.colors.text,
+          '--tw-prose-links': currentTheme.colors.primary,
+        } as React.CSSProperties}
+      >
+        {sectionsToShow.map((section, idx) => (
+          <div key={section.id}>
+            <ReactMarkdown>{section.content}</ReactMarkdown>
+            {idx < sectionsToShow.length - 1 && <hr className="my-8" style={{ borderColor: currentTheme.colors.border }} />}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Parse AI report into sections based on ## headings
+  const reportSections = useMemo(() => {
+    if (!report?.aiReport) return [];
+
+    const sections: Array<{ id: string; title: string; content: string }> = [];
+    const lines = report.aiReport.split('\n');
+    let currentSection: { id: string; title: string; content: string } | null = null;
+
+    for (const line of lines) {
+      if (line.startsWith('## ')) {
+        if (currentSection) {
+          sections.push(currentSection);
+        }
+        const title = line.replace('## ', '').trim();
+        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        currentSection = { id, title, content: line + '\n' };
+      } else if (currentSection) {
+        currentSection.content += line + '\n';
+      }
+    }
+
+    if (currentSection) {
+      sections.push(currentSection);
+    }
+
+    return sections;
+  }, [report?.aiReport]);
+
   const sidebarSections: SectionContent[] = [
     { id: "overview", title: "Overview", subtitle: "Vue d'ensemble", content: "" },
     { id: "biomarkers", title: "Biomarqueurs", subtitle: "Lecture par marqueur", content: "" },
-    { id: "insights", title: "Insights", subtitle: "Synthese", content: "" },
+    { id: "synthese", title: "Synthèse", subtitle: "Executive summary", content: "" },
+    { id: "donnees", title: "Données & Tests", subtitle: "Limites & manquants", content: "" },
+    { id: "axes", title: "Analyse Axes", subtitle: "Lecture par systèmes", content: "" },
+    { id: "plan", title: "Plan 90j", subtitle: "Action concrète", content: "" },
+    { id: "protocoles", title: "Protocoles", subtitle: "Nutrition & supps", content: "" },
+    { id: "annexes", title: "Annexes", subtitle: "Détails techniques", content: "" },
   ];
 
   const clientName = report?.profile?.prenom
@@ -313,10 +408,15 @@ function BloodAnalysisDashboardInner() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-8 flex flex-wrap">
+            <TabsList className="mb-8 flex flex-wrap gap-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="biomarkers">Biomarqueurs</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
+              <TabsTrigger value="synthese">Synthèse</TabsTrigger>
+              <TabsTrigger value="donnees">Données & Tests</TabsTrigger>
+              <TabsTrigger value="axes">Analyse Axes</TabsTrigger>
+              <TabsTrigger value="plan">Plan 90j</TabsTrigger>
+              <TabsTrigger value="protocoles">Protocoles</TabsTrigger>
+              <TabsTrigger value="annexes">Annexes</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
@@ -522,39 +622,39 @@ function BloodAnalysisDashboardInner() {
               </div>
             </TabsContent>
 
-            <TabsContent value="insights">
-              {report?.aiReport ? (
-                <div
-                  className={`rounded border p-6 max-w-none ${
-                    currentTheme.type === 'dark' ? 'prose prose-slate' : 'prose prose-amber'
-                  }`}
-                  style={{
-                    backgroundColor: currentTheme.colors.surface,
-                    borderColor: currentTheme.colors.border,
-                    color: currentTheme.colors.text,
-                    '--tw-prose-headings': currentTheme.colors.text,
-                    '--tw-prose-body': currentTheme.colors.text,
-                    '--tw-prose-bold': currentTheme.colors.text,
-                    '--tw-prose-links': currentTheme.colors.primary,
-                  } as React.CSSProperties}
-                >
-                  <ReactMarkdown>{report.aiReport}</ReactMarkdown>
-                </div>
-              ) : (
-                <div
-                  className="rounded border p-6"
-                  style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
-                >
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: currentTheme.colors.primary }} />
-                    <h2 className="text-xl font-semibold mb-2">Génération du rapport AI en cours...</h2>
-                    <p className="text-sm text-center max-w-md" style={{ color: currentTheme.colors.textMuted }}>
-                      L'analyse approfondie de vos biomarqueurs est en cours de génération par notre IA médicale.
-                      Rechargez la page dans quelques minutes.
-                    </p>
-                  </div>
-                </div>
-              )}
+            {/* Synthèse: Synthese executive + Tableau de bord */}
+            <TabsContent value="synthese">
+              {renderReportSection(['synthese-executive', 'qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests', 'tableau-de-bord-scores-priorites', 'potentiel-recomposition'])}
+            </TabsContent>
+
+            {/* Données & Tests: Qualité données + Marqueurs manquants */}
+            <TabsContent value="donnees">
+              {renderReportSection(['qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests'])}
+            </TabsContent>
+
+            {/* Analyse Axes: Tous les axes */}
+            <TabsContent value="axes">
+              {renderReportSection([
+                'lecture-compartimentee-par-axes',
+                'axe-1', 'axe-2', 'axe-3', 'axe-4', 'axe-5', 'axe-6', 'axe-7', 'axe-8', 'axe-9', 'axe-10', 'axe-11',
+                'interconnexions-majeures',
+                'deep-dive'
+              ])}
+            </TabsContent>
+
+            {/* Plan 90j */}
+            <TabsContent value="plan">
+              {renderReportSection(['plan-daction-90-jours'])}
+            </TabsContent>
+
+            {/* Protocoles: Nutrition + Supplements */}
+            <TabsContent value="protocoles">
+              {renderReportSection(['nutrition-entrainement', 'supplements-stack'])}
+            </TabsContent>
+
+            {/* Annexes */}
+            <TabsContent value="annexes">
+              {renderReportSection(['annexes', 'sources'])}
             </TabsContent>
           </Tabs>
         </div>
