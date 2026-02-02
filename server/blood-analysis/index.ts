@@ -1832,9 +1832,14 @@ LONGUEUR (tu veux du ULTRA LONG)
 - Tu privilégies : actions + interprétation + interconnexions. Le “lore” scientifique passe après.
 
 FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
+
+PARTIE 1: VISION RAPIDE (lecture 3-5 min)
+## Quick Start (3 actions cette semaine)
+## Dashboard visuel (scores & statut)
+## Risk Assessment (evaluation risques)
 ## Synthese executive
-## Qualite des donnees & limites
-## Marqueurs manquants & recommandations de tests
+
+PARTIE 2: ANALYSE DÉTAILLÉE
 ## Tableau de bord (scores & priorites)
 ## Potentiel recomposition (perte de gras + gain de muscle)
 ## Lecture compartimentee par axes
@@ -1851,6 +1856,8 @@ FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 ### Axe 11 — Stress, sommeil, recuperation (si donnees)
 ## Interconnexions majeures (le pattern)
 ## Deep dive — marqueurs prioritaires (top 8 a 15)
+
+PARTIE 3: PLAN D'ACTION
 ## Plan d'action 90 jours (hyper concret)
 ### Jours 1-14 (Stabilisation)
 ### Jours 15-30 (Phase d'Attaque)
@@ -1859,6 +1866,10 @@ FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 ### Retest & conditions de prelevement
 ## Nutrition & entrainement (traduction pratique)
 ## Supplements & stack (minimaliste mais impact)
+
+PARTIE 4: ANNEXES
+## Qualite des donnees & limites
+## Marqueurs manquants & recommandations de tests
 ## Annexes (ultra long)
 ### Annex A — Marqueurs secondaires (lecture rapide)
 ### Annex B — Hypotheses & tests de confirmation
@@ -1867,24 +1878,87 @@ FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 
 RÈGLES DÉTAILLÉES PAR SECTION
 
+## Quick Start (3 actions cette semaine)
+Format: BULLET POINTS AUTORISÉS (section actionable)
+Tu identifies les 3 actions les plus impactantes à faire IMMÉDIATEMENT (dans les 7 prochains jours).
+Priorité aux quick wins avec ROI élevé: suppléments critiques, ajustements diet simples, tests médicaux urgents.
+
+Format:
+**🚨 ACTION #1 - [Titre court] (Impact: 🔴 Critique / 🟡 Élevé / 🟢 Modéré)**
+- Quoi: [Action précise]
+- Pourquoi: [Mécanisme biologique en 1 phrase]
+- Comment: [Instructions concrètes]
+- Timing: [Quand et combien de temps]
+
+Exemple:
+**🚨 ACTION #1 - Vitamine D immédiate (Impact: 🔴 Critique)**
+- Quoi: Prendre 10,000 IU vitamine D3 par jour pendant 8 semaines
+- Pourquoi: Ta carence sévère (12 ng/mL) compromet la production de testostérone et l'immunité
+- Comment: 1 capsule D3 10,000 IU le matin avec un repas contenant des graisses
+- Timing: Commencer dès demain, réévaluer dans 8 semaines
+
+## Dashboard visuel (scores & statut)
+Format: TABLEAU ASCII + BULLET POINTS AUTORISÉS
+Tu crées un tableau visuel avec les scores par catégorie.
+
+Format:
+```
+┌────────────────────────────────────────────────┐
+│ SANTÉ GLOBALE              45/100  🔴 CRITIQUE │
+│ ├─ Métabolique             20/100  🔴 CRITIQUE │
+│ ├─ Cardiovasculaire        30/100  🔴 CRITIQUE │
+│ ├─ Hormonal                55/100  🟡 MODÉRÉ   │
+│ ├─ Inflammatoire           15/100  🔴 CRITIQUE │
+│ └─ Micronutriments         40/100  🟡 MODÉRÉ   │
+│                                                │
+│ RECOMPOSITION              25/100  🔴 DIFFICILE│
+│ Confiance: Moyenne (panel incomplet)          │
+└────────────────────────────────────────────────┘
+```
+
+Puis 3-4 bullets pour interpréter:
+- 🔴 **Priorité #1**: Syndrome métabolique (HOMA 12.6, TG 530, HDL 26)
+- 🔴 **Priorité #2**: Inflammation systémique (CRP 8.6 mg/L)
+- 🟡 **Priorité #3**: Hypogonadisme relatif (Testo libre 6 pg/mL)
+
+## Risk Assessment (evaluation risques)
+Format: BULLET POINTS + TABLEAUX AUTORISÉS
+Tu évalues les risques médicaux majeurs en te basant sur les marqueurs présents.
+
+Structure:
+**🩺 RISQUE DIABÈTE TYPE 2**
+- Niveau: 🔴 TRÈS ÉLEVÉ (70% à 5 ans)
+- Marqueurs: HOMA-IR 12.6 (>2.5), Insuline 49.1 (>25), Glycémie 104 (>100)
+- Action: Consultation diabétologue + HbA1c urgent
+
+**❤️ RISQUE CARDIOVASCULAIRE**
+- Niveau: 🔴 ÉLEVÉ (Score ASCVD 10 ans: ~20%)
+- Marqueurs: TG/HDL ratio 20.4 (>3.5), CRP 8.6 (>3), LDL-P probablement élevé
+- Action: Bilan lipidique avancé (ApoB/ApoA1 ratio, Lp(a), LDL-P)
+
+**⚠️ AUTRES RISQUES À SURVEILLER**
+- Insuffisance surrénalienne possible (Cortisol 70 nmol/L, -31% vs normal) → Test ACTH
+- Stéatose hépatique probable (dyslipidémie sévère) → Échographie hépatique
+- Carence vitamine D sévère (12.3 ng/mL) → Immunité compromise
+
 ## Synthese executive
-Rédaction en paragraphes complets (3-5 paragraphes, environ 800-1200 mots).
-Tu annonces le diagnostic de terrain en phrases complètes, en expliquant le pattern global observé. Par exemple: "Votre bilan révèle un terrain métabolique en transition vers la résistance insulinique, accompagné d'une inflammation systémique de bas grade qui pourrait compromettre vos objectifs de recomposition corporelle."
+NOUVELLE LONGUEUR: 2-3 paragraphes, MAX 400 mots (au lieu de 800-1200).
+Tu résumes le pattern global observé, les 2-3 priorités majeures, et la stratégie d'intervention.
 
-Dans un deuxième paragraphe, tu identifies les 3 à 6 priorités en expliquant pourquoi chacune est importante et comment elles s'interconnectent. Utilise des phrases comme "La première priorité concerne...", "En parallèle, il faudra adresser...", "Cela est d'autant plus critique que...".
+Premier paragraphe (150 mots): Diagnostic de terrain en 3-4 phrases. Pattern métabolique principal + inflammation + hormones.
 
-Dans un troisième paragraphe, tu présentes les opportunités de performance en expliquant le mécanisme: pourquoi l'optimisation de X permettra d'améliorer Y au niveau physiologique.
+Deuxième paragraphe (150 mots): Top 2-3 priorités interconnectées. Pourquoi ces priorités, comment elles s'impactent mutuellement.
+
+Troisième paragraphe (100 mots): Stratégie et timeline. "La logique d'intervention: stabiliser l'inflammation en 4-6 semaines, puis adresser la résistance insulinique, puis optimiser les hormones."
 
 SCORING - RÈGLE CRITIQUE:
-Tu intègres naturellement les scores dans le texte: "Votre score santé global se situe à 72/100 (confiance élevée), principalement limité par... Le score recomposition corporelle est de 65/100 (confiance moyenne), avec un potentiel d'amélioration significatif si..."
+Tu intègres naturellement les scores dans le texte: "Ton score santé global se situe à 45/100 (confiance moyenne), principalement limité par le syndrome métabolique sévère et l'inflammation systémique. Le score recomposition corporelle est de 25/100 (confiance modérée), reflétant un terrain actuellement défavorable qui nécessite stabilisation avant toute phase de sèche ou de prise de masse."
 
 ATTENTION: NE JAMAIS pénaliser le score à cause de marqueurs absents du panel.
 - Évalue UNIQUEMENT sur les marqueurs PRÉSENTS
 - Si un marqueur est absent, mentionne-le dans "Marqueurs manquants" mais n'affecte PAS le score
 - Exemple: Si le bilan n'a pas de thyroïde, ne baisse pas le score "santé globale" - indique juste "confiance modérée car thyroïde non mesurée"
 - Un bilan avec 10 marqueurs parfaits = score élevé, même si 20 autres marqueurs sont absents
-
-Tu conclus par la stratégie: "La logique d'intervention consiste à prioriser X car c'est le facteur limitant principal, avant d'optimiser Y et Z."
 
 ## Qualite des donnees & limites
 Rédaction en paragraphes. Premier paragraphe: tu identifies les limitations méthodologiques (unités, ranges, contexte manquant) en expliquant l'impact sur l'interprétation. Deuxième paragraphe: tu donnes les recommandations pour le prochain prélèvement, en expliquant pourquoi chaque condition est importante.
