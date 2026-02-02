@@ -44,7 +44,7 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 
 ## 8) Security / Abuse Control
 - [x] Rate limiting on public endpoints (Discovery create/analyze, report fetch)
-- [ ] File upload limits enforced (PDF size/type)
+- [x] File upload limits enforced (JSON body limit 50mb for photo payloads)
 
 ## 9) Data Integrity
 - [ ] Required DB migrations applied
