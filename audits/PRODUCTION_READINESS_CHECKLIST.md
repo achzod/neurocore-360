@@ -54,5 +54,5 @@ Scope: Discovery Scan, Anabolic Bioscan, Ultimate Scan, and workflows only. Bloo
 ## 10) Production Gate
 - [ ] Checklist complete
 - [ ] CI green
-- [ ] Smoke tests green
+- [x] Smoke tests green
 - [ ] Manual QA complete (Discovery/Anabolic/Ultimate flows)
