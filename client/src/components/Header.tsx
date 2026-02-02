@@ -14,7 +14,6 @@ const PRODUCTS = [
   { name: "Anabolic Bioscan", href: "/offers/anabolic-bioscan" },
   { name: "Blood Analysis", href: "/offers/blood-analysis" },
   { name: "Ultimate Scan", href: "/offers/ultimate-scan" },
-  { name: "Peptides Engine", href: "/offers/peptides-engine" },
 ];
 
 export function Header() {

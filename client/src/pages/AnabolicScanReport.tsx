@@ -217,7 +217,7 @@ interface NarrativeReport {
     months2_3: string;
   };
   conclusion: string;
-  auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE' | 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'PEPTIDES';
+  auditType: 'GRATUIT' | 'PREMIUM' | 'ELITE' | 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS';
 }
 
 const isAnalysisSection = (section: NarrativeSection): boolean => /analyse/i.test(section.title);

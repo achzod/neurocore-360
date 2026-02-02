@@ -41,8 +41,6 @@ export function ReviewForm({ auditId, onSubmit }: ReviewFormProps) {
             ? "ULTIMATE_SCAN"
             : type === "BLOOD_ANALYSIS"
             ? "BLOOD_ANALYSIS"
-            : type === "PEPTIDES"
-            ? "PEPTIDES"
             : null;
 
         setAuditEmail(data.email || null);

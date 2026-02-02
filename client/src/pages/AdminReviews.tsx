@@ -22,7 +22,7 @@ interface Review {
   auditId: string;
   userId?: string;
   email: string;
-  auditType: 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'PEPTIDES';
+  auditType: 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS';
   rating: number;
   comment: string;
   status: "pending" | "approved" | "rejected";
@@ -39,7 +39,6 @@ const AUDIT_TYPE_LABELS: Record<string, string> = {
   'ANABOLIC_BIOSCAN': 'Anabolic Bioscan',
   'ULTIMATE_SCAN': 'Ultimate Scan',
   'BLOOD_ANALYSIS': 'Blood Analysis',
-  'PEPTIDES': 'Peptides Engine',
 };
 
 const PROMO_CODES: Record<string, { code: string; description: string }> = {
@@ -47,7 +46,6 @@ const PROMO_CODES: Record<string, { code: string; description: string }> = {
   'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ deduits' },
   'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ deduits' },
   'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ deduits' },
-  'PEPTIDES': { code: 'PEPTIDES', description: '99€ deduits' },
 };
 
 export default function AdminReviews() {

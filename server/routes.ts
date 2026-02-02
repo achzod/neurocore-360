@@ -40,7 +40,6 @@ import { registerKnowledgeRoutes } from "./knowledge";
 import { registerBloodAnalysisRoutes } from "./blood-analysis/routes";
 import { registerBloodTestsRoutes } from "./blood-tests/routes";
 import { getAuthPayload, signAuthToken } from "./auth";
-// import { registerPeptidesRoutes } from "./peptides-engine"; // Temporarily commented - file missing
 import { analyzeDiscoveryScan, convertToNarrativeReport } from "./discovery-scan";
 import {
   scrapeArticleFromUrl,
@@ -1219,7 +1218,7 @@ export async function registerRoutes(
    * Body:
    * - url: string (obligatoire)
    * - cta?: string (optionnel, bloc markdown à injecter en bas)
-   * - category?: string (optionnel, ex: "sommeil", "sarms", "peptides")
+   * - category?: string (optionnel, ex: "sommeil", "sarms")
    * - slug?: string (optionnel, sinon auto-slug depuis le titre FR)
    * - image?: string (optionnel, URL d'image)
    * - featured?: boolean
@@ -2022,18 +2021,7 @@ export async function registerRoutes(
     if (!requireAdminAuth(req, res)) return;
     try {
       const allAudits = await storage.getAllAudits();
-      const peptidesReports = await storage.getAllPeptidesReports();
       const bloodReports = await storage.getAllBloodReports();
-      const mappedPeptides = peptidesReports.map((report) => ({
-        id: report.id,
-        email: report.email,
-        type: "PEPTIDES",
-        status: "COMPLETED",
-        reportDeliveryStatus: "SENT",
-        reportSentAt: report.createdAt,
-        createdAt: report.createdAt,
-        completedAt: report.createdAt,
-      }));
 
       const mappedBlood = bloodReports.map((report) => ({
         id: report.id,
@@ -2046,7 +2034,7 @@ export async function registerRoutes(
         completedAt: report.createdAt,
       }));
 
-      const audits = [...mappedBlood, ...mappedPeptides, ...allAudits].sort((a: any, b: any) => {
+      const audits = [...mappedBlood, ...allAudits].sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt).getTime();
         const dateB = new Date(b.createdAt).getTime();
         return dateB - dateA;
@@ -2449,25 +2437,6 @@ export async function registerRoutes(
           last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
         )`,
 
-        `CREATE TABLE IF NOT EXISTS peptides_progress (
-          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-          email VARCHAR(255) NOT NULL UNIQUE,
-          current_section TEXT NOT NULL DEFAULT '0',
-          total_sections TEXT NOT NULL DEFAULT '6',
-          percent_complete TEXT NOT NULL DEFAULT '0',
-          responses JSONB NOT NULL DEFAULT '{}',
-          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
-          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )`,
-
-        `CREATE TABLE IF NOT EXISTS peptides_reports (
-          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-          email VARCHAR(255) NOT NULL,
-          responses JSONB NOT NULL DEFAULT '{}',
-          report JSONB NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )`,
         
         `CREATE TABLE IF NOT EXISTS magic_tokens (
           token VARCHAR(255) PRIMARY KEY,
@@ -2560,10 +2529,7 @@ export async function registerRoutes(
         `CREATE INDEX IF NOT EXISTS idx_cta_history_audit_id ON cta_history(audit_id)`,
         `CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status)`,
         `CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`,
-        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`,
-        `CREATE INDEX IF NOT EXISTS idx_peptides_progress_email ON peptides_progress(email)`,
-        `CREATE INDEX IF NOT EXISTS idx_peptides_reports_email ON peptides_reports(email)`,
-        `CREATE INDEX IF NOT EXISTS idx_peptides_reports_created_at ON peptides_reports(created_at)`
+        `CREATE INDEX IF NOT EXISTS idx_email_tracking_audit_id ON email_tracking(audit_id)`
       ];
       
       const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_CONNECTION_STRING;
@@ -3549,9 +3515,6 @@ export async function registerRoutes(
 
   // ==================== BLOOD TESTS DASHBOARD ROUTES ====================
   registerBloodTestsRoutes(app);
-
-  // ==================== PEPTIDES ENGINE ROUTES ====================
-  // registerPeptidesRoutes(app); // Temporarily commented - file missing
 
   return httpServer;
 }

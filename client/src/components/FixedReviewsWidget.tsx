@@ -20,7 +20,7 @@ const REVIEWS = [
   {
     name: "Marc L.",
     role: "Cadre dirigeant",
-    content: "Le Peptides Engine m'a donne un plan clair et actionnable. Resultats visibles en quelques semaines.",
+    content: "Le scan m'a donne un plan clair et actionnable. Resultats visibles en quelques semaines.",
     rating: 5,
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
   },

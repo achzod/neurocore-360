@@ -25,7 +25,6 @@ import Report from "@/pages/Report";
 import BloodAnalysisDashboard from "@/pages/BloodAnalysisDashboard";
 import BloodAnalysisStart from "@/pages/BloodAnalysisStart";
 import BloodAnalysisLegacyRedirect from "@/pages/BloodAnalysisLegacyRedirect";
-import PeptidesEnginePage from "@/pages/PeptidesEnginePage";
 import Blog from "@/pages/Blog";
 import BlogArticle from "@/pages/BlogArticle";
 import Press from "@/pages/Press";
@@ -34,7 +33,6 @@ import ApexLabs from "@/pages/ApexLabs";
 import DiscoveryScanReport from "@/pages/DiscoveryScanReport";
 import AnabolicScanReport from "@/pages/AnabolicScanReport";
 import UltimateScanReport from "@/pages/UltimateScanReport";
-import PeptidesEngineReport from "@/pages/PeptidesEngineReport";
 import BloodClientDashboard from "@/pages/BloodClientDashboard";
 
 // Offer Pages
@@ -42,7 +40,6 @@ import AuditGratuit from "@/pages/offers/AuditGratuit";
 import AuditPremium from "@/pages/offers/AuditPremium";
 import BloodAnalysisOffer from "@/pages/offers/BloodAnalysisOffer";
 import ProPanel from "@/pages/offers/ProPanel";
-import PeptidesEngine from "@/pages/offers/PeptidesEngine";
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -68,14 +65,12 @@ function Router() {
       <Route path="/blood-analysis" component={BloodAnalysisStart} />
       <Route path="/blood-analysis/dashboard/:reportId" component={BloodAnalysisLegacyRedirect} />
       <Route path="/blood-analysis/:reportId" component={BloodAnalysisLegacyRedirect} />
-      <Route path="/peptides-engine" component={PeptidesEnginePage} />
 
       {/* Offer Pages - New Names */}
       <Route path="/offers/discovery-scan" component={AuditGratuit} />
       <Route path="/offers/anabolic-bioscan" component={AuditPremium} />
       <Route path="/offers/blood-analysis" component={BloodAnalysisOffer} />
       <Route path="/offers/ultimate-scan" component={ProPanel} />
-      <Route path="/offers/peptides-engine" component={PeptidesEngine} />
 
       {/* Legacy routes - redirects */}
       <Route path="/offers/audit-gratuit" component={AuditGratuit} />
@@ -86,7 +81,6 @@ function Router() {
       <Route path="/scan/:auditId" component={DiscoveryScanReport} />
       <Route path="/anabolic/:auditId" component={AnabolicScanReport} />
       <Route path="/ultimate/:auditId" component={UltimateScanReport} />
-      <Route path="/peptides/:auditId" component={PeptidesEngineReport} />
 
       <Route path="/dashboard" component={DashboardRouter} />
       <Route path="/analysis/:reportId" component={BloodAnalysisDashboard} />

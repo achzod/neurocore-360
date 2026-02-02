@@ -41,8 +41,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ? 'Anabolic Bioscan'
       : auditType === 'ELITE' || auditType === 'ULTIMATE_SCAN'
       ? 'Ultimate Scan'
-      : auditType === 'PEPTIDES'
-      ? 'Peptides Engine'
       : auditType === 'BLOOD_ANALYSIS'
       ? 'Blood Analysis'
       : 'Audit';

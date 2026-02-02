@@ -100,33 +100,6 @@ export interface BurnoutReportRecord {
   createdAt: Date | string;
 }
 
-export interface PeptidesProgress {
-  id: string;
-  email: string;
-  currentSection: number;
-  totalSections: number;
-  percentComplete: number;
-  responses: Record<string, unknown>;
-  status: AuditStatusEnum;
-  startedAt: Date | string;
-  lastActivityAt: Date | string;
-}
-
-export interface SavePeptidesProgressInput {
-  email: string;
-  currentSection: number;
-  totalSections?: number;
-  responses: Record<string, unknown>;
-}
-
-export interface PeptidesReportRecord {
-  id: string;
-  email: string;
-  responses: Record<string, unknown>;
-  report: unknown;
-  createdAt: Date | string;
-}
-
 export interface BloodReportRecord {
   id: string;
   email: string;
@@ -180,13 +153,6 @@ export interface IStorage {
   updateBurnoutReport(id: string, report: unknown): Promise<BurnoutReportRecord | undefined>;
   getAllBurnoutReports(): Promise<BurnoutReportRecord[]>;
 
-  getPeptidesProgress(email: string): Promise<PeptidesProgress | undefined>;
-  savePeptidesProgress(input: SavePeptidesProgressInput): Promise<PeptidesProgress>;
-  createPeptidesReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<PeptidesReportRecord>;
-  getPeptidesReport(id: string): Promise<PeptidesReportRecord | undefined>;
-  updatePeptidesReport(id: string, report: unknown): Promise<PeptidesReportRecord | undefined>;
-  getAllPeptidesReports(): Promise<PeptidesReportRecord[]>;
-
   createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord>;
   getBloodReport(id: string): Promise<BloodReportRecord | undefined>;
   updateBloodReport(id: string, data: Partial<BloodReportRecord>): Promise<BloodReportRecord | undefined>;
@@ -232,8 +198,6 @@ export class MemStorage implements IStorage {
   private progress: Map<string, QuestionnaireProgress>;
   private burnoutProgress: Map<string, BurnoutProgress>;
   private burnoutReports: Map<string, BurnoutReportRecord>;
-  private peptidesProgress: Map<string, PeptidesProgress>;
-  private peptidesReports: Map<string, PeptidesReportRecord>;
   private bloodReports: Map<string, BloodReportRecord>;
   private bloodTests: Map<string, BloodTestRecord>;
   private magicTokens: Map<string, MagicToken>;
@@ -247,8 +211,6 @@ export class MemStorage implements IStorage {
     this.progress = new Map();
     this.burnoutProgress = new Map();
     this.burnoutReports = new Map();
-    this.peptidesProgress = new Map();
-    this.peptidesReports = new Map();
     this.bloodReports = new Map();
     this.bloodTests = new Map();
     this.magicTokens = new Map();
@@ -480,67 +442,6 @@ export class MemStorage implements IStorage {
 
   async getAllBurnoutReports(): Promise<BurnoutReportRecord[]> {
     return Array.from(this.burnoutReports.values()).sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return dateB - dateA;
-    });
-  }
-
-  async getPeptidesProgress(email: string): Promise<PeptidesProgress | undefined> {
-    return this.peptidesProgress.get(email);
-  }
-
-  async savePeptidesProgress(input: SavePeptidesProgressInput): Promise<PeptidesProgress> {
-    const existing = this.peptidesProgress.get(input.email);
-    const totalSections = input.totalSections ?? 6;
-    const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
-
-    const progress: PeptidesProgress = {
-      id: existing?.id || randomUUID(),
-      email: input.email,
-      currentSection: input.currentSection,
-      totalSections,
-      percentComplete,
-      responses: input.responses,
-      status: input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS",
-      startedAt: existing?.startedAt || new Date(),
-      lastActivityAt: new Date(),
-    };
-
-    this.peptidesProgress.set(input.email, progress);
-    return progress;
-  }
-
-  async createPeptidesReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<PeptidesReportRecord> {
-    const id = randomUUID();
-    const record: PeptidesReportRecord = {
-      id,
-      email: input.email,
-      responses: input.responses,
-      report: input.report,
-      createdAt: new Date(),
-    };
-    this.peptidesReports.set(id, record);
-    return record;
-  }
-
-  async getPeptidesReport(id: string): Promise<PeptidesReportRecord | undefined> {
-    return this.peptidesReports.get(id);
-  }
-
-  async updatePeptidesReport(id: string, report: unknown): Promise<PeptidesReportRecord | undefined> {
-    const existing = this.peptidesReports.get(id);
-    if (!existing) return undefined;
-    const updated: PeptidesReportRecord = {
-      ...existing,
-      report,
-    };
-    this.peptidesReports.set(id, updated);
-    return updated;
-  }
-
-  async getAllPeptidesReports(): Promise<PeptidesReportRecord[]> {
-    return Array.from(this.peptidesReports.values()).sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
@@ -1302,145 +1203,6 @@ export class PgStorage implements IStorage {
     }));
   }
 
-  async getPeptidesProgress(email: string): Promise<PeptidesProgress | undefined> {
-    await this.ensurePeptidesProgressTable();
-    const result = await pool.query("SELECT * FROM peptides_progress WHERE email = $1", [email]);
-    if (result.rows.length === 0) return undefined;
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      email: row.email,
-      currentSection: parseInt(row.current_section),
-      totalSections: parseInt(row.total_sections),
-      percentComplete: parseInt(row.percent_complete),
-      responses: row.responses || {},
-      status: row.status,
-      startedAt: row.started_at,
-      lastActivityAt: row.last_activity_at,
-    };
-  }
-
-  async savePeptidesProgress(input: SavePeptidesProgressInput): Promise<PeptidesProgress> {
-    await this.ensurePeptidesProgressTable();
-    const existing = await this.getPeptidesProgress(input.email);
-    const totalSections = input.totalSections ?? 6;
-    const percentComplete = Math.round(((input.currentSection + 1) / totalSections) * 100);
-    const status: AuditStatusEnum = input.currentSection >= totalSections - 1 ? "COMPLETED" : "IN_PROGRESS";
-
-    if (existing) {
-      const result = await pool.query(
-        `UPDATE peptides_progress SET current_section = $1, total_sections = $2, percent_complete = $3, responses = $4, status = $5, last_activity_at = NOW() WHERE email = $6 RETURNING *`,
-        [
-          input.currentSection.toString(),
-          totalSections.toString(),
-          percentComplete.toString(),
-          JSON.stringify(input.responses || {}),
-          status,
-          input.email,
-        ]
-      );
-      const row = result.rows[0];
-      return {
-        id: row.id,
-        email: row.email,
-        currentSection: parseInt(row.current_section),
-        totalSections: parseInt(row.total_sections),
-        percentComplete: parseInt(row.percent_complete),
-        responses: row.responses || {},
-        status: row.status,
-        startedAt: row.started_at,
-        lastActivityAt: row.last_activity_at,
-      };
-    }
-
-    const id = randomUUID();
-    const result = await pool.query(
-      `INSERT INTO peptides_progress (id, email, current_section, total_sections, percent_complete, responses, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [
-        id,
-        input.email,
-        input.currentSection.toString(),
-        totalSections.toString(),
-        percentComplete.toString(),
-        JSON.stringify(input.responses || {}),
-        status,
-      ]
-    );
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      email: row.email,
-      currentSection: parseInt(row.current_section),
-      totalSections: parseInt(row.total_sections),
-      percentComplete: parseInt(row.percent_complete),
-      responses: row.responses || {},
-      status: row.status,
-      startedAt: row.started_at,
-      lastActivityAt: row.last_activity_at,
-    };
-  }
-
-  async createPeptidesReport(input: { email: string; responses: Record<string, unknown>; report: unknown }): Promise<PeptidesReportRecord> {
-    await this.ensurePeptidesReportsTable();
-    const id = randomUUID();
-    const result = await pool.query(
-      `INSERT INTO peptides_reports (id, email, responses, report) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [id, input.email, JSON.stringify(input.responses || {}), JSON.stringify(input.report)]
-    );
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      email: row.email,
-      responses: row.responses || {},
-      report: row.report || {},
-      createdAt: row.created_at,
-    };
-  }
-
-  async getPeptidesReport(id: string): Promise<PeptidesReportRecord | undefined> {
-    await this.ensurePeptidesReportsTable();
-    const result = await pool.query("SELECT * FROM peptides_reports WHERE id = $1", [id]);
-    if (result.rows.length === 0) return undefined;
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      email: row.email,
-      responses: row.responses || {},
-      report: row.report || {},
-      createdAt: row.created_at,
-    };
-  }
-
-  async updatePeptidesReport(id: string, report: unknown): Promise<PeptidesReportRecord | undefined> {
-    await this.ensurePeptidesReportsTable();
-    const result = await pool.query(
-      `UPDATE peptides_reports SET report = $2 WHERE id = $1 RETURNING *`,
-      [id, JSON.stringify(report)]
-    );
-    if (result.rows.length === 0) return undefined;
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      email: row.email,
-      responses: row.responses || {},
-      report: row.report || {},
-      createdAt: row.created_at,
-    };
-  }
-
-  async getAllPeptidesReports(): Promise<PeptidesReportRecord[]> {
-    await this.ensurePeptidesReportsTable();
-    const result = await pool.query("SELECT * FROM peptides_reports ORDER BY created_at DESC LIMIT 100");
-    return result.rows.map(row => ({
-      id: row.id,
-      email: row.email,
-      responses: row.responses || {},
-      report: row.report || {},
-      createdAt: row.created_at,
-    }));
-  }
-
   async createBloodReport(input: { email: string; profile: Record<string, unknown>; markers: unknown[]; analysis: unknown; aiReport: string }): Promise<BloodReportRecord> {
     await this.ensureBloodReportsTable();
     const id = randomUUID();
@@ -2036,8 +1798,6 @@ export class PgStorage implements IStorage {
   private ensuredTerraTable = false;
   private ensuredBurnoutProgressTable = false;
   private ensuredBurnoutReportsTable = false;
-  private ensuredPeptidesProgressTable = false;
-  private ensuredPeptidesReportsTable = false;
   private ensuredBloodReportsTable = false;
 
   private async ensureTerraDataTable(): Promise<void> {
@@ -2106,51 +1866,6 @@ export class PgStorage implements IStorage {
     } catch (err) {
       console.error("[Storage] Error creating burnout_reports table:", err);
       this.ensuredBurnoutReportsTable = true;
-    }
-  }
-
-  private async ensurePeptidesProgressTable(): Promise<void> {
-    if (this.ensuredPeptidesProgressTable) return;
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS peptides_progress (
-          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-          email VARCHAR(255) NOT NULL UNIQUE,
-          current_section TEXT NOT NULL DEFAULT '0',
-          total_sections TEXT NOT NULL DEFAULT '6',
-          percent_complete TEXT NOT NULL DEFAULT '0',
-          responses JSONB NOT NULL DEFAULT '{}',
-          status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
-          started_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          last_activity_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      await pool.query(`CREATE INDEX IF NOT EXISTS idx_peptides_progress_email ON peptides_progress(email)`);
-      this.ensuredPeptidesProgressTable = true;
-    } catch (err) {
-      console.error("[Storage] Error creating peptides_progress table:", err);
-      this.ensuredPeptidesProgressTable = true;
-    }
-  }
-
-  private async ensurePeptidesReportsTable(): Promise<void> {
-    if (this.ensuredPeptidesReportsTable) return;
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS peptides_reports (
-          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
-          email VARCHAR(255) NOT NULL,
-          responses JSONB NOT NULL DEFAULT '{}',
-          report JSONB NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      await pool.query(`CREATE INDEX IF NOT EXISTS idx_peptides_reports_email ON peptides_reports(email)`);
-      await pool.query(`CREATE INDEX IF NOT EXISTS idx_peptides_reports_created_at ON peptides_reports(created_at)`);
-      this.ensuredPeptidesReportsTable = true;
-    } catch (err) {
-      console.error("[Storage] Error creating peptides_reports table:", err);
-      this.ensuredPeptidesReportsTable = true;
     }
   }
 
@@ -2277,7 +1992,7 @@ export const storage = new PgStorage();
 // ==================== REVIEW STORAGE (PostgreSQL) ====================
 
 export type ReviewStatusEnum = 'pending' | 'approved' | 'rejected';
-export type AuditTypeEnum = 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS' | 'PEPTIDES';
+export type AuditTypeEnum = 'DISCOVERY' | 'ANABOLIC_BIOSCAN' | 'ULTIMATE_SCAN' | 'BLOOD_ANALYSIS';
 
 export interface Review {
   id: string;
@@ -2311,7 +2026,6 @@ export const PROMO_CODES_BY_AUDIT_TYPE: Record<ReviewAuditTypeEnum, { code: stri
   'ANABOLIC_BIOSCAN': { code: 'ANABOLICBIOSCAN', description: '59€ déduits du coaching' },
   'ULTIMATE_SCAN': { code: 'ULTIMATESCAN', description: '79€ déduits du coaching' },
   'BLOOD_ANALYSIS': { code: 'BLOOD', description: '99€ déduits du coaching' },
-  'PEPTIDES': { code: 'PEPTIDES', description: '99€ déduits du coaching' },
 };
 
 export interface IReviewStorage {

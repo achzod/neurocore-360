@@ -347,28 +347,6 @@ export const PRICING_PLANS = [
     popular: false,
     cta: "Choisir Ultimate Scan",
   },
-  {
-    id: "peptides",
-    name: "Peptides Engine",
-    price: 99,
-    priceLabel: "99€",
-    subtitle: "Paiement unique",
-    description: "Questionnaire peptides + protocole sur mesure",
-    icon: "FlaskConical",
-    color: "amber",
-    href: "/offers/peptides-engine",
-    features: [
-      "Questionnaire precis 6 sections",
-      "Protocoles peptides sur mesure",
-      "Dosages + timing + durees",
-      "Sources fiables + controle qualite",
-      "Stack supplements synergique",
-      "Ebook peptides offert",
-    ],
-    lockedFeatures: [],
-    popular: false,
-    cta: "Lancer Peptides Engine",
-  },
 ] as const;
 
 // Review system
@@ -385,7 +363,6 @@ export const ReviewAuditType = {
   ANABOLIC_BIOSCAN: "ANABOLIC_BIOSCAN",
   ULTIMATE_SCAN: "ULTIMATE_SCAN",
   BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
-  PEPTIDES: "PEPTIDES",
 } as const;
 
 export type ReviewAuditTypeEnum = (typeof ReviewAuditType)[keyof typeof ReviewAuditType];
@@ -411,7 +388,7 @@ export const insertReviewSchema = z.object({
   auditId: z.string(),
   userId: z.string().optional(),
   email: z.string().email("Email invalide"),
-  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS", "PEPTIDES"]),
+  auditType: z.enum(["DISCOVERY", "ANABOLIC_BIOSCAN", "ULTIMATE_SCAN", "BLOOD_ANALYSIS"]),
   rating: z.number().min(1).max(5),
   comment: z.string().min(10, "Le commentaire doit contenir au moins 10 caractères"),
 });

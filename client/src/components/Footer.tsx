@@ -70,11 +70,6 @@ export function Footer() {
                   Ultimate Scan
                 </Link>
               </li>
-              <li>
-                <Link href="/offers/peptides-engine" className="hover:text-white transition-colors">
-                  Peptides Engine
-                </Link>
-              </li>
             </ul>
           </div>
 

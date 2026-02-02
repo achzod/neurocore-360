@@ -67,16 +67,6 @@ const OFFERS: Offer[] = [
     imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/cno_pro.png",
     reverse: true
   },
-  {
-    id: 'peptides-engine',
-    title: "PEPTIDES ENGINE",
-    subtitle: "Protocoles peptides",
-    description: "Un questionnaire pointu pour definir les peptides adaptes a tes objectifs. Tu reçois un plan de dosage, un timing clair, un protocole semaine par semaine et des sources fiables. Bonus: ebook peptides offert.",
-    features: ["Protocoles peptides sur mesure", "Dosages + timing", "Sources fiables", "Ebook peptides offert"],
-    price: "99€",
-    imageUrl: "https://cdn.speedsize.com/3f711f28-1488-44dc-b013-5e43284ac4b0/https://public-web-assets.uh-static.com/web_v2/womens-health/whitepapers/sleep_ramadan.png",
-    reverse: false
-  }
 ];
 
 // ============================================================================

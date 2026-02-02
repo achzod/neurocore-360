@@ -4,7 +4,6 @@
  * Tests:
  * 1. Discovery Scan (GRATUIT)
  * 2. Anabolic Bioscan (PREMIUM)
- * 3. Peptides Engine
  *
  * Note: Ultimate Scan déjà testé séparément avec photos
  */
@@ -19,7 +18,6 @@ const __dirname = path.dirname(__filename);
 const API_BASE = "https://neurocore-360.onrender.com";
 const TEST_EMAIL = process.env.TEST_EMAIL?.trim() || "";
 const TEST_NAME = process.env.TEST_NAME?.trim() || "";
-const SKIP_PEPTIDES = /^(1|true|yes)$/i.test(process.env.SKIP_PEPTIDES || "");
 const TEST_PROFILE = (process.env.TEST_PROFILE || "clean").toLowerCase();
 
 const buildTestEmail = (prefix: string): string => {
@@ -415,94 +413,6 @@ async function testAnabolicBioscan(): Promise<{ id: string; url: string } | null
   }
 }
 
-async function testPeptidesEngine(): Promise<{ id: string; url: string } | null> {
-  console.log("\n" + "=".repeat(70));
-  console.log("🧪 TEST 3: PEPTIDES ENGINE");
-  console.log("=".repeat(70));
-
-  const email = `test.peptides.${Date.now()}@achzodcoaching.com`;
-
-  const peptidesResponses = {
-    prenom: "Julien",
-    age: "32",
-    sexe: "homme",
-    taille: "178",
-    poids: "82",
-    niveau_entrainement: "avance",
-    objectif_principal: "recomposition",
-    objectifs_secondaires: ["sommeil", "libido"],
-    antecedents: ["anxiete"],
-    medicaments: "aucun",
-    supplements: "creatine, omega-3, magnesium",
-    sommeil_qualite: "6-7",
-    stress_niveau: "eleve",
-    digestion: "ballonnements",
-    blessures: "tendon coude droit",
-    allergies: "aucune",
-    frequence_entrainement: "5-6",
-    type_entrainement: ["musculation", "endurance"],
-    recuperation: "moyenne",
-    plateau: "oui",
-    masse_grasse: "15-20",
-    douleurs_articulaires: "parfois",
-    energie_journee: "chute",
-    cardio: "1-2",
-    objectifs_peptides: ["gh", "tendons", "sommeil"],
-    experience_peptides: "jamais",
-    tolerance_injection: "ok",
-    delai: "8",
-    budget: "100-200",
-    suivi: "oui",
-    peptides_precis: "",
-    effets_secondaires: "",
-    bilans_dispo: "non",
-    biomarqueurs_notes: "",
-    traitement_hormonal: "non",
-    objectif_igf1: "optimiser",
-    suivi_medical: "oui",
-    timeline: "Shooting photo dans 10 semaines",
-    top_resultats: "Recuperation rapide, sommeil profond, repartition graisse",
-    contraintes: "Voyages frequents",
-    tolerance_risque: "modere",
-    niveau_engagement: "optimise",
-    notes_finales: "Je veux un plan simple et execute.",
-  };
-
-  try {
-    console.log(`📤 Soumission Peptides Engine...`);
-    console.log(`   Email: ${email}`);
-
-    const res = await fetch(`${API_BASE}/api/peptides-engine/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ responses: peptidesResponses, email }),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      console.error(`❌ Erreur:`, err);
-      return null;
-    }
-
-    const result = await res.json();
-    console.log(`✅ Analyse Peptides générée`);
-
-    if (result.id) {
-      console.log(`   Audit ID: ${result.id}`);
-      console.log(`   URL: ${API_BASE}/peptides/${result.id}`);
-      return { id: result.id, url: `${API_BASE}/peptides/${result.id}` };
-    }
-
-    fs.writeFileSync(
-      path.join(__dirname, `test-peptides-result-${Date.now()}.json`),
-      JSON.stringify(result, null, 2)
-    );
-    return { id: "peptides-direct", url: "voir fichier JSON" };
-  } catch (e) {
-    console.error(`❌ Erreur réseau:`, e);
-    return null;
-  }
-}
 
 async function waitForDiscoveryCompletion(auditId: string, maxWaitMinutes: number = 15): Promise<boolean> {
   console.log(`\n⏳ Attente génération rapport Discovery ${auditId}...`);
@@ -533,24 +443,6 @@ async function waitForDiscoveryCompletion(auditId: string, maxWaitMinutes: numbe
   return false;
 }
 
-async function analyzePeptidesReport(id: string): Promise<{ ok: boolean; issues: string[] }> {
-  const issues: string[] = [];
-  try {
-    const res = await fetch(`${API_BASE}/api/peptides-engine/${id}`);
-    if (!res.ok) {
-      issues.push(`❌ Fetch peptides ${res.status}`);
-      return { ok: false, issues };
-    }
-    const report = await res.json();
-    if (typeof report?.globalScore !== "number") issues.push("⚠️ Score global manquant");
-    if (!report?.sections?.length) {
-      issues.push("⚠️ Sections absentes");
-    }
-  } catch (e) {
-    issues.push(`❌ Erreur analyse peptides: ${e}`);
-  }
-  return { ok: issues.length === 0, issues };
-}
 
 async function waitForCompletion(auditId: string, maxWaitMinutes: number = 15): Promise<boolean> {
   console.log(`\n⏳ Attente génération rapport ${auditId}...`);
@@ -714,40 +606,12 @@ async function main() {
     results.push({ offer: "Anabolic Bioscan", ...anabolic, status: "pending" });
   }
 
-  // Test 3: Peptides Engine (optionnel)
-  if (!SKIP_PEPTIDES) {
-    const peptides = await testPeptidesEngine();
-    if (peptides) {
-      results.push({ offer: "Peptides Engine", ...peptides, status: "pending" });
-    }
-  } else {
-    console.log("⏭️  Peptides Engine saute (SKIP_PEPTIDES=1)");
-  }
-
   // Attendre génération et analyser
   console.log("\n" + "=".repeat(70));
   console.log("📊 ATTENTE GÉNÉRATION ET ANALYSE");
   console.log("=".repeat(70));
 
   for (const r of results) {
-    if (r.offer === "Peptides Engine") {
-      if (r.id !== "peptides-direct") {
-        const peptidesAnalysis = await analyzePeptidesReport(r.id);
-        r.status = peptidesAnalysis.ok ? "success" : "failed";
-        if (peptidesAnalysis.issues.length > 0) {
-          r.analysis = {
-            hasAIPatterns: false,
-            aiPatterns: [],
-            hasNutritionAnalysis: false,
-            hasExpertSupplements: false,
-            hasCTA: false,
-            issues: peptidesAnalysis.issues,
-          };
-        }
-      }
-      continue;
-    }
-
     const completed =
       r.offer === "Discovery Scan"
         ? await waitForDiscoveryCompletion(r.id)
@@ -783,16 +647,22 @@ async function main() {
     }
   }
 
-  // Ajouter Ultimate Scan déjà généré
-  console.log(`\n📋 Ultimate Scan (généré précédemment)`);
-  console.log(`   ID: ebc7b23d-da3e-4b8d-9d20-bbb5078cef7f`);
-  console.log(`   URL: ${API_BASE}/audit/ebc7b23d-da3e-4b8d-9d20-bbb5078cef7f`);
+  // Ultimate Scan (optionnel)
+  const ultimateId = process.env.ULTIMATE_AUDIT_ID?.trim();
+  if (ultimateId) {
+    console.log(`\n📋 Ultimate Scan (ID fourni)`);
+    console.log(`   ID: ${ultimateId}`);
+    console.log(`   URL: ${API_BASE}/audit/${ultimateId}`);
 
-  const ultimateAnalysis = await analyzeReport("ebc7b23d-da3e-4b8d-9d20-bbb5078cef7f");
-  console.log(`   Patterns IA: ${ultimateAnalysis.hasAIPatterns ? "⚠️ OUI" : "✅ NON"}`);
-  console.log(`   Nutrition détaillée: ${ultimateAnalysis.hasNutritionAnalysis ? "✅" : "⚠️"}`);
-  console.log(`   Compléments expert: ${ultimateAnalysis.hasExpertSupplements ? "✅" : "⚠️"}`);
-  console.log(`   CTA: ${ultimateAnalysis.hasCTA ? "✅" : "⚠️"}`);
+    const ultimateAnalysis = await analyzeReport(ultimateId);
+    console.log(`   Patterns IA: ${ultimateAnalysis.hasAIPatterns ? "⚠️ OUI" : "✅ NON"}`);
+    console.log(`   Nutrition détaillée: ${ultimateAnalysis.hasNutritionAnalysis ? "✅" : "⚠️"}`);
+    console.log(`   Compléments expert: ${ultimateAnalysis.hasExpertSupplements ? "✅" : "⚠️"}`);
+    console.log(`   CTA: ${ultimateAnalysis.hasCTA ? "✅" : "⚠️"}`);
+  } else {
+    console.log(`\n📋 Ultimate Scan (skipped)`);
+    console.log(`   Set ULTIMATE_AUDIT_ID to validate Ultimate Scan in this run.`);
+  }
 
   console.log("\n" + "=".repeat(70));
   console.log("✅ TESTS TERMINÉS");
