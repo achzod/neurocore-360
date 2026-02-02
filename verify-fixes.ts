@@ -20,7 +20,7 @@ const { db } = await import("./server/db.js");
 const { bloodTests } = await import("./shared/drizzle-schema.js");
 const { eq } = await import("drizzle-orm");
 
-const testId = "6cb20aac-8001-4ec2-a76d-78154a9b462e";
+const testId = "7e59bc99-ca77-4930-a031-07c27362d6e0";
 
 const [test] = await db
   .select()
