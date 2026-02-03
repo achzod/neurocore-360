@@ -2663,21 +2663,38 @@ RÉSUMÉ:
 ${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR (OBLIGATOIRE):\n${deepDivePayload.context}` : ""}
 ${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
 
-GÉNÈRE UNE ANALYSE COMPLÈTE EN RESPECTANT **TOUTES** LES SECTIONS SUIVANTES (ordre obligatoire):
-1. ## Synthèse exécutive
-2. ## Qualité des données & limites
-3. ## Tableau de bord (scores & priorités)
-4. ## Potentiel recomposition (perte de gras + gain de muscle)
-5. ## Lecture compartimentée par axes (Axe 1 à Axe 11)
-6. ## Interconnexions majeures (le pattern)
-7. ## Deep dive — marqueurs prioritaires (top 8 à 15)
-8. ## Plan d'action 90 jours (hyper concret) - avec les 4 phases complètes
-9. ## Nutrition & entraînement (traduction pratique)
-10. ## Supplements & stack (minimaliste mais impact)
-11. ## Annexes (ultra long) - Annexe A, B, C
-12. ## Sources (bibliothèque)
+IMPÉRATIF ABSOLU — GÉNÉRATION COMPLÈTE OBLIGATOIRE:
 
-CRITICAL: Ne t'arrête PAS avant d'avoir généré TOUTES les sections ci-dessus. L'objectif est un rapport ultra-complet de 35 000 à 90 000 caractères.`;
+Tu DOIS générer un rapport de MINIMUM 35 000 caractères avec TOUTES les sections suivantes (dans cet ordre exact):
+
+1. ## Synthèse exécutive (800-1500 chars)
+2. ## Qualité des données & limites (600-1000 chars)
+3. ## Tableau de bord (scores & priorités) (800-1200 chars)
+4. ## Potentiel recomposition (perte de gras + gain de muscle) (1500-2500 chars)
+5. ## Lecture compartimentée par axes — TOUS LES 11 AXES OBLIGATOIRES:
+   - Axe 1 — Potentiel musculaire & androgènes (800-1500 chars)
+   - Axe 2 — Métabolisme & gestion du risque diabète (800-1500 chars)
+   - Axe 3 — Lipides & risque cardio-métabolique (1000-2000 chars)
+   - Axe 4 — Thyroïde & dépense énergétique (600-1000 chars)
+   - Axe 5 — Foie, bile & détox métabolique (600-1000 chars)
+   - Axe 6 — Rein, hydratation & performance (500-800 chars)
+   - Axe 7 — Inflammation, immunité & terrain (800-1500 chars)
+   - Axe 8 — Hématologie, oxygénation & endurance (600-1000 chars)
+   - Axe 9 — Micronutriments (vitamines & minéraux) (800-1500 chars)
+   - Axe 10 — Électrolytes, crampes, pression & performance (500-800 chars)
+   - Axe 11 — Stress, sommeil, récupération (500-800 chars)
+6. ## Interconnexions majeures (le pattern) (1500-3000 chars)
+7. ## Deep dive — marqueurs prioritaires (3000-8000 chars pour 8-15 marqueurs)
+8. ## Plan d'action 90 jours (3000-6000 chars avec 4 phases détaillées)
+9. ## Nutrition & entraînement (traduction pratique) (2000-4000 chars)
+10. ## Supplements & stack (minimaliste mais impact) (1500-3000 chars)
+11. ## Annexes (ultra long) (3000-8000 chars):
+    - Annexe A — Marqueurs secondaires
+    - Annexe B — Hypothèses & tests de confirmation
+    - Annexe C — Glossaire utile
+12. ## Sources (bibliothèque) (200-500 chars)
+
+RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sections ci-dessus. Si tu t'arrêtes avant, le rapport sera rejeté. Target minimum: 35 000 caractères.`;
 
   let output = "";
   let bestCandidate = "";
