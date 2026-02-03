@@ -59,9 +59,9 @@ export function BiomarkerRangeIndicator({
       </div>
       <div className="relative h-3 overflow-hidden rounded-full" style={{ backgroundColor: theme.borderSubtle }}>
         <div className="absolute inset-0 flex">
-          <div style={{ width: `${normalStart}%`, backgroundColor: "rgba(239,68,68,0.25)" }} />
-          <div style={{ width: `${normalWidth}%`, backgroundColor: "rgba(245,158,11,0.25)" }} />
-          <div style={{ width: `${normalEnd}%`, backgroundColor: "rgba(239,68,68,0.25)" }} />
+          <div style={{ width: `${normalStart}%`, backgroundColor: `${theme.status.critical}40` }} />
+          <div style={{ width: `${normalWidth}%`, backgroundColor: `${theme.status.suboptimal}40` }} />
+          <div style={{ width: `${normalEnd}%`, backgroundColor: `${theme.status.critical}40` }} />
         </div>
         {optimalStart !== null && optimalWidth !== null && (
           <motion.div
@@ -69,7 +69,7 @@ export function BiomarkerRangeIndicator({
             style={{
               left: `${clamp(optimalStart, 0, 100)}%`,
               width: `${clamp(optimalWidth, 0, 100)}%`,
-              backgroundColor: "rgba(16, 185, 129, 0.45)",
+              backgroundColor: `${theme.status.optimal}73`,
             }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}

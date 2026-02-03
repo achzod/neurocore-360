@@ -26,10 +26,10 @@ export const InteractiveHeatmap = ({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const getScoreColor = (score: number) => {
-    if (score >= 85) return { bg: 'rgba(6, 182, 212, 0.2)', border: '#06b6d4', text: '#06b6d4' };
-    if (score >= 70) return { bg: 'rgba(59, 130, 246, 0.2)', border: '#3b82f6', text: '#3b82f6' };
-    if (score >= 50) return { bg: 'rgba(245, 158, 11, 0.2)', border: '#f59e0b', text: '#f59e0b' };
-    return { bg: 'rgba(244, 63, 94, 0.2)', border: '#f43f5e', text: '#f43f5e' };
+    if (score >= 85) return { bg: `${theme.status.optimal}33`, border: theme.status.optimal, text: theme.status.optimal };
+    if (score >= 70) return { bg: `${theme.status.normal}33`, border: theme.status.normal, text: theme.status.normal };
+    if (score >= 50) return { bg: `${theme.status.suboptimal}33`, border: theme.status.suboptimal, text: theme.status.suboptimal };
+    return { bg: `${theme.status.critical}33`, border: theme.status.critical, text: theme.status.critical };
   };
 
   const handleClick = (key: string) => {
@@ -75,9 +75,9 @@ export const InteractiveHeatmap = ({
             <div
               className="relative overflow-hidden rounded-xl p-6 h-full"
               style={{
-                background: isHovered || isSelected ? colors.bg : mode === 'dark' ? 'rgba(26, 29, 36, 0.4)' : 'rgba(255, 255, 255, 0.8)',
+                background: isHovered || isSelected ? colors.bg : theme.surfaceMuted,
                 backdropFilter: 'blur(8px)',
-                border: `2px solid ${isHovered || isSelected ? colors.border : mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(100, 116, 139, 0.3)'}`,
+                border: `2px solid ${isHovered || isSelected ? colors.border : theme.borderSubtle}`,
                 transition: 'all 0.3s ease',
               }}
             >
@@ -103,7 +103,7 @@ export const InteractiveHeatmap = ({
               {/* Content */}
               <div className="relative z-10">
                 {/* Label */}
-                <h3 className="text-sm uppercase tracking-wider font-semibold mb-4" style={{ color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                <h3 className="text-sm uppercase tracking-wider font-semibold mb-4" style={{ color: theme.textTertiary }}>
                   {category.label}
                 </h3>
 
@@ -127,18 +127,18 @@ export const InteractiveHeatmap = ({
                   >
                     {category.score}
                   </motion.span>
-                  <span className="text-xl" style={{ color: mode === 'dark' ? '#64748b' : '#94a3b8' }}>/100</span>
+                  <span className="text-xl" style={{ color: theme.textTertiary }}>/100</span>
                 </div>
 
                 {/* Metadata */}
-                <div className="flex items-center gap-3 text-xs" style={{ color: mode === 'dark' ? '#64748b' : '#94a3b8' }}>
+                <div className="flex items-center gap-3 text-xs" style={{ color: theme.textTertiary }}>
                   <span>{category.markerCount} marqueurs</span>
                   {category.criticalCount > 0 && (
                     <span
                       className="px-2 py-0.5 rounded-full font-semibold"
                       style={{
-                        background: 'rgba(244, 63, 94, 0.2)',
-                        color: '#f43f5e',
+                        background: `${theme.status.critical}33`,
+                        color: theme.status.critical,
                       }}
                     >
                       {category.criticalCount} critique{category.criticalCount > 1 ? 's' : ''}
@@ -147,7 +147,7 @@ export const InteractiveHeatmap = ({
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: mode === 'dark' ? '#1e293b' : '#e2e8f0' }}>
+                <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: theme.borderSubtle }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{ background: `linear-gradient(90deg, ${colors.border}, ${colors.text})` }}
@@ -164,7 +164,7 @@ export const InteractiveHeatmap = ({
                   className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
                   style={{
                     background: colors.border,
-                    color: mode === 'dark' ? '#0a0b0d' : '#ffffff',
+                    color: theme.surface,
                   }}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}

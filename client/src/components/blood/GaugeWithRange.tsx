@@ -1,5 +1,6 @@
 import type { BiomarkerStatus } from "@/lib/biomarker-colors";
 import { getBiomarkerStatusColor } from "@/lib/biomarker-colors";
+import { useBloodTheme } from "./BloodThemeContext";
 
 interface GaugeWithRangeProps {
   value: number;
@@ -35,6 +36,7 @@ export function GaugeWithRange({
   optimalMax,
   status = "normal",
 }: GaugeWithRangeProps) {
+  const { theme } = useBloodTheme();
   const colors = getBiomarkerStatusColor(status);
   const rangeMin =
     typeof normalMin === "number"
@@ -75,27 +77,29 @@ export function GaugeWithRange({
         <path
           d={describeArc(cx, cy, radius, startAngle, endAngle)}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke={theme.borderSubtle}
           strokeWidth={10}
           strokeLinecap="round"
         />
         <path
           d={describeArc(cx, cy, radius, normalStart, normalEnd)}
           fill="none"
-          stroke="rgba(59,130,246,0.7)"
+          stroke={theme.status.normal}
           strokeWidth={10}
           strokeLinecap="round"
+          opacity={0.7}
         />
         {optimalStart !== null && optimalEnd !== null && (
           <path
             d={describeArc(cx, cy, radius, optimalStart, optimalEnd)}
             fill="none"
-            stroke="rgba(16,185,129,0.9)"
+            stroke={theme.status.optimal}
             strokeWidth={10}
             strokeLinecap="round"
+            opacity={0.9}
           />
         )}
-        <circle cx={valuePoint.x} cy={valuePoint.y} r={6} fill={colors.primary} stroke="#0a0a0a" strokeWidth={2} />
+        <circle cx={valuePoint.x} cy={valuePoint.y} r={6} fill={colors.primary} stroke={theme.surface} strokeWidth={2} />
       </svg>
       <div className="flex items-baseline justify-between mt-2">
         <div className="text-lg font-semibold">{value}</div>

@@ -2,6 +2,7 @@
 
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface RadialScoreChartProps {
   score: number;
@@ -26,6 +27,7 @@ export const RadialScoreChart = ({
   percentile,
   showComparison = false,
 }: RadialScoreChartProps) => {
+  const { theme } = useBloodTheme();
   const [animatedScore, setAnimatedScore] = useState(0);
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -52,12 +54,12 @@ export const RadialScoreChart = ({
     return () => clearInterval(timer);
   }, [score]);
 
-  // Color based on score
+  // Color based on score using theme
   const getScoreColor = (pct: number) => {
-    if (pct >= 85) return { from: '#06b6d4', to: '#3b82f6', glow: 'rgba(6,182,212,0.3)' };
-    if (pct >= 70) return { from: '#3b82f6', to: '#8b5cf6', glow: 'rgba(59,130,246,0.3)' };
-    if (pct >= 50) return { from: '#f59e0b', to: '#f97316', glow: 'rgba(245,158,11,0.3)' };
-    return { from: '#f43f5e', to: '#dc2626', glow: 'rgba(244,63,94,0.3)' };
+    if (pct >= 85) return { from: theme.status.optimal, to: theme.status.normal, glow: `${theme.status.optimal}4D` };
+    if (pct >= 70) return { from: theme.status.normal, to: theme.primaryBlue, glow: `${theme.status.normal}4D` };
+    if (pct >= 50) return { from: theme.status.suboptimal, to: theme.status.suboptimal, glow: `${theme.status.suboptimal}4D` };
+    return { from: theme.status.critical, to: theme.status.critical, glow: `${theme.status.critical}4D` };
   };
 
   const colors = getScoreColor(percentage);
@@ -82,7 +84,7 @@ export const RadialScoreChart = ({
             <path
               d="M 12 0 L 0 0 0 12"
               fill="none"
-              stroke="rgba(148, 163, 184, 0.1)"
+              stroke={theme.grid}
               strokeWidth="0.5"
             />
           </pattern>
@@ -109,7 +111,7 @@ export const RadialScoreChart = ({
           cy={size / 2}
           r={radius}
           fill="url(#scoreGrid)"
-          stroke="rgba(148, 163, 184, 0.15)"
+          stroke={theme.borderSubtle}
           strokeWidth={strokeWidth}
         />
 
@@ -120,7 +122,7 @@ export const RadialScoreChart = ({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="rgba(16, 185, 129, 0.3)"
+            stroke={`${theme.status.optimal}4D`}
             strokeWidth={strokeWidth / 2}
             strokeDasharray={circumference}
             strokeDashoffset={circumference - ((targetScore / maxScore) * circumference)}
