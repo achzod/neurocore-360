@@ -75,9 +75,9 @@ export const InteractiveHeatmap = ({
             <div
               className="relative overflow-hidden rounded-xl p-6 h-full"
               style={{
-                background: isHovered || isSelected ? colors.bg : 'rgba(26, 29, 36, 0.4)',
+                background: isHovered || isSelected ? colors.bg : mode === 'dark' ? 'rgba(26, 29, 36, 0.4)' : 'rgba(255, 255, 255, 0.8)',
                 backdropFilter: 'blur(8px)',
-                border: `2px solid ${isHovered || isSelected ? colors.border : 'rgba(148, 163, 184, 0.2)'}`,
+                border: `2px solid ${isHovered || isSelected ? colors.border : mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(100, 116, 139, 0.3)'}`,
                 transition: 'all 0.3s ease',
               }}
             >
@@ -103,7 +103,7 @@ export const InteractiveHeatmap = ({
               {/* Content */}
               <div className="relative z-10">
                 {/* Label */}
-                <h3 className="text-sm uppercase tracking-wider text-slate-400 font-semibold mb-4">
+                <h3 className="text-sm uppercase tracking-wider font-semibold mb-4" style={{ color: mode === 'dark' ? '#94a3b8' : '#64748b' }}>
                   {category.label}
                 </h3>
 
@@ -113,25 +113,25 @@ export const InteractiveHeatmap = ({
                     className="text-5xl font-bold font-mono tabular-nums"
                     style={{
                       color: colors.text,
-                      textShadow: `0 0 30px ${colors.bg}`,
+                      textShadow: mode === 'dark' ? `0 0 30px ${colors.bg}` : 'none',
                     }}
                     animate={isHovered ? {
                       scale: [1, 1.1, 1],
-                      textShadow: [
+                      textShadow: mode === 'dark' ? [
                         `0 0 30px ${colors.bg}`,
                         `0 0 50px ${colors.bg}`,
                         `0 0 30px ${colors.bg}`,
-                      ],
+                      ] : ['none', 'none', 'none'],
                     } : {}}
                     transition={{ duration: 0.6 }}
                   >
                     {category.score}
                   </motion.span>
-                  <span className="text-xl text-slate-500">/100</span>
+                  <span className="text-xl" style={{ color: mode === 'dark' ? '#64748b' : '#94a3b8' }}>/100</span>
                 </div>
 
                 {/* Metadata */}
-                <div className="flex items-center gap-3 text-xs text-slate-500">
+                <div className="flex items-center gap-3 text-xs" style={{ color: mode === 'dark' ? '#64748b' : '#94a3b8' }}>
                   <span>{category.markerCount} marqueurs</span>
                   {category.criticalCount > 0 && (
                     <span
@@ -147,7 +147,7 @@ export const InteractiveHeatmap = ({
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-4 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: mode === 'dark' ? '#1e293b' : '#e2e8f0' }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{ background: `linear-gradient(90deg, ${colors.border}, ${colors.text})` }}

@@ -63,9 +63,9 @@ export const AnimatedStatCard = ({
       <div
         className="rounded-xl p-6"
         style={{
-          background: 'rgba(26, 29, 36, 0.4)',
+          background: 'var(--color-surface, rgba(26, 29, 36, 0.4))',
           backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(148, 163, 184, 0.2)',
+          border: '1px solid var(--color-border, rgba(148, 163, 184, 0.2))',
         }}
       >
         {/* Icon */}
@@ -98,7 +98,7 @@ export const AnimatedStatCard = ({
         </div>
 
         {/* Label */}
-        <div className="text-sm text-slate-400">{label}</div>
+        <div className="text-sm" style={{ color: 'var(--color-text-muted, #94a3b8)' }}>{label}</div>
 
         {/* Trend (if provided) */}
         {trend && (

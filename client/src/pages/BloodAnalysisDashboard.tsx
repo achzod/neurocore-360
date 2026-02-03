@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { StatusIndicator } from "@/components/blood/StatusIndicator";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
-import { BiomarkerTrendChart } from "@/components/blood/BiomarkerTrendChart";
 import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
 import { BloodRadar } from "@/components/blood/BloodRadar";
 import { BloodThemeProvider } from "@/components/blood/BloodThemeContext";
@@ -222,6 +221,47 @@ function BloodAnalysisDashboardInner() {
 
   const summary = report?.analysis?.summary || { optimal: [], watch: [], action: [] };
 
+  // Function to normalize section IDs for flexible matching
+  const normalizeSectionId = (text: string) => {
+    return text.toLowerCase()
+      .replace(/[àáâãäå]/g, 'a')
+      .replace(/[èéêë]/g, 'e')
+      .replace(/[ìíîï]/g, 'i')
+      .replace(/[òóôõö]/g, 'o')
+      .replace(/[ùúûü]/g, 'u')
+      .replace(/[ç]/g, 'c')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // Parse AI report into sections based on ## headings
+  const reportSections = useMemo(() => {
+    if (!report?.aiReport) return [];
+
+    const sections: Array<{ id: string; title: string; content: string }> = [];
+    const lines = report.aiReport.split('\n');
+    let currentSection: { id: string; title: string; content: string } | null = null;
+
+    for (const line of lines) {
+      if (line.startsWith('## ')) {
+        if (currentSection) {
+          sections.push(currentSection);
+        }
+        const title = line.replace('## ', '').trim();
+        const id = normalizeSectionId(title);
+        currentSection = { id, title, content: line + '\n' };
+      } else if (currentSection) {
+        currentSection.content += line + '\n';
+      }
+    }
+
+    if (currentSection) {
+      sections.push(currentSection);
+    }
+
+    return sections;
+  }, [report?.aiReport]);
+
   // Function to render specific sections of the report
   const renderReportSection = (sectionIds: string[]) => {
     if (!report?.aiReport) {
@@ -242,9 +282,18 @@ function BloodAnalysisDashboardInner() {
       );
     }
 
-    const sectionsToShow = reportSections.filter(section =>
-      sectionIds.some(id => section.id.includes(id) || id.includes(section.id))
-    );
+    // Normalize search IDs for better matching
+    const normalizedSearchIds = sectionIds.map(normalizeSectionId);
+
+    const sectionsToShow = reportSections.filter(section => {
+      const normalizedSectionId = normalizeSectionId(section.id);
+      return normalizedSearchIds.some(searchId => {
+        // Check if either contains the other, or if they're similar enough
+        return normalizedSectionId.includes(searchId) ||
+               searchId.includes(normalizedSectionId) ||
+               normalizedSectionId === searchId;
+      });
+    });
 
     if (sectionsToShow.length === 0) {
       return (
@@ -283,34 +332,6 @@ function BloodAnalysisDashboardInner() {
       </div>
     );
   };
-
-  // Parse AI report into sections based on ## headings
-  const reportSections = useMemo(() => {
-    if (!report?.aiReport) return [];
-
-    const sections: Array<{ id: string; title: string; content: string }> = [];
-    const lines = report.aiReport.split('\n');
-    let currentSection: { id: string; title: string; content: string } | null = null;
-
-    for (const line of lines) {
-      if (line.startsWith('## ')) {
-        if (currentSection) {
-          sections.push(currentSection);
-        }
-        const title = line.replace('## ', '').trim();
-        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        currentSection = { id, title, content: line + '\n' };
-      } else if (currentSection) {
-        currentSection.content += line + '\n';
-      }
-    }
-
-    if (currentSection) {
-      sections.push(currentSection);
-    }
-
-    return sections;
-  }, [report?.aiReport]);
 
   const sidebarSections: SectionContent[] = [
     { id: "overview", title: "Overview", subtitle: "Vue d'ensemble", content: "" },
@@ -420,6 +441,43 @@ function BloodAnalysisDashboardInner() {
             </TabsList>
 
             <TabsContent value="overview">
+              {/* Storytelling Introduction */}
+              <div
+                className="rounded border p-8 mb-8"
+                style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
+              >
+                <div className="max-w-3xl">
+                  <h2 className="text-2xl font-bold mb-4" style={{ color: currentTheme.colors.text }}>
+                    Bienvenue dans ton Blood Analysis
+                  </h2>
+                  <div className="space-y-4 text-base leading-relaxed" style={{ color: currentTheme.colors.text }}>
+                    <p>
+                      Tes biomarqueurs racontent une histoire. Chaque valeur, chaque marqueur est une pièce du puzzle qui révèle
+                      comment ton corps fonctionne réellement - au-delà des symptômes, au-delà des sensations.
+                    </p>
+                    <p>
+                      Cette analyse premium va au-delà des "ranges normaux" classiques. Nous utilisons des ranges optimaux,
+                      une lecture systémique et une approche de performance pour identifier non seulement ce qui ne va pas,
+                      mais surtout <strong>comment maximiser ton potentiel physiologique</strong>.
+                    </p>
+                    <p>
+                      Tu trouveras ici:
+                    </p>
+                    <ul className="list-disc list-inside space-y-2 pl-4">
+                      <li>Une vue d'ensemble de ton profil métabolique complet</li>
+                      <li>Une analyse détaillée de chaque biomarqueur avec interprétation contextuelle</li>
+                      <li>Des axes d'optimisation prioritaires basés sur l'interconnexion de tes marqueurs</li>
+                      <li>Un plan d'action 90 jours concret et personnalisé</li>
+                      <li>Des protocoles de nutrition et supplémentation evidence-based</li>
+                    </ul>
+                    <p className="pt-2">
+                      Prends le temps d'explorer chaque section. Chaque insight a été généré en analysant l'ensemble de tes données,
+                      pas juste marqueur par marqueur, mais dans leur contexte global.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid lg:grid-cols-2 gap-8 mb-8">
                 <div
                   className="flex flex-col items-center justify-center p-8 rounded-sm border blood-glass blood-grain"
@@ -562,8 +620,8 @@ function BloodAnalysisDashboardInner() {
                               style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                             >
                               <div className="flex items-start justify-between gap-3 mb-4">
-                                <div>
-                                  <p className="text-xs uppercase tracking-[0.15em]" style={{ color: currentTheme.colors.textMuted }}>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[10px] uppercase tracking-[0.1em] break-words" style={{ color: currentTheme.colors.textMuted }}>
                                     {panel.title}
                                   </p>
                                   <h3 className="text-lg font-semibold">{marker.name}</h3>
@@ -593,19 +651,6 @@ function BloodAnalysisDashboardInner() {
                                 optimalMin={marker.optimalMin}
                                 optimalMax={marker.optimalMax}
                               />
-
-                              <div className="mt-3">
-                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Tendance</p>
-                                <BiomarkerTrendChart
-                                  data={marker.history}
-                                  unit={marker.unit}
-                                  status={marker.status}
-                                  normalMin={marker.normalMin}
-                                  normalMax={marker.normalMax}
-                                  optimalMin={marker.optimalMin}
-                                  optimalMax={marker.optimalMax}
-                                />
-                              </div>
 
                               {marker.interpretation && (
                                 <p className="text-sm mt-3" style={{ color: currentTheme.colors.textMuted }}>
@@ -644,17 +689,17 @@ function BloodAnalysisDashboardInner() {
 
             {/* Plan 90j */}
             <TabsContent value="plan">
-              {renderReportSection(['plan-daction-90-jours'])}
+              {renderReportSection(['plan-d-action-90-jours', 'plan-daction-90-jours', 'plan-90-jours', 'plan-action'])}
             </TabsContent>
 
             {/* Protocoles: Nutrition + Supplements */}
             <TabsContent value="protocoles">
-              {renderReportSection(['nutrition-entrainement', 'supplements-stack'])}
+              {renderReportSection(['nutrition-entrainement', 'supplements-stack', 'supplementation', 'protocole'])}
             </TabsContent>
 
             {/* Annexes */}
             <TabsContent value="annexes">
-              {renderReportSection(['annexes', 'sources'])}
+              {renderReportSection(['annexes', 'sources', 'bibliographie', 'references'])}
             </TabsContent>
           </Tabs>
         </div>
