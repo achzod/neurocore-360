@@ -222,13 +222,16 @@ type AISection = { title: string; content: string };
 
 type AISections = {
   synthesis?: AISection;
-  alerts?: AISection;
-  systems?: AISection;
+  dataQuality?: AISection;
+  dashboard?: AISection;
+  recomposition?: AISection;
+  axes?: AISection;
   interconnections?: AISection;
   deepDive?: AISection;
   plan90?: AISection;
   nutrition?: AISection;
   supplements?: AISection;
+  annexes?: AISection;
   sources?: AISection;
 };
 
@@ -246,16 +249,20 @@ const parseAISections = (markdown: string): AISections => {
   const getBy = (keyword: string) =>
     sections.find((section) => normalizeText(section.title).includes(keyword));
 
+  // Match new Achzod-style section names
   return {
-    synthesis: getBy("synthese"),
-    alerts: getBy("alertes"),
-    systems: getBy("systeme"),
+    synthesis: getBy("synthese executive") || getBy("synthese"),
+    dataQuality: getBy("qualite des donnees") || getBy("limites"),
+    dashboard: getBy("tableau de bord"),
+    recomposition: getBy("potentiel recomposition") || getBy("recomposition"),
+    axes: getBy("lecture compartimentee") || getBy("axes") || getBy("systeme"),
     interconnections: getBy("interconnexion"),
     deepDive: getBy("deep dive"),
-    plan90: getBy("plan 90"),
+    plan90: getBy("plan d'action") || getBy("plan 90"),
     nutrition: getBy("nutrition"),
     supplements: getBy("supplements"),
-    sources: getBy("sources scientifiques"),
+    annexes: getBy("annexes") || getBy("annexe"),
+    sources: getBy("sources scientifiques") || getBy("sources"),
   };
 };
 
@@ -294,62 +301,108 @@ const formatValue = (value: number | null, unit?: string) => {
   return `${value}${unit ? ` ${unit}` : ""}`;
 };
 
-const glossaryEntries = [
-  {
+// Dynamic glossary - maps marker codes to definitions
+const GLOSSARY_DATABASE: Record<string, { term: string; definition: string }> = {
+  homa_ir: {
     term: "HOMA-IR",
-    definition:
-      "Indice de résistance à l'insuline calculé à partir de la glycémie et de l'insuline à jeun. >3 indique une résistance insulinique installée.",
+    definition: "Indice de resistance a l'insuline calcule a partir de la glycemie et de l'insuline a jeun. >3 indique une resistance insulinique installee.",
   },
-  {
+  insuline: {
+    term: "Insuline",
+    definition: "Hormone pancreatique qui regule la glycemie. Un taux eleve a jeun indique une resistance insulinique.",
+  },
+  glycemie: {
+    term: "Glycemie a jeun",
+    definition: "Taux de sucre dans le sang a jeun. Entre 70-100 mg/dL est optimal.",
+  },
+  hba1c: {
+    term: "HbA1c",
+    definition: "Hemoglobine glyquee - reflete la glycemie moyenne des 3 derniers mois. <5.7% est optimal.",
+  },
+  triglycerides: {
+    term: "Triglycerides",
+    definition: "Graisses circulantes. Un taux eleve indique souvent un exces de glucides et/ou d'alcool.",
+  },
+  ldl: {
+    term: "LDL-Cholesterol",
+    definition: "Cholesterol transporte vers les tissus. Trop eleve = risque atherosclerose.",
+  },
+  hdl: {
+    term: "HDL-Cholesterol",
+    definition: "Bon cholesterol qui nettoie les arteres. Plus c'est haut, mieux c'est.",
+  },
+  crp_us: {
+    term: "CRP ultrasensible",
+    definition: "Marqueur d'inflammation systemique. <1 mg/L est optimal pour la sante cardiovasculaire.",
+  },
+  vitamine_d: {
+    term: "Vitamine D (25-OH)",
+    definition: "Hormone essentielle pour les os, l'immunite et les hormones. Vise 50-80 ng/mL.",
+  },
+  testosterone_total: {
+    term: "Testosterone totale",
+    definition: "Hormone anabolique principale chez l'homme. Impacte muscle, energie, libido.",
+  },
+  tsh: {
+    term: "TSH",
+    definition: "Hormone thyreostimulante. Elevee = thyroide ralentie (hypothyroidie).",
+  },
+  t4_libre: {
+    term: "T4 Libre",
+    definition: "Hormone thyroidienne inactive. Convertie en T3 active dans les tissus.",
+  },
+  t3_libre: {
+    term: "T3 Libre",
+    definition: "Hormone thyroidienne active. Regule metabolisme, energie, perte de gras.",
+  },
+  ggt: {
     term: "GGT",
-    definition:
-      "Enzyme hépatique qui augmente en cas de stress oxydatif du foie ou de stéatose. Marqueur précoce de souffrance hépatique.",
+    definition: "Enzyme hepatique sensible au stress oxydatif et a l'alcool. Marqueur precoce de souffrance hepatique.",
   },
-  {
-    term: "Créatinine",
-    definition:
-      "Déchet musculaire éliminé par les reins. Un taux élevé suggère une filtration rénale diminuée ou une déshydratation.",
+  ferritine: {
+    term: "Ferritine",
+    definition: "Reserve de fer dans l'organisme. Basse = carence, tres elevee = inflammation ou surcharge.",
   },
-  {
-    term: "DFG",
-    definition:
-      "Débit de filtration glomérulaire, estimation de la fonction rénale. >90 est idéal chez l'adulte.",
+  creatinine: {
+    term: "Creatinine",
+    definition: "Dechet musculaire elimine par les reins. Taux eleve = filtration renale diminuee.",
   },
-  {
-    term: "VLDL",
-    definition:
-      "Lipoprotéines riches en triglycérides fabriquées par le foie. Trop de VLDL = hypertriglycéridémie.",
-  },
-  {
-    term: "NAFLD",
-    definition:
-      "Stéatose hépatique non alcoolique. Excès de graisse dans le foie lié au syndrome métabolique.",
-  },
-  {
-    term: "SREBP-1c",
-    definition:
-      "Facteur de transcription qui stimule la fabrication de lipides dans le foie. Activé par l'insuline.",
-  },
-  {
-    term: "GLUT4",
-    definition:
-      "Transporteur de glucose dans les muscles. L'exercice améliore son activation et baisse l'insuline requise.",
-  },
-  {
-    term: "Aromatase",
-    definition:
-      "Enzyme qui convertit la testostérone en estrogènes. Plus de graisse viscérale = plus d'aromatase.",
-  },
-];
+};
+
+// Generate glossary dynamically from markers
+const buildGlossary = (markers: BloodMarker[]) => {
+  const entries: Array<{ term: string; definition: string }> = [];
+  const seenTerms = new Set<string>();
+
+  markers.forEach((marker) => {
+    const key = marker.code.toLowerCase();
+    if (GLOSSARY_DATABASE[key] && !seenTerms.has(key)) {
+      seenTerms.add(key);
+      entries.push(GLOSSARY_DATABASE[key]);
+    }
+  });
+
+  // Always add common terms
+  const commonTerms = ["homa_ir", "crp_us", "ggt"];
+  commonTerms.forEach((key) => {
+    if (GLOSSARY_DATABASE[key] && !seenTerms.has(key)) {
+      seenTerms.add(key);
+      entries.push(GLOSSARY_DATABASE[key]);
+    }
+  });
+
+  return entries;
+};
 
 const SECTION_NAV = [
   { id: "introduction", label: "Introduction" },
-  { id: "overview", label: "Vue d'ensemble" },
-  { id: "alerts", label: "Alertes prioritaires" },
-  { id: "strengths", label: "Tes forces" },
-  { id: "systems", label: "Analyse détaillée" },
+  { id: "overview", label: "Synthese executive" },
+  { id: "data-quality", label: "Qualite des donnees" },
+  { id: "dashboard", label: "Tableau de bord" },
+  { id: "recomposition", label: "Potentiel recomposition" },
+  { id: "axes", label: "Lecture par axes" },
   { id: "interconnections", label: "Interconnexions" },
-  { id: "protocol", label: "Protocole 90 jours" },
+  { id: "protocol", label: "Plan d'action 90j" },
   { id: "full-report", label: "Rapport complet" },
   { id: "glossary", label: "Glossaire" },
   { id: "sources", label: "Sources" },
@@ -494,6 +547,11 @@ function BloodAnalysisReportInner() {
     return reportData.markers.filter((marker) => marker.status === "optimal").slice(0, 4);
   }, [reportData]);
 
+  const glossaryEntries = useMemo(() => {
+    if (!reportData) return [];
+    return buildGlossary(reportData.markers);
+  }, [reportData]);
+
   const supplements = reportData?.comprehensiveData?.supplements || [];
   const protocols = reportData?.comprehensiveData?.protocols || [];
 
@@ -601,6 +659,7 @@ function BloodAnalysisReportInner() {
       </header>
 
       <div className="mx-auto flex max-w-6xl gap-10 px-6 py-10">
+        {/* Desktop sidebar */}
         <aside className="hidden w-60 flex-shrink-0 lg:block">
           <div className="sticky top-28 rounded-xl border border-slate-200 bg-white p-4">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Navigation</div>
@@ -617,6 +676,21 @@ function BloodAnalysisReportInner() {
             </nav>
           </div>
         </aside>
+
+        {/* Mobile bottom navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white p-2 lg:hidden">
+          <div className="flex gap-1 overflow-x-auto pb-safe">
+            {SECTION_NAV.slice(0, 6).map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="flex-shrink-0 rounded-md bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
+              >
+                {section.label}
+              </a>
+            ))}
+          </div>
+        </nav>
 
         <main
           className="w-full max-w-[900px]"
@@ -713,151 +787,132 @@ function BloodAnalysisReportInner() {
             </div>
           </section>
 
-          <section id="alerts" className="mt-10 scroll-mt-24">
+          <section id="data-quality" className="mt-10 scroll-mt-24">
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <Info className="h-5 w-5 text-amber-500" />
                 <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
-                  Alertes prioritaires (ce qui nécessite une action rapide)
+                  Qualite des donnees et limites
                 </h2>
               </div>
-              <p className="mt-3 text-sm text-slate-700">
-                Voici les marqueurs qui demandent ton attention immédiate. Chaque alerte est expliquée pour que tu
-                comprennes quoi faire, pourquoi, et avec quel impact attendu.
-              </p>
-              <div className="mt-6 space-y-6">
-                {aiSections.alerts?.content ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                    <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                      Synthèse des alertes
-                    </div>
-                    <MarkdownBlock content={aiSections.alerts.content} />
-                  </div>
-                ) : null}
-                {criticalMarkers.length ? (
-                  criticalMarkers.map((marker, idx) => {
-                  const deepDive = deepDiveItems.find((item) =>
-                    normalizeText(item.title).includes(normalizeText(marker.name))
-                  );
-                  const diffNormal =
-                    marker.normalMax !== null && marker.value > marker.normalMax
-                      ? formatPercentDiff(marker.value, marker.normalMax)
-                      : null;
-                  const diffOptimal =
-                    marker.optimalMax !== null && marker.value > marker.optimalMax
-                      ? formatPercentDiff(marker.value, marker.optimalMax)
-                      : null;
-
-                  return (
-                    <div key={`${marker.code}-${idx}`} className="rounded-2xl border border-slate-200 p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="text-lg font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                          🚨 Alerte #{idx + 1}: {marker.name.toUpperCase()}
-                        </div>
-                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-                          {marker.status.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="mt-4 grid gap-4 text-sm text-slate-700 sm:grid-cols-2">
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Ta valeur</div>
-                          <div className="mt-1 font-semibold text-slate-900">{formatValue(marker.value, marker.unit)}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Range normal</div>
-                          <div className="mt-1 font-semibold text-slate-900">
-                            {marker.normalMin ?? "-"} - {marker.normalMax ?? "-"} {marker.unit}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Range optimal</div>
-                          <div className="mt-1 font-semibold text-slate-900">
-                            {marker.optimalMin ?? "-"} - {marker.optimalMax ?? "-"} {marker.unit}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs uppercase text-slate-500">Ton statut</div>
-                          <div className="mt-1 font-semibold text-slate-900">
-                            {diffNormal !== null ? `${diffNormal}% au-dessus du normal` : "Hors optimal"}
-                            {diffOptimal !== null ? ` · ${diffOptimal}% au-dessus de l'optimal` : ""}
-                          </div>
-                        </div>
-                      </div>
-                      {deepDive?.content ? (
-                        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                            Analyse personnalisée
-                          </div>
-                          <MarkdownBlock content={deepDive.content} />
-                        </div>
-                      ) : (
-                        <div className="mt-4 text-sm text-slate-600">
-                          Analyse détaillée indisponible pour ce marqueur.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-                ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-700">
-                    Aucun marqueur critique détecté. Le rapport complet détaille les optimisations possibles.
-                  </div>
-                )}
-              </div>
+              {aiSections.dataQuality?.content ? (
+                <div className="mt-4">
+                  <MarkdownBlock content={aiSections.dataQuality.content} />
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-600">
+                  Cette section detaille les limites de l'analyse et les marqueurs manquants.
+                  Consulte le rapport complet ci-dessous.
+                </p>
+              )}
             </div>
           </section>
 
-          <section id="strengths" className="mt-10 scroll-mt-24">
+          <section id="dashboard" className="mt-10 scroll-mt-24">
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <Target className="h-5 w-5 text-blue-600" />
                 <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
-                  Tes forces (ce qui fonctionne déjà)
+                  Tableau de bord - Priorites
                 </h2>
               </div>
-              <p className="mt-3 text-sm text-slate-700">
-                Ces marqueurs sont solides. On va s'appuyer dessus pour accélérer le reste de ta progression.
-              </p>
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {strongMarkers.length ? (
-                  strongMarkers.map((marker) => (
-                    <div key={marker.code} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                        {marker.name} ({formatValue(marker.value, marker.unit)})
+              {aiSections.dashboard?.content ? (
+                <div className="mt-4">
+                  <MarkdownBlock content={aiSections.dashboard.content} />
+                </div>
+              ) : (
+                <>
+                  <p className="mt-4 text-sm text-slate-700">
+                    Voici tes marqueurs classes par priorite d'action.
+                  </p>
+                  <div className="mt-6 space-y-4">
+                    {criticalMarkers.length ? (
+                      criticalMarkers.map((marker, idx) => (
+                        <div key={`${marker.code}-${idx}`} className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+                          <div className="flex items-center gap-3">
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                            <span className="font-medium text-slate-900">{marker.name}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-slate-600">{formatValue(marker.value, marker.unit)}</span>
+                            <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-600">
+                              {marker.status.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        Aucun marqueur critique detecte.
                       </div>
-                      <p className="mt-2 text-sm text-slate-700">
-                        Ton {marker.name.toLowerCase()} est dans la zone optimale. Continue tes habitudes actuelles
-                        pour maintenir ce point fort.
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                    Tes marqueurs forts seront détaillés dans l'analyse complète.
+                    )}
+                    {strongMarkers.length ? (
+                      strongMarkers.map((marker) => (
+                        <div key={marker.code} className="flex items-center justify-between rounded-xl border border-slate-200 p-4">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            <span className="font-medium text-slate-900">{marker.name}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-slate-600">{formatValue(marker.value, marker.unit)}</span>
+                            <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-600">
+                              OPTIMAL
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : null}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </section>
 
-          <section id="systems" className="mt-10 scroll-mt-24">
+          <section id="recomposition" className="mt-10 scroll-mt-24">
+            <div className="rounded-2xl border border-slate-200 bg-white p-8">
+              <div className="flex items-center gap-3">
+                <Target className="h-5 w-5 text-purple-600" />
+                <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
+                  Potentiel recomposition corporelle
+                </h2>
+              </div>
+              {aiSections.recomposition?.content ? (
+                <div className="mt-4">
+                  <MarkdownBlock content={aiSections.recomposition.content} />
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-600">
+                  Cette section analyse ton potentiel de recomposition corporelle (prise de muscle / perte de gras).
+                  Consulte le rapport complet ci-dessous.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section id="axes" className="mt-10 scroll-mt-24">
             <div className="rounded-2xl border border-slate-200 bg-white p-8">
               <div className="flex items-center gap-3">
                 <Info className="h-5 w-5 text-blue-600" />
                 <h2 className="text-2xl font-semibold" style={{ fontFamily: "Inter, sans-serif" }}>
-                  Analyse système par système
+                  Lecture compartimentee par axes
                 </h2>
               </div>
-              <MarkdownBlock content={aiSections.systems?.content || ""} />
-              {!aiSections.systems?.content && (
+              <p className="mt-3 text-sm text-slate-700">
+                Analyse detaillee de chaque systeme physiologique: muscle, metabolisme, lipides, thyroide, foie, reins, inflammation, hematologie.
+              </p>
+              {aiSections.axes?.content ? (
+                <div className="mt-4">
+                  <MarkdownBlock content={aiSections.axes.content} />
+                </div>
+              ) : (
                 <p className="mt-4 text-sm text-slate-600">
-                  Analyse détaillée en cours de génération. Consulte le rapport complet ci-dessous pour le texte intégral.
+                  L'analyse par axes est disponible dans le rapport complet ci-dessous.
                 </p>
               )}
               {aiSections.deepDive?.content ? (
                 <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
                   <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                    Deep dive (explications détaillées)
+                    Deep dive (explications detaillees)
                   </div>
                   <MarkdownBlock content={aiSections.deepDive.content} />
                 </div>
@@ -926,17 +981,17 @@ function BloodAnalysisReportInner() {
                         <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
                           {supp.name}
                         </div>
-                        <div className="mt-2 text-sm text-slate-700">
-                          <div>✅ QUOI: {supp.name}</div>
-                          <div>🎯 POURQUOI: {supp.mechanism || "Optimiser tes marqueurs prioritaires."}</div>
+                        <div className="mt-2 text-sm text-slate-700 space-y-1">
+                          <div><span className="font-medium text-slate-900">QUOI:</span> {supp.name}</div>
+                          <div><span className="font-medium text-slate-900">POURQUOI:</span> {supp.mechanism || "Optimiser tes marqueurs prioritaires."}</div>
                           <div>
-                            📊 COMMENT: {supp.dosage} · {supp.timing}
+                            <span className="font-medium text-slate-900">COMMENT:</span> {supp.dosage} · {supp.timing}
                             {supp.brand ? ` · Marque: ${supp.brand}` : ""}
                           </div>
-                          <div>🕐 QUAND: {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}</div>
-                          <div>📈 IMPACT: Amélioration attendue sur marqueurs ciblés.</div>
+                          <div><span className="font-medium text-slate-900">QUAND:</span> {supp.priority === 1 ? "Phase d'attaque" : "Phase d'optimisation"}</div>
+                          <div><span className="font-medium text-slate-900">IMPACT:</span> Amelioration attendue sur marqueurs cibles.</div>
                           <div>
-                            💬 EXPERT: {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
+                            <span className="font-medium text-slate-900">EXPERT:</span> {supp.citations && supp.citations.length ? highlightText(supp.citations[0]) : "-"}
                           </div>
                         </div>
                       </div>
@@ -960,19 +1015,19 @@ function BloodAnalysisReportInner() {
                         <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
                           {protocol.name}
                         </div>
-                        <div className="mt-2 text-sm text-slate-700">
-                          <div>✅ QUOI: {protocol.description || protocol.name}</div>
+                        <div className="mt-2 text-sm text-slate-700 space-y-1">
+                          <div><span className="font-medium text-slate-900">QUOI:</span> {protocol.description || protocol.name}</div>
                           <div>
-                            🎯 POURQUOI: {protocol.scienceContext || protocol.expectedOutcome || "Optimiser tes marqueurs."}
+                            <span className="font-medium text-slate-900">POURQUOI:</span> {protocol.scienceContext || protocol.expectedOutcome || "Optimiser tes marqueurs."}
                           </div>
                           <div>
-                            📊 COMMENT:{" "}
+                            <span className="font-medium text-slate-900">COMMENT:</span>{" "}
                             {protocol.steps && protocol.steps.length ? protocol.steps.join(" · ") : protocol.frequency}
                           </div>
-                          <div>🕐 QUAND: {protocol.duration || "Phase actuelle"}</div>
-                          <div>📈 IMPACT: {protocol.expectedOutcome || "Amélioration attendue sur tes objectifs."}</div>
+                          <div><span className="font-medium text-slate-900">QUAND:</span> {protocol.duration || "Phase actuelle"}</div>
+                          <div><span className="font-medium text-slate-900">IMPACT:</span> {protocol.expectedOutcome || "Amelioration attendue sur tes objectifs."}</div>
                           <div>
-                            💬 EXPERT:{" "}
+                            <span className="font-medium text-slate-900">EXPERT:</span>{" "}
                             {protocol.citations && protocol.citations.length
                               ? highlightText(protocol.citations[0])
                               : "-"}
@@ -997,13 +1052,16 @@ function BloodAnalysisReportInner() {
               {hasAISections ? (
                 <div className="mt-4 space-y-6 text-sm text-slate-700">
                   {aiSections.synthesis?.content && <MarkdownBlock content={aiSections.synthesis.content} />}
-                  {aiSections.alerts?.content && <MarkdownBlock content={aiSections.alerts.content} />}
-                  {aiSections.systems?.content && <MarkdownBlock content={aiSections.systems.content} />}
+                  {aiSections.dataQuality?.content && <MarkdownBlock content={aiSections.dataQuality.content} />}
+                  {aiSections.dashboard?.content && <MarkdownBlock content={aiSections.dashboard.content} />}
+                  {aiSections.recomposition?.content && <MarkdownBlock content={aiSections.recomposition.content} />}
+                  {aiSections.axes?.content && <MarkdownBlock content={aiSections.axes.content} />}
                   {aiSections.interconnections?.content && <MarkdownBlock content={aiSections.interconnections.content} />}
                   {aiSections.deepDive?.content && <MarkdownBlock content={aiSections.deepDive.content} />}
                   {aiSections.plan90?.content && <MarkdownBlock content={aiSections.plan90.content} />}
                   {aiSections.nutrition?.content && <MarkdownBlock content={aiSections.nutrition.content} />}
                   {aiSections.supplements?.content && <MarkdownBlock content={aiSections.supplements.content} />}
+                  {aiSections.annexes?.content && <MarkdownBlock content={aiSections.annexes.content} />}
                   {aiSections.sources?.content && <MarkdownBlock content={aiSections.sources.content} />}
                 </div>
               ) : (
@@ -1021,17 +1079,21 @@ function BloodAnalysisReportInner() {
                 </h2>
               </div>
               <p className="mt-3 text-sm text-slate-700">
-                Ce glossaire vulgarise les termes techniques utilisés dans ton rapport.
+                Ce glossaire vulgarise les termes techniques de tes marqueurs.
               </p>
               <div className="mt-6 space-y-4">
-                {glossaryEntries.map((entry) => (
-                  <div key={entry.term} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
-                      {entry.term}
+                {glossaryEntries.length ? (
+                  glossaryEntries.map((entry) => (
+                    <div key={entry.term} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="text-sm font-semibold text-slate-900" style={{ fontFamily: "Inter, sans-serif" }}>
+                        {entry.term}
+                      </div>
+                      <p className="mt-2 text-sm text-slate-700">{entry.definition}</p>
                     </div>
-                    <p className="mt-2 text-sm text-slate-700">{entry.definition}</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-600">Aucun terme technique a definir pour ce rapport.</p>
+                )}
               </div>
             </div>
           </section>
