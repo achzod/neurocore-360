@@ -2663,7 +2663,21 @@ RÉSUMÉ:
 ${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR (OBLIGATOIRE):\n${deepDivePayload.context}` : ""}
 ${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
 
-Génère une analyse complète selon le format demandé.`;
+GÉNÈRE UNE ANALYSE COMPLÈTE EN RESPECTANT **TOUTES** LES SECTIONS SUIVANTES (ordre obligatoire):
+1. ## Synthèse exécutive
+2. ## Qualité des données & limites
+3. ## Tableau de bord (scores & priorités)
+4. ## Potentiel recomposition (perte de gras + gain de muscle)
+5. ## Lecture compartimentée par axes (Axe 1 à Axe 11)
+6. ## Interconnexions majeures (le pattern)
+7. ## Deep dive — marqueurs prioritaires (top 8 à 15)
+8. ## Plan d'action 90 jours (hyper concret) - avec les 4 phases complètes
+9. ## Nutrition & entraînement (traduction pratique)
+10. ## Supplements & stack (minimaliste mais impact)
+11. ## Annexes (ultra long) - Annexe A, B, C
+12. ## Sources (bibliothèque)
+
+CRITICAL: Ne t'arrête PAS avant d'avoir généré TOUTES les sections ci-dessus. L'objectif est un rapport ultra-complet de 35 000 à 90 000 caractères.`;
 
   let output = "";
   let bestCandidate = "";
