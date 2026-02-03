@@ -15,9 +15,13 @@ const BloodThemeContext = createContext<BloodThemeContextValue | undefined>(unde
 export function BloodThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") return "light";
+    // Check for dark mode from parent or system preference
+    const isDark = document.documentElement.classList.contains('dark') ||
+                   window.matchMedia('(prefers-color-scheme: dark)').matches ||
+                   document.body.style.backgroundColor === 'rgb(0, 0, 0)';
     const stored = localStorage.getItem("blood-theme-mode");
     if (stored === "dark" || stored === "light") return stored;
-    return "light";
+    return isDark ? "dark" : "light";
   });
 
   const theme = useMemo(() => BLOOD_THEMES[mode], [mode]);

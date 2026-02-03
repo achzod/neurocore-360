@@ -77,7 +77,7 @@ export function GaugeWithRange({
         <path
           d={describeArc(cx, cy, radius, startAngle, endAngle)}
           fill="none"
-          stroke={theme.borderSubtle}
+          stroke={theme.borderDefault}
           strokeWidth={10}
           strokeLinecap="round"
         />
@@ -87,7 +87,6 @@ export function GaugeWithRange({
           stroke={theme.status.normal}
           strokeWidth={10}
           strokeLinecap="round"
-          opacity={0.7}
         />
         {optimalStart !== null && optimalEnd !== null && (
           <path
@@ -96,10 +95,9 @@ export function GaugeWithRange({
             stroke={theme.status.optimal}
             strokeWidth={10}
             strokeLinecap="round"
-            opacity={0.9}
           />
         )}
-        <circle cx={valuePoint.x} cy={valuePoint.y} r={6} fill={colors.primary} stroke={theme.surface} strokeWidth={2} />
+        <circle cx={valuePoint.x} cy={valuePoint.y} r={6} fill={colors.primary} stroke={theme.textPrimary} strokeWidth={2} />
       </svg>
       <div className="flex items-baseline justify-between mt-2">
         <div className="text-lg font-semibold">{value}</div>
