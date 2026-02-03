@@ -75,8 +75,8 @@ export const AnimatedStatCard = ({
             background: `${color}20`,
             border: `1px solid ${color}40`,
           }}
-          whileHover={{ rotate: 360 }}
-          transition={{ duration: 0.6 }}
+          whileHover={{ rotate: 15 }}
+          transition={{ duration: 0.3 }}
         >
           <Icon className="w-6 h-6" style={{ color }} />
         </motion.div>
@@ -94,7 +94,7 @@ export const AnimatedStatCard = ({
           >
             {displayValue}
           </motion.span>
-          {unit && <span className="text-lg text-slate-500">{unit}</span>}
+          {unit && <span className="text-lg" style={{ color: 'var(--color-text-muted, #94a3b8)' }}>{unit}</span>}
         </div>
 
         {/* Label */}

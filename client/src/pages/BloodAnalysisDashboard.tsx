@@ -334,7 +334,7 @@ function BloodAnalysisDashboardInner() {
     return (
       <div
         className={`rounded border p-6 max-w-none ${
-          currentTheme.type === 'dark' ? 'prose prose-slate' : 'prose prose-amber'
+          currentTheme.type === 'dark' ? 'prose prose-slate' : 'prose prose-stone'
         }`}
         style={{
           backgroundColor: currentTheme.colors.surface,
@@ -344,12 +344,20 @@ function BloodAnalysisDashboardInner() {
           '--tw-prose-body': currentTheme.colors.text,
           '--tw-prose-bold': currentTheme.colors.text,
           '--tw-prose-links': currentTheme.colors.primary,
+          '--tw-prose-code': currentTheme.colors.primary,
+          '--tw-prose-pre-bg': currentTheme.colors.surface,
+          '--tw-prose-pre-code': currentTheme.colors.text,
+          '--tw-prose-quotes': currentTheme.colors.textMuted,
+          '--tw-prose-quote-borders': currentTheme.colors.border,
+          '--tw-prose-hr': currentTheme.colors.border,
+          '--tw-prose-th-borders': currentTheme.colors.border,
+          '--tw-prose-td-borders': currentTheme.colors.border,
         } as React.CSSProperties}
       >
         {sectionsToShow.map((section, idx) => (
           <div key={section.id}>
             <ReactMarkdown>{section.content}</ReactMarkdown>
-            {idx < sectionsToShow.length - 1 && <hr className="my-8" style={{ borderColor: currentTheme.colors.border }} />}
+            {idx < sectionsToShow.length - 1 && <hr className="my-6" style={{ borderColor: currentTheme.colors.border }} />}
           </div>
         ))}
       </div>
@@ -542,7 +550,7 @@ function BloodAnalysisDashboardInner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 {panelGroups.map((panel, index) => {
                   const status = scoreToStatus(panel.score);
                   const Icon = PANEL_ICONS[panel.id] || Heart;
