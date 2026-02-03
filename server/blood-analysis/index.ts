@@ -2678,7 +2678,7 @@ Génère une analyse complète selon le format demandé.`;
       // Use streaming for long-running operations (>10min possible with new Achzod prompt)
       const stream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-        max_tokens: 32000, // Increased for comprehensive Achzod-style reports (35k-90k chars)
+        max_tokens: 128000, // Increased for FULL Achzod ultra-long reports (35k-90k chars = ~12k-25k tokens)
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
         stream: true,
@@ -2724,7 +2724,7 @@ Génère une analyse complète selon le format demandé.`;
     try {
       const planStream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-        max_tokens: 4000, // Increased for detailed 4-phase plan
+        max_tokens: 16000, // Increased for ultra-detailed 4-phase plan (Achzod comprehensive format)
         system: "Tu es Achzod, expert elite en optimisation physiologique. Respecte STRICTEMENT le format demande avec 4 phases detaillees.",
         messages: [{ role: "user", content: planPrompt }],
         stream: true,
