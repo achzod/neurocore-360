@@ -262,6 +262,13 @@ function BloodAnalysisDashboardInner() {
     return sections;
   }, [report?.aiReport]);
 
+  // Dynamically extract axe sections
+  const axeSections = useMemo(() => {
+    return reportSections
+      .filter(section => section.id.startsWith('axe-') && /axe-\d+/.test(section.id))
+      .map(section => section.id);
+  }, [reportSections]);
+
   // Function to render specific sections of the report
   const renderReportSection = (sectionIds: string[]) => {
     if (!report?.aiReport) {
@@ -275,7 +282,7 @@ function BloodAnalysisDashboardInner() {
             <h2 className="text-xl font-semibold mb-2">Génération du rapport AI en cours...</h2>
             <p className="text-sm text-center max-w-md" style={{ color: currentTheme.colors.textMuted }}>
               L'analyse approfondie de tes biomarqueurs est en cours de génération.
-              Recharge la page dans quelques minutes.
+              Le rapport complet sera disponible sous peu.
             </p>
           </div>
         </div>
@@ -459,14 +466,14 @@ function BloodAnalysisDashboardInner() {
             <TabsContent value="overview">
               {/* Storytelling Introduction */}
               <div
-                className="rounded border p-8 mb-8"
+                className="rounded border p-6 mb-8"
                 style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
               >
                 <div className="max-w-3xl">
-                  <h2 className="text-2xl font-bold mb-4" style={{ color: currentTheme.colors.text }}>
+                  <h2 className="text-2xl font-bold tracking-tight mb-4" style={{ color: currentTheme.colors.text }}>
                     Bienvenue dans ton Blood Analysis
                   </h2>
-                  <div className="space-y-4 text-base leading-relaxed" style={{ color: currentTheme.colors.text }}>
+                  <div className="space-y-4 text-base" style={{ color: currentTheme.colors.text, lineHeight: '1.7' }}>
                     <p>
                       Tes biomarqueurs racontent une histoire. Chaque valeur, chaque marqueur est une pièce du puzzle qui révèle
                       comment ton corps fonctionne réellement - au-delà des symptômes, au-delà des sensations.
@@ -479,7 +486,7 @@ function BloodAnalysisDashboardInner() {
                     <p>
                       Tu trouveras ici:
                     </p>
-                    <ul className="list-disc list-inside space-y-2 pl-4">
+                    <ul className="list-disc list-outside space-y-2 pl-6">
                       <li>Une vue d'ensemble de ton profil métabolique complet</li>
                       <li>Une analyse détaillée de chaque biomarqueur avec interprétation contextuelle</li>
                       <li>Des axes d'optimisation prioritaires basés sur l'interconnexion de tes marqueurs</li>
@@ -496,7 +503,7 @@ function BloodAnalysisDashboardInner() {
 
               <div className="grid lg:grid-cols-2 gap-8 mb-8">
                 <div
-                  className="flex flex-col items-center justify-center p-8 rounded-sm border blood-glass blood-grain"
+                  className="flex flex-col items-center justify-center p-6 rounded-sm border blood-glass blood-grain"
                   style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                 >
                   <RadialScoreChart
@@ -563,8 +570,13 @@ function BloodAnalysisDashboardInner() {
                         {item}
                       </li>
                     ))}
+                    {(summary.optimal || []).length > 6 && (
+                      <li className="text-muted-foreground font-medium">
+                        +{(summary.optimal || []).length - 6} autres...
+                      </li>
+                    )}
                     {(summary.optimal || []).length === 0 && (
-                      <li className="text-muted-foreground">Aucun marqueur optimal déclaré.</li>
+                      <li className="text-muted-foreground">Aucun marqueur optimal détecté.</li>
                     )}
                   </ul>
                 </div>
@@ -579,8 +591,13 @@ function BloodAnalysisDashboardInner() {
                         {item}
                       </li>
                     ))}
+                    {(summary.watch || []).length > 6 && (
+                      <li className="text-muted-foreground font-medium">
+                        +{(summary.watch || []).length - 6} autres...
+                      </li>
+                    )}
                     {(summary.watch || []).length === 0 && (
-                      <li className="text-muted-foreground">Aucun point en surveillance.</li>
+                      <li className="text-muted-foreground">Aucun marqueur sous surveillance.</li>
                     )}
                   </ul>
                 </div>
@@ -595,6 +612,11 @@ function BloodAnalysisDashboardInner() {
                         {item}
                       </li>
                     ))}
+                    {(summary.action || []).length > 6 && (
+                      <li className="text-muted-foreground font-medium">
+                        +{(summary.action || []).length - 6} autres...
+                      </li>
+                    )}
                     {(summary.action || []).length === 0 && (
                       <li className="text-muted-foreground">Aucune action critique détectée.</li>
                     )}
@@ -636,9 +658,6 @@ function BloodAnalysisDashboardInner() {
                             >
                               <div className="flex items-start justify-between gap-3 mb-4">
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[10px] uppercase tracking-[0.1em] break-words" style={{ color: currentTheme.colors.textMuted }}>
-                                    {panel.title}
-                                  </p>
                                   <h3 className="text-lg font-semibold">{marker.name}</h3>
                                   <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
                                     {marker.value} {marker.unit}
@@ -684,19 +703,19 @@ function BloodAnalysisDashboardInner() {
 
             {/* Synthèse: Synthese executive + Tableau de bord */}
             <TabsContent value="synthese">
-              {renderReportSection(['synthese-executive', 'qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests', 'tableau-de-bord-scores-priorites', 'potentiel-recomposition'])}
+              {renderReportSection(['synthese-executive', 'tableau-de-bord-scores-priorites', 'potentiel-recomposition'])}
             </TabsContent>
 
             {/* Données & Tests: Qualité données + Marqueurs manquants */}
             <TabsContent value="donnees">
-              {renderReportSection(['qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests'])}
+              {renderReportSection(['qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests', 'tests-complementaires'])}
             </TabsContent>
 
             {/* Analyse Axes: Tous les axes */}
             <TabsContent value="axes">
               {renderReportSection([
                 'lecture-compartimentee-par-axes',
-                'axe-1', 'axe-2', 'axe-3', 'axe-4', 'axe-5', 'axe-6', 'axe-7', 'axe-8', 'axe-9', 'axe-10', 'axe-11',
+                ...axeSections,
                 'interconnexions-majeures',
                 'deep-dive'
               ])}
@@ -704,17 +723,17 @@ function BloodAnalysisDashboardInner() {
 
             {/* Plan 90j */}
             <TabsContent value="plan">
-              {renderReportSection(['plan-d-action-90-jours', 'plan-daction-90-jours', 'plan-90-jours', 'plan-action'])}
+              {renderReportSection(['plan-90-jours', 'plan-action'])}
             </TabsContent>
 
             {/* Protocoles: Nutrition + Supplements */}
             <TabsContent value="protocoles">
-              {renderReportSection(['nutrition-entrainement', 'supplements-stack', 'supplementation', 'protocole'])}
+              {renderReportSection(['protocole-nutrition', 'protocole-supplements', 'nutrition-entrainement', 'supplementation'])}
             </TabsContent>
 
             {/* Annexes */}
             <TabsContent value="annexes">
-              {renderReportSection(['annexes', 'sources', 'bibliographie', 'references'])}
+              {renderReportSection(['annexes', 'bibliographie'])}
             </TabsContent>
           </Tabs>
         </div>
