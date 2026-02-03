@@ -1202,10 +1202,12 @@ export async function extractMarkersFromPdfText(
   const textExtracted = extractMarkersFromText(cleaned);
   const unique = new Map<string, BloodMarkerInput>();
   for (const item of lineExtracted) {
+    if (!item.markerId) continue;
     if (!isPlausibleMarkerValue(item.markerId, item.value)) continue;
     unique.set(item.markerId, item);
   }
   for (const item of textExtracted) {
+    if (!item.markerId) continue;
     if (unique.has(item.markerId)) continue;
     if (!isPlausibleMarkerValue(item.markerId, item.value)) continue;
     unique.set(item.markerId, item);
@@ -2147,6 +2149,13 @@ export function buildFallbackAnalysis(
     stressLevel?: number;
     poids?: number;
     taille?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string;
+    infectionRecent?: string;
   }
 ): string {
   const formatList = (items: string[], emptyLabel: string) =>
@@ -2603,6 +2612,13 @@ export async function generateAIBloodAnalysis(
     calorieDeficit?: number;
     alcoholWeekly?: number;
     stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string;
+    infectionRecent?: string;
   },
   knowledgeContext?: string
 ): Promise<string> {
