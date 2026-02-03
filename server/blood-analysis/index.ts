@@ -2694,7 +2694,7 @@ Génère une analyse complète selon le format demandé.`;
       // Use streaming for long-running operations (>10min possible with new Achzod prompt)
       const stream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-        max_tokens: 128000, // Increased for FULL Achzod ultra-long reports (35k-90k chars = ~12k-25k tokens)
+        max_tokens: 64000, // Max allowed by Claude Opus 4.5 - sufficient for FULL Achzod reports (35k-90k chars = ~12k-25k tokens)
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
         stream: true,
