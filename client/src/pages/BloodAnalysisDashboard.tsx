@@ -530,7 +530,6 @@ function BloodAnalysisDashboardInner() {
                       value={panel.score}
                       unit="%"
                       icon={Icon}
-                      trend={panel.score >= 70 ? { value: '+' + (panel.score - 70), direction: 'up' } : { value: '-' + (70 - panel.score), direction: 'down' }}
                     />
                   );
                 })}
@@ -549,7 +548,7 @@ function BloodAnalysisDashboardInner() {
                       </li>
                     ))}
                     {(summary.optimal || []).length === 0 && (
-                      <li className="text-muted-foreground">Aucun marqueur optimal declare.</li>
+                      <li className="text-muted-foreground">Aucun marqueur optimal déclaré.</li>
                     )}
                   </ul>
                 </div>
@@ -581,7 +580,7 @@ function BloodAnalysisDashboardInner() {
                       </li>
                     ))}
                     {(summary.action || []).length === 0 && (
-                      <li className="text-muted-foreground">Aucune action critique detectee.</li>
+                      <li className="text-muted-foreground">Aucune action critique détectée.</li>
                     )}
                   </ul>
                 </div>
@@ -609,7 +608,7 @@ function BloodAnalysisDashboardInner() {
                           className="rounded border p-4 text-sm"
                           style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                         >
-                          Aucun biomarqueur renseigne pour ce panel.
+                          Aucun biomarqueur renseigné pour ce panel.
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
