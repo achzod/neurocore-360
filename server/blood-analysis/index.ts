@@ -2154,7 +2154,7 @@ export function buildFallbackAnalysis(
     lastTraining?: string;
     alcoholLast72h?: string;
     nutritionPhase?: string;
-    supplementsUsed?: string;
+    supplementsUsed?: string[];
     infectionRecent?: string;
   }
 ): string {
@@ -2617,7 +2617,7 @@ export async function generateAIBloodAnalysis(
     lastTraining?: string;
     alcoholLast72h?: string;
     nutritionPhase?: string;
-    supplementsUsed?: string;
+    supplementsUsed?: string[];
     infectionRecent?: string;
   },
   knowledgeContext?: string
