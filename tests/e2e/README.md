@@ -103,6 +103,9 @@ Tests are configured in `playwright.config.ts`:
 |----------|-------------|----------|
 | `TEST_REPORT_ID` | Valid blood analysis report ID | Yes |
 | `E2E_BASE_URL` | Run tests against an existing deployment | No |
+| `DISCOVERY_AUDIT_ID` | Discovery Scan audit ID for report smoke test | No |
+| `ANABOLIC_AUDIT_ID` | Anabolic Bioscan audit ID for report smoke test | No |
+| `ULTIMATE_AUDIT_ID` | Ultimate Scan audit ID for report smoke test | No |
 | `CI` | Set to `true` in CI environment | No |
 
 ## Example Usage
@@ -116,6 +119,9 @@ TEST_REPORT_ID=clx123abc npm run test:e2e
 
 # 2b. Run offer smoke tests against production
 E2E_BASE_URL=https://neurocore-360.onrender.com npx playwright test tests/e2e/offers.spec.ts
+
+# 2c. Run report smoke tests against production
+E2E_BASE_URL=https://neurocore-360.onrender.com npx playwright test tests/e2e/reports.spec.ts
 
 # 3. View report
 npm run test:e2e:report
