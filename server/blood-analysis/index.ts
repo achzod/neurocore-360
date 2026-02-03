@@ -2675,18 +2675,21 @@ Génère une analyse complète selon le format demandé.`;
     const prompt = `${userPrompt}\n${retryNote}`;
 
     try {
-      const response = await withTimeout(
-        anthropic.messages.create({
-          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 32000, // Increased for comprehensive Achzod-style reports (35k-90k chars)
-          system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-          messages: [{ role: "user", content: prompt }]
-        }),
-        API_TIMEOUT_MS
-      );
+      // Use streaming for long-running operations (>10min possible with new Achzod prompt)
+      const stream = await anthropic.messages.create({
+        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+        max_tokens: 32000, // Increased for comprehensive Achzod-style reports (35k-90k chars)
+        system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
+        stream: true,
+      });
 
-      const textContent = response.content.find(c => c.type === "text");
-      const candidate = textContent?.text || "";
+      let candidate = "";
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          candidate += event.delta.text;
+        }
+      }
       const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
 
       const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
@@ -2719,18 +2722,22 @@ Génère une analyse complète selon le format demandé.`;
     const planPrompt = `Tu dois produire UNIQUEMENT la section "## PLAN D'ACTION 90 JOURS" avec les 4 phases pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## PLAN D'ACTION 90 JOURS\n  ### PHASE 1: ATTAQUE (Jours 1-30)\n  ### PHASE 2: OPTIMISATION (Jours 31-60)\n  ### PHASE 3: CONSOLIDATION (Jours 61-90)\n  ### PHASE 4: RETEST (J+90)\n- Chaque phase doit inclure:\n  * Supplementation (tableau: Supplement | Dosage | Timing | Pourquoi | Source expert)\n  * Nutrition (modifications precises avec quantification)\n  * Lifestyle (sommeil, stress)\n  * Entrainement (ajustements si necessaires)\n- Phase 4 RETEST doit lister: marqueurs a retester + valeur actuelle → cible → amelioration attendue %\n- Citation experts obligatoire: Derek MPMD, Huberman, Attia, Examine.com\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
 
     try {
-      const planResponse = await withTimeout(
-        anthropic.messages.create({
-          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
-          max_tokens: 4000, // Increased for detailed 4-phase plan
-          system: "Tu es Achzod, expert elite en optimisation physiologique. Respecte STRICTEMENT le format demande avec 4 phases detaillees.",
-          messages: [{ role: "user", content: planPrompt }]
-        }),
-        30000 // 30s timeout for comprehensive Plan 90 section
-      );
-      const planText = extractPlan90Section(
-        planResponse.content.find(c => c.type === "text")?.text || ""
-      );
+      const planStream = await anthropic.messages.create({
+        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+        max_tokens: 4000, // Increased for detailed 4-phase plan
+        system: "Tu es Achzod, expert elite en optimisation physiologique. Respecte STRICTEMENT le format demande avec 4 phases detaillees.",
+        messages: [{ role: "user", content: planPrompt }],
+        stream: true,
+      });
+
+      let planContent = "";
+      for await (const event of planStream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          planContent += event.delta.text;
+        }
+      }
+
+      const planText = extractPlan90Section(planContent);
       if (planText) {
         output = insertPlan90Section(output, planText);
       }
