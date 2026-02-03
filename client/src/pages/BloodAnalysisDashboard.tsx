@@ -285,15 +285,31 @@ function BloodAnalysisDashboardInner() {
     // Normalize search IDs for better matching
     const normalizedSearchIds = sectionIds.map(normalizeSectionId);
 
-    const sectionsToShow = reportSections.filter(section => {
+    // Use Set to prevent duplicate sections
+    const matchedSectionIds = new Set<string>();
+
+    // Pass 1: Exact match (highest priority)
+    reportSections.forEach(section => {
       const normalizedSectionId = normalizeSectionId(section.id);
-      return normalizedSearchIds.some(searchId => {
-        // Check if either contains the other, or if they're similar enough
-        return normalizedSectionId.includes(searchId) ||
-               searchId.includes(normalizedSectionId) ||
-               normalizedSectionId === searchId;
-      });
+      if (normalizedSearchIds.includes(normalizedSectionId)) {
+        matchedSectionIds.add(section.id);
+      }
     });
+
+    // Pass 2: Fuzzy match only if section ID contains searchId (more strict)
+    if (matchedSectionIds.size === 0) {
+      reportSections.forEach(section => {
+        const normalizedSectionId = normalizeSectionId(section.id);
+        const matches = normalizedSearchIds.some(searchId =>
+          normalizedSectionId.includes(searchId) && searchId.length >= 5 // Require minimum 5 chars to avoid false positives
+        );
+        if (matches) {
+          matchedSectionIds.add(section.id);
+        }
+      });
+    }
+
+    const sectionsToShow = reportSections.filter(section => matchedSectionIds.has(section.id));
 
     if (sectionsToShow.length === 0) {
       return (
@@ -429,7 +445,7 @@ function BloodAnalysisDashboardInner() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-8 flex flex-wrap gap-2">
+            <TabsList className="mb-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 h-auto w-full p-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="biomarkers">Biomarqueurs</TabsTrigger>
               <TabsTrigger value="synthese">Synthèse</TabsTrigger>
