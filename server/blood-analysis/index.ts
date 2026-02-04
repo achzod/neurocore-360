@@ -2099,7 +2099,7 @@ const insertPlan90Section = (text: string, planSection: string): string => {
   return `${text.trim()}\n\n${planSection.trim()}`.trim();
 };
 
-const trimAiAnalysis = (text: string, maxChars = 20000): string => {
+const trimAiAnalysis = (text: string, maxChars = 100000): string => {
   if (!text) return "";
   const cleaned = stripEmojis(text).trim();
   if (cleaned.length <= maxChars) return cleaned;
