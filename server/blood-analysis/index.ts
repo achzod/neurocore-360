@@ -789,7 +789,7 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
 };
 
 const MARKER_SYNONYMS: Record<string, RegExp[]> = {
-  testosterone_total: [/testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i],
+  testosterone_total: [/^testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i],
   testosterone_libre: [/testost[ée]rone\s*libre/i, /testost[ée]rone\s*bio/i],
   shbg: [/shbg/i, /globuline.*sex/i],
   estradiol: [/estradiol/i, /\be2\b/i],
@@ -811,7 +811,7 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   fructosamine: [/fructosamine/i],
   triglycerides: [/triglyc[ée]rides/i],
   hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
-  ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /cholest[ée]rol\s*l\.?d\.?l/i, /\bl\.?d\.?l\b/i, /\bldl[-\s]?c\b/i],
+  ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /\bl\.?d\.?l\s+mesur[eé]/i],
   apob: [/apolipoprot[ée]ine.*b/i, /apo\s*b/i],
   lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
   cholesterol_total: [/cholest[ée]rol\s*total/i],
@@ -989,7 +989,7 @@ const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
   fsh: { min: 0.5, max: 15 },
   prolactine: { min: 2, max: 30 },
   dhea_s: { min: 40, max: 700 },
-  cortisol: { min: 3, max: 35 },
+  cortisol: { min: 1, max: 50 },
   igf1: { min: 60, max: 450 },
   tsh: { min: 0.2, max: 6 },
   t4_libre: { min: 0.5, max: 2.5 },
