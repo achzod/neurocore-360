@@ -2797,6 +2797,157 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
     }
   }
 
+  // Multi-pass generation: add missing critical sections
+  const missingSections: { title: string; check: string; prompt: () => string }[] = [
+    {
+      title: "Interconnexions majeures",
+      check: "## Interconnexions majeures",
+      prompt: () => `Génère UNIQUEMENT la section "## Interconnexions majeures (le pattern)" pour ce bilan sanguin.
+
+FORMAT OBLIGATOIRE:
+## Interconnexions majeures (le pattern)
+
+Pour chaque interconnexion (5 à 12 max):
+1. **Pattern observé**: [Liste des marqueurs impliqués]
+2. **Hypothèse la plus probable**: [Explication mécanistique]
+3. **Ce qui confirmerait**: [Tests ou données supplémentaires nécessaires]
+4. **Action concrète**: [Protocole d'intervention]
+
+CONTEXTE:
+Marqueurs: ${markersTable}
+Patterns: ${patternsText}
+
+Sois ultra-concret et actionable. Cite les sources [SRC:ID] si disponible dans le contexte fourni.
+${knowledgeContext ? `\n\nCONTEXTE:\n${knowledgeContext}` : ""}`,
+    },
+    {
+      title: "Deep dive",
+      check: "## Deep dive",
+      prompt: () => `Génère UNIQUEMENT la section "## Deep dive — marqueurs prioritaires" pour ce bilan sanguin.
+
+Sélectionne les 8 à 15 marqueurs les plus importants pour la recomposition et la santé.
+
+FORMAT OBLIGATOIRE PAR MARQUEUR:
+### [Nom du marqueur]
+- **Priorité**: [CRITIQUE/IMPORTANT/OPTIMISATION]
+- **Valeur**: ${analysisResult.markers[0]?.value} ${analysisResult.markers[0]?.unit}
+- **Lecture clinique**: [Interprétation médicale]
+- **Lecture performance/bodybuilding**: [Impact sur physique et performance]
+- **Causes plausibles** (ordre de probabilité): [Liste numérotée 1-5]
+- **Facteurs confondants**: [Ce qui peut fausser l'interprétation]
+- **Plan d'action**: [3 à 7 points concrets]
+- **Tests/data à ajouter**: [Marqueurs complémentaires nécessaires]
+- **Confiance**: [élevée/moyenne/faible]
+
+CONTEXTE:
+${markersTable}
+
+${deepDivePayload.context ? `DONNÉES DÉTAILLÉES PAR BIOMARQUEUR:\n${deepDivePayload.context}` : ""}`,
+    },
+    {
+      title: "Nutrition & entraînement",
+      check: "## Nutrition & entraînement",
+      prompt: () => `Génère UNIQUEMENT la section "## Nutrition & entraînement (traduction pratique)" pour ce bilan sanguin.
+
+FORMAT OBLIGATOIRE:
+
+## Nutrition & entraînement (traduction pratique)
+
+### Nutrition
+- **Structure hebdo**: [Déficit intelligent, refeeds, etc.]
+- **Timing des glucides**: [Autour training ou autres stratégies]
+- **Protéines/fibres**: [Recommandations sans inventer les chiffres si poids manquant]
+- **Focus micronutriments**: [Selon marqueurs déficients]
+
+### Entraînement
+- **Volume/intensité**: [Deload si inflammation/stress élevé]
+- **Cardio**: [Zone 2 / HIIT selon profil métabolique]
+- **NEAT**: [Activité quotidienne]
+- **Récupération**: [Sommeil, steps, deload planifié]
+
+CONTEXTE:
+Client: ${userProfile.prenom || "le client"} (${userProfile.gender} ${userProfile.age || ""})
+Lifestyle: ${lifestyleLine}
+Marqueurs: ${markersTable}`,
+    },
+    {
+      title: "Supplements & stack",
+      check: "## Supplements & stack",
+      prompt: () => `Génère UNIQUEMENT la section "## Supplements & stack (minimaliste mais impact)" pour ce bilan sanguin.
+
+FORMAT OBLIGATOIRE:
+## Supplements & stack (minimaliste mais impact)
+
+Liste de 6 à 14 suppléments maximum. Pour chaque:
+- **Supplément**: [Nom]
+- **Pourquoi**: [Cible biomarqueur/pattern spécifique]
+- **Dose indicative**: [Plage prudente]
+- **Timing**: [Matin, soir, autour training]
+- **Durée**: [Combien de temps]
+- **Précautions/interactions**: [Effets secondaires ou interactions]
+
+CONTEXTE:
+Marqueurs problématiques: ${analysisResult.summary.action.join(", ")}
+À surveiller: ${analysisResult.summary.watch.join(", ")}
+
+${markersTable}`,
+    },
+    {
+      title: "Annexes",
+      check: "## Annexes",
+      prompt: () => `Génère UNIQUEMENT la section "## Annexes (ultra long)" pour ce bilan sanguin.
+
+FORMAT OBLIGATOIRE:
+## Annexes (ultra long)
+
+### Annexe A — Marqueurs secondaires (lecture rapide)
+[Pour chaque marqueur non prioritaire: statut + 1 ligne d'interprétation + action éventuelle]
+
+### Annexe B — Hypothèses & tests de confirmation
+[Liste des hypothèses non confirmées + tests pour confirmer/infirmer]
+
+### Annexe C — Glossaire utile
+[Définitions simples en 1-2 lignes des termes techniques utilisés]
+
+CONTEXTE:
+${markersTable}`,
+    },
+  ];
+
+  for (const section of missingSections) {
+    if (!output.includes(section.check)) {
+      console.log(`[BloodAnalysis] Missing section: ${section.title}, generating...`);
+      try {
+        const sectionStream = await anthropic.messages.create({
+          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+          max_tokens: 8000,
+          system: "Tu es Achzod, expert elite en optimisation physiologique. Génère UNIQUEMENT la section demandée, rien d'autre.",
+          messages: [{ role: "user", content: section.prompt() }],
+          stream: true,
+        });
+
+        let sectionContent = "";
+        for await (const event of sectionStream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            sectionContent += event.delta.text;
+          }
+        }
+
+        if (sectionContent.trim()) {
+          // Insert section before "## Sources" if it exists, otherwise append
+          if (output.includes("## Sources")) {
+            output = output.replace("## Sources", `${sectionContent.trim()}\n\n## Sources`);
+          } else {
+            output += `\n\n${sectionContent.trim()}`;
+          }
+          console.log(`[BloodAnalysis] Added section: ${section.title} (${sectionContent.length} chars)`);
+        }
+      } catch (err: any) {
+        console.error(`[BloodAnalysis] Failed to generate ${section.title}:`, err.message);
+      }
+    }
+  }
+
   const withSources = ensureSourcesSection(output);
   return trimAiAnalysis(withSources);
 }
