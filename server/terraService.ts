@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 /**
  * NEUROCORE 360 - Terra API Integration
  *
@@ -546,12 +548,47 @@ export function mapTerraDataToAnswers(terraData: TerraData): {
  * Ce webhook reçoit TOUS les événements Terra pour tous les sites,
  * puis les dispatch vers le bon site selon le reference_id.
  */
+const extractTerraSignature = (signature: string): string => {
+  if (!signature) return "";
+  const parts = signature.split(",").map((part) => part.trim());
+  const tagged = parts.find((part) => part.startsWith("v1=") || part.startsWith("sha256="));
+  if (tagged) {
+    return tagged.split("=")[1] || "";
+  }
+  return signature;
+};
+
+const verifyTerraSignature = (rawBody: Buffer, signature: string, secret: string): boolean => {
+  const candidate = extractTerraSignature(signature);
+  if (!candidate || !secret || !rawBody.length) return false;
+  const hmacHex = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+  if (candidate.length === hmacHex.length) {
+    try {
+      return crypto.timingSafeEqual(Buffer.from(candidate), Buffer.from(hmacHex));
+    } catch {
+      return false;
+    }
+  }
+  const hmacBase64 = crypto.createHmac("sha256", secret).update(rawBody).digest("base64");
+  return candidate === hmacBase64 || candidate === hmacHex;
+};
+
 export async function handleTerraWebhook(
   payload: unknown,
-  signature: string
+  signature: string,
+  rawBody?: Buffer
 ): Promise<{ success: boolean; message: string; site?: string }> {
   // Verify webhook signature
-  // TODO: Implement signature verification with TERRA_CONFIG.WEBHOOK_SECRET
+  const secret = TERRA_CONFIG.WEBHOOK_SECRET;
+  if (secret) {
+    const raw = rawBody ?? Buffer.from(JSON.stringify(payload ?? {}));
+    const valid = verifyTerraSignature(raw, signature, secret);
+    if (!valid) {
+      return { success: false, message: "Invalid Terra webhook signature" };
+    }
+  } else {
+    console.warn("[Terra] WEBHOOK_SECRET not configured - skipping signature verification");
+  }
 
   const event = payload as any;
   const referenceId = event.user?.reference_id || "";

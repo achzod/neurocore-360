@@ -595,6 +595,69 @@ export async function sendAdminEmailNewAudit(
   }
 }
 
+export async function sendCTAEmail(
+  email: string,
+  subject: string,
+  message: string
+): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+    const content = `
+      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;">
+        Message important
+      </h2>
+
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 18px; text-align: center;">
+        De la part d'Achzod
+      </p>
+
+      <div style="margin-top: 18px; padding: 18px; background-color: ${COLORS.surface}; border-radius: 10px; border: 1px solid ${COLORS.border};">
+        ${message
+          .split("\n")
+          .map(
+            (line) =>
+              `<p style="color: ${COLORS.text}; font-size: 14px; line-height: 1.7; margin: 0 0 10px;">${line}</p>`
+          )
+          .join("")}
+      </div>
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.primary} 0%, #0b0b0f 100%)`,
+      "ApexLabs",
+      "Message personnalisé"
+    );
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: {
+          subject,
+          from: {
+            name: SENDER_NAME,
+            email: SENDER_EMAIL,
+          },
+          to: [{ email }],
+          html: encodeBase64(emailContent),
+          text: message,
+        },
+      }),
+    });
+
+    const result = (await response.json()) as { result: boolean };
+    console.log(`[SendPulse] CTA email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending CTA email:", error);
+    return false;
+  }
+}
+
 // Email GRATUIT: demande avis + upsell Anabolic Bioscan avec code ANALYSE20
 export async function sendGratuitUpsellEmail(
   email: string,

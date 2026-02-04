@@ -216,18 +216,44 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/blood-analysis/purchase", async (req, res) => {
     try {
-      const { userId } = req.body;
+      const { userId, email, priceId } = req.body as {
+        userId?: string;
+        email?: string;
+        priceId?: string;
+      };
 
-      if (!userId) {
-        res.status(400).json({ error: "userId required" });
+      const recipientEmail = email || userId;
+      if (!recipientEmail) {
+        res.status(400).json({ error: "email required" });
         return;
       }
 
-      // TODO: Implement Stripe payment
+      const stripePriceId = priceId || process.env.BLOOD_ANALYSIS_PRICE_ID;
+      if (!stripePriceId) {
+        res.status(400).json({ error: "priceId required" });
+        return;
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = getBaseUrl();
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [{ price: stripePriceId, quantity: 1 }],
+        mode: "payment",
+        success_url: `${baseUrl}/blood-analysis?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/offers/blood-analysis?cancelled=true`,
+        customer_email: recipientEmail,
+        metadata: {
+          planType: "BLOOD_ANALYSIS",
+          email: recipientEmail,
+          userId: userId || "",
+        },
+      });
+
       res.json({
         success: true,
-        clientSecret: "pk_test_placeholder",
-        message: "Stripe integration coming soon"
+        sessionId: session.id,
+        url: session.url,
       });
     } catch (error) {
       console.error("[BloodAnalysis] Purchase error:", error);
@@ -241,23 +267,40 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    */
   app.post("/api/blood-analysis/upload", async (req, res) => {
     try {
-      const { userId, markers } = req.body as {
-        userId: string;
-        markers: BloodMarkerInput[];
+      const { pdfBase64, pdfName } = req.body as {
+        pdfBase64?: string;
+        pdfName?: string;
       };
 
-      if (!userId || !markers) {
-        res.status(400).json({ error: "userId and markers required" });
+      if (!pdfBase64) {
+        res.status(400).json({ error: "pdfBase64 required" });
         return;
       }
 
-      // For MVP: Store markers directly (no OCR)
-      // TODO: Implement file upload + OCR
+      const payload = pdfBase64.includes(",") ? pdfBase64.split(",")[1] : pdfBase64;
+      let parsedText = "";
+      try {
+        const pdfBuffer = Buffer.from(payload, "base64");
+        const parsed = await pdf(pdfBuffer);
+        parsedText = parsed.text || "";
+      } catch (parseError) {
+        console.error("[BloodAnalysis] PDF parse error:", parseError);
+        res.status(400).json({ error: "PDF illisible" });
+        return;
+      }
 
+      const markers = await extractMarkersFromPdfText(parsedText, pdfName || "bilan.pdf");
+      if (!markers.length) {
+        res.status(400).json({ error: "Aucun biomarqueur detecte" });
+        return;
+      }
+
+      const profile = extractPatientInfoFromPdfText(parsedText);
       res.json({
         success: true,
-        reportId: `temp-${Date.now()}`,
-        message: "Markers saved - proceed to questionnaire"
+        markers,
+        profile,
+        message: "Extraction OK"
       });
     } catch (error) {
       console.error("[BloodAnalysis] Upload error:", error);

@@ -16,6 +16,7 @@ import {
   sendPremiumJ14Email,
   sendPromoCodeEmail,
   sendAdminReviewNotification,
+  sendCTAEmail,
   addSubscriberToList,
   sendApexLabsWelcomeEmail,
 } from "./emailService";
@@ -1398,12 +1399,12 @@ export async function registerRoutes(
   app.post("/api/terra/webhook", async (req, res) => {
     try {
       const signature = req.headers["terra-signature"] as string || "";
-      const result = await handleTerraWebhook(req.body, signature);
+      const result = await handleTerraWebhook(req.body, signature, req.rawBody as Buffer | undefined);
 
       if (result.success) {
         res.json({ status: "ok", message: result.message });
       } else {
-        res.status(400).json({ error: result.message });
+        res.status(401).json({ error: result.message });
       }
     } catch (error) {
       console.error("[Terra] Webhook error:", error);
@@ -2099,14 +2100,14 @@ export async function registerRoutes(
         return;
       }
 
-      // TODO: Implémenter l'envoi d'email avec le CTA
-      // Pour l'instant, on log juste
       console.log(`[Admin CTA] Envoi CTA à ${audit.email} pour audit ${auditId}`);
       console.log(`Sujet: ${subject}`);
       console.log(`Message: ${message}`);
-
-      // TODO: Utiliser emailService pour envoyer l'email
-      // await sendCTAEmail(audit.email, subject, message);
+      const sent = await sendCTAEmail(audit.email, subject, message);
+      if (!sent) {
+        res.status(500).json({ success: false, error: "Echec envoi CTA" });
+        return;
+      }
 
       res.json({ success: true, message: "CTA envoyé avec succès" });
     } catch (error) {
