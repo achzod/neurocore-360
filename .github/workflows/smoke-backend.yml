@@ -1,0 +1,61 @@
+name: smoke-backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      audit_id:
+        description: "Audit ID to validate"
+        required: false
+        type: string
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      RENDER_EXTERNAL_URL: ${{ secrets.RENDER_EXTERNAL_URL }}
+      ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+      ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+      AUDIT_ID: ${{ inputs.audit_id }}
+      SMOKE_AUDIT_ID: ${{ secrets.SMOKE_AUDIT_ID }}
+    steps:
+      - name: Backend smoke checks (5 iterations)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_URL="${RENDER_EXTERNAL_URL:-https://neurocore-360.onrender.com}"
+          ADMIN="${ADMIN_KEY:-${ADMIN_SECRET:-}}"
+          AUDIT="${AUDIT_ID:-${SMOKE_AUDIT_ID:-}}"
+
+          if [ -z "$ADMIN" ]; then
+            echo "Missing ADMIN_KEY/ADMIN_SECRET secret"
+            exit 1
+          fi
+
+          if [ -z "$AUDIT" ]; then
+            echo "Missing AUDIT_ID input or SMOKE_AUDIT_ID secret"
+            exit 1
+          fi
+
+          check() {
+            local name="$1"
+            local url="$2"
+            local code
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+            echo "$name=$code"
+            if [ "$code" != "200" ]; then
+              exit 1
+            fi
+          }
+
+          for i in {1..5}; do
+            echo "--- iteration $i ---"
+            check health "$BASE_URL/api/health"
+            check stripe "$BASE_URL/api/stripe/publishable-key"
+            check terra "$BASE_URL/api/terra/providers"
+            check audit "$BASE_URL/api/audits/$AUDIT?light=1"
+            check narrative "$BASE_URL/api/audits/$AUDIT/narrative-status"
+            check admin "$BASE_URL/api/admin/audits?key=$ADMIN"
+            sleep 2
+          done
