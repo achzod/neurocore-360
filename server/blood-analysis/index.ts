@@ -2798,6 +2798,9 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
   }
 
   // Multi-pass generation: add missing critical sections
+  console.log(`[BloodAnalysis] Starting multi-pass check. Output length: ${output.length} chars`);
+  console.log(`[BloodAnalysis] Checking for missing sections...`);
+
   const missingSections: { title: string; check: string; prompt: () => string }[] = [
     {
       title: "Interconnexions majeures",
@@ -2915,8 +2918,9 @@ ${markersTable}`,
   ];
 
   for (const section of missingSections) {
+    console.log(`[BloodAnalysis] Checking section "${section.title}": ${output.includes(section.check) ? "PRESENT" : "MISSING"}`);
     if (!output.includes(section.check)) {
-      console.log(`[BloodAnalysis] Missing section: ${section.title}, generating...`);
+      console.log(`[BloodAnalysis] ⚠️  Generating missing section: ${section.title}...`);
       try {
         const sectionStream = await anthropic.messages.create({
           model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
@@ -2940,13 +2944,15 @@ ${markersTable}`,
           } else {
             output += `\n\n${sectionContent.trim()}`;
           }
-          console.log(`[BloodAnalysis] Added section: ${section.title} (${sectionContent.length} chars)`);
+          console.log(`[BloodAnalysis] ✅ Added section: ${section.title} (${sectionContent.length} chars)`);
         }
       } catch (err: any) {
-        console.error(`[BloodAnalysis] Failed to generate ${section.title}:`, err.message);
+        console.error(`[BloodAnalysis] ❌ Failed to generate ${section.title}:`, err.message);
       }
     }
   }
+
+  console.log(`[BloodAnalysis] Multi-pass complete. Final output length: ${output.length} chars`);
 
   const withSources = ensureSourcesSection(output);
   return trimAiAnalysis(withSources);
