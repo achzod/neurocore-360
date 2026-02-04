@@ -164,6 +164,13 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     optimalMin: 0, optimalMax: 1.5,
     context: "Résistance insuline"
   },
+  fructosamine: {
+    name: "Fructosamine",
+    unit: "µmol/L",
+    normalMin: 205, normalMax: 285,
+    optimalMin: 205, optimalMax: 228,
+    context: "Contrôle glycémique 2-3 semaines"
+  },
   triglycerides: {
     name: "Triglycérides",
     unit: "mg/dL",
@@ -198,6 +205,20 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
     normalMin: 0, normalMax: 30,
     optimalMin: 0, optimalMax: 14,
     context: "Génétique, risque CV"
+  },
+  cholesterol_total: {
+    name: "Cholestérol total",
+    unit: "mg/dL",
+    normalMin: 0, normalMax: 190,
+    optimalMin: 150, optimalMax: 200,
+    context: "Total cholesterol"
+  },
+  apo_a1: {
+    name: "Apolipoprotéines A1",
+    unit: "mg/dL",
+    normalMin: 125, normalMax: 999,
+    optimalMin: 140, optimalMax: 180,
+    context: "HDL particles"
   },
 
   // Panel Inflammatoire
@@ -748,7 +769,7 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
   const lipidMmolToMg = 38.67;
   const trigMmolToMg = 88.57;
 
-  if (["ldl", "hdl", "apob", "lpa", "cholesterol"].includes(markerId)) {
+  if (["ldl", "hdl", "apob", "lpa", "cholesterol", "cholesterol_total", "apo_a1"].includes(markerId)) {
     if (sourceUnit === "mmol/L") return Math.round(value * lipidMmolToMg);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
@@ -787,17 +808,20 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i],
   insuline_jeun: [/insuline.*je[uû]n/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
+  fructosamine: [/fructosamine/i],
   triglycerides: [/triglyc[ée]rides/i],
   hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
-  ldl: [/cholest[ée]rol\s*l\.?d\.?l/i, /\bl\.?d\.?l\b/i, /\bldl[-\s]?c\b/i],
-  apob: [/apo\s*b/i],
+  ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /cholest[ée]rol\s*l\.?d\.?l/i, /\bl\.?d\.?l\b/i, /\bldl[-\s]?c\b/i],
+  apob: [/apolipoprot[ée]ine.*b/i, /apo\s*b/i],
   lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
+  cholesterol_total: [/cholest[ée]rol\s*total/i],
+  apo_a1: [/apolipoprot[ée]ine.*a1/i, /apo\s*a1/i],
   crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
   homocysteine: [/homocyst[ée]ine/i],
   ferritine: [/ferritine/i],
   fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i],
   transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i],
-  vitamine_d: [/vitamine\s*d/i, /25\s*oh/i, /25[-\s]?oh\s*vit/i],
+  vitamine_d: [/vitamine\s*d\s*25\s*oh/i, /25[-\s]?oh\s*vit/i, /vitamine\s*d/i],
   b12: [/vitamine\s*b12/i, /cobalamine/i],
   folate: [/folate/i, /vitamine\s*b9/i],
   magnesium_rbc: [/magn[eé]sium.*rbc/i, /magn[eé]sium.*intra/i],
@@ -919,6 +943,10 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     const end = start + match[0].length;
     const beforeChar = snippet[start - 1] || "";
     const afterChar = snippet[end] || "";
+
+    // CRITICAL FIX: Skip numbers in parentheses like (1), (2) - lab references
+    if (beforeChar === "(" || afterChar === ")") continue;
+
     if (/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) continue;
     if (dateMatches.some((range) => start >= range.start && end <= range.end)) continue;
     if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
@@ -945,9 +973,12 @@ const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
   insuline_jeun: { min: 0.2, max: 200 },
   testosterone_total: { min: 100, max: 2000 },
   testosterone_libre: { min: 1, max: 60 },
-  cortisol: { min: 1, max: 50 },
+  cortisol: { min: 1, max: 600 },
   vitamine_d: { min: 5, max: 200 },
   b12: { min: 100, max: 3000 },
+  fructosamine: { min: 150, max: 400 },
+  cholesterol_total: { min: 50, max: 400 },
+  apo_a1: { min: 50, max: 250 },
 };
 
 const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
@@ -2692,7 +2723,7 @@ Tu DOIS générer un rapport de MINIMUM 35 000 caractères avec TOUTES les secti
     - Annexe A — Marqueurs secondaires
     - Annexe B — Hypothèses & tests de confirmation
     - Annexe C — Glossaire utile
-12. ## Sources (bibliothèque) (200-500 chars)
+12. ## Sources scientifiques (200-500 chars)
 
 RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sections ci-dessus. Si tu t'arrêtes avant, le rapport sera rejeté. Target minimum: 35 000 caractères.`;
 
