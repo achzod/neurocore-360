@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/blood/StatusBadge";
 import { StatusIndicator } from "@/components/blood/StatusIndicator";
 import { BiomarkerRangeIndicator } from "@/components/blood/BiomarkerRangeIndicator";
-import { GaugeWithRange } from "@/components/blood/GaugeWithRange";
+import { BiomarkerBar } from "@/components/blood/BiomarkerBar";
 import { BloodRadar } from "@/components/blood/BloodRadar";
 import { BloodThemeProvider } from "@/components/blood/BloodThemeContext";
 import ReactMarkdown from 'react-markdown';
@@ -674,7 +674,7 @@ function BloodAnalysisDashboardInner() {
                                 <StatusBadge status={marker.status} />
                               </div>
 
-                              <GaugeWithRange
+                              <BiomarkerBar
                                 value={marker.value}
                                 unit={marker.unit}
                                 status={marker.status}
