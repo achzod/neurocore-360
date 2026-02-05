@@ -44,7 +44,7 @@ export const useBloodReport = (reportId: string | undefined) => {
     },
     enabled: !!reportId,
     staleTime: 5 * 60 * 1000, // Cache 5 minutes
-    cacheTime: 10 * 60 * 1000, // Keep in cache 10 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache 10 minutes (formerly cacheTime)
     retry: 2,
     refetchOnWindowFocus: false,
   });
