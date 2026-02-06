@@ -56,7 +56,7 @@ async function buildAll() {
     define: {
       "process.env.NODE_ENV": '"production"',
     },
-    minify: true,
+    minify: false, // Temporarily disable minification to debug deployment failures
     sourcemap: true,
     external: externals,
     logLevel: "info",
