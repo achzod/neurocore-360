@@ -85,8 +85,8 @@ export function ReportSectionTab({
 
   return (
     <div
-      className={`rounded border p-6 max-w-none ${
-        currentTheme.type === 'dark' ? 'prose prose-slate' : 'prose prose-stone'
+      className={`rounded border p-4 sm:p-6 max-w-none ${
+        currentTheme.type === 'dark' ? 'prose prose-slate prose-sm sm:prose-base' : 'prose prose-stone prose-sm sm:prose-base'
       }`}
       style={{
         backgroundColor: currentTheme.colors.surface,
@@ -107,9 +107,9 @@ export function ReportSectionTab({
       } as React.CSSProperties}
     >
       {sectionsToShow.map((section, idx) => (
-        <div key={section.id}>
+        <div key={section.id} className="overflow-x-auto">
           <ReactMarkdown>{section.content}</ReactMarkdown>
-          {idx < sectionsToShow.length - 1 && <hr className="my-6" style={{ borderColor: currentTheme.colors.border }} />}
+          {idx < sectionsToShow.length - 1 && <hr className="my-4 sm:my-6" style={{ borderColor: currentTheme.colors.border }} />}
         </div>
       ))}
     </div>

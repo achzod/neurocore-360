@@ -43,16 +43,16 @@ interface BiomarkersTabProps {
 
 export function BiomarkersTab({ panelGroups, currentTheme }: BiomarkersTabProps) {
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 sm:space-y-10">
       {panelGroups.map((panel) => {
         const Icon = PANEL_ICONS[panel.id] || Heart;
         return (
           <section key={panel.id} className="space-y-4">
             <div className="flex items-center gap-3">
-              <Icon className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
+              <Icon className="w-5 h-5 flex-shrink-0" style={{ color: currentTheme.colors.primary }} />
               <div>
-                <h2 className="text-xl font-semibold">{panel.title}</h2>
-                <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                <h2 className="text-lg sm:text-xl font-semibold">{panel.title}</h2>
+                <p className="text-xs sm:text-sm" style={{ color: currentTheme.colors.textMuted }}>
                   {panel.subtitle}
                 </p>
               </div>
@@ -66,17 +66,17 @@ export function BiomarkersTab({ panelGroups, currentTheme }: BiomarkersTabProps)
                 Aucun biomarqueur renseigné pour ce panel.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {panel.markers.map((marker) => (
                   <div
                     key={marker.id}
-                    className="rounded border p-4"
+                    className="rounded border p-3 sm:p-4"
                     style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-start justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold">{marker.name}</h3>
-                        <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>
+                        <h3 className="text-base sm:text-lg font-semibold break-words">{marker.name}</h3>
+                        <p className="text-xs sm:text-sm" style={{ color: currentTheme.colors.textMuted }}>
                           {marker.value} {marker.unit}
                         </p>
                       </div>
@@ -104,7 +104,7 @@ export function BiomarkersTab({ panelGroups, currentTheme }: BiomarkersTabProps)
                     />
 
                     {marker.interpretation && (
-                      <p className="text-sm mt-3" style={{ color: currentTheme.colors.textMuted }}>
+                      <p className="text-xs sm:text-sm mt-3 break-words" style={{ color: currentTheme.colors.textMuted }}>
                         {marker.interpretation}
                       </p>
                     )}
