@@ -63,14 +63,14 @@ export function OverviewTab({
     <>
       {/* Storytelling Introduction */}
       <div
-        className="rounded border p-6 mb-8"
+        className="rounded border p-4 sm:p-6 mb-6 sm:mb-8"
         style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
       >
         <div className="max-w-3xl">
-          <h2 className="text-2xl font-bold tracking-tight mb-4" style={{ color: currentTheme.colors.text }}>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-3 sm:mb-4" style={{ color: currentTheme.colors.text }}>
             Bienvenue dans ton Blood Analysis
           </h2>
-          <div className="space-y-4 text-base" style={{ color: currentTheme.colors.text, lineHeight: '1.7' }}>
+          <div className="space-y-3 sm:space-y-4 text-sm sm:text-base" style={{ color: currentTheme.colors.text, lineHeight: '1.7' }}>
             <p>
               Tes biomarqueurs racontent une histoire. Chaque valeur, chaque marqueur est une pièce du puzzle qui révèle
               comment ton corps fonctionne réellement - au-delà des symptômes, au-delà des sensations.
@@ -83,7 +83,7 @@ export function OverviewTab({
             <p>
               Tu trouveras ici:
             </p>
-            <ul className="list-disc list-outside space-y-2 pl-6">
+            <ul className="list-disc list-outside space-y-2 pl-5 sm:pl-6 text-sm sm:text-base">
               <li>Une vue d'ensemble de ton profil métabolique complet</li>
               <li>Une analyse détaillée de chaque biomarqueur avec interprétation contextuelle</li>
               <li>Des axes d'optimisation prioritaires basés sur l'interconnexion de tes marqueurs</li>
@@ -99,30 +99,30 @@ export function OverviewTab({
       </div>
 
       {/* Score Global & Heatmap */}
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8">
         <div
-          className="flex flex-col items-center justify-center p-6 rounded-sm border blood-glass blood-grain"
+          className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-sm border blood-glass blood-grain"
           style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
         >
           <RadialScoreChart
             score={globalScore}
-            size={220}
-            strokeWidth={8}
+            size={window.innerWidth < 640 ? 180 : 220}
+            strokeWidth={window.innerWidth < 640 ? 6 : 8}
             label="SCORE GLOBAL"
             sublabel={`${normalizedMarkers.length} biomarqueurs`}
           />
-          <p className="text-xs mt-4 text-caption" style={{ color: currentTheme.colors.textMuted }}>
+          <p className="text-xs mt-4 text-caption text-center" style={{ color: currentTheme.colors.textMuted }}>
             Synthèse issue de {normalizedMarkers.length} biomarqueurs analysés
           </p>
         </div>
 
         <div
-          className="p-6 rounded-sm border blood-glass blood-grain"
+          className="p-4 sm:p-6 rounded-sm border blood-glass blood-grain"
           style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <Beaker className="w-5 h-5" style={{ color: currentTheme.colors.primary }} />
-            <h2 className="text-heading-4">Heatmap systémique</h2>
+            <Beaker className="w-5 h-5 flex-shrink-0" style={{ color: currentTheme.colors.primary }} />
+            <h2 className="text-base sm:text-lg font-semibold">Heatmap systémique</h2>
           </div>
           <InteractiveHeatmap
             categories={panelGroups.map((panel) => ({
@@ -134,7 +134,7 @@ export function OverviewTab({
             }))}
             onCategoryClick={() => setActiveTab("biomarkers")}
           />
-          <p className="text-caption mt-4" style={{ color: currentTheme.colors.textMuted }}>
+          <p className="text-xs sm:text-sm mt-4" style={{ color: currentTheme.colors.textMuted }}>
             Cliquez sur une catégorie pour explorer les biomarqueurs
           </p>
         </div>
@@ -157,15 +157,15 @@ export function OverviewTab({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div
           className="rounded border p-4"
           style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
         >
           <StatusIndicator status="optimal" label="Optimal" />
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-3 space-y-2 text-xs sm:text-sm">
             {(summary.optimal || []).slice(0, 6).map((item) => (
-              <li key={item} className="text-muted-foreground">
+              <li key={item} className="text-muted-foreground break-words">
                 {item}
               </li>
             ))}
@@ -184,9 +184,9 @@ export function OverviewTab({
           style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
         >
           <StatusIndicator status="suboptimal" label="A surveiller" />
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-3 space-y-2 text-xs sm:text-sm">
             {(summary.watch || []).slice(0, 6).map((item) => (
-              <li key={item} className="text-muted-foreground">
+              <li key={item} className="text-muted-foreground break-words">
                 {item}
               </li>
             ))}
@@ -205,9 +205,9 @@ export function OverviewTab({
           style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
         >
           <StatusIndicator status="critical" label="Action requise" />
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-3 space-y-2 text-xs sm:text-sm">
             {(summary.action || []).slice(0, 6).map((item) => (
-              <li key={item} className="text-muted-foreground">
+              <li key={item} className="text-muted-foreground break-words">
                 {item}
               </li>
             ))}

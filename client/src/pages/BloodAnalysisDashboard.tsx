@@ -12,6 +12,11 @@ import { useBloodReport } from "./BloodAnalysisDashboard/hooks/useBloodReport";
 import { useBloodCalculations } from "./BloodAnalysisDashboard/hooks/useBloodCalculations";
 import { useReportSections } from "./BloodAnalysisDashboard/hooks/useReportSections";
 
+// Skeleton loaders
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import { BiomarkersSkeleton } from "@/components/skeletons/BiomarkersSkeleton";
+import { ReportSkeleton } from "@/components/skeletons/ReportSkeleton";
+
 // Lazy-loaded tab components for better code splitting
 const OverviewTab = lazy(() => import("./BloodAnalysisDashboard/tabs/OverviewTab").then(m => ({ default: m.OverviewTab })));
 const BiomarkersTab = lazy(() => import("./BloodAnalysisDashboard/tabs/BiomarkersTab").then(m => ({ default: m.BiomarkersTab })));
@@ -21,16 +26,6 @@ const THEMES: Theme[] = ULTRAHUMAN_THEMES;
 
 // Force light theme - find "Claude Creme" or "Titanium Light"
 const DEFAULT_THEME = THEMES.find(t => t.id === "metabolic") || THEMES.find(t => t.type === "light") || THEMES[1];
-
-// Loading fallback component
-const TabLoadingFallback = memo(({ theme }: { theme: Theme }) => (
-  <div
-    className="flex items-center justify-center py-12"
-    style={{ backgroundColor: theme.colors.surface }}
-  >
-    <Loader2 className="w-8 h-8 animate-spin" style={{ color: theme.colors.primary }} />
-  </div>
-));
 
 const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() {
   const { reportId } = useParams<{ reportId: string }>();
@@ -90,11 +85,8 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: currentTheme.colors.background }}>
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-3" style={{ color: currentTheme.colors.primary }} />
-          <p className="text-sm" style={{ color: currentTheme.colors.textMuted }}>Chargement du Blood Analysis...</p>
-        </div>
+      <div className="min-h-screen" style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}>
+        <DashboardSkeleton />
       </div>
     );
   }
@@ -155,31 +147,33 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
           <div className="mb-6">
             <p className="text-xs uppercase tracking-[0.2em]" style={{ color: currentTheme.colors.textMuted }}>
               Blood Analysis
             </p>
-            <h1 className="text-3xl font-bold mt-2">Tableau de bord biomarqueurs</h1>
-            <p className="text-sm mt-2" style={{ color: currentTheme.colors.textMuted }}>
+            <h1 className="text-2xl sm:text-3xl font-bold mt-2">Tableau de bord biomarqueurs</h1>
+            <p className="text-xs sm:text-sm mt-2" style={{ color: currentTheme.colors.textMuted }}>
               Lecture premium de ton bilan sanguin, ranges optimaux et axes de correction.
             </p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 h-auto w-full p-2">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="biomarkers">Biomarqueurs</TabsTrigger>
-              <TabsTrigger value="synthese">Synthèse</TabsTrigger>
-              <TabsTrigger value="donnees">Données & Tests</TabsTrigger>
-              <TabsTrigger value="axes">Analyse Axes</TabsTrigger>
-              <TabsTrigger value="plan">Plan 90j</TabsTrigger>
-              <TabsTrigger value="protocoles">Protocoles</TabsTrigger>
-              <TabsTrigger value="annexes">Annexes</TabsTrigger>
-            </TabsList>
+            <div className="mb-6 overflow-x-auto -mx-6 px-6 lg:mx-0 lg:px-0">
+              <TabsList className="inline-flex lg:grid lg:grid-cols-8 gap-2 h-auto w-full lg:w-full p-2 min-w-max lg:min-w-0">
+                <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
+                <TabsTrigger value="biomarkers" className="whitespace-nowrap">Biomarqueurs</TabsTrigger>
+                <TabsTrigger value="synthese" className="whitespace-nowrap">Synthèse</TabsTrigger>
+                <TabsTrigger value="donnees" className="whitespace-nowrap">Données & Tests</TabsTrigger>
+                <TabsTrigger value="axes" className="whitespace-nowrap">Analyse Axes</TabsTrigger>
+                <TabsTrigger value="plan" className="whitespace-nowrap">Plan 90j</TabsTrigger>
+                <TabsTrigger value="protocoles" className="whitespace-nowrap">Protocoles</TabsTrigger>
+                <TabsTrigger value="annexes" className="whitespace-nowrap">Annexes</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="overview">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<DashboardSkeleton />}>
                 <OverviewTab
                   globalScore={globalScore}
                   normalizedMarkers={normalizedMarkers}
@@ -192,7 +186,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             </TabsContent>
 
             <TabsContent value="biomarkers">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<BiomarkersSkeleton />}>
                 <BiomarkersTab
                   panelGroups={panelGroups}
                   currentTheme={currentTheme}
@@ -202,7 +196,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
             {/* Synthèse: Synthese executive + Tableau de bord */}
             <TabsContent value="synthese">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={['synthese-executive', 'tableau-de-bord-scores-priorites', 'potentiel-recomposition']}
                   reportSections={reportSections}
@@ -215,7 +209,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
             {/* Données & Tests: Qualité données + Marqueurs manquants */}
             <TabsContent value="donnees">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={['qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests', 'tests-complementaires']}
                   reportSections={reportSections}
@@ -228,7 +222,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
             {/* Analyse Axes: Tous les axes */}
             <TabsContent value="axes">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={[
                     'lecture-compartimentee-par-axes',
@@ -246,7 +240,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
             {/* Plan 90j */}
             <TabsContent value="plan">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={['plan-90-jours', 'plan-action']}
                   reportSections={reportSections}
@@ -259,7 +253,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
             {/* Protocoles: Nutrition + Supplements */}
             <TabsContent value="protocoles">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={['protocole-nutrition', 'protocole-supplements', 'nutrition-entrainement', 'supplementation']}
                   reportSections={reportSections}
@@ -272,7 +266,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
             {/* Annexes */}
             <TabsContent value="annexes">
-              <Suspense fallback={<TabLoadingFallback theme={currentTheme} />}>
+              <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={['annexes', 'bibliographie']}
                   reportSections={reportSections}
