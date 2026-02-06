@@ -24,6 +24,7 @@ const TestAudit = lazy(() => import("@/pages/TestAudit"));
 const FAQ = lazy(() => import("@/pages/FAQ"));
 const Report = lazy(() => import("@/pages/Report"));
 const BloodAnalysisDashboard = lazy(() => import("@/pages/BloodAnalysisDashboard"));
+const BloodReportModern = lazy(() => import("@/pages/BloodReportModern"));
 const BloodAnalysisStart = lazy(() => import("@/pages/BloodAnalysisStart"));
 const BloodAnalysisLegacyRedirect = lazy(() => import("@/pages/BloodAnalysisLegacyRedirect"));
 const Blog = lazy(() => import("@/pages/Blog"));
@@ -86,6 +87,7 @@ function Router() {
 
         <Route path="/dashboard" component={DashboardRouter} />
         <Route path="/analysis/:reportId" component={BloodAnalysisDashboard} />
+        <Route path="/blood-report/:reportId" component={BloodReportModern} />
         <Route path="/login" component={Login} />
         <Route path="/dashboard/:auditId" component={AuditDetail} />
         <Route path="/auth/login" component={Login} />
