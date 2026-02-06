@@ -106,8 +106,8 @@ export function OverviewTab({
         >
           <RadialScoreChart
             score={globalScore}
-            size={window.innerWidth < 640 ? 180 : 220}
-            strokeWidth={window.innerWidth < 640 ? 6 : 8}
+            size={220}
+            strokeWidth={8}
             label="SCORE GLOBAL"
             sublabel={`${normalizedMarkers.length} biomarqueurs`}
           />
