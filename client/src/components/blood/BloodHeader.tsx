@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
 import { useBloodTheme } from "@/components/blood/BloodThemeContext";
+import { ThemeToggle } from "@/components/blood/ThemeToggle";
 
 type BloodHeaderProps = {
   credits?: number;
@@ -48,6 +49,7 @@ export default function BloodHeader({
           {subtitle && <div className="text-xs blood-text-tertiary">{subtitle}</div>}
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {showShare && (
             <Button
               variant="outline"
