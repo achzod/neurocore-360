@@ -56,17 +56,17 @@ function SectionCard({ title, content, icon: Icon, iconColor }: SectionCardProps
         <ReactMarkdown
           components={{
             h1: ({ children }) => (
-              <h1 className="text-xl font-bold mt-6 mb-3">
+              <h1 className="text-xl font-bold mt-6 mb-3" style={{ color: theme.textPrimary }}>
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-lg font-semibold mt-5 mb-2">
+              <h2 className="text-lg font-semibold mt-5 mb-2" style={{ color: theme.textPrimary }}>
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-base font-medium mt-4 mb-2">
+              <h3 className="text-base font-medium mt-4 mb-2" style={{ color: theme.textPrimary }}>
                 {children}
               </h3>
             ),

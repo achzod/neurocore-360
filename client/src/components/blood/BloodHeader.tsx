@@ -41,12 +41,12 @@ export default function BloodHeader({
       }}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-6 py-4">
-        <Link href="/blood-dashboard" className="text-sm font-semibold tracking-[0.2em] blood-text-primary">
+        <Link href="/blood-dashboard" className="text-sm font-semibold tracking-[0.2em]" style={{ color: theme.textPrimary }}>
           APEXLABS
         </Link>
         <div className="flex-1 text-center">
-          {title && <div className="text-sm font-semibold blood-text-primary">{title}</div>}
-          {subtitle && <div className="text-xs blood-text-tertiary">{subtitle}</div>}
+          {title && <div className="text-sm font-semibold" style={{ color: theme.textPrimary }}>{title}</div>}
+          {subtitle && <div className="text-xs" style={{ color: theme.textTertiary }}>{subtitle}</div>}
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />

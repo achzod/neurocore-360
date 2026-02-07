@@ -28,14 +28,14 @@ export const RadialScoreChart = ({
   showComparison = false,
 }: RadialScoreChartProps) => {
   const { theme } = useBloodTheme();
-  const uid = useId();
-  const gridId = `scoreGrid-${uid}`;
-  const gradientId = `scoreGradient-${uid}`;
-  const glowId = `scoreGlow-${uid}`;
+  const rawId = useId().replace(/:/g, '');
+  const gridId = `scoreGrid${rawId}`;
+  const gradientId = `scoreGradient${rawId}`;
+  const glowId = `scoreGlow${rawId}`;
   const [animatedScore, setAnimatedScore] = useState(0);
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
-  const percentage = (score / maxScore) * 100;
+  const percentage = Math.max(0, Math.min(100, (score / maxScore) * 100));
   const offset = circumference - (percentage / 100) * circumference;
 
   // Animated counter

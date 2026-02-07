@@ -135,12 +135,15 @@ export function OverviewTab({
               liver_kidney: "Foie & Reins",
             };
 
+            const panelStatus = avgScore >= 80 ? 'optimal' as const : avgScore >= 60 ? 'normal' as const : avgScore >= 40 ? 'suboptimal' as const : 'critical' as const;
+
             return (
               <MetricCard3D
                 key={panelKey}
-                title={panelLabels[panelKey as PanelKey]}
+                title={panelLabels[panelKey as PanelKey] || panelKey}
                 value={Math.round(avgScore)}
                 unit="/100"
+                status={panelStatus}
               />
             );
           })}

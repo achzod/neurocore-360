@@ -3,6 +3,7 @@
 import { motion, useInView } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { LucideIcon } from 'lucide-react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface AnimatedStatCardProps {
   label: string;
@@ -24,6 +25,7 @@ export const AnimatedStatCard = ({
   color = '#06b6d4',
   trend,
 }: AnimatedStatCardProps) => {
+  const { theme } = useBloodTheme();
   const [displayValue, setDisplayValue] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -63,9 +65,9 @@ export const AnimatedStatCard = ({
       <div
         className="rounded-xl p-6"
         style={{
-          background: 'var(--color-surface, rgba(26, 29, 36, 0.4))',
+          background: `${theme.surfaceElevated}66`,
           backdropFilter: 'blur(8px)',
-          border: '1px solid var(--color-border, rgba(148, 163, 184, 0.2))',
+          border: `1px solid ${theme.borderDefault}`,
         }}
       >
         {/* Icon */}
@@ -94,11 +96,11 @@ export const AnimatedStatCard = ({
           >
             {displayValue}
           </motion.span>
-          {unit && <span className="text-lg" style={{ color: 'var(--color-text-muted, #94a3b8)' }}>{unit}</span>}
+          {unit && <span className="text-lg" style={{ color: theme.textTertiary }}>{unit}</span>}
         </div>
 
         {/* Label */}
-        <div className="text-sm" style={{ color: 'var(--color-text-muted, #94a3b8)' }}>{label}</div>
+        <div className="text-sm" style={{ color: theme.textSecondary }}>{label}</div>
 
         {/* Trend (if provided) */}
         {trend && (

@@ -47,5 +47,11 @@ export const useBloodReport = (reportId: string | undefined) => {
     gcTime: 10 * 60 * 1000, // Keep in cache 10 minutes (formerly cacheTime)
     retry: 2,
     refetchOnWindowFocus: false,
+    refetchInterval: (query) => {
+      const report = query.state.data;
+      // Poll every 10s while waiting for AI report to be generated
+      if (report && !report.aiReport) return 10_000;
+      return false;
+    },
   });
 };

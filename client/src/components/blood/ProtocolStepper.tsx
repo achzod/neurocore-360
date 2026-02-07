@@ -20,10 +20,8 @@ interface ProtocolStepperProps {
 }
 
 export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperProps) => {
-  const { theme, mode } = useBloodTheme();
+  const { theme } = useBloodTheme();
   const [expandedPhase, setExpandedPhase] = useState<number | null>(currentPhase);
-
-  const iconTextColor = mode === 'dark' ? '#ffffff' : '#000000';
 
   return (
     <div className="space-y-8">
@@ -31,9 +29,10 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
       <div className="hidden lg:block">
         <div className="relative flex items-center justify-between">
           {/* Connecting line */}
-          <div className="absolute top-6 left-0 right-0 h-0.5 bg-slate-800">
+          <div className="absolute top-6 left-0 right-0 h-0.5" style={{ backgroundColor: theme.borderDefault }}>
             <motion.div
-              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500"
+              className="h-full"
+              style={{ background: `linear-gradient(to right, ${theme.status.optimal}, ${theme.primaryBlue})` }}
               initial={{ width: '0%' }}
               animate={{ width: `${((currentPhase - 1) / (phases.length - 1)) * 100}%` }}
               transition={{ duration: 1, ease: 'easeOut' }}
@@ -44,7 +43,6 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
           {phases.map((phase, index) => {
             const isActive = phase.id === currentPhase;
             const isCompleted = phase.id < currentPhase || phase.completed;
-            const isFuture = phase.id > currentPhase;
 
             return (
               <div key={phase.id} className="relative flex flex-col items-center z-10">
@@ -53,19 +51,19 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   className="w-12 h-12 rounded-full flex items-center justify-center relative"
                   style={{
                     background: isActive
-                      ? 'linear-gradient(135deg, #06b6d4, #3b82f6)'
+                      ? `linear-gradient(135deg, ${theme.primaryBlue}, ${theme.status.normal})`
                       : isCompleted
-                      ? '#10b981'
-                      : 'rgba(148, 163, 184, 0.2)',
-                    border: isActive ? '3px solid rgba(6, 182, 212, 0.5)' : 'none',
+                      ? theme.status.optimal
+                      : `${theme.textTertiary}33`,
+                    border: isActive ? `3px solid ${theme.primaryBlue}80` : 'none',
                   }}
                   onClick={() => setExpandedPhase(expandedPhase === phase.id ? null : phase.id)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   animate={isActive ? {
                     boxShadow: [
-                      '0 0 0 0 rgba(6, 182, 212, 0.4)',
-                      '0 0 0 20px rgba(6, 182, 212, 0)',
+                      `0 0 0 0 ${theme.primaryBlue}66`,
+                      `0 0 0 20px ${theme.primaryBlue}00`,
                     ],
                   } : {}}
                   transition={{
@@ -74,25 +72,25 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   }}
                 >
                   {isCompleted ? (
-                    <Check className="w-6 h-6" style={{ color: iconTextColor }} />
+                    <Check className="w-6 h-6 text-white" />
                   ) : (
-                    <span className="font-bold" style={{ color: iconTextColor }}>{phase.id}</span>
+                    <span className="font-bold text-white">{phase.id}</span>
                   )}
                 </motion.button>
 
                 {/* Label */}
                 <div className="mt-4 text-center max-w-[120px]">
-                  <div className={`text-sm font-semibold ${isActive ? 'text-cyan-400' : 'text-slate-400'}`}>
+                  <div className="text-sm font-semibold" style={{ color: isActive ? theme.primaryBlue : theme.textSecondary }}>
                     {phase.title}
                   </div>
-                  <div className="text-xs text-slate-600 mt-1">{phase.duration}</div>
+                  <div className="text-xs mt-1" style={{ color: theme.textTertiary }}>{phase.duration}</div>
                 </div>
 
                 {/* Arrow (except last) */}
                 {index < phases.length - 1 && (
                   <ArrowRight
-                    className="absolute top-4 -right-8 w-5 h-5 text-slate-700"
-                    style={{ display: 'none' }} // Handled by connecting line instead
+                    className="absolute top-4 -right-8 w-5 h-5"
+                    style={{ display: 'none', color: theme.textTertiary }}
                   />
                 )}
               </div>
@@ -121,26 +119,26 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   className="w-10 h-10 rounded-full flex items-center justify-center"
                   style={{
                     background: isActive
-                      ? 'linear-gradient(135deg, #06b6d4, #3b82f6)'
+                      ? `linear-gradient(135deg, ${theme.primaryBlue}, ${theme.status.normal})`
                       : isCompleted
-                      ? '#10b981'
-                      : 'rgba(148, 163, 184, 0.2)',
+                      ? theme.status.optimal
+                      : `${theme.textTertiary}33`,
                   }}
                 >
                   {isCompleted ? (
-                    <Check className="w-5 h-5" style={{ color: iconTextColor }} />
+                    <Check className="w-5 h-5 text-white" />
                   ) : (
-                    <span className="font-bold text-sm" style={{ color: iconTextColor }}>{phase.id}</span>
+                    <span className="font-bold text-sm text-white">{phase.id}</span>
                   )}
                 </div>
               </div>
 
               {/* Content */}
               <div className="flex-1">
-                <div className={`font-semibold ${isActive ? 'text-cyan-400' : 'text-slate-400'}`}>
+                <div className="font-semibold" style={{ color: isActive ? theme.primaryBlue : theme.textSecondary }}>
                   {phase.title}
                 </div>
-                <div className="text-xs text-slate-600">{phase.duration}</div>
+                <div className="text-xs" style={{ color: theme.textTertiary }}>{phase.duration}</div>
               </div>
             </motion.div>
           );
@@ -164,24 +162,25 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   key={phase.id}
                   className="rounded-xl p-6"
                   style={{
-                    background: 'rgba(26, 29, 36, 0.6)',
+                    background: `${theme.surfaceElevated}99`,
                     backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(6, 182, 212, 0.3)',
+                    border: `1px solid ${theme.primaryBlue}4D`,
                   }}
                 >
-                  <h4 className="text-lg font-bold text-cyan-400 mb-2">{phase.title}</h4>
-                  <p className="text-sm text-slate-400 mb-4">{phase.description}</p>
+                  <h4 className="text-lg font-bold mb-2" style={{ color: theme.primaryBlue }}>{phase.title}</h4>
+                  <p className="text-sm mb-4" style={{ color: theme.textSecondary }}>{phase.description}</p>
 
                   <ul className="space-y-2">
                     {phase.items.map((item, idx) => (
                       <motion.li
                         key={idx}
-                        className="flex items-start gap-3 text-sm text-slate-300"
+                        className="flex items-start gap-3 text-sm"
+                        style={{ color: theme.textSecondary }}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <Circle className="w-1.5 h-1.5 mt-2 flex-shrink-0 fill-cyan-500 text-cyan-500" />
+                        <Circle className="w-1.5 h-1.5 mt-2 flex-shrink-0" style={{ fill: theme.primaryBlue, color: theme.primaryBlue }} />
                         <span>{item}</span>
                       </motion.li>
                     ))}
