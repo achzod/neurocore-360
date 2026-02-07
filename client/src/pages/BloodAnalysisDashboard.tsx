@@ -280,15 +280,18 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <TabsContent value="protocoles">
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
-                  sectionIds={[
-                    // "Full" report format
-                    'protocole-nutrition',
-                    'protocole-supplements',
-                    'nutrition-entrainement',
-                    'supplementation',
-                    // "Compact" report format: protocols are embedded in the 90-day plan
-                    'plan-d-action-90-jours',
-                  ]}
+	                  sectionIds={[
+	                    // "Full" report format
+	                    'protocole-nutrition',
+	                    'protocole-supplements',
+	                    'nutrition-entrainement',
+	                    'supplementation',
+	                    // Blood report format (AI/fallback)
+	                    'supplements-stack',
+	                    'supplements-stack-minimaliste-mais-impact',
+	                    // "Compact" report format: protocols are embedded in the 90-day plan
+	                    'plan-d-action-90-jours',
+	                  ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
                   currentTheme={currentTheme}
