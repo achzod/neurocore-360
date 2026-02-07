@@ -72,9 +72,9 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   }}
                 >
                   {isCompleted ? (
-                    <Check className="w-6 h-6 text-white" />
+                    <Check className="w-6 h-6" style={{ color: isCompleted || isActive ? '#fff' : theme.textSecondary }} />
                   ) : (
-                    <span className="font-bold text-white">{phase.id}</span>
+                    <span className="font-bold" style={{ color: isActive ? '#fff' : theme.textSecondary }}>{phase.id}</span>
                   )}
                 </motion.button>
 
@@ -126,9 +126,9 @@ export const ProtocolStepper = ({ phases, currentPhase = 1 }: ProtocolStepperPro
                   }}
                 >
                   {isCompleted ? (
-                    <Check className="w-5 h-5 text-white" />
+                    <Check className="w-5 h-5" style={{ color: isCompleted || isActive ? '#fff' : theme.textSecondary }} />
                   ) : (
-                    <span className="font-bold text-sm text-white">{phase.id}</span>
+                    <span className="font-bold text-sm" style={{ color: isActive ? '#fff' : theme.textSecondary }}>{phase.id}</span>
                   )}
                 </div>
               </div>

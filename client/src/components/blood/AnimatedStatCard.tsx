@@ -107,7 +107,7 @@ export const AnimatedStatCard = ({
           <div
             className="mt-2 flex items-center gap-1 text-xs"
             style={{
-              color: trend.direction === 'up' ? '#10b981' : '#f43f5e',
+              color: trend.direction === 'up' ? theme.status.optimal : theme.status.critical,
             }}
           >
             <span>{trend.direction === 'up' ? '↑' : '↓'}</span>

@@ -757,7 +757,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         const markerId = normalizeMarkerName(rawMarkerId);
         const range = BIOMARKER_RANGES[markerId];
         const analysisMarker = (analysis.markers as any[])?.find((am: any) =>
-          (am.markerId || am.name || am.id) === markerId
+          normalizeMarkerName((am.markerId || am.name || am.id) as string) === markerId
         );
         return {
           name: range?.name || markerId,
@@ -775,7 +775,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       });
 
       // Calculate global score from analysis
-      const analysisMarkers = (analysis.markers || []) as Array<{ status: string }>;
+      const analysisMarkers = ((analysis.markers || []) as Array<{ status: string }>).map(m => ({
+        ...m,
+        status: (m.status || "normal").toLowerCase(),
+      }));
       const optimalCount = analysisMarkers.filter(m => m.status === "optimal").length;
       const normalCount = analysisMarkers.filter(m => m.status === "normal").length;
       const totalMarkers = analysisMarkers.length || 1;

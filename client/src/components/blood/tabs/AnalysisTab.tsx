@@ -86,7 +86,7 @@ function SectionCard({ title, content, icon: Icon, iconColor }: SectionCardProps
               </li>
             ),
             strong: ({ children }) => (
-              <strong className="font-semibold">
+              <strong className="font-semibold" style={{ color: theme.textPrimary }}>
                 {children}
               </strong>
             ),
