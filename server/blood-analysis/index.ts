@@ -2864,7 +2864,7 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
       // Use streaming for long-running operations (>10min possible with new Achzod prompt)
       const stream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-        max_tokens: 64000, // Max allowed by Claude Opus 4.5 - sufficient for FULL Achzod reports (35k-90k chars = ~12k-25k tokens)
+        max_tokens: 64000, // High max_tokens for Opus 4.6 - sufficient for FULL Achzod reports (35k-90k chars = ~12k-25k tokens)
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
         stream: true,
