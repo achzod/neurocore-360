@@ -2691,6 +2691,8 @@ export async function generateAIBloodAnalysis(
     nom: userProfile.nom,
     age: userProfile.age,
   });
+  const deepDiveContext = deepDivePayload.context ? deepDivePayload.context.slice(0, 7000) : "";
+  const knowledgeContextTrimmed = knowledgeContext ? knowledgeContext.slice(0, 7000) : "";
 
   const basePrompt = [
     `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).`,
@@ -2709,8 +2711,8 @@ export async function generateAIBloodAnalysis(
     `- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}`,
     `- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}`,
     ``,
-    deepDivePayload.context ? `DEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR:\n${deepDivePayload.context}` : "",
-    knowledgeContext ? `CONTEXTE SCIENTIFIQUE (chunks; cite seulement les IDs fournis):\n${knowledgeContext}` : "",
+    deepDiveContext ? `DEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR:\n${deepDiveContext}` : "",
+    knowledgeContextTrimmed ? `CONTEXTE SCIENTIFIQUE (chunks; cite seulement les IDs fournis):\n${knowledgeContextTrimmed}` : "",
     ``,
     `CONTRAINTES DE SORTIE:`,
     `- Output en Markdown.`,
