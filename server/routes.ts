@@ -98,6 +98,14 @@ export async function registerRoutes(
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  app.get("/api/version", (_req, res) => {
+    res.json({
+      commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null,
+      service: process.env.RENDER_SERVICE_NAME || null,
+      deployedAt: new Date().toISOString(),
+    });
+  });
+
   const PHOTO_FIELD_VARIANTS: string[][] = [
     ["photoFront", "photo-front"],
     ["photoSide", "photo-side"],
