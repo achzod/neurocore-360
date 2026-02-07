@@ -584,6 +584,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               ? (bloodTest.patientProfile as Record<string, unknown>)
               : {};
           const markers = Array.isArray(bloodTest.markers) ? bloodTest.markers : [];
+          const aiReportText =
+            (analysis as any).aiReport ||
+            (analysis as any).aiAnalysis || // stored in blood_tests analysis payload
+            "";
 
           report = {
             id: bloodTest.id,
@@ -598,7 +602,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               alerts: (analysis as any).alerts || [],
               markers
             },
-            aiReport: (analysis as any).aiReport || "",
+            aiReport: aiReportText,
             createdAt: bloodTest.createdAt || new Date().toISOString()
           };
         }
