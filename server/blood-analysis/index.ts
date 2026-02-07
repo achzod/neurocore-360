@@ -2280,18 +2280,23 @@ const validateBloodAnalysisReport = (output: string) => {
     .filter((r) => !r.checks.some((c) => normalized.includes(c)))
     .map((r) => r.id);
 
-  // Axes: at least Axe 1..6 must exist.
+  // Axes: all Axe 1..11 must exist (even if some have "Non renseigne").
   const axesOk =
     normalized.includes("### axe 1") &&
     normalized.includes("### axe 2") &&
     normalized.includes("### axe 3") &&
     normalized.includes("### axe 4") &&
     normalized.includes("### axe 5") &&
-    normalized.includes("### axe 6");
+    normalized.includes("### axe 6") &&
+    normalized.includes("### axe 7") &&
+    normalized.includes("### axe 8") &&
+    normalized.includes("### axe 9") &&
+    normalized.includes("### axe 10") &&
+    normalized.includes("### axe 11");
   if (!axesOk) missing.push("axes_subsections");
 
   const headings = (output.match(/^##\s+/gm) || []).length;
-  if (headings < 10) missing.push("headings_count");
+  if (headings < 12) missing.push("headings_count");
 
   if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(output)) missing.push("emoji_present");
 
@@ -2720,56 +2725,124 @@ export async function generateAIBloodAnalysis(
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
   const maxTokens = 8000;
 
-  let best = "";
-  let bestValidation = { ok: false, missing: ["no_attempt"] as string[] };
+  const CANONICAL_ORDER = [
+    "## Synthese executive",
+    "## Qualite des donnees & limites",
+    "## Tableau de bord (scores & priorites)",
+    "## Potentiel recomposition (perte de gras + gain de muscle)",
+    "## Lecture compartimentee par axes",
+    "### Axe 1 — Potentiel musculaire & androgenes",
+    "### Axe 2 — Metabolisme & gestion du risque diabete",
+    "### Axe 3 — Lipides & risque cardio-metabolique",
+    "### Axe 4 — Thyroide & depense energetique",
+    "### Axe 5 — Foie, bile & detox metabolique",
+    "### Axe 6 — Rein, hydratation & performance",
+    "### Axe 7 — Inflammation, immunite & terrain",
+    "### Axe 8 — Hematologie, oxygenation & endurance",
+    "### Axe 9 — Micronutriments (vitamines & mineraux)",
+    "### Axe 10 — Electrolytes, crampes, pression & performance",
+    "### Axe 11 — Stress, sommeil, recuperation (si donnees)",
+    "## Interconnexions majeures (le pattern)",
+    "## Deep dive — marqueurs prioritaires (top 8 a 15)",
+    "## Plan d'action 90 jours (hyper concret)",
+    "## Nutrition & entrainement (traduction pratique)",
+    "## Supplements & stack (minimaliste mais impact)",
+    "## Annexes (ultra long)",
+    "### Annex A — Marqueurs secondaires (lecture rapide)",
+    "### Annex B — Hypotheses & tests de confirmation",
+    "### Annex C — Glossaire utile",
+    "## Sources (bibliotheque)",
+  ];
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const fixNote =
-      attempt === 1
-        ? ""
-        : `\n\nIMPORTANT: Ton precedent rendu manquait: ${bestValidation.missing.join(
-            ", "
-          )}. Regenere le RAPPORT COMPLET (pas une section) et respecte STRICTEMENT tous les titres.\n`;
-    const prompt = `${basePrompt}${fixNote}`;
+  const stripSourcesFromReport = (text: string) => {
+    const idx = text.search(/\n##\s+Sources\b/i);
+    if (idx === -1) return text.trim();
+    return text.slice(0, idx).trim();
+  };
 
+  const extractFromFirstH2 = (text: string) => {
+    const idx = text.indexOf("## ");
+    if (idx === -1) return text.trim();
+    return text.slice(idx).trim();
+  };
+
+  const firstMissingHeading = (text: string): string | null => {
+    const normalized = normalizeForCheck(text);
+    for (const heading of CANONICAL_ORDER) {
+      const key = normalizeForCheck(heading);
+      if (!normalized.includes(key)) return heading;
+    }
+    return null;
+  };
+
+  const callClaudeOnce = async (prompt: string) => {
+    const resp = await client.messages.create({
+      model,
+      max_tokens: maxTokens,
+      temperature: 0.45,
+      system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }],
+    } as any);
+
+    const textContent = (resp as any).content?.find((c: any) => c.type === "text");
+    const candidate = String(textContent?.text || "").trim();
+    if (!candidate) throw new Error("Claude returned empty report");
+    return stripEmojis(candidate).trim();
+  };
+
+  let output = "";
+  let validation = { ok: false, missing: ["no_attempt"] as string[] };
+
+  // Pass 1: full report
+  try {
+    output = await callClaudeOnce(basePrompt);
+    validation = validateBloodAnalysisReport(output);
+    if (validation.ok) {
+      const withSources = ensureSourcesSection(output);
+      return trimAiAnalysis(withSources);
+    }
+  } catch (err: any) {
+    console.error("[BloodAnalysis] Claude generation failed (pass1):", err?.message || err);
+  }
+
+  // Pass 2/3: continuation from first missing heading in canonical order
+  for (let pass = 2; pass <= 3; pass++) {
     try {
-      const resp = await client.messages.create({
-        model,
-        max_tokens: maxTokens,
-        temperature: 0.45,
-        system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      } as any);
+      const next = firstMissingHeading(output) || "## Sources (bibliotheque)";
+      const continuationPrompt = [
+        basePrompt,
+        ``,
+        `RAPPORT PARTIEL (ne pas repeter, tu dois CONTINUER):`,
+        stripSourcesFromReport(output).slice(-12000),
+        ``,
+        `MISSION: ecris UNIQUEMENT la suite du rapport en commençant EXACTEMENT par:`,
+        next,
+        ``,
+        `Puis continue en respectant l'ordre CANONIQUE jusqu'a terminer par:`,
+        `## Sources (bibliotheque)`,
+        ``,
+        `REGLES STRICTES:`,
+        `- Aucun titre en '#'. Utilise uniquement '##' et '###' comme dans le template.`,
+        `- Ne repete aucune section deja presente dans le rapport partiel.`,
+        `- Si une section manque de donnees, ecris 'Non renseigne' mais garde le titre.`,
+        `- Pas d'emoji.`,
+      ].join("\n");
 
-      const textContent = (resp as any).content?.find((c: any) => c.type === "text");
-      const candidate = String(textContent?.text || "").trim();
-      if (!candidate) {
-        throw new Error("Claude returned empty report");
-      }
-
-      const cleaned = stripEmojis(candidate).trim();
-      const validation = validateBloodAnalysisReport(cleaned);
+      const continuation = await callClaudeOnce(continuationPrompt);
+      const merged = `${stripSourcesFromReport(output)}\n\n${extractFromFirstH2(continuation)}`.trim();
+      output = merged;
+      validation = validateBloodAnalysisReport(output);
       if (validation.ok) {
-        const withSources = ensureSourcesSection(cleaned);
+        const withSources = ensureSourcesSection(output);
         return trimAiAnalysis(withSources);
       }
-
-      if (!best || cleaned.length > best.length) {
-        best = cleaned;
-        bestValidation = validation;
-      }
+      console.warn(`[BloodAnalysis] Continuation pass ${pass} still invalid:`, validation.missing.join(", "));
     } catch (err: any) {
-      console.error("[BloodAnalysis] Claude generation failed:", err?.message || err);
+      console.error(`[BloodAnalysis] Claude generation failed (pass${pass}):`, err?.message || err);
     }
   }
 
-  if (best) {
-    console.warn("[BloodAnalysis] Using partial Claude report (failed validation):", bestValidation.missing.join(", "));
-    const withSources = ensureSourcesSection(best);
-    return trimAiAnalysis(withSources);
-  }
-
-  console.warn("[BloodAnalysis] Falling back to deterministic report");
+  console.warn("[BloodAnalysis] Falling back to deterministic report:", validation.missing.join(", "));
   return buildFallbackAnalysis(analysisResult, userProfile);
 }
 
