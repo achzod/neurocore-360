@@ -779,7 +779,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       const optimalCount = analysisMarkers.filter(m => m.status === "optimal").length;
       const normalCount = analysisMarkers.filter(m => m.status === "normal").length;
       const totalMarkers = analysisMarkers.length || 1;
-      const globalScore = Math.round(((optimalCount * 100 + normalCount * 70) / totalMarkers));
+      const suboptimalCount = analysisMarkers.filter(m => m.status === "suboptimal").length;
+      const criticalCount = analysisMarkers.filter(m => m.status === "critical").length;
+      const globalScore = Math.round((optimalCount * 100 + normalCount * 80 + suboptimalCount * 55 + criticalCount * 30) / totalMarkers);
       const globalLevel = globalScore >= 85 ? "excellent" : globalScore >= 70 ? "bon" : globalScore >= 50 ? "moyen" : "faible";
 
       res.json({

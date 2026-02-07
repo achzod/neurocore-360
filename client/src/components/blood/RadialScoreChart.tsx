@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, useSpring, useTransform } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useId, useState } from 'react';
 import { useBloodTheme } from './BloodThemeContext';
 
 interface RadialScoreChartProps {
@@ -28,6 +28,10 @@ export const RadialScoreChart = ({
   showComparison = false,
 }: RadialScoreChartProps) => {
   const { theme } = useBloodTheme();
+  const uid = useId();
+  const gridId = `scoreGrid-${uid}`;
+  const gradientId = `scoreGradient-${uid}`;
+  const glowId = `scoreGlow-${uid}`;
   const [animatedScore, setAnimatedScore] = useState(0);
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -80,7 +84,7 @@ export const RadialScoreChart = ({
       >
         <defs>
           {/* Grid pattern */}
-          <pattern id="scoreGrid" width="12" height="12" patternUnits="userSpaceOnUse">
+          <pattern id={gridId} width="12" height="12" patternUnits="userSpaceOnUse">
             <path
               d="M 12 0 L 0 0 0 12"
               fill="none"
@@ -90,13 +94,13 @@ export const RadialScoreChart = ({
           </pattern>
 
           {/* Score gradient */}
-          <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={colors.from} />
             <stop offset="100%" stopColor={colors.to} />
           </linearGradient>
 
           {/* Glow filter */}
-          <filter id="scoreGlow">
+          <filter id={glowId}>
             <feGaussianBlur stdDeviation="4" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
@@ -110,7 +114,7 @@ export const RadialScoreChart = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          fill="url(#scoreGrid)"
+          fill={`url(#${gridId})`}
           stroke={theme.borderSubtle}
           strokeWidth={strokeWidth}
         />
@@ -141,14 +145,14 @@ export const RadialScoreChart = ({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="url(#scoreGradient)"
+          stroke={`url(#${gradientId})`}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
-          filter="url(#scoreGlow)"
+          filter={`url(#${glowId})`}
         />
 
         {/* Animated glow layer */}
@@ -196,13 +200,13 @@ export const RadialScoreChart = ({
         </motion.div>
 
         {/* Label */}
-        <div className="text-xs uppercase tracking-widest text-slate-500 mt-2 font-semibold">
+        <div className="text-xs uppercase tracking-widest mt-2 font-semibold" style={{ color: theme.textTertiary }}>
           {label}
         </div>
 
         {/* Sublabel */}
         {sublabel && (
-          <div className="text-[10px] text-slate-600 mt-1">{sublabel}</div>
+          <div className="text-[10px] mt-1" style={{ color: theme.textTertiary }}>{sublabel}</div>
         )}
 
         {/* Percentile badge */}
@@ -226,10 +230,11 @@ export const RadialScoreChart = ({
       {/* Floating labels */}
       {targetScore && (
         <motion.div
-          className="absolute text-xs text-emerald-400 font-semibold"
+          className="absolute text-xs font-semibold"
           style={{
             top: '20%',
             right: '10%',
+            color: theme.status.optimal,
           }}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}

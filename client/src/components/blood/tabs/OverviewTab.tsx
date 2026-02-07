@@ -33,12 +33,6 @@ export function OverviewTab({
 }: OverviewTabProps) {
   const { theme } = useBloodTheme();
 
-  const formatValue = (value: number, unit: string) => {
-    if (!unit) return value.toString();
-    if (unit === "%") return `${value}%`;
-    return `${value} ${unit}`;
-  };
-
   const calculateAge = (dob?: string) => {
     if (!dob) return null;
     const birthDate = new Date(dob);
@@ -128,7 +122,7 @@ export function OverviewTab({
             const avgScore =
               markers.reduce((sum, m) => {
                 const score =
-                  m.status === "optimal" ? 100 : m.status === "normal" ? 75 : m.status === "suboptimal" ? 50 : 25;
+                  m.status === "optimal" ? 100 : m.status === "normal" ? 80 : m.status === "suboptimal" ? 55 : 30;
                 return sum + score;
               }, 0) / markers.length;
 

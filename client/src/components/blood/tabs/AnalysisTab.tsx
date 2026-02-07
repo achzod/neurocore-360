@@ -158,9 +158,13 @@ export function AnalysisTab({ aiSections }: AnalysisTabProps) {
         />
       )}
 
-      {/* Any other sections that might exist */}
+      {/* Any other sections that might exist (exclude known sections handled elsewhere) */}
       {Object.entries(aiSections).map(([key, section]) => {
-        if (!section || ["alerts", "systems", "deepDive", "interconnections"].includes(key)) {
+        if (!section || [
+          "alerts", "systems", "deepDive", "interconnections",
+          "synthesis", "quality", "potential", "plan90",
+          "nutrition", "supplements", "annexes", "sources",
+        ].includes(key)) {
           return null;
         }
         return (
@@ -174,7 +178,7 @@ export function AnalysisTab({ aiSections }: AnalysisTabProps) {
         );
       })}
 
-      {Object.keys(aiSections).length === 0 && (
+      {!Object.values(aiSections).some(Boolean) && (
         <div
           className="rounded-xl border p-8 text-center"
           style={{

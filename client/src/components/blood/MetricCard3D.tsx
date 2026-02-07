@@ -2,6 +2,7 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ReactNode, useRef } from 'react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface MetricCard3DProps {
   title: string;
@@ -24,6 +25,7 @@ export const MetricCard3D = ({
   status = 'normal',
   children,
 }: MetricCard3DProps) => {
+  const { theme } = useBloodTheme();
   const ref = useRef<HTMLDivElement>(null);
 
   // Mouse tracking for 3D effect
@@ -54,28 +56,12 @@ export const MetricCard3D = ({
     mouseY.set(0);
   };
 
+  const statusBase = theme.status[status];
   const statusColors = {
-    optimal: {
-      border: 'rgba(6, 182, 212, 0.4)',
-      glow: 'rgba(6, 182, 212, 0.2)',
-      text: '#06b6d4',
-    },
-    normal: {
-      border: 'rgba(59, 130, 246, 0.4)',
-      glow: 'rgba(59, 130, 246, 0.2)',
-      text: '#3b82f6',
-    },
-    suboptimal: {
-      border: 'rgba(245, 158, 11, 0.4)',
-      glow: 'rgba(245, 158, 11, 0.2)',
-      text: '#f59e0b',
-    },
-    critical: {
-      border: 'rgba(244, 63, 94, 0.4)',
-      glow: 'rgba(244, 63, 94, 0.2)',
-      text: '#f43f5e',
-    },
-  }[status];
+    border: `${statusBase}66`,
+    glow: `${statusBase}33`,
+    text: statusBase,
+  };
 
   const trendIcons = {
     up: '↑',
@@ -101,7 +87,7 @@ export const MetricCard3D = ({
           rotateX,
           rotateY,
           transformStyle: 'preserve-3d',
-          background: 'rgba(26, 29, 36, 0.6)',
+          background: `${theme.surfaceElevated}99`,
           backdropFilter: 'blur(12px)',
           border: `1px solid ${statusColors.border}`,
         }}
@@ -156,13 +142,13 @@ export const MetricCard3D = ({
                 </motion.div>
               )}
               <div>
-                <h3 className="text-sm uppercase tracking-wider text-slate-400 font-semibold">
+                <h3 className="text-sm uppercase tracking-wider font-semibold" style={{ color: theme.textSecondary }}>
                   {title}
                 </h3>
                 {trend && trendValue && (
                   <div className="flex items-center gap-1 mt-1">
                     <span style={{ color: statusColors.text }}>{trendIcons[trend]}</span>
-                    <span className="text-xs text-slate-500">{trendValue}</span>
+                    <span className="text-xs" style={{ color: theme.textTertiary }}>{trendValue}</span>
                   </div>
                 )}
               </div>
@@ -184,7 +170,7 @@ export const MetricCard3D = ({
               {value}
             </motion.div>
             {unit && (
-              <span className="text-2xl text-slate-500 font-medium">{unit}</span>
+              <span className="text-2xl font-medium" style={{ color: theme.textTertiary }}>{unit}</span>
             )}
           </div>
 
