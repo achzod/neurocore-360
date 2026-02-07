@@ -46,6 +46,9 @@ import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
 
+// Prevent duplicate background generation per instance.
+const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
+
 const getBaseUrl = (): string => {
   return (
     process.env.APP_URL ||
@@ -553,6 +556,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     try {
       // First try blood_reports table (legacy storage)
       let report = await storage.getBloodReport(req.params.id);
+      const reportId = req.params.id;
+      let reportSource: "legacy" | "blood_tests" | "unknown" = report ? "legacy" : "unknown";
+      let bloodTestRow: any | null = null;
 
       // If not found, try blood_tests table (new direct DB storage)
       if (!report) {
@@ -560,10 +566,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         const { bloodTests } = await import("../../shared/drizzle-schema.js");
         const { eq } = await import("drizzle-orm");
 
-        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, req.params.id));
+        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
 
         if (results.length > 0) {
           const bloodTest = results[0];
+          bloodTestRow = bloodTest;
+          reportSource = "blood_tests";
           // Transform blood_tests format to blood_reports format for frontend compatibility
           const analysis =
             typeof bloodTest.analysis === "object" && bloodTest.analysis !== null
@@ -600,6 +608,92 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         res.status(404).json({ error: "Rapport introuvable" });
         return;
       }
+
+      // If the AI report is missing, kick off background generation.
+      // This unblocks cases where async generation never ran (dyno sleep / crash / seed rows).
+      const aiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
+      const shouldGenerateAi =
+        !!process.env.ANTHROPIC_API_KEY && aiReportText.trim().length === 0;
+
+      if (shouldGenerateAi && !BLOOD_AI_REPORT_IN_FLIGHT.has(reportId)) {
+        BLOOD_AI_REPORT_IN_FLIGHT.add(reportId);
+
+        setImmediate(async () => {
+          try {
+            const rawProfile = ((report as any).profile || {}) as Record<string, unknown>;
+            const gender = rawProfile.gender === "femme" ? "femme" : "homme";
+
+            const rawMarkers = Array.isArray((report as any).markers) ? ((report as any).markers as any[]) : [];
+            const resolvedMarkers: BloodMarkerInput[] = rawMarkers
+              .map((m) => {
+                const rawId = String(m?.markerId || m?.code || m?.name || "");
+                const markerId = normalizeMarkerName(rawId);
+                const value = Number(m?.value);
+                const unit = typeof m?.unit === "string" ? m.unit : undefined;
+                return { markerId, value, unit };
+              })
+              .filter((m) => m.markerId && Number.isFinite(m.value));
+
+            if (!resolvedMarkers.length) {
+              console.warn(`[BloodAnalysis] AI generation skipped (no markers) for report ${reportId}`);
+              return;
+            }
+
+            const analysisResult = await analyzeBloodwork(resolvedMarkers, {
+              ...(rawProfile as any),
+              gender,
+            });
+
+            const knowledgeContext = await getBloodworkKnowledgeContext(
+              analysisResult.markers,
+              analysisResult.patterns
+            );
+
+            const aiReport = await generateAIBloodAnalysis(
+              analysisResult,
+              { ...(rawProfile as any), gender } as any,
+              knowledgeContext
+            );
+
+            if (reportSource === "legacy") {
+              await storage.updateBloodReport(reportId, { analysis: analysisResult as any, aiReport });
+              console.log(`[BloodAnalysis] AI report generated for legacy report ${reportId} (${aiReport.length} chars)`);
+              return;
+            }
+
+            if (reportSource === "blood_tests" && bloodTestRow) {
+              const { db } = await import("../db.js");
+              const { bloodTests } = await import("../../shared/drizzle-schema.js");
+              const { eq } = await import("drizzle-orm");
+
+              const existingAnalysis =
+                bloodTestRow.analysis && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+                  ? (bloodTestRow.analysis as Record<string, unknown>)
+                  : {};
+
+              await db
+                .update(bloodTests)
+                .set({
+                  analysis: {
+                    ...existingAnalysis,
+                    ...analysisResult,
+                    aiReport,
+                    aiModel: "claude-opus-4-6",
+                    aiGeneratedAt: new Date().toISOString(),
+                  } as any,
+                })
+                .where(eq(bloodTests.id, reportId));
+
+              console.log(`[BloodAnalysis] AI report generated for blood_tests ${reportId} (${aiReport.length} chars)`);
+            }
+          } catch (err) {
+            console.error(`[BloodAnalysis] Background AI generation failed for ${reportId}:`, err);
+          } finally {
+            BLOOD_AI_REPORT_IN_FLIGHT.delete(reportId);
+          }
+        });
+      }
+
       res.json({ success: true, report });
     } catch (error) {
       console.error("[BloodAnalysis] Report fetch error:", error);
