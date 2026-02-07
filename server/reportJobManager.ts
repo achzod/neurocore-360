@@ -303,13 +303,13 @@ async function generateReportAsync(
       progress: 20,
     });
 
-    console.log(`[ReportJobManager] Calling Claude Opus 4.5 engine for ${auditId}`);
+    console.log(`[ReportJobManager] Calling Claude Opus 4.6 engine for ${auditId}`);
 
-    // Utiliser Claude Opus 4.5 pour la génération
+    // Utiliser Claude Opus 4.6 pour la génération
     const generationPromise = withTimeout(
       generateAndConvertAuditWithClaude(normalizedResponses as ClientData, photoAnalysis, auditType as any, auditId),
       AI_CALL_TIMEOUT_MS,
-      `Claude Opus 4.5 report generation for ${auditId}`
+      `Claude Opus 4.6 report generation for ${auditId}`
     );
 
     // ============================================
@@ -372,7 +372,7 @@ async function generateReportAsync(
     const result = await generationPromise.finally(() => clearInterval(heartbeat));
 
     if (!result.success) {
-      throw new Error(result.error || "Claude Opus 4.5 generation failed");
+      throw new Error(result.error || "Claude Opus 4.6 generation failed");
     }
 
     // ⚠️ IMPORTANT: Ne PAS marquer comme COMPLETED avant d'avoir généré le HTML

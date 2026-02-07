@@ -1,5 +1,5 @@
 /**
- * NEUROCORE 360 - Module de generation d'audits avec Claude Opus 4.5
+ * NEUROCORE 360 - Module de generation d'audits avec Claude Opus 4.6
  * Remplace openaiPremiumEngine pour une generation plus personnalisee et detaillee
  */
 
@@ -698,7 +698,7 @@ export async function generateAndConvertAuditWithClaude(
   const clientName = `${firstName} ${lastName}`.trim();
 
   console.log(`\n[Claude] Nouvelle demande d'audit pour ${firstName}`);
-  console.log(`[Claude] Generation audit PREMIUM avec Claude Opus 4.5 pour ${clientName}...`);
+  console.log(`[Claude] Generation audit PREMIUM avec Claude Opus 4.6 pour ${clientName}...`);
 
   const txtContent = await generateAuditTxtWithClaude(clientData, photoAnalysis, tier, resumeAuditId);
   if (!txtContent) {

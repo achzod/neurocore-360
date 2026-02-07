@@ -2353,7 +2353,7 @@ export async function registerRoutes(
 
       res.json(result);
     } catch (error: any) {
-      console.error("[Claude Opus 4.5] Erreur generation audit:", error);
+      console.error("[Claude Opus 4.6] Erreur generation audit:", error);
       res.status(500).json({
         success: false,
         error: error.message || "Erreur serveur interne"

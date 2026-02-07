@@ -1,14 +1,13 @@
 /**
  * Anthropic Claude API Configuration
- * Primary: Claude Sonnet 4.5 - Best balance intelligence/speed/cost ($3/$15 MTok)
- * Fallback: Claude Opus 4.5 - Most powerful model ($5/$25 MTok)
- * Both: 200K context, 64K max output, extended thinking support
+ * Primary: Claude Opus 4.6
+ * Fallback: Claude Opus 4.6
  */
 
 export const ANTHROPIC_CONFIG = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
-  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250929",
-  ANTHROPIC_FALLBACK_MODEL: process.env.ANTHROPIC_FALLBACK_MODEL || "claude-opus-4-5-20251101",
+  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || "claude-opus-4-6",
+  ANTHROPIC_FALLBACK_MODEL: process.env.ANTHROPIC_FALLBACK_MODEL || "claude-opus-4-6",
   ANTHROPIC_TEMPERATURE: Number(process.env.ANTHROPIC_TEMPERATURE ?? "0.7"),
   // Max tokens par section - augmenté pour 40-50 pages PREMIUM
   ANTHROPIC_MAX_TOKENS: Number(process.env.ANTHROPIC_MAX_TOKENS ?? "8000"),

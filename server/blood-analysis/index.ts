@@ -1275,7 +1275,7 @@ TEXTE PDF:
 ${cleaned.slice(0, 12000)}`;
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5-20251101",
+    model: "claude-opus-4-6",
     max_tokens: 1200,
     system: "Tu es un extracteur strict de biomarqueurs. Tu ne renvoies que du JSON valide.",
     messages: [{ role: "user", content: userPrompt }],
@@ -2863,7 +2863,7 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
     try {
       // Use streaming for long-running operations (>10min possible with new Achzod prompt)
       const stream = await anthropic.messages.create({
-        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
         max_tokens: 64000, // Max allowed by Claude Opus 4.5 - sufficient for FULL Achzod reports (35k-90k chars = ~12k-25k tokens)
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
@@ -2909,7 +2909,7 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
 
     try {
       const planStream = await anthropic.messages.create({
-        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
         max_tokens: 16000, // Increased for ultra-detailed 4-phase plan (Achzod comprehensive format)
         system: "Tu es Achzod, expert elite en optimisation physiologique. Respecte STRICTEMENT le format demande avec 4 phases detaillees.",
         messages: [{ role: "user", content: planPrompt }],
@@ -3062,7 +3062,7 @@ ${markersTable}`,
       console.log(`[BloodAnalysis] ⚠️  Generating missing section: ${section.title}...`);
       try {
         const sectionStream = await anthropic.messages.create({
-          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-5-20251101",
+          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
           max_tokens: 8000,
           system: "Tu es Achzod, expert elite en optimisation physiologique. Génère UNIQUEMENT la section demandée, rien d'autre.",
           messages: [{ role: "user", content: section.prompt() }],

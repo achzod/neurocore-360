@@ -1,6 +1,6 @@
 /**
  * OpenAI Config - Minimal stub for photoAnalysisAI (GPT-4 Vision)
- * NOTE: Main report generation uses Claude Opus 4.5 (anthropicEngine.ts)
+ * NOTE: Main report generation uses Claude Opus 4.6 (anthropicEngine.ts)
  */
 
 export const OPENAI_CONFIG = {

@@ -1,18 +1,13 @@
-import OpenAI from "openai";
-import { OPENAI_CONFIG } from "./openaiConfig";
+import Anthropic from "@anthropic-ai/sdk";
+import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "./anthropicConfig";
 import { PhotoAnalysis } from "./types";
 
-// GPT-4.1 Vision - meilleur modèle pour analyse corporelle détaillée
-const openai = new OpenAI({
-  apiKey: OPENAI_CONFIG.OPENAI_API_KEY,
-});
+// Ultimate Scan photo analysis should not require extra Render env vars.
+// We run vision analysis with Claude (Opus 4.6 by default) using ANTHROPIC_API_KEY.
 
-const VISION_MODEL = "gpt-4.1"; // GPT-4.1 avec vision intégrée
-
-// On utilise maintenant le type PhotoAnalysis exporté globalement
 export type PhotoAnalysisResult = PhotoAnalysis;
 
-const PHOTO_ANALYSIS_PROMPT = `Tu es un EXPERT en composition corporelle, biomecanique et evaluation posturale (15 ans d'experience). 
+const PHOTO_ANALYSIS_PROMPT = `Tu es un EXPERT en composition corporelle, biomecanique et evaluation posturale (15 ans d'experience).
 
 Analyse ces photos avec une PRECISION CLINIQUE. Evalue :
 
@@ -98,311 +93,162 @@ REGLES CRITIQUES :
 - JSON VALIDE uniquement, pas de commentaires
 - Si incertitude, indique-le dans le champ mais donne quand meme une analyse`;
 
-export async function analyzeBodyPhotosWithAI(
-  photos: { front?: string; side?: string; back?: string },
-  userContext?: { sexe?: string; age?: string; objectif?: string }
-): Promise<PhotoAnalysisResult> {
-
-  // Préparer les images pour l'API OpenAI Vision
-  const imageContents: Array<{ type: "image_url"; image_url: { url: string; detail: "high" } }> = [];
-  const photoLabels: string[] = [];
-
-  const processPhotoUrl = (base64Data: string): string => {
-    // Si c'est déjà une data URL complète, la retourner
-    if (base64Data.startsWith("data:image/")) {
-      return base64Data;
-    }
-    // Sinon, ajouter le préfixe
-    return `data:image/jpeg;base64,${base64Data.replace(/\s/g, '')}`;
-  };
-
-  if (photos.front) {
-    const url = processPhotoUrl(photos.front);
-    imageContents.push({ type: "image_url", image_url: { url, detail: "high" } });
-    photoLabels.push("Photo 1: Vue de face");
-  }
-  if (photos.side) {
-    const url = processPhotoUrl(photos.side);
-    imageContents.push({ type: "image_url", image_url: { url, detail: "high" } });
-    photoLabels.push("Photo 2: Vue de profil");
-  }
-  if (photos.back) {
-    const url = processPhotoUrl(photos.back);
-    imageContents.push({ type: "image_url", image_url: { url, detail: "high" } });
-    photoLabels.push("Photo 3: Vue de dos");
-  }
-
-  if (imageContents.length === 0) {
-    return getDefaultAnalysis("Aucune photo fournie");
-  }
-
-  const contextText = userContext
-    ? `\nCONTEXTE CLIENT: Sexe ${userContext.sexe || "non specifie"}, Age ${userContext.age || "non specifie"}, Objectif ${userContext.objectif || "non specifie"}`
-    : "";
-
-  const fullPrompt = `${PHOTO_ANALYSIS_PROMPT}${contextText}\n\nPhotos fournies: ${photoLabels.join(", ")}\n\nAnalyse ces photos et retourne ton analyse en JSON.`;
-
-  // Construire le message avec images + texte
-  const messageContent: Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "high" } }> = [
-    ...imageContents,
-    { type: "text", text: fullPrompt }
-  ];
-
-  try {
-    console.log(`[PhotoAnalysis GPT-4.1] Analysing ${photoLabels.length} photos with ${VISION_MODEL}...`);
-
-    const response = await openai.chat.completions.create({
-      model: VISION_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: messageContent,
-        }
-      ],
-      max_tokens: 3000,
-      temperature: 0.5, // Plus bas pour analyse précise
-    });
-
-    const text = response.choices[0]?.message?.content || "";
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("[PhotoAnalysis GPT-4.1] No JSON found in response:", text.substring(0, 500));
-      return getDefaultAnalysis("JSON non trouve dans la reponse");
-    }
-
-    let jsonStr = jsonMatch[0];
-    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-    jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');
-    jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
-    jsonStr = jsonStr.replace(/[\x00-\x1F\x7F]/g, ' ');
-
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error("[PhotoAnalysis GPT-4.1] JSON parse failed, trying recovery. Raw:", jsonStr.substring(0, 1000));
-      try {
-        jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-        jsonStr = jsonStr.replace(/\n/g, ' ').replace(/\r/g, '');
-        jsonStr = jsonStr.replace(/\s+/g, ' ');
-        parsed = JSON.parse(jsonStr);
-      } catch (e) {
-        console.error("[PhotoAnalysis GPT-4.1] JSON recovery failed:", e);
-        return getDefaultAnalysis("Erreur parsing JSON - reponse IA malformee");
-      }
-    }
-
-    console.log(`[PhotoAnalysis GPT-4.1] Analysis complete - confidence: ${(parsed as { confidenceLevel?: number }).confidenceLevel || 70}%`);
-    return normalizeAnalysisResult(parsed);
-
-  } catch (error: any) {
-    console.error("[PhotoAnalysis GPT-4.1] Error:", error?.message || error);
-
-    // Fallback vers GPT-4o si GPT-4.1 échoue
-    try {
-      console.log("[PhotoAnalysis] Fallback to gpt-4o...");
-      const fallbackResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: messageContent,
-          }
-        ],
-        max_tokens: 3000,
-        temperature: 0.5,
-      });
-
-      const fallbackText = fallbackResponse.choices[0]?.message?.content || "";
-      const fallbackJsonMatch = fallbackText.match(/\{[\s\S]*\}/);
-      if (fallbackJsonMatch) {
-        const parsed = JSON.parse(fallbackJsonMatch[0]);
-        console.log(`[PhotoAnalysis GPT-4o Fallback] Analysis complete`);
-        return normalizeAnalysisResult(parsed);
-      }
-    } catch (fallbackError) {
-      console.error("[PhotoAnalysis GPT-4o Fallback] Error:", fallbackError);
-    }
-
-    return getDefaultAnalysis("Erreur lors de l'analyse IA");
-  }
-}
-
-function normalizeAnalysisResult(parsed: Record<string, unknown>): PhotoAnalysisResult {
-  return {
-    fatDistribution: {
-      visceral: (parsed.fatDistribution as Record<string, unknown>)?.visceral as PhotoAnalysisResult["fatDistribution"]["visceral"] || "modere",
-      subcutaneous: (parsed.fatDistribution as Record<string, unknown>)?.subcutaneous as PhotoAnalysisResult["fatDistribution"]["subcutaneous"] || "modere",
-      zones: ((parsed.fatDistribution as Record<string, unknown>)?.zones as string[]) || [],
-      estimatedBF: ((parsed.fatDistribution as Record<string, unknown>)?.estimatedBF as string) || "Non estime",
-      waistToHipRatio: ((parsed.fatDistribution as Record<string, unknown>)?.waistToHipRatio as string) || "Non estime",
-    },
-    posture: {
-      headPosition: ((parsed.posture as Record<string, unknown>)?.headPosition as string) || "Non evalue",
-      shoulderAlignment: ((parsed.posture as Record<string, unknown>)?.shoulderAlignment as string) || "Non evalue",
-      spineAlignment: ((parsed.posture as Record<string, unknown>)?.spineAlignment as string) || "Non evalue",
-      pelvicTilt: ((parsed.posture as Record<string, unknown>)?.pelvicTilt as string) || "Non evalue",
-      kneesAlignment: ((parsed.posture as Record<string, unknown>)?.kneesAlignment as string) || "Non evalue",
-      overallScore: ((parsed.posture as Record<string, unknown>)?.overallScore as number) || 50,
-      issues: ((parsed.posture as Record<string, unknown>)?.issues as string[]) || [],
-    },
-    muscularBalance: {
-      upperBody: ((parsed.muscularBalance as Record<string, unknown>)?.upperBody as string) || "Non evalue",
-      lowerBody: ((parsed.muscularBalance as Record<string, unknown>)?.lowerBody as string) || "Non evalue",
-      leftRightSymmetry: ((parsed.muscularBalance as Record<string, unknown>)?.leftRightSymmetry as string) || "Non evalue",
-      anteriorPosterior: ((parsed.muscularBalance as Record<string, unknown>)?.anteriorPosterior as string) || "Non evalue",
-      weakAreas: ((parsed.muscularBalance as Record<string, unknown>)?.weakAreas as string[]) || [],
-      strongAreas: ((parsed.muscularBalance as Record<string, unknown>)?.strongAreas as string[]) || [],
-    },
-    medicalObservations: {
-      skinCondition: ((parsed.medicalObservations as Record<string, unknown>)?.skinCondition as string[]) || [],
-      edemaPresence: ((parsed.medicalObservations as Record<string, unknown>)?.edemaPresence as string) || "Non observe",
-      vascularSigns: ((parsed.medicalObservations as Record<string, unknown>)?.vascularSigns as string[]) || [],
-      potentialConcerns: ((parsed.medicalObservations as Record<string, unknown>)?.potentialConcerns as string[]) || [],
-    },
-    recommendations: {
-      posturalCorrections: ((parsed.recommendations as Record<string, unknown>)?.posturalCorrections as string[]) || [],
-      muscleGroupsToTarget: ((parsed.recommendations as Record<string, unknown>)?.muscleGroupsToTarget as string[]) || [],
-      mobilityWork: ((parsed.recommendations as Record<string, unknown>)?.mobilityWork as string[]) || [],
-      medicalFollowUp: ((parsed.recommendations as Record<string, unknown>)?.medicalFollowUp as string[]) || [],
-    },
-    summary: (parsed.summary as string) || "Analyse completee",
-    confidenceLevel: (parsed.confidenceLevel as number) || 70,
-  };
-}
-
 function getDefaultAnalysis(reason: string): PhotoAnalysisResult {
   return {
     fatDistribution: {
       visceral: "modere",
       subcutaneous: "modere",
       zones: [],
-      estimatedBF: "Non disponible - " + reason,
-      waistToHipRatio: "Non disponible",
-    },
+      estimatedBF: `Analyse indisponible (${reason})`,
+      waistToHipRatio: "non visible",
+      hormonalPattern: "non determine",
+      inflammationSigns: "non determine",
+    } as any,
     posture: {
-      headPosition: "Non evalue - photos requises",
-      shoulderAlignment: "Non evalue",
-      spineAlignment: "Non evalue",
-      pelvicTilt: "Non evalue",
-      kneesAlignment: "Non evalue",
+      headPosition: "non visible",
+      shoulderAlignment: "non visible",
+      spineAlignment: "non visible",
+      pelvicTilt: "non visible",
+      kneesAlignment: "non visible",
       overallScore: 50,
-      issues: ["Analyse photo non disponible: " + reason],
+      issues: [],
     },
     muscularBalance: {
-      upperBody: "Non evalue",
-      lowerBody: "Non evalue",
-      leftRightSymmetry: "Non evalue",
-      anteriorPosterior: "Non evalue",
+      upperBody: "non visible",
+      lowerBody: "non visible",
+      leftRightSymmetry: "non visible",
+      anteriorPosterior: "non visible",
       weakAreas: [],
       strongAreas: [],
     },
     medicalObservations: {
       skinCondition: [],
-      edemaPresence: "Non observe",
+      edemaPresence: "non visible",
       vascularSigns: [],
       potentialConcerns: [],
     },
     recommendations: {
-      posturalCorrections: ["Fournir des photos pour une analyse posturale complete"],
+      posturalCorrections: [],
       muscleGroupsToTarget: [],
       mobilityWork: [],
       medicalFollowUp: [],
     },
-    summary: `Analyse photo non realisee: ${reason}. Pour une analyse complete, veuillez fournir 3 photos (face, profil, dos) en bonne qualite et eclairage.`,
-    confidenceLevel: 0,
-  };
+    summary: `Analyse photo non disponible: ${reason}`,
+    confidenceLevel: 70,
+  } as any;
 }
 
-export function formatPhotoAnalysisForReport(analysis: PhotoAnalysisResult, prenom?: string): string {
-  if (analysis.confidenceLevel === 0) {
-    return analysis.summary;
-  }
-  
-  const name = prenom || "toi";
-  let report = "";
-  
-  report += `Alors ${name}, je vais te decrypter ce que je vois sur tes photos. C'est un moment cle parce que les chiffres c'est bien, mais la realite visuelle ne ment pas.\n\n`;
-  
-  report += `TA COMPOSITION CORPORELLE\n\n`;
-  report += `Ta graisse viscerale est ${analysis.fatDistribution.visceral}, et ta graisse sous-cutanee est ${analysis.fatDistribution.subcutaneous}. `;
-  if (analysis.fatDistribution.zones.length > 0) {
-    report += `Tes zones de stockage principales : ${analysis.fatDistribution.zones.join(", ")}. `;
-  }
-  // Ne pas afficher de chiffres précis (WHR, BF %) si non mesurés
-  const bfStr = analysis.fatDistribution.estimatedBF || "";
-  const whrStr = analysis.fatDistribution.waistToHipRatio || "";
-  // Si BF contient un % ou chiffres, utiliser description qualitative
-  if (bfStr && !bfStr.includes("Non") && !bfStr.includes("disponible")) {
-    if (bfStr.match(/\d+%/) || bfStr.match(/\d+-\d+%/)) {
-      // C'est un chiffre, remplacer par tendance qualitative
-      report += `Tendance composition corporelle : modérée-élevée (analyse visuelle, sans mesure précise). `;
-    } else {
-      report += `Tendance composition corporelle : ${bfStr}. `;
-    }
-  }
-  // Si WHR contient un chiffre (0.XX), ne pas l'afficher
-  if (whrStr && !whrStr.includes("Non") && !whrStr.includes("disponible")) {
-    if (whrStr.match(/0\.\d+/)) {
-      // C'est un chiffre, ne pas l'afficher. On remplace par une tendance qualitative.
-      report += `Distribution graisseuse : tendance de stockage abdominal (analyse visuelle, sans mesure au ruban). `;
-    } else {
-      // C'est déjà une description qualitative
-      report += `Distribution graisseuse : ${whrStr}. `;
-    }
-  } else {
-    // Fallback qualitatif
-    report += `Distribution graisseuse : analyse basée sur photos statiques. `;
-  }
-  report += `\n\nIMPORTANT : Analyse basée sur photos statiques. Pour mesures précises (tour de taille/hanches selon protocole standardisé, % masse grasse), utilise repères anatomiques et équipements validés.\n\n`;
-  
-  report += `TA POSTURE (Score: ${analysis.posture.overallScore}/100 - analyse basée sur photos statiques)\n`;
-  report += `Ta tete : ${analysis.posture.headPosition}. Tes epaules : ${analysis.posture.shoulderAlignment}. `;
-  report += `Ta colonne : ${analysis.posture.spineAlignment}. Ton bassin : ${analysis.posture.pelvicTilt}. Tes genoux : ${analysis.posture.kneesAlignment}.\n`;
-  if (analysis.posture.issues.length > 0) {
-    report += `Indices observés sur photos statiques : ${analysis.posture.issues.join("; ")}. À confirmer par tests vidéo simples pour validation.\n\n`;
-  }
-  
-  report += `TON EQUILIBRE MUSCULAIRE\n`;
-  report += `Ton haut du corps : ${analysis.muscularBalance.upperBody}. Ton bas du corps : ${analysis.muscularBalance.lowerBody}. `;
-  report += `Ta symetrie gauche/droite : ${analysis.muscularBalance.leftRightSymmetry}. Ton equilibre avant/arriere : ${analysis.muscularBalance.anteriorPosterior}.\n`;
-  if (analysis.muscularBalance.weakAreas.length > 0) {
-    report += `Les zones ou tu dois bosser : ${analysis.muscularBalance.weakAreas.join(", ")}. `;
-  }
-  if (analysis.muscularBalance.strongAreas.length > 0) {
-    report += `Tes points forts : ${analysis.muscularBalance.strongAreas.join(", ")}.\n\n`;
-  }
-  
-  if (analysis.medicalObservations.potentialConcerns.length > 0 || analysis.medicalObservations.skinCondition.length > 0) {
-    report += `CE QUE JE NOTE AUSSI\n`;
-    if (analysis.medicalObservations.skinCondition.length > 0) {
-      report += `Ta peau : ${analysis.medicalObservations.skinCondition.join(", ")}. `;
-    }
-    report += `Oedeme : ${analysis.medicalObservations.edemaPresence}. `;
-    if (analysis.medicalObservations.vascularSigns.length > 0) {
-      report += `Signes vasculaires : ${analysis.medicalObservations.vascularSigns.join(", ")}. `;
-    }
-    if (analysis.medicalObservations.potentialConcerns.length > 0) {
-      report += `\nPoints a surveiller : ${analysis.medicalObservations.potentialConcerns.join("; ")}.\n\n`;
-    }
-  }
-  
-  report += `CE QUE TU DOIS FAIRE\n`;
-  if (analysis.recommendations.posturalCorrections.length > 0) {
-    report += `Pour ta posture : ${analysis.recommendations.posturalCorrections.join("; ")}. `;
-  }
-  if (analysis.recommendations.muscleGroupsToTarget.length > 0) {
-    report += `\nMuscles a cibler en priorite : ${analysis.recommendations.muscleGroupsToTarget.join(", ")}. `;
-  }
-  if (analysis.recommendations.mobilityWork.length > 0) {
-    report += `\nMobilite a travailler : ${analysis.recommendations.mobilityWork.join("; ")}. `;
-  }
-  if (analysis.recommendations.medicalFollowUp.length > 0) {
-    report += `\nJe te conseille aussi de voir un pro pour : ${analysis.recommendations.medicalFollowUp.join("; ")}.`;
-  }
-  
-  report += `\n\n${analysis.summary} (Fiabilite de mon analyse : ${analysis.confidenceLevel}%)`;
-  
-  return report;
+function normalizeAnalysisResult(obj: Record<string, unknown>): PhotoAnalysisResult {
+  // Minimal shape normalization to avoid frontend crashes.
+  const base = getDefaultAnalysis("normalisation");
+  const merged = { ...base, ...(obj as any) };
+  merged.confidenceLevel = Number((merged as any).confidenceLevel ?? 70);
+  if (!Number.isFinite(merged.confidenceLevel)) merged.confidenceLevel = 70;
+  return merged as PhotoAnalysisResult;
 }
+
+function parsePhotoToBase64(photo: string): { mediaType: string; data: string } | null {
+  const trimmed = String(photo || "").trim();
+  if (!trimmed) return null;
+
+  // data URL
+  if (trimmed.startsWith("data:image/")) {
+    const m = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+    if (!m) return null;
+    return { mediaType: m[1], data: m[2] };
+  }
+
+  // raw base64 -> assume jpeg
+  return { mediaType: "image/jpeg", data: trimmed.replace(/\s/g, "") };
+}
+
+function getAnthropicClient(): Anthropic {
+  if (!validateAnthropicConfig()) {
+    throw new Error("ANTHROPIC_API_KEY not configured");
+  }
+  return new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
+}
+
+export async function analyzeBodyPhotosWithAI(
+  photos: { front?: string; side?: string; back?: string },
+  userContext?: { sexe?: string; age?: string; objectif?: string }
+): Promise<PhotoAnalysisResult> {
+  const client = getAnthropicClient();
+
+  const blocks: any[] = [];
+  const labels: string[] = [];
+
+  const add = (label: string, raw?: string) => {
+    if (!raw) return;
+    const parsed = parsePhotoToBase64(raw);
+    if (!parsed) return;
+    blocks.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: parsed.mediaType,
+        data: parsed.data,
+      },
+    });
+    labels.push(label);
+  };
+
+  add("Photo 1: Vue de face", photos.front);
+  add("Photo 2: Vue de profil", photos.side);
+  add("Photo 3: Vue de dos", photos.back);
+
+  if (blocks.length === 0) return getDefaultAnalysis("Aucune photo fournie");
+
+  const contextText = userContext
+    ? `\nCONTEXTE CLIENT: Sexe ${userContext.sexe || "non specifie"}, Age ${userContext.age || "non specifie"}, Objectif ${userContext.objectif || "non specifie"}`
+    : "";
+
+  const fullPrompt = `${PHOTO_ANALYSIS_PROMPT}${contextText}\n\nPhotos fournies: ${labels.join(", ")}\n\nAnalyse ces photos et retourne ton analyse en JSON.`;
+  blocks.push({ type: "text", text: fullPrompt });
+
+  try {
+    console.log(`[PhotoAnalysis Claude] Analysing ${labels.length} photos with ${ANTHROPIC_CONFIG.ANTHROPIC_MODEL}...`);
+
+    const resp = await client.messages.create({
+      model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
+      max_tokens: 2500,
+      temperature: 0.5,
+      messages: [{ role: "user", content: blocks }],
+    } as any);
+
+    const textContent = (resp as any).content?.find((c: any) => c.type === "text");
+    const text = textContent?.text || "";
+    const jsonMatch = String(text).match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("[PhotoAnalysis Claude] No JSON found in response:", String(text).slice(0, 500));
+      return getDefaultAnalysis("JSON non trouve dans la reponse");
+    }
+
+    let jsonStr = jsonMatch[0];
+    jsonStr = jsonStr.replace(/,(\s*[}\]])/g, "$1");
+    jsonStr = jsonStr.replace(/```json\s*/g, "").replace(/```\s*/g, "");
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (e) {
+      console.error("[PhotoAnalysis Claude] JSON parse failed:", e);
+      return getDefaultAnalysis("Erreur parsing JSON");
+    }
+
+    console.log(`[PhotoAnalysis Claude] Analysis complete - confidence: ${(parsed as any).confidenceLevel || 70}%`);
+    return normalizeAnalysisResult(parsed);
+  } catch (err: any) {
+    console.error("[PhotoAnalysis Claude] Error:", err?.message || err);
+    return getDefaultAnalysis(err?.message || "Erreur API Claude");
+  }
+}
+
+export function formatPhotoAnalysisForReport(photoAnalysis: PhotoAnalysisResult | null): string {
+  if (!photoAnalysis) return "";
+  // Keep it compact; the full JSON is embedded in the report pipeline separately.
+  const bf = (photoAnalysis as any)?.fatDistribution?.estimatedBF || "N/A";
+  const summary = (photoAnalysis as any)?.summary || "";
+  return `ANALYSE PHOTO (Vision)\n- Estimation BF: ${bf}\n- Synthese: ${summary}`.trim();
+}
+
