@@ -41,7 +41,7 @@ export const RadialScoreChart = ({
   // Animated counter
   useEffect(() => {
     let start = 0;
-    const end = score;
+    const end = Math.max(0, Math.min(maxScore, score));
     const duration = 2000;
     const increment = (end - start) / (duration / 16);
 

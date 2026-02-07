@@ -55,7 +55,7 @@ export const parseAISections = (markdown: string): AISections => {
   }
   // Set end of each section to start of next header
   for (let i = 0; i < headerPositions.length - 1; i++) {
-    headerPositions[i].end = markdown.lastIndexOf("\n", headerPositions[i + 1].start - headerPositions[i + 1].title.length - 4);
+    headerPositions[i].end = markdown.lastIndexOf("\n", headerPositions[i + 1].start - headerPositions[i + 1].title.length - 3);
   }
   for (const pos of headerPositions) {
     const content = markdown.slice(pos.start, pos.end).trim();

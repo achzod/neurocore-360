@@ -63,7 +63,7 @@ export function BiomarkersTab({ markers }: BiomarkersTabProps) {
     >
       {/* Filters */}
       <div
-        className="sticky top-0 z-20 rounded-xl border p-4 backdrop-blur"
+        className="sticky top-[129px] z-20 rounded-xl border p-4 backdrop-blur"
         style={{
           backgroundColor: theme.surface,
           opacity: 0.97,
