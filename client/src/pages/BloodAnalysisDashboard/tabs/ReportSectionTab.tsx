@@ -55,18 +55,17 @@ export function ReportSectionTab({
     }
   });
 
-  // Pass 2: Fuzzy match only if section ID contains searchId (more strict)
-  if (matchedSectionIds.size === 0) {
-    reportSections.forEach(section => {
-      const normalizedSectionId = normalizeSectionId(section.id);
-      const matches = normalizedSearchIds.some(searchId =>
-        normalizedSectionId.includes(searchId) && searchId.length >= 5
-      );
-      if (matches) {
-        matchedSectionIds.add(section.id);
-      }
-    });
-  }
+  // Pass 2: Fuzzy match for remaining sections (more strict).
+  // We run this even if we already found exact matches, so tabs can aggregate multiple sections.
+  reportSections.forEach(section => {
+    const normalizedSectionId = normalizeSectionId(section.id);
+    const matches = normalizedSearchIds.some(searchId =>
+      normalizedSectionId.includes(searchId) && searchId.length >= 5
+    );
+    if (matches) {
+      matchedSectionIds.add(section.id);
+    }
+  });
 
   const sectionsToShow = reportSections.filter(section => matchedSectionIds.has(section.id));
 
