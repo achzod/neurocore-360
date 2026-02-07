@@ -3,7 +3,7 @@
  */
 
 export const GEMINI_CONFIG = {
-  GEMINI_API_KEY: "AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk",
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
   GEMINI_MODEL: "gemini-2.5-pro",
   GEMINI_TEMPERATURE: 0.85,
   GEMINI_MAX_TOKENS: 8000,

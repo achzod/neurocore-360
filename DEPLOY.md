@@ -28,8 +28,8 @@
 3. **Variables d'environnement** (dans Render Dashboard) :
    ```
    DATABASE_URL=postgresql://...  (copie depuis Replit)
-   GEMINI_API_KEY=AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk
-   GEMINI_MODEL=gemini-2.0-flash-exp
+   GEMINI_API_KEY=(optionnel, seulement si tu utilises Gemini)
+   GEMINI_MODEL=(optionnel)
    SESSION_SECRET=(auto-généré)
    SMTP_HOST=smtp-pulse.com
    SMTP_PORT=587
@@ -69,8 +69,8 @@ Une fois déployé :
 
 ## ⚠️ Important
 
-- La clé Gemini est celle-ci : `AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk`
-- Utilise `gemini-2.0-flash-exp` (pas 2.5-pro, il est trop cher)
+- Ne commit jamais de clés API (Gemini, OpenAI, etc.). Configure-les uniquement dans les env vars Render si tu en as besoin.
+- Si tu utilises Gemini: choisis un modèle adapté au budget.
 - Le premier build prend ~5-10 minutes
 
 ## 🆘 En cas de problème

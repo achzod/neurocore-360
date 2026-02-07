@@ -21,7 +21,10 @@ interface TranslatedArticle extends Article {
   keywords: string[];
 }
 
-const GEMINI_API_KEY = 'AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+if (!GEMINI_API_KEY) {
+  throw new Error("Missing GEMINI_API_KEY in environment");
+}
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 async function translateArticle(article: Article): Promise<TranslatedArticle> {

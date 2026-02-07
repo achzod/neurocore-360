@@ -4,7 +4,7 @@ VARIABLES D'ENVIRONNEMENT POUR RENDER
 
 Copie-colle ces valeurs dans Render Dashboard > Environment:
 
-GEMINI_API_KEY = AIzaSyAUqhl7sr7gmtoYdoLhRj-wg68l9xuzTpk
+GEMINI_API_KEY = (optionnel, seulement si tu utilises Gemini; ne pas commit de clé)
 
 DATABASE_URL = (copie l'URL depuis Replit ou crée une DB PostgreSQL sur Render)
 

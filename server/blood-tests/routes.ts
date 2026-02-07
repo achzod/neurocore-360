@@ -376,9 +376,9 @@ export function registerBloodTestsRoutes(app: Express): void {
           let aiAnalysis = "";
           const includeAI = body.includeAI !== false;
           const asyncAI = body.asyncAI === true;
-          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
-            try {
-              aiAnalysis = await generateAIBloodAnalysis(
+	          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
+	            try {
+	              aiAnalysis = await generateAIBloodAnalysis(
                 analysisResult,
                 {
                   gender: patientProfile.gender as "homme" | "femme",
@@ -398,12 +398,13 @@ export function registerBloodTestsRoutes(app: Express): void {
                   medications: patientProfile.medications,
                   infectionRecent: patientProfile.infectionRecent,
                 },
-                knowledgeContext
-              );
-            } catch {
-              aiAnalysis = "";
-            }
-          }
+	                knowledgeContext
+	              );
+	            } catch (err) {
+	              console.error("[BloodTests] AI generation failed (seed sync):", err);
+	              aiAnalysis = "";
+	            }
+	          }
           if (!aiAnalysis) {
             aiAnalysis = buildFallbackAnalysis(analysisResult, {
               gender: patientProfile.gender as "homme" | "femme",
@@ -658,10 +659,10 @@ export function registerBloodTestsRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      let aiAnalysis = "";
-      if (process.env.ANTHROPIC_API_KEY) {
-        try {
-          aiAnalysis = await generateAIBloodAnalysis(
+	      let aiAnalysis = "";
+	      if (process.env.ANTHROPIC_API_KEY) {
+	        try {
+	          aiAnalysis = await generateAIBloodAnalysis(
             analysisResult,
             {
               gender: profile.gender as "homme" | "femme",
@@ -681,12 +682,13 @@ export function registerBloodTestsRoutes(app: Express): void {
               medications: profile.medications,
               infectionRecent: profile.infectionRecent,
             },
-            knowledgeContext
-          );
-        } catch {
-          aiAnalysis = "";
-        }
-      }
+	            knowledgeContext
+	          );
+	        } catch (err) {
+	          console.error("[BloodTests] AI generation failed (upload sync):", err);
+	          aiAnalysis = "";
+	        }
+	      }
       if (!aiAnalysis) {
         aiAnalysis = buildFallbackAnalysis(analysisResult, {
           gender: profile.gender as "homme" | "femme",

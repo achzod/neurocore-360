@@ -461,43 +461,67 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * POST /api/admin/blood-analysis/report/:id/regenerate
    * Regenerate AI report for a stored blood report (admin only)
    */
-  app.post("/api/admin/blood-analysis/report/:id/regenerate", async (req, res) => {
-    try {
-      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
-      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
-      if (!validKey || adminKey !== validKey) {
-        res.status(401).json({ error: "Unauthorized - admin key required" });
-        return;
-      }
+	  app.post("/api/admin/blood-analysis/report/:id/regenerate", async (req, res) => {
+	    try {
+	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      if (!validKey || adminKey !== validKey) {
+	        res.status(401).json({ error: "Unauthorized - admin key required" });
+	        return;
+	      }
 
-      const report = await storage.getBloodReport(req.params.id);
-      if (!report) {
-        res.status(404).json({ error: "Rapport introuvable" });
-        return;
-      }
+	      const targetId = req.params.id;
+	      let report = await storage.getBloodReport(targetId);
+	      let bloodTestRow: any | null = null;
 
-      const profile = (report.profile || {}) as Record<string, unknown>;
-      let computedAge: string | undefined;
-      if (typeof profile.dob === "string") {
-        const dobDate = new Date(profile.dob);
-        if (!Number.isNaN(dobDate.getTime())) {
-          const ageYears = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-          computedAge = String(ageYears);
-        }
-      }
+	      if (!report) {
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+	        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, targetId));
+	        if (results.length > 0) {
+	          bloodTestRow = results[0];
+	        }
+	      }
 
-      const resolvedMarkers = ((report.markers || []) as Array<Record<string, unknown>>)
-        .map((marker) => ({
-          markerId: normalizeMarkerName(String(marker.markerId || marker.name || "")),
-          value: Number(marker.value),
-          unit: marker.unit as string | undefined,
-        }))
-        .filter((marker) => marker.markerId && Number.isFinite(marker.value));
+	      if (!report && !bloodTestRow) {
+	        res.status(404).json({ error: "Rapport introuvable" });
+	        return;
+	      }
 
-      if (!resolvedMarkers.length) {
-        res.status(400).json({ error: "Aucun biomarqueur detecte" });
-        return;
-      }
+	      const profile =
+	        report
+	          ? ((report.profile || {}) as Record<string, unknown>)
+	          : (bloodTestRow?.patientProfile && typeof bloodTestRow.patientProfile === "object" && !Array.isArray(bloodTestRow.patientProfile)
+	              ? (bloodTestRow.patientProfile as Record<string, unknown>)
+	              : (typeof bloodTestRow?.analysis === "object" && bloodTestRow.analysis
+	                  ? ((bloodTestRow.analysis as any).patient as Record<string, unknown>) || {}
+	                  : {}));
+	      let computedAge: string | undefined;
+	      if (typeof profile.dob === "string") {
+	        const dobDate = new Date(profile.dob);
+	        if (!Number.isNaN(dobDate.getTime())) {
+	          const ageYears = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+	          computedAge = String(ageYears);
+	        }
+	      }
+
+	      const rawMarkers: Array<Record<string, unknown>> = report
+	        ? (((report.markers || []) as Array<Record<string, unknown>>) || [])
+	        : (Array.isArray(bloodTestRow?.markers) ? (bloodTestRow.markers as Array<Record<string, unknown>>) : []);
+
+	      const resolvedMarkers = rawMarkers
+	        .map((marker) => ({
+	          markerId: normalizeMarkerName(String((marker as any).markerId || (marker as any).code || (marker as any).name || "")),
+	          value: Number((marker as any).value),
+	          unit: ((marker as any).unit as string | undefined) || undefined,
+	        }))
+	        .filter((marker) => marker.markerId && Number.isFinite(marker.value));
+
+	      if (!resolvedMarkers.length) {
+	        res.status(400).json({ error: "Aucun biomarqueur detecte" });
+	        return;
+	      }
 
       const normalizedProfile = {
         ...profile,
@@ -517,36 +541,59 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult.patterns
         );
 
-        const aiReport = await generateAIBloodAnalysis(
-          analysisResult,
-          normalizedProfile,
-          knowledgeContext
-        );
+	        const aiReport = await generateAIBloodAnalysis(
+	          analysisResult,
+	          normalizedProfile,
+	          knowledgeContext
+	        );
 
-        await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
-      };
+	        if (report) {
+	          await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+	          return;
+	        }
+
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+
+	        const existingAnalysis =
+	          bloodTestRow && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+	            ? (bloodTestRow.analysis as Record<string, unknown>)
+	            : {};
+
+	        const updatedAnalysis = {
+	          ...existingAnalysis,
+	          aiAnalysis: aiReport,
+	          aiReport: aiReport,
+	          aiStatus: "generated",
+	          aiGeneratedAt: new Date().toISOString(),
+	          aiModel: "claude-opus-4-6",
+	        };
+
+	        await db.update(bloodTests).set({ analysis: updatedAnalysis }).where(eq(bloodTests.id, targetId));
+	      };
 
       const asyncMode =
         req.query.async === "true" || (req.body && (req.body as any).async === true);
 
-      if (asyncMode) {
-        setImmediate(() => {
-          runRegeneration().catch((err) => {
-            console.error("[BloodAnalysis] Regenerate async error:", err);
-          });
-        });
-        res.json({ success: true, reportId: report.id, status: "processing" });
-        return;
-      }
+	      if (asyncMode) {
+	        setImmediate(() => {
+	          runRegeneration().catch((err) => {
+	            console.error("[BloodAnalysis] Regenerate async error:", err);
+	          });
+	        });
+	        res.json({ success: true, reportId: report ? report.id : targetId, status: "processing" });
+	        return;
+	      }
 
-      await runRegeneration();
+	      await runRegeneration();
 
-      res.json({ success: true, reportId: report.id, status: "completed" });
-    } catch (error) {
-      console.error("[BloodAnalysis] Regenerate error:", error);
-      res.status(500).json({ error: "Erreur regeneration" });
-    }
-  });
+	      res.json({ success: true, reportId: report ? report.id : targetId, status: "completed" });
+	    } catch (error) {
+	      console.error("[BloodAnalysis] Regenerate error:", error);
+	      res.status(500).json({ error: "Erreur regeneration" });
+	    }
+	  });
 
   /**
    * GET /api/blood-analysis/report/:id

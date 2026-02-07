@@ -5,6 +5,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "../anthropicConfig";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 
@@ -1244,11 +1245,11 @@ export async function extractMarkersFromPdfText(
     unique.set(item.markerId, item);
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!validateAnthropicConfig()) {
     return addComputedMarkers(Array.from(unique.values()));
   }
 
-  const anthropic = new Anthropic();
+  const anthropic = getBloodAnthropicClient();
   const markerList = Object.entries(BIOMARKER_RANGES)
     .map(([id, range]) => `${id} (${range.name}, ${range.unit})`)
     .join(", ");
@@ -1272,10 +1273,10 @@ Conversions utiles:
 - Creatinine: µmol/L -> mg/dL (÷88.4)
 
 TEXTE PDF:
-${cleaned.slice(0, 12000)}`;
+  ${cleaned.slice(0, 12000)}`;
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-6",
+    model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
     max_tokens: 1200,
     system: "Tu es un extracteur strict de biomarqueurs. Tu ne renvoies que du JSON valide.",
     messages: [{ role: "user", content: userPrompt }],
@@ -2164,10 +2165,10 @@ const buildSourcesSection = (): string => {
 
 const ensureSourcesSection = (text: string): string => {
   if (!text) return "";
-  if (text.includes("## Sources scientifiques")) {
+  if (/\n##\s+Sources\b/i.test(text)) {
     return text.trim();
   }
-  return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
+  return `${text.trim()}\n\n## Sources (bibliotheque)\n- Non fourni`.trim();
 };
 
 const stripEmojis = (text: string): string => {
@@ -2240,6 +2241,63 @@ const trimAiAnalysis = (text: string, maxChars = 100000): string => {
   return stripEmojis(sliced).trim();
 };
 
+let bloodAnthropicClient: Anthropic | null = null;
+function getBloodAnthropicClient(): Anthropic {
+  if (!bloodAnthropicClient) {
+    if (!validateAnthropicConfig()) {
+      throw new Error("ANTHROPIC_API_KEY not configured");
+    }
+    bloodAnthropicClient = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
+  }
+  return bloodAnthropicClient;
+}
+
+const normalizeForCheck = (text: string) =>
+  String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+const validateBloodAnalysisReport = (output: string) => {
+  const normalized = normalizeForCheck(output);
+
+  const required: Array<{ id: string; checks: string[] }> = [
+    { id: "synthese", checks: ["## synthese executive"] },
+    { id: "qualite", checks: ["## qualite des donnees", "## qualite"] },
+    { id: "dashboard", checks: ["## tableau de bord"] },
+    { id: "potentiel", checks: ["## potentiel recomposition"] },
+    { id: "axes", checks: ["## lecture compartimentee par axes", "## analyse par axe", "## analyse par axes"] },
+    { id: "interconnexions", checks: ["## interconnexions majeures"] },
+    { id: "deep_dive", checks: ["## deep dive"] },
+    { id: "plan90", checks: ["## plan d'action 90 jours", "## plan d action 90 jours", "## plan 90 jours"] },
+    { id: "nutrition", checks: ["## nutrition"] },
+    { id: "supplements", checks: ["## supplements"] },
+    { id: "annexes", checks: ["## annexes"] },
+    { id: "sources", checks: ["## sources"] },
+  ];
+
+  const missing = required
+    .filter((r) => !r.checks.some((c) => normalized.includes(c)))
+    .map((r) => r.id);
+
+  // Axes: at least Axe 1..6 must exist.
+  const axesOk =
+    normalized.includes("### axe 1") &&
+    normalized.includes("### axe 2") &&
+    normalized.includes("### axe 3") &&
+    normalized.includes("### axe 4") &&
+    normalized.includes("### axe 5") &&
+    normalized.includes("### axe 6");
+  if (!axesOk) missing.push("axes_subsections");
+
+  const headings = (output.match(/^##\s+/gm) || []).length;
+  if (headings < 10) missing.push("headings_count");
+
+  if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(output)) missing.push("emoji_present");
+
+  return { ok: missing.length === 0, missing };
+};
+
 export function buildFallbackAnalysis(
   analysisResult: BloodAnalysisResult,
   userProfile: {
@@ -2263,234 +2321,108 @@ export function buildFallbackAnalysis(
     infectionRecent?: string;
   }
 ): string {
-  const formatList = (items: string[], emptyLabel: string) =>
-    items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${emptyLabel}`;
+  const statusLabel = (status: MarkerStatus) =>
+    status === "critical" ? "CRITIQUE" : status === "suboptimal" ? "IMPORTANT" : status === "optimal" ? "OPTIMISATION" : "NORMAL";
 
-  const formatMarkerTable = (markers: MarkerAnalysis[]): string => {
-    if (!markers.length) return "Aucun marqueur disponible pour cet axe.";
-    return markers
-      .map((m) => {
-        const statusEmoji = m.status === "critical" ? "🔴" : m.status === "suboptimal" ? "🟠" : m.status === "optimal" ? "🟢" : "⚪";
-        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "-"} | ${m.optimalRange || "-"} | ${statusEmoji} |`;
-      })
-      .join("\n");
-  };
-
-  const summary = analysisResult.summary;
   const critical = analysisResult.markers.filter((m) => m.status === "critical");
   const suboptimal = analysisResult.markers.filter((m) => m.status === "suboptimal");
-  const optimal = analysisResult.markers.filter((m) => m.status === "optimal");
-  const priority1 = analysisResult.recommendations.priority1.map((rec) => rec.action);
-  const priority2 = analysisResult.recommendations.priority2.map((rec) => rec.action);
-  const followUp = analysisResult.followUp.map(
-    (item) => `- ${item.test}: ${item.delay} - ${item.objective}`
-  );
-  const alerts = analysisResult.alerts.map((alert) => `- ${alert}`);
-  const correlations = buildLifestyleCorrelations(analysisResult.markers, userProfile);
-  const correlationLines = correlations.length
-    ? correlations.map(
-        (item) => `- **${item.factor}** (${item.current}): ${item.impact}\n  → Action: ${item.recommendation}`
-      )
-    : ["- Donnees lifestyle insuffisantes pour calculer des correlations."];
 
-  // Group markers by axis
-  const axisMarkers = {
-    hormonal: analysisResult.markers.filter((m) =>
-      ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1"].includes(m.markerId)
-    ),
-    metabolique: analysisResult.markers.filter((m) =>
-      ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "acide_urique"].includes(m.markerId)
-    ),
-    lipidique: analysisResult.markers.filter((m) =>
-      ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa"].includes(m.markerId)
-    ),
-    thyroide: analysisResult.markers.filter((m) =>
-      ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId)
-    ),
-    hepatique: analysisResult.markers.filter((m) =>
-      ["alt", "ast", "ggt", "bilirubine", "albumine", "phosphatases_alcalines"].includes(m.markerId)
-    ),
-    renal: analysisResult.markers.filter((m) =>
-      ["creatinine", "uree", "egfr", "acide_urique", "cystatine_c"].includes(m.markerId)
-    ),
-    inflammation: analysisResult.markers.filter((m) =>
-      ["crp_us", "homocysteine", "fibrinogene", "ferritine", "vs"].includes(m.markerId)
-    ),
-    hematologie: analysisResult.markers.filter((m) =>
-      ["hemoglobine", "hematocrite", "vgm", "tcmh", "plaquettes", "globules_blancs"].includes(m.markerId)
-    ),
-    micronutriments: analysisResult.markers.filter((m) =>
-      ["vitamine_d", "b12", "folate", "fer_serique", "ferritine", "transferrine_sat", "zinc", "magnesium_rbc", "selenium"].includes(m.markerId)
-    ),
-    electrolytes: analysisResult.markers.filter((m) =>
-      ["sodium", "potassium", "chlore", "calcium", "phosphore", "magnesium"].includes(m.markerId)
-    ),
-    stress: analysisResult.markers.filter((m) =>
-      ["cortisol", "dhea_s"].includes(m.markerId)
-    ),
-  };
+  const testedIds = new Set(analysisResult.markers.map((m) => m.markerId));
+  const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"].filter(
+    (id) => !testedIds.has(id)
+  );
+
+  const markerLines = analysisResult.markers
+    .map(
+      (m) =>
+        `- ${m.name} [${m.markerId}]: ${m.value} ${m.unit || ""} (normal: ${m.normalRange || "N/A"}, optimal: ${
+          m.optimalRange || "N/A"
+        }) -> ${String(m.status || "").toUpperCase()}${m.interpretation ? ` | ${m.interpretation}` : ""}`
+    )
+    .join("\n");
 
   const sections: string[] = [];
-
-  // SYNTHESE EXECUTIVE
-  sections.push("## SYNTHESE EXECUTIVE\n");
-  sections.push("### Triage Prioritaire\n");
-
+  sections.push("## Synthese executive\n");
+  sections.push(
+    `NOTE IMPORTANTE: mode fallback (generation IA indisponible au moment du calcul). Ce contenu est un resume automatique base sur les ranges/patterns. Regeneration recommande.\n`
+  );
+  sections.push(`- Critiques: ${critical.length}\n- Importants: ${suboptimal.length}\n`);
   if (critical.length) {
-    sections.push("**[CRITIQUE]**");
-    critical.forEach((m) => {
-      sections.push(`- **${m.name}**: ${m.value} ${m.unit || ""} | Hors range optimal | Action immediate requise`);
-    });
-    sections.push("");
+    sections.push("\n[CRITIQUE]\n");
+    critical.slice(0, 10).forEach((m) => sections.push(`- ${m.name}: ${m.value} ${m.unit || ""}`));
   }
-
   if (suboptimal.length) {
-    sections.push("**[IMPORTANT]**");
-    suboptimal.forEach((m) => {
-      sections.push(`- **${m.name}**: ${m.value} ${m.unit || ""} | Sous-optimal | Impact performance mesurable`);
-    });
-    sections.push("");
+    sections.push("\n[IMPORTANT]\n");
+    suboptimal.slice(0, 12).forEach((m) => sections.push(`- ${m.name}: ${m.value} ${m.unit || ""}`));
   }
-
-  if (optimal.length) {
-    sections.push("**[OPTIMISATION]**");
-    optimal.slice(0, 3).forEach((m) => {
-      sections.push(`- **${m.name}**: ${m.value} ${m.unit || ""} | Dans la zone optimale | Maintenir`);
-    });
-    sections.push("");
-  }
-
-  sections.push("### Lecture Globale\n");
-  sections.push(`Profil ${userProfile.gender}${userProfile.age ? " (" + userProfile.age + " ans)" : ""} avec ${critical.length} marqueur(s) critique(s) et ${suboptimal.length} zone(s) sous-optimale(s). ${optimal.length} marqueur(s) dans la zone optimale. ${summary.action.length ? "Priorite: " + summary.action[0] + "." : "Pas d'action urgente requise."}\n`);
-
-  sections.push("### Marqueurs Manquants Critiques\n");
-  const testedIds = new Set(analysisResult.markers.map(m => m.markerId));
-  const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"]
-    .filter(id => !testedIds.has(id));
-  sections.push(criticalMissing.length
-    ? criticalMissing.map(id => `- ${id.replace(/_/g, " ").toUpperCase()}: a ajouter au prochain bilan`).join("\n")
-    : "- Bilan relativement complet pour les marqueurs critiques.\n");
-
   sections.push("\n---\n");
 
-  // ANALYSE PAR AXE
-  sections.push("## ANALYSE PAR AXE\n");
-
-  const axisConfig = [
-    { key: "hormonal", name: "POTENTIEL MUSCULAIRE & ANABOLISME", markers: axisMarkers.hormonal },
-    { key: "metabolique", name: "METABOLISME & SENSIBILITE INSULINE", markers: axisMarkers.metabolique },
-    { key: "lipidique", name: "PROFIL LIPIDIQUE", markers: axisMarkers.lipidique },
-    { key: "thyroide", name: "THYROIDE & METABOLISME DE BASE", markers: axisMarkers.thyroide },
-    { key: "hepatique", name: "FONCTION HEPATIQUE", markers: axisMarkers.hepatique },
-    { key: "renal", name: "FONCTION RENALE", markers: axisMarkers.renal },
-    { key: "inflammation", name: "INFLAMMATION & STRESS OXYDATIF", markers: axisMarkers.inflammation },
-    { key: "hematologie", name: "HEMATOLOGIE & OXYGENATION", markers: axisMarkers.hematologie },
-    { key: "micronutriments", name: "MICRONUTRIMENTS & COFACTEURS", markers: axisMarkers.micronutriments },
-    { key: "stress", name: "STRESS, CORTISOL & SOMMEIL", markers: axisMarkers.stress },
-  ];
-
-  for (const axis of axisConfig) {
-    if (axis.markers.length === 0) continue;
-
-    const axisCritical = axis.markers.filter(m => m.status === "critical").length;
-    const axisSuboptimal = axis.markers.filter(m => m.status === "suboptimal").length;
-    const axisOptimal = axis.markers.filter(m => m.status === "optimal").length;
-    const score = Math.round((axisOptimal / Math.max(axis.markers.length, 1)) * 10);
-
-    sections.push(`### ${axis.name} — Score: ${score}/10\n`);
-    sections.push("**Marqueurs analyses:**");
-    sections.push("| Marqueur | Valeur | Range Labo | Range Optimal | Statut |");
-    sections.push("|----------|--------|------------|---------------|--------|");
-    sections.push(formatMarkerTable(axis.markers));
-    sections.push("");
-
-    sections.push("**Lecture clinique:**");
-    if (axisCritical > 0) {
-      sections.push(`Attention: ${axisCritical} marqueur(s) critique(s) detecte(s) sur cet axe. Action immediate recommandee.`);
-    } else if (axisSuboptimal > 0) {
-      sections.push(`${axisSuboptimal} marqueur(s) sous-optimal(aux) sur cet axe. Optimisation possible pour ameliorer la performance.`);
-    } else {
-      sections.push("Cet axe est bien equilibre. Maintenir les protocoles actuels.");
-    }
-    sections.push("\n");
+  sections.push("## Qualite des donnees & limites\n");
+  sections.push("- Conditions de prelevement: non verifiees en fallback.\n- Infos manquantes: si tu n'as pas note sport <48h, alcool, infection, sommeil, ca peut fausser l'interpretation.\n");
+  if (criticalMissing.length) {
+    sections.push("\nMarqueurs manquants critiques a ajouter au prochain bilan:\n");
+    criticalMissing.forEach((id) => sections.push(`- ${id}`));
   }
-
-  sections.push("---\n");
-
-  // DEEP DIVE (top 4 critical/suboptimal markers)
-  const priorityMarkers = [...critical, ...suboptimal].slice(0, 4);
-  if (priorityMarkers.length > 0) {
-    sections.push("## DEEP DIVE MARQUEURS PRIORITAIRES\n");
-    for (const marker of priorityMarkers) {
-      const statusLabel = marker.status === "critical" ? "[CRITIQUE]" : "[IMPORTANT]";
-      sections.push(`### ${marker.name} — ${marker.value} ${marker.unit || ""} — ${statusLabel}\n`);
-      sections.push("**C'est quoi ce marqueur?**");
-      sections.push(`${marker.name} est un biomarqueur essentiel pour evaluer ${marker.markerId.includes("testosterone") ? "le potentiel anabolique et la composition corporelle" : marker.markerId.includes("thyroid") || marker.markerId.includes("tsh") || marker.markerId.includes("t3") || marker.markerId.includes("t4") ? "le metabolisme de base et la thermogenese" : marker.markerId.includes("glucose") || marker.markerId.includes("hba1c") || marker.markerId.includes("insulin") ? "la sensibilite a l'insuline et le metabolisme glucidique" : "la sante globale et la performance"}. Ce marqueur reflete l'etat physiologique et impacte directement les objectifs de performance et de composition corporelle.\n`);
-      sections.push("**Ton analyse personnalisee**");
-      sections.push(`Ta valeur de ${marker.value} ${marker.unit || ""} est ${marker.status === "critical" ? "significativement hors du range optimal" : "sous-optimale par rapport aux standards athlete"}. ${marker.normalRange ? `Le range labo standard est ${marker.normalRange}, mais` : ""} ${marker.optimalRange ? `le range optimal athlete est ${marker.optimalRange}.` : "les standards performance sont plus exigeants."} Cette valeur peut impacter ta recuperation, tes gains et ton energie quotidienne.\n`);
-      sections.push("**Impacts concrets sur ton corps**");
-      sections.push(`Un niveau ${marker.status === "critical" ? "critique" : "sous-optimal"} de ${marker.name} peut affecter: recuperation musculaire, energie, sommeil, humeur et progression en salle. Les athletes avec des valeurs optimisees rapportent systematiquement de meilleures performances.\n`);
-      sections.push("**Protocole detaille**");
-      sections.push("Phase 1 (J1-14): Ajuster alimentation et sommeil pour creer les conditions de base.");
-      sections.push("Phase 2 (J15-45): Introduire supplementation ciblee si necessaire.");
-      sections.push("Phase 3 (J45-90): Consolider les acquis et preparer le retest.\n");
-    }
-    sections.push("---\n");
-  }
-
-  // CORRELATIONS LIFESTYLE
-  sections.push("## CORRELATIONS LIFESTYLE\n");
-  sections.push(...correlationLines);
   sections.push("\n---\n");
 
-  // PLAN D'ACTION 90 JOURS
-  sections.push("## PLAN D'ACTION 90 JOURS\n");
+  sections.push("## Tableau de bord (scores & priorites)\n");
+  sections.push("Priorites (fallback):\n");
+  const priorities = [...critical, ...suboptimal].slice(0, 8);
+  priorities.forEach((m) => sections.push(`- ${statusLabel(m.status)}: ${m.name}`));
+  sections.push("\n---\n");
 
-  sections.push("### PHASE 1: ATTAQUE (Jours 1-30)\n");
-  sections.push("**Focus:** Corriger les marqueurs critiques et initier les protocoles importants.\n");
-  sections.push("**Supplementation:**");
-  sections.push("| Supplement | Dosage | Timing | Pourquoi |");
-  sections.push("|------------|--------|--------|----------|");
-  sections.push("| Vitamine D3 | 5000 UI | Matin avec gras | Optimisation hormonale |");
-  sections.push("| Magnesium Glycinate | 400mg | Soir | Recuperation, sommeil |");
-  sections.push("| Omega-3 | 3g EPA+DHA | Repas | Anti-inflammatoire |\n");
-  sections.push("**Nutrition:**");
-  sections.push(formatList(priority1.slice(0, 3), "Stabiliser sommeil, hydratation, apport proteique minimum 1.6g/kg."));
-  sections.push("");
+  sections.push("## Potentiel recomposition (perte de gras + gain de muscle)\n");
+  sections.push(
+    "En fallback, je ne fais pas de plan fin. Focus: stabiliser les marqueurs critiques/sous-optimaux, puis iterer sur nutrition/entrainement.\n"
+  );
+  sections.push("\n---\n");
 
-  sections.push("### PHASE 2: OPTIMISATION (Jours 31-60)\n");
-  sections.push("**Focus:** Affiner les protocoles selon la reponse initiale.\n");
-  sections.push("**Nutrition:**");
-  sections.push(formatList(priority2.slice(0, 3), "Optimiser timing nutritionnel et qualite des sources."));
-  sections.push("");
+  sections.push("## Lecture compartimentee par axes\n");
+  sections.push("Non disponible en fallback (necessite generation IA narrative). Referentiel: utilise les statuts par marqueur ci-dessous.\n");
+  sections.push("\n---\n");
 
-  sections.push("### PHASE 3: CONSOLIDATION (Jours 61-90)\n");
-  sections.push("**Focus:** Stabiliser les acquis et preparer le retest.\n");
-  sections.push("- Maintenir les protocoles qui fonctionnent");
-  sections.push("- Ajuster les dosages si necessaire");
-  sections.push("- Preparer la liste des marqueurs a retester\n");
-
-  sections.push("### PHASE 4: RETEST (J+90)\n");
-  sections.push("**Marqueurs a retester obligatoirement:**");
-  if (critical.length || suboptimal.length) {
-    [...critical, ...suboptimal].slice(0, 5).forEach((m) => {
-      sections.push(`- ${m.name}: ${m.value} → cible ${m.optimalRange || "zone optimale"} → amelioration attendue 15-30%`);
+  sections.push("## Interconnexions majeures (le pattern)\n");
+  if (analysisResult.patterns.length) {
+    analysisResult.patterns.slice(0, 10).forEach((p) => {
+      sections.push(`- ${p.name}${p.causes?.length ? ` (causes possibles: ${p.causes.join(", ")})` : ""}`);
     });
+  } else {
+    sections.push("Aucun pattern fort detecte.\n");
   }
-  sections.push("");
-  sections.push("**Controles supplementaires:**");
-  sections.push(followUp.length ? followUp.join("\n") : "- Aucun controle supplementaire requis.\n");
+  sections.push("\n---\n");
 
-  sections.push("---\n");
+  sections.push("## Deep dive — marqueurs prioritaires (top 8 a 15)\n");
+  if (priorities.length) {
+    priorities.forEach((m) => {
+      sections.push(`### ${m.name}\nValeur: ${m.value} ${m.unit || ""}\nStatut: ${String(m.status || "").toUpperCase()}\n`);
+    });
+  } else {
+    sections.push("Aucun marqueur prioritaire evident.\n");
+  }
+  sections.push("\n---\n");
 
-  // VIGILANCE
-  sections.push("## VIGILANCE\n");
-  sections.push(alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur necessitant une consultation medicale immediate.\n");
+  sections.push("## Plan d'action 90 jours (hyper concret)\n");
+  sections.push("Non disponible en fallback (regeneration requise).\n");
+  sections.push("\n---\n");
 
-  sections.push("---\n");
-  sections.push("*Ce rapport est genere en mode fallback. Pour une analyse complete avec citations d'experts et protocoles detailles, veuillez regenerer le rapport.*");
+  sections.push("## Nutrition & entrainement (traduction pratique)\n");
+  sections.push("Non disponible en fallback (regeneration requise).\n");
+  sections.push("\n---\n");
 
-  return sections.join("\n");
+  sections.push("## Supplements & stack (minimaliste mais impact)\n");
+  sections.push("Non disponible en fallback (regeneration requise).\n");
+  sections.push("\n---\n");
+
+  sections.push("## Annexes (ultra long)\n");
+  sections.push("### Annex A — Marqueurs secondaires (lecture rapide)\n");
+  sections.push(markerLines || "- Aucun\n");
+  sections.push("\n### Annex B — Hypotheses & tests de confirmation\nNon disponible en fallback.\n");
+  sections.push("\n### Annex C — Glossaire utile\nNon disponible en fallback.\n");
+  sections.push("\n---\n");
+
+  sections.push("## Sources (bibliotheque)\nAucune (fallback).\n");
+
+  return trimAiAnalysis(sections.join("\n"));
 }
 
 const isFlaggedStatus = (status?: MarkerStatus): boolean => status === "suboptimal" || status === "critical";
@@ -2727,374 +2659,118 @@ export async function generateAIBloodAnalysis(
   },
   knowledgeContext?: string
 ): Promise<string> {
-  const anthropic = new Anthropic();
+  const client = getBloodAnthropicClient();
 
-  // Build the prompt with analysis data
-  const markersTable = analysisResult.markers.map(m =>
-    `- ${m.name} [${m.markerId}] (${m.category}) : ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) → ${m.status.toUpperCase()}${m.interpretation ? ` | Note: ${m.interpretation}` : ""}`
-  ).join("\n");
+  const markersTable = analysisResult.markers
+    .map(
+      (m) =>
+        `- ${m.name} [${m.markerId}] (${m.category}) : ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) -> ${String(
+          m.status || ""
+        ).toUpperCase()}${m.interpretation ? ` | Note: ${m.interpretation}` : ""}`
+    )
+    .join("\n");
 
-  const patternsText = analysisResult.patterns.map(p =>
-    `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
-  ).join("\n\n");
+  const patternsText = analysisResult.patterns
+    .map((p) => `- ${p.name}${p.causes?.length ? ` (causes possibles: ${p.causes.join(", ")})` : ""}`)
+    .join("\n");
 
   const bmi =
     typeof userProfile.poids === "number" && typeof userProfile.taille === "number" && userProfile.taille > 0
       ? (userProfile.poids / Math.pow(userProfile.taille / 100, 2)).toFixed(1)
-      : "N/A";
-  const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "N/A"} h/nuit | Training: ${userProfile.trainingHours ?? "N/A"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "N/A"}% | Alcool: ${userProfile.alcoholWeekly ?? "N/A"} verres/sem | Stress: ${userProfile.stressLevel ?? "N/A"}/10 | Poids: ${userProfile.poids ?? "N/A"} kg | Taille: ${userProfile.taille ?? "N/A"} cm | IMC: ${bmi}`;
+      : "Non renseigne";
+
+  const lifestyleLine = `Sommeil: ${userProfile.sleepHours ?? "Non renseigne"} h/nuit | Training: ${userProfile.trainingHours ?? "Non renseigne"} h/sem | Deficit: ${userProfile.calorieDeficit ?? "Non renseigne"}% | Alcool: ${userProfile.alcoholWeekly ?? "Non renseigne"} verres/sem | Stress: ${userProfile.stressLevel ?? "Non renseigne"}/10 | Poids: ${userProfile.poids ?? "Non renseigne"} kg | Taille: ${userProfile.taille ?? "Non renseigne"} cm | IMC: ${bmi}`;
+
   const deepDivePayload = await getBiomarkerDeepDiveContext(analysisResult.markers, {
     prenom: userProfile.prenom,
     nom: userProfile.nom,
     age: userProfile.age,
   });
 
-  const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
-Objectifs: ${userProfile.objectives || "Performance et santé"}
-Médicaments: ${userProfile.medications || "Aucun"}
-Lifestyle: ${lifestyleLine}
+  const basePrompt = [
+    `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).`,
+    `Objectifs: ${userProfile.objectives || "Performance et sante"}`,
+    `Medicaments: ${userProfile.medications || "Non renseigne"}`,
+    `Lifestyle: ${lifestyleLine}`,
+    ``,
+    `MARQUEURS (verite d'entree, ne reinvente rien):`,
+    markersTable || "- Aucun",
+    ``,
+    `PATTERNS DETECTES:`,
+    patternsText || "- Aucun",
+    ``,
+    `RESUME:`,
+    `- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}`,
+    `- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}`,
+    `- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}`,
+    ``,
+    deepDivePayload.context ? `DEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR:\n${deepDivePayload.context}` : "",
+    knowledgeContext ? `CONTEXTE SCIENTIFIQUE (chunks; cite seulement les IDs fournis):\n${knowledgeContext}` : "",
+    ``,
+    `CONTRAINTES DE SORTIE:`,
+    `- Output en Markdown.`,
+    `- Tu dois produire un rapport COMPLET avec TOUTES les sections/titres dans l'ordre EXACT defini par le system prompt (## / ###).`,
+    `- Pas d'emoji.`,
+    `- Si une info manque: ecris "Non renseigne" et baisse le niveau de confiance.`,
+    `- Pas de diagnostic definitif, pas de prescription medicamenteuse, pas de protocole dopage/injectables.`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
-MARQUEURS:
-${markersTable}
+  const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
+  const maxTokens = 8000;
 
-PATTERNS DÉTECTÉS:
-${patternsText}
+  let best = "";
+  let bestValidation = { ok: false, missing: ["no_attempt"] as string[] };
 
-RÉSUMÉ:
-- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}
-- À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
-- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
-
-${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR (OBLIGATOIRE):\n${deepDivePayload.context}` : ""}
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
-
-IMPÉRATIF ABSOLU — GÉNÉRATION COMPLÈTE OBLIGATOIRE:
-
-Tu DOIS générer un rapport de MINIMUM 35 000 caractères avec TOUTES les sections suivantes (dans cet ordre exact):
-
-1. ## Synthèse exécutive (800-1200 chars)
-2. ## Qualité des données & limites (500-800 chars)
-3. ## Tableau de bord (scores & priorités) (800-1200 chars)
-4. ## Potentiel recomposition (perte de gras + gain de muscle) (1500-2500 chars)
-5. ## Lecture compartimentée par axes — TOUS LES 11 AXES OBLIGATOIRES:
-   - Axe 1 — Potentiel musculaire & androgènes (1000-1500 chars)
-   - Axe 2 — Métabolisme & gestion du risque diabète (1000-1500 chars)
-   - Axe 3 — Lipides & risque cardio-métabolique (1200-1800 chars)
-   - Axe 4 — Thyroïde & dépense énergétique (600-1000 chars)
-   - Axe 5 — Foie, bile & détox métabolique (600-1000 chars)
-   - Axe 6 — Rein, hydratation & performance (500-800 chars)
-   - Axe 7 — Inflammation, immunité & terrain (1000-1500 chars)
-   - Axe 8 — Hématologie, oxygénation & endurance (600-1000 chars)
-   - Axe 9 — Micronutriments (vitamines & minéraux) (1000-1500 chars)
-   - Axe 10 — Électrolytes, crampes, pression & performance (500-800 chars)
-   - Axe 11 — Stress, sommeil, récupération (500-800 chars)
-6. ## Interconnexions majeures (le pattern) (2000-3000 chars)
-7. ## Deep dive — marqueurs prioritaires (DÉTAILLÉ)
-   Pour CHAQUE marqueur prioritaire, tu DOIS écrire 500-700 MOTS (2500-3500 chars) structurés en 4 sous-sections:
-
-   ### [Nom du marqueur] — [Valeur] [Unité] — [CRITIQUE/IMPORTANT]
-
-   **C'est quoi ce marqueur?** (100-150 mots)
-   - Définition avec mécanisme d'action
-   - Rôle dans métabolisme et performance
-   - 1 citation d'expert [SRC:ID]
-
-   **Ton analyse personnalisée** (150-200 mots)
-   - Ta valeur vs ranges optimal
-   - Pourquoi hors optimal dans TON cas
-   - Causes probables avec preuves
-   - Corrélations autres marqueurs
-
-   **Impacts concrets** (150-200 mots)
-   - PERFORMANCE: Hypertrophie, force, récup
-   - SANTÉ: Énergie, humeur
-   - Risques si non-corrigé
-
-   **Protocole recommandé** (200-300 mots)
-   - LIFESTYLE (0-30j): Sommeil, nutrition, training
-   - SUPPLÉMENTATION (30-90j): Nom + dosage + timing
-   - RETEST (90j): Marqueurs, critères succès
-
-   Total par marqueur: 500-700 mots (2500-3500 chars). Pour 4-5 marqueurs = 10,000-17,500 chars pour Deep Dive.
-
-8. ## Plan d'action 90 jours (3000-5000 chars avec 4 phases)
-9. ## Nutrition & entraînement (2500-4000 chars)
-10. ## Supplements & stack (2000-3000 chars)
-11. ## Annexes (4000-6000 chars):
-    - Annexe A — Marqueurs secondaires
-    - Annexe B — Hypothèses & tests
-    - Annexe C — Glossaire
-12. ## Sources scientifiques (200-400 chars)
-
-RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sections ci-dessus. Si tu t'arrêtes avant, le rapport sera rejeté. Target minimum: 35 000 caractères pour un rapport détaillé professionnel.`;
-
-  let output = "";
-  let bestCandidate = "";
-  let bestScore = -1;
-
-  // Timeout wrapper for API calls - increased to support longer Achzod-style reports (35k-90k chars)
-  const API_TIMEOUT_MS = 120000; // 2 minutes for comprehensive reports
-  const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error("API_TIMEOUT")), ms)
-      )
-    ]);
-  };
-
-  // Reduce retries to 1 for faster response, with timeout protection
-  const maxAttempts = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" ? 1 : 2;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const retryNote =
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const fixNote =
       attempt === 1
         ? ""
-        : `\nATTENTION: Ta reponse precedente etait trop generique ou ne respectait pas les sections deep dive. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies. Chaque biomarqueur doit contenir les 4 sous-sections avec au moins 2 citations d'experts.\n`;
-    const prompt = `${userPrompt}\n${retryNote}`;
+        : `\n\nIMPORTANT: Ton precedent rendu manquait: ${bestValidation.missing.join(
+            ", "
+          )}. Regenere le RAPPORT COMPLET (pas une section) et respecte STRICTEMENT tous les titres.\n`;
+    const prompt = `${basePrompt}${fixNote}`;
 
     try {
-      // Use streaming for long-running operations (>10min possible with new Achzod prompt)
-      const stream = await anthropic.messages.create({
-        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-        max_tokens: 64000, // Opus 4.6 supports 128K output, 64K is sufficient for 35-90k char reports
+      const resp = await client.messages.create({
+        model,
+        max_tokens: maxTokens,
+        temperature: 0.45,
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
-        stream: true,
-      });
+      } as any);
 
-      let candidate = "";
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          candidate += event.delta.text;
-        }
-      }
-      const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
-
-      const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
-      if (score > bestScore) {
-        bestScore = score;
-        bestCandidate = candidate;
-      }
-      if (deepDiveCheck.ok) {
-        output = candidate;
-        break;
-      }
-    } catch (err: any) {
-      if (err.message === "API_TIMEOUT") {
-        console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
-        if (attempt === maxAttempts) {
-          console.log("[BloodAnalysis] All attempts timed out, using fallback");
-          return buildFallbackAnalysis(analysisResult, userProfile);
-        }
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  if (!output) {
-    output = bestCandidate;
-  }
-
-  if (!output.includes("## Plan 90 jours")) {
-    const planPrompt = `Tu dois produire UNIQUEMENT la section "## PLAN D'ACTION 90 JOURS" avec les 4 phases pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## PLAN D'ACTION 90 JOURS\n  ### PHASE 1: ATTAQUE (Jours 1-30)\n  ### PHASE 2: OPTIMISATION (Jours 31-60)\n  ### PHASE 3: CONSOLIDATION (Jours 61-90)\n  ### PHASE 4: RETEST (J+90)\n- Chaque phase doit inclure:\n  * Supplementation (tableau: Supplement | Dosage | Timing | Pourquoi | Source expert)\n  * Nutrition (modifications precises avec quantification)\n  * Lifestyle (sommeil, stress)\n  * Entrainement (ajustements si necessaires)\n- Phase 4 RETEST doit lister: marqueurs a retester + valeur actuelle → cible → amelioration attendue %\n- Citation experts obligatoire: Derek MPMD, Huberman, Attia, Examine.com\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
-
-    try {
-      const planStream = await anthropic.messages.create({
-        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-        max_tokens: 16000, // Increased for ultra-detailed 4-phase plan (Achzod comprehensive format)
-        system: "Tu es Achzod, expert elite en optimisation physiologique. Respecte STRICTEMENT le format demande avec 4 phases detaillees.",
-        messages: [{ role: "user", content: planPrompt }],
-        stream: true,
-      });
-
-      let planContent = "";
-      for await (const event of planStream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          planContent += event.delta.text;
-        }
+      const textContent = (resp as any).content?.find((c: any) => c.type === "text");
+      const candidate = String(textContent?.text || "").trim();
+      if (!candidate) {
+        throw new Error("Claude returned empty report");
       }
 
-      const planText = extractPlan90Section(planContent);
-      if (planText) {
-        output = insertPlan90Section(output, planText);
+      const cleaned = stripEmojis(candidate).trim();
+      const validation = validateBloodAnalysisReport(cleaned);
+      if (validation.ok) {
+        const withSources = ensureSourcesSection(cleaned);
+        return trimAiAnalysis(withSources);
+      }
+
+      if (!best || cleaned.length > best.length) {
+        best = cleaned;
+        bestValidation = validation;
       }
     } catch (err: any) {
-      if (err.message === "API_TIMEOUT") {
-        console.warn("[BloodAnalysis] Plan 90 jours timed out, skipping");
-      } else {
-        console.error("[BloodAnalysis] Plan 90 jours fallback failed:", err);
-      }
+      console.error("[BloodAnalysis] Claude generation failed:", err?.message || err);
     }
   }
 
-  // Multi-pass generation: add missing critical sections
-  console.log(`[BloodAnalysis] Starting multi-pass check. Output length: ${output.length} chars`);
-  console.log(`[BloodAnalysis] Checking for missing sections...`);
-
-  const missingSections: { title: string; check: string; prompt: () => string }[] = [
-    {
-      title: "Interconnexions majeures",
-      check: "## Interconnexions majeures",
-      prompt: () => `Génère UNIQUEMENT la section "## Interconnexions majeures (le pattern)" pour ce bilan sanguin.
-
-FORMAT OBLIGATOIRE:
-## Interconnexions majeures (le pattern)
-
-Pour chaque interconnexion (5 à 12 max):
-1. **Pattern observé**: [Liste des marqueurs impliqués]
-2. **Hypothèse la plus probable**: [Explication mécanistique]
-3. **Ce qui confirmerait**: [Tests ou données supplémentaires nécessaires]
-4. **Action concrète**: [Protocole d'intervention]
-
-CONTEXTE:
-Marqueurs: ${markersTable}
-Patterns: ${patternsText}
-
-Sois ultra-concret et actionable. Cite les sources [SRC:ID] si disponible dans le contexte fourni.
-${knowledgeContext ? `\n\nCONTEXTE:\n${knowledgeContext}` : ""}`,
-    },
-    {
-      title: "Deep dive",
-      check: "## Deep dive",
-      prompt: () => `Génère UNIQUEMENT la section "## Deep dive — marqueurs prioritaires" pour ce bilan sanguin.
-
-Sélectionne les 8 à 15 marqueurs les plus importants pour la recomposition et la santé.
-
-FORMAT OBLIGATOIRE PAR MARQUEUR:
-### [Nom du marqueur]
-- **Priorité**: [CRITIQUE/IMPORTANT/OPTIMISATION]
-- **Valeur**: ${analysisResult.markers[0]?.value} ${analysisResult.markers[0]?.unit}
-- **Lecture clinique**: [Interprétation médicale]
-- **Lecture performance/bodybuilding**: [Impact sur physique et performance]
-- **Causes plausibles** (ordre de probabilité): [Liste numérotée 1-5]
-- **Facteurs confondants**: [Ce qui peut fausser l'interprétation]
-- **Plan d'action**: [3 à 7 points concrets]
-- **Tests/data à ajouter**: [Marqueurs complémentaires nécessaires]
-- **Confiance**: [élevée/moyenne/faible]
-
-CONTEXTE:
-${markersTable}
-
-${deepDivePayload.context ? `DONNÉES DÉTAILLÉES PAR BIOMARQUEUR:\n${deepDivePayload.context}` : ""}`,
-    },
-    {
-      title: "Nutrition & entraînement",
-      check: "## Nutrition & entraînement",
-      prompt: () => `Génère UNIQUEMENT la section "## Nutrition & entraînement (traduction pratique)" pour ce bilan sanguin.
-
-FORMAT OBLIGATOIRE:
-
-## Nutrition & entraînement (traduction pratique)
-
-### Nutrition
-- **Structure hebdo**: [Déficit intelligent, refeeds, etc.]
-- **Timing des glucides**: [Autour training ou autres stratégies]
-- **Protéines/fibres**: [Recommandations sans inventer les chiffres si poids manquant]
-- **Focus micronutriments**: [Selon marqueurs déficients]
-
-### Entraînement
-- **Volume/intensité**: [Deload si inflammation/stress élevé]
-- **Cardio**: [Zone 2 / HIIT selon profil métabolique]
-- **NEAT**: [Activité quotidienne]
-- **Récupération**: [Sommeil, steps, deload planifié]
-
-CONTEXTE:
-Client: ${userProfile.prenom || "le client"} (${userProfile.gender} ${userProfile.age || ""})
-Lifestyle: ${lifestyleLine}
-Marqueurs: ${markersTable}`,
-    },
-    {
-      title: "Supplements & stack",
-      check: "## Supplements & stack",
-      prompt: () => `Génère UNIQUEMENT la section "## Supplements & stack (minimaliste mais impact)" pour ce bilan sanguin.
-
-FORMAT OBLIGATOIRE:
-## Supplements & stack (minimaliste mais impact)
-
-Liste de 6 à 14 suppléments maximum. Pour chaque:
-- **Supplément**: [Nom]
-- **Pourquoi**: [Cible biomarqueur/pattern spécifique]
-- **Dose indicative**: [Plage prudente]
-- **Timing**: [Matin, soir, autour training]
-- **Durée**: [Combien de temps]
-- **Précautions/interactions**: [Effets secondaires ou interactions]
-
-CONTEXTE:
-Marqueurs problématiques: ${analysisResult.summary.action.join(", ")}
-À surveiller: ${analysisResult.summary.watch.join(", ")}
-
-${markersTable}`,
-    },
-    {
-      title: "Annexes",
-      check: "## Annexes",
-      prompt: () => `Génère UNIQUEMENT la section "## Annexes (ultra long)" pour ce bilan sanguin.
-
-FORMAT OBLIGATOIRE:
-## Annexes (ultra long)
-
-### Annexe A — Marqueurs secondaires (lecture rapide)
-[Pour chaque marqueur non prioritaire: statut + 1 ligne d'interprétation + action éventuelle]
-
-### Annexe B — Hypothèses & tests de confirmation
-[Liste des hypothèses non confirmées + tests pour confirmer/infirmer]
-
-### Annexe C — Glossaire utile
-[Définitions simples en 1-2 lignes des termes techniques utilisés]
-
-CONTEXTE:
-${markersTable}`,
-    },
-  ];
-
-  // Accent-insensitive section check helper
-  const normalizeForCheck = (text: string) =>
-    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-  for (const section of missingSections) {
-    const normalizedOutput = normalizeForCheck(output);
-    const normalizedCheck = normalizeForCheck(section.check);
-    const isPresent = normalizedOutput.includes(normalizedCheck);
-    console.log(`[BloodAnalysis] Checking section "${section.title}": ${isPresent ? "PRESENT" : "MISSING"}`);
-    if (!isPresent) {
-      console.log(`[BloodAnalysis] ⚠️  Generating missing section: ${section.title}...`);
-      try {
-        const sectionStream = await anthropic.messages.create({
-          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-          max_tokens: 8000,
-          system: "Tu es Achzod, expert elite en optimisation physiologique. Génère UNIQUEMENT la section demandée, rien d'autre.",
-          messages: [{ role: "user", content: section.prompt() }],
-          stream: true,
-        });
-
-        let sectionContent = "";
-        for await (const event of sectionStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            sectionContent += event.delta.text;
-          }
-        }
-
-        if (sectionContent.trim()) {
-          // Insert section before "## Sources" if it exists, otherwise append
-          if (output.includes("## Sources")) {
-            output = output.replace("## Sources", `${sectionContent.trim()}\n\n## Sources`);
-          } else {
-            output += `\n\n${sectionContent.trim()}`;
-          }
-          console.log(`[BloodAnalysis] ✅ Added section: ${section.title} (${sectionContent.length} chars)`);
-        }
-      } catch (err: any) {
-        console.error(`[BloodAnalysis] ❌ Failed to generate ${section.title}:`, err.message);
-      }
-    }
+  if (best) {
+    console.warn("[BloodAnalysis] Using partial Claude report (failed validation):", bestValidation.missing.join(", "));
+    const withSources = ensureSourcesSection(best);
+    return trimAiAnalysis(withSources);
   }
 
-  console.log(`[BloodAnalysis] Multi-pass complete. Final output length: ${output.length} chars`);
-
-  const withSources = ensureSourcesSection(output);
-  return trimAiAnalysis(withSources);
+  console.warn("[BloodAnalysis] Falling back to deterministic report");
+  return buildFallbackAnalysis(analysisResult, userProfile);
 }
 
 // ============================================
