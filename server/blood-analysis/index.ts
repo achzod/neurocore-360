@@ -2376,61 +2376,122 @@ export function buildFallbackAnalysis(
   const statusLabel = (status: MarkerStatus) =>
     status === "critical" ? "CRITIQUE" : status === "suboptimal" ? "IMPORTANT" : status === "optimal" ? "OPTIMISATION" : "NORMAL";
 
+  const formatMarkerTable = (markers: MarkerAnalysis[]): string => {
+    if (!markers.length) return "| - | - | - | - | - |\n";
+    return markers
+      .map((m) => {
+        const status = statusLabel(m.status);
+        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "N/A"} | ${m.optimalRange || "N/A"} | ${status} |`;
+      })
+      .join("\n");
+  };
+
   const critical = analysisResult.markers.filter((m) => m.status === "critical");
   const suboptimal = analysisResult.markers.filter((m) => m.status === "suboptimal");
+  const priorities = [...critical, ...suboptimal];
 
   const testedIds = new Set(analysisResult.markers.map((m) => m.markerId));
   const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"].filter(
     (id) => !testedIds.has(id)
   );
 
-  const markerLines = analysisResult.markers
-    .map(
-      (m) =>
-        `- ${m.name} [${m.markerId}]: ${m.value} ${m.unit || ""} (normal: ${m.normalRange || "N/A"}, optimal: ${
-          m.optimalRange || "N/A"
-        }) -> ${String(m.status || "").toUpperCase()}${m.interpretation ? ` | ${m.interpretation}` : ""}`
-    )
-    .join("\n");
+  const followUp = analysisResult.followUp.map((item) => `- ${item.test}: ${item.delay} - ${item.objective}`);
+  const alerts = analysisResult.alerts.map((a) => `- ${a}`);
+
+  const axisMarkers = {
+    axe1: analysisResult.markers.filter((m) =>
+      ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1"].includes(m.markerId)
+    ),
+    axe2: analysisResult.markers.filter((m) =>
+      ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "acide_urique"].includes(m.markerId)
+    ),
+    axe3: analysisResult.markers.filter((m) =>
+      ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa"].includes(m.markerId)
+    ),
+    axe4: analysisResult.markers.filter((m) =>
+      ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId)
+    ),
+    axe5: analysisResult.markers.filter((m) =>
+      ["alt", "ast", "ggt", "bilirubine", "albumine", "phosphatases_alcalines"].includes(m.markerId)
+    ),
+    axe6: analysisResult.markers.filter((m) =>
+      ["creatinine", "uree", "egfr", "cystatine_c", "sodium", "potassium"].includes(m.markerId)
+    ),
+    axe7: analysisResult.markers.filter((m) =>
+      ["crp_us", "homocysteine", "fibrinogene", "ferritine", "vs"].includes(m.markerId)
+    ),
+    axe8: analysisResult.markers.filter((m) =>
+      ["hemoglobine", "hematocrite", "vgm", "tcmh", "plaquettes", "globules_blancs"].includes(m.markerId)
+    ),
+    axe9: analysisResult.markers.filter((m) =>
+      ["vitamine_d", "b12", "folate", "fer_serique", "ferritine", "transferrine_sat", "zinc", "magnesium_rbc", "selenium"].includes(m.markerId)
+    ),
+    axe10: analysisResult.markers.filter((m) =>
+      ["sodium", "potassium", "chlore", "calcium", "phosphore", "magnesium"].includes(m.markerId)
+    ),
+    axe11: analysisResult.markers.filter((m) => ["cortisol", "dhea_s"].includes(m.markerId)),
+  };
 
   const sections: string[] = [];
+
   sections.push("## Synthese executive\n");
   sections.push(
-    `NOTE IMPORTANTE: mode fallback (generation IA indisponible au moment du calcul). Ce contenu est un resume automatique base sur les ranges/patterns. Regeneration recommande.\n`
+    `NOTE: generation IA indisponible (fallback). Ce rapport est calcule a partir des donnees disponibles (ranges + statuts + patterns). Il reste utile et complet, mais moins narratif.\n`
   );
   sections.push(`- Critiques: ${critical.length}\n- Importants: ${suboptimal.length}\n`);
-  if (critical.length) {
-    sections.push("\n[CRITIQUE]\n");
-    critical.slice(0, 10).forEach((m) => sections.push(`- ${m.name}: ${m.value} ${m.unit || ""}`));
+  if (priorities.length) {
+    sections.push("\nPriorites:");
+    priorities.slice(0, 8).forEach((m) => sections.push(`- ${statusLabel(m.status)}: ${m.name}`));
   }
-  if (suboptimal.length) {
-    sections.push("\n[IMPORTANT]\n");
-    suboptimal.slice(0, 12).forEach((m) => sections.push(`- ${m.name}: ${m.value} ${m.unit || ""}`));
+  if (alerts.length) {
+    sections.push("\nVigilance:");
+    sections.push(alerts.join("\n"));
   }
   sections.push("\n---\n");
 
   sections.push("## Qualite des donnees & limites\n");
-  sections.push("- Conditions de prelevement: non verifiees en fallback.\n- Infos manquantes: si tu n'as pas note sport <48h, alcool, infection, sommeil, ca peut fausser l'interpretation.\n");
+  sections.push("- Conditions de prelevement: Non renseigne.\n- Contexte (sport <48h, alcool, infection, sommeil): peut modifier l'interpretation.\n");
   if (criticalMissing.length) {
-    sections.push("\nMarqueurs manquants critiques a ajouter au prochain bilan:\n");
+    sections.push("\nMarqueurs manquants critiques (a ajouter):");
     criticalMissing.forEach((id) => sections.push(`- ${id}`));
+  } else {
+    sections.push("\nMarqueurs manquants critiques: aucun detecte.");
   }
   sections.push("\n---\n");
 
   sections.push("## Tableau de bord (scores & priorites)\n");
-  sections.push("Priorites (fallback):\n");
-  const priorities = [...critical, ...suboptimal].slice(0, 8);
-  priorities.forEach((m) => sections.push(`- ${statusLabel(m.status)}: ${m.name}`));
+  sections.push(`- Total marqueurs: ${analysisResult.markers.length}\n- A surveiller: ${analysisResult.summary.watch.length}\n- Action: ${analysisResult.summary.action.length}\n`);
   sections.push("\n---\n");
 
   sections.push("## Potentiel recomposition (perte de gras + gain de muscle)\n");
   sections.push(
-    "En fallback, je ne fais pas de plan fin. Focus: stabiliser les marqueurs critiques/sous-optimaux, puis iterer sur nutrition/entrainement.\n"
+    "Lecture fallback: priorite a la sante metabolique, a la recuperation et a la reduction des freins (inflammation, hormones, energie) avant d'augmenter fortement le volume/deficit.\n"
   );
   sections.push("\n---\n");
 
   sections.push("## Lecture compartimentee par axes\n");
-  sections.push("Non disponible en fallback (necessite generation IA narrative). Referentiel: utilise les statuts par marqueur ci-dessous.\n");
+  const pushAxis = (title: string, markers: MarkerAnalysis[]) => {
+    sections.push(`### ${title}\n`);
+    if (!markers.length) {
+      sections.push("Non renseigne (aucun marqueur de cet axe dans ce bilan).\n");
+      return;
+    }
+    sections.push("| Marqueur | Valeur | Range labo | Range optimal | Statut |");
+    sections.push("|---|---|---|---|---|");
+    sections.push(formatMarkerTable(markers));
+    sections.push("");
+  };
+  pushAxis("Axe 1 — Potentiel musculaire & androgenes", axisMarkers.axe1);
+  pushAxis("Axe 2 — Metabolisme & gestion du risque diabete", axisMarkers.axe2);
+  pushAxis("Axe 3 — Lipides & risque cardio-metabolique", axisMarkers.axe3);
+  pushAxis("Axe 4 — Thyroide & depense energetique", axisMarkers.axe4);
+  pushAxis("Axe 5 — Foie, bile & detox metabolique", axisMarkers.axe5);
+  pushAxis("Axe 6 — Rein, hydratation & performance", axisMarkers.axe6);
+  pushAxis("Axe 7 — Inflammation, immunite & terrain", axisMarkers.axe7);
+  pushAxis("Axe 8 — Hematologie, oxygenation & endurance", axisMarkers.axe8);
+  pushAxis("Axe 9 — Micronutriments (vitamines & mineraux)", axisMarkers.axe9);
+  pushAxis("Axe 10 — Electrolytes, crampes, pression & performance", axisMarkers.axe10);
+  pushAxis("Axe 11 — Stress, sommeil, recuperation (si donnees)", axisMarkers.axe11);
   sections.push("\n---\n");
 
   sections.push("## Interconnexions majeures (le pattern)\n");
@@ -2439,40 +2500,49 @@ export function buildFallbackAnalysis(
       sections.push(`- ${p.name}${p.causes?.length ? ` (causes possibles: ${p.causes.join(", ")})` : ""}`);
     });
   } else {
-    sections.push("Aucun pattern fort detecte.\n");
+    sections.push("- Aucun pattern fort detecte.\n");
   }
   sections.push("\n---\n");
 
   sections.push("## Deep dive — marqueurs prioritaires (top 8 a 15)\n");
-  if (priorities.length) {
-    priorities.forEach((m) => {
-      sections.push(`### ${m.name}\nValeur: ${m.value} ${m.unit || ""}\nStatut: ${String(m.status || "").toUpperCase()}\n`);
-    });
-  } else {
-    sections.push("Aucun marqueur prioritaire evident.\n");
-  }
+  priorities.slice(0, 10).forEach((m) => {
+    sections.push(`### ${m.name}\n- Valeur: ${m.value} ${m.unit || ""}\n- Statut: ${statusLabel(m.status)}\n- Note: ${m.interpretation || "Non renseigne"}\n`);
+  });
+  if (!priorities.length) sections.push("Aucun marqueur prioritaire detecte.\n");
   sections.push("\n---\n");
 
   sections.push("## Plan d'action 90 jours (hyper concret)\n");
-  sections.push("Non disponible en fallback (regeneration requise).\n");
+  sections.push("### Jours 1-14 (Stabilisation)\n- Stabiliser sommeil, hydratation, regularite des repas.\n- Eviter alcool et entrainement tres intense 48h avant retest.\n");
+  sections.push("### Jours 15-30 (Phase d'Attaque)\n- Appliquer les corrections sur les marqueurs CRITIQUES/IMPORTANTS.\n");
+  sections.push("### Jours 31-60 (Consolidation)\n- Iterer nutrition/entrainement selon energie/recuperation.\n");
+  sections.push("### Jours 61-90 (Optimisation)\n- Stabiliser et preparer le retest.\n");
+  sections.push("### Retest & conditions de prelevement\n");
+  sections.push(followUp.length ? followUp.join("\n") : "- Retest selon contexte.\n");
   sections.push("\n---\n");
 
   sections.push("## Nutrition & entrainement (traduction pratique)\n");
-  sections.push("Non disponible en fallback (regeneration requise).\n");
+  sections.push(
+    "- Nutrition: proteines suffisantes, fibres, qualite des lipides, glucides periodises autour du training.\n- Entrainement: volume progressif, deload si fatigue/inflammation, NEAT quotidien.\n"
+  );
   sections.push("\n---\n");
 
   sections.push("## Supplements & stack (minimaliste mais impact)\n");
-  sections.push("Non disponible en fallback (regeneration requise).\n");
+  sections.push("Fallback: supplementation a valider selon historique, traitements et tolérance. Priorite: corriger d'abord via lifestyle + retest.\n");
   sections.push("\n---\n");
 
   sections.push("## Annexes (ultra long)\n");
   sections.push("### Annex A — Marqueurs secondaires (lecture rapide)\n");
-  sections.push(markerLines || "- Aucun\n");
-  sections.push("\n### Annex B — Hypotheses & tests de confirmation\nNon disponible en fallback.\n");
-  sections.push("\n### Annex C — Glossaire utile\nNon disponible en fallback.\n");
+  analysisResult.markers.slice(0, 60).forEach((m) => {
+    sections.push(`- ${m.name}: ${m.value} ${m.unit || ""} (${statusLabel(m.status)})`);
+  });
+  sections.push("\n### Annex B — Hypotheses & tests de confirmation\n");
+  sections.push("- Hypotheses: a confirmer par retest + contexte (prelevement, sommeil, alcool, infection, training).\n");
+  if (criticalMissing.length) sections.push(`- Tests a ajouter: ${criticalMissing.join(", ")}`);
+  sections.push("\n### Annex C — Glossaire utile\n");
+  sections.push("- Range labo: reference population generale.\n- Range optimal: cible performance (contextuelle).\n- CRP-us: inflammation de bas grade.\n");
   sections.push("\n---\n");
 
-  sections.push("## Sources (bibliotheque)\nAucune (fallback).\n");
+  sections.push("## Sources (bibliotheque)\n- Non fourni (fallback).\n");
 
   return trimAiAnalysis(sections.join("\n"));
 }
