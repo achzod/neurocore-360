@@ -2215,7 +2215,7 @@ const ensureSourcesSection = (text: string): string => {
   if (/\n##\s+Sources\b/i.test(text)) {
     return text.trim();
   }
-  return `${text.trim()}\n\n## Sources (bibliotheque)\n- Non fourni`.trim();
+  return `${text.trim()}\n\n## Sources (bibliotheque)\n${buildSourcesSection()}`.trim();
 };
 
 const stripEmojis = (text: string): string => {
@@ -2225,7 +2225,9 @@ const stripEmojis = (text: string): string => {
 
 const extractPlan90Section = (text: string): string => {
   if (!text) return "";
-  const start = text.indexOf("## Plan 90 jours");
+  const candidates = ["## Plan d'action 90 jours", "## Plan 90 jours"];
+  const starts = candidates.map((c) => text.indexOf(c)).filter((idx) => idx !== -1);
+  const start = starts.length ? Math.min(...starts) : -1;
   if (start === -1) return "";
   const rest = text.slice(start);
   const nextHeadingIndex = rest.slice(1).search(/\n##\s+/);
@@ -2238,9 +2240,9 @@ const extractPlan90Section = (text: string): string => {
 const insertPlan90Section = (text: string, planSection: string): string => {
   if (!text) return planSection.trim();
   if (!planSection) return text.trim();
-  if (text.includes("## Plan 90 jours")) return text.trim();
+  if (text.includes("## Plan d'action 90 jours") || text.includes("## Plan 90 jours")) return text.trim();
 
-  const anchors = ["## Nutrition & entrainement", "## Supplements & stack", "## Sources scientifiques"];
+  const anchors = ["## Nutrition & entrainement", "## Supplements & stack", "## Sources (bibliotheque)"];
   for (const anchor of anchors) {
     const idx = text.indexOf(anchor);
     if (idx !== -1) {
@@ -2256,8 +2258,16 @@ const trimAiAnalysis = (text: string, maxChars = 100000): string => {
   if (!text) return "";
   const cleaned = stripEmojis(text).trim();
   if (cleaned.length <= maxChars) return cleaned;
-  const sourcesIndex = text.indexOf("## Sources scientifiques");
-  const planIndex = text.indexOf("## Plan 90 jours");
+  const sourcesIndex = (() => {
+    const idxA = text.indexOf("## Sources (bibliotheque)");
+    if (idxA !== -1) return idxA;
+    return text.indexOf("## Sources scientifiques");
+  })();
+  const planIndex = (() => {
+    const idxA = text.indexOf("## Plan d'action 90 jours");
+    if (idxA !== -1) return idxA;
+    return text.indexOf("## Plan 90 jours");
+  })();
   const sources = sourcesIndex !== -1 ? text.slice(sourcesIndex).trim() : "";
   const plan = planIndex !== -1 ? extractPlan90Section(text) : "";
 
@@ -2376,6 +2386,12 @@ export function buildFallbackAnalysis(
   const statusLabel = (status: MarkerStatus) =>
     status === "critical" ? "CRITIQUE" : status === "suboptimal" ? "IMPORTANT" : status === "optimal" ? "OPTIMISATION" : "NORMAL";
 
+  const fmt = (value: unknown) => {
+    if (value === null || value === undefined) return "Non renseigne";
+    const txt = String(value).trim();
+    return txt.length ? txt : "Non renseigne";
+  };
+
   const formatMarkerTable = (markers: MarkerAnalysis[]): string => {
     if (!markers.length) return "| - | - | - | - | - |\n";
     return markers
@@ -2435,9 +2451,6 @@ export function buildFallbackAnalysis(
   const sections: string[] = [];
 
   sections.push("## Synthese executive\n");
-  sections.push(
-    `NOTE: generation IA indisponible (fallback). Ce rapport est calcule a partir des donnees disponibles (ranges + statuts + patterns). Il reste utile et complet, mais moins narratif.\n`
-  );
   sections.push(`- Critiques: ${critical.length}\n- Importants: ${suboptimal.length}\n`);
   if (priorities.length) {
     sections.push("\nPriorites:");
@@ -2450,7 +2463,16 @@ export function buildFallbackAnalysis(
   sections.push("\n---\n");
 
   sections.push("## Qualite des donnees & limites\n");
-  sections.push("- Conditions de prelevement: Non renseigne.\n- Contexte (sport <48h, alcool, infection, sommeil): peut modifier l'interpretation.\n");
+  sections.push(
+    [
+      `- Jeune: ${typeof userProfile.fastingHours === "number" ? `${userProfile.fastingHours} h` : "Non renseigne"}`,
+      `- Heure de prelevement: ${fmt(userProfile.drawTime)}`,
+      `- Dernier entrainement: ${fmt(userProfile.lastTraining)}`,
+      `- Alcool (72h): ${fmt(userProfile.alcoholLast72h)}`,
+      `- Infection recente: ${fmt(userProfile.infectionRecent)}`,
+      `- Notes: sommeil, stress, hydratation et activite 48h avant peuvent modifier l'interpretation.`,
+    ].join("\n")
+  );
   if (criticalMissing.length) {
     sections.push("\nMarqueurs manquants critiques (a ajouter):");
     criticalMissing.forEach((id) => sections.push(`- ${id}`));
@@ -2465,7 +2487,7 @@ export function buildFallbackAnalysis(
 
   sections.push("## Potentiel recomposition (perte de gras + gain de muscle)\n");
   sections.push(
-    "Lecture fallback: priorite a la sante metabolique, a la recuperation et a la reduction des freins (inflammation, hormones, energie) avant d'augmenter fortement le volume/deficit.\n"
+    "Priorite: solidifier sante metabolique + recuperation, puis pousser progressivement volume/deficit. Si des freins sont presents (inflammation, energie, hormones), on les corrige d'abord.\n"
   );
   sections.push("\n---\n");
 
@@ -2527,7 +2549,16 @@ export function buildFallbackAnalysis(
   sections.push("\n---\n");
 
   sections.push("## Supplements & stack (minimaliste mais impact)\n");
-  sections.push("Fallback: supplementation a valider selon historique, traitements et tolérance. Priorite: corriger d'abord via lifestyle + retest.\n");
+  sections.push(
+    [
+      "- Base (si tolere): omega-3, magnesium, vitamine D (si basse), creatine monohydrate.",
+      "- Lipides (si LDL/ApoB hauts): fibres solubles (psyllium), phytosterols; bergamote possible (prudence si traitement).",
+      "- Glycemie (si HOMA-IR/insuline/HbA1c hauts): marche post-prandiale; berberine possible (prudence interactions).",
+      "- Inflammation (si CRP-us/homocysteine hauts): omega-3 + sommeil + gestion stress; B-vitamines si homocysteine elevee selon contexte.",
+      "",
+      "Precautions: si tu as des traitements ou antecedents, on valide chaque supplement (interactions possibles).",
+    ].join("\n")
+  );
   sections.push("\n---\n");
 
   sections.push("## Annexes (ultra long)\n");
@@ -2542,7 +2573,8 @@ export function buildFallbackAnalysis(
   sections.push("- Range labo: reference population generale.\n- Range optimal: cible performance (contextuelle).\n- CRP-us: inflammation de bas grade.\n");
   sections.push("\n---\n");
 
-  sections.push("## Sources (bibliotheque)\n- Non fourni (fallback).\n");
+  sections.push("## Sources (bibliotheque)\n");
+  sections.push(buildSourcesSection());
 
   return trimAiAnalysis(sections.join("\n"));
 }
@@ -2897,27 +2929,57 @@ export async function generateAIBloodAnalysis(
   };
 
   const callClaudeOnce = async (prompt: string) => {
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
     const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
       Promise.race([
         p,
         new Promise<T>((_, reject) => setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), ms)),
       ]);
 
-    const resp = await withTimeout(
-      client.messages.create({
-        model,
-        max_tokens: maxTokens,
-        temperature: 0.45,
-        system: BLOOD_ANALYSIS_SYSTEM_PROMPT_V2,
-        messages: [{ role: "user", content: prompt }],
-      } as any),
-      120_000
-    );
+    const isRetryable = (err: any) => {
+      const status = Number(err?.status || err?.statusCode || err?.response?.status);
+      const msg = String(err?.message || err || "");
+      if (status === 429 || status === 500 || status === 529) return true;
+      if (/overloaded|rate limit|timeout|ECONNRESET|ETIMEDOUT/i.test(msg)) return true;
+      if (msg.includes("CLAUDE_TIMEOUT")) return true;
+      return false;
+    };
 
-    const textContent = (resp as any).content?.find((c: any) => c.type === "text");
-    const candidate = String(textContent?.text || "").trim();
-    if (!candidate) throw new Error("Claude returned empty report");
-    return stripEmojis(candidate).trim();
+    const MAX_ATTEMPTS = 2;
+    const TIMEOUT_MS = 90_000;
+
+    let lastErr: unknown = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const resp = await withTimeout(
+          client.messages.create({
+            model,
+            max_tokens: maxTokens,
+            temperature: 0.4,
+            system: BLOOD_ANALYSIS_SYSTEM_PROMPT_V2,
+            messages: [{ role: "user", content: prompt }],
+          } as any),
+          TIMEOUT_MS
+        );
+
+        const textContent = (resp as any).content?.find((c: any) => c.type === "text");
+        const candidate = String(textContent?.text || "").trim();
+        if (!candidate) throw new Error("Claude returned empty report");
+        return stripEmojis(candidate).trim();
+      } catch (err: any) {
+        lastErr = err;
+        if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
+          const backoff = attempt === 1 ? 1500 : 3500;
+          console.warn(`[BloodAnalysis] Claude retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
+          await sleep(backoff);
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    throw lastErr instanceof Error ? lastErr : new Error("Claude failed");
   };
 
   let output = "";
