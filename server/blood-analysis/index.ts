@@ -2723,7 +2723,9 @@ export async function generateAIBloodAnalysis(
     .join("\n");
 
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
-  const maxTokens = 8000;
+  // Keep output bounded to avoid long-running requests in production.
+  // Prioritise completeness/structure over extreme length.
+  const maxTokens = 4500;
 
   const CANONICAL_ORDER = [
     "## Synthese executive",
@@ -2776,13 +2778,22 @@ export async function generateAIBloodAnalysis(
   };
 
   const callClaudeOnce = async (prompt: string) => {
-    const resp = await client.messages.create({
-      model,
-      max_tokens: maxTokens,
-      temperature: 0.45,
-      system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }],
-    } as any);
+    const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), ms)),
+      ]);
+
+    const resp = await withTimeout(
+      client.messages.create({
+        model,
+        max_tokens: maxTokens,
+        temperature: 0.45,
+        system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
+      } as any),
+      120_000
+    );
 
     const textContent = (resp as any).content?.find((c: any) => c.type === "text");
     const candidate = String(textContent?.text || "").trim();
@@ -2795,7 +2806,9 @@ export async function generateAIBloodAnalysis(
 
   // Pass 1: full report
   try {
-    output = await callClaudeOnce(basePrompt);
+    output = await callClaudeOnce(
+      `${basePrompt}\n\nPRIORITE ABSOLUE: complete toutes les sections/axes du template. Vise un rapport concis mais complet (structure > longueur).`
+    );
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
       const withSources = ensureSourcesSection(output);
