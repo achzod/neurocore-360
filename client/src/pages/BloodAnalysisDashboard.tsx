@@ -198,7 +198,14 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <TabsContent value="synthese">
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
-                  sectionIds={['synthese-executive', 'tableau-de-bord-scores-priorites', 'potentiel-recomposition']}
+                  sectionIds={[
+                    // "Full" report format
+                    'synthese-executive',
+                    'tableau-de-bord-scores-priorites',
+                    'potentiel-recomposition',
+                    // "Compact" report format (current blood_tests aiAnalysis)
+                    'vigilance',
+                  ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
                   currentTheme={currentTheme}
@@ -211,7 +218,14 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <TabsContent value="donnees">
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
-                  sectionIds={['qualite-des-donnees-limites', 'marqueurs-manquants-recommandations-de-tests', 'tests-complementaires']}
+                  sectionIds={[
+                    // "Full" report format
+                    'qualite-des-donnees-limites',
+                    'marqueurs-manquants-recommandations-de-tests',
+                    'tests-complementaires',
+                    // "Compact" report format
+                    'correlations-lifestyle',
+                  ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
                   currentTheme={currentTheme}
@@ -225,10 +239,15 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={[
+                    // "Full" report format
                     'lecture-compartimentee-par-axes',
                     ...axeSections,
                     'interconnexions-majeures',
-                    'deep-dive'
+                    'deep-dive',
+                    // "Compact" report format
+                    'analyse-par-axe',
+                    'deep-dive-marqueurs-prioritaires',
+                    'correlations-lifestyle',
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
@@ -242,7 +261,13 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <TabsContent value="plan">
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
-                  sectionIds={['plan-90-jours', 'plan-action']}
+                  sectionIds={[
+                    // "Full" report format
+                    'plan-90-jours',
+                    'plan-action',
+                    // "Compact" report format
+                    'plan-d-action-90-jours',
+                  ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
                   currentTheme={currentTheme}
@@ -255,7 +280,15 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <TabsContent value="protocoles">
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
-                  sectionIds={['protocole-nutrition', 'protocole-supplements', 'nutrition-entrainement', 'supplementation']}
+                  sectionIds={[
+                    // "Full" report format
+                    'protocole-nutrition',
+                    'protocole-supplements',
+                    'nutrition-entrainement',
+                    'supplementation',
+                    // "Compact" report format: protocols are embedded in the 90-day plan
+                    'plan-d-action-90-jours',
+                  ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
                   currentTheme={currentTheme}
@@ -268,7 +301,13 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <TabsContent value="annexes">
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
-                  sectionIds={['annexes', 'bibliographie']}
+                  sectionIds={[
+                    // "Full" report format
+                    'annexes',
+                    'bibliographie',
+                    // "Compact" report format: put warnings/notes here
+                    'vigilance',
+                  ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
                   currentTheme={currentTheme}
