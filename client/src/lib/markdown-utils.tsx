@@ -57,10 +57,10 @@ export const parseAISections = (markdown: string): AISections => {
   const result: AISections = {
     synthesis: getBy("synthese"),
     quality: getBy("qualite des donnees", "qualite"),
-    alerts: getBy("tableau de bord", "alertes"),
+    alerts: getBy("tableau de bord", "alertes", "vigilance"),
     potential: getBy("potentiel recomposition", "potentiel"),
-    systems: getBy("lecture compartimentee", "systeme"),
-    interconnections: getBy("interconnexions", "interconnexion"),
+    systems: getBy("lecture compartimentee", "analyse par axe", "analyse par axes", "systeme", "systemes"),
+    interconnections: getBy("interconnexions", "interconnexion", "correlations", "correlation"),
     deepDive: getBy("deep dive"),
     plan90: getBy("plan d'action 90 jours", "plan 90"),
     nutrition: getBy("nutrition"),
