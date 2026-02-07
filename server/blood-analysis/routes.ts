@@ -595,6 +595,114 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	    }
 	  });
 
+	  /**
+	   * POST /api/admin/blood-analysis/report/:id/rewrite-fallback
+	   * Force-rewrite the report using deterministic fallback (admin only).
+	   * Useful when AI generation fails or to refresh legacy fallback content after code changes.
+	   */
+	  app.post("/api/admin/blood-analysis/report/:id/rewrite-fallback", async (req, res) => {
+	    try {
+	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      if (!validKey || adminKey !== validKey) {
+	        res.status(401).json({ error: "Unauthorized - admin key required" });
+	        return;
+	      }
+
+	      const targetId = req.params.id;
+	      let report = await storage.getBloodReport(targetId);
+	      let bloodTestRow: any | null = null;
+
+	      if (!report) {
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+	        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, targetId));
+	        if (results.length > 0) {
+	          bloodTestRow = results[0];
+	        }
+	      }
+
+	      if (!report && !bloodTestRow) {
+	        res.status(404).json({ error: "Rapport introuvable" });
+	        return;
+	      }
+
+	      const profile =
+	        report
+	          ? ((report.profile || {}) as Record<string, unknown>)
+	          : (bloodTestRow?.patientProfile && typeof bloodTestRow.patientProfile === "object" && !Array.isArray(bloodTestRow.patientProfile)
+	              ? (bloodTestRow.patientProfile as Record<string, unknown>)
+	              : (typeof bloodTestRow?.analysis === "object" && bloodTestRow.analysis
+	                  ? ((bloodTestRow.analysis as any).patient as Record<string, unknown>) || {}
+	                  : {}));
+
+	      let computedAge: string | undefined;
+	      if (typeof profile.dob === "string") {
+	        const dobDate = new Date(profile.dob);
+	        if (!Number.isNaN(dobDate.getTime())) {
+	          const ageYears = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+	          computedAge = String(ageYears);
+	        }
+	      }
+
+	      const rawMarkers: Array<Record<string, unknown>> = report
+	        ? (((report.markers || []) as Array<Record<string, unknown>>) || [])
+	        : (Array.isArray(bloodTestRow?.markers) ? (bloodTestRow.markers as Array<Record<string, unknown>>) : []);
+
+	      const resolvedMarkers = rawMarkers
+	        .map((marker) => ({
+	          markerId: normalizeMarkerName(String((marker as any).markerId || (marker as any).code || (marker as any).name || "")),
+	          value: Number((marker as any).value),
+	          unit: ((marker as any).unit as string | undefined) || undefined,
+	        }))
+	        .filter((marker) => marker.markerId && Number.isFinite(marker.value));
+
+	      if (!resolvedMarkers.length) {
+	        res.status(400).json({ error: "Aucun biomarqueur detecte" });
+	        return;
+	      }
+
+	      const normalizedProfile = { ...profile, age: computedAge } as any;
+	      const analysisResult = await analyzeBloodwork(resolvedMarkers, {
+	        gender: (normalizedProfile.gender as "homme" | "femme") || "homme",
+	        age: computedAge,
+	        objectives: undefined,
+	        medications: undefined,
+	      });
+
+	      const aiReport = buildFallbackAnalysis(analysisResult, normalizedProfile);
+
+	      if (report) {
+	        await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+	        res.json({ success: true, reportId: report.id, status: "completed", mode: "fallback" });
+	        return;
+	      }
+
+	      const { db } = await import("../db.js");
+	      const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	      const { eq } = await import("drizzle-orm");
+	      const existingAnalysis =
+	        bloodTestRow && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+	          ? (bloodTestRow.analysis as Record<string, unknown>)
+	          : {};
+	      const updatedAnalysis = {
+	        ...existingAnalysis,
+	        aiAnalysis: aiReport,
+	        aiReport: aiReport,
+	        aiStatus: "fallback",
+	        aiGeneratedAt: new Date().toISOString(),
+	        aiModel: "fallback",
+	      };
+	      await db.update(bloodTests).set({ analysis: updatedAnalysis }).where(eq(bloodTests.id, targetId));
+
+	      res.json({ success: true, reportId: targetId, status: "completed", mode: "fallback" });
+	    } catch (error) {
+	      console.error("[BloodAnalysis] rewrite-fallback error:", error);
+	      res.status(500).json({ error: "Erreur rewrite-fallback" });
+	    }
+	  });
+
   /**
    * GET /api/blood-analysis/report/:id
    * Fetch stored blood analysis report
