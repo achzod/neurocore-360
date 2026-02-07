@@ -649,14 +649,26 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               analysisResult.patterns
             );
 
-            const aiReport = await generateAIBloodAnalysis(
-              analysisResult,
-              { ...(rawProfile as any), gender } as any,
-              knowledgeContext
-            );
+            let aiReport = "";
+            let aiError: unknown = null;
+            try {
+              aiReport = await generateAIBloodAnalysis(
+                analysisResult,
+                { ...(rawProfile as any), gender } as any,
+                knowledgeContext
+              );
+            } catch (err) {
+              aiError = err;
+              console.error(`[BloodAnalysis] AI generation failed for ${reportId}, using fallback:`, err);
+              aiReport = buildFallbackAnalysis(analysisResult as any, { ...(rawProfile as any), gender } as any);
+            }
 
             if (reportSource === "legacy") {
-              await storage.updateBloodReport(reportId, { analysis: analysisResult as any, aiReport });
+              await storage.updateBloodReport(reportId, {
+                analysis: analysisResult as any,
+                aiReport,
+                ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
+              } as any);
               console.log(`[BloodAnalysis] AI report generated for legacy report ${reportId} (${aiReport.length} chars)`);
               return;
             }
@@ -680,6 +692,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                     aiReport,
                     aiModel: "claude-opus-4-6",
                     aiGeneratedAt: new Date().toISOString(),
+                    ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
                   } as any,
                 })
                 .where(eq(bloodTests.id, reportId));
