@@ -22,7 +22,7 @@ export function BiomarkersTab({ markers }: BiomarkersTabProps) {
     hormonal: "Hormonal",
     metabolic: "Métabolique",
     thyroid: "Thyroïde",
-    inflammatory: "Inflammatoire",
+    inflammation: "Inflammatoire",
     vitamins: "Vitamines",
     liver_kidney: "Foie & Reins",
   };

@@ -2770,70 +2770,63 @@ ${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par pane
 
 IMPÉRATIF ABSOLU — GÉNÉRATION COMPLÈTE OBLIGATOIRE:
 
-Tu DOIS générer un rapport de MINIMUM 80 000 caractères avec TOUTES les sections suivantes (dans cet ordre exact):
+Tu DOIS générer un rapport de MINIMUM 35 000 caractères avec TOUTES les sections suivantes (dans cet ordre exact):
 
-1. ## Synthèse exécutive (1200-2000 chars)
-2. ## Qualité des données & limites (800-1500 chars)
-3. ## Tableau de bord (scores & priorités) (1200-2000 chars)
-4. ## Potentiel recomposition (perte de gras + gain de muscle) (2500-4000 chars)
+1. ## Synthèse exécutive (800-1200 chars)
+2. ## Qualité des données & limites (500-800 chars)
+3. ## Tableau de bord (scores & priorités) (800-1200 chars)
+4. ## Potentiel recomposition (perte de gras + gain de muscle) (1500-2500 chars)
 5. ## Lecture compartimentée par axes — TOUS LES 11 AXES OBLIGATOIRES:
-   - Axe 1 — Potentiel musculaire & androgènes (1500-2500 chars)
-   - Axe 2 — Métabolisme & gestion du risque diabète (1500-2500 chars)
-   - Axe 3 — Lipides & risque cardio-métabolique (2000-3000 chars)
-   - Axe 4 — Thyroïde & dépense énergétique (1000-1800 chars)
-   - Axe 5 — Foie, bile & détox métabolique (1000-1800 chars)
-   - Axe 6 — Rein, hydratation & performance (800-1500 chars)
-   - Axe 7 — Inflammation, immunité & terrain (1500-2500 chars)
-   - Axe 8 — Hématologie, oxygénation & endurance (1000-1800 chars)
-   - Axe 9 — Micronutriments (vitamines & minéraux) (1500-2500 chars)
-   - Axe 10 — Électrolytes, crampes, pression & performance (800-1500 chars)
-   - Axe 11 — Stress, sommeil, récupération (800-1500 chars)
-6. ## Interconnexions majeures (le pattern) (3000-5000 chars)
-7. ## Deep dive — marqueurs prioritaires (ULTRA DÉTAILLÉ)
-   Pour CHAQUE marqueur prioritaire, tu DOIS écrire 2000-3000 MOTS (10,000-15,000 chars) structurés en 4 sous-sections:
+   - Axe 1 — Potentiel musculaire & androgènes (1000-1500 chars)
+   - Axe 2 — Métabolisme & gestion du risque diabète (1000-1500 chars)
+   - Axe 3 — Lipides & risque cardio-métabolique (1200-1800 chars)
+   - Axe 4 — Thyroïde & dépense énergétique (600-1000 chars)
+   - Axe 5 — Foie, bile & détox métabolique (600-1000 chars)
+   - Axe 6 — Rein, hydratation & performance (500-800 chars)
+   - Axe 7 — Inflammation, immunité & terrain (1000-1500 chars)
+   - Axe 8 — Hématologie, oxygénation & endurance (600-1000 chars)
+   - Axe 9 — Micronutriments (vitamines & minéraux) (1000-1500 chars)
+   - Axe 10 — Électrolytes, crampes, pression & performance (500-800 chars)
+   - Axe 11 — Stress, sommeil, récupération (500-800 chars)
+6. ## Interconnexions majeures (le pattern) (2000-3000 chars)
+7. ## Deep dive — marqueurs prioritaires (DÉTAILLÉ)
+   Pour CHAQUE marqueur prioritaire, tu DOIS écrire 500-700 MOTS (2500-3500 chars) structurés en 4 sous-sections:
 
    ### [Nom du marqueur] — [Valeur] [Unité] — [CRITIQUE/IMPORTANT]
 
-   **C'est quoi ce marqueur?** (300-500 mots)
-   - Définition complète avec mécanisme moléculaire
-   - Récepteurs impliqués, voies de signalisation
-   - Rôle dans la physiologie (métabolisme, hormones, performance)
-   - Variations normales vs pathologiques
-   - Études de référence [SRC:ID] avec au moins 2 citations d'experts (Huberman/Attia/MPMD/Masterjohn)
+   **C'est quoi ce marqueur?** (100-150 mots)
+   - Définition avec mécanisme d'action
+   - Rôle dans métabolisme et performance
+   - 1 citation d'expert [SRC:ID]
 
-   **Ton analyse personnalisée** (500-800 mots)
-   - Contexte précis: ta valeur vs ranges (labo ET optimal)
-   - Pourquoi c'est hors optimal dans TON cas spécifique (âge, lifestyle, objectifs)
-   - Causes probables hiérarchisées avec preuves des sources
-   - Facteurs aggravants identifiés dans ton profil
-   - Corrélations avec tes autres marqueurs
-   - Études de cas similaires [SRC:ID]
+   **Ton analyse personnalisée** (150-200 mots)
+   - Ta valeur vs ranges optimal
+   - Pourquoi hors optimal dans TON cas
+   - Causes probables avec preuves
+   - Corrélations autres marqueurs
 
-   **Impacts concrets sur ton corps** (600-900 mots)
-   - PERFORMANCE: Hypertrophie (↑ mTOR, ↑ synthèse protéique), Force, Récupération, Composition corporelle
-   - SANTÉ: Énergie quotidienne, Humeur, Cognition, Immunité
-   - LONG TERME: Risque cardiovasculaire, Risque métabolique, Espérance de vie, Qualité de vie
-   - Mécanismes physiologiques détaillés avec études [SRC:ID]
-   - Exemples concrets: "Si ton [marqueur] reste à [valeur], dans 3 mois tu risques..."
+   **Impacts concrets** (150-200 mots)
+   - PERFORMANCE: Hypertrophie, force, récup
+   - SANTÉ: Énergie, humeur
+   - Risques si non-corrigé
 
-   **Protocole détaillé recommandé** (600-900 mots)
-   - PHASE 1 — LIFESTYLE (0-30 jours): Sommeil (horaires précis, température, lumière), Nutrition (macros, timing, aliments spécifiques), Training (volume, intensité, fréquence), Stress (techniques, fréquence), Alcool (quantité max)
-   - PHASE 2 — SUPPLÉMENTATION (30-90 jours): Pour chaque supplément: Nom + forme (ex: Zinc picolinate), Dosage précis, Timing optimal, Marque recommandée, Mécanisme d'action, Études prouvant l'efficacité [SRC:ID], Effets attendus sur TON marqueur
-   - PHASE 3 — RETEST & AJUSTEMENT (90 jours): Quand retester, Quels marqueurs, Critères de succès chiffrés, Plan B si non-répondeur
-   - CAS PARTICULIERS: Contraindications, Red flags nécessitant médecin, Interactions médicamenteuses
+   **Protocole recommandé** (200-300 mots)
+   - LIFESTYLE (0-30j): Sommeil, nutrition, training
+   - SUPPLÉMENTATION (30-90j): Nom + dosage + timing
+   - RETEST (90j): Marqueurs, critères succès
 
-   Total par marqueur: MINIMUM 2000 mots. Pour 4-8 marqueurs = 40,000-120,000 chars pour toute la section Deep Dive.
+   Total par marqueur: 500-700 mots (2500-3500 chars). Pour 4-5 marqueurs = 10,000-17,500 chars pour Deep Dive.
 
-8. ## Plan d'action 90 jours (5000-8000 chars avec 4 phases détaillées)
-9. ## Nutrition & entraînement (traduction pratique) (4000-6000 chars)
-10. ## Supplements & stack (minimaliste mais impact) (3000-5000 chars)
-11. ## Annexes (ultra long) (5000-10000 chars):
+8. ## Plan d'action 90 jours (3000-5000 chars avec 4 phases)
+9. ## Nutrition & entraînement (2500-4000 chars)
+10. ## Supplements & stack (2000-3000 chars)
+11. ## Annexes (4000-6000 chars):
     - Annexe A — Marqueurs secondaires
-    - Annexe B — Hypothèses & tests de confirmation
-    - Annexe C — Glossaire utile
-12. ## Sources scientifiques (300-800 chars)
+    - Annexe B — Hypothèses & tests
+    - Annexe C — Glossaire
+12. ## Sources scientifiques (200-400 chars)
 
-RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sections ci-dessus. Si tu t'arrêtes avant, le rapport sera rejeté. Target minimum: 80 000 caractères pour un rapport premium de haut niveau.`;
+RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sections ci-dessus. Si tu t'arrêtes avant, le rapport sera rejeté. Target minimum: 35 000 caractères pour un rapport détaillé professionnel.`;
 
   let output = "";
   let bestCandidate = "";
@@ -2864,7 +2857,7 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
       // Use streaming for long-running operations (>10min possible with new Achzod prompt)
       const stream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-        max_tokens: 64000, // High max_tokens for Opus 4.6 - sufficient for FULL Achzod reports (35k-90k chars = ~12k-25k tokens)
+        max_tokens: 64000, // Opus 4.6 supports 128K output, 64K is sufficient for 35-90k char reports
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
         stream: true,
@@ -3056,9 +3049,16 @@ ${markersTable}`,
     },
   ];
 
+  // Accent-insensitive section check helper
+  const normalizeForCheck = (text: string) =>
+    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   for (const section of missingSections) {
-    console.log(`[BloodAnalysis] Checking section "${section.title}": ${output.includes(section.check) ? "PRESENT" : "MISSING"}`);
-    if (!output.includes(section.check)) {
+    const normalizedOutput = normalizeForCheck(output);
+    const normalizedCheck = normalizeForCheck(section.check);
+    const isPresent = normalizedOutput.includes(normalizedCheck);
+    console.log(`[BloodAnalysis] Checking section "${section.title}": ${isPresent ? "PRESENT" : "MISSING"}`);
+    if (!isPresent) {
       console.log(`[BloodAnalysis] ⚠️  Generating missing section: ${section.title}...`);
       try {
         const sectionStream = await anthropic.messages.create({

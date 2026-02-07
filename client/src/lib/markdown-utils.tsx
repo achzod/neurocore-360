@@ -13,7 +13,9 @@ export type AISections = {
   plan90?: AISection;
   nutrition?: AISection;
   supplements?: AISection;
+  annexes?: AISection;
   sources?: AISection;
+  [key: string]: AISection | undefined;
 };
 
 const parsedSectionsCache = new Map<string, AISections>();
@@ -40,14 +42,25 @@ export const parseAISections = (markdown: string): AISections => {
   }
 
   const sections: AISection[] = [];
-  const matches = Array.from(
-    markdown.matchAll(/^##\s+(.+)\n([\s\S]*?)(?=^##\s+|\s*$)/gm)
-  );
-  matches.forEach((match) => {
-    const title = match[1]?.trim() ?? "";
-    const content = match[2]?.trim() ?? "";
-    if (title) sections.push({ title, content });
-  });
+  // Two-pass parser: split on ## headers, then capture content between them
+  const headerRegex = /^##\s+(.+)$/gm;
+  const headerPositions: Array<{ title: string; start: number; end: number }> = [];
+  let match;
+  while ((match = headerRegex.exec(markdown)) !== null) {
+    headerPositions.push({
+      title: match[1].trim(),
+      start: match.index + match[0].length,
+      end: markdown.length,
+    });
+  }
+  // Set end of each section to start of next header
+  for (let i = 0; i < headerPositions.length - 1; i++) {
+    headerPositions[i].end = markdown.lastIndexOf("\n", headerPositions[i + 1].start - headerPositions[i + 1].title.length - 4);
+  }
+  for (const pos of headerPositions) {
+    const content = markdown.slice(pos.start, pos.end).trim();
+    if (pos.title) sections.push({ title: pos.title, content });
+  }
 
   const getBy = (...keywords: string[]) =>
     sections.find((section) =>
@@ -65,6 +78,7 @@ export const parseAISections = (markdown: string): AISections => {
     plan90: getBy("plan d'action 90 jours", "plan 90"),
     nutrition: getBy("nutrition"),
     supplements: getBy("supplements"),
+    annexes: getBy("annexes"),
     sources: getBy("sources (bibliotheque)", "sources scientifiques", "sources"),
   };
 

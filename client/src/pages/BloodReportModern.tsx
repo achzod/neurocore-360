@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "wouter";
-import { BloodThemeProvider } from "@/components/blood/BloodThemeContext";
+import { BloodThemeProvider, useBloodTheme } from "@/components/blood/BloodThemeContext";
 import { BloodTabs, type BloodTabKey } from "@/components/blood/BloodTabs";
 import BloodHeader from "@/components/blood/BloodHeader";
 import {
@@ -16,10 +16,19 @@ import { useBloodCalculations } from "@/pages/BloodAnalysisDashboard/hooks/useBl
 import { parseAISections } from "@/lib/markdown-utils";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
+import type { BloodMarker, PanelKey } from "@/types/blood";
+
+const STATUS_SCORE: Record<string, number> = {
+  optimal: 100,
+  normal: 80,
+  suboptimal: 55,
+  critical: 30,
+};
 
 function BloodReportModernInner() {
   const { reportId } = useParams<{ reportId: string }>();
   const [activeTab, setActiveTab] = useState<BloodTabKey>("overview");
+  const { theme } = useBloodTheme();
 
   // Fetch report data
   const { data: report, isLoading, error } = useBloodReport(reportId);
@@ -30,25 +39,44 @@ function BloodReportModernInner() {
   // Parse AI report sections
   const aiSections = report?.aiReport ? parseAISections(report.aiReport) : {};
 
-  // Process markers for tabs
-  const markers = normalizedMarkers.map((m: any) => ({
+  // Process markers for tabs - fix panel and score mapping
+  const markers: BloodMarker[] = normalizedMarkers.map((m: any) => ({
     code: m.id,
     name: m.name,
     value: m.value,
     unit: m.unit,
     status: m.status,
-    normalMin: m.normalMin,
-    normalMax: m.normalMax,
-    optimalMin: m.optimalMin,
-    optimalMax: m.optimalMax,
-    panel: m.panel,
-    score: m.score,
+    normalMin: m.normalMin ?? null,
+    normalMax: m.normalMax ?? null,
+    optimalMin: m.optimalMin ?? null,
+    optimalMax: m.optimalMax ?? null,
+    panel: (m.panelId || "metabolic") as PanelKey,
+    score: STATUS_SCORE[m.status] || 80,
   }));
 
-  const summary = report?.analysis?.summary || { optimal: [], watch: [], action: [] };
-  const optimalMarkers = markers.filter((m: any) => m.status === "optimal");
-  const watchMarkers = markers.filter((m: any) => m.status === "normal" || m.status === "suboptimal");
-  const actionMarkers = markers.filter((m: any) => m.status === "critical");
+  const optimalMarkers = markers.filter((m) => m.status === "optimal");
+  const watchMarkers = markers.filter((m) => m.status === "normal" || m.status === "suboptimal");
+  const actionMarkers = markers.filter((m) => m.status === "critical");
+
+  // Convert panelGroups array to Record<PanelKey, BloodMarker[]> for OverviewTab
+  const panelGroupRecord = Object.fromEntries(
+    panelGroups.map((g: any) => [
+      g.id as PanelKey,
+      (g.markers || []).map((m: any) => ({
+        code: m.id,
+        name: m.name,
+        value: m.value,
+        unit: m.unit,
+        status: m.status,
+        normalMin: m.normalMin ?? null,
+        normalMax: m.normalMax ?? null,
+        optimalMin: m.optimalMin ?? null,
+        optimalMax: m.optimalMax ?? null,
+        panel: (m.panelId || g.id) as PanelKey,
+        score: STATUS_SCORE[m.status] || 80,
+      })),
+    ])
+  ) as Record<PanelKey, BloodMarker[]>;
 
   // Build protocol phases from AI sections (simplified)
   const protocolPhases = aiSections.plan90
@@ -82,25 +110,25 @@ function BloodReportModernInner() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: theme.background }}>
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: theme.primaryBlue }} />
       </div>
     );
   }
 
   if (error || !report) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: theme.background }}>
         <div className="text-center space-y-2">
-          <p className="text-lg font-semibold">Erreur de chargement</p>
-          <p className="text-sm text-gray-500">{error?.message || "Rapport introuvable"}</p>
+          <p className="text-lg font-semibold" style={{ color: theme.textPrimary }}>Erreur de chargement</p>
+          <p className="text-sm" style={{ color: theme.textSecondary }}>{error?.message || "Rapport introuvable"}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--blood-bg)" }}>
+    <div className="min-h-screen" style={{ backgroundColor: theme.background }}>
       <BloodHeader
         title="Analyse Sanguine"
         subtitle={`Rapport du ${new Date(report.createdAt || Date.now()).toLocaleDateString("fr-FR")}`}
@@ -110,39 +138,31 @@ function BloodReportModernInner() {
 
       <div className="mx-auto max-w-6xl px-6 pt-6">
         <AnimatePresence mode="wait">
-          {activeTab === "overview" && (
+          {activeTab === "overview" ? (
             <OverviewTab
               key="overview"
               globalScore={globalScore}
               optimalMarkers={optimalMarkers}
               watchMarkers={watchMarkers}
               actionMarkers={actionMarkers}
-              panelGroups={panelGroups as any}
+              panelGroups={panelGroupRecord}
               patientInfo={report.profile as any}
             />
-          )}
-
-          {activeTab === "biomarkers" && (
+          ) : activeTab === "biomarkers" ? (
             <BiomarkersTab key="biomarkers" markers={markers} />
-          )}
-
-          {activeTab === "analysis" && (
+          ) : activeTab === "analysis" ? (
             <AnalysisTab key="analysis" aiSections={aiSections} />
-          )}
-
-          {activeTab === "protocols" && (
+          ) : activeTab === "protocols" ? (
             <ProtocolsTab
               key="protocols"
               aiSections={aiSections}
               protocolPhases={protocolPhases}
             />
-          )}
-
-          {activeTab === "trends" && <TrendsTab key="trends" />}
-
-          {activeTab === "sources" && (
+          ) : activeTab === "trends" ? (
+            <TrendsTab key="trends" />
+          ) : activeTab === "sources" ? (
             <SourcesTab key="sources" aiSections={aiSections} />
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
     </div>

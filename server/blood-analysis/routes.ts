@@ -589,6 +589,18 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             (analysis as any).aiAnalysis || // stored in blood_tests analysis payload
             "";
 
+          // Transform blood_tests marker format to blood_reports format for frontend
+          const analysisMarkers = markers.map((m: any) => ({
+            markerId: m.code || m.markerId || (m.name || "").toLowerCase().replace(/\s+/g, "_"),
+            name: m.name || m.code || "",
+            value: m.value,
+            unit: m.unit || "",
+            status: m.status || "normal",
+            normalRange: (m.refMin != null && m.refMax != null) ? `${m.refMin} - ${m.refMax}` : undefined,
+            optimalRange: (m.optimalMin != null && m.optimalMax != null) ? `${m.optimalMin} - ${m.optimalMax}` : undefined,
+            interpretation: m.interpretation || "",
+          }));
+
           report = {
             id: bloodTest.id,
             email: bloodTest.userId, // Use userId as email placeholder
@@ -600,7 +612,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               recommendations: (analysis as any).recommendations || [],
               followUp: (analysis as any).followUp || [],
               alerts: (analysis as any).alerts || [],
-              markers
+              markers: analysisMarkers
             },
             aiReport: aiReportText,
             createdAt: bloodTest.createdAt || new Date().toISOString()
