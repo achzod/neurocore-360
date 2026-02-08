@@ -717,7 +717,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const aiReport = buildFallbackAnalysis(analysisResult, normalizedProfile);
 
 	      if (report) {
-	        await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+	        await storage.updateBloodReport(report.id, {
+	          analysis: {
+	            ...analysisResult,
+	            aiStatus: "fallback",
+	            aiModel: "fallback",
+	            aiGeneratedAt: new Date().toISOString(),
+	          } as any,
+	          aiReport,
+	        });
 	        res.json({ success: true, reportId: report.id, status: "completed", mode: "fallback" });
 	        return;
 	      }
