@@ -821,6 +821,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               markers: analysisMarkers
             },
             aiReport: aiReportText,
+            aiMeta: {
+              status: (analysis as any).aiStatus || null,
+              model: (analysis as any).aiModel || null,
+              generatedAt: (analysis as any).aiGeneratedAt || null,
+              validationMissing: (analysis as any).aiValidationMissing || null,
+            },
             createdAt: bloodTest.createdAt || new Date().toISOString()
           };
         }
