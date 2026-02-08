@@ -2812,7 +2812,7 @@ export async function generateAIBloodAnalysis(
     infectionRecent?: string;
   },
   knowledgeContext?: string
-): Promise<string> {
+): Promise<{ report: string; status: "generated" | "fallback"; model: string; validationMissing?: string[] }> {
   const client = getBloodAnthropicClient();
 
   const markersTable = analysisResult.markers
@@ -2993,7 +2993,7 @@ export async function generateAIBloodAnalysis(
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
       const withSources = ensureSourcesSection(output);
-      return trimAiAnalysis(withSources);
+      return { report: trimAiAnalysis(withSources), status: "generated", model };
     }
   } catch (err: any) {
     console.error("[BloodAnalysis] Claude generation failed (pass1):", err?.message || err);
@@ -3028,7 +3028,7 @@ export async function generateAIBloodAnalysis(
       validation = validateBloodAnalysisReport(output);
       if (validation.ok) {
         const withSources = ensureSourcesSection(output);
-        return trimAiAnalysis(withSources);
+        return { report: trimAiAnalysis(withSources), status: "generated", model };
       }
       console.warn(`[BloodAnalysis] Continuation pass ${pass} still invalid:`, validation.missing.join(", "));
     } catch (err: any) {
@@ -3037,7 +3037,12 @@ export async function generateAIBloodAnalysis(
   }
 
   console.warn("[BloodAnalysis] Falling back to deterministic report:", validation.missing.join(", "));
-  return buildFallbackAnalysis(analysisResult, userProfile);
+  return {
+    report: buildFallbackAnalysis(analysisResult, userProfile),
+    status: "fallback",
+    model: "fallback",
+    validationMissing: validation.missing,
+  };
 }
 
 // ============================================

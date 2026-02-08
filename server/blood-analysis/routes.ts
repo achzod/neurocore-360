@@ -128,7 +128,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       res.json({
         success: true,
         analysis: analysisResult,
-        aiReport: aiAnalysis,
+        aiReport: aiAnalysis.report,
+        aiMeta: {
+          status: aiAnalysis.status,
+          model: aiAnalysis.model,
+          validationMissing: aiAnalysis.validationMissing || null,
+        },
         sourcesUsed: knowledgeContext ? true : false
       });
     } catch (error) {
@@ -404,12 +409,19 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       const shouldIncludeAI = includeAI !== false;
       const shouldAsyncAI = asyncAI !== false;
       let aiAnalysis = "";
+      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
-        aiAnalysis = await generateAIBloodAnalysis(
+        const generated = await generateAIBloodAnalysis(
           analysisResult,
           profile,
           knowledgeContext
         );
+        aiAnalysis = generated.report;
+        aiMeta = {
+          status: generated.status,
+          model: generated.model,
+          validationMissing: generated.validationMissing || null,
+        };
       }
 
       const reportRecord = await storage.createBloodReport({
@@ -419,7 +431,17 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           age: computedAge,
         },
         markers: resolvedMarkers,
-        analysis: analysisResult,
+        analysis: {
+          ...analysisResult,
+          ...(shouldIncludeAI
+            ? {
+                aiStatus: shouldAsyncAI ? "processing" : (aiMeta?.status || "unknown"),
+                aiModel: shouldAsyncAI ? "claude-opus-4-6" : (aiMeta?.model || "unknown"),
+                ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
+                ...(shouldAsyncAI ? {} : { aiGeneratedAt: new Date().toISOString() }),
+              }
+            : {}),
+        } as any,
         aiReport: aiAnalysis,
       });
 
@@ -431,7 +453,16 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               profile,
               knowledgeContext
             );
-            await storage.updateBloodReport(reportRecord.id, { aiReport: enriched });
+            await storage.updateBloodReport(reportRecord.id, {
+              aiReport: enriched.report,
+              analysis: {
+                ...analysisResult,
+                aiStatus: enriched.status,
+                aiModel: enriched.model,
+                aiGeneratedAt: new Date().toISOString(),
+                ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
+              } as any,
+            });
           } catch (err) {
             console.error("[BloodAnalysis] async AI failed:", err);
           }
@@ -449,6 +480,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         reportId: reportRecord.id,
         analysis: analysisResult,
         aiReport: aiAnalysis,
+        aiMeta,
         status: shouldIncludeAI && shouldAsyncAI ? "processing" : "completed"
       });
     } catch (error) {
@@ -541,14 +573,24 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult.patterns
         );
 
-	        const aiReport = await generateAIBloodAnalysis(
+	        const generated = await generateAIBloodAnalysis(
 	          analysisResult,
 	          normalizedProfile,
 	          knowledgeContext
 	        );
+	        const aiReport = generated.report;
 
 	        if (report) {
-	          await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
+	          await storage.updateBloodReport(report.id, {
+	            analysis: {
+	              ...analysisResult,
+	              aiStatus: generated.status,
+	              aiModel: generated.model,
+	              aiGeneratedAt: new Date().toISOString(),
+	              ...(generated.validationMissing ? { aiValidationMissing: generated.validationMissing } : {}),
+	            } as any,
+	            aiReport,
+	          });
 	          return;
 	        }
 
@@ -565,9 +607,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	          ...existingAnalysis,
 	          aiAnalysis: aiReport,
 	          aiReport: aiReport,
-	          aiStatus: "generated",
+	          aiStatus: generated.status,
 	          aiGeneratedAt: new Date().toISOString(),
-	          aiModel: "claude-opus-4-6",
+	          aiModel: generated.model,
+	          ...(generated.validationMissing ? { aiValidationMissing: generated.validationMissing } : {}),
 	        };
 
 	        await db.update(bloodTests).set({ analysis: updatedAnalysis }).where(eq(bloodTests.id, targetId));
@@ -821,24 +864,34 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             );
 
             let aiReport = "";
+            let aiMeta: { status: string; model: string; validationMissing?: string[] } | null = null;
             let aiError: unknown = null;
             try {
-              aiReport = await generateAIBloodAnalysis(
+              const generated = await generateAIBloodAnalysis(
                 analysisResult,
                 { ...(rawProfile as any), gender } as any,
                 knowledgeContext
               );
+              aiReport = generated.report;
+              aiMeta = { status: generated.status, model: generated.model, validationMissing: generated.validationMissing };
             } catch (err) {
               aiError = err;
-              console.error(`[BloodAnalysis] AI generation failed for ${reportId}, using fallback:`, err);
+              console.error(`[BloodAnalysis] AI generation crashed for ${reportId}, using deterministic fallback:`, err);
               aiReport = buildFallbackAnalysis(analysisResult as any, { ...(rawProfile as any), gender } as any);
+              aiMeta = { status: "fallback", model: "fallback" };
             }
 
             if (reportSource === "legacy") {
               await storage.updateBloodReport(reportId, {
-                analysis: analysisResult as any,
+                analysis: {
+                  ...analysisResult,
+                  aiStatus: aiMeta?.status || "unknown",
+                  aiModel: aiMeta?.model || "unknown",
+                  aiGeneratedAt: new Date().toISOString(),
+                  ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
+                  ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
+                } as any,
                 aiReport,
-                ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
               } as any);
               console.log(`[BloodAnalysis] AI report generated for legacy report ${reportId} (${aiReport.length} chars)`);
               return;
@@ -861,9 +914,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                     ...existingAnalysis,
                     ...analysisResult,
                     aiReport,
-                    aiModel: "claude-opus-4-6",
+                    aiStatus: aiMeta?.status || "unknown",
+                    aiModel: aiMeta?.model || "unknown",
                     aiGeneratedAt: new Date().toISOString(),
                     ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
+                    ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
                   } as any,
                 })
                 .where(eq(bloodTests.id, reportId));
@@ -1443,15 +1498,23 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       );
 
       let aiReport: string;
+      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       try {
-        aiReport = await generateAIBloodAnalysis(
+        const generated = await generateAIBloodAnalysis(
           basicAnalysis,
           profileWithAge,
           knowledgeContext
         );
+        aiReport = generated.report;
+        aiMeta = {
+          status: generated.status,
+          model: generated.model,
+          validationMissing: generated.validationMissing || null,
+        };
       } catch (aiError) {
         console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
         aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
+        aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
 
       res.json({
@@ -1466,6 +1529,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         },
         riskProfile,
         aiReport,
+        aiMeta,
         priorityActions: [
           ...riskProfile.overallHealth.recommendations,
           ...riskProfile.prediabetes.recommendations.slice(0, 2),
@@ -1576,15 +1640,23 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       );
 
       let aiReport: string;
+      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       try {
-        aiReport = await generateAIBloodAnalysis(
+        const generated = await generateAIBloodAnalysis(
           basicAnalysis,
           profileWithAge,
           knowledgeContext
         );
+        aiReport = generated.report;
+        aiMeta = {
+          status: generated.status,
+          model: generated.model,
+          validationMissing: generated.validationMissing || null,
+        };
       } catch (aiError) {
         console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
         aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
+        aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
 
       res.json({
@@ -1593,6 +1665,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         markersFound: resolvedMarkers.length,
         report: comprehensiveReport,
         aiNarrative: aiReport,
+        aiMeta,
         timestamp: new Date().toISOString()
       });
     } catch (error) {

@@ -374,11 +374,12 @@ export function registerBloodTestsRoutes(app: Express): void {
           );
 
           let aiAnalysis = "";
+          let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
           const includeAI = body.includeAI !== false;
           const asyncAI = body.asyncAI === true;
 	          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
 	            try {
-	              aiAnalysis = await generateAIBloodAnalysis(
+	              const generated = await generateAIBloodAnalysis(
                 analysisResult,
                 {
                   gender: patientProfile.gender as "homme" | "femme",
@@ -400,9 +401,16 @@ export function registerBloodTestsRoutes(app: Express): void {
                 },
 	                knowledgeContext
 	              );
+	              aiAnalysis = generated.report;
+	              aiMeta = {
+	                status: generated.status,
+	                model: generated.model,
+	                validationMissing: generated.validationMissing || null,
+	              };
 	            } catch (err) {
 	              console.error("[BloodTests] AI generation failed (seed sync):", err);
 	              aiAnalysis = "";
+	              aiMeta = null;
 	            }
 	          }
           if (!aiAnalysis) {
@@ -422,6 +430,7 @@ export function registerBloodTestsRoutes(app: Express): void {
               poids: patientProfile.poids,
               taille: patientProfile.taille,
             });
+            aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
           }
 
           const markers = analysisResult.markers.map((marker) => {
@@ -461,6 +470,10 @@ export function registerBloodTestsRoutes(app: Express): void {
             followUp: analysisResult.followUp,
             alerts: analysisResult.alerts,
             aiAnalysis,
+            aiStatus: aiMeta?.status || "unknown",
+            aiModel: aiMeta?.model || "unknown",
+            aiGeneratedAt: new Date().toISOString(),
+            ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
             protocolPhases,
             lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
             patient: patientProfile,
@@ -509,7 +522,11 @@ export function registerBloodTestsRoutes(app: Express): void {
                 );
                 const updatedAnalysis = {
                   ...analysisPayload,
-                  aiAnalysis: enriched,
+                  aiAnalysis: enriched.report,
+                  aiStatus: enriched.status,
+                  aiModel: enriched.model,
+                  aiGeneratedAt: new Date().toISOString(),
+                  ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
                 };
                 await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
               } catch (err) {
@@ -660,9 +677,10 @@ export function registerBloodTestsRoutes(app: Express): void {
       );
 
 	      let aiAnalysis = "";
+	      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
 	      if (process.env.ANTHROPIC_API_KEY) {
 	        try {
-	          aiAnalysis = await generateAIBloodAnalysis(
+	          const generated = await generateAIBloodAnalysis(
             analysisResult,
             {
               gender: profile.gender as "homme" | "femme",
@@ -684,9 +702,16 @@ export function registerBloodTestsRoutes(app: Express): void {
             },
 	            knowledgeContext
 	          );
+	          aiAnalysis = generated.report;
+	          aiMeta = {
+	            status: generated.status,
+	            model: generated.model,
+	            validationMissing: generated.validationMissing || null,
+	          };
 	        } catch (err) {
 	          console.error("[BloodTests] AI generation failed (upload sync):", err);
 	          aiAnalysis = "";
+	          aiMeta = null;
 	        }
 	      }
       if (!aiAnalysis) {
@@ -706,6 +731,7 @@ export function registerBloodTestsRoutes(app: Express): void {
           poids: profile.poids,
           taille: profile.taille,
         });
+        aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
 
       const markers = analysisResult.markers.map((marker) => {
@@ -745,6 +771,10 @@ export function registerBloodTestsRoutes(app: Express): void {
         followUp: analysisResult.followUp,
         alerts: analysisResult.alerts,
         aiAnalysis,
+        aiStatus: aiMeta?.status || "unknown",
+        aiModel: aiMeta?.model || "unknown",
+        aiGeneratedAt: new Date().toISOString(),
+        ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
         protocolPhases,
         lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
         patient: profile,
