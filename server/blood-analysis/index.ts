@@ -3459,7 +3459,7 @@ export async function generateAIBloodAnalysis(
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
   // Keep output bounded to avoid long-running requests in production.
   // Prioritise completeness/structure over extreme length.
-  const maxTokens = 32000;
+  const maxTokens = 16000;
 
   const CANONICAL_ORDER = [
     "## Synthese executive",
@@ -3530,7 +3530,7 @@ export async function generateAIBloodAnalysis(
     };
 
     const MAX_ATTEMPTS = 2;
-    const TIMEOUT_MS = 180_000;
+    const TIMEOUT_MS = 600_000;
 
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
