@@ -1,1 +1,0 @@
-import{bf as r,u as n,r as s}from"./vendor-C1l_5e97.js";function d(){const o=r(),[,e]=n();return s.useEffect(()=>{const t=typeof window<"u"?window.location.search:"";if(o!=null&&o.reportId){e(`/analysis/${o.reportId}${t}`);return}e(`/blood-dashboard${t}`)},[e,o==null?void 0:o.reportId]),null}export{d as default};
