@@ -3385,7 +3385,18 @@ export async function generateAIBloodAnalysis(
   },
   knowledgeContext?: string
 ): Promise<{ report: string; status: "generated" | "fallback"; model: string; validationMissing?: string[] }> {
-  const client = getBloodAnthropicClient();
+  let client: ReturnType<typeof getBloodAnthropicClient>;
+  try {
+    client = getBloodAnthropicClient();
+  } catch (initErr: any) {
+    console.error("[BloodAnalysis] Anthropic client init failed:", initErr?.message || initErr);
+    return {
+      report: buildFallbackAnalysis(analysisResult, userProfile),
+      status: "fallback",
+      model: "fallback",
+      validationMissing: [`init_error:${String(initErr?.message || initErr).slice(0, 200)}`],
+    };
+  }
 
   const markersTable = analysisResult.markers
     .map(
@@ -3569,6 +3580,7 @@ export async function generateAIBloodAnalysis(
     }
   } catch (err: any) {
     console.error("[BloodAnalysis] Claude generation failed (pass1):", err?.message || err);
+    validation.missing.push(`pass1_error:${String(err?.message || err).slice(0, 200)}`);
   }
 
   // Pass 2/3: continuation from first missing heading in canonical order
@@ -3605,6 +3617,7 @@ export async function generateAIBloodAnalysis(
       console.warn(`[BloodAnalysis] Continuation pass ${pass} still invalid:`, validation.missing.join(", "));
     } catch (err: any) {
       console.error(`[BloodAnalysis] Claude generation failed (pass${pass}):`, err?.message || err);
+      validation.missing.push(`pass${pass}_error:${String(err?.message || err).slice(0, 200)}`);
     }
   }
 
