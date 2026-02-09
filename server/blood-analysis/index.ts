@@ -3459,7 +3459,7 @@ export async function generateAIBloodAnalysis(
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
   // Keep output bounded to avoid long-running requests in production.
   // Prioritise completeness/structure over extreme length.
-  const maxTokens = 16000;
+  const maxTokens = 8192;
 
   const CANONICAL_ORDER = [
     "## Synthese executive",
@@ -3572,7 +3572,7 @@ export async function generateAIBloodAnalysis(
   // Pass 1: full report
   try {
     output = await callClaudeOnce(
-      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et LONG (35000-90000 caracteres) avec TOUTES les sections/axes du template. Tu as le budget tokens pour tout ecrire. Ne te retiens pas sur la longueur.`
+      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET (15000-25000 caracteres) avec TOUTES les sections/axes du template. Chaque section doit etre substantielle mais concise. Assure-toi d'inclure les 12 sections ## et tous les ### Axe.`
     );
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
