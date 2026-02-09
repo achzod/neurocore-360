@@ -3535,19 +3535,20 @@ export async function generateAIBloodAnalysis(
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
-        const resp = await withTimeout(
-          client.messages.create({
+        const streamPromise = async () => {
+          const stream = client.messages.stream({
             model,
             max_tokens: maxTokens,
             temperature: 0.4,
             system: BLOOD_ANALYSIS_SYSTEM_PROMPT_V6,
             messages: [{ role: "user", content: prompt }],
-          } as any),
-          TIMEOUT_MS
-        );
+          } as any);
+          const finalMessage = await stream.finalMessage();
+          const textContent = (finalMessage as any).content?.find((c: any) => c.type === "text");
+          return String(textContent?.text || "").trim();
+        };
 
-        const textContent = (resp as any).content?.find((c: any) => c.type === "text");
-        const candidate = String(textContent?.text || "").trim();
+        const candidate = await withTimeout(streamPromise(), TIMEOUT_MS);
         if (!candidate) throw new Error("Claude returned empty report");
         return stripEmojis(candidate).trim();
       } catch (err: any) {
