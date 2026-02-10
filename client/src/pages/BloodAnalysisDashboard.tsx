@@ -199,11 +199,10 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={[
-                    // "Full" report format
                     'synthese-executive',
                     'tableau-de-bord-scores-priorites',
+                    'tableau-de-bord-scores-et-priorites',
                     'potentiel-recomposition',
-                    // "Compact" report format (current blood_tests aiAnalysis)
                     'vigilance',
                   ]}
                   reportSections={reportSections}
@@ -219,11 +218,10 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
               <Suspense fallback={<ReportSkeleton />}>
                 <ReportSectionTab
                   sectionIds={[
-                    // "Full" report format
                     'qualite-des-donnees-limites',
+                    'qualite-des-donnees-et-limites',
                     'marqueurs-manquants-recommandations-de-tests',
                     'tests-complementaires',
-                    // "Compact" report format
                     'correlations-lifestyle',
                   ]}
                   reportSections={reportSections}
@@ -267,6 +265,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                     'plan-action',
                     // "Compact" report format
                     'plan-d-action-90-jours',
+                    'plan-action-90-jours-hyper-concret',
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
@@ -285,10 +284,12 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                     'protocole-nutrition',
                     'protocole-supplements',
                     'nutrition-entrainement',
+                    'nutrition-entrainement-traduction-pratique',
                     'supplementation',
                     // Blood report format (AI/fallback)
                     'supplements-stack',
                     'supplements-stack-minimaliste-mais-impact',
+                    'supplements-stack-minimaliste',
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
@@ -305,7 +306,10 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   sectionIds={[
                     // "Full" report format
                     'annexes',
+                    'annexes-ultra-long',
                     'bibliographie',
+                    'sources-bibliotheque',
+                    'sources',
                     // "Compact" report format: put warnings/notes here
                     'vigilance',
                   ]}

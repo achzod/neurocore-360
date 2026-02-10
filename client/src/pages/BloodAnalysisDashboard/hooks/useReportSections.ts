@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
 
+// French stop words stripped during normalization so "nutrition-et-entrainement"
+// matches "nutrition-entrainement" regardless of AI title wording.
+const STOP_WORDS = new Set(['et', 'de', 'des', 'du', 'le', 'la', 'les', 'un', 'une', 'en', 'par', 'au', 'aux', 'd', 'l']);
+
 // Function to normalize section IDs for flexible matching
 const normalizeSectionId = (text: string) => {
   return text
@@ -11,7 +15,10 @@ const normalizeSectionId = (text: string) => {
     .replace(/[ùúûü]/g, 'u')
     .replace(/[ç]/g, 'c')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-+|-+$/g, '')
+    .split('-')
+    .filter(w => !STOP_WORDS.has(w))
+    .join('-');
 };
 
 export const useReportSections = (aiReport: string | undefined) => {
