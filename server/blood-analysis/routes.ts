@@ -899,7 +899,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
 	      // Extract the "Annexes" H2 section without using unsupported PCRE features.
 	      // We find the first "## Annexes ..." heading, then slice until the next H2 ("## ") or EOF.
-	      const annexHeading = aiReportText.match(/^##\\s+Annexes\\b[^\\n]*\\n/m);
+	      // Regex literal: use single backslashes (\\s would match a literal "\\s").
+	      const annexHeading = aiReportText.match(/^##\s+Annexes\b[^\n]*\n/m);
 	      if (!annexHeading || annexHeading.index == null) {
 	        res.status(400).json({ error: "Section Annexes introuvable dans le rapport" });
 	        return;
@@ -907,7 +908,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
 	      const annexStart = annexHeading.index;
 	      const afterHeadingStart = annexStart + annexHeading[0].length;
-	      const nextH2Rel = aiReportText.slice(afterHeadingStart).search(/\\n##\\s+/);
+	      const nextH2Rel = aiReportText.slice(afterHeadingStart).search(/\n##\s+/);
 	      const annexEnd = nextH2Rel === -1 ? aiReportText.length : afterHeadingStart + nextH2Rel + 1;
 	      const currentAnnex = aiReportText.slice(annexStart, annexEnd);
 	      if (currentAnnex.trim().length >= 2200) {
@@ -916,7 +917,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      }
 
 	      const titleLine = currentAnnex.split("\n")[0] || "## Annexes (ultra long)";
-	      const title = titleLine.replace(/^##\\s+/, "").trim() || "Annexes (ultra long)";
+	      const title = titleLine.replace(/^##\s+/, "").trim() || "Annexes (ultra long)";
 
 	      // Provide minimal context from existing analysis (best-effort)
 	      const analysisObj =
