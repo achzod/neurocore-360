@@ -2936,6 +2936,11 @@ const auditSectionMinimums = (output: string) => {
   return { issues, sections };
 };
 
+// Exposed for admin/meta refresh (no AI calls).
+export const auditBloodReportQualityForMeta = (aiReport: string) => {
+  return auditSectionMinimums(aiReport || "").issues;
+};
+
 const replaceH2Section = (fullText: string, targetTitle: string, replacementSection: string): string => {
   if (!fullText || !targetTitle || !replacementSection) return fullText;
   const sections = parseH2Sections(fullText);
