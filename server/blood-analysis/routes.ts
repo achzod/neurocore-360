@@ -4,6 +4,7 @@
  */
 
 import type { Express } from "express";
+import Anthropic from "@anthropic-ai/sdk";
 import {
   analyzeBloodwork,
   extractMarkersFromPdfText,
@@ -17,6 +18,7 @@ import {
   DIAGNOSTIC_PATTERNS,
   BloodMarkerInput
 } from "./index";
+import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "../anthropicConfig";
 import {
   generateComprehensiveRiskProfile,
   calculatePrediabetesRisk,
@@ -844,6 +846,166 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	    } catch (error) {
 	      console.error("[BloodAnalysis] refresh-meta error:", error);
 	      res.status(500).json({ error: "Erreur refresh-meta" });
+	    }
+	  });
+
+	  /**
+	   * POST /api/admin/blood-analysis/report/:id/repair-annexes
+	   * Targeted fix: rewrite/expand the "Annexes" section only (fast), without regenerating the whole report.
+	   */
+	  app.post("/api/admin/blood-analysis/report/:id/repair-annexes", async (req, res) => {
+	    try {
+	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      if (!validKey || adminKey !== validKey) {
+	        res.status(401).json({ error: "Unauthorized - admin key required" });
+	        return;
+	      }
+
+	      if (!validateAnthropicConfig()) {
+	        res.status(400).json({ error: "ANTHROPIC_API_KEY manquante" });
+	        return;
+	      }
+
+	      const targetId = req.params.id;
+	      let report = await storage.getBloodReport(targetId);
+	      let bloodTestRow: any | null = null;
+
+	      if (!report) {
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+	        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, targetId));
+	        if (results.length > 0) {
+	          bloodTestRow = results[0];
+	        }
+	      }
+
+	      if (!report && !bloodTestRow) {
+	        res.status(404).json({ error: "Rapport introuvable" });
+	        return;
+	      }
+
+	      const aiReportText =
+	        report
+	          ? String((report as any).aiReport || "")
+	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
+	      if (!aiReportText.trim()) {
+	        res.status(400).json({ error: "aiReport vide" });
+	        return;
+	      }
+
+	      const annexMatch = aiReportText.match(/(?ms)^##\\s+Annexes[^\\n]*\\n.*?(?=^##\\s+|\\Z)/);
+	      if (!annexMatch) {
+	        res.status(400).json({ error: "Section Annexes introuvable dans le rapport" });
+	        return;
+	      }
+
+	      const currentAnnex = annexMatch[0];
+	      if (currentAnnex.trim().length >= 2200) {
+	        res.json({ success: true, reportId: targetId, status: "already_ok", annexLen: currentAnnex.trim().length });
+	        return;
+	      }
+
+	      const titleLine = currentAnnex.split("\n")[0] || "## Annexes (ultra long)";
+	      const title = titleLine.replace(/^##\\s+/, "").trim() || "Annexes (ultra long)";
+
+	      // Provide minimal context from existing analysis (best-effort)
+	      const analysisObj =
+	        report
+	          ? ((report as any).analysis || {})
+	          : ((bloodTestRow?.analysis && typeof bloodTestRow.analysis === "object") ? bloodTestRow.analysis : {});
+	      const analysisMarkers = Array.isArray((analysisObj as any).markers) ? (analysisObj as any).markers : [];
+	      const markerLines = analysisMarkers
+	        .slice(0, 40)
+	        .map((m: any) => `${m.name || m.markerId || m.id}: ${m.value ?? "N/A"} ${m.unit || ""} (${String(m.status || "normal")})`)
+	        .join("\n");
+
+	      const system = `Tu es un expert en lecture de bilan sanguin.\n\nMISSION:\n- Tu re-ecris UNE SEULE section du rapport.\n- Tu renvoies UNIQUEMENT cette section (du '##' jusqu'avant le prochain '##').\n\nREGLES:\n- Francais, tutoiement.\n- Paragraphes narratifs uniquement.\n- Pas de listes: pas de '- ', pas de '* ', pas de listes numerotees.\n- Pas d'emoji.\n- Tu n'inventes pas de donnees.`;
+
+	      const prompt = [
+	        `Contexte biomarqueurs (best-effort):`,
+	        markerLines || "Non renseigne",
+	        ``,
+	        `Section a re-ecrire et enrichir:`,
+	        `## ${title}`,
+	        ``,
+	        `Contraintes:`,
+	        `- Minimum 2400 caracteres.`,
+	        `- Doit inclure:`,
+	        `### Annex A — Marqueurs secondaires (lecture rapide)`,
+	        `### Annex B — Hypotheses & tests de confirmation`,
+	        `### Annex C — Glossaire utile`,
+	        `- Tu restes coherent avec le reste du rapport (meme ton).`,
+	        ``,
+	        `Retour attendu: UNIQUEMENT la section complete, en commencant EXACTEMENT par:`,
+	        `## ${title}`,
+	      ].join("\n");
+
+	      const anthropic = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
+	      const resp = await anthropic.messages.create({
+	        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	        max_tokens: 5000,
+	        temperature: 0.4,
+	        system,
+	        messages: [{ role: "user", content: prompt }],
+	      } as any);
+
+	      const textContent = (resp as any).content?.find((c: any) => c.type === "text");
+	      const rewritten = String(textContent?.text || "").trim();
+	      if (!rewritten.startsWith("## ")) {
+	        res.status(500).json({ error: "Claude n'a pas renvoye une section valide" });
+	        return;
+	      }
+
+	      const updatedReport = aiReportText.replace(annexMatch[0], rewritten.trim() + "\n");
+	      const issues = auditBloodReportQualityForMeta(updatedReport);
+	      const nowIso = new Date().toISOString();
+
+	      if (report) {
+	        const existingAnalysis =
+	          (report as any).analysis && typeof (report as any).analysis === "object" && (report as any).analysis !== null
+	            ? (report as any).analysis
+	            : {};
+	        await storage.updateBloodReport(targetId, {
+	          aiReport: updatedReport,
+	          analysis: {
+	            ...existingAnalysis,
+	            aiStatus: "generated",
+	            aiModel: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	            aiGeneratedAt: nowIso,
+	            aiValidationMissing: issues.length ? issues : null,
+	          } as any,
+	        } as any);
+	        res.json({ success: true, reportId: targetId, annexLen: rewritten.length, validationMissing: issues.length ? issues : null });
+	        return;
+	      }
+
+	      const { db } = await import("../db.js");
+	      const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	      const { eq } = await import("drizzle-orm");
+	      const existingAnalysis =
+	        bloodTestRow && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+	          ? (bloodTestRow.analysis as Record<string, unknown>)
+	          : {};
+	      await db
+	        .update(bloodTests)
+	        .set({
+	          analysis: {
+	            ...existingAnalysis,
+	            aiReport: updatedReport,
+	            aiAnalysis: updatedReport,
+	            aiStatus: "generated",
+	            aiModel: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	            aiGeneratedAt: nowIso,
+	            aiValidationMissing: issues.length ? issues : null,
+	          } as any,
+	        })
+	        .where(eq(bloodTests.id, targetId));
+	      res.json({ success: true, reportId: targetId, annexLen: rewritten.length, validationMissing: issues.length ? issues : null });
+	    } catch (error) {
+	      console.error("[BloodAnalysis] repair-annexes error:", error);
+	      res.status(500).json({ error: "Erreur repair-annexes" });
 	    }
 	  });
 
