@@ -3439,6 +3439,17 @@ export async function generateAIBloodAnalysis(
     return text.slice(idx).trim();
   };
 
+  /** Extract a fuzzy dedup key from a section title: first 3 significant words */
+  const dedupKey = (title: string): string => {
+    const normalized = normalizeForCheck(title)
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const stopWords = new Set(["de", "des", "du", "le", "la", "les", "et", "en", "par", "a", "au", "aux", "si", "mais", "ou"]);
+    const words = normalized.split(" ").filter(w => w.length > 1 && !stopWords.has(w));
+    return words.slice(0, 3).join("_");
+  };
+
   /** Deduplicate ## sections: keep first occurrence of each normalized title */
   const deduplicateSections = (text: string): string => {
     const lines = text.split("\n");
@@ -3446,31 +3457,32 @@ export async function generateAIBloodAnalysis(
     const seenH2s = new Set<string>();
     let skipUntilNextH2 = false;
 
+    const checkH2 = (title: string): boolean => {
+      const key = dedupKey(title);
+      if (seenH2s.has(key)) {
+        console.log(`[BloodAnalysis] Dedup: removing duplicate section '${title}' (key: ${key})`);
+        return true; // duplicate
+      }
+      seenH2s.add(key);
+      return false;
+    };
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const h2Match = line.match(/^## (.+)/);
       if (h2Match) {
-        const key = normalizeForCheck(h2Match[1]);
-        if (seenH2s.has(key)) {
+        if (checkH2(h2Match[1])) {
           skipUntilNextH2 = true;
-          console.log(`[BloodAnalysis] Dedup: removing duplicate section '${h2Match[1]}'`);
           continue;
         }
-        seenH2s.add(key);
         skipUntilNextH2 = false;
       } else if (skipUntilNextH2) {
         if (line.match(/^## /)) {
-          // New H2 — check if it's also a dupe
           const newH2 = line.match(/^## (.+)/);
-          if (newH2) {
-            const k2 = normalizeForCheck(newH2[1]);
-            if (seenH2s.has(k2)) {
-              console.log(`[BloodAnalysis] Dedup: removing duplicate section '${newH2[1]}'`);
-              continue;
-            }
-            seenH2s.add(k2);
-            skipUntilNextH2 = false;
+          if (newH2 && checkH2(newH2[1])) {
+            continue;
           }
+          skipUntilNextH2 = false;
         } else {
           continue; // skip content of duplicate section
         }
