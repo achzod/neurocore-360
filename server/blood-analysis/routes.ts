@@ -897,13 +897,19 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        return;
 	      }
 
-	      const annexMatch = aiReportText.match(/(?ms)^##\\s+Annexes[^\\n]*\\n.*?(?=^##\\s+|\\Z)/);
-	      if (!annexMatch) {
+	      // Extract the "Annexes" H2 section without using unsupported PCRE features.
+	      // We find the first "## Annexes ..." heading, then slice until the next H2 ("## ") or EOF.
+	      const annexHeading = aiReportText.match(/^##\\s+Annexes\\b[^\\n]*\\n/m);
+	      if (!annexHeading || annexHeading.index == null) {
 	        res.status(400).json({ error: "Section Annexes introuvable dans le rapport" });
 	        return;
 	      }
 
-	      const currentAnnex = annexMatch[0];
+	      const annexStart = annexHeading.index;
+	      const afterHeadingStart = annexStart + annexHeading[0].length;
+	      const nextH2Rel = aiReportText.slice(afterHeadingStart).search(/\\n##\\s+/);
+	      const annexEnd = nextH2Rel === -1 ? aiReportText.length : afterHeadingStart + nextH2Rel + 1;
+	      const currentAnnex = aiReportText.slice(annexStart, annexEnd);
 	      if (currentAnnex.trim().length >= 2200) {
 	        res.json({ success: true, reportId: targetId, status: "already_ok", annexLen: currentAnnex.trim().length });
 	        return;
@@ -960,7 +966,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        return;
 	      }
 
-	      const updatedReport = aiReportText.replace(annexMatch[0], rewritten.trim() + "\n");
+	      const updatedReport =
+	        aiReportText.slice(0, annexStart) +
+	        rewritten.trim() +
+	        "\n\n" +
+	        aiReportText.slice(annexEnd);
 	      const issues = auditBloodReportQualityForMeta(updatedReport);
 	      const nowIso = new Date().toISOString();
 
