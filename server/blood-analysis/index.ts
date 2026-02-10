@@ -2118,33 +2118,14 @@ TUTOIEMENT + INCARNATION "JE"
 - Tu tutoies le client dans 100% du rapport : "Tu as...", "Ton insuline...", "Je te recommande..."
 - Tu utilises "je" pour incarner l'expert (analyse + decisions), mais sans repetition artificielle.
 - JAMAIS de tournures impersonnelles type "Le patient presente...", "On observe...", "Il est recommande de..."
+- Registre premium strict: direct mais calme. Jamais familier. Jamais agressif.
+- Interdictions explicites: pas de "mec", pas de "franchement", pas de "ecoute", pas de "je vais etre direct", pas de vulgarites.
+- Francais impeccable (accents, orthographe, ponctuation). Pas de style "sans accents".
 
 REGLES :
 - Tu tutoies le client dans 100% du rapport : "Tu as...", "Ton insuline...", "Je te recommande..."
 - Tu utilises "je" pour incarner l'expert, pas un ton neutre medical
 - JAMAIS de tournures impersonnelles type "Le patient presente...", "On observe...", "Il est recommande de..."
-
-PHRASES TYPE A UTILISER (pour atteindre 40+):
-- "Je vois que..." (analyses de marqueurs)
-- "Ce que je remarque..." (observations patterns)
-- "Je te recommande..." (actions)
-- "Laisse-moi t'expliquer..." (mecanismes complexes)
-- "Je suspecte..." (hypotheses diagnostiques)
-- "Mon analyse montre..." (conclusions)
-- "Je veux que tu..." (directives claires)
-
-TRANSFORMATIONS OBLIGATOIRES :
-❌ "Ton HOMA-IR est eleve"
-✅ "Je vois que ton HOMA-IR est eleve"
-
-❌ "Faire doser la testosterone"
-✅ "Je te recommande de faire doser ta testosterone"
-
-❌ "La SHBG regule..."
-✅ "Laisse-moi t'expliquer comment la SHBG regule..."
-
-❌ "Les causes probables sont..."
-✅ "Ce que je pense, c'est que les causes probables sont..."
 
 INTERDICTION ABSOLUE LISTES A PUCES :
 
@@ -2924,9 +2905,97 @@ const auditSectionMinimums = (output: string) => {
   return { issues, sections };
 };
 
+const auditStyleIssues = (output: string) => {
+  const sections = parseH2Sections(output);
+  const issues: string[] = [];
+  const sectionHits: Record<string, string[]> = {};
+
+  const addHit = (title: string, issue: string) => {
+    if (!sectionHits[title]) sectionHits[title] = [];
+    sectionHits[title].push(issue);
+  };
+
+  const normalized = normalizeForCheck(output);
+
+  // Common "low quality / non premium" phrases we want to eliminate reliably.
+  const bannedPhrases = [
+    "je vais etre direct",
+    "franchement",
+    "ecoute",
+    "mec",
+    "putain",
+    "bordel",
+    "c'est nul",
+  ];
+
+  // Medical/impersonal voice patterns that break the "incarne" style.
+  const impersonal = [
+    "le patient",
+    "la patiente",
+    "on observe",
+    "il est recommande",
+    "il convient de",
+    "il est conseille",
+  ];
+
+  // Global checks
+  if (/^\s*[-*]\s+/m.test(output) || /^\s*\d+\.\s+/m.test(output)) {
+    issues.push("bullets_present");
+  }
+  if (impersonal.some((p) => normalized.includes(p))) {
+    issues.push("impersonal_tone");
+  }
+  if (bannedPhrases.some((p) => normalized.includes(p))) {
+    issues.push("banned_phrase_present");
+  }
+
+  // Section attribution for targeted rewrites
+  for (const s of sections) {
+    const sNorm = normalizeForCheck(s.content || "");
+    for (const p of bannedPhrases) {
+      if (sNorm.includes(p)) addHit(s.title, `banned_phrase:${p}`);
+    }
+    for (const p of impersonal) {
+      if (sNorm.includes(p)) addHit(s.title, `impersonal:${p}`);
+    }
+    if (/^\s*[-*]\s+/m.test(s.content || "") || /^\s*\d+\.\s+/m.test(s.content || "")) {
+      addHit(s.title, "bullets_present");
+    }
+  }
+
+  // Accent heuristics (best-effort). Not perfect, but catches "sans accents" reports.
+  const accentPairs: Array<[string, string]> = [
+    ["etre", "être"],
+    ["tres", "très"],
+    ["ca", "ça"],
+    ["deja", "déjà"],
+    ["meme", "même"],
+    ["eleve", "élevé"],
+    ["elevee", "élevée"],
+    ["negligeable", "négligeable"],
+  ];
+  let accentMisses = 0;
+  for (const [plain, accented] of accentPairs) {
+    if (plain === accented) continue;
+    const plainCount = (output.match(new RegExp(`\\b${plain}\\b`, "gi")) || []).length;
+    const accentCount = (output.match(new RegExp(`\\b${accented}\\b`, "g")) || []).length;
+    if (plainCount >= 4 && accentCount === 0) accentMisses++;
+  }
+  if (accentMisses >= 2) issues.push("missing_accents_suspected");
+
+  return { issues, sectionHits };
+};
+
+const auditBloodReportAllIssues = (aiReport: string) => {
+  const base = auditSectionMinimums(aiReport || "");
+  const style = auditStyleIssues(aiReport || "");
+  const merged = Array.from(new Set([...base.issues, ...style.issues]));
+  return { issues: merged, sections: base.sections, style };
+};
+
 // Exposed for admin/meta refresh (no AI calls).
 export const auditBloodReportQualityForMeta = (aiReport: string) => {
-  return auditSectionMinimums(aiReport || "").issues;
+  return auditBloodReportAllIssues(aiReport || "").issues;
 };
 
 const replaceH2Section = (fullText: string, targetTitle: string, replacementSection: string): string => {
@@ -3645,7 +3714,7 @@ export async function generateAIBloodAnalysis(
   const SECTION_REWRITE_SYSTEM = `Tu es un expert en lecture de bilan sanguin.\n\nMISSION:\n- Tu REECRIS UNE SEULE section de rapport (Markdown) avec un titre '##' deja fourni.\n- Tu renvoies UNIQUEMENT cette section (du '##' jusqu'avant le prochain '##').\n\nREGLES STRICTES:\n- Francais impeccable (accents, orthographe), tutoiement.\n- Registre premium: calme, precis, jamais familier.\n- Interdiction: pas de \"mec\", pas de \"franchement\", pas de \"ecoute\", pas de \"je vais etre direct\", pas de vulgarites.\n- ZERO listes: pas de '- ', pas de '* ', pas de listes numerotees.\n- Pas d'emoji.\n- Tu n'inventes pas de donnees: si une info manque, ecris 'Non renseigne' en phrase.\n- Structure narrative: paragraphes fluides.\n`;
 
   const rewriteIfNeeded = async () => {
-    const audit = auditSectionMinimums(output);
+    const audit = auditBloodReportAllIssues(output);
     qualityIssues = audit.issues.slice();
     if (qualityIssues.length === 0) return;
 
@@ -3654,24 +3723,52 @@ export async function generateAIBloodAnalysis(
       if (key === "synthese") return findSection(sections, ["Synthese"])?.title || null;
       if (key === "qualite") return findSection(sections, ["Qualite"])?.title || null;
       if (key === "dashboard") return findSection(sections, ["Tableau de bord"])?.title || null;
+      if (key === "plan90") return findSection(sections, ["Plan d'action 90 jours", "Plan 90"])?.title || null;
       if (key === "annexes") return findSection(sections, ["Annexes"])?.title || null;
       if (key === "sources") return findSection(sections, ["Sources"])?.title || null;
       return null;
     };
 
+    const styleTargetTitles = Object.keys(audit.style.sectionHits || {});
+
     // Rewrite up to 4 sections per generation to keep runtime/cost bounded.
-    const targets = ["annexes", "qualite", "dashboard", "sources", "synthese"]
-      .filter((k) => qualityIssues.includes(`short_section:${k}`) || qualityIssues.includes(`missing_section:${k}`))
-      .slice(0, 4);
+    // 1) Fix missing/short core sections
+    // 2) Fix style violations where they happen (banned phrases, bullets, impersonal tone, missing accents)
+    const targetsByKey = ["annexes", "qualite", "dashboard", "plan90", "sources", "synthese"].filter(
+      (k) => qualityIssues.includes(`short_section:${k}`) || qualityIssues.includes(`missing_section:${k}`)
+    );
 
-    for (const key of targets) {
-      const title = pickTitle(key) || (key === "synthese" ? "Synthese executive" : null);
+    // If we suspect "sans accents" output or banned phrases globally, prioritise rewriting the opening sections.
+    if (qualityIssues.includes("missing_accents_suspected") || qualityIssues.includes("banned_phrase_present")) {
+      if (!targetsByKey.includes("synthese")) targetsByKey.unshift("synthese");
+      if (!targetsByKey.includes("qualite")) targetsByKey.push("qualite");
+    }
+
+    const targets: Array<{ key?: string; title?: string }> = [];
+    for (const k of targetsByKey) targets.push({ key: k });
+    for (const t of styleTargetTitles) targets.push({ title: t });
+
+    // Dedupe titles after resolving keys.
+    const resolvedTitles: string[] = [];
+    for (const item of targets) {
+      const title =
+        item.title ||
+        (item.key ? pickTitle(item.key) : null) ||
+        (item.key === "synthese" ? "Synthese executive" : null);
       if (!title) continue;
+      const norm = normalizeForCheck(title);
+      if (resolvedTitles.some((x) => normalizeForCheck(x) === norm)) continue;
+      resolvedTitles.push(title);
+      if (resolvedTitles.length >= 4) break;
+    }
 
-      const minChars = key === "synthese" ? 5000 : 2400;
+    for (const title of resolvedTitles) {
+      const isSynthese = normalizeForCheck(title).includes("synthese");
+      const isSources = normalizeForCheck(title).includes("sources");
+      const minChars = isSynthese ? 5000 : 2400;
 
       // Sources can be made robust deterministically if needed (no bullets).
-      if (key === "sources") {
+      if (isSources) {
         const sourcesSection = `## ${title}\n${buildSourcesSection()}`.trim();
         output = replaceH2Section(output, title, sourcesSection);
         continue;
@@ -3687,6 +3784,8 @@ export async function generateAIBloodAnalysis(
         `- Minimum ${minChars} caracteres (hors espaces)`,
         `- Paragraphes narratifs uniquement`,
         `- Concrete: donne des exemples, conditions de prelevement, limites, retest, et implications pratiques`,
+        `- Registre premium, accents, et suppression explicite de toute familiarite / vulgarite`,
+        `- Interdiction de listes (pas de tirets, pas de bullets, pas de "1.")`,
         ``,
         `REGLES:`,
         `- Retourne UNIQUEMENT la section complete, en commencant EXACTEMENT par:`,
@@ -3703,7 +3802,7 @@ export async function generateAIBloodAnalysis(
     }
 
     // Re-audit after rewrites
-    qualityIssues = auditSectionMinimums(output).issues.slice();
+    qualityIssues = auditBloodReportAllIssues(output).issues.slice();
   };
 
   // Pass 1: full report

@@ -1732,7 +1732,7 @@ export async function generateAuditTxt(
   let photoDataStr = '';
   if (tier === "ELITE") {
     if (photoAnalysis) {
-      const formattedAnalysis = formatPhotoAnalysisForReport(photoAnalysis, firstName);
+      const formattedAnalysis = formatPhotoAnalysisForReport(photoAnalysis);
       photoDataStr = `\n\nRAPPORT D'EXPERTISE VISUELLE (A INTEGRER DANS TON RECIT) :\n${formattedAnalysis}`;
     } else {
       photoDataStr = '\n\nPHOTOS NON DISPONIBLES : fais une analyse prudente, puis propose une PROCHAINE ETAPE GUIDEE (upload) + 2-3 tests video simples. Ne te justifie pas.';

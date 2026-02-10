@@ -5,7 +5,7 @@ export const PANEL_LABELS: Record<PanelKey, string> = {
   hormonal: "Hormones",
   thyroid: "Thyroide",
   metabolic: "Metabolisme",
-  inflammatory: "Inflammation",
+  inflammation: "Inflammation",
   vitamins: "Vitamines",
   liver_kidney: "Foie/Rein",
 };

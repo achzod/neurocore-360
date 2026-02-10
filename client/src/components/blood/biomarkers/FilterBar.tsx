@@ -13,7 +13,7 @@ const PANELS: PanelKey[] = [
   "hormonal",
   "thyroid",
   "metabolic",
-  "inflammatory",
+  "inflammation",
   "vitamins",
   "liver_kidney",
 ];

@@ -1029,7 +1029,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
   app.get("/api/blood-analysis/report/:id", async (req, res) => {
     try {
       // First try blood_reports table (legacy storage)
-      let report = await storage.getBloodReport(req.params.id);
+      // This endpoint returns a frontend-friendly shape (includes aiMeta) that is not the same
+      // as the DB/storage record type. Keep it untyped here to avoid leaking storage internals.
+      let report: any = await storage.getBloodReport(req.params.id);
       const reportId = req.params.id;
       let reportSource: "legacy" | "blood_tests" | "unknown" = report ? "legacy" : "unknown";
       let bloodTestRow: any | null = null;

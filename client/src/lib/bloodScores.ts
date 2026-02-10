@@ -23,7 +23,7 @@ export function calculateGlobalScore(markers: BloodMarker[]): number {
     hormonal: 0.25,
     metabolic: 0.2,
     thyroid: 0.15,
-    inflammatory: 0.15,
+    inflammation: 0.15,
     vitamins: 0.15,
     liver_kidney: 0.1,
   };

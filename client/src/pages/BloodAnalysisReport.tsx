@@ -155,7 +155,7 @@ const PANEL_KEYS: PanelKey[] = [
   "hormonal",
   "thyroid",
   "metabolic",
-  "inflammatory",
+  "inflammation",
   "vitamins",
   "liver_kidney",
 ];
@@ -164,7 +164,7 @@ const CATEGORY_LABELS: Record<PanelKey, string> = {
   hormonal: "Hormonal",
   thyroid: "Thyroide",
   metabolic: "Metabolisme",
-  inflammatory: "Inflammation",
+  inflammation: "Inflammation",
   vitamins: "Vitamines",
   liver_kidney: "Foie/Rein",
 };
