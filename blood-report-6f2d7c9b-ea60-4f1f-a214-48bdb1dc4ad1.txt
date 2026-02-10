@@ -1,0 +1,198 @@
+## SYNTHESE EXECUTIVE
+
+### Triage Prioritaire
+
+**[IMPORTANT]**
+- **LDL**: 115 mg/dL | Sous-optimal | Impact performance mesurable
+
+**[OPTIMISATION]**
+- **SHBG**: 35 nmol/L | Dans la zone optimale | Maintenir
+- **Estradiol (E2)**: 28 pg/mL | Dans la zone optimale | Maintenir
+- **Cortisol matin**: 15 µg/dL | Dans la zone optimale | Maintenir
+
+### Lecture Globale
+
+Profil homme (32 ans) avec 0 marqueur(s) critique(s) et 1 zone(s) sous-optimale(s). 9 marqueur(s) dans la zone optimale. Pas d'action urgente requise.
+
+### Marqueurs Manquants Critiques
+
+- Bilan relativement complet pour les marqueurs critiques.
+
+
+---
+
+## ANALYSE PAR AXE
+
+### POTENTIEL MUSCULAIRE & ANABOLISME — Score: 5/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| Testostérone totale | 450 ng/dL | 300-1000 | 600-900 | ⚪ |
+| Testostérone libre | 8.5 pg/mL | 5-25 | 15-25 | ⚪ |
+| SHBG | 35 nmol/L | 10-80 | 20-40 | 🟢 |
+| Estradiol (E2) | 28 pg/mL | 10-40 | 20-35 | 🟢 |
+
+**Lecture clinique:**
+Cet axe est bien equilibre. Maintenir les protocoles actuels.
+
+
+### METABOLISME & SENSIBILITE INSULINE — Score: 3/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| Glycémie à jeun | 92 mg/dL | 70-100 | 75-90 | ⚪ |
+| HbA1c | 5.4 % | 0-5.7 | 0-5.3 | ⚪ |
+| Insuline à jeun | 6.5 µIU/mL | 2-25 | 3-8 | 🟢 |
+| Triglycérides | 95 mg/dL | 0-150 | 0-80 | ⚪ |
+
+**Lecture clinique:**
+Cet axe est bien equilibre. Maintenir les protocoles actuels.
+
+
+### PROFIL LIPIDIQUE — Score: 5/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| Cholestérol total | 195 mg/dL | 0-190 | 150-200 | 🟢 |
+| HDL | 55 mg/dL | 40-999 | 55-999 | 🟢 |
+| LDL | 115 mg/dL | 0-100 | 70-100 | 🟠 |
+| Triglycérides | 95 mg/dL | 0-150 | 0-80 | ⚪ |
+
+**Lecture clinique:**
+1 marqueur(s) sous-optimal(aux) sur cet axe. Optimisation possible pour ameliorer la performance.
+
+
+### THYROIDE & METABOLISME DE BASE — Score: 7/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| TSH | 2.1 mIU/L | 0.4-4.5 | 0.5-2 | ⚪ |
+| T3 libre | 3.2 pg/mL | 2.3-4.2 | 3-4 | 🟢 |
+| T4 libre | 1.3 ng/dL | 0.8-1.8 | 1.2-1.6 | 🟢 |
+
+**Lecture clinique:**
+Cet axe est bien equilibre. Maintenir les protocoles actuels.
+
+
+### INFLAMMATION & STRESS OXYDATIF — Score: 5/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| Ferritine | 85 ng/mL | 20-300 | 80-150 | 🟢 |
+| CRP-us | 1.8 mg/L | 0-3 | 0-0.5 | ⚪ |
+
+**Lecture clinique:**
+Cet axe est bien equilibre. Maintenir les protocoles actuels.
+
+
+### MICRONUTRIMENTS & COFACTEURS — Score: 5/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| Vitamine D | 32 ng/mL | 30-100 | 50-80 | ⚪ |
+| Ferritine | 85 ng/mL | 20-300 | 80-150 | 🟢 |
+
+**Lecture clinique:**
+Cet axe est bien equilibre. Maintenir les protocoles actuels.
+
+
+### STRESS, CORTISOL & SOMMEIL — Score: 10/10
+
+**Marqueurs analyses:**
+| Marqueur | Valeur | Range Labo | Range Optimal | Statut |
+|----------|--------|------------|---------------|--------|
+| Cortisol matin | 15 µg/dL | 5-25 | 12-18 | 🟢 |
+
+**Lecture clinique:**
+Cet axe est bien equilibre. Maintenir les protocoles actuels.
+
+
+---
+
+## DEEP DIVE MARQUEURS PRIORITAIRES
+
+### LDL — 115 mg/dL — [IMPORTANT]
+
+**C'est quoi ce marqueur?**
+LDL est un biomarqueur essentiel pour evaluer la sante globale et la performance. Ce marqueur reflete l'etat physiologique et impacte directement les objectifs de performance et de composition corporelle.
+
+**Ton analyse personnalisee**
+Ta valeur de 115 mg/dL est sous-optimale par rapport aux standards athlete. Le range labo standard est 0-100, mais le range optimal athlete est 70-100. Cette valeur peut impacter ta recuperation, tes gains et ton energie quotidienne.
+
+**Impacts concrets sur ton corps**
+Un niveau sous-optimal de LDL peut affecter: recuperation musculaire, energie, sommeil, humeur et progression en salle. Les athletes avec des valeurs optimisees rapportent systematiquement de meilleures performances.
+
+**Protocole detaille**
+Phase 1 (J1-14): Ajuster alimentation et sommeil pour creer les conditions de base.
+Phase 2 (J15-45): Introduire supplementation ciblee si necessaire.
+Phase 3 (J45-90): Consolider les acquis et preparer le retest.
+
+---
+
+## CORRELATIONS LIFESTYLE
+
+- **Sommeil** (7 h/nuit): Sommeil correct mais perfectible pour la performance.
+  → Action: Vise +30 min et couche-toi plus regulierement.
+- **Stress** (6/10): Stress modere, garde un rituel quotidien.
+  → Action: Ajoute 5-10 min de respiration le soir.
+- **Training** (5 h/sem): Volume coherent avec performance et recuperation.
+  → Action: Maintiens 3-5 seances bien reparties.
+- **Deficit calorique** (0%): Deficit modere, soutenable pour la performance.
+  → Action: Continue avec un deficit stable.
+
+---
+
+## PLAN D'ACTION 90 JOURS
+
+### PHASE 1: ATTAQUE (Jours 1-30)
+
+**Focus:** Corriger les marqueurs critiques et initier les protocoles importants.
+
+**Supplementation:**
+| Supplement | Dosage | Timing | Pourquoi |
+|------------|--------|--------|----------|
+| Vitamine D3 | 5000 UI | Matin avec gras | Optimisation hormonale |
+| Magnesium Glycinate | 400mg | Soir | Recuperation, sommeil |
+| Omega-3 | 3g EPA+DHA | Repas | Anti-inflammatoire |
+
+**Nutrition:**
+- Réduire glucides raffinés
+- Marche post-prandiale 15min
+
+### PHASE 2: OPTIMISATION (Jours 31-60)
+
+**Focus:** Affiner les protocoles selon la reponse initiale.
+
+**Nutrition:**
+- Musculation 3x/semaine
+- Berbérine 500mg x2 ou Metformine (médecin)
+
+### PHASE 3: CONSOLIDATION (Jours 61-90)
+
+**Focus:** Stabiliser les acquis et preparer le retest.
+
+- Maintenir les protocoles qui fonctionnent
+- Ajuster les dosages si necessaire
+- Preparer la liste des marqueurs a retester
+
+### PHASE 4: RETEST (J+90)
+
+**Marqueurs a retester obligatoirement:**
+- LDL: 115 → cible 70-100 → amelioration attendue 15-30%
+
+**Controles supplementaires:**
+- LDL: 6-8 semaines - Vérifier évolution vers range optimal (mg/dL)
+---
+
+## VIGILANCE
+
+- Risque métabolique détecté - consultation recommandée
+---
+
+*Ce rapport est genere en mode fallback. Pour une analyse complete avec citations d'experts et protocoles detailles, veuillez regenerer le rapport.*

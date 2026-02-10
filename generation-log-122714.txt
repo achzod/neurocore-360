@@ -1,0 +1,31 @@
+🩸 Génération d'un nouveau rapport blood analysis...
+
+📝 Log: /Users/achzod/Desktop/neurocore/neurocore-github/generation-log-122714.txt
+
+📊 Analyse des marqueurs...
+
+✅ Analyse terminée:
+   - 9 marqueurs optimaux
+   - 9 marqueurs à surveiller
+   - 0 marqueurs critiques
+   - 1 patterns détectés
+
+🤖 Génération du rapport AI (peut prendre plusieurs minutes)...
+
+✅ Analyse AI générée: 99874 caractères
+👤 User found: d19f265a-2fda-4dd9-a51e-412d6000c1ba (alex.demo@neurocore360.com)
+
+✅ Rapport sauvegardé dans la base de données (blood_tests): 51d5f1b7-d08b-40b5-b0f8-3af67128aeba
+
+📋 LIENS D'ACCÈS:
+
+Dashboard (Ultrahuman-style):
+https://neurocore-360.onrender.com/analysis/51d5f1b7-d08b-40b5-b0f8-3af67128aeba?key=Badboy007
+
+Modern Interface (Nouvelle avec tabs):
+https://neurocore-360.onrender.com/blood-report/51d5f1b7-d08b-40b5-b0f8-3af67128aeba?key=Badboy007
+
+Local dev:
+http://localhost:5000/blood-report/51d5f1b7-d08b-40b5-b0f8-3af67128aeba
+
+📄 Rapport sauvegardé: /Users/achzod/Desktop/neurocore/neurocore-github/blood-report-51d5f1b7-d08b-40b5-b0f8-3af67128aeba.txt

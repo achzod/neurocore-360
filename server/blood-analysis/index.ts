@@ -1769,11 +1769,12 @@ INTERDICTIONS STRICTES :
 - ZERO enumeration seche sans explication
 
 CAS PARTICULIERS :
-- Tables/tableaux : OK pour presenter des donnees comparatives
-- Actions concretes : OK en liste (car c'est un plan d'action, pas une explication)
-- Tests manquants : OK en liste
-- Supplements : OK en liste structuree
-- Mais AVANT chaque liste, tu EXPLIQUES en phrases pourquoi ces actions/tests/supplements
+- Tables/tableaux : OK pour presenter des donnees comparatives (rare)
+- ZERO tiret "- ", ZERO asterisque "* ", ZERO liste numerotee "1. 2. 3."
+- ZERO pattern "Label : valeur" en debut de ligne (ex: "Priorite : [IMPORTANT]")
+- MEME pour les actions concretes, tests manquants, et supplements : tu les integres dans des phrases narratives fluides
+- Exemple CORRECT pour les supplements : "Je te recommande de commencer par la vitamine D3 a 5000 UI par jour, prise le matin avec un repas contenant du gras. En parallele, ajoute du zinc a 30mg au diner et du magnesium bisglycinate 400mg le soir avant de dormir."
+- Exemple INCORRECT : "- Vitamine D3 : 5000 UI/jour\n- Zinc : 30mg/jour\n- Magnesium : 400mg/jour"
 
 REGLE MAJEURE : RAG / BIBLIOTHEQUE SCRAPPEE
 Tu disposes d'une bibliotheque de connaissances (chunks) fournie dans l'entree.
@@ -1879,15 +1880,10 @@ FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 REGLES DETAILLEES PAR SECTION
 
 ## Synthese executive
-- 12 a 20 lignes.
-- Tu annonces : le diagnostic de terrain (ex: "terrain inflammatoire discret + metabolisme a securiser + axe androgenes a optimiser").
-- 3 a 6 priorites, classees.
-- 3 opportunites performance.
-- Tu annonces la logique : "On attaque X d'abord car c'est le goulot d'etranglement".
-- Tu donnes 2 scores :
-  - Score Sante (0-100) + confiance (elevee/moyenne/faible)
-  - Score Recomposition (0-100) + confiance
-- Tu ajoutes : "ce qui change tout si confirme".
+SECTION LA PLUS IMPORTANTE DU RAPPORT. MINIMUM 5000 CARACTERES (environ 40-50 lignes).
+Tu annonces le diagnostic de terrain en PARAGRAPHES NARRATIFS (pas de liste, pas de tirets).
+Couvre: diagnostic global avec metaphore concrete, chaque marqueur problematique detaille avec chiffres precis et pourcentage d'ecart, les interconnexions entre marqueurs, 3-6 priorites reliees entre elles, 3 opportunites performance, la logique d'attaque ("On attaque X d'abord car c'est le goulot d'etranglement"), 2 scores (Sante et Recomposition) integres dans le texte.
+Termine par une transition vers le reste du rapport.
 
 ## Qualite des donnees & limites
 - Liste courte et chirurgicale : unites, ranges, contexte, prelevement.
@@ -2049,52 +2045,30 @@ Tu selectionnes les marqueurs les plus importants pour :
 - energie/recup
 Tu evites de deep dive 30 marqueurs.
 
-FORMAT FIXE PAR MARQUEUR (OBLIGATOIRE)
+FORMAT PAR MARQUEUR (NARRATIF OBLIGATOIRE - ZERO TIRET/LISTE)
 ### [Nom du marqueur]
-- Priorite: [CRITIQUE/IMPORTANT/OPTIMISATION]
-- Valeur: X (unite) | Range labo: Y (si fourni)
-- Lecture clinique:
-- Lecture performance/bodybuilding:
-- Causes plausibles (ordre de probabilite):
-- Facteurs confondants:
-- Plan d'action (3 a 7 points):
-- Tests / data a ajouter:
-- Confiance: elevee/moyenne/faible
-- Sources (si utilisees): [SRC:ID] [SRC:ID]
+Tu ecris 4-8 PARAGRAPHES NARRATIFS par marqueur. INTERDICTION de listes a puces ou de patterns "Label: valeur".
+Couvre dans l'ordre naturel d'une conversation: la valeur et son contexte, ta lecture clinique puis performance, les causes plausibles, ton plan d'action detaille, les tests a ajouter, et ta confiance dans l'interpretation.
+Exemple: "Ta testosterone libre a 8.5 pg/mL, c'est 43% sous la zone que je considere optimale pour ton profil. En lecture clinique pure, ton endocrinologue te dirait que c'est 'dans les normes'. Mais en lecture performance, c'est ton goulot d'etranglement numero un pour l'hypertrophie..."
+Cite [SRC:ID] quand tu t'appuies sur un chunk fourni.
 
 ## Plan d'action 90 jours (hyper concret)
-Tu donnes un plan d'execution, pas une liste de voeux.
-- Chaque phase a :
-  - objectifs (2-4)
-  - actions (5-12)
-  - indicateurs (3-6)
-  - erreurs a eviter (2-5)
-- Retest : quoi tester + quand + conditions de prelevement.
-- Tu relies le plan au resultat physique : "ce levier = seche plus facile / recup meilleure / force stable".
+Tu donnes un plan d'execution EN PARAGRAPHES NARRATIFS, pas une liste de voeux.
+ZERO TIRET "- ", ZERO LISTE. Tu ecris les phases comme un coach qui briefe son athlete:
+"Pendant les 14 premiers jours, ton objectif principal est de poser les fondations. Je veux que tu commences la supplementation en vitamine D a 5000 UI chaque matin avec ton petit-dejeuner, que tu ajoutes 30 minutes de marche quotidienne pour le NEAT, et que tu structures tes repas autour de 3 prises principales espacees de 5 heures..."
+Couvre: objectifs mesurables, actions concretes avec dosages/timings, indicateurs de suivi, erreurs a eviter, et protocole de retest J+90.
+Tu relies le plan au resultat physique: "ce levier = seche plus facile / recup meilleure / force stable".
 
 ## Nutrition & entrainement (traduction pratique)
-Tu dois fournir :
-- Nutrition :
-  - structure hebdo (deficit intelligent)
-  - timing des glucides (autour training si besoin)
-  - proteines/fibres (sans inventer chiffres si pas de poids)
-  - focus micronutriments selon marqueurs
-- Entrainement :
-  - volume/intensite (deload si inflammation/stress)
-  - cardio (zone 2 / HIIT selon profil)
-  - NEAT
-  - recuperation (sommeil, steps, deload)
-
-REGLE : pas de macros chiffrees si tu n'as pas poids/taille/activite. Sinon tu proposes des plages.
+ECRIS EN PARAGRAPHES NARRATIFS (pas de listes). Couvre:
+Structure hebdo (deficit intelligent), timing des glucides (autour training si besoin), proteines/fibres, focus micronutriments selon marqueurs.
+Entrainement: volume/intensite (deload si inflammation/stress), cardio (zone 2 / HIIT selon profil), NEAT, recuperation (sommeil, steps, deload).
+REGLE: pas de macros chiffrees si tu n'as pas poids/taille/activite. Sinon tu proposes des plages.
 
 ## Supplements & stack (minimaliste mais impact)
-- 6 a 14 items max.
-- Pour chaque item :
-  - Pourquoi (cible biomarqueur/pattern)
-  - Dose indicative prudente (ou plage)
-  - Timing
-  - Duree
-  - Precautions / interactions
+6 a 14 supplements max. ECRIS EN PARAGRAPHES NARRATIFS.
+Pour chaque supplement, integre dans le texte: pourquoi (cible biomarqueur/pattern), dose indicative prudente, timing, duree, precautions/interactions.
+Exemple: "Je te recommande de commencer par la vitamine D3 a 5000 UI par jour, prise le matin avec un repas contenant du gras pour optimiser l'absorption. L'objectif est de passer de 32 a 50+ ng/mL en 90 jours, ce qui devrait avoir un impact direct sur ta testosterone et ton inflammation. Prends-la pendant au moins 3 mois puis reteste. Seule precaution: si tu prends deja un multivitamine contenant de la D, ajuste pour ne pas depasser 5000 UI total."
 - Si donnees insuffisantes : stack plus courte + tu l'assumes.
 
 ## Annexes (ultra long)
@@ -2594,17 +2568,13 @@ Tu selectionnes les marqueurs les plus importants pour :
 - energie/recup
 Tu evites de deep dive 30 marqueurs.
 
-FORMAT PAR MARQUEUR (ADAPTATIF - PAS ROBOTIQUE)
+FORMAT PAR MARQUEUR (NARRATIF - ZERO TIRET/LISTE/BULLET)
 ### [Nom du marqueur]
-- VARIE LA STRUCTURE selon le marqueur - ne sois PAS repetitif
-- Commence parfois par l'action, parfois par l'explication, parfois par un exemple
-- PAS DE LISTES A PUCES pour expliquer des concepts - uniquement pour actions concretes
-- INTEGRE les donnees dans des phrases, pas en lignes separees
-- "Priorite:" OK, "Valeur:" OK, mais le reste en paragraphes narratifs
-- SOURCES OBLIGATOIRES : Cite AU MOINS 2-3 sources DIFFERENTES dans cette section
-- DIVERSITE : Si tu as cite Examine 2 fois, cite Huberman ou Attia ensuite
-- Format source: [SRC: Nom_Source Titre_Article] (exemple: [SRC: Huberman Lab Insulin Resistance])
-- CONFIANCE : integre dans le texte final, pas en ligne separee
+ECRIS UNIQUEMENT EN PARAGRAPHES NARRATIFS. ZERO "- ", ZERO "* ", ZERO "1. ", ZERO pattern "Label: valeur" en debut de ligne.
+VARIE la structure selon le marqueur. Commence parfois par l'action, parfois par l'explication, parfois par un exemple.
+INTEGRE les donnees dans des phrases fluides, pas en lignes separees.
+Cite AU MOINS 2-3 sources DIFFERENTES [SRC:ID] dans cette section. Diversifie (Examine, Huberman, Attia, etc.).
+Integre la confiance et la priorite dans le texte narratif: "Ma confiance dans cette interpretation est elevee parce que..." pas "Confiance: elevee".
 
 ## Plan d'action 90 jours (hyper concret)
 Tu donnes un plan d'execution ultra-detaille avec DATES PRECISES, pas une liste de voeux vagues.
@@ -2627,57 +2597,23 @@ RETEST FINAL (OBLIGATOIRE):
 Precise EXACTEMENT: quels marqueurs + date (J+60 ou J+90) + conditions (matin 7-9h, jeun 12h, pas d'entrainement 48h, sommeil 7h+ la veille)
 
 ## Nutrition & entrainement (traduction pratique)
-Tu dois fournir :
-- Nutrition :
-  - structure hebdo (deficit intelligent)
-  - timing des glucides (autour training si besoin)
-  - proteines/fibres (sans inventer chiffres si pas de poids)
-  - focus micronutriments selon marqueurs
-- Entrainement :
-  - volume/intensite (deload si inflammation/stress)
-  - cardio (zone 2 / HIIT selon profil)
-  - NEAT
-  - recuperation (sommeil, steps, deload)
-
-REGLE : pas de macros chiffrees si tu n'as pas poids/taille/activite. Sinon tu proposes des plages.
+ECRIS EN PARAGRAPHES NARRATIFS UNIQUEMENT. ZERO TIRET "- ", ZERO LISTE.
+Couvre nutrition (structure hebdo, timing glucides, proteines/fibres, micronutriments selon marqueurs) et entrainement (volume/intensite, deload si inflammation, cardio zone 2/HIIT, NEAT, recuperation).
+REGLE: pas de macros chiffrees si tu n'as pas poids/taille/activite. Sinon tu proposes des plages.
 
 ## Supplements & stack (minimaliste mais impact)
-Stack ultra-precis avec dosages exacts, timing optimal, interactions.
-
-REGLES STRICTES (8-14 supplements maximum):
-- INTRODUCTION NARRATIVE: Commence par expliquer la philosophie du stack en paragraphes ("Voici comment je vois ton stack. Je vais pas te noyer sous 30 supplements. On va cibler les 10 leviers qui ont le plus d'impact sur...")
-- FORMAT PAR SUPPLEMENT (narratif puis liste structuree acceptable):
-  * NOM + FORME: "Magnesium bisglycinate" pas juste "magnesium"
-  * POURQUOI (1-2 phrases): "Je te mets ca parce que ton magnesium serique est limite et que ca va directement ameliorer ton sommeil et ta sensibilite a l'insuline"
-  * DOSAGE PRECIS: "400mg le soir" OU "200mg si <70kg, 400mg si >70kg" - JAMAIS vague
-  * TIMING OPTIMAL: "30 min avant coucher" / "le matin a jeun" / "pendant repas gras" - soit precis
-  * DUREE PROTOCOLE: "3 mois minimum avant retest" / "en continu" / "6 mois puis reevaluation"
-  * INTERACTIONS/PRECAUTIONS: "Ne pas combiner avec calcium (espace 2h)" / "Peut causer nausees a jeun, prendre apres repas si probleme"
-  * COUT APPROXIMATIF: "~15-20€/mois" si pertinent
-  * MARQUES SUGGEREES (optionnel): "Thorne, Pure Encapsulations, ou NOW Foods qualite correcte"
-
-PRIORITES OBLIGATOIRES PAR PATTERN:
-- Insulino-resistance: Berberine, Chrome, Inositol, Acide alpha-lipoique, Omega-3
-- Hypogonadisme: Vitamine D, Zinc, Magnesium, Ashwagandha, DHEA (si tres bas, precautions)
-- Thyroide: Selenium, Iode (avec precautions), Zinc, Tyrosine
-- Inflammation: Omega-3 haute dose, Curcumine, Spiruline
-- Support hepatique: NAC, Silymarine, Choline
-
-EXEMPLE COMPLET:
-"Vitamine D3 (cholecalciferol): Je te prescris ca en priorite parce que ton niveau est a 25 ng/mL, ce qui est franchement bas pour quelqu'un qui s'entraine. Dosage: 5000 UI par jour le matin pendant le petit-dejeuner (c'est une vitamine liposoluble donc toujours avec du gras). Duree: 3 mois en loading dose, puis on retest et on ajuste probablement a 2000-3000 UI en maintenance. Timing: le matin parce que ca peut legerement interferer avec la melatonine le soir chez certaines personnes. Cout: ~10€ pour 3 mois. Precautions: si tu prends deja un multi-vitamine, verifie qu'il n'y a pas deja 1000 UI dedans pour eviter surdosage (meme si quasi impossible sous 10000 UI/j). Marques: Thorne ou Pure Encapsulations pour qualite premium, NOW Foods ou Solgar pour budget serre."
+Stack ultra-precis avec dosages exacts, timing optimal, interactions. 6 a 14 supplements max.
+ECRIS TOUT EN PARAGRAPHES NARRATIFS. ZERO TIRET, ZERO LISTE, ZERO "* ".
+Commence par expliquer la philosophie du stack en paragraphes, puis decris chaque supplement dans un paragraphe fluide qui integre: forme precise, dosage, timing, duree, precautions/interactions.
+Exemple: "Je te recommande la vitamine D3 sous forme cholecalciferol a 5000 UI par jour, prise le matin avec ton petit-dejeuner qui contient du gras pour optimiser l'absorption. L'objectif est de passer de 25 a 50+ ng/mL en 90 jours. Continue pendant 3 mois puis reteste. Seule precaution: verifie que ton multivitamine ne contient pas deja de la D pour eviter de depasser 5000 UI au total. Budget: environ 10 euros pour 3 mois chez Thorne ou NOW Foods."
 
 ## Annexes (ultra long)
-Annex A : marqueurs secondaires (lecture rapide)
-- Format liste : statut + 1 ligne d'interpretation + action eventuelle.
-
-Annex B : hypotheses & tests
-- Tu listes les hypotheses non confirmees + tests pour confirmer/infirmer.
-
-Annex C : glossaire
-- Definitions simples en 1-2 lignes.
+Annex A: marqueurs secondaires en paragraphes narratifs (statut + interpretation + action eventuelle).
+Annex B: hypotheses non confirmees + tests pour confirmer/infirmer, en paragraphes.
+Annex C: glossaire en paragraphes (definitions simples).
 
 ## Sources (bibliotheque)
-- Liste des IDs utilises, groupes par theme.
+Liste des IDs utilises en paragraphes groupes par theme. Format narratif: "Pour la section thyroide, j'ai cite le Dr Antonio Bianco via Peter Attia [SRC:ID] pour..."
 
 ═══════════════════════════════════════════════════════════════
 VERIFICATION FINALE AVANT GENERATION (CHECKLIST OBLIGATOIRE)
@@ -2685,11 +2621,12 @@ VERIFICATION FINALE AVANT GENERATION (CHECKLIST OBLIGATOIRE)
 
 Avant de generer, COMPTE et VERIFIE:
 
-1. LISTES A PUCES: < 20 maximum dans TOUT le rapport (V5 = 57, INACCEPTABLE)
-2. OCCURRENCES "JE": 50-60 minimum (V5 = 15, REGRESSION CRITIQUE)
+1. ZERO TIRETS/BULLETS: AUCUN "- " ou "* " dans TOUT le rapport. Tout en paragraphes narratifs.
+2. OCCURRENCES "JE": 50-60 minimum
 3. SOURCES [SRC:...]: 12-15 minimum, diversifiees (pas que Examine)
 4. TIMELINES: TOUTES les actions ont des deadlines precises (J+7, J+14, J+30, etc.)
 5. DOSAGES: TOUS les supplements ont dosages precis + timing + duree
+6. SYNTHESE EXECUTIVE: minimum 5000 caracteres
 6. LONGUEUR: 60,000-90,000 caracteres
 
 DISTRIBUTION "JE" PAR SECTION (VERIFIE AVANT D'ENVOYER):
@@ -3502,6 +3439,49 @@ export async function generateAIBloodAnalysis(
     return text.slice(idx).trim();
   };
 
+  /** Deduplicate ## sections: keep first occurrence of each normalized title */
+  const deduplicateSections = (text: string): string => {
+    const lines = text.split("\n");
+    const result: string[] = [];
+    const seenH2s = new Set<string>();
+    let skipUntilNextH2 = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const h2Match = line.match(/^## (.+)/);
+      if (h2Match) {
+        const key = normalizeForCheck(h2Match[1]);
+        if (seenH2s.has(key)) {
+          skipUntilNextH2 = true;
+          console.log(`[BloodAnalysis] Dedup: removing duplicate section '${h2Match[1]}'`);
+          continue;
+        }
+        seenH2s.add(key);
+        skipUntilNextH2 = false;
+      } else if (skipUntilNextH2) {
+        if (line.match(/^## /)) {
+          // New H2 — check if it's also a dupe
+          const newH2 = line.match(/^## (.+)/);
+          if (newH2) {
+            const k2 = normalizeForCheck(newH2[1]);
+            if (seenH2s.has(k2)) {
+              console.log(`[BloodAnalysis] Dedup: removing duplicate section '${newH2[1]}'`);
+              continue;
+            }
+            seenH2s.add(k2);
+            skipUntilNextH2 = false;
+          }
+        } else {
+          continue; // skip content of duplicate section
+        }
+      }
+      if (!skipUntilNextH2) {
+        result.push(line);
+      }
+    }
+    return result.join("\n").trim();
+  };
+
   const firstMissingHeading = (text: string): string | null => {
     const normalized = normalizeForCheck(text);
     for (const heading of CANONICAL_ORDER) {
@@ -3572,7 +3552,7 @@ export async function generateAIBloodAnalysis(
   // Pass 1: full report
   try {
     output = await callClaudeOnce(
-      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et DETAILLE (25000-45000 caracteres) avec TOUTES les sections/axes du template. Tu as un budget de 16000 tokens. Chaque section doit etre substantielle avec des paragraphes narratifs. Assure-toi d'inclure les 12 sections ## et tous les ### Axe 1 a 11.`
+      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et DETAILLE (25000-45000 caracteres) avec TOUTES les sections/axes du template. Tu as un budget de 16000 tokens. REGLES CRITIQUES:\n1. La Synthese executive DOIT faire minimum 5000 caracteres — c'est la premiere chose que le client lit. Detaille CHAQUE marqueur problematique, explique les interconnexions, donne ton verdict global avec des chiffres precis.\n2. ZERO tiret, ZERO bullet point, ZERO liste a puces. Uniquement des paragraphes narratifs fluides. Pas de "- ", pas de "* ", pas de listes numerotees "1. 2. 3.". Tu ecris comme un expert qui parle, pas comme un PowerPoint.\n3. Chaque section ## doit faire minimum 2000 caracteres de paragraphes narratifs.\n4. Assure-toi d'inclure les 12 sections ## et tous les ### Axe 1 a 11.`
     );
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
@@ -3605,11 +3585,13 @@ export async function generateAIBloodAnalysis(
         `- Ne repete aucune section deja presente dans le rapport partiel.`,
         `- Si une section manque de donnees, ecris 'Non renseigne' mais garde le titre.`,
         `- Pas d'emoji.`,
+        `- ZERO tiret, ZERO bullet point, ZERO "- ", ZERO "* ", ZERO liste numerotee. Uniquement des paragraphes narratifs fluides.`,
+        `- Pas de pattern "Label : valeur" en debut de ligne. Integre les informations dans des phrases completes.`,
       ].join("\n");
 
       const continuation = await callClaudeOnce(continuationPrompt);
       const merged = `${stripSourcesFromReport(output)}\n\n${extractFromFirstH2(continuation)}`.trim();
-      output = merged;
+      output = deduplicateSections(merged);
       validation = validateBloodAnalysisReport(output);
       if (validation.ok) {
         const withSources = ensureSourcesSection(output);

@@ -1,0 +1,11 @@
+🩸 Génération d'un nouveau rapport blood analysis...
+
+📊 Analyse des marqueurs...
+
+✅ Analyse terminée:
+   - 9 marqueurs optimaux
+   - 9 marqueurs à surveiller
+   - 0 marqueurs critiques
+   - 1 patterns détectés
+
+🤖 Génération du rapport AI (peut prendre 2-3 minutes)...
