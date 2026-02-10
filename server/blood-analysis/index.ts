@@ -2910,12 +2910,14 @@ const auditSectionMinimums = (output: string) => {
     synthese: 5000,
     qualite: 2200,
     dashboard: 2200,
+    annexes: 2200,
     sources: 2200,
   };
 
   const synthese = findSection(sections, ["Synthese"]);
   const qualite = findSection(sections, ["Qualite"]);
   const dashboard = findSection(sections, ["Tableau de bord"]);
+  const annexes = findSection(sections, ["Annexes"]);
   const sources = findSection(sections, ["Sources"]);
 
   const checkLen = (id: keyof typeof minChars, section: H2Section | null) => {
@@ -2931,6 +2933,7 @@ const auditSectionMinimums = (output: string) => {
   checkLen("synthese", synthese);
   checkLen("qualite", qualite);
   checkLen("dashboard", dashboard);
+  checkLen("annexes", annexes);
   checkLen("sources", sources);
 
   return { issues, sections };
@@ -3666,14 +3669,15 @@ export async function generateAIBloodAnalysis(
       if (key === "synthese") return findSection(sections, ["Synthese"])?.title || null;
       if (key === "qualite") return findSection(sections, ["Qualite"])?.title || null;
       if (key === "dashboard") return findSection(sections, ["Tableau de bord"])?.title || null;
+      if (key === "annexes") return findSection(sections, ["Annexes"])?.title || null;
       if (key === "sources") return findSection(sections, ["Sources"])?.title || null;
       return null;
     };
 
-    // Rewrite up to 3 sections per generation to keep runtime/cost bounded.
-    const targets = ["qualite", "dashboard", "sources", "synthese"]
+    // Rewrite up to 4 sections per generation to keep runtime/cost bounded.
+    const targets = ["annexes", "qualite", "dashboard", "sources", "synthese"]
       .filter((k) => qualityIssues.includes(`short_section:${k}`) || qualityIssues.includes(`missing_section:${k}`))
-      .slice(0, 3);
+      .slice(0, 4);
 
     for (const key of targets) {
       const title = pickTitle(key) || (key === "synthese" ? "Synthese executive" : null);
