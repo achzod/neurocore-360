@@ -44,28 +44,57 @@ export function ReportSectionTab({
   // Normalize search IDs for better matching
   const normalizedSearchIds = sectionIds.map(normalizeSectionId);
 
+  // Build normalized ids once (avoid re-normalizing in nested loops)
+  const normalizedById = new Map<string, string>();
+  for (const section of reportSections) {
+    normalizedById.set(section.id, normalizeSectionId(section.id));
+  }
+
   // Use Set to prevent duplicate sections
   const matchedSectionIds = new Set<string>();
 
-  // Pass 1: Exact match (highest priority)
-  reportSections.forEach(section => {
-    const normalizedSectionId = normalizeSectionId(section.id);
-    if (normalizedSearchIds.includes(normalizedSectionId)) {
-      matchedSectionIds.add(section.id);
-    }
-  });
+  // Pick the best matching section for each searchId.
+  // This prevents the fuzzy substring matcher from accidentally pulling in unrelated sections.
+  const pickBestMatch = (searchId: string): string | null => {
+    if (!searchId) return null;
 
-  // Pass 2: Fuzzy match for remaining sections (more strict).
-  // We run this even if we already found exact matches, so tabs can aggregate multiple sections.
-  reportSections.forEach(section => {
-    const normalizedSectionId = normalizeSectionId(section.id);
-    const matches = normalizedSearchIds.some(searchId =>
-      normalizedSectionId.includes(searchId) && searchId.length >= 5
-    );
-    if (matches) {
-      matchedSectionIds.add(section.id);
+    let bestId: string | null = null;
+    let bestScore = -Infinity;
+
+    for (const section of reportSections) {
+      const normalizedSectionId = normalizedById.get(section.id) || "";
+
+      // Exact normalized match: strongest signal
+      if (normalizedSectionId === searchId) {
+        const score = 1000 - normalizedSectionId.length; // tie-break: shorter id wins
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = section.id;
+        }
+        continue;
+      }
+
+      // Fuzzy match: substring containment, but only for meaningful searchIds
+      if (searchId.length >= 5 && (normalizedSectionId.includes(searchId) || searchId.includes(normalizedSectionId))) {
+        // Prefer close-length matches + prefix matches
+        const lenDelta = Math.abs(normalizedSectionId.length - searchId.length);
+        const prefixBonus =
+          normalizedSectionId.startsWith(searchId) || searchId.startsWith(normalizedSectionId) ? 25 : 0;
+        const score = 500 - lenDelta + prefixBonus;
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = section.id;
+        }
+      }
     }
-  });
+
+    return bestId;
+  };
+
+  for (const searchId of normalizedSearchIds) {
+    const best = pickBestMatch(searchId);
+    if (best) matchedSectionIds.add(best);
+  }
 
   const sectionsToShow = reportSections.filter(section => matchedSectionIds.has(section.id));
 

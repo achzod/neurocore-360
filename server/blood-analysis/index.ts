@@ -2713,8 +2713,12 @@ const buildSourcesSection = (): string => {
   for (const [panel, citations] of Object.entries(PANEL_CITATIONS)) {
     lines.push(`### ${panel}`);
     for (const item of citations) {
-      lines.push(`- ${item.title} ${item.url}`);
+      // Narrative-friendly (no bullet lists) to comply with the V6 prompt constraints.
+      lines.push(
+        `${item.title} ${item.url} Cette reference sert de garde-fou: elle donne un cadre general (mecanisme + associations observees) pour eviter de sur-interpreter un seul marqueur hors contexte.`
+      );
     }
+    lines.push("");
   }
   return lines.join("\n");
 };
@@ -2867,6 +2871,89 @@ const validateBloodAnalysisReport = (output: string) => {
   if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(output)) missing.push("emoji_present");
 
   return { ok: missing.length === 0, missing };
+};
+
+type H2Section = { title: string; content: string };
+
+const parseH2Sections = (text: string): H2Section[] => {
+  if (!text) return [];
+  const lines = text.split("\n");
+  const sections: H2Section[] = [];
+  let current: H2Section | null = null;
+  for (const line of lines) {
+    if (line.startsWith("## ")) {
+      if (current) sections.push(current);
+      const title = line.slice(3).trim();
+      current = { title, content: line + "\n" };
+      continue;
+    }
+    if (current) current.content += line + "\n";
+  }
+  if (current) sections.push(current);
+  return sections;
+};
+
+const findSection = (sections: H2Section[], includesAny: string[]): H2Section | null => {
+  const keys = includesAny.map((k) => normalizeForCheck(k));
+  for (const section of sections) {
+    const title = normalizeForCheck(section.title);
+    if (keys.some((k) => title.includes(k))) return section;
+  }
+  return null;
+};
+
+const auditSectionMinimums = (output: string) => {
+  const sections = parseH2Sections(output);
+  const issues: string[] = [];
+
+  const minChars: Record<string, number> = {
+    synthese: 5000,
+    qualite: 2200,
+    dashboard: 2200,
+    sources: 2200,
+  };
+
+  const synthese = findSection(sections, ["Synthese"]);
+  const qualite = findSection(sections, ["Qualite"]);
+  const dashboard = findSection(sections, ["Tableau de bord"]);
+  const sources = findSection(sections, ["Sources"]);
+
+  const checkLen = (id: keyof typeof minChars, section: H2Section | null) => {
+    if (!section) {
+      issues.push(`missing_section:${id}`);
+      return;
+    }
+    if ((section.content || "").trim().length < minChars[id]) {
+      issues.push(`short_section:${id}`);
+    }
+  };
+
+  checkLen("synthese", synthese);
+  checkLen("qualite", qualite);
+  checkLen("dashboard", dashboard);
+  checkLen("sources", sources);
+
+  return { issues, sections };
+};
+
+const replaceH2Section = (fullText: string, targetTitle: string, replacementSection: string): string => {
+  if (!fullText || !targetTitle || !replacementSection) return fullText;
+  const sections = parseH2Sections(fullText);
+  const titleNorm = normalizeForCheck(targetTitle);
+
+  const rebuilt: string[] = [];
+  let replaced = false;
+  for (const s of sections) {
+    if (!replaced && normalizeForCheck(s.title) === titleNorm) {
+      rebuilt.push(replacementSection.trim());
+      replaced = true;
+      continue;
+    }
+    rebuilt.push(s.content.trim());
+  }
+  // If we couldn't find the section, append at the end (best-effort).
+  if (!replaced) rebuilt.push(replacementSection.trim());
+  return rebuilt.filter(Boolean).join("\n\n").trim() + "\n";
 };
 
 export function buildFallbackAnalysis(
@@ -3503,7 +3590,7 @@ export async function generateAIBloodAnalysis(
     return null;
   };
 
-  const callClaudeOnce = async (prompt: string) => {
+  const callClaudeOnce = async (prompt: string, opts?: { system?: string }) => {
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
     const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
@@ -3532,7 +3619,7 @@ export async function generateAIBloodAnalysis(
             model,
             max_tokens: maxTokens,
             temperature: 0.4,
-            system: BLOOD_ANALYSIS_SYSTEM_PROMPT_V6,
+            system: opts?.system || BLOOD_ANALYSIS_SYSTEM_PROMPT_V6,
             messages: [{ role: "user", content: prompt }],
           } as any);
           const finalMessage = await stream.finalMessage();
@@ -3560,6 +3647,70 @@ export async function generateAIBloodAnalysis(
 
   let output = "";
   let validation = { ok: false, missing: ["no_attempt"] as string[] };
+  let qualityIssues: string[] = [];
+
+  const SECTION_REWRITE_SYSTEM = `Tu es un expert en lecture de bilan sanguin.\n\nMISSION:\n- Tu REECRIS UNE SEULE section de rapport (Markdown) avec un titre '##' deja fourni.\n- Tu renvoies UNIQUEMENT cette section (du '##' jusqu'avant le prochain '##').\n\nREGLES STRICTES:\n- Francais, tutoiement.\n- ZERO listes: pas de '- ', pas de '* ', pas de listes numerotees.\n- Pas d'emoji.\n- Tu n'inventes pas de donnees: si une info manque, ecris 'Non renseigne' en phrase.\n- Structure narrative: paragraphes fluides.\n`;
+
+  const rewriteIfNeeded = async () => {
+    const audit = auditSectionMinimums(output);
+    qualityIssues = audit.issues.slice();
+    if (qualityIssues.length === 0) return;
+
+    const pickTitle = (key: string): string | null => {
+      const sections = audit.sections;
+      if (key === "synthese") return findSection(sections, ["Synthese"])?.title || null;
+      if (key === "qualite") return findSection(sections, ["Qualite"])?.title || null;
+      if (key === "dashboard") return findSection(sections, ["Tableau de bord"])?.title || null;
+      if (key === "sources") return findSection(sections, ["Sources"])?.title || null;
+      return null;
+    };
+
+    // Rewrite up to 3 sections per generation to keep runtime/cost bounded.
+    const targets = ["qualite", "dashboard", "sources", "synthese"]
+      .filter((k) => qualityIssues.includes(`short_section:${k}`) || qualityIssues.includes(`missing_section:${k}`))
+      .slice(0, 3);
+
+    for (const key of targets) {
+      const title = pickTitle(key) || (key === "synthese" ? "Synthese executive" : null);
+      if (!title) continue;
+
+      const minChars = key === "synthese" ? 5000 : 2400;
+
+      // Sources can be made robust deterministically if needed (no bullets).
+      if (key === "sources") {
+        const sourcesSection = `## ${title}\n${buildSourcesSection()}`.trim();
+        output = replaceH2Section(output, title, sourcesSection);
+        continue;
+      }
+
+      const rewritePrompt = [
+        basePrompt,
+        ``,
+        `SECTION A REECRIRE:`,
+        `## ${title}`,
+        ``,
+        `OBJECTIF:`,
+        `- Minimum ${minChars} caracteres (hors espaces)`,
+        `- Paragraphes narratifs uniquement`,
+        `- Concrete: donne des exemples, conditions de prelevement, limites, retest, et implications pratiques`,
+        ``,
+        `REGLES:`,
+        `- Retourne UNIQUEMENT la section complete, en commencant EXACTEMENT par:`,
+        `## ${title}`,
+        `- Ne rajoute aucun autre '##' apres. Pas de commentaires.`,
+      ].join("\n");
+
+      const rewritten = await callClaudeOnce(rewritePrompt, { system: SECTION_REWRITE_SYSTEM });
+      if (rewritten && rewritten.includes("## ")) {
+        const parsed = parseH2Sections(rewritten);
+        const first = parsed[0]?.content?.trim();
+        if (first) output = replaceH2Section(output, title, first);
+      }
+    }
+
+    // Re-audit after rewrites
+    qualityIssues = auditSectionMinimums(output).issues.slice();
+  };
 
   // Pass 1: full report
   try {
@@ -3568,8 +3719,16 @@ export async function generateAIBloodAnalysis(
     );
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
+      await rewriteIfNeeded();
       const withSources = ensureSourcesSection(output);
-      return { report: trimAiAnalysis(withSources), status: "generated", model };
+      const after = trimAiAnalysis(withSources);
+      const remaining = auditSectionMinimums(after).issues;
+      return {
+        report: after,
+        status: "generated",
+        model,
+        ...(remaining.length ? { validationMissing: remaining } : {}),
+      };
     }
   } catch (err: any) {
     console.error("[BloodAnalysis] Claude generation failed (pass1):", err?.message || err);
@@ -3606,8 +3765,16 @@ export async function generateAIBloodAnalysis(
       output = deduplicateSections(merged);
       validation = validateBloodAnalysisReport(output);
       if (validation.ok) {
+        await rewriteIfNeeded();
         const withSources = ensureSourcesSection(output);
-        return { report: trimAiAnalysis(withSources), status: "generated", model };
+        const after = trimAiAnalysis(withSources);
+        const remaining = auditSectionMinimums(after).issues;
+        return {
+          report: after,
+          status: "generated",
+          model,
+          ...(remaining.length ? { validationMissing: remaining } : {}),
+        };
       }
       console.warn(`[BloodAnalysis] Continuation pass ${pass} still invalid:`, validation.missing.join(", "));
     } catch (err: any) {
