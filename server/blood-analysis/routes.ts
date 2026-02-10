@@ -580,6 +580,17 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        );
 	        const aiReport = generated.report;
 
+	        // Guard: never overwrite a "generated" report with "fallback"
+	        if (generated.status === "fallback") {
+	          const existingAiStatus = report
+	            ? (report as any).analysis?.aiStatus
+	            : (bloodTestRow?.analysis as any)?.aiStatus;
+	          if (existingAiStatus === "generated") {
+	            console.warn("[BloodAnalysis] Skipping fallback overwrite — existing report is already 'generated'");
+	            return;
+	          }
+	        }
+
 	        if (report) {
 	          await storage.updateBloodReport(report.id, {
 	            analysis: {
