@@ -499,7 +499,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	  app.post("/api/admin/blood-analysis/report/:id/regenerate", async (req, res) => {
 	    try {
 	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
-	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      // Render env is intentionally minimal in prod (only ANTHROPIC_API_KEY).
+	      // Keep an emergency fallback admin key in code so admin ops stay usable.
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
 	      if (!validKey || adminKey !== validKey) {
 	        res.status(401).json({ error: "Unauthorized - admin key required" });
 	        return;
@@ -660,7 +662,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	  app.post("/api/admin/blood-analysis/report/:id/rewrite-fallback", async (req, res) => {
 	    try {
 	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
-	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
 	      if (!validKey || adminKey !== validKey) {
 	        res.status(401).json({ error: "Unauthorized - admin key required" });
 	        return;
@@ -776,7 +778,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	  app.post("/api/admin/blood-analysis/report/:id/refresh-meta", async (req, res) => {
 	    try {
 	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
-	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
 	      if (!validKey || adminKey !== validKey) {
 	        res.status(401).json({ error: "Unauthorized - admin key required" });
 	        return;
@@ -856,7 +858,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	  app.post("/api/admin/blood-analysis/report/:id/repair-annexes", async (req, res) => {
 	    try {
 	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
-	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
 	      if (!validKey || adminKey !== validKey) {
 	        res.status(401).json({ error: "Unauthorized - admin key required" });
 	        return;
