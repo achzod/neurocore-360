@@ -1064,15 +1064,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        report
 	          ? String((report as any).aiReport || "")
 	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
-	      const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReportTextRaw));
-	      if (!aiReportText.trim()) {
+	      const before = aiReportTextRaw || "";
+	      const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(before));
+	      if (!after.trim()) {
 	        res.status(400).json({ error: "aiReport vide" });
 	        return;
 	      }
-
-	      const before = aiReportText;
-	      const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(before));
-	      const changed = before !== after;
+	      const changed = String(before).trim() !== String(after).trim();
 
 	      const nowIso = new Date().toISOString();
 	      const issues = auditBloodReportQualityForMeta(after);
@@ -1153,11 +1151,16 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        .toLowerCase()
 	        .trim();
 	      const forceRewrite = rawForce === "1" || rawForce === "true" || rawForce === "yes";
-	      const sectionKey = rawSection === "supplements" || rawSection === "supplementation" ? "supplements"
-	        : rawSection === "nutrition" || rawSection === "training" || rawSection === "protocoles" ? "nutrition"
-	        : "";
+	      const sectionKey =
+	        rawSection === "supplements" || rawSection === "supplementation"
+	          ? "supplements"
+	          : rawSection === "nutrition" || rawSection === "training" || rawSection === "protocoles"
+	          ? "nutrition"
+	          : rawSection === "axes" || rawSection === "axe" || rawSection === "analyse-axes"
+	          ? "axes"
+	          : "";
 	      if (!sectionKey) {
-	        res.status(400).json({ error: "Section invalide (utilise: nutrition | supplements)" });
+	        res.status(400).json({ error: "Section invalide (utilise: nutrition | supplements | axes)" });
 	        return;
 	      }
 
@@ -1191,6 +1194,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const headingRegex =
 	        sectionKey === "nutrition"
 	          ? /^##\s+Nutrition\b[^\n]*\n/m
+	          : sectionKey === "axes"
+	          ? /^##\s+(Lecture compartiment[ée]e par axes|Analyse par axe[s]?)[^\n]*\n/m
 	          : /^##\s+Suppl[ée]ments?\b[^\n]*\n/m;
 
 	      const headingMatch = aiReportText.match(headingRegex);
@@ -1204,10 +1209,16 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const nextH2Rel = aiReportText.slice(afterHeadingStart).search(/\n##\s+/);
 	      const end = nextH2Rel === -1 ? aiReportText.length : afterHeadingStart + nextH2Rel + 1;
 	      const currentSection = aiReportText.slice(start, end);
-	      const titleLine = currentSection.split("\n")[0] || (sectionKey === "nutrition" ? "## Nutrition & entrainement (traduction pratique)" : "## Supplements & stack (minimaliste mais impact)");
+	      const titleLine =
+	        currentSection.split("\n")[0] ||
+	        (sectionKey === "nutrition"
+	          ? "## Nutrition & entrainement (traduction pratique)"
+	          : sectionKey === "axes"
+	          ? "## Lecture compartimentee par axes"
+	          : "## Supplements & stack (minimaliste mais impact)");
 	      const title = titleLine.replace(/^##\s+/, "").trim();
 
-	      const minChars = sectionKey === "nutrition" ? 5200 : 6500;
+	      const minChars = sectionKey === "nutrition" ? 5200 : sectionKey === "axes" ? 9000 : 6500;
 	      if (!forceRewrite && currentSection.trim().length >= minChars) {
 	        res.json({ success: true, reportId: targetId, status: "already_ok", section: sectionKey, currentLen: currentSection.trim().length });
 	        return;
@@ -1260,7 +1271,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        `- Ultra concret et expert: mecanismes, application pratique, priorisation, dosages/timing/duree/precautions si supplements.`,
 	        sectionKey === "supplements"
 	          ? `- Supplements: minimum 6 interventions, chacune avec forme, dosage chiffre, timing, duree, interactions/precautions et condition de retest.`
-	          : `- Nutrition: periodisation hebdo, logique physiologique, charge d'entrainement, cardio/NEAT, recuperation et timelines concretes.`,
+	          : sectionKey === "nutrition"
+	          ? `- Nutrition: periodisation hebdo, logique physiologique, charge d'entrainement, cardio/NEAT, recuperation et timelines concretes.`
+	          : `- Axes: conserve obligatoirement les 11 sous-titres canonique ### Axe 1 a ### Axe 11 avec un contenu dense et personnalise pour chaque axe.`,
 	        `- Interdiction des formulations vagues type: "optimiser" sans parametres operationnels.`,
 	        `- Tu utilises la connaissance scientifique en arriere-plan SANS afficher de source.`,
 	        `- Tu commences EXACTEMENT par: ## ${title}`,
@@ -1270,7 +1283,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const anthropic = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
 	      const resp = await anthropic.messages.create({
 	        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
-	        max_tokens: 8000,
+	        max_tokens: sectionKey === "axes" ? 9000 : 8000,
 	        temperature: 0.35,
 	        system,
 	        messages: [{ role: "user", content: prompt }],
