@@ -23,6 +23,8 @@ export function BiomarkerBar({
 }: BiomarkerBarProps) {
   const { theme } = useBloodTheme();
   const colors = getBiomarkerStatusColor(status);
+  const formatRange = (min?: number, max?: number) =>
+    typeof min === "number" && typeof max === "number" ? `${min} a ${max}` : "N/A";
 
   // Calculate range bounds
   const rangeMin =
@@ -130,13 +132,13 @@ export function BiomarkerBar({
         {normalMin !== undefined && normalMax !== undefined && (
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: `${theme.status.normal}60` }} />
-            <span>Normal: {normalMin}-{normalMax}</span>
+            <span>Normal: {formatRange(normalMin, normalMax)}</span>
           </div>
         )}
         {optimalMin !== undefined && optimalMax !== undefined && (
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded" style={{ backgroundColor: `${theme.status.optimal}80` }} />
-            <span>Optimal: {optimalMin}-{optimalMax}</span>
+            <span>Optimal: {formatRange(optimalMin, optimalMax)}</span>
           </div>
         )}
       </div>

@@ -16,6 +16,8 @@ interface BiomarkerRangeIndicatorProps {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+const formatRange = (min?: number, max?: number) =>
+  typeof min === "number" && typeof max === "number" ? `${min} a ${max}` : "N/A";
 
 export function BiomarkerRangeIndicator({
   value,
@@ -53,9 +55,9 @@ export function BiomarkerRangeIndicator({
     <div className={`space-y-2 ${className}`}>
       <div className="flex items-center justify-between text-[11px]" style={{ color: theme.textTertiary }}>
         <span>
-          {normalLabel || (hasRange ? `Normal: ${normalMin}-${normalMax}` : "Normal: N/A")}
+          {normalLabel || `Normal: ${formatRange(normalMin, normalMax)}`}
         </span>
-        <span>{optimalLabel || (optimalMin !== undefined && optimalMax !== undefined ? `Optimal: ${optimalMin}-${optimalMax}` : "Optimal: N/A")}</span>
+        <span>{optimalLabel || `Optimal: ${formatRange(optimalMin, optimalMax)}`}</span>
       </div>
       <div className="relative h-3 overflow-hidden rounded-full" style={{ backgroundColor: theme.borderSubtle }}>
         <div className="absolute inset-0 flex">
