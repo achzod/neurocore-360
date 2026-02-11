@@ -73,10 +73,10 @@ export function OverviewTab({
           <div className="space-y-3 sm:space-y-4 text-sm sm:text-base" style={{ color: currentTheme.colors.text, lineHeight: '1.7' }}>
             <p>
               Tes biomarqueurs racontent une histoire. Chaque valeur, chaque marqueur est une pièce du puzzle qui révèle
-              comment ton corps fonctionne réellement - au-delà des symptômes, au-delà des sensations.
+              comment ton corps fonctionne réellement, au dela des symptomes, au dela des sensations.
             </p>
             <p>
-              Cette analyse premium va au-delà des "ranges normaux" classiques. Nous utilisons des ranges optimaux,
+              Cette analyse premium va au dela des "ranges normaux" classiques. Nous utilisons des ranges optimaux,
               une lecture systémique et une approche de performance pour identifier non seulement ce qui ne va pas,
               mais surtout <strong>comment maximiser ton potentiel physiologique</strong>.
             </p>
@@ -88,7 +88,7 @@ export function OverviewTab({
               <li>Une analyse détaillée de chaque biomarqueur avec interprétation contextuelle</li>
               <li>Des axes d'optimisation prioritaires basés sur l'interconnexion de tes marqueurs</li>
               <li>Un plan d'action 90 jours concret et personnalisé</li>
-              <li>Des protocoles de nutrition et supplémentation evidence-based</li>
+              <li>Des protocoles de nutrition et supplémentation evidence based</li>
             </ul>
             <p className="pt-2">
               Prends le temps d'explorer chaque section. Chaque insight a été généré en analysant l'ensemble de tes données,
