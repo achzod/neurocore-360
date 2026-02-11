@@ -1131,6 +1131,183 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	    }
 	  });
 
+	  /**
+	   * POST /api/admin/blood-analysis/report/:id/rewrite-section
+	   * Targeted rewrite for one heavy section (nutrition / supplements) without full regeneration.
+	   */
+	  app.post("/api/admin/blood-analysis/report/:id/rewrite-section", async (req, res) => {
+	    try {
+	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
+	      if (!validKey || adminKey !== validKey) {
+	        res.status(401).json({ error: "Unauthorized - admin key required" });
+	        return;
+	      }
+	      if (!validateAnthropicConfig()) {
+	        res.status(400).json({ error: "ANTHROPIC_API_KEY manquante" });
+	        return;
+	      }
+
+	      const rawSection = String(req.query.section || (req.body as any)?.section || "").toLowerCase().trim();
+	      const sectionKey = rawSection === "supplements" || rawSection === "supplementation" ? "supplements"
+	        : rawSection === "nutrition" || rawSection === "training" || rawSection === "protocoles" ? "nutrition"
+	        : "";
+	      if (!sectionKey) {
+	        res.status(400).json({ error: "Section invalide (utilise: nutrition | supplements)" });
+	        return;
+	      }
+
+	      const targetId = req.params.id;
+	      let report = await storage.getBloodReport(targetId);
+	      let bloodTestRow: any | null = null;
+
+	      if (!report) {
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+	        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, targetId));
+	        if (results.length > 0) bloodTestRow = results[0];
+	      }
+
+	      if (!report && !bloodTestRow) {
+	        res.status(404).json({ error: "Rapport introuvable" });
+	        return;
+	      }
+
+	      const aiReportRaw =
+	        report
+	          ? String((report as any).aiReport || "")
+	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
+	      const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReportRaw));
+	      if (!aiReportText.trim()) {
+	        res.status(400).json({ error: "aiReport vide" });
+	        return;
+	      }
+
+	      const headingRegex =
+	        sectionKey === "nutrition"
+	          ? /^##\s+Nutrition\b[^\n]*\n/m
+	          : /^##\s+Suppl[ée]ments?\b[^\n]*\n/m;
+
+	      const headingMatch = aiReportText.match(headingRegex);
+	      if (!headingMatch || headingMatch.index == null) {
+	        res.status(400).json({ error: "Section cible introuvable dans le rapport" });
+	        return;
+	      }
+
+	      const start = headingMatch.index;
+	      const afterHeadingStart = start + headingMatch[0].length;
+	      const nextH2Rel = aiReportText.slice(afterHeadingStart).search(/\n##\s+/);
+	      const end = nextH2Rel === -1 ? aiReportText.length : afterHeadingStart + nextH2Rel + 1;
+	      const currentSection = aiReportText.slice(start, end);
+	      const titleLine = currentSection.split("\n")[0] || (sectionKey === "nutrition" ? "## Nutrition & entrainement (traduction pratique)" : "## Supplements & stack (minimaliste mais impact)");
+	      const title = titleLine.replace(/^##\s+/, "").trim();
+
+	      const minChars = sectionKey === "nutrition" ? 5200 : 6500;
+	      if (currentSection.trim().length >= minChars) {
+	        res.json({ success: true, reportId: targetId, status: "already_ok", section: sectionKey, currentLen: currentSection.trim().length });
+	        return;
+	      }
+
+	      const analysisObj = report
+	        ? ((report as any).analysis || {})
+	        : (((bloodTestRow?.analysis as any) || {}) as Record<string, unknown>);
+	      const markers = Array.isArray((analysisObj as any).markers) ? (analysisObj as any).markers : [];
+	      const markerLines = markers
+	        .slice(0, 50)
+	        .map((m: any) => `${m.name || m.markerId || m.id}: ${m.value ?? "N/A"} ${m.unit || ""} (${String(m.status || "normal")})`)
+	        .join("\n");
+
+	      const system = `Tu es un expert clinique et performance tres haut niveau.\nMISSION: re-ecrire UNE section uniquement.\nREGLES STRICTES: francais impeccable, ton premium, narratif dense, zero liste, zero tirets, zero [SRC], aucune section Sources.`;
+	      const prompt = [
+	        `Section a re-ecrire:`,
+	        `## ${title}`,
+	        ``,
+	        `Contexte biomarqueurs (best effort):`,
+	        markerLines || "Non renseigne",
+	        ``,
+	        `Exigences obligatoires:`,
+	        `- Minimum ${minChars} caracteres.`,
+	        `- Paragraphes narratifs uniquement (pas de bullets).`,
+	        `- Ultra concret et expert: mecanismes, application pratique, priorisation, dosages/timing/duree/precautions si supplements.`,
+	        `- Tu utilises la connaissance scientifique en arriere-plan SANS afficher de source.`,
+	        `- Tu commences EXACTEMENT par: ## ${title}`,
+	        `- Tu ne renvoies aucun autre bloc '##' ensuite.`,
+	      ].join("\n");
+
+	      const anthropic = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
+	      const resp = await anthropic.messages.create({
+	        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	        max_tokens: 7000,
+	        temperature: 0.35,
+	        system,
+	        messages: [{ role: "user", content: prompt }],
+	      } as any);
+
+	      const textContent = (resp as any).content?.find((c: any) => c.type === "text");
+	      const rewritten = String(textContent?.text || "").trim();
+	      if (!rewritten.startsWith("## ")) {
+	        res.status(500).json({ error: "Claude n'a pas renvoye une section valide" });
+	        return;
+	      }
+
+	      const mergedRaw = aiReportText.slice(0, start) + rewritten.trim() + "\n\n" + aiReportText.slice(end);
+	      const merged = ensureAxesSectionTemplate(sanitizeBloodReportRegister(mergedRaw));
+	      const nowIso = new Date().toISOString();
+	      const issues = auditBloodReportQualityForMeta(merged);
+
+	      if (report) {
+	        const existingAnalysis =
+	          (report as any).analysis && typeof (report as any).analysis === "object" && (report as any).analysis !== null
+	            ? (report as any).analysis
+	            : {};
+	        await storage.updateBloodReport(targetId, {
+	          aiReport: merged,
+	          analysis: {
+	            ...existingAnalysis,
+	            aiStatus: "generated",
+	            aiModel: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	            aiGeneratedAt: nowIso,
+	            aiValidationMissing: issues.length ? issues : null,
+	          } as any,
+	        } as any);
+	      } else {
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+	        const existingAnalysis =
+	          bloodTestRow && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+	            ? (bloodTestRow.analysis as Record<string, unknown>)
+	            : {};
+	        await db
+	          .update(bloodTests)
+	          .set({
+	            analysis: {
+	              ...existingAnalysis,
+	              aiReport: merged,
+	              aiAnalysis: merged,
+	              aiStatus: "generated",
+	              aiModel: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	              aiGeneratedAt: nowIso,
+	              aiValidationMissing: issues.length ? issues : null,
+	            } as any,
+	          })
+	          .where(eq(bloodTests.id, targetId));
+	      }
+
+	      res.json({
+	        success: true,
+	        reportId: targetId,
+	        section: sectionKey,
+	        rewrittenLen: rewritten.length,
+	        validationMissing: issues.length ? issues : null,
+	      });
+	    } catch (error) {
+	      console.error("[BloodAnalysis] rewrite-section error:", error);
+	      res.status(500).json({ error: "Erreur rewrite-section" });
+	    }
+	  });
+
   /**
    * GET /api/blood-analysis/report/:id
    * Fetch stored blood analysis report
