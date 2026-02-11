@@ -13,6 +13,7 @@ import {
   getBloodworkKnowledgeContext,
   auditBloodReportQualityForMeta,
   sanitizeBloodReportRegister,
+  ensureAxesSectionTemplate,
   buildFallbackAnalysis,
   normalizeMarkerName,
   BIOMARKER_RANGES,
@@ -804,10 +805,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        return;
 	      }
 
-	      const aiReportText =
+	      const aiReportTextRaw =
 	        report
 	          ? String((report as any).aiReport || "")
 	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
+	      const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReportTextRaw));
 
 	      const issues = auditBloodReportQualityForMeta(aiReportText);
 	      const nowIso = new Date().toISOString();
@@ -889,10 +891,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        return;
 	      }
 
-	      const aiReportText =
+	      const aiReportTextRaw =
 	        report
 	          ? String((report as any).aiReport || "")
 	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
+	      const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReportTextRaw));
 	      if (!aiReportText.trim()) {
 	        res.status(400).json({ error: "aiReport vide" });
 	        return;
@@ -968,11 +971,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        return;
 	      }
 
-	      const updatedReport =
+	      const updatedReportRaw =
 	        aiReportText.slice(0, annexStart) +
 	        rewritten.trim() +
 	        "\n\n" +
 	        aiReportText.slice(annexEnd);
+	      const updatedReport = ensureAxesSectionTemplate(sanitizeBloodReportRegister(updatedReportRaw));
 	      const issues = auditBloodReportQualityForMeta(updatedReport);
 	      const nowIso = new Date().toISOString();
 
@@ -1056,17 +1060,18 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        return;
 	      }
 
-	      const aiReportText =
+	      const aiReportTextRaw =
 	        report
 	          ? String((report as any).aiReport || "")
 	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
+	      const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReportTextRaw));
 	      if (!aiReportText.trim()) {
 	        res.status(400).json({ error: "aiReport vide" });
 	        return;
 	      }
 
 	      const before = aiReportText;
-	      const after = sanitizeBloodReportRegister(before);
+	      const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(before));
 	      const changed = before !== after;
 
 	      const nowIso = new Date().toISOString();
@@ -1168,7 +1173,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             (analysis as any).aiReport ||
             (analysis as any).aiAnalysis || // stored in blood_tests analysis payload
             "";
-          const aiReportText = sanitizeBloodReportRegister(String(aiReportTextRaw || ""));
+          const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(String(aiReportTextRaw || "")));
 
           // Transform blood_tests marker format to blood_reports format for frontend
           const analysisMarkers = markers.map((m: any) => ({
@@ -1214,7 +1219,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       // Safety: sanitize register/tone for legacy reports before returning to frontend.
       if (typeof (report as any).aiReport === "string" && (report as any).aiReport) {
-        (report as any).aiReport = sanitizeBloodReportRegister((report as any).aiReport);
+        (report as any).aiReport = ensureAxesSectionTemplate(sanitizeBloodReportRegister((report as any).aiReport));
       }
 
       // If the AI report is missing, kick off background generation.

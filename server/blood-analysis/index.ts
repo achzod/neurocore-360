@@ -2794,6 +2794,41 @@ const normalizeForCheck = (text: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
+const AXES_CANONICAL_HEADINGS = [
+  "### Axe 1 — Potentiel musculaire & androgenes",
+  "### Axe 2 — Metabolisme & gestion du risque diabete",
+  "### Axe 3 — Lipides & risque cardio-metabolique",
+  "### Axe 4 — Thyroide & depense energetique",
+  "### Axe 5 — Foie, bile & detox metabolique",
+  "### Axe 6 — Rein, hydratation & performance",
+  "### Axe 7 — Inflammation, immunite & terrain",
+  "### Axe 8 — Hematologie, oxygenation & endurance",
+  "### Axe 9 — Micronutriments (vitamines & mineraux)",
+  "### Axe 10 — Electrolytes, crampes, pression & performance",
+  "### Axe 11 — Stress, sommeil, recuperation (si donnees)",
+];
+
+export const ensureAxesSectionTemplate = (fullText: string): string => {
+  if (!fullText) return fullText;
+  const sections = parseH2Sections(fullText);
+  const axes = findSection(sections, ["Lecture compartimentee par axes", "Analyse par axe", "Analyse par axes"]);
+  if (!axes) return fullText;
+
+  const normalizedAxes = normalizeForCheck(axes.content || "");
+  const missing = AXES_CANONICAL_HEADINGS.filter((h) => !normalizedAxes.includes(normalizeForCheck(h)));
+  if (missing.length === 0) return fullText;
+
+  const additions = missing
+    .map(
+      (heading) =>
+        `${heading}\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et je te recommande de le confirmer au prochain retest avec les marqueurs associes.`
+    )
+    .join("\n\n");
+
+  const merged = `${axes.content.trim()}\n\n${additions}`.trim();
+  return replaceH2Section(fullText, axes.title, merged);
+};
+
 export const sanitizeBloodReportRegister = (text: string): string => {
   if (!text) return text;
   let out = String(text);
@@ -2855,19 +2890,10 @@ const validateBloodAnalysisReport = (output: string) => {
     .filter((r) => !r.checks.some((c) => normalized.includes(c)))
     .map((r) => r.id);
 
-  // Axes: all Axe 1..11 must exist (even if some have "Non renseigne").
-  const axesOk =
-    normalized.includes("### axe 1") &&
-    normalized.includes("### axe 2") &&
-    normalized.includes("### axe 3") &&
-    normalized.includes("### axe 4") &&
-    normalized.includes("### axe 5") &&
-    normalized.includes("### axe 6") &&
-    normalized.includes("### axe 7") &&
-    normalized.includes("### axe 8") &&
-    normalized.includes("### axe 9") &&
-    normalized.includes("### axe 10") &&
-    normalized.includes("### axe 11");
+  // Axes: all Axe 1..11 must exist as actual H3 headings.
+  const axesOk = Array.from({ length: 11 }, (_, idx) => idx + 1).every((n) =>
+    new RegExp(`^###\\s+Axe\\s+${n}\\b`, "mi").test(output)
+  );
   if (!axesOk) missing.push("axes_subsections");
 
   const headings = (output.match(/^##\s+/gm) || []).length;
@@ -3849,11 +3875,12 @@ export async function generateAIBloodAnalysis(
     output = await callClaudeOnce(
       `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et DETAILLE (25000-45000 caracteres) avec TOUTES les sections/axes du template. Tu as un budget de 16000 tokens. REGLES CRITIQUES:\n1. La Synthese executive DOIT faire minimum 5000 caracteres — c'est la premiere chose que le client lit. Detaille CHAQUE marqueur problematique, explique les interconnexions, donne ton verdict global avec des chiffres precis.\n2. ZERO tiret, ZERO bullet point, ZERO liste a puces. Uniquement des paragraphes narratifs fluides. Pas de "- ", pas de "* ", pas de listes numerotees "1. 2. 3.". Tu ecris comme un expert qui parle, pas comme un PowerPoint.\n3. Chaque section ## doit faire minimum 2000 caracteres de paragraphes narratifs.\n4. Assure-toi d'inclure les 12 sections ## et tous les ### Axe 1 a 11.`
     );
+    output = ensureAxesSectionTemplate(output);
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
       await rewriteIfNeeded();
       const withSources = ensureSourcesSection(output);
-      const after = sanitizeBloodReportRegister(trimAiAnalysis(withSources));
+      const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(withSources)));
       const remaining = auditSectionMinimums(after).issues;
       return {
         report: after,
@@ -3895,11 +3922,12 @@ export async function generateAIBloodAnalysis(
       const continuation = await callClaudeOnce(continuationPrompt);
       const merged = `${stripSourcesFromReport(output)}\n\n${extractFromFirstH2(continuation)}`.trim();
       output = deduplicateSections(merged);
+      output = ensureAxesSectionTemplate(output);
       validation = validateBloodAnalysisReport(output);
       if (validation.ok) {
         await rewriteIfNeeded();
         const withSources = ensureSourcesSection(output);
-        const after = sanitizeBloodReportRegister(trimAiAnalysis(withSources));
+        const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(withSources)));
         const remaining = auditSectionMinimums(after).issues;
         return {
           report: after,
@@ -3917,7 +3945,7 @@ export async function generateAIBloodAnalysis(
 
   console.warn("[BloodAnalysis] Falling back to deterministic report:", validation.missing.join(", "));
   return {
-    report: sanitizeBloodReportRegister(buildFallbackAnalysis(analysisResult, userProfile)),
+    report: ensureAxesSectionTemplate(sanitizeBloodReportRegister(buildFallbackAnalysis(analysisResult, userProfile))),
     status: "fallback",
     model: "fallback",
     validationMissing: validation.missing,
