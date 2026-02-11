@@ -2794,6 +2794,34 @@ const normalizeForCheck = (text: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
+export const sanitizeBloodReportRegister = (text: string): string => {
+  if (!text) return text;
+  let out = String(text);
+
+  const replacements: Array<{ pattern: RegExp; value: string }> = [
+    { pattern: /\bje vais etre direct avec toi\b/gi, value: "je vais etre clair avec toi" },
+    { pattern: /\bje vais etre direct\b/gi, value: "je vais etre clair" },
+    { pattern: /\bfranchement\b/gi, value: "honnêtement" },
+    { pattern: /\becoute\b/gi, value: "regarde" },
+    { pattern: /\bmec\b/gi, value: "tu" },
+    { pattern: /\bputain\b/gi, value: "" },
+    { pattern: /\bbordel\b/gi, value: "" },
+  ];
+
+  for (const r of replacements) {
+    out = out.replace(r.pattern, r.value);
+  }
+
+  // Clean whitespace artifacts introduced by replacements.
+  out = out
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return out;
+};
+
 const validateBloodAnalysisReport = (output: string) => {
   const normalized = normalizeForCheck(output);
 
@@ -3691,7 +3719,7 @@ export async function generateAIBloodAnalysis(
 
         const candidate = await withTimeout(streamPromise(), TIMEOUT_MS);
         if (!candidate) throw new Error("Claude returned empty report");
-        return stripEmojis(candidate).trim();
+        return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
       } catch (err: any) {
         lastErr = err;
         if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
@@ -3814,7 +3842,7 @@ export async function generateAIBloodAnalysis(
     if (validation.ok) {
       await rewriteIfNeeded();
       const withSources = ensureSourcesSection(output);
-      const after = trimAiAnalysis(withSources);
+      const after = sanitizeBloodReportRegister(trimAiAnalysis(withSources));
       const remaining = auditSectionMinimums(after).issues;
       return {
         report: after,
@@ -3860,7 +3888,7 @@ export async function generateAIBloodAnalysis(
       if (validation.ok) {
         await rewriteIfNeeded();
         const withSources = ensureSourcesSection(output);
-        const after = trimAiAnalysis(withSources);
+        const after = sanitizeBloodReportRegister(trimAiAnalysis(withSources));
         const remaining = auditSectionMinimums(after).issues;
         return {
           report: after,
@@ -3878,7 +3906,7 @@ export async function generateAIBloodAnalysis(
 
   console.warn("[BloodAnalysis] Falling back to deterministic report:", validation.missing.join(", "));
   return {
-    report: buildFallbackAnalysis(analysisResult, userProfile),
+    report: sanitizeBloodReportRegister(buildFallbackAnalysis(analysisResult, userProfile)),
     status: "fallback",
     model: "fallback",
     validationMissing: validation.missing,

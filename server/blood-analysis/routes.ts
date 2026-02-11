@@ -12,6 +12,7 @@ import {
   generateAIBloodAnalysis,
   getBloodworkKnowledgeContext,
   auditBloodReportQualityForMeta,
+  sanitizeBloodReportRegister,
   buildFallbackAnalysis,
   normalizeMarkerName,
   BIOMARKER_RANGES,
@@ -1022,6 +1023,109 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	    }
 	  });
 
+	  /**
+	   * POST /api/admin/blood-analysis/report/:id/sanitize-style
+	   * Fast admin fix for legacy reports: remove banned familiar/slang phrasing
+	   * and refresh aiValidationMissing without full regeneration.
+	   */
+	  app.post("/api/admin/blood-analysis/report/:id/sanitize-style", async (req, res) => {
+	    try {
+	      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+	      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
+	      if (!validKey || adminKey !== validKey) {
+	        res.status(401).json({ error: "Unauthorized - admin key required" });
+	        return;
+	      }
+
+	      const targetId = req.params.id;
+	      let report = await storage.getBloodReport(targetId);
+	      let bloodTestRow: any | null = null;
+
+	      if (!report) {
+	        const { db } = await import("../db.js");
+	        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	        const { eq } = await import("drizzle-orm");
+	        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, targetId));
+	        if (results.length > 0) {
+	          bloodTestRow = results[0];
+	        }
+	      }
+
+	      if (!report && !bloodTestRow) {
+	        res.status(404).json({ error: "Rapport introuvable" });
+	        return;
+	      }
+
+	      const aiReportText =
+	        report
+	          ? String((report as any).aiReport || "")
+	          : String((bloodTestRow?.analysis as any)?.aiReport || (bloodTestRow?.analysis as any)?.aiAnalysis || "");
+	      if (!aiReportText.trim()) {
+	        res.status(400).json({ error: "aiReport vide" });
+	        return;
+	      }
+
+	      const before = aiReportText;
+	      const after = sanitizeBloodReportRegister(before);
+	      const changed = before !== after;
+
+	      const nowIso = new Date().toISOString();
+	      const issues = auditBloodReportQualityForMeta(after);
+
+	      if (changed) {
+	        if (report) {
+	          const existingAnalysis =
+	            (report as any).analysis && typeof (report as any).analysis === "object" && (report as any).analysis !== null
+	              ? (report as any).analysis
+	              : {};
+	          await storage.updateBloodReport(targetId, {
+	            aiReport: after,
+	            analysis: {
+	              ...existingAnalysis,
+	              aiStatus: "generated",
+	              aiModel: (existingAnalysis as any).aiModel || ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	              aiGeneratedAt: nowIso,
+	              aiValidationMissing: issues.length ? issues : null,
+	            } as any,
+	          } as any);
+	        } else {
+	          const { db } = await import("../db.js");
+	          const { bloodTests } = await import("../../shared/drizzle-schema.js");
+	          const { eq } = await import("drizzle-orm");
+	          const existingAnalysis =
+	            bloodTestRow && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+	              ? (bloodTestRow.analysis as Record<string, unknown>)
+	              : {};
+	          await db
+	            .update(bloodTests)
+	            .set({
+	              analysis: {
+	                ...existingAnalysis,
+	                aiReport: after,
+	                aiAnalysis: after,
+	                aiStatus: "generated",
+	                aiModel: (existingAnalysis as any).aiModel || ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
+	                aiGeneratedAt: nowIso,
+	                aiValidationMissing: issues.length ? issues : null,
+	              } as any,
+	            })
+	            .where(eq(bloodTests.id, targetId));
+	        }
+	      }
+
+	      res.json({
+	        success: true,
+	        reportId: targetId,
+	        status: changed ? "sanitized" : "already_ok",
+	        changed,
+	        validationMissing: issues.length ? issues : null,
+	      });
+	    } catch (error) {
+	      console.error("[BloodAnalysis] sanitize-style error:", error);
+	      res.status(500).json({ error: "Erreur sanitize-style" });
+	    }
+	  });
+
   /**
    * GET /api/blood-analysis/report/:id
    * Fetch stored blood analysis report
@@ -1060,10 +1164,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               ? (bloodTest.patientProfile as Record<string, unknown>)
               : {};
           const markers = Array.isArray(bloodTest.markers) ? bloodTest.markers : [];
-          const aiReportText =
+          const aiReportTextRaw =
             (analysis as any).aiReport ||
             (analysis as any).aiAnalysis || // stored in blood_tests analysis payload
             "";
+          const aiReportText = sanitizeBloodReportRegister(String(aiReportTextRaw || ""));
 
           // Transform blood_tests marker format to blood_reports format for frontend
           const analysisMarkers = markers.map((m: any) => ({
@@ -1105,6 +1210,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       if (!report) {
         res.status(404).json({ error: "Rapport introuvable" });
         return;
+      }
+
+      // Safety: sanitize register/tone for legacy reports before returning to frontend.
+      if (typeof (report as any).aiReport === "string" && (report as any).aiReport) {
+        (report as any).aiReport = sanitizeBloodReportRegister((report as any).aiReport);
       }
 
       // If the AI report is missing, kick off background generation.
