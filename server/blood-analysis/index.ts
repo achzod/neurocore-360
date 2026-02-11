@@ -2363,7 +2363,7 @@ const normalizeForCheck = (text: string) =>
 const AXES_CANONICAL_HEADINGS = [
   "### Axe 1 — Potentiel musculaire & androgenes",
   "### Axe 2 — Metabolisme & gestion du risque diabete",
-  "### Axe 3 — Lipides & risque cardio-metabolique",
+  "### Axe 3 — Lipides & risque cardio metabolique",
   "### Axe 4 — Thyroide & depense energetique",
   "### Axe 5 — Foie, bile & detox metabolique",
   "### Axe 6 — Rein, hydratation & performance",
