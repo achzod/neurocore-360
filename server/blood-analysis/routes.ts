@@ -1218,7 +1218,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	          : "## Supplements & stack (minimaliste mais impact)");
 	      const title = titleLine.replace(/^##\s+/, "").trim();
 
-	      const minChars = sectionKey === "nutrition" ? 5200 : sectionKey === "axes" ? 9000 : 6500;
+	      const minChars = sectionKey === "nutrition" ? 5600 : sectionKey === "axes" ? 9500 : 9000;
 	      if (!forceRewrite && currentSection.trim().length >= minChars) {
 	        res.json({ success: true, reportId: targetId, status: "already_ok", section: sectionKey, currentLen: currentSection.trim().length });
 	        return;
@@ -1257,7 +1257,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        })
 	        .join("\n");
 
-	      const system = `Tu es un expert clinique et performance tres haut niveau.\nMISSION: re-ecrire UNE section uniquement.\nREGLES STRICTES: francais impeccable, ton premium, narratif dense, zero liste, zero tirets, zero [SRC], aucune section Sources.`;
+	      const system = `Tu es un expert clinique et performance tres haut niveau.\nMISSION: re-ecrire UNE section uniquement.\nREGLES STRICTES: francais impeccable, ton premium, narratif dense, zero liste, zero tirets visibles, zero [SRC], aucune section Sources.`;
 	      const prompt = [
 	        `Section a re-ecrire:`,
 	        `## ${title}`,
@@ -1270,20 +1270,29 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        `- Paragraphes narratifs uniquement (pas de bullets).`,
 	        `- Ultra concret et expert: mecanismes, application pratique, priorisation, dosages/timing/duree/precautions si supplements.`,
 	        sectionKey === "supplements"
-	          ? `- Supplements: minimum 6 interventions, chacune avec forme, dosage chiffre, timing, duree, interactions/precautions et condition de retest.`
+	          ? `- Supplements: minimum 8 interventions, chacune avec forme, dosage chiffre, timing, duree, interactions/precautions et condition de retest.`
 	          : sectionKey === "nutrition"
 	          ? `- Nutrition: periodisation hebdo, logique physiologique, charge d'entrainement, cardio/NEAT, recuperation et timelines concretes.`
 	          : `- Axes: conserve obligatoirement les 11 sous-titres canonique ### Axe 1 a ### Axe 11 avec un contenu dense et personnalise pour chaque axe.`,
+	        sectionKey === "supplements"
+	          ? `- Supplements expert: pour chaque intervention, explique pourquoi ce choix dans CE dossier, comment lire l'etiquette, comment choisir la marque et le produit, quels marqueurs suivre, quels effets attendre, quels effets indesirables surveiller et quand ajuster.`
+	          : `-`,
+	        sectionKey === "supplements"
+	          ? `- A inclure explicitement: forme active, dosage par prise, fenetre horaire, duree minimale, sequence d'introduction, strategie d'achat (qualite, certificats, purete, budget, conservation).`
+	          : `-`,
+	        `- Interdiction des caracteres de tiret visibles: "-", "--", "–", "—".`,
 	        `- Interdiction des formulations vagues type: "optimiser" sans parametres operationnels.`,
 	        `- Tu utilises la connaissance scientifique en arriere-plan SANS afficher de source.`,
 	        `- Tu commences EXACTEMENT par: ## ${title}`,
 	        `- Tu ne renvoies aucun autre bloc '##' ensuite.`,
-	      ].join("\n");
+	      ]
+	        .filter((line) => line !== `-`)
+	        .join("\n");
 
 	      const anthropic = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
 	      const resp = await anthropic.messages.create({
 	        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
-	        max_tokens: sectionKey === "axes" ? 9000 : 8000,
+	        max_tokens: sectionKey === "axes" ? 9500 : sectionKey === "supplements" ? 9000 : 8000,
 	        temperature: 0.35,
 	        system,
 	        messages: [{ role: "user", content: prompt }],

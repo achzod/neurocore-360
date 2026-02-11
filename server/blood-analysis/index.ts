@@ -2167,6 +2167,9 @@ SECTION SUPPLEMENTS OBLIGATOIRE
 Section longue et experte avec 6 a 12 interventions maximum selon le dossier.
 Chaque intervention doit etre decrite en paragraphe complet avec:
 forme exacte, dosage numerique, timing de prise, duree, interactions/precautions, indicateur de suivi et condition de retest.
+Tu expliques explicitement pourquoi chaque supplement est pertinent pour CE profil biomarqueur et quel mecanisme biologique est cible.
+Tu inclus un guide d'achat concret: lecture d'etiquette, verification du dosage par portion, forme chimique a privilegier, signaux qualite (certification, tests tiers, purete), conservation et fourchette budget.
+Tu precises comment introduire le stack dans le temps, quels effets attendre par phase, quels effets indesirables surveiller et comment ajuster en cas d'intolerance.
 Relie chaque intervention a un marqueur, un pattern ou un risque concret du dossier.
 Si certaines donnees manquent, tu proposes une version prudente mais precise et tu expliques pourquoi.
 Aucun contenu vague de type "optimiser" ou "a envisager" sans parametres concrets.
@@ -2174,6 +2177,7 @@ Aucun contenu vague de type "optimiser" ou "a envisager" sans parametres concret
 CONTROLE FINAL AVANT REPONSE
 Verifie que toutes les sections et sous-sections sont presentes dans le bon ordre.
 Verifie qu'il n'y a ni [SRC], ni section Sources, ni puces, ni listes numerotees.
+Verifie qu'il n'y a aucun caractere de tiret visible dans le rapport final.
 Verifie que Nutrition et Supplements sont detaillees et actionnables avec dosages, timing, duree et retest.
 Tu renvoies uniquement le rapport final markdown.`;
 
@@ -2361,17 +2365,17 @@ const normalizeForCheck = (text: string) =>
     .toLowerCase();
 
 const AXES_CANONICAL_HEADINGS = [
-  "### Axe 1 — Potentiel musculaire & androgenes",
-  "### Axe 2 — Metabolisme & gestion du risque diabete",
-  "### Axe 3 — Lipides & risque cardio metabolique",
-  "### Axe 4 — Thyroide & depense energetique",
-  "### Axe 5 — Foie, bile & detox metabolique",
-  "### Axe 6 — Rein, hydratation & performance",
-  "### Axe 7 — Inflammation, immunite & terrain",
-  "### Axe 8 — Hematologie, oxygenation & endurance",
-  "### Axe 9 — Micronutriments (vitamines & mineraux)",
-  "### Axe 10 — Electrolytes, crampes, pression & performance",
-  "### Axe 11 — Stress, sommeil, recuperation (si donnees)",
+  "### Axe 1 Potentiel musculaire et androgenes",
+  "### Axe 2 Metabolisme et gestion du risque diabete",
+  "### Axe 3 Lipides et risque cardio metabolique",
+  "### Axe 4 Thyroide et depense energetique",
+  "### Axe 5 Foie bile et detox metabolique",
+  "### Axe 6 Rein hydratation et performance",
+  "### Axe 7 Inflammation immunite et terrain",
+  "### Axe 8 Hematologie oxygenation et endurance",
+  "### Axe 9 Micronutriments vitamines et mineraux",
+  "### Axe 10 Electrolytes crampes pression et performance",
+  "### Axe 11 Stress sommeil recuperation si donnees",
 ];
 
 const inferAxisIndexFromHeading = (headingLine: string): number | null => {
@@ -2525,8 +2529,8 @@ export const sanitizeBloodReportRegister = (text: string): string => {
   out = out.replace(/\bsources\b/gi, "origines");
   out = out.replace(/\bsource\b/gi, "origine");
 
-  // Strict user rule: no hyphen-minus in the client-facing report body.
-  out = out.replace(/-/g, " ");
+  // Strict user rule: remove all dash-like characters in client-facing text.
+  out = out.replace(/[-‐‑‒–—―−]+/g, " ");
 
   // Normalize misplaced axis headings: they must be H3 under the axis section.
   out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
@@ -2671,12 +2675,32 @@ const auditSectionMinimums = (output: string) => {
     const dosageSignals = countMatches(body, /\b\d+(?:[.,]\d+)?\s?(mg|g|mcg|ug|iu|ui|ml)\b/g);
     const timingSignals = countMatches(body, /\b(matin|soir|coucher|avant|apres|repas|jeuner|a jeun)\b/g);
     const cautionSignals = countMatches(body, /\b(interaction|precaution|contre[- ]?indication|surveillance|retest|duree)\b/g);
+    const labelSignals = countMatches(
+      body,
+      /\b(etiquette|forme|biodisponibilite|portion|ingredients?|excipient|additif|purete|certificat|coa|analyse tierce|nsf|usp|gmp)\b/g
+    );
+    const purchaseSignals = countMatches(body, /\b(achat|acheter|marque|lot|tracabilite|prix|budget|vendeur|conservation)\b/g);
+    const effectsSignals = countMatches(
+      body,
+      /\b(effet|effets|attendus|indesirable|tolerance|naus[ée]e|digestif|sommeil|energie|performance|libido)\b/g
+    );
     const paragraphCount = (supplements.content || "")
       .split(/\n\s*\n/g)
       .map((p) => p.trim())
       .filter(Boolean).length;
-    if (dosageSignals < 10 || timingSignals < 8 || cautionSignals < 6 || paragraphCount < 8) {
+    if (
+      dosageSignals < 12 ||
+      timingSignals < 9 ||
+      cautionSignals < 7 ||
+      labelSignals < 8 ||
+      purchaseSignals < 5 ||
+      effectsSignals < 8 ||
+      paragraphCount < 9
+    ) {
       issues.push("low_specificity:supplements");
+    }
+    if (labelSignals < 6 || purchaseSignals < 4 || effectsSignals < 6) {
+      issues.push("low_specificity:supplements_expert");
     }
   }
 
@@ -3530,6 +3554,9 @@ export async function generateAIBloodAnalysis(
     if (qualityIssues.includes("low_specificity:supplements") && !targetsByKey.includes("supplements")) {
       targetsByKey.unshift("supplements");
     }
+    if (qualityIssues.includes("low_specificity:supplements_expert") && !targetsByKey.includes("supplements")) {
+      targetsByKey.unshift("supplements");
+    }
     if (qualityIssues.includes("low_specificity:nutrition") && !targetsByKey.includes("nutrition")) {
       targetsByKey.unshift("nutrition");
     }
@@ -3579,6 +3606,12 @@ export async function generateAIBloodAnalysis(
         `- Interdiction absolue de tags [SRC:...] et de section Sources`,
         isSupplements
           ? `- Pour Supplements: minimum 6 interventions clairement detaillees avec forme, dosage, timing, duree, precautions/interactions et condition de retest.`
+          : `-`,
+        isSupplements
+          ? `- Pour Supplements: expliquer pour chaque intervention pourquoi elle est choisie pour CE dossier, comment lire l'etiquette, comment choisir le produit a l'achat, signaux de qualite, effets attendus, effets indesirables et ajustements.`
+          : `-`,
+        isSupplements
+          ? `- Interdiction de vagues generalites. Chaque recommandation doit etre reliee a un marqueur concret et a une logique mecanistique explicite.`
           : `-`,
         isNutrition
           ? `- Pour Nutrition: periodisation hebdo, logique physiologique, entrainement (volume/intensite/cardio/NEAT), recuperation et timelines concretes.`
