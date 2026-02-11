@@ -2590,8 +2590,10 @@ Annex A: marqueurs secondaires en paragraphes narratifs (statut + interpretation
 Annex B: hypotheses non confirmees + tests pour confirmer/infirmer, en paragraphes.
 Annex C: glossaire en paragraphes (definitions simples).
 
-## Sources (bibliotheque)
-Liste des IDs utilises en paragraphes groupes par theme. Format narratif: "Pour la section thyroide, j'ai cite le Dr Antonio Bianco via Peter Attia [SRC:ID] pour..."
+NE PAS AFFICHER DE SOURCES
+- Interdiction de section "Sources".
+- Interdiction des tags [SRC:...].
+- Tu utilises la bibliotheque en arriere-plan pour fiabiliser le raisonnement, mais sans l'afficher au client.
 
 ═══════════════════════════════════════════════════════════════
 VERIFICATION FINALE AVANT GENERATION (CHECKLIST OBLIGATOIRE)
@@ -2600,7 +2602,7 @@ VERIFICATION FINALE AVANT GENERATION (CHECKLIST OBLIGATOIRE)
 Avant de generer, COMPTE et VERIFIE:
 
 1. ZERO TIRETS/BULLETS: AUCUN "- " ou "* " dans TOUT le rapport. Tout en paragraphes narratifs.
-2. SOURCES [SRC:...]: 12-15 minimum, diversifiees (pas que Examine)
+2. SOURCES VISIBLES: INTERDITES (aucun [SRC], aucune section Sources)
 3. TIMELINES: TOUTES les actions ont des deadlines precises (J+7, J+14, J+30, etc.)
 4. DOSAGES: TOUS les supplements ont dosages precis + timing + duree
 5. SYNTHESE EXECUTIVE: minimum 5000 caracteres
@@ -2814,9 +2816,20 @@ export const ensureAxesSectionTemplate = (fullText: string): string => {
   const axes = findSection(sections, ["Lecture compartimentee par axes", "Analyse par axe", "Analyse par axes"]);
   if (!axes) return fullText;
 
-  const normalizedAxes = normalizeForCheck(axes.content || "");
+  const axesTitleNorm = normalizeForCheck(axes.title);
+  const cleanedSections = sections.map((section) => {
+    if (normalizeForCheck(section.title) === axesTitleNorm) return section;
+    // If an axis heading leaked into another H2 section, keep text but demote heading markup.
+    const cleaned = section.content.replace(/^###\s+(Axe\s+\d+\b[^\n]*)/gim, "$1");
+    return { ...section, content: cleaned };
+  });
+
+  const cleanedAxes = cleanedSections.find((s) => normalizeForCheck(s.title) === axesTitleNorm) || axes;
+  const normalizedAxes = normalizeForCheck(cleanedAxes.content || "");
   const missing = AXES_CANONICAL_HEADINGS.filter((h) => !normalizedAxes.includes(normalizeForCheck(h)));
-  if (missing.length === 0) return fullText;
+  if (missing.length === 0) {
+    return cleanedSections.map((s) => s.content.trim()).join("\n\n").trim() + "\n";
+  }
 
   const additions = missing
     .map(
@@ -2825,8 +2838,9 @@ export const ensureAxesSectionTemplate = (fullText: string): string => {
     )
     .join("\n\n");
 
-  const merged = `${axes.content.trim()}\n\n${additions}`.trim();
-  return replaceH2Section(fullText, axes.title, merged);
+  const merged = `${cleanedAxes.content.trim()}\n\n${additions}`.trim();
+  const rebuilt = replaceH2Section(cleanedSections.map((s) => s.content.trim()).join("\n\n").trim(), cleanedAxes.title, merged);
+  return rebuilt;
 };
 
 export const sanitizeBloodReportRegister = (text: string): string => {
@@ -2854,6 +2868,12 @@ export const sanitizeBloodReportRegister = (text: string): string => {
   for (const r of replacements) {
     out = out.replace(r.pattern, r.value);
   }
+
+  // Hide citation tags in the client-facing report while still using knowledge context upstream.
+  out = out.replace(/\s*\[SRC:[^\]]+\]\s*/g, " ");
+
+  // Do not expose raw source bibliography section in the client-facing report.
+  out = out.replace(/\n##\s+Sources[^\n]*[\s\S]*$/i, "");
 
   // Normalize misplaced axis headings: they must be H3 under the axis section.
   out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
@@ -2883,7 +2903,6 @@ const validateBloodAnalysisReport = (output: string) => {
     { id: "nutrition", checks: ["## nutrition"] },
     { id: "supplements", checks: ["## supplements"] },
     { id: "annexes", checks: ["## annexes"] },
-    { id: "sources", checks: ["## sources"] },
   ];
 
   const missing = required
@@ -2897,7 +2916,7 @@ const validateBloodAnalysisReport = (output: string) => {
   if (!axesOk) missing.push("axes_subsections");
 
   const headings = (output.match(/^##\s+/gm) || []).length;
-  if (headings < 12) missing.push("headings_count");
+  if (headings < 11) missing.push("headings_count");
 
   if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(output)) missing.push("emoji_present");
 
@@ -2938,18 +2957,26 @@ const auditSectionMinimums = (output: string) => {
   const issues: string[] = [];
 
   const minChars: Record<string, number> = {
-    synthese: 5000,
-    qualite: 2200,
-    dashboard: 2200,
-    annexes: 2200,
-    sources: 2200,
+    synthese: 7000,
+    qualite: 3500,
+    dashboard: 3500,
+    axes: 9000,
+    deep_dive: 9000,
+    plan90: 7000,
+    nutrition: 4500,
+    supplements: 6000,
+    annexes: 4500,
   };
 
   const synthese = findSection(sections, ["Synthese"]);
   const qualite = findSection(sections, ["Qualite"]);
   const dashboard = findSection(sections, ["Tableau de bord"]);
+  const axes = findSection(sections, ["Lecture compartimentee par axes", "Analyse par axe"]);
+  const deepDive = findSection(sections, ["Deep dive"]);
+  const plan90 = findSection(sections, ["Plan d'action 90 jours", "Plan 90 jours"]);
+  const nutrition = findSection(sections, ["Nutrition"]);
+  const supplements = findSection(sections, ["Supplements", "Suppléments"]);
   const annexes = findSection(sections, ["Annexes"]);
-  const sources = findSection(sections, ["Sources"]);
 
   const checkLen = (id: keyof typeof minChars, section: H2Section | null) => {
     if (!section) {
@@ -2964,8 +2991,12 @@ const auditSectionMinimums = (output: string) => {
   checkLen("synthese", synthese);
   checkLen("qualite", qualite);
   checkLen("dashboard", dashboard);
+  checkLen("axes", axes);
+  checkLen("deep_dive", deepDive);
+  checkLen("plan90", plan90);
+  checkLen("nutrition", nutrition);
+  checkLen("supplements", supplements);
   checkLen("annexes", annexes);
-  checkLen("sources", sources);
 
   return { issues, sections };
 };
@@ -3601,6 +3632,10 @@ export async function generateAIBloodAnalysis(
     `- Output en Markdown.`,
     `- Tu dois produire un rapport COMPLET avec TOUTES les sections/titres dans l'ordre EXACT defini par le system prompt (## / ###).`,
     `- Pas d'emoji.`,
+    `- AUCUN tag de citation visible (pas de [SRC:...], pas de section "Sources").`,
+    `- AUCUNE liste a puces ni numerotee. Pas de '-', pas de '*', pas de '1.' en debut de ligne.`,
+    `- Section "Supplements & stack" obligatoire: ultra detaillee, explicative, mecanismes, dosages, timing, duree, interactions et conditions de retest.`,
+    `- Section "Nutrition & entrainement" obligatoire: plan narratif concret et progressif, avec logique physiologique explicite.`,
     `- Si une info manque: ecris "Non renseigne" et baisse le niveau de confiance.`,
     `- Pas de diagnostic definitif, pas de prescription medicamenteuse, pas de protocole dopage/injectables.`,
   ]
@@ -3638,7 +3673,6 @@ export async function generateAIBloodAnalysis(
     "### Annex A — Marqueurs secondaires (lecture rapide)",
     "### Annex B — Hypotheses & tests de confirmation",
     "### Annex C — Glossaire utile",
-    "## Sources (bibliotheque)",
   ];
 
   const stripSourcesFromReport = (text: string) => {
@@ -3788,9 +3822,12 @@ export async function generateAIBloodAnalysis(
       if (key === "synthese") return findSection(sections, ["Synthese"])?.title || null;
       if (key === "qualite") return findSection(sections, ["Qualite"])?.title || null;
       if (key === "dashboard") return findSection(sections, ["Tableau de bord"])?.title || null;
+      if (key === "axes") return findSection(sections, ["Lecture compartimentee par axes", "Analyse par axe"])?.title || null;
+      if (key === "deep_dive") return findSection(sections, ["Deep dive"])?.title || null;
       if (key === "plan90") return findSection(sections, ["Plan d'action 90 jours", "Plan 90"])?.title || null;
+      if (key === "nutrition") return findSection(sections, ["Nutrition"])?.title || null;
+      if (key === "supplements") return findSection(sections, ["Supplements", "Suppléments"])?.title || null;
       if (key === "annexes") return findSection(sections, ["Annexes"])?.title || null;
-      if (key === "sources") return findSection(sections, ["Sources"])?.title || null;
       return null;
     };
 
@@ -3799,7 +3836,7 @@ export async function generateAIBloodAnalysis(
     // Rewrite up to 4 sections per generation to keep runtime/cost bounded.
     // 1) Fix missing/short core sections
     // 2) Fix style violations where they happen (banned phrases, bullets, impersonal tone, missing accents)
-    const targetsByKey = ["annexes", "qualite", "dashboard", "plan90", "sources", "synthese"].filter(
+    const targetsByKey = ["supplements", "nutrition", "deep_dive", "axes", "annexes", "plan90", "qualite", "dashboard", "synthese"].filter(
       (k) => qualityIssues.includes(`short_section:${k}`) || qualityIssues.includes(`missing_section:${k}`)
     );
 
@@ -3829,15 +3866,7 @@ export async function generateAIBloodAnalysis(
 
     for (const title of resolvedTitles) {
       const isSynthese = normalizeForCheck(title).includes("synthese");
-      const isSources = normalizeForCheck(title).includes("sources");
-      const minChars = isSynthese ? 5000 : 2400;
-
-      // Sources can be made robust deterministically if needed (no bullets).
-      if (isSources) {
-        const sourcesSection = `## ${title}\n${buildSourcesSection()}`.trim();
-        output = replaceH2Section(output, title, sourcesSection);
-        continue;
-      }
+      const minChars = isSynthese ? 7000 : 3200;
 
       const rewritePrompt = [
         basePrompt,
@@ -3851,6 +3880,7 @@ export async function generateAIBloodAnalysis(
         `- Concrete: donne des exemples, conditions de prelevement, limites, retest, et implications pratiques`,
         `- Registre premium, accents, et suppression explicite de toute familiarite / vulgarite`,
         `- Interdiction de listes (pas de tirets, pas de bullets, pas de "1.")`,
+        `- Interdiction absolue de tags [SRC:...] et de section Sources`,
         ``,
         `REGLES:`,
         `- Retourne UNIQUEMENT la section complete, en commencant EXACTEMENT par:`,
@@ -3873,14 +3903,13 @@ export async function generateAIBloodAnalysis(
   // Pass 1: full report
   try {
     output = await callClaudeOnce(
-      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et DETAILLE (25000-45000 caracteres) avec TOUTES les sections/axes du template. Tu as un budget de 16000 tokens. REGLES CRITIQUES:\n1. La Synthese executive DOIT faire minimum 5000 caracteres — c'est la premiere chose que le client lit. Detaille CHAQUE marqueur problematique, explique les interconnexions, donne ton verdict global avec des chiffres precis.\n2. ZERO tiret, ZERO bullet point, ZERO liste a puces. Uniquement des paragraphes narratifs fluides. Pas de "- ", pas de "* ", pas de listes numerotees "1. 2. 3.". Tu ecris comme un expert qui parle, pas comme un PowerPoint.\n3. Chaque section ## doit faire minimum 2000 caracteres de paragraphes narratifs.\n4. Assure-toi d'inclure les 12 sections ## et tous les ### Axe 1 a 11.`
+      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et DETAILLE (35000-70000 caracteres) avec TOUTES les sections/axes du template. Tu as un budget de 16000 tokens. REGLES CRITIQUES:\n1. La Synthese executive DOIT faire minimum 7000 caracteres — c'est la premiere chose que le client lit. Detaille CHAQUE marqueur problematique, explique les interconnexions, donne ton verdict global avec des chiffres precis.\n2. ZERO tiret, ZERO bullet point, ZERO liste a puces. Uniquement des paragraphes narratifs fluides. Pas de \"- \", pas de \"* \", pas de listes numerotees \"1. 2. 3.\".\n3. Les sections \"Nutrition & entrainement\" et \"Supplements & stack\" doivent etre ultra detaillees, pedagogiques et actionnables, avec mecanismes, dosages, timing, interactions et retest.\n4. Interdit de montrer les sources au client: pas de tags [SRC:...], pas de section Sources.\n5. Assure-toi d'inclure les 11 sections ## et tous les ### Axe 1 a 11.`
     );
     output = ensureAxesSectionTemplate(output);
     validation = validateBloodAnalysisReport(output);
     if (validation.ok) {
       await rewriteIfNeeded();
-      const withSources = ensureSourcesSection(output);
-      const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(withSources)));
+      const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(output)));
       const remaining = auditSectionMinimums(after).issues;
       return {
         report: after,
@@ -3897,7 +3926,7 @@ export async function generateAIBloodAnalysis(
   // Pass 2/3: continuation from first missing heading in canonical order
   for (let pass = 2; pass <= 3; pass++) {
     try {
-      const next = firstMissingHeading(output) || "## Sources (bibliotheque)";
+      const next = firstMissingHeading(output) || "## Annexes (ultra long)";
       const continuationPrompt = [
         basePrompt,
         ``,
@@ -3908,13 +3937,14 @@ export async function generateAIBloodAnalysis(
         next,
         ``,
         `Puis continue en respectant l'ordre CANONIQUE jusqu'a terminer par:`,
-        `## Sources (bibliotheque)`,
+        `## Annexes (ultra long)`,
         ``,
         `REGLES STRICTES:`,
         `- Aucun titre en '#'. Utilise uniquement '##' et '###' comme dans le template.`,
         `- Ne repete aucune section deja presente dans le rapport partiel.`,
         `- Si une section manque de donnees, ecris 'Non renseigne' mais garde le titre.`,
         `- Pas d'emoji.`,
+        `- Pas de [SRC:...] ni de section Sources.`,
         `- ZERO tiret, ZERO bullet point, ZERO "- ", ZERO "* ", ZERO liste numerotee. Uniquement des paragraphes narratifs fluides.`,
         `- Pas de pattern "Label : valeur" en debut de ligne. Integre les informations dans des phrases completes.`,
       ].join("\n");
@@ -3926,8 +3956,7 @@ export async function generateAIBloodAnalysis(
       validation = validateBloodAnalysisReport(output);
       if (validation.ok) {
         await rewriteIfNeeded();
-        const withSources = ensureSourcesSection(output);
-        const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(withSources)));
+        const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(output)));
         const remaining = auditSectionMinimums(after).issues;
         return {
           report: after,

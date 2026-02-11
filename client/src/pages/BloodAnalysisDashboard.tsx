@@ -308,8 +308,6 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                     'annexes',
                     'annexes-ultra-long',
                     'bibliographie',
-                    'sources-bibliotheque',
-                    'sources',
                     // "Compact" report format: put warnings/notes here
                     'vigilance',
                   ]}
