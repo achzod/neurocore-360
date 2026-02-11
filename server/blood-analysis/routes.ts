@@ -1149,6 +1149,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      }
 
 	      const rawSection = String(req.query.section || (req.body as any)?.section || "").toLowerCase().trim();
+	      const rawForce = String(req.query.force ?? (req.body as any)?.force ?? "")
+	        .toLowerCase()
+	        .trim();
+	      const forceRewrite = rawForce === "1" || rawForce === "true" || rawForce === "yes";
 	      const sectionKey = rawSection === "supplements" || rawSection === "supplementation" ? "supplements"
 	        : rawSection === "nutrition" || rawSection === "training" || rawSection === "protocoles" ? "nutrition"
 	        : "";
@@ -1204,7 +1208,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const title = titleLine.replace(/^##\s+/, "").trim();
 
 	      const minChars = sectionKey === "nutrition" ? 5200 : 6500;
-	      if (currentSection.trim().length >= minChars) {
+	      if (!forceRewrite && currentSection.trim().length >= minChars) {
 	        res.json({ success: true, reportId: targetId, status: "already_ok", section: sectionKey, currentLen: currentSection.trim().length });
 	        return;
 	      }
@@ -1212,10 +1216,34 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const analysisObj = report
 	        ? ((report as any).analysis || {})
 	        : (((bloodTestRow?.analysis as any) || {}) as Record<string, unknown>);
-	      const markers = Array.isArray((analysisObj as any).markers) ? (analysisObj as any).markers : [];
+	      const analysisMarkers = Array.isArray((analysisObj as any).markers) ? (analysisObj as any).markers : [];
+	      const reportMarkers = report && Array.isArray((report as any).markers) ? (report as any).markers : [];
+	      const bloodTestMarkersRaw = bloodTestRow?.markers;
+	      const bloodTestMarkers =
+	        Array.isArray(bloodTestMarkersRaw)
+	          ? bloodTestMarkersRaw
+	          : typeof bloodTestMarkersRaw === "string"
+	          ? (() => {
+	              try {
+	                const parsed = JSON.parse(bloodTestMarkersRaw);
+	                return Array.isArray(parsed) ? parsed : [];
+	              } catch {
+	                return [];
+	              }
+	            })()
+	          : [];
+	      const markers = analysisMarkers.length ? analysisMarkers : reportMarkers.length ? reportMarkers : bloodTestMarkers;
 	      const markerLines = markers
 	        .slice(0, 50)
-	        .map((m: any) => `${m.name || m.markerId || m.id}: ${m.value ?? "N/A"} ${m.unit || ""} (${String(m.status || "normal")})`)
+	        .map((m: any) => {
+	          const name = m.name || m.markerId || m.id || "Marker";
+	          const value = m.value ?? m.result ?? "N/A";
+	          const unit = m.unit || "";
+	          const status = String(m.status || "normal");
+	          const optimal = m.optimalRange ? ` | optimal=${m.optimalRange}` : "";
+	          const normal = m.normalRange ? ` | normal=${m.normalRange}` : "";
+	          return `${name}: ${value} ${unit} (${status})${optimal}${normal}`.trim();
+	        })
 	        .join("\n");
 
 	      const system = `Tu es un expert clinique et performance tres haut niveau.\nMISSION: re-ecrire UNE section uniquement.\nREGLES STRICTES: francais impeccable, ton premium, narratif dense, zero liste, zero tirets, zero [SRC], aucune section Sources.`;
@@ -1230,6 +1258,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        `- Minimum ${minChars} caracteres.`,
 	        `- Paragraphes narratifs uniquement (pas de bullets).`,
 	        `- Ultra concret et expert: mecanismes, application pratique, priorisation, dosages/timing/duree/precautions si supplements.`,
+	        sectionKey === "supplements"
+	          ? `- Supplements: minimum 6 interventions, chacune avec forme, dosage chiffre, timing, duree, interactions/precautions et condition de retest.`
+	          : `- Nutrition: periodisation hebdo, logique physiologique, charge d'entrainement, cardio/NEAT, recuperation et timelines concretes.`,
+	        `- Interdiction des formulations vagues type: "optimiser" sans parametres operationnels.`,
 	        `- Tu utilises la connaissance scientifique en arriere-plan SANS afficher de source.`,
 	        `- Tu commences EXACTEMENT par: ## ${title}`,
 	        `- Tu ne renvoies aucun autre bloc '##' ensuite.`,
@@ -1238,7 +1270,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const anthropic = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
 	      const resp = await anthropic.messages.create({
 	        model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6",
-	        max_tokens: 7000,
+	        max_tokens: 8000,
 	        temperature: 0.35,
 	        system,
 	        messages: [{ role: "user", content: prompt }],
@@ -1299,6 +1331,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        success: true,
 	        reportId: targetId,
 	        section: sectionKey,
+	        forced: forceRewrite,
 	        rewrittenLen: rewritten.length,
 	        validationMissing: issues.length ? issues : null,
 	      });
