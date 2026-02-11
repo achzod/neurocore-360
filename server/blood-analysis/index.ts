@@ -2521,6 +2521,10 @@ export const sanitizeBloodReportRegister = (text: string): string => {
   // Do not expose raw source bibliography section in the client-facing report.
   out = out.replace(/\n##\s+Sources[^\n]*[\s\S]*$/i, "");
 
+  // Enforce "no visible sources" language in client-facing text as requested.
+  out = out.replace(/\bsources\b/gi, "origines");
+  out = out.replace(/\bsource\b/gi, "origine");
+
   // Normalize misplaced axis headings: they must be H3 under the axis section.
   out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
 
