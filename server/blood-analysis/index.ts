@@ -2525,6 +2525,9 @@ export const sanitizeBloodReportRegister = (text: string): string => {
   out = out.replace(/\bsources\b/gi, "origines");
   out = out.replace(/\bsource\b/gi, "origine");
 
+  // Strict user rule: no hyphen-minus in the client-facing report body.
+  out = out.replace(/-/g, " ");
+
   // Normalize misplaced axis headings: they must be H3 under the axis section.
   out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
 
