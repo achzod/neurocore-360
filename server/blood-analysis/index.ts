@@ -2820,6 +2820,9 @@ export const sanitizeBloodReportRegister = (text: string): string => {
     out = out.replace(r.pattern, r.value);
   }
 
+  // Normalize misplaced axis headings: they must be H3 under the axis section.
+  out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
+
   // Clean whitespace artifacts introduced by replacements.
   out = out
     .replace(/[ \t]{2,}/g, " ")
