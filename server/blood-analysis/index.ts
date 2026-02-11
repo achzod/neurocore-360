@@ -2804,6 +2804,14 @@ export const sanitizeBloodReportRegister = (text: string): string => {
     { pattern: /\bfranchement\b/gi, value: "honnêtement" },
     { pattern: /\becoute\b/gi, value: "regarde" },
     { pattern: /\bmec\b/gi, value: "tu" },
+    { pattern: /\bon observe que\b/gi, value: "je vois que" },
+    { pattern: /\bon observe\b/gi, value: "je vois" },
+    { pattern: /\bil convient de\b/gi, value: "je te recommande de" },
+    { pattern: /\bil est recommande de\b/gi, value: "je te recommande de" },
+    { pattern: /\bil est recommande\b/gi, value: "je te recommande" },
+    { pattern: /\bil est conseille de\b/gi, value: "je te recommande de" },
+    { pattern: /\ble patient\b/gi, value: "tu" },
+    { pattern: /\bla patiente\b/gi, value: "tu" },
     { pattern: /\bputain\b/gi, value: "" },
     { pattern: /\bbordel\b/gi, value: "" },
   ];
@@ -2946,34 +2954,34 @@ const auditStyleIssues = (output: string) => {
   const normalized = normalizeForCheck(output);
 
   // Common "low quality / non premium" phrases we want to eliminate reliably.
-  const bannedPhrases = [
-    "je vais etre direct",
-    "franchement",
-    "ecoute",
-    "mec",
-    "putain",
-    "bordel",
-    "c'est nul",
+  const bannedPhrases: Array<{ id: string; pattern: RegExp }> = [
+    { id: "je_vais_etre_direct", pattern: /\bje vais etre direct\b/ },
+    { id: "franchement", pattern: /\bfranchement\b/ },
+    { id: "ecoute", pattern: /\becoute\b/ },
+    { id: "mec", pattern: /\bmec\b/ },
+    { id: "putain", pattern: /\bputain\b/ },
+    { id: "bordel", pattern: /\bbordel\b/ },
+    { id: "c_est_nul", pattern: /\bc est nul\b/ },
   ];
 
   // Medical/impersonal voice patterns that break the "incarne" style.
-  const impersonal = [
-    "le patient",
-    "la patiente",
-    "on observe",
-    "il est recommande",
-    "il convient de",
-    "il est conseille",
+  const impersonal: Array<{ id: string; pattern: RegExp }> = [
+    { id: "le_patient", pattern: /\ble patient\b/ },
+    { id: "la_patiente", pattern: /\bla patiente\b/ },
+    { id: "on_observe", pattern: /\bon observe\b/ },
+    { id: "il_est_recommande", pattern: /\bil est recommande\b/ },
+    { id: "il_convient_de", pattern: /\bil convient de\b/ },
+    { id: "il_est_conseille", pattern: /\bil est conseille\b/ },
   ];
 
   // Global checks
   if (/^\s*[-*]\s+/m.test(output) || /^\s*\d+\.\s+/m.test(output)) {
     issues.push("bullets_present");
   }
-  if (impersonal.some((p) => normalized.includes(p))) {
+  if (impersonal.some((p) => p.pattern.test(normalized))) {
     issues.push("impersonal_tone");
   }
-  if (bannedPhrases.some((p) => normalized.includes(p))) {
+  if (bannedPhrases.some((p) => p.pattern.test(normalized))) {
     issues.push("banned_phrase_present");
   }
 
@@ -2981,10 +2989,10 @@ const auditStyleIssues = (output: string) => {
   for (const s of sections) {
     const sNorm = normalizeForCheck(s.content || "");
     for (const p of bannedPhrases) {
-      if (sNorm.includes(p)) addHit(s.title, `banned_phrase:${p}`);
+      if (p.pattern.test(sNorm)) addHit(s.title, `banned_phrase:${p.id}`);
     }
     for (const p of impersonal) {
-      if (sNorm.includes(p)) addHit(s.title, `impersonal:${p}`);
+      if (p.pattern.test(sNorm)) addHit(s.title, `impersonal:${p.id}`);
     }
     if (/^\s*[-*]\s+/m.test(s.content || "") || /^\s*\d+\.\s+/m.test(s.content || "")) {
       addHit(s.title, "bullets_present");
