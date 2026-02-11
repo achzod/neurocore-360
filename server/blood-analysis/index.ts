@@ -2374,6 +2374,97 @@ const AXES_CANONICAL_HEADINGS = [
   "### Axe 11 — Stress, sommeil, recuperation (si donnees)",
 ];
 
+const inferAxisIndexFromHeading = (headingLine: string): number | null => {
+  const text = normalizeForCheck(headingLine.replace(/^###\s+/, "").trim());
+  const numbered = text.match(/^axe\s+(\d{1,2})\b/);
+  if (numbered) {
+    const n = Number(numbered[1]);
+    if (n >= 1 && n <= 11) return n;
+  }
+
+  const byKeyword: Array<{ axis: number; patterns: RegExp[] }> = [
+    { axis: 1, patterns: [/\bhormonal\b/, /\bandrogen/, /\btestoster/] },
+    { axis: 2, patterns: [/\bmetabol/, /\binsulin/, /\bdiabet/, /\bglycem/] },
+    { axis: 3, patterns: [/\blipid/, /\bcardio/, /\bapob\b/, /\bldl\b/, /\bhdl\b/, /\btrigly/] },
+    { axis: 4, patterns: [/\bthyroid/, /\btsh\b/, /\bt3\b/, /\bt4\b/] },
+    { axis: 5, patterns: [/\bfoie\b/, /\bhepat/, /\bbile\b/, /\bdetox\b/, /\bggt\b/, /\balt\b/, /\bast\b/] },
+    { axis: 6, patterns: [/\brein\b/, /\brenal/, /\bhydrat/, /\bcreatin/, /\begfr\b/, /\buree\b/] },
+    { axis: 7, patterns: [/\binflamm/, /\bimmun/, /\bcrp\b/, /\bferritin/, /\bterrain\b/] },
+    { axis: 8, patterns: [/\bhemat/, /\boxygen/, /\bendurance\b/, /\banemi/, /\bhb\b/, /\bhct\b/] },
+    { axis: 9, patterns: [/\bmicronutr/, /\bvitamin/, /\bminer/, /\bzinc\b/, /\bmagnes/, /\bfolat/] },
+    { axis: 10, patterns: [/\belectro/, /\bcramp/, /\bpression\b/, /\bsodium\b/, /\bpotassium\b/, /\bcalcium\b/] },
+    { axis: 11, patterns: [/\bstress\b/, /\bsommeil\b/, /\brecuper/, /\bcortisol\b/] },
+  ];
+
+  for (const group of byKeyword) {
+    if (group.patterns.some((re) => re.test(text))) return group.axis;
+  }
+  return null;
+};
+
+const normalizeAxesSectionContent = (content: string): string => {
+  if (!content.trim()) return content;
+
+  const lines = content.split("\n");
+  const h2Line = lines[0].startsWith("## ") ? lines[0] : "## Lecture compartimentee par axes";
+  const bodyLines = lines.slice(1);
+  const intro: string[] = [];
+  const blocks: Array<{ heading: string; lines: string[]; axisIndex: number | null }> = [];
+  let current: { heading: string; lines: string[]; axisIndex: number | null } | null = null;
+
+  for (const line of bodyLines) {
+    if (/^###\s+/.test(line)) {
+      if (current) blocks.push(current);
+      current = {
+        heading: line,
+        lines: [line],
+        axisIndex: inferAxisIndexFromHeading(line),
+      };
+      continue;
+    }
+    if (current) {
+      current.lines.push(line);
+    } else {
+      intro.push(line);
+    }
+  }
+  if (current) blocks.push(current);
+
+  const byAxis = new Map<number, string[]>();
+  const unknownBlocks: string[] = [];
+  for (const block of blocks) {
+    if (!block.axisIndex) {
+      unknownBlocks.push(block.lines.join("\n").trim());
+      continue;
+    }
+    if (byAxis.has(block.axisIndex)) continue;
+    const canonicalHeading = AXES_CANONICAL_HEADINGS[block.axisIndex - 1];
+    byAxis.set(block.axisIndex, [canonicalHeading, ...block.lines.slice(1)]);
+  }
+
+  const out: string[] = [h2Line];
+  const introText = intro.join("\n").trim();
+  if (introText) out.push("", introText);
+
+  for (let axis = 1; axis <= 11; axis++) {
+    const block = byAxis.get(axis);
+    if (block) {
+      out.push("", block.join("\n").trim());
+      continue;
+    }
+    out.push(
+      "",
+      `${AXES_CANONICAL_HEADINGS[axis - 1]}\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et je te recommande de le confirmer au prochain retest avec les marqueurs associes.`
+    );
+  }
+
+  if (unknownBlocks.length > 0) {
+    out.push("", unknownBlocks.join("\n\n"));
+  }
+
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+};
+
 export const ensureAxesSectionTemplate = (fullText: string): string => {
   if (!fullText) return fullText;
   const sections = parseH2Sections(fullText);
@@ -2389,21 +2480,12 @@ export const ensureAxesSectionTemplate = (fullText: string): string => {
   });
 
   const cleanedAxes = cleanedSections.find((s) => normalizeForCheck(s.title) === axesTitleNorm) || axes;
-  const normalizedAxes = normalizeForCheck(cleanedAxes.content || "");
-  const missing = AXES_CANONICAL_HEADINGS.filter((h) => !normalizedAxes.includes(normalizeForCheck(h)));
-  if (missing.length === 0) {
-    return cleanedSections.map((s) => s.content.trim()).join("\n\n").trim() + "\n";
-  }
-
-  const additions = missing
-    .map(
-      (heading) =>
-        `${heading}\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et je te recommande de le confirmer au prochain retest avec les marqueurs associes.`
-    )
-    .join("\n\n");
-
-  const merged = `${cleanedAxes.content.trim()}\n\n${additions}`.trim();
-  const rebuilt = replaceH2Section(cleanedSections.map((s) => s.content.trim()).join("\n\n").trim(), cleanedAxes.title, merged);
+  const normalizedAxesContent = normalizeAxesSectionContent(cleanedAxes.content || "");
+  const rebuilt = replaceH2Section(
+    cleanedSections.map((s) => s.content.trim()).join("\n\n").trim(),
+    cleanedAxes.title,
+    normalizedAxesContent
+  );
   return rebuilt;
 };
 
