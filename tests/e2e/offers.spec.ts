@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Offer pages smoke tests", () => {
+  test("Blood dashboard redirects to login when unauthenticated", async ({ page }) => {
+    await page.goto("/blood-dashboard");
+    await expect(page).toHaveURL(/\/auth\/login\?next=\/blood-dashboard/);
+  });
+
   test("Blood Analysis offer renders CTA", async ({ page }) => {
     await page.goto("/offers/blood-analysis");
     await expect(page.getByRole("heading", { name: /Blood Analysis/i })).toBeVisible();
