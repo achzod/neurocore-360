@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, useInView } from 'framer-motion';
-import { useEffect, useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { useBloodTheme } from './BloodThemeContext';
 
@@ -27,16 +27,12 @@ export const AnimatedStatCard = ({
 }: AnimatedStatCardProps) => {
   const { theme } = useBloodTheme();
   const [displayValue, setDisplayValue] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
-  // Counter animation when in view
+  // Always animate on mount/value change to avoid stale "0" when inside custom scroll containers.
   useEffect(() => {
-    if (!isInView) return;
-
     let start = 0;
     const duration = 2000;
-    const increment = value / (duration / 16);
+    const increment = Math.max(value / (duration / 16), 0.1);
 
     const timer = setInterval(() => {
       start += increment;
@@ -49,14 +45,13 @@ export const AnimatedStatCard = ({
     }, 16);
 
     return () => clearInterval(timer);
-  }, [isInView, value]);
+  }, [value]);
 
   return (
     <motion.div
-      ref={ref}
       className="relative group cursor-default"
       initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       whileHover={{ scale: 1.05, y: -4 }}
       role="article"
@@ -91,16 +86,17 @@ export const AnimatedStatCard = ({
               color,
               textShadow: `0 0 20px ${color}40`,
             }}
-            aria-live="polite"
-            aria-atomic="true"
           >
             {displayValue}
           </motion.span>
           {unit && <span className="text-lg" style={{ color: theme.textTertiary }}>{unit}</span>}
         </div>
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {`${label}: ${displayValue}${unit || ''}`}
+        </span>
 
         {/* Label */}
-        <div className="text-sm" style={{ color: theme.textSecondary }}>{label}</div>
+        <div className="text-sm font-medium" style={{ color: theme.textSecondary }}>{label}</div>
 
         {/* Trend (if provided) */}
         {trend && (
