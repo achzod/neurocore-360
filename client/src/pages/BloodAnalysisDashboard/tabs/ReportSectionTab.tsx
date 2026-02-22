@@ -43,34 +43,53 @@ export function ReportSectionTab({
 
   // Normalize search IDs for better matching
   const normalizedSearchIds = sectionIds.map(normalizeSectionId);
-
-  // Use Set to prevent duplicate sections
-  const matchedSectionIds = new Set<string>();
-
-  // Pass 1: Exact match (highest priority)
-  reportSections.forEach(section => {
+  const minFuzzyLen = 5;
+  const sectionsToShow = reportSections.filter((section) => {
     const normalizedSectionId = normalizeSectionId(section.id);
-    if (normalizedSearchIds.includes(normalizedSectionId)) {
-      matchedSectionIds.add(section.id);
-    }
+    return normalizedSearchIds.some((searchId) => {
+      if (normalizedSectionId === searchId) return true;
+      if (searchId.length < minFuzzyLen) return false;
+      return (
+        normalizedSectionId.includes(searchId) ||
+        searchId.includes(normalizedSectionId)
+      );
+    });
   });
 
-  // Pass 2: Fuzzy match only if section ID contains searchId (more strict)
-  if (matchedSectionIds.size === 0) {
-    reportSections.forEach(section => {
-      const normalizedSectionId = normalizeSectionId(section.id);
-      const matches = normalizedSearchIds.some(searchId =>
-        normalizedSectionId.includes(searchId) && searchId.length >= 5
-      );
-      if (matches) {
-        matchedSectionIds.add(section.id);
-      }
-    });
-  }
-
-  const sectionsToShow = reportSections.filter(section => matchedSectionIds.has(section.id));
-
   if (sectionsToShow.length === 0) {
+    // Last-resort fallback: AI report exists but headings parsing didn't match this tab.
+    // Show full report content instead of empty premium tab.
+    if (reportSections.length === 0 && aiReport.trim().length > 0) {
+      return (
+        <div
+          className={`rounded border p-4 sm:p-6 max-w-none ${
+            currentTheme.type === 'dark' ? 'prose prose-slate prose-sm sm:prose-base' : 'prose prose-stone prose-sm sm:prose-base'
+          }`}
+          style={{
+            backgroundColor: currentTheme.colors.surface,
+            borderColor: currentTheme.colors.border,
+            color: currentTheme.colors.text,
+            '--tw-prose-headings': currentTheme.colors.text,
+            '--tw-prose-body': currentTheme.colors.text,
+            '--tw-prose-bold': currentTheme.colors.text,
+            '--tw-prose-links': currentTheme.colors.primary,
+            '--tw-prose-code': currentTheme.colors.primary,
+            '--tw-prose-pre-bg': currentTheme.colors.surface,
+            '--tw-prose-pre-code': currentTheme.colors.text,
+            '--tw-prose-quotes': currentTheme.colors.textMuted,
+            '--tw-prose-quote-borders': currentTheme.colors.border,
+            '--tw-prose-hr': currentTheme.colors.border,
+            '--tw-prose-th-borders': currentTheme.colors.border,
+            '--tw-prose-td-borders': currentTheme.colors.border,
+          } as React.CSSProperties}
+        >
+          <div className="overflow-x-auto">
+            <ReactMarkdown>{aiReport}</ReactMarkdown>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         className="rounded border p-6"

@@ -14,21 +14,20 @@ End-to-end tests for the ultra-premium blood analysis dashboard UI/UX refonte.
    npx playwright install chromium
    ```
 
-3. **Have a test report ID:**
-   - You need a valid blood analysis report ID in your database
-   - Set the `TEST_REPORT_ID` environment variable before running tests
-   - Without this, tests will be skipped
+3. **Blood dashboard tests are fixture-driven:**
+   - `tests/e2e/blood-dashboard.spec.ts` mocks `/api/blood-analysis/report/:id`
+   - No database seed and no `TEST_REPORT_ID` required for this spec
 
 ## Running Tests
 
 ### Run all tests (headless mode)
 ```bash
-TEST_REPORT_ID=your_report_id npm run test:e2e
+npm run test:e2e
 ```
 
 ### Run tests with UI mode (recommended for development)
 ```bash
-TEST_REPORT_ID=your_report_id npm run test:e2e:ui
+npm run test:e2e:ui
 ```
 
 ### View test report
@@ -38,17 +37,17 @@ npm run test:e2e:report
 
 ### Run specific test file
 ```bash
-TEST_REPORT_ID=your_report_id npx playwright test tests/e2e/blood-dashboard.spec.ts
+npx playwright test tests/e2e/blood-dashboard.spec.ts
 ```
 
 ### Run tests in headed mode (see browser)
 ```bash
-TEST_REPORT_ID=your_report_id npx playwright test --headed
+npx playwright test --headed
 ```
 
 ### Debug mode
 ```bash
-TEST_REPORT_ID=your_report_id npx playwright test --debug
+npx playwright test --debug
 ```
 
 ## Test Suites
@@ -101,7 +100,7 @@ Tests are configured in `playwright.config.ts`:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `TEST_REPORT_ID` | Valid blood analysis report ID | Yes |
+| `TEST_REPORT_ID` | Legacy specs requiring real DB report | No |
 | `E2E_BASE_URL` | Run tests against an existing deployment | No |
 | `DISCOVERY_AUDIT_ID` | Discovery Scan audit ID for report smoke test | No |
 | `ANABOLIC_AUDIT_ID` | Anabolic Bioscan audit ID for report smoke test | No |
@@ -114,8 +113,8 @@ Tests are configured in `playwright.config.ts`:
 # 1. Start dev server (optional - Playwright will auto-start)
 npm run dev
 
-# 2. Run tests with a specific report ID
-TEST_REPORT_ID=clx123abc npm run test:e2e
+# 2. Run tests locally
+npm run test:e2e
 
 # 2b. Run offer smoke tests against production
 E2E_BASE_URL=https://neurocore-360.onrender.com npx playwright test tests/e2e/offers.spec.ts
@@ -139,16 +138,14 @@ Example GitHub Actions workflow:
 
 ```yaml
 - name: Run E2E tests
-  env:
-    TEST_REPORT_ID: ${{ secrets.TEST_REPORT_ID }}
   run: npm run test:e2e
 ```
 
 ## Troubleshooting
 
 ### Tests are skipped
-**Cause:** `TEST_REPORT_ID` environment variable is not set.
-**Fix:** Set the environment variable before running tests.
+**Cause:** You are running a legacy spec that needs seeded IDs (`reports.spec.ts`).
+**Fix:** Set the matching env var (`DISCOVERY_AUDIT_ID`, `ANABOLIC_AUDIT_ID`, `ULTIMATE_AUDIT_ID`) or run fixture-driven specs.
 
 ### Dev server timeout
 **Cause:** Dev server takes too long to start.
@@ -166,16 +163,14 @@ Example GitHub Actions workflow:
 
 Current test coverage:
 
-- ✅ RadialScoreChart rendering and ARIA
-- ✅ InteractiveHeatmap rendering, interaction, and ARIA
-- ✅ AnimatedStatCard rendering and ARIA
-- ✅ Keyboard navigation (Tab, Enter, Space)
-- ✅ Focus states visibility
-- ✅ Responsive layouts (mobile, tablet, desktop)
-- ✅ Reduced motion preference
-- ✅ Touch target sizes (WCAG AA)
-- ✅ Page load performance
-- ✅ Lazy loading verification
+- ✅ Blood dashboard overview rendering (score radial, heatmap, panel cards)
+- ✅ Score visibility regressions (no hidden counters off-screen)
+- ✅ Keyboard navigation via heatmap (Enter/Space -> Biomarkers tab)
+- ✅ 8 tabs coverage (Overview, Biomarqueurs, Synthèse, Données & Tests, Axes, Plan, Protocoles, Annexes)
+- ✅ Theme switching stability (M1, Claude, Titanium, Sand)
+- ✅ Responsive overflow checks (desktop + mobile)
+- ✅ Loading state when `aiReport` is absent
+- ✅ Offer smoke tests including Blood Analysis CTA
 
 ## Future Improvements
 

@@ -1,6 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Offer pages smoke tests", () => {
+  test("Blood Analysis offer renders CTA", async ({ page }) => {
+    await page.goto("/offers/blood-analysis");
+    await expect(page.getByRole("heading", { name: /Blood Analysis/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Analyser mon bilan/i })).toBeVisible();
+  });
+
   test("Discovery Scan offer renders CTA", async ({ page }) => {
     await page.goto("/offers/discovery-scan");
     await expect(page.getByRole("button", { name: /Lancer mon Discovery Scan/i })).toBeVisible();

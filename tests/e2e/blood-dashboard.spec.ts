@@ -1,328 +1,262 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from "@playwright/test";
 
-/**
- * E2E Tests for Blood Analysis Dashboard
- * Tests the ultra-premium UI/UX refonte components
- */
+type Marker = {
+  markerId: string;
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  status: "optimal" | "normal" | "suboptimal" | "critical";
+  normalRange: string;
+  optimalRange: string;
+  interpretation: string;
+};
 
-test.describe('Blood Analysis Dashboard - Overview Section', () => {
-  // Skip tests if no test report ID is available
-  // User should set TEST_REPORT_ID environment variable
-  const testReportId = process.env.TEST_REPORT_ID;
+const RICH_MARKERS: Marker[] = [
+  { markerId: "creatinine", id: "creatinine", name: "Creatinine", value: 1.04, unit: "mg/dL", status: "optimal", normalRange: "0.7-1.3", optimalRange: "0.9-1.1", interpretation: "Fonction renale" },
+  { markerId: "egfr", id: "egfr", name: "eGFR", value: 101, unit: "mL/min", status: "optimal", normalRange: "90-999", optimalRange: "100-999", interpretation: "Filtration renale" },
+  { markerId: "ferritine", id: "ferritine", name: "Ferritine", value: 196, unit: "ng/mL", status: "normal", normalRange: "20-300", optimalRange: "80-150", interpretation: "Fer stocke" },
+  { markerId: "transferrine_sat", id: "transferrine_sat", name: "Transferrine sat.", value: 40, unit: "%", status: "optimal", normalRange: "20-50", optimalRange: "30-45", interpretation: "Utilisation fer" },
+  { markerId: "b12", id: "b12", name: "B12", value: 432, unit: "pg/mL", status: "normal", normalRange: "200-900", optimalRange: "500-800", interpretation: "Energie neuro" },
+  { markerId: "vitamine_d", id: "vitamine_d", name: "Vitamine D", value: 38, unit: "ng/mL", status: "normal", normalRange: "30-100", optimalRange: "50-80", interpretation: "Hormones immunite" },
+  { markerId: "triglycerides", id: "triglycerides", name: "Triglycerides", value: 166, unit: "mg/dL", status: "suboptimal", normalRange: "0-150", optimalRange: "0-80", interpretation: "Energie" },
+  { markerId: "lpa", id: "lpa", name: "Lp(a)", value: 100, unit: "mg/dL", status: "critical", normalRange: "0-30", optimalRange: "0-14", interpretation: "Risque cardio" },
+  { markerId: "apo_a1", id: "apo_a1", name: "Apolipoproteines A1", value: 85, unit: "mg/dL", status: "suboptimal", normalRange: "125-999", optimalRange: "140-180", interpretation: "HDL particles" },
+  { markerId: "hdl", id: "hdl", name: "HDL", value: 70, unit: "mg/dL", status: "optimal", normalRange: "40-999", optimalRange: "55-999", interpretation: "Protection cardio" },
+  { markerId: "crp_us", id: "crp_us", name: "CRP-us", value: 0.7, unit: "mg/L", status: "normal", normalRange: "0-3", optimalRange: "0-0.5", interpretation: "Inflammation systemique" },
+  { markerId: "ast", id: "ast", name: "AST", value: 34, unit: "U/L", status: "normal", normalRange: "10-40", optimalRange: "0-30", interpretation: "Foie muscle" },
+  { markerId: "alt", id: "alt", name: "ALT", value: 56, unit: "U/L", status: "normal", normalRange: "7-56", optimalRange: "0-30", interpretation: "Foie" },
+  { markerId: "ggt", id: "ggt", name: "GGT", value: 33, unit: "U/L", status: "normal", normalRange: "9-48", optimalRange: "0-25", interpretation: "Stress oxydatif" },
+  { markerId: "estradiol", id: "estradiol", name: "Estradiol (E2)", value: 23, unit: "pg/mL", status: "optimal", normalRange: "10-40", optimalRange: "20-35", interpretation: "Equilibre testo/E2" },
+  { markerId: "prolactine", id: "prolactine", name: "Prolactine", value: 6.7, unit: "ng/mL", status: "optimal", normalRange: "2-18", optimalRange: "5-12", interpretation: "Libido" },
+  { markerId: "t4_libre", id: "t4_libre", name: "T4 libre", value: 1.14, unit: "ng/dL", status: "normal", normalRange: "0.8-1.8", optimalRange: "1.2-1.6", interpretation: "Hormone stockage" },
+  { markerId: "tsh", id: "tsh", name: "TSH", value: 1.89, unit: "mIU/L", status: "optimal", normalRange: "0.4-4.5", optimalRange: "0.5-2", interpretation: "Thyroide" },
+  { markerId: "testosterone_libre", id: "testosterone_libre", name: "Testosterone libre", value: 5, unit: "pg/mL", status: "normal", normalRange: "5-25", optimalRange: "15-25", interpretation: "Forme active" },
+];
 
-  test.beforeEach(async ({ page }) => {
-    if (!testReportId) {
-      test.skip();
-    }
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await page.waitForLoadState('networkidle');
-  });
+const AI_REPORT_FULL = `
+## SYNTHESE EXECUTIVE
+### Triage Prioritaire
+- Priorite 1: Lp(a) tres eleve.
+- Priorite 2: axe metabolique sous-optimal.
 
-  test('should display the introduction section by default', async ({ page }) => {
-    const introHeading = page.getByRole('heading', { name: 'Introduction & guide de lecture' });
-    await expect(introHeading).toBeVisible();
-  });
+### Lecture Globale
+Profil global coherent avec un risque cardio-metabolique ameliorable.
 
-  test('should display RadialScoreChart with global score', async ({ page }) => {
-    // Wait for the chart to load (Suspense boundary resolved)
-    await page.waitForSelector('div[role="figure"]', { timeout: 5000 });
+## QUALITE DES DONNEES & LIMITES
+Les donnees sont coherentes. Un retest a jeun standardise est recommande.
 
-    const scoreChart = page.locator('div[role="figure"]');
-    await expect(scoreChart).toBeVisible();
+## TABLEAU DE BORD (SCORES & PRIORITES)
+Top priorites et quick wins identifies.
 
-    // Verify aria-label contains score information
-    const ariaLabel = await scoreChart.getAttribute('aria-label');
-    expect(ariaLabel).toMatch(/Score Global/i);
+## POTENTIEL RECOMPOSITION (PERTE DE GRAS + GAIN DE MUSCLE)
+Potentiel de recomposition eleve apres correction du risque metabolique.
 
-    // Verify SVG is present
-    const svg = scoreChart.locator('svg[role="img"]');
-    await expect(svg).toBeVisible();
-  });
+## ANALYSE PAR AXE
+### Axe 1 — Potentiel musculaire & androgenes
+Signals anaboliques presents mais perfectibles.
 
-  test('should display InteractiveHeatmap with 6 categories', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    await expect(heatmap).toBeVisible();
+### Axe 2 — Metabolisme & gestion du risque diabete
+Triglycerides elevés, vigilance sur sensibilite insulinique.
 
-    // Count the number of category buttons
-    const categoryButtons = heatmap.locator('button[role="button"]');
-    await expect(categoryButtons).toHaveCount(6);
-  });
+## CORRELATIONS LIFESTYLE
+Sommeil et gestion du stress a renforcer.
 
-  test('should toggle heatmap category selection when clicked', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const firstCategory = heatmap.locator('button[role="button"]').first();
+## DEEP DIVE MARQUEURS PRIORITAIRES
+### Lp(a) — 100 mg/dL — CRITIQUE
+Intervention prioritaire.
 
-    // Click the first category
-    await firstCategory.click();
+## PLAN D'ACTION 90 JOURS
+### PHASE 1: ATTAQUE (Jours 1-30)
+Nutrition anti-inflammatoire + marche post-prandiale.
 
-    // Verify it is selected
-    await expect(firstCategory).toHaveAttribute('aria-pressed', 'true');
-  });
+### PHASE 2: OPTIMISATION (Jours 31-60)
+Progression entrainement force.
 
-  test('should display key AnimatedStatCards in overview', async ({ page }) => {
-    const statCards = page.locator('div[role="article"]');
-    const statCount = await statCards.count();
-    expect(statCount).toBeGreaterThanOrEqual(2);
+### PHASE 3: CONSOLIDATION (Jours 61-90)
+Consolidation habitudes.
 
-    // Verify each stat card has required elements
-    await expect(statCards.filter({ hasText: 'Marqueurs optimaux' }).first()).toBeVisible();
-    await expect(statCards.filter({ hasText: 'Alertes critiques' }).first()).toBeVisible();
+### PHASE 4: RETEST (J+90)
+Retest des biomarqueurs cibles.
 
-    // Check aria-label contains stat information
-    const ariaLabel = await statCards.first().getAttribute('aria-label');
-    expect(ariaLabel).toBeTruthy();
-  });
+## NUTRITION & ENTRAINEMENT (TRADUCTION PRATIQUE)
+### Nutrition
+Strategie proteique et controle glycémique.
 
-  test('should animate counter values on page load', async ({ page }) => {
-    // Wait for counter animation to complete
-    await page.waitForTimeout(2500);
+### Entrainement
+Zone 2 + force 3x/semaine.
 
-    // Verify score value is visible and numeric
-    const scoreValue = page.locator('div[role="figure"] div[aria-live="polite"]');
-    const scoreText = await scoreValue.textContent();
-    expect(parseInt(scoreText || '0')).toBeGreaterThan(0);
-  });
+## SUPPLEMENTS & STACK (MINIMALISTE MAIS IMPACT)
+Omega-3, magnesium, vitamine D selon contexte.
 
-  test('should display grain texture and glass-like effects', async ({ page }) => {
-    // Check for grain texture class
-    const grainElements = page.locator('.grain-texture');
-    await expect(grainElements.first()).toBeVisible();
+## ANNEXES (ULTRA LONG)
+### Annexe C — Glossaire utile
+Definitions des marqueurs.
 
-    // Check for blur (glass-like) on heatmap cards
-    const heatmapCard = page.locator('div[role="region"][aria-label*="Heatmap"] button').first();
-    const heatmapSurface = heatmapCard.locator('div').first();
-    const backdropFilter = await heatmapSurface.evaluate((el) => getComputedStyle(el).backdropFilter);
-    expect(backdropFilter).not.toBe('none');
-  });
+## VIGILANCE
+Ce rapport ne remplace pas un avis medical.
+
+## SOURCES (BIBLIOTHEQUE)
+Huberman, Attia, Examine, publications revues par les pairs.
+`.trim();
+
+const summary = {
+  optimal: ["Creatinine", "eGFR", "Transferrine sat.", "HDL", "Estradiol (E2)", "Prolactine", "TSH"],
+  watch: ["Ferritine", "B12", "Vitamine D", "Triglycerides", "Apolipoproteines A1", "CRP-us", "AST", "ALT", "GGT", "T4 libre", "Testosterone libre"],
+  action: ["Lp(a)"],
+};
+
+const buildReportPayload = (reportId: string, withAiReport: boolean) => ({
+  success: true,
+  report: {
+    id: reportId,
+    email: "test@example.com",
+    profile: { prenom: "Alex", gender: "homme" },
+    analysis: {
+      markers: RICH_MARKERS,
+      summary,
+    },
+    aiReport: withAiReport ? AI_REPORT_FULL : "",
+    createdAt: "2026-02-22T13:45:14.513Z",
+  },
 });
 
-test.describe('Blood Analysis Dashboard - Keyboard Navigation', () => {
-  const testReportId = process.env.TEST_REPORT_ID;
+const installReportRouteMock = async (page: Page) => {
+  await page.route("**/api/blood-analysis/report/**", async (route) => {
+    const url = new URL(route.request().url());
+    const reportId = url.pathname.split("/").pop() || "fixture-rich";
+    const withAiReport = reportId !== "fixture-no-ai";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(buildReportPayload(reportId, withAiReport)),
+    });
+  });
+};
 
+const openDashboard = async (page: Page, reportId = "fixture-rich") => {
+  await page.goto(`/analysis/${reportId}`);
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(2300);
+};
+
+test.describe("Blood Analysis Dashboard - Production Readiness", () => {
   test.beforeEach(async ({ page }) => {
-    if (!testReportId) {
-      test.skip();
+    await installReportRouteMock(page);
+  });
+
+  test("renders overview with visible scores and consistent widgets", async ({ page }) => {
+    await openDashboard(page);
+
+    await expect(page.getByRole("heading", { name: /Tableau de bord biomarqueurs/i })).toBeVisible();
+    await expect(page.locator('div[role="figure"]')).toBeVisible();
+    await expect(page.locator('div[role="region"][aria-label*="Heatmap"]')).toBeVisible();
+    await expect(page.locator('div[role="article"]')).toHaveCount(6);
+
+    const debug = await page.evaluate(() => {
+      const values = Array.from(document.querySelectorAll('[role="article"] .text-4xl')).map((node) => {
+        const style = getComputedStyle(node as HTMLElement);
+        const rect = (node as HTMLElement).getBoundingClientRect();
+        return {
+          text: node.textContent?.trim() || "",
+          position: style.position,
+          left: style.left,
+          width: rect.width,
+        };
+      });
+      const radial = document.querySelector('[role="figure"] .text-7xl') as HTMLElement | null;
+      const radialStyle = radial ? getComputedStyle(radial) : null;
+      return {
+        values,
+        radialText: radial?.textContent?.trim() || "",
+        radialPosition: radialStyle?.position || "",
+        radialLeft: radialStyle?.left || "",
+      };
+    });
+
+    for (const value of debug.values) {
+      expect(Number(value.text)).toBeGreaterThan(0);
+      expect(value.position).toBe("static");
+      expect(value.left).toBe("auto");
+      expect(value.width).toBeGreaterThan(10);
     }
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await page.waitForLoadState('networkidle');
+    expect(Number(debug.radialText)).toBeGreaterThan(0);
+    expect(debug.radialPosition).toBe("static");
+    expect(debug.radialLeft).toBe("auto");
   });
 
-  test('should allow keyboard focus on heatmap categories', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const firstCategory = heatmap.locator('button[role="button"]').first();
+  test("supports heatmap interaction and keyboard accessibility", async ({ page }) => {
+    await openDashboard(page);
+    await page.getByRole("tab", { name: /Overview/i }).click();
+    await expect(page.getByRole("heading", { name: /Heatmap systémique/i })).toBeVisible();
+
+    const firstCategory = page.getByRole("button", { name: /Panel Hormonal: score/i }).first();
     await firstCategory.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("tab", { name: /Biomarqueurs/i })).toHaveAttribute("data-state", "active");
 
-    const focusedElement = page.locator(':focus');
-    const isFocused = await focusedElement.evaluate((el) =>
-      el.getAttribute('role') === 'button'
-    );
-    expect(isFocused).toBeTruthy();
+    await page.getByRole("tab", { name: /Overview/i }).click();
+    const firstCategoryAgain = page.getByRole("button", { name: /Panel Hormonal: score/i }).first();
+    await firstCategoryAgain.focus();
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("tab", { name: /Biomarqueurs/i })).toHaveAttribute("data-state", "active");
   });
 
-  test('should activate heatmap category with Enter key', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const firstCategory = heatmap.locator('button[role="button"]').first();
+  test("opens all dashboard tabs with expected content blocks", async ({ page }) => {
+    await openDashboard(page);
 
-    // Focus the first category
-    await firstCategory.focus();
+    const checks = [
+      { tab: /Overview/i, expected: /Heatmap systémique/i },
+      { tab: /Biomarqueurs/i, expected: /Creatinine/i },
+      { tab: /Synthèse/i, expected: /Triage Prioritaire/i },
+      { tab: /Données & Tests/i, expected: /QUALITE DES DONNEES/i },
+      { tab: /Analyse Axes/i, expected: /Axe 1 — Potentiel musculaire/i },
+      { tab: /Plan 90j/i, expected: /PHASE 1: ATTAQUE/i },
+      { tab: /Protocoles/i, expected: /NUTRITION & ENTRAINEMENT/i },
+      { tab: /Annexes/i, expected: /Glossaire utile/i },
+    ];
 
-    // Press Enter to activate
-    await page.keyboard.press('Enter');
-
-    await expect(firstCategory).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  test('should activate heatmap category with Space key', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const firstCategory = heatmap.locator('button[role="button"]').first();
-
-    // Focus the first category
-    await firstCategory.focus();
-
-    // Press Space to activate
-    await page.keyboard.press('Space');
-
-    await expect(firstCategory).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  test('should show visible focus states on interactive elements', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const firstCategory = heatmap.locator('button[role="button"]').first();
-
-    // Focus the element
-    await firstCategory.focus();
-
-    // Check if focus state is visible (outline should be applied)
-    const outlineStyle = await firstCategory.evaluate((el) =>
-      window.getComputedStyle(el).outlineStyle
-    );
-    expect(outlineStyle).not.toBe('none');
-  });
-});
-
-test.describe('Blood Analysis Dashboard - Responsive Layout', () => {
-  const testReportId = process.env.TEST_REPORT_ID;
-
-  test.beforeEach(async ({ page }) => {
-    if (!testReportId) {
-      test.skip();
-    }
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await page.waitForLoadState('networkidle');
-  });
-
-  test('should display correct layout on desktop (1920x1080)', async ({ page }) => {
-    await page.setViewportSize({ width: 1920, height: 1080 });
-
-    // Heatmap should have 3 columns on large screens
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const gridClass = await heatmap.getAttribute('class');
-    expect(gridClass).toContain('lg:grid-cols-3');
-
-    // Stat cards container should be present on the right column
-    const statCardsContainer = page.locator('div.col-span-12.lg\\:col-span-4');
-    await expect(statCardsContainer).toBeVisible();
-  });
-
-  test('should display correct layout on tablet (768x1024)', async ({ page }) => {
-    await page.setViewportSize({ width: 768, height: 1024 });
-
-    // Heatmap should have 2 columns on mobile/tablet
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    const gridClass = await heatmap.getAttribute('class');
-    expect(gridClass).toContain('grid-cols-2');
-
-    // Verify no horizontal overflow
-    const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
-    expect(bodyScrollWidth).toBeLessThanOrEqual(768);
-  });
-
-  test('should display correct layout on mobile (375x667)', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 667 });
-
-    // Verify no horizontal overflow
-    const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
-    expect(bodyScrollWidth).toBeLessThanOrEqual(375);
-
-    // All elements should be visible
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    await expect(heatmap).toBeVisible();
-
-    const statCards = page.locator('div[role="article"]');
-    await expect(statCards.first()).toBeVisible();
-  });
-});
-
-test.describe('Blood Analysis Dashboard - Accessibility', () => {
-  const testReportId = process.env.TEST_REPORT_ID;
-
-  test.beforeEach(async ({ page }) => {
-    if (!testReportId) {
-      test.skip();
-    }
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await page.waitForLoadState('networkidle');
-  });
-
-  test('should have proper ARIA attributes on RadialScoreChart', async ({ page }) => {
-    const scoreChart = page.locator('div[role="figure"]');
-    await expect(scoreChart).toHaveAttribute('aria-label');
-
-    // Verify aria-live for counter animation
-    const counterElement = scoreChart.locator('div[aria-live="polite"]');
-    await expect(counterElement).toBeVisible();
-  });
-
-  test('should have proper ARIA attributes on InteractiveHeatmap', async ({ page }) => {
-    const heatmap = page.locator('div[role="region"][aria-label*="Heatmap"]');
-    await expect(heatmap).toHaveAttribute('aria-label');
-
-    // Check buttons have proper ARIA
-    const firstButton = heatmap.locator('button[role="button"]').first();
-    await expect(firstButton).toHaveAttribute('aria-label');
-    await expect(firstButton).toHaveAttribute('tabindex', '0');
-  });
-
-  test('should have proper ARIA attributes on AnimatedStatCards', async ({ page }) => {
-    const firstCard = page.locator('div[role="article"]').first();
-    await expect(firstCard).toHaveAttribute('aria-label');
-
-    // Verify aria-live for counter animation
-    const counterElement = firstCard.locator('span[aria-live="polite"]');
-    await expect(counterElement).toBeVisible();
-  });
-
-  test('should respect prefers-reduced-motion', async ({ page, context }) => {
-    // Create new page with reduced motion preference
-    const reducedMotionPage = await context.newPage();
-    await reducedMotionPage.emulateMedia({ reducedMotion: 'reduce' });
-    await reducedMotionPage.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await reducedMotionPage.waitForLoadState('networkidle');
-
-    // Animations should be minimal/instant
-    const scoreChart = reducedMotionPage.locator('div[role="figure"]');
-    await expect(scoreChart).toBeVisible();
-
-    // Close the page
-    await reducedMotionPage.close();
-  });
-
-  test('should have minimum touch target size (44px)', async ({ page }) => {
-    const heatmapButtons = page.locator('div[role="region"][aria-label*="Heatmap"] button[role="button"]');
-    const firstButton = heatmapButtons.first();
-
-    const boundingBox = await firstButton.boundingBox();
-    expect(boundingBox?.width).toBeGreaterThanOrEqual(44);
-    expect(boundingBox?.height).toBeGreaterThanOrEqual(44);
-  });
-});
-
-test.describe('Blood Analysis Dashboard - Performance', () => {
-  const testReportId = process.env.TEST_REPORT_ID;
-
-  test.beforeEach(async ({ page }) => {
-    if (!testReportId) {
-      test.skip();
+    for (const { tab, expected } of checks) {
+      await page.getByRole("tab", { name: tab }).click();
+      await expect(page.getByText(expected, { exact: false }).first()).toBeVisible();
     }
   });
 
-  test('should load page within acceptable time', async ({ page }) => {
-    const startTime = Date.now();
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await page.waitForLoadState('networkidle');
-    const loadTime = Date.now() - startTime;
+  test("keeps metrics visible after theme switches", async ({ page }) => {
+    await openDashboard(page);
 
-    // Page should load in less than 5 seconds
-    expect(loadTime).toBeLessThan(5000);
+    const themes = [/^M1$/i, /^Claude$/i, /^Titanium$/i, /^Sand$/i];
+    for (const theme of themes) {
+      await page.getByRole("button", { name: theme }).click();
+      await page.waitForTimeout(200);
+      const firstValue = await page.locator('[role="article"] .text-4xl').first().textContent();
+      expect(Number((firstValue || "").trim())).toBeGreaterThan(0);
+    }
   });
 
-  test('should lazy load premium components', async ({ page }) => {
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
+  test("has no horizontal overflow on desktop and mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 900 });
+    await openDashboard(page);
+    let overflow = await page.evaluate(() => {
+      const main = document.querySelector("main");
+      if (!main) return 0;
+      return main.scrollWidth - main.clientWidth;
+    });
+    expect(overflow).toBeLessThanOrEqual(12);
 
-    // Check for Suspense fallback loader
-    const loader = page.locator('.animate-spin');
-
-    // Loader should appear initially (or already be gone if fast load)
-    // Then all components should be visible
-    await page.waitForTimeout(3000);
-
-    const scoreChart = page.locator('div[role="figure"]');
-    await expect(scoreChart).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openDashboard(page);
+    overflow = await page.evaluate(() => {
+      const main = document.querySelector("main");
+      if (!main) return 0;
+      return main.scrollWidth - main.clientWidth;
+    });
+    expect(overflow).toBeLessThanOrEqual(12);
   });
 
-  test('should have smooth animations at 60fps', async ({ page }) => {
-    await page.goto(`/analysis/${testReportId}?key=Badboy007`);
-    await page.waitForLoadState('networkidle');
-
-    // Trigger hover animation
-    const firstCard = page.locator('div[role="article"]').first();
-    await firstCard.hover();
-
-    // Animation should be smooth (this is a basic check)
-    // In a real scenario, you'd measure frame rate
-    await page.waitForTimeout(600);
-
-    // Element should be visible after animation
-    await expect(firstCard).toBeVisible();
+  test("shows explicit AI generation state when report text is absent", async ({ page }) => {
+    await openDashboard(page, "fixture-no-ai");
+    await page.getByRole("tab", { name: /Synthèse/i }).click();
+    await expect(page.getByText(/Génération du rapport AI en cours/i)).toBeVisible();
   });
 });

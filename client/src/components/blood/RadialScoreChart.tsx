@@ -189,20 +189,26 @@ export const RadialScoreChart = ({
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-          aria-live="polite"
-          aria-atomic="true"
         >
           {animatedScore}
         </motion.div>
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {`${label}: ${animatedScore} sur ${maxScore}`}
+        </span>
 
         {/* Label */}
-        <div className="text-xs uppercase tracking-widest text-slate-500 mt-2 font-semibold">
+        <div
+          className="text-xs uppercase tracking-widest mt-2 font-semibold"
+          style={{ color: theme.textTertiary }}
+        >
           {label}
         </div>
 
         {/* Sublabel */}
         {sublabel && (
-          <div className="text-[10px] text-slate-600 mt-1">{sublabel}</div>
+          <div className="text-[10px] mt-1" style={{ color: theme.textSecondary }}>
+            {sublabel}
+          </div>
         )}
 
         {/* Percentile badge */}
