@@ -1737,7 +1737,7 @@ STRUCTURE STRICTE ET ORDRE IMPERATIF
 ### Retest & conditions de prelevement
 ## Nutrition & entrainement (traduction pratique)
 ## Supplements & stack (minimaliste mais impact)
-## Annexes (ultra long)
+## Annexes (references et vigilance)
 ### Annex A — Marqueurs secondaires (lecture rapide)
 ### Annex B — Hypotheses & tests de confirmation
 ### Annex C — Glossaire utile
@@ -3069,7 +3069,7 @@ export function buildFallbackAnalysis(
   );
   sections.push("\n---\n");
 
-  sections.push("## Annexes (ultra long)\n");
+  sections.push("## Annexes (references et vigilance)\n");
   sections.push("### Annex A — Marqueurs secondaires (lecture rapide)\n");
   sections.push("| Marqueur | Valeur | Statut | Lecture express |");
   sections.push("|---|---|---|---|");
@@ -3437,7 +3437,7 @@ export async function generateAIBloodAnalysis(
     "## Plan d'action 90 jours (hyper concret)",
     "## Nutrition & entrainement (traduction pratique)",
     "## Supplements & stack (minimaliste mais impact)",
-    "## Annexes (ultra long)",
+    "## Annexes (references et vigilance)",
     "### Annex A — Marqueurs secondaires (lecture rapide)",
     "### Annex B — Hypotheses & tests de confirmation",
     "### Annex C — Glossaire utile",
@@ -3739,7 +3739,7 @@ REGLES STRICTES:
   // Pass 2/3: continuation from first missing heading in canonical order
   for (let pass = 2; pass <= 3; pass++) {
     try {
-      const next = firstMissingHeading(output) || "## Annexes (ultra long)";
+      const next = firstMissingHeading(output) || "## Annexes (references et vigilance)";
       const continuationPrompt = [
         basePrompt,
         ``,
@@ -3750,7 +3750,7 @@ REGLES STRICTES:
         next,
         ``,
         `Puis continue en respectant l'ordre CANONIQUE jusqu'a terminer par:`,
-        `## Annexes (ultra long)`,
+        `## Annexes (references et vigilance)`,
         ``,
         `REGLES STRICTES:`,
         `- Aucun titre en '#'. Utilise uniquement '##' et '###' comme dans le template.`,

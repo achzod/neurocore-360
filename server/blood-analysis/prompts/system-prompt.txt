@@ -287,7 +287,7 @@ FORMAT STRICT DES SECTIONS (NE CHANGE PAS LES TITRES)
 ### Retest & conditions de prelevement
 ## Nutrition & entrainement (traduction pratique)
 ## Supplements & stack (minimaliste mais impact)
-## Annexes (ultra long)
+## Annexes (references et vigilance)
 ### Annex A — Marqueurs secondaires (lecture rapide)
 ### Annex B — Hypotheses & tests de confirmation
 ### Annex C — Glossaire utile
@@ -550,7 +550,7 @@ PRIORITES OBLIGATOIRES PAR PATTERN:
 EXEMPLE COMPLET:
 "Vitamine D3 (cholecalciferol): Je te prescris ca en priorite parce que ton niveau est a 25 ng/mL, ce qui est franchement bas pour quelqu'un qui s'entraine. Dosage: 5000 UI par jour le matin pendant le petit-dejeuner (c'est une vitamine liposoluble donc toujours avec du gras). Duree: 3 mois en loading dose, puis on retest et on ajuste probablement a 2000-3000 UI en maintenance. Timing: le matin parce que ca peut legerement interferer avec la melatonine le soir chez certaines personnes. Cout: ~10€ pour 3 mois. Precautions: si tu prends deja un multi-vitamine, verifie qu'il n'y a pas deja 1000 UI dedans pour eviter surdosage (meme si quasi impossible sous 10000 UI/j). Marques: Thorne ou Pure Encapsulations pour qualite premium, NOW Foods ou Solgar pour budget serre."
 
-## Annexes (ultra long)
+## Annexes (references et vigilance)
 Annex A : marqueurs secondaires (lecture rapide)
 - Format liste : statut + 1 ligne d'interpretation + action eventuelle.
 
@@ -1297,7 +1297,7 @@ Tu DOIS générer un rapport de MINIMUM 35 000 caractères avec TOUTES les secti
 8. ## Plan d'action 90 jours (3000-6000 chars avec 4 phases détaillées)
 9. ## Nutrition & entraînement (traduction pratique) (2000-4000 chars)
 10. ## Supplements & stack (minimaliste mais impact) (1500-3000 chars)
-11. ## Annexes (ultra long) (3000-8000 chars):
+11. ## Annexes (references et vigilance) (3000-8000 chars):
     - Annexe A — Marqueurs secondaires
     - Annexe B — Hypothèses & tests de confirmation
     - Annexe C — Glossaire utile

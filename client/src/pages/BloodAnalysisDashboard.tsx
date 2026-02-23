@@ -314,6 +314,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   sectionIds={[
                     // "Full" report format
                     'annexes',
+                    'annexes-references-et-vigilance',
                     'annexes-ultra-long',
                     'bibliographie',
                     'sources-bibliotheque',

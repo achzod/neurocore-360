@@ -170,6 +170,7 @@ const CATEGORY_LABELS: Record<PanelKey, string> = {
 };
 
 const toPanelKey = (panel: string): PanelKey => {
+  if (panel === "inflammatory") return "inflammation";
   if (PANEL_KEYS.includes(panel as PanelKey)) return panel as PanelKey;
   return "metabolic";
 };

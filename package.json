@@ -8,6 +8,7 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "qa:blood:dashboard": "tsx scripts/qa-blood-dashboard.ts",
     "db:push": "drizzle-kit push",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

@@ -43,6 +43,7 @@ const CATEGORY_TO_PANEL: Record<string, string> = {
   metabolique: "metabolic",
   metabolic: "metabolic",
   inflammation: "inflammation",
+  inflammatory: "inflammation",
   vitamines: "vitamins",
   vitamins: "vitamins",
   liver_kidney: "liver_kidney",
@@ -52,14 +53,23 @@ const CATEGORY_TO_PANEL: Record<string, string> = {
 
 const parseRange = (range?: string): { min?: number; max?: number } => {
   if (!range) return {};
-  const normalizedRange = String(range).replace(/,/g, '.').replace(/−/g, '-');
-  const numbers = normalizedRange.match(/-?\d+(?:\.\d+)?/g);
+  const normalizedRange = String(range)
+    .replace(/,/g, '.')
+    .replace(/[−–—]/g, '-')
+    // Prevent "10-40" from being parsed as [10, -40].
+    .replace(/(\d)\s*-\s*(?=\d)/g, '$1 to ');
+  const numbers = normalizedRange.match(/[+-]?\d+(?:\.\d+)?/g);
   if (!numbers || numbers.length === 0) return {};
   if (numbers.length === 1) {
     const value = Number(numbers[0]);
     return { min: value, max: value };
   }
-  return { min: Number(numbers[0]), max: Number(numbers[1]) };
+  const min = Number(numbers[0]);
+  const max = Number(numbers[1]);
+  return {
+    min: Math.min(min, max),
+    max: Math.max(min, max),
+  };
 };
 
 const scoreToStatus = (score: number): BiomarkerStatus => {
