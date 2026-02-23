@@ -14,6 +14,10 @@ import {
   buildFallbackAnalysis,
   buildLifestyleCorrelations,
 } from "../blood-analysis";
+import {
+  withAIGenerationTimeout,
+  isAIGenerationTimeoutError,
+} from "../blood-analysis/ai-timeout";
 import { generateComprehensiveBloodReport } from "../blood-analysis/recommendations-engine";
 import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores";
 import { storage } from "../storage";
@@ -375,31 +379,37 @@ export function registerBloodTestsRoutes(app: Express): void {
 
           let aiAnalysis = "";
           let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
+          let syncAiNeedsBackgroundRetry = false;
           const includeAI = body.includeAI !== false;
           const asyncAI = body.asyncAI === true;
+          const aiProfile = {
+            gender: patientProfile.gender as "homme" | "femme",
+            age,
+            prenom: patientProfile.prenom,
+            nom: patientProfile.nom,
+            poids: patientProfile.poids,
+            taille: patientProfile.taille,
+            sleepHours: patientProfile.sleepHours,
+            stressLevel: patientProfile.stressLevel,
+            fastingHours: patientProfile.fastingHours,
+            drawTime: patientProfile.drawTime,
+            lastTraining: patientProfile.lastTraining,
+            alcoholLast72h: patientProfile.alcoholLast72h,
+            nutritionPhase: patientProfile.nutritionPhase,
+            supplementsUsed: patientProfile.supplementsUsed,
+            medications: patientProfile.medications,
+            infectionRecent: patientProfile.infectionRecent,
+          };
 	          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
 	            try {
-	              const generated = await generateAIBloodAnalysis(
-                analysisResult,
-                {
-                  gender: patientProfile.gender as "homme" | "femme",
-                  age,
-                  prenom: patientProfile.prenom,
-                  nom: patientProfile.nom,
-                  poids: patientProfile.poids,
-                  taille: patientProfile.taille,
-                  sleepHours: patientProfile.sleepHours,
-                  stressLevel: patientProfile.stressLevel,
-                  fastingHours: patientProfile.fastingHours,
-                  drawTime: patientProfile.drawTime,
-                  lastTraining: patientProfile.lastTraining,
-                  alcoholLast72h: patientProfile.alcoholLast72h,
-                  nutritionPhase: patientProfile.nutritionPhase,
-                  supplementsUsed: patientProfile.supplementsUsed,
-                  medications: patientProfile.medications,
-                  infectionRecent: patientProfile.infectionRecent,
-                },
-	                knowledgeContext
+	              const generated = await withAIGenerationTimeout(
+	                () =>
+	                  generateAIBloodAnalysis(
+                    analysisResult,
+                    aiProfile,
+	                    knowledgeContext
+	                  ),
+	                "blood-tests/seed sync report"
 	              );
 	              aiAnalysis = generated.report;
 	              aiMeta = {
@@ -408,7 +418,12 @@ export function registerBloodTestsRoutes(app: Express): void {
 	                validationMissing: generated.validationMissing || null,
 	              };
 	            } catch (err) {
-	              console.error("[BloodTests] AI generation failed (seed sync):", err);
+	              syncAiNeedsBackgroundRetry = true;
+	              if (isAIGenerationTimeoutError(err)) {
+	                console.warn("[BloodTests] Seed sync AI timed out, using fallback and queuing retry.");
+	              } else {
+	                console.error("[BloodTests] AI generation failed (seed sync), using fallback and queuing retry:", err);
+	              }
 	              aiAnalysis = "";
 	              aiMeta = null;
 	            }
@@ -495,29 +510,12 @@ export function registerBloodTestsRoutes(app: Express): void {
             completedAt: new Date(),
           });
 
-          if (includeAI && asyncAI && process.env.ANTHROPIC_API_KEY) {
+          if (includeAI && process.env.ANTHROPIC_API_KEY && (asyncAI || syncAiNeedsBackgroundRetry)) {
             setImmediate(async () => {
               try {
                 const enriched = await generateAIBloodAnalysis(
                   analysisResult,
-                  {
-                    gender: patientProfile.gender as "homme" | "femme",
-                    age,
-                    prenom: patientProfile.prenom,
-                    nom: patientProfile.nom,
-                    poids: patientProfile.poids,
-                    taille: patientProfile.taille,
-                    sleepHours: patientProfile.sleepHours,
-                    stressLevel: patientProfile.stressLevel,
-                    fastingHours: patientProfile.fastingHours,
-                    drawTime: patientProfile.drawTime,
-                    lastTraining: patientProfile.lastTraining,
-                    alcoholLast72h: patientProfile.alcoholLast72h,
-                    nutritionPhase: patientProfile.nutritionPhase,
-                    supplementsUsed: patientProfile.supplementsUsed,
-                    medications: patientProfile.medications,
-                    infectionRecent: patientProfile.infectionRecent,
-                  },
+                  aiProfile,
                   knowledgeContext
                 );
                 const updatedAnalysis = {
@@ -678,29 +676,35 @@ export function registerBloodTestsRoutes(app: Express): void {
 
 	      let aiAnalysis = "";
 	      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
+      let syncAiNeedsBackgroundRetry = false;
+      const aiProfile = {
+        gender: profile.gender as "homme" | "femme",
+        age,
+        prenom: profile.prenom,
+        nom: profile.nom,
+        poids: profile.poids,
+        taille: profile.taille,
+        sleepHours: profile.sleepHours,
+        stressLevel: profile.stressLevel,
+        fastingHours: profile.fastingHours,
+        drawTime: profile.drawTime,
+        lastTraining: profile.lastTraining,
+        alcoholLast72h: profile.alcoholLast72h,
+        nutritionPhase: profile.nutritionPhase,
+        supplementsUsed: profile.supplementsUsed,
+        medications: profile.medications,
+        infectionRecent: profile.infectionRecent,
+      };
 	      if (process.env.ANTHROPIC_API_KEY) {
 	        try {
-	          const generated = await generateAIBloodAnalysis(
-            analysisResult,
-            {
-              gender: profile.gender as "homme" | "femme",
-              age,
-              prenom: profile.prenom,
-              nom: profile.nom,
-              poids: profile.poids,
-              taille: profile.taille,
-              sleepHours: profile.sleepHours,
-              stressLevel: profile.stressLevel,
-              fastingHours: profile.fastingHours,
-              drawTime: profile.drawTime,
-              lastTraining: profile.lastTraining,
-              alcoholLast72h: profile.alcoholLast72h,
-              nutritionPhase: profile.nutritionPhase,
-              supplementsUsed: profile.supplementsUsed,
-              medications: profile.medications,
-              infectionRecent: profile.infectionRecent,
-            },
-	            knowledgeContext
+	          const generated = await withAIGenerationTimeout(
+	            () =>
+	              generateAIBloodAnalysis(
+                analysisResult,
+                aiProfile,
+	                knowledgeContext
+	              ),
+	            "blood-tests/upload sync report"
 	          );
 	          aiAnalysis = generated.report;
 	          aiMeta = {
@@ -709,7 +713,12 @@ export function registerBloodTestsRoutes(app: Express): void {
 	            validationMissing: generated.validationMissing || null,
 	          };
 	        } catch (err) {
-	          console.error("[BloodTests] AI generation failed (upload sync):", err);
+          syncAiNeedsBackgroundRetry = true;
+          if (isAIGenerationTimeoutError(err)) {
+            console.warn("[BloodTests] Upload sync AI timed out, using fallback and queuing retry.");
+          } else {
+            console.error("[BloodTests] AI generation failed (upload sync), using fallback and queuing retry:", err);
+          }
 	          aiAnalysis = "";
 	          aiMeta = null;
 	        }
@@ -789,6 +798,29 @@ export function registerBloodTestsRoutes(app: Express): void {
         globalLevel,
         completedAt: new Date(),
       });
+
+      if (syncAiNeedsBackgroundRetry && process.env.ANTHROPIC_API_KEY) {
+        setImmediate(async () => {
+          try {
+            const enriched = await generateAIBloodAnalysis(
+              analysisResult,
+              aiProfile,
+              knowledgeContext
+            );
+            const refreshedAnalysis = {
+              ...analysisPayload,
+              aiAnalysis: enriched.report,
+              aiStatus: enriched.status,
+              aiModel: enriched.model,
+              aiGeneratedAt: new Date().toISOString(),
+              ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
+            };
+            await storage.updateBloodTest(baseRecord.id, { analysis: refreshedAnalysis });
+          } catch (err) {
+            console.error("[BloodTests] Upload async AI retry failed:", err);
+          }
+        });
+      }
 
       res.json({
         bloodTest: updatedRecord || baseRecord,

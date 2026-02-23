@@ -50,6 +50,10 @@ import { storage } from "../storage";
 import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
+import {
+  withAIGenerationTimeout,
+  isAIGenerationTimeoutError,
+} from "./ai-timeout";
 
 // Prevent duplicate background generation per instance.
 const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
@@ -123,12 +127,30 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      // Generate AI-powered analysis
-      const aiAnalysis = await generateAIBloodAnalysis(
-        analysisResult,
-        profile,
-        knowledgeContext
-      );
+      let aiAnalysis;
+      try {
+        aiAnalysis = await withAIGenerationTimeout(
+          () =>
+            generateAIBloodAnalysis(
+              analysisResult,
+              profile,
+              knowledgeContext
+            ),
+          "blood-analysis/analyze sync report"
+        );
+      } catch (aiError) {
+        if (isAIGenerationTimeoutError(aiError)) {
+          console.warn("[BloodAnalysis] Analyze AI timed out, returning fallback.");
+        } else {
+          console.error("[BloodAnalysis] Analyze AI failed, returning fallback:", aiError);
+        }
+        aiAnalysis = {
+          report: buildFallbackAnalysis(analysisResult, profile as any),
+          status: "fallback" as const,
+          model: "fallback",
+          validationMissing: [] as string[],
+        };
+      }
 
       res.json({
         success: true,
@@ -413,28 +435,48 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const shouldIncludeAI = includeAI !== false;
       const shouldAsyncAI = asyncAI !== false;
+      const profileWithAge = {
+        ...profile,
+        age: computedAge,
+      };
       let aiAnalysis = "";
       let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
+      let syncAiNeedsBackgroundRetry = false;
       if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
-        const generated = await generateAIBloodAnalysis(
-          analysisResult,
-          profile,
-          knowledgeContext
-        );
-        aiAnalysis = generated.report;
-        aiMeta = {
-          status: generated.status,
-          model: generated.model,
-          validationMissing: generated.validationMissing || null,
-        };
+        try {
+          const generated = await withAIGenerationTimeout(
+            () =>
+              generateAIBloodAnalysis(
+                analysisResult,
+                profileWithAge as any,
+                knowledgeContext
+              ),
+            "blood-analysis/submit sync report"
+          );
+          aiAnalysis = generated.report;
+          aiMeta = {
+            status: generated.status,
+            model: generated.model,
+            validationMissing: generated.validationMissing || null,
+          };
+        } catch (aiError) {
+          syncAiNeedsBackgroundRetry = true;
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodAnalysis] Submit sync AI timed out, returning fallback and queuing retry.");
+          } else {
+            console.error("[BloodAnalysis] Submit sync AI failed, returning fallback and queuing retry:", aiError);
+          }
+          aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
+          aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
+        }
+      } else if (shouldIncludeAI && !process.env.ANTHROPIC_API_KEY) {
+        aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
+        aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
 
       const reportRecord = await storage.createBloodReport({
         email: recipientEmail,
-        profile: {
-          ...profile,
-          age: computedAge,
-        },
+        profile: profileWithAge,
         markers: resolvedMarkers,
         analysis: {
           ...analysisResult,
@@ -450,12 +492,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiReport: aiAnalysis,
       });
 
-      if (shouldIncludeAI && shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
+      const shouldQueueBackgroundAI =
+        shouldIncludeAI && process.env.ANTHROPIC_API_KEY && (shouldAsyncAI || syncAiNeedsBackgroundRetry);
+      if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
             const enriched = await generateAIBloodAnalysis(
               analysisResult,
-              profile,
+              profileWithAge as any,
               knowledgeContext
             );
             await storage.updateBloodReport(reportRecord.id, {
@@ -486,7 +530,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysis: analysisResult,
         aiReport: aiAnalysis,
         aiMeta,
-        status: shouldIncludeAI && shouldAsyncAI ? "processing" : "completed"
+        status:
+          shouldIncludeAI && shouldAsyncAI && Boolean(process.env.ANTHROPIC_API_KEY) && !aiAnalysis
+            ? "processing"
+            : "completed"
       });
     } catch (error) {
       console.error("[BloodAnalysis] Submit error:", error);
@@ -580,11 +627,30 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult.patterns
         );
 
-	        const generated = await generateAIBloodAnalysis(
-	          analysisResult,
-	          normalizedProfile,
-	          knowledgeContext
-	        );
+	        let generated;
+	        try {
+	          generated = await withAIGenerationTimeout(
+	            () =>
+	              generateAIBloodAnalysis(
+	                analysisResult,
+	                normalizedProfile,
+	                knowledgeContext
+	              ),
+	            "blood-analysis/admin-regenerate sync report"
+	          );
+	        } catch (aiError) {
+	          if (isAIGenerationTimeoutError(aiError)) {
+	            console.warn("[BloodAnalysis] Admin regenerate sync AI timed out, storing fallback.");
+	          } else {
+	            console.error("[BloodAnalysis] Admin regenerate sync AI failed, storing fallback:", aiError);
+	          }
+	          generated = {
+	            report: buildFallbackAnalysis(analysisResult, normalizedProfile),
+	            status: "fallback" as const,
+	            model: "fallback",
+	            validationMissing: [] as string[],
+	          };
+	        }
 	        const aiReport = generated.report;
 
 	        // Guard: never overwrite a "generated" report with "fallback"
@@ -2131,10 +2197,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let aiReport: string;
       let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       try {
-        const generated = await generateAIBloodAnalysis(
-          basicAnalysis,
-          profileWithAge,
-          knowledgeContext
+        const generated = await withAIGenerationTimeout(
+          () =>
+            generateAIBloodAnalysis(
+              basicAnalysis,
+              profileWithAge,
+              knowledgeContext
+            ),
+          "blood-analysis/full-analysis sync report"
         );
         aiReport = generated.report;
         aiMeta = {
@@ -2143,7 +2213,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           validationMissing: generated.validationMissing || null,
         };
       } catch (aiError) {
-        console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        if (isAIGenerationTimeoutError(aiError)) {
+          console.warn("[BloodAnalysis] Full analysis AI timed out, using fallback.");
+        } else {
+          console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        }
         aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
         aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
@@ -2273,10 +2347,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let aiReport: string;
       let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       try {
-        const generated = await generateAIBloodAnalysis(
-          basicAnalysis,
-          profileWithAge,
-          knowledgeContext
+        const generated = await withAIGenerationTimeout(
+          () =>
+            generateAIBloodAnalysis(
+              basicAnalysis,
+              profileWithAge,
+              knowledgeContext
+            ),
+          "blood-analysis/comprehensive-report sync report"
         );
         aiReport = generated.report;
         aiMeta = {
@@ -2285,7 +2363,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           validationMissing: generated.validationMissing || null,
         };
       } catch (aiError) {
-        console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        if (isAIGenerationTimeoutError(aiError)) {
+          console.warn("[BloodAnalysis] Comprehensive report AI timed out, using fallback.");
+        } else {
+          console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        }
         aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
         aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
