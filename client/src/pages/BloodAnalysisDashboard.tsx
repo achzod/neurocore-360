@@ -104,10 +104,11 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
   }
 
   return (
-    <div
-      className="ultrahuman-report min-h-screen flex"
-      style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
-    >
+    <BloodThemeProvider forcedMode={currentTheme.type}>
+      <div
+        className="ultrahuman-report min-h-screen flex"
+        style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+      >
       <aside
         className={`fixed lg:sticky top-0 left-0 h-screen w-72 border-r z-40 transition-transform lg:translate-x-0 ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
@@ -203,8 +204,9 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                     'synthese-executive',
                     'tableau-de-bord-scores-priorites',
                     'potentiel-recomposition',
-                    // "Compact" report format (current blood_tests aiAnalysis)
-                    'vigilance',
+                    // Alternate headings seen in legacy/fallback outputs
+                    'synthese',
+                    'resume-executif',
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
@@ -221,8 +223,10 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   sectionIds={[
                     // "Full" report format
                     'qualite-des-donnees-limites',
+                    'donnees-tests-complementaires',
                     'marqueurs-manquants-recommandations-de-tests',
                     'tests-complementaires',
+                    'retest-conditions-de-prelevement',
                     // "Compact" report format
                     'correlations-lifestyle',
                   ]}
@@ -241,11 +245,12 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   sectionIds={[
                     // "Full" report format
                     'lecture-compartimentee-par-axes',
+                    'analyse-par-axe',
                     ...axeSections,
                     'interconnexions-majeures',
+                    'interconnexions-majeures-le-pattern',
                     'deep-dive',
                     // "Compact" report format
-                    'analyse-par-axe',
                     'deep-dive-marqueurs-prioritaires',
                     'correlations-lifestyle',
                   ]}
@@ -286,8 +291,10 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                     'protocole-supplements',
                     'nutrition-entrainement',
                     'supplementation',
-                    // "Compact" report format: protocols are embedded in the 90-day plan
-                    'plan-d-action-90-jours',
+                    'supplements-stack',
+                    // "Compact" report format
+                    'nutrition-entrainement-traduction-pratique',
+                    'supplements-stack-minimaliste-mais-impact',
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
@@ -304,8 +311,11 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   sectionIds={[
                     // "Full" report format
                     'annexes',
+                    'annexes-ultra-long',
                     'bibliographie',
-                    // "Compact" report format: put warnings/notes here
+                    'sources-bibliotheque',
+                    'sources-scientifiques',
+                    // "Compact" report format: warnings/notes
                     'vigilance',
                   ]}
                   reportSections={reportSections}
@@ -319,13 +329,10 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
         </div>
       </main>
     </div>
+    </BloodThemeProvider>
   );
 });
 
 export default function BloodAnalysisDashboard() {
-  return (
-    <BloodThemeProvider>
-      <BloodAnalysisDashboardInner />
-    </BloodThemeProvider>
-  );
+  return <BloodAnalysisDashboardInner />;
 }

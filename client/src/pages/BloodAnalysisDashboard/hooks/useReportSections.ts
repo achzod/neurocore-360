@@ -15,7 +15,7 @@ const normalizeSectionId = (text: string) => {
 };
 
 export const useReportSections = (aiReport: string | undefined) => {
-  // Parse AI report into sections based on ## headings
+  // Parse AI report into sections based on level-2 headings.
   const reportSections = useMemo(() => {
     if (!aiReport) return [];
 
@@ -24,11 +24,12 @@ export const useReportSections = (aiReport: string | undefined) => {
     let currentSection: { id: string; title: string; content: string } | null = null;
 
     for (const line of lines) {
-      if (line.startsWith('## ')) {
+      const headingMatch = line.match(/^##\s+(.+)$/);
+      if (headingMatch) {
         if (currentSection) {
           sections.push(currentSection);
         }
-        const title = line.replace('## ', '').trim();
+        const title = headingMatch[1].trim();
         const id = normalizeSectionId(title);
         currentSection = { id, title, content: line + '\n' };
       } else if (currentSection) {
@@ -45,10 +46,19 @@ export const useReportSections = (aiReport: string | undefined) => {
 
   // Dynamically extract axe sections
   const axeSections = useMemo(() => {
-    return reportSections
-      .filter((section) => section.id.startsWith('axe-') && /axe-\d+/.test(section.id))
-      .map((section) => section.id);
-  }, [reportSections]);
+    if (!aiReport) return [];
+    const ids = new Set<string>();
+    const lines = aiReport.split('\n');
+    for (const line of lines) {
+      const headingMatch = line.match(/^###\s+(.+)$/i);
+      if (!headingMatch) continue;
+      const id = normalizeSectionId(headingMatch[1]);
+      if (/^axe-\d+/.test(id)) {
+        ids.add(id);
+      }
+    }
+    return Array.from(ids);
+  }, [aiReport]);
 
   return {
     reportSections,

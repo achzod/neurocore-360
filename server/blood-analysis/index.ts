@@ -1360,15 +1360,20 @@ function detectPatterns(markers: MarkerAnalysis[]): DiagnosticPattern[] {
 
 const SOURCE_LABELS: Record<string, string> = {
   huberman: "Huberman Lab",
+  applied_metabolics: "Applied Metabolics",
+  newsletter: "NeuroCore Newsletter",
   peter_attia: "Dr. Peter Attia",
   mpmd: "Derek de MPMD",
   chris_masterjohn: "Dr. Chris Masterjohn",
   examine: "Examine.com",
   marek_health: "Marek Health",
   sbs: "Stronger by Science",
+  renaissance_periodization: "Renaissance Periodization",
+  achzod: "Achzod",
+  manual: "Manual",
 };
 
-const EXPERT_NAME_REGEX = /(Derek(?: de MPMD)?|MPMD|Huberman|Attia|Masterjohn|Examine(?:\.com)?)/gi;
+const EXPERT_NAME_REGEX = /(Derek(?: de MPMD)?|MPMD|Huberman|Attia|Masterjohn|Examine(?:\.com)?|Applied Metabolics)/gi;
 const GENERIC_PHRASES = [
   "renseigne sur ta sante",
   "renseigne sur votre sante",
@@ -1420,10 +1425,29 @@ const selectDeepDiveMarkers = (markers: MarkerAnalysis[]) => {
     .slice(0, 6);
 };
 
+const slugifySourceRef = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+
+const getSourceRefId = (article: ScrapedArticle) => {
+  if (article.id && article.id.trim()) return article.id.trim();
+  const source = slugifySourceRef(article.source || "source");
+  const title = slugifySourceRef(article.title || "untitled");
+  return `${source}-${title}`.slice(0, 72);
+};
+
 const buildSourceExcerpt = (article: ScrapedArticle) => {
   const label = SOURCE_LABELS[article.source] || article.source;
-  const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 420);
-  return `- ${label}: "${excerpt}${excerpt.length >= 420 ? "..." : ""}"`;
+  const sourceId = getSourceRefId(article);
+  const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 360);
+  const title = article.title?.trim() || "Source";
+  const sourceLine = `- [SRC:${sourceId}] ${label} — ${title}`;
+  const urlLine = article.url ? `  URL: ${article.url}` : "";
+  const excerptLine = `  Extrait: ${excerpt}${excerpt.length >= 360 ? "..." : ""}`;
+  return [sourceLine, urlLine, excerptLine].filter(Boolean).join("\n");
 };
 
 const normalizePlain = (value: string) =>
@@ -1452,12 +1476,14 @@ async function getBiomarkerDeepDiveContext(
     const keywords = [marker.name.toLowerCase(), marker.markerId];
     const articles = await searchArticles(keywords, 4, [
       "huberman",
+      "applied_metabolics",
       "peter_attia",
       "mpmd",
       "chris_masterjohn",
       "examine",
       "marek_health",
       "sbs",
+      "newsletter",
     ]);
     const sourceLines = articles.slice(0, 3).map(buildSourceExcerpt);
 
@@ -1503,43 +1529,26 @@ const hasGenericPhrases = (text: string) => {
 };
 
 const validateDeepDive = (output: string, markerNames: string[]) => {
-  if (!markerNames.length) return { ok: true, reason: "" };
-  const deepDive = extractSection(output, "## Deep dive marqueurs prioritaires");
+  const deepDive = extractSection(output, "## Deep dive");
   if (!deepDive) return { ok: false, reason: "missing_deep_dive" };
 
+  if (!markerNames.length) return { ok: true, reason: "" };
+
   const normalizedDeepDive = normalizePlain(deepDive);
-  const missingMarkers = markerNames.filter(
-    (name) => !normalizedDeepDive.includes(normalizePlain(name))
-  );
-  if (missingMarkers.length) {
-    return { ok: false, reason: `missing_markers:${missingMarkers.join(",")}` };
+  const coveredMarkers = markerNames.filter((name) =>
+    normalizedDeepDive.includes(normalizePlain(name))
+  ).length;
+  const minCoverage = Math.min(2, markerNames.length);
+  if (coveredMarkers < minCoverage) {
+    return { ok: false, reason: "insufficient_marker_coverage" };
   }
 
-  const requiredCount = markerNames.length;
-  if (countMatches(deepDive, /C'?est quoi\s*\?/gi) < requiredCount) {
-    return { ok: false, reason: "missing_cest_quoi" };
-  }
-  if (countMatches(deepDive, /Ton analyse personnalisee/gi) < requiredCount) {
-    return { ok: false, reason: "missing_analyse_perso" };
-  }
-  if (countMatches(deepDive, /Impacts sur ton corps/gi) < requiredCount) {
-    return { ok: false, reason: "missing_impacts" };
-  }
-  if (countMatches(deepDive, /Protocole recommande/gi) < requiredCount) {
-    return { ok: false, reason: "missing_protocole" };
-  }
   const expertMentions = countMatches(deepDive, EXPERT_NAME_REGEX);
-  if (expertMentions < requiredCount * 2) {
+  if (expertMentions < 1) {
     return { ok: false, reason: "missing_expert_mentions" };
-  }
-  if (!/Huberman/i.test(deepDive) || !/Attia/i.test(deepDive) || !/Derek|MPMD/i.test(deepDive)) {
-    return { ok: false, reason: "missing_key_experts" };
   }
   if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(deepDive)) {
     return { ok: false, reason: "emoji_present" };
-  }
-  if (/(^|\n)-\s+/.test(deepDive)) {
-    return { ok: false, reason: "bullet_list_present" };
   }
   if (hasGenericPhrases(deepDive)) {
     return { ok: false, reason: "generic_phrases" };
@@ -2084,6 +2093,12 @@ Annex C : glossaire
 ## Sources (bibliotheque)
 - Liste des IDs utilises, groupes par theme.
 
+PRIORITE FINALE (A APPLIQUER MEME SI UNE REGLE CI-DESSUS DIT L'INVERSE)
+- Vise un rapport complet, lisible et coherent entre 12 000 et 25 000 caracteres selon le nombre de marqueurs.
+- Les listes et tableaux markdown sont autorises quand ils ameliorent la clarte.
+- N'ecris pas de contraintes meta ("je dois atteindre X occurrences"), genere seulement le rapport.
+- La qualite, la precision et l'actionnabilite priment sur la longueur brute.
+
 COMPORTEMENT FINAL
 Tu produis UNIQUEMENT le rapport final, en respectant les titres.
 Aucun commentaire sur tes regles.`;
@@ -2162,12 +2177,18 @@ const buildSourcesSection = (): string => {
   return lines.join("\n");
 };
 
+const findSourcesHeadingIndex = (text: string): number => {
+  const match = /(^|\n)##\s+sources[^\n]*/i.exec(text);
+  if (!match) return -1;
+  return match.index + (match[1] ? match[1].length : 0);
+};
+
 const ensureSourcesSection = (text: string): string => {
   if (!text) return "";
-  if (text.includes("## Sources scientifiques")) {
+  if (findSourcesHeadingIndex(text) !== -1) {
     return text.trim();
   }
-  return `${text.trim()}\n\n## Sources scientifiques\n${buildSourcesSection()}`.trim();
+  return `${text.trim()}\n\n## Sources (bibliotheque)\n${buildSourcesSection()}`.trim();
 };
 
 const stripEmojis = (text: string): string => {
@@ -2177,8 +2198,9 @@ const stripEmojis = (text: string): string => {
 
 const extractPlan90Section = (text: string): string => {
   if (!text) return "";
-  const start = text.indexOf("## Plan 90 jours");
-  if (start === -1) return "";
+  const match = /(^|\n)##\s+Plan(?: d'action)? 90 jours[^\n]*/i.exec(text);
+  if (!match) return "";
+  const start = match.index + (match[1] ? match[1].length : 0);
   const rest = text.slice(start);
   const nextHeadingIndex = rest.slice(1).search(/\n##\s+/);
   if (nextHeadingIndex !== -1) {
@@ -2190,9 +2212,15 @@ const extractPlan90Section = (text: string): string => {
 const insertPlan90Section = (text: string, planSection: string): string => {
   if (!text) return planSection.trim();
   if (!planSection) return text.trim();
-  if (text.includes("## Plan 90 jours")) return text.trim();
+  if (/(^|\n)##\s+Plan(?: d'action)? 90 jours/i.test(text)) return text.trim();
 
-  const anchors = ["## Nutrition & entrainement", "## Supplements & stack", "## Sources scientifiques"];
+  const anchors = [
+    "## Nutrition & entrainement",
+    "## Nutrition & entraînement",
+    "## Supplements & stack",
+    "## Sources scientifiques",
+    "## Sources (bibliotheque)",
+  ];
   for (const anchor of anchors) {
     const idx = text.indexOf(anchor);
     if (idx !== -1) {
@@ -2208,8 +2236,9 @@ const trimAiAnalysis = (text: string, maxChars = 100000): string => {
   if (!text) return "";
   const cleaned = stripEmojis(text).trim();
   if (cleaned.length <= maxChars) return cleaned;
-  const sourcesIndex = text.indexOf("## Sources scientifiques");
-  const planIndex = text.indexOf("## Plan 90 jours");
+  const sourcesIndex = findSourcesHeadingIndex(text);
+  const planMatchIndex = /(^|\n)##\s+Plan(?: d'action)? 90 jours/i.exec(text);
+  const planIndex = planMatchIndex ? planMatchIndex.index + (planMatchIndex[1] ? planMatchIndex[1].length : 0) : -1;
   const sources = sourcesIndex !== -1 ? text.slice(sourcesIndex).trim() : "";
   const plan = planIndex !== -1 ? extractPlan90Section(text) : "";
 
@@ -2261,7 +2290,8 @@ export function buildFallbackAnalysis(
     nutritionPhase?: string;
     supplementsUsed?: string[];
     infectionRecent?: string;
-  }
+  },
+  knowledgeContext?: string
 ): string {
   const formatList = (items: string[], emptyLabel: string) =>
     items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${emptyLabel}`;
@@ -2270,8 +2300,8 @@ export function buildFallbackAnalysis(
     if (!markers.length) return "Aucun marqueur disponible pour cet axe.";
     return markers
       .map((m) => {
-        const statusEmoji = m.status === "critical" ? "🔴" : m.status === "suboptimal" ? "🟠" : m.status === "optimal" ? "🟢" : "⚪";
-        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "-"} | ${m.optimalRange || "-"} | ${statusEmoji} |`;
+        const statusLabel = m.status === "critical" ? "CRITIQUE" : m.status === "suboptimal" ? "IMPORTANT" : m.status === "optimal" ? "OPTIMAL" : "NORMAL";
+        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "-"} | ${m.optimalRange || "-"} | ${statusLabel} |`;
       })
       .join("\n");
   };
@@ -2367,9 +2397,54 @@ export function buildFallbackAnalysis(
   const testedIds = new Set(analysisResult.markers.map(m => m.markerId));
   const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"]
     .filter(id => !testedIds.has(id));
+  const criticalMissingLabels = criticalMissing.map((id) => id.replace(/_/g, " ").toUpperCase());
   sections.push(criticalMissing.length
-    ? criticalMissing.map(id => `- ${id.replace(/_/g, " ").toUpperCase()}: a ajouter au prochain bilan`).join("\n")
+    ? criticalMissingLabels.map((label) => `- ${label}: a ajouter au prochain bilan`).join("\n")
     : "- Bilan relativement complet pour les marqueurs critiques.\n");
+
+  sections.push("\n## QUALITE DES DONNEES & LIMITES\n");
+  sections.push(`- Marqueurs interpretes: ${analysisResult.markers.length}`);
+  sections.push(`- Patterns robustes detectes: ${analysisResult.patterns.length}`);
+  sections.push(`- Niveau de confiance: ${analysisResult.markers.length >= 12 ? "eleve" : analysisResult.markers.length >= 7 ? "moyen" : "modere (panel incomplet)"}`);
+  sections.push("- Conditions de prelevement recommandees au prochain controle: matin a jeun 10-12h, pas d'entrainement intense 24-48h avant, alcool evite 72h, hydratation stable.");
+  sections.push(criticalMissing.length
+    ? `- Limite principale: ${criticalMissing.length} marqueur(s) critique(s) manquant(s), ce qui limite la precision mecanistique sur certains axes.`
+    : "- Limite principale: interpretation dependante du contexte lifestyle (sommeil, stress, charge d'entrainement).");
+
+  sections.push("\n## DONNEES & TESTS COMPLEMENTAIRES\n");
+  sections.push("### Tests prioritaires a ajouter");
+  sections.push(
+    criticalMissingLabels.length
+      ? criticalMissingLabels.map((label) => `- ${label}`).join("\n")
+      : "- Aucun test critique manquant identifie sur ce bilan."
+  );
+  sections.push("### Retest conseille (J+60 a J+90)");
+  sections.push(followUp.length ? followUp.join("\n") : "- Aucun retest supplementaire requis pour l'instant.");
+
+  sections.push("\n## TABLEAU DE BORD (SCORES & PRIORITES)\n");
+  sections.push(`- Priorites critiques: ${critical.length || 0}`);
+  sections.push(`- Priorites importantes: ${suboptimal.length || 0}`);
+  sections.push(`- Quick wins possibles: ${Math.max(1, Math.min(6, analysisResult.markers.length - critical.length))}`);
+  sections.push("### TOP priorites");
+  sections.push(formatList(
+    [...critical, ...suboptimal].slice(0, 6).map((marker) => `${marker.name}: corriger vers ${marker.optimalRange}`),
+    "Aucune alerte majeure, focus sur la consolidation."
+  ));
+  sections.push("### Quick wins");
+  sections.push(formatList(
+    [
+      "Regulariser le sommeil sur une heure de coucher fixe 7 jours/7.",
+      "Augmenter le NEAT quotidien (marches post-prandiales).",
+      "Structurer les repas autour de proteines/fibres avant glucides rapides.",
+      "Hydratation et electrolytes calibres sur l'entrainement.",
+    ],
+    "Maintenir le cap actuel."
+  ));
+
+  sections.push("\n## POTENTIEL RECOMPOSITION (PERTE DE GRAS + GAIN DE MUSCLE)\n");
+  sections.push(`Ton potentiel de recomp est surtout pilote par ${summary.action[0] || "la qualite metabolique globale"}. Avec ${critical.length} drapeau(x) critique(s) et ${suboptimal.length} point(s) sous-optimal(aux), la priorite est de restaurer le terrain hormonal/metabolique avant d'augmenter agressivement la charge d'entrainement.`);
+  sections.push(`Concretement, si tu corriges d'abord ${[...critical, ...suboptimal].slice(0, 2).map((m) => m.name).join(" + ") || "les points metaboliques dominants"}, tu facilites la perte de gras, tu améliores la recup et tu retrouves une progression plus stable sur la force et l'hypertrophie.`);
+  sections.push("Les 3 leviers qui debloquent le physique dans ce contexte: qualite du sommeil, gestion du stress/charge d'entrainement, et periodisation nutritionnelle avec retests planifies.");
 
   sections.push("\n---\n");
 
@@ -2438,7 +2513,23 @@ export function buildFallbackAnalysis(
     sections.push("---\n");
   }
 
-  // CORRELATIONS LIFESTYLE
+  // INTERCONNEXIONS MAJEURES + CORRELATIONS LIFESTYLE
+  sections.push("## INTERCONNEXIONS MAJEURES (LE PATTERN)\n");
+  if (correlations.length) {
+    correlations.forEach((item, idx) => {
+      sections.push(`### Pattern ${idx + 1} — ${item.factor}`);
+      sections.push(`1) Pattern observe: ${item.current} avec impact potentiel sur plusieurs axes.`);
+      sections.push(`2) Hypothese la plus probable: ${item.impact}`);
+      sections.push(`3) Ce qui confirmerait: retest cible + suivi des marqueurs relies a cet axe.`);
+      sections.push(`4) Action concrete: ${item.recommendation}`);
+      if (item.evidence) {
+        sections.push(`Preuve orientative: ${item.evidence}`);
+      }
+      sections.push("");
+    });
+  } else {
+    sections.push("Aucune interconnexion lifestyle robuste n'a pu etre etablie faute de donnees contextuelles suffisantes.");
+  }
   sections.push("## CORRELATIONS LIFESTYLE\n");
   sections.push(...correlationLines);
   sections.push("\n---\n");
@@ -2483,12 +2574,70 @@ export function buildFallbackAnalysis(
 
   sections.push("---\n");
 
+  sections.push("## NUTRITION & ENTRAINEMENT (TRADUCTION PRATIQUE)\n");
+  sections.push("### Nutrition");
+  sections.push("- Priorise proteines et fibres en debut de repas pour lisser la glycemie.");
+  sections.push("- Concentre les glucides autour des seances pour soutenir performance et sensibilite a l'insuline.");
+  sections.push("- Ajuste le deficit calorique de maniere progressive pour proteger la thyroide et la recuperation.");
+  sections.push("### Entrainement");
+  sections.push("- 3-5 seances qualitatives/semaine avec volume progressif et deload planifie.");
+  sections.push("- 150-180 min de cardio Zone 2/semaine si axe metabolique/lipidique altere.");
+  sections.push("- NEAT quotidien eleve (steps, marches post-repas) pour booster la recomp sans sur-fatigue.");
+
+  sections.push("\n## SUPPLEMENTS & STACK (MINIMALISTE MAIS IMPACT)\n");
+  sections.push("- Vitamine D3 (si basse): 2000-5000 UI/j avec repas gras.");
+  sections.push("- Magnesium glycinate: 300-400 mg le soir pour sommeil/recuperation.");
+  sections.push("- Omega-3 EPA+DHA: 2-3 g/j pour terrain inflammatoire/lipidique.");
+  sections.push("- Creatine monohydrate: 3-5 g/j pour performance et retention de masse maigre.");
+  sections.push("- Berberine ou alternatives glycemiques (selon validation medicale) si axe insulinique degrade.");
+  sections.push("- Ajuster selon interactions, symptomes et retests a J+90.");
+
+  sections.push("\n## ANNEXES (ULTRA LONG)\n");
+  sections.push("### Annexe A — Marqueurs secondaires (lecture rapide)");
+  sections.push(formatList(
+    analysisResult.markers
+      .slice(0, 20)
+      .map((marker) => `${marker.name}: ${marker.status} | ${marker.value} ${marker.unit}`),
+    "Aucun marqueur secondaire disponible."
+  ));
+  sections.push("### Annexe B — Hypotheses & tests de confirmation");
+  sections.push(formatList(
+    criticalMissing.map((id) => `Hypothese a confirmer via ${id.replace(/_/g, " ").toUpperCase()}`),
+    "Aucune hypothese critique supplementaire."
+  ));
+  sections.push("### Annexe C — Glossaire utile");
+  sections.push("- HOMA-IR: indice de resistance a l'insuline.");
+  sections.push("- ApoB: charge de particules atherogenes.");
+  sections.push("- hs-CRP: marqueur d'inflammation systemique basse intensite.");
+  sections.push("- SHBG: proteine qui module la fraction libre des hormones sexuelles.");
+
   // VIGILANCE
   sections.push("## VIGILANCE\n");
   sections.push(alerts.length ? alerts.join("\n") : "- Aucun signal critique majeur necessitant une consultation medicale immediate.\n");
 
   sections.push("---\n");
-  sections.push("*Ce rapport est genere en mode fallback. Pour une analyse complete avec citations d'experts et protocoles detailles, veuillez regenerer le rapport.*");
+  sections.push("## SOURCES (BIBLIOTHEQUE)\n");
+
+  const knowledgeSourceLines = (knowledgeContext || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("[SRC:"));
+
+  if (knowledgeSourceLines.length) {
+    sections.push("- Sources detectees dans la bibliotheque knowledge base:");
+    for (const line of knowledgeSourceLines.slice(0, 12)) {
+      sections.push(`- ${line}`);
+    }
+  } else {
+    const fallbackSources = Object.values(PANEL_CITATIONS)
+      .flat()
+      .slice(0, 10)
+      .map((citation) => `- ${citation.title} ${citation.url}`);
+    sections.push(...fallbackSources);
+  }
+
+  sections.push("");
+  sections.push("*Ce rapport est genere en mode fallback knowledge-backed. Il reste personnalise sur tes marqueurs reels, avec priorites et plan d'action concret.*");
 
   return sections.join("\n");
 }
@@ -2701,6 +2850,41 @@ export const buildLifestyleCorrelations = (
     .map(({ rank, ...item }) => item);
 };
 
+const PANEL_KEYWORDS: Array<{ panel: string; markerIds: string[] }> = [
+  {
+    panel: "Axe hormonal",
+    markerIds: ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1", "cortisol"],
+  },
+  {
+    panel: "Axe metabolique",
+    markerIds: ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "fructosamine", "triglycerides", "hdl", "ldl", "apob", "lpa", "cholesterol_total", "apo_a1"],
+  },
+  {
+    panel: "Axe thyroidien",
+    markerIds: ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"],
+  },
+  {
+    panel: "Axe inflammation/immunite",
+    markerIds: ["crp_us", "homocysteine", "ferritine", "fer_serique", "transferrine_sat"],
+  },
+  {
+    panel: "Axe micronutriments",
+    markerIds: ["vitamine_d", "b12", "folate", "magnesium_rbc", "zinc"],
+  },
+  {
+    panel: "Axe foie/rein",
+    markerIds: ["alt", "ast", "ggt", "creatinine", "egfr"],
+  },
+];
+
+const getMarkerPanelName = (markerId: string, fallback?: string) => {
+  if (fallback && fallback.trim()) return fallback.trim();
+  for (const group of PANEL_KEYWORDS) {
+    if (group.markerIds.includes(markerId)) return group.panel;
+  }
+  return "Axe general";
+};
+
 export async function generateAIBloodAnalysis(
   analysisResult: BloodAnalysisResult,
   userProfile: {
@@ -2730,13 +2914,23 @@ export async function generateAIBloodAnalysis(
   const anthropic = new Anthropic();
 
   // Build the prompt with analysis data
-  const markersTable = analysisResult.markers.map(m =>
-    `- ${m.name} [${m.markerId}] (${m.category}) : ${m.value} ${m.unit} (Normal: ${m.normalRange}, Optimal: ${m.optimalRange}) → ${m.status.toUpperCase()}${m.interpretation ? ` | Note: ${m.interpretation}` : ""}`
-  ).join("\n");
+  const markersTable = analysisResult.markers
+    .map((marker) => {
+      const range = BIOMARKER_RANGES[marker.markerId];
+      const panel = getMarkerPanelName(marker.markerId, marker.category);
+      const deltaOptimal =
+        range && Number.isFinite(range.optimalMin) && Number.isFinite(range.optimalMax)
+          ? formatPercentDelta(marker.value, range.optimalMin, range.optimalMax)
+          : "N/A";
+      return `- ${marker.name} [${marker.markerId}] | Axe: ${panel} | Valeur: ${marker.value} ${marker.unit} | Normal: ${marker.normalRange} | Optimal: ${marker.optimalRange} | Ecart vs optimal: ${deltaOptimal} | Statut: ${marker.status.toUpperCase()}${marker.interpretation ? ` | Note: ${marker.interpretation}` : ""}`;
+    })
+    .join("\n");
 
-  const patternsText = analysisResult.patterns.map(p =>
-    `Pattern détecté: ${p.name}\nCauses: ${p.causes.join(", ")}`
-  ).join("\n\n");
+  const patternsText = analysisResult.patterns.length
+    ? analysisResult.patterns
+        .map((pattern) => `Pattern detecte: ${pattern.name}\nCauses probables: ${pattern.causes.join(", ")}`)
+        .join("\n\n")
+    : "Aucun pattern robuste detecte avec les donnees disponibles.";
 
   const bmi =
     typeof userProfile.poids === "number" && typeof userProfile.taille === "number" && userProfile.taille > 0
@@ -2748,100 +2942,77 @@ export async function generateAIBloodAnalysis(
     nom: userProfile.nom,
     age: userProfile.age,
   });
+  const markerCount = analysisResult.markers.length;
+  const lowDataMode = markerCount < 8;
+  const targetChars = markerCount >= 20 ? 22000 : markerCount >= 14 ? 18000 : markerCount >= 8 ? 14000 : 10000;
+  const minDeepDiveMarkers = Math.max(2, Math.min(5, markerCount));
+  const focusMarkers = analysisResult.markers
+    .filter((marker) => marker.status !== "optimal")
+    .slice(0, 6)
+    .map((marker) => `${marker.name} (${marker.value} ${marker.unit}, ${marker.status})`)
+    .join(", ");
+  const reportSeed = [
+    userProfile.prenom || "profil",
+    userProfile.gender,
+    userProfile.age || "na",
+    markerCount,
+    analysisResult.summary.action.length,
+    analysisResult.summary.watch.length,
+  ].join("-");
 
   const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
-Objectifs: ${userProfile.objectives || "Performance et santé"}
-Médicaments: ${userProfile.medications || "Aucun"}
+Objectifs: ${userProfile.objectives || "Performance et sante"}
+Medicaments: ${userProfile.medications || "Aucun"}
 Lifestyle: ${lifestyleLine}
+Seed de personnalisation: ${reportSeed}
 
 MARQUEURS:
 ${markersTable}
 
-PATTERNS DÉTECTÉS:
+PATTERNS DETECTES:
 ${patternsText}
 
-RÉSUMÉ:
+RESUME:
 - Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}
-- À surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
+- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}
 - Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}
+Top marqueurs focus: ${focusMarkers || "Aucun marqueur en alerte"}
+Nombre de marqueurs interpretes: ${markerCount}
 
-${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR (OBLIGATOIRE):\n${deepDivePayload.context}` : ""}
-${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL (cite 1-2 sources par panel, format court):\n${knowledgeContext}` : ""}
+${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR:\n${deepDivePayload.context}` : ""}
+${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL:\n${knowledgeContext}` : ""}
 
-IMPÉRATIF ABSOLU — GÉNÉRATION COMPLÈTE OBLIGATOIRE:
+FORMAT OBLIGATOIRE (dans cet ordre exact):
+1. ## Synthese executive
+2. ## Qualite des donnees & limites
+3. ## Tableau de bord (scores & priorites)
+4. ## Potentiel recomposition (perte de gras + gain de muscle)
+5. ## Lecture compartimentee par axes
+6. ## Interconnexions majeures (le pattern)
+7. ## Deep dive — marqueurs prioritaires
+8. ## Plan d'action 90 jours
+9. ## Nutrition & entrainement
+10. ## Supplements & stack
+11. ## Annexes (ultra long)
+12. ## Sources (bibliotheque)
 
-Tu DOIS générer un rapport de MINIMUM 35 000 caractères avec TOUTES les sections suivantes (dans cet ordre exact):
-
-1. ## Synthèse exécutive (800-1200 chars)
-2. ## Qualité des données & limites (500-800 chars)
-3. ## Tableau de bord (scores & priorités) (800-1200 chars)
-4. ## Potentiel recomposition (perte de gras + gain de muscle) (1500-2500 chars)
-5. ## Lecture compartimentée par axes — TOUS LES 11 AXES OBLIGATOIRES:
-   - Axe 1 — Potentiel musculaire & androgènes (1000-1500 chars)
-   - Axe 2 — Métabolisme & gestion du risque diabète (1000-1500 chars)
-   - Axe 3 — Lipides & risque cardio-métabolique (1200-1800 chars)
-   - Axe 4 — Thyroïde & dépense énergétique (600-1000 chars)
-   - Axe 5 — Foie, bile & détox métabolique (600-1000 chars)
-   - Axe 6 — Rein, hydratation & performance (500-800 chars)
-   - Axe 7 — Inflammation, immunité & terrain (1000-1500 chars)
-   - Axe 8 — Hématologie, oxygénation & endurance (600-1000 chars)
-   - Axe 9 — Micronutriments (vitamines & minéraux) (1000-1500 chars)
-   - Axe 10 — Électrolytes, crampes, pression & performance (500-800 chars)
-   - Axe 11 — Stress, sommeil, récupération (500-800 chars)
-6. ## Interconnexions majeures (le pattern) (2000-3000 chars)
-7. ## Deep dive — marqueurs prioritaires (DÉTAILLÉ)
-   Pour CHAQUE marqueur prioritaire, tu DOIS écrire 500-700 MOTS (2500-3500 chars) structurés en 4 sous-sections:
-
-   ### [Nom du marqueur] — [Valeur] [Unité] — [CRITIQUE/IMPORTANT]
-
-   **C'est quoi ce marqueur?** (100-150 mots)
-   - Définition avec mécanisme d'action
-   - Rôle dans métabolisme et performance
-   - 1 citation d'expert [SRC:ID]
-
-   **Ton analyse personnalisée** (150-200 mots)
-   - Ta valeur vs ranges optimal
-   - Pourquoi hors optimal dans TON cas
-   - Causes probables avec preuves
-   - Corrélations autres marqueurs
-
-   **Impacts concrets** (150-200 mots)
-   - PERFORMANCE: Hypertrophie, force, récup
-   - SANTÉ: Énergie, humeur
-   - Risques si non-corrigé
-
-   **Protocole recommandé** (200-300 mots)
-   - LIFESTYLE (0-30j): Sommeil, nutrition, training
-   - SUPPLÉMENTATION (30-90j): Nom + dosage + timing
-   - RETEST (90j): Marqueurs, critères succès
-
-   Total par marqueur: 500-700 mots (2500-3500 chars). Pour 4-5 marqueurs = 10,000-17,500 chars pour Deep Dive.
-
-8. ## Plan d'action 90 jours (3000-5000 chars avec 4 phases)
-9. ## Nutrition & entraînement (2500-4000 chars)
-10. ## Supplements & stack (2000-3000 chars)
-11. ## Annexes (4000-6000 chars):
-    - Annexe A — Marqueurs secondaires
-    - Annexe B — Hypothèses & tests
-    - Annexe C — Glossaire
-12. ## Sources scientifiques (200-400 chars)
-
-RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sections ci-dessus. Si tu t'arrêtes avant, le rapport sera rejeté. Target minimum: 35 000 caractères pour un rapport détaillé professionnel.`;
+EXIGENCES DE QUALITE:
+- Longueur cible: ${targetChars} caracteres minimum, sans remplissage artificiel.
+- Traiter au moins ${minDeepDiveMarkers} marqueurs en deep dive (ou tous les non-optimaux s'il y en a moins).
+- Pour chaque axe et chaque marqueur prioritaire: lecture clinique + lecture performance + actions concretes.
+- Utiliser des listes et tableaux markdown quand cela clarifie la lecture.
+- Ne jamais inventer un marqueur, une valeur, un symptome, un contexte ou une source.
+- Si une info est absente: ecrire "Non renseigne", expliquer la limite, proposer le test utile.
+- Citer [SRC:ID] uniquement si l'ID existe dans le contexte fourni.
+- Ton expert, humain, personnalise, orienté resultat, sans jargon inutile.
+${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section limites, hypotheses et retest sans halluciner." : ""}`;
 
   let output = "";
   let bestCandidate = "";
   let bestScore = -1;
 
-  // Timeout wrapper for API calls - increased to support longer Achzod-style reports (35k-90k chars)
-  const API_TIMEOUT_MS = 120000; // 2 minutes for comprehensive reports
-  const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error("API_TIMEOUT")), ms)
-      )
-    ]);
-  };
+  // Keep timeout conservative to avoid reports stuck in "processing".
+  const API_TIMEOUT_MS = 120000;
 
   // Reduce retries to 1 for faster response, with timeout protection
   const maxAttempts = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" ? 1 : 2;
@@ -2854,10 +3025,10 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
     const prompt = `${userPrompt}\n${retryNote}`;
 
     try {
-      // Use streaming for long-running operations (>10min possible with new Achzod prompt)
+      // Stream output to support long narratives while keeping memory bounded.
       const stream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-        max_tokens: 64000, // Opus 4.6 supports 128K output, 64K is sufficient for 35-90k char reports
+        max_tokens: 22000,
         system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
         stream: true,
@@ -2870,6 +3041,9 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
         }
       }
       const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
+      if (!deepDiveCheck.ok) {
+        console.warn(`[BloodAnalysis] Candidate rejected: ${deepDiveCheck.reason}`);
+      }
 
       const score = candidate.length + (deepDiveCheck.ok ? 10000 : 0);
       if (score > bestScore) {
@@ -2885,7 +3059,7 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
         console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
         if (attempt === maxAttempts) {
           console.log("[BloodAnalysis] All attempts timed out, using fallback");
-          return buildFallbackAnalysis(analysisResult, userProfile);
+          return buildFallbackAnalysis(analysisResult, userProfile, knowledgeContext);
         }
       } else {
         throw err;
@@ -2897,7 +3071,7 @@ RÈGLE CRITIQUE: Continue d'écrire jusqu'à avoir complété TOUTES les 12 sect
     output = bestCandidate;
   }
 
-  if (!output.includes("## Plan 90 jours")) {
+  if (!/(^|\n)##\s+Plan(?: d'action)? 90 jours/i.test(output)) {
     const planPrompt = `Tu dois produire UNIQUEMENT la section "## PLAN D'ACTION 90 JOURS" avec les 4 phases pour ce bilan.\n\nCONTRAINTES:\n- Titres EXACTS et dans l'ordre:\n  ## PLAN D'ACTION 90 JOURS\n  ### PHASE 1: ATTAQUE (Jours 1-30)\n  ### PHASE 2: OPTIMISATION (Jours 31-60)\n  ### PHASE 3: CONSOLIDATION (Jours 61-90)\n  ### PHASE 4: RETEST (J+90)\n- Chaque phase doit inclure:\n  * Supplementation (tableau: Supplement | Dosage | Timing | Pourquoi | Source expert)\n  * Nutrition (modifications precises avec quantification)\n  * Lifestyle (sommeil, stress)\n  * Entrainement (ajustements si necessaires)\n- Phase 4 RETEST doit lister: marqueurs a retester + valeur actuelle → cible → amelioration attendue %\n- Citation experts obligatoire: Derek MPMD, Huberman, Attia, Examine.com\n- Aucun autre texte ou section.\n\nCONTEXTE:\nClient: ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""})\nLifestyle: ${lifestyleLine}\n\nMARQUEURS:\n${markersTable}\n\nPATTERNS DETECTES:\n${patternsText}\n\nRESUME:\n- Optimal: ${analysisResult.summary.optimal.join(", ") || "Aucun"}\n- A surveiller: ${analysisResult.summary.watch.join(", ") || "Aucun"}\n- Action requise: ${analysisResult.summary.action.join(", ") || "Aucun"}\n\n${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE:\n${knowledgeContext}` : ""}\n`;
 
     try {
@@ -3105,44 +3279,132 @@ export async function getBloodworkKnowledgeContext(
   markers: MarkerAnalysis[],
   patterns: DiagnosticPattern[]
 ): Promise<string> {
-  const keywords: string[] = [];
+  const sourceFilter = [
+    "huberman",
+    "applied_metabolics",
+    "peter_attia",
+    "examine",
+    "mpmd",
+    "sbs",
+    "marek_health",
+    "chris_masterjohn",
+    "renaissance_periodization",
+    "newsletter",
+    "achzod",
+    "manual",
+  ];
 
-  // Add marker names as keywords
+  const keywordSet = new Set<string>();
+
   for (const marker of markers) {
-    if (marker.status !== "optimal") {
-      keywords.push(marker.name.toLowerCase());
+    if (!marker || marker.status === "optimal") continue;
+    const markerName = typeof marker.name === "string" ? marker.name : "";
+    const markerId = typeof marker.markerId === "string" ? marker.markerId : "";
+    if (!markerName && !markerId) continue;
+    if (markerName) keywordSet.add(markerName.toLowerCase());
+    if (markerId) {
+      keywordSet.add(markerId.toLowerCase().replace(/_/g, " "));
+      keywordSet.add(getMarkerPanelName(markerId).toLowerCase());
     }
   }
 
-  // Add pattern-related keywords
   for (const pattern of patterns) {
-    keywords.push(...pattern.causes.map(c => c.toLowerCase()));
+    if (pattern?.name) keywordSet.add(pattern.name.toLowerCase());
+    const causes = Array.isArray(pattern?.causes) ? pattern.causes : [];
+    for (const cause of causes) {
+      keywordSet.add(cause.toLowerCase());
+    }
   }
 
-  // Add specific bloodwork terms
-  keywords.push("bloodwork", "biomarker", "optimal range");
+  keywordSet.add("bloodwork");
+  keywordSet.add("biomarker");
+  keywordSet.add("insulin resistance");
+  keywordSet.add("hormones");
+  keywordSet.add("body composition");
+  keywordSet.add("muscle gain");
+  keywordSet.add("fat loss");
 
-  // Search knowledge base
-  const articles = await searchArticles(keywords, 6, [
-    "huberman",
-    "sbs",
-    "applied_metabolics",
-    "newsletter",
-    "peter_attia",
-    "marek_health",
-    "examine",
-    "chris_masterjohn",
-    "mpmd"
-  ]);
+  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 28);
+  if (!keywords.length) return "";
 
-  if (articles.length === 0) {
+  try {
+    const primaryArticles = await searchArticles(keywords, 28, sourceFilter);
+    let allArticles = [...primaryArticles];
+
+    if (allArticles.length < 8) {
+      const markerQueries = markers
+        .filter((marker) => marker.status !== "optimal")
+        .slice(0, 4)
+        .map((marker) => `${marker.name || ""} ${(marker.markerId || "").replace(/_/g, " ")}`.trim())
+        .filter(Boolean);
+
+      for (const query of markerQueries) {
+        try {
+          const extra = await searchFullText(query, 4);
+          allArticles.push(...extra);
+        } catch {
+          // Ignore full-text errors and keep primary retrieval.
+        }
+      }
+    }
+
+    const deduped = new Map<string, ScrapedArticle>();
+    for (const article of allArticles) {
+      const key = article.id || `${article.source}:${normalizePlain(article.title)}`;
+      if (!deduped.has(key)) deduped.set(key, article);
+    }
+
+    const tokenSet = new Set(
+      keywords
+        .flatMap((keyword) => normalizePlain(keyword).split(/\s+/))
+        .filter((token) => token.length >= 3)
+    );
+
+    const scoreArticle = (article: ScrapedArticle) => {
+      const haystack = normalizePlain(`${article.title} ${article.content.slice(0, 1200)} ${(article.keywords || []).join(" ")}`);
+      let score = 0;
+      for (const token of tokenSet) {
+        if (haystack.includes(token)) score += 1;
+      }
+      if (article.source === "huberman" || article.source === "applied_metabolics") score += 2;
+      if (article.source === "peter_attia" || article.source === "examine") score += 1;
+      return score;
+    };
+
+    const sorted = Array.from(deduped.values())
+      .sort((a, b) => scoreArticle(b) - scoreArticle(a))
+      .slice(0, 20);
+
+    const selected: ScrapedArticle[] = [];
+    const perSourceCount = new Map<string, number>();
+    for (const article of sorted) {
+      const count = perSourceCount.get(article.source) || 0;
+      if (count >= 2) continue;
+      selected.push(article);
+      perSourceCount.set(article.source, count + 1);
+      if (selected.length >= 10) break;
+    }
+
+    if (!selected.length) return "";
+
+    const contextLines: string[] = [
+      "SOURCES BIBLIOTHEQUE DISPONIBLES (UTILISE [SRC:ID] UNIQUEMENT AVEC CES IDS):",
+    ];
+
+    for (const article of selected) {
+      const sourceId = getSourceRefId(article);
+      const label = SOURCE_LABELS[article.source] || article.source;
+      const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 380);
+      contextLines.push(`[SRC:${sourceId}] ${label} — ${article.title}`);
+      if (article.url) contextLines.push(`URL: ${article.url}`);
+      if (article.category) contextLines.push(`Categorie: ${article.category}`);
+      contextLines.push(`Extrait: ${excerpt}${excerpt.length >= 380 ? "..." : ""}`);
+      contextLines.push("");
+    }
+
+    return contextLines.join("\n").trim();
+  } catch (error) {
+    console.error("[BloodAnalysis] Knowledge context retrieval failed:", error);
     return "";
   }
-
-  // Build context from articles
-  const context = articles
-    .map((article) => `${article.title}\n${article.content.substring(0, 1000)}...`)
-    .join("\n\n---\n\n");
-
-  return context;
 }

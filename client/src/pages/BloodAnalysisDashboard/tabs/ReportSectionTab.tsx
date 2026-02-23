@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Theme } from "@/components/ultrahuman/types";
 
 type ReportSection = {
@@ -59,10 +60,10 @@ export function ReportSectionTab({
   if (sectionsToShow.length === 0) {
     // Last-resort fallback: AI report exists but headings parsing didn't match this tab.
     // Show full report content instead of empty premium tab.
-    if (reportSections.length === 0 && aiReport.trim().length > 0) {
+    if (aiReport.trim().length > 0) {
       return (
         <div
-          className={`rounded border p-4 sm:p-6 max-w-none ${
+          className={`rounded border p-4 sm:p-6 max-w-none [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_td]:border [&_th]:px-2 [&_th]:py-1 [&_td]:px-2 [&_td]:py-1 ${
             currentTheme.type === 'dark' ? 'prose prose-slate prose-sm sm:prose-base' : 'prose prose-stone prose-sm sm:prose-base'
           }`}
           style={{
@@ -84,7 +85,7 @@ export function ReportSectionTab({
           } as React.CSSProperties}
         >
           <div className="overflow-x-auto">
-            <ReactMarkdown>{aiReport}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiReport}</ReactMarkdown>
           </div>
         </div>
       );
@@ -104,7 +105,7 @@ export function ReportSectionTab({
 
   return (
     <div
-      className={`rounded border p-4 sm:p-6 max-w-none ${
+      className={`rounded border p-4 sm:p-6 max-w-none [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_td]:border [&_th]:px-2 [&_th]:py-1 [&_td]:px-2 [&_td]:py-1 ${
         currentTheme.type === 'dark' ? 'prose prose-slate prose-sm sm:prose-base' : 'prose prose-stone prose-sm sm:prose-base'
       }`}
       style={{
@@ -127,7 +128,7 @@ export function ReportSectionTab({
     >
       {sectionsToShow.map((section, idx) => (
         <div key={section.id} className="overflow-x-auto">
-          <ReactMarkdown>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
           {idx < sectionsToShow.length - 1 && <hr className="my-4 sm:my-6" style={{ borderColor: currentTheme.colors.border }} />}
         </div>
       ))}
