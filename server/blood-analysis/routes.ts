@@ -1579,6 +1579,98 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         (report as any).aiReport = ensureAxesSectionTemplate(sanitizeBloodReportRegister((report as any).aiReport));
       }
 
+      // If AI report text is missing, return a deterministic fallback immediately
+      // so downstream tabs are never blocked on "processing".
+      const initialAiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
+      const missingAiReport = initialAiReportText.trim().length === 0;
+      if (missingAiReport) {
+        const rawProfile =
+          (report as any).profile && typeof (report as any).profile === "object"
+            ? ((report as any).profile as Record<string, unknown>)
+            : {};
+        const rawAnalysis =
+          (report as any).analysis && typeof (report as any).analysis === "object"
+            ? ((report as any).analysis as Record<string, unknown>)
+            : null;
+        if (rawAnalysis && Array.isArray((rawAnalysis as any).markers)) {
+          try {
+            const fallbackAt = new Date().toISOString();
+            const fallbackReport = ensureAxesSectionTemplate(
+              sanitizeBloodReportRegister(
+                buildFallbackAnalysis(rawAnalysis as any, rawProfile as any)
+              )
+            );
+            (report as any).aiReport = fallbackReport;
+            (report as any).aiMeta = {
+              ...(report as any).aiMeta,
+              status: "fallback",
+              model: "fallback",
+              generatedAt: (report as any)?.aiMeta?.generatedAt || fallbackAt,
+              fallbackAt,
+              fallbackReason: "missing_ai_report_fallback",
+            };
+
+            // Persist fallback asynchronously so subsequent reads are deterministic.
+            setImmediate(async () => {
+              try {
+                if (reportSource === "legacy") {
+                  await storage.updateBloodReport(reportId, {
+                    analysis: {
+                      ...rawAnalysis,
+                      aiStatus: "fallback",
+                      aiModel: "fallback",
+                      aiGeneratedAt: fallbackAt,
+                      aiFallbackAt: fallbackAt,
+                      aiFallbackReason: "missing_ai_report_fallback",
+                    } as any,
+                    aiReport: fallbackReport,
+                  } as any);
+                  return;
+                }
+
+                if (reportSource === "blood_tests" && bloodTestRow) {
+                  const { db } = await import("../db.js");
+                  const { bloodTests } = await import("../../shared/drizzle-schema.js");
+                  const { eq } = await import("drizzle-orm");
+
+                  const existingAnalysis =
+                    bloodTestRow.analysis &&
+                    typeof bloodTestRow.analysis === "object" &&
+                    bloodTestRow.analysis !== null
+                      ? (bloodTestRow.analysis as Record<string, unknown>)
+                      : {};
+
+                  await db
+                    .update(bloodTests)
+                    .set({
+                      analysis: {
+                        ...existingAnalysis,
+                        aiReport: fallbackReport,
+                        aiStatus: "fallback",
+                        aiModel: "fallback",
+                        aiGeneratedAt: fallbackAt,
+                        aiFallbackAt: fallbackAt,
+                        aiFallbackReason: "missing_ai_report_fallback",
+                      } as any,
+                    })
+                    .where(eq(bloodTests.id, reportId));
+                }
+              } catch (persistErr) {
+                console.error(
+                  `[BloodAnalysis] Failed to persist immediate fallback for ${reportId}:`,
+                  persistErr
+                );
+              }
+            });
+          } catch (fallbackErr) {
+            console.error(
+              `[BloodAnalysis] Failed to build immediate fallback for ${reportId}:`,
+              fallbackErr
+            );
+          }
+        }
+      }
+
       // If the AI report is missing OR stuck in fallback for too long,
       // kick off background generation with cooldown protection.
       const aiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
@@ -1587,7 +1679,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       const aiGeneratedAtMs = Date.parse(aiGeneratedAtRaw);
       const aiAgeMs = Number.isFinite(aiGeneratedAtMs) ? Math.max(0, Date.now() - aiGeneratedAtMs) : Number.POSITIVE_INFINITY;
       const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
-      const shouldGenerateMissingAi = hasAnthropicKey && aiReportText.trim().length === 0;
+      const shouldGenerateMissingAi = hasAnthropicKey && missingAiReport;
       const shouldRefreshFallbackAi =
         hasAnthropicKey &&
         aiStatus === "fallback" &&
