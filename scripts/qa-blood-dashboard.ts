@@ -24,7 +24,8 @@ const tabs = [
   { name: "Annexes", minLength: 900 },
 ] as const;
 
-const placeholderPattern = /(section sera disponible|aucune donnee|prochainement|indisponible)/i;
+const placeholderPattern =
+  /(Cette section sera disponible une fois le rapport complet généré|Génération du rapport AI en cours|Le rapport complet sera disponible sous peu)/i;
 const badRangePattern = /\ba\s+-\d/;
 const ultraLongPattern = /ultra long/i;
 
