@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { LucideIcon } from 'lucide-react';
+import { useBloodTheme } from './BloodThemeContext';
 
 interface AnimatedStatCardProps {
   label: string;
@@ -24,6 +25,7 @@ export const AnimatedStatCard = ({
   color = '#06b6d4',
   trend,
 }: AnimatedStatCardProps) => {
+  const { theme } = useBloodTheme();
   const [displayValue, setDisplayValue] = useState(0);
 
   // Always animate on mount/value change to avoid stale "0" when inside custom scroll containers.
@@ -58,10 +60,9 @@ export const AnimatedStatCard = ({
       <div
         className="rounded-xl p-6"
         style={{
-          background:
-            'linear-gradient(145deg, var(--color-surface, rgba(26, 29, 36, 0.4)) 0%, rgba(17, 24, 39, 0.08) 100%)',
+          background: `linear-gradient(145deg, ${theme.surfaceMuted} 0%, ${theme.surface} 100%)`,
           backdropFilter: 'blur(8px)',
-          border: '1px solid var(--color-border, rgba(148, 163, 184, 0.2))',
+          border: `1px solid ${theme.borderSubtle}`,
         }}
       >
         {/* Icon */}
@@ -88,14 +89,14 @@ export const AnimatedStatCard = ({
           >
             {displayValue}
           </motion.span>
-          {unit && <span className="text-lg" style={{ color: 'var(--color-text, #0f172a)' }}>{unit}</span>}
+          {unit && <span className="text-lg" style={{ color: theme.textPrimary }}>{unit}</span>}
         </div>
         <span className="sr-only" aria-live="polite" aria-atomic="true">
           {`${label}: ${displayValue}${unit || ''}`}
         </span>
 
         {/* Label */}
-        <div className="text-sm font-medium" style={{ color: 'var(--color-text, #0f172a)' }}>{label}</div>
+        <div className="text-sm font-medium" style={{ color: theme.textPrimary }}>{label}</div>
 
         {/* Trend (if provided) */}
         {trend && (

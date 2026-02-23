@@ -45,6 +45,10 @@ import { storage } from "../storage";
 import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
+import {
+  withAIGenerationTimeout,
+  isAIGenerationTimeoutError,
+} from "./ai-timeout";
 
 // Prevent duplicate background generation per instance.
 const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
@@ -55,6 +59,117 @@ const getBaseUrl = (): string => {
     process.env.RENDER_EXTERNAL_URL ||
     "http://localhost:10000"
   );
+};
+
+type MarkerStatus = "optimal" | "normal" | "suboptimal" | "critical";
+
+const SCORE_BY_STATUS: Record<MarkerStatus, number> = {
+  optimal: 100,
+  normal: 80,
+  suboptimal: 55,
+  critical: 30,
+};
+
+const CATEGORY_BY_MARKER: Record<string, string> = {
+  testosterone_total: "hormonal",
+  testosterone_libre: "hormonal",
+  shbg: "hormonal",
+  estradiol: "hormonal",
+  lh: "hormonal",
+  fsh: "hormonal",
+  prolactine: "hormonal",
+  dhea_s: "hormonal",
+  cortisol: "hormonal",
+  igf1: "hormonal",
+  tsh: "thyroid",
+  t4_libre: "thyroid",
+  t3_libre: "thyroid",
+  t3_reverse: "thyroid",
+  anti_tpo: "thyroid",
+  glycemie_jeun: "metabolic",
+  hba1c: "metabolic",
+  insuline_jeun: "metabolic",
+  homa_ir: "metabolic",
+  triglycerides: "metabolic",
+  hdl: "metabolic",
+  ldl: "metabolic",
+  apob: "metabolic",
+  lpa: "metabolic",
+  crp_us: "inflammation",
+  homocysteine: "inflammation",
+  ferritine: "inflammation",
+  fer_serique: "inflammation",
+  transferrine_sat: "inflammation",
+  vitamine_d: "vitamins",
+  b12: "vitamins",
+  folate: "vitamins",
+  magnesium_rbc: "vitamins",
+  zinc: "vitamins",
+  alt: "liver_kidney",
+  ast: "liver_kidney",
+  ggt: "liver_kidney",
+  creatinine: "liver_kidney",
+  egfr: "liver_kidney",
+};
+
+const normalizeMarkerStatus = (status: unknown): MarkerStatus => {
+  const lower = String(status || "").toLowerCase();
+  if (lower === "optimal") return "optimal";
+  if (lower === "normal") return "normal";
+  if (lower === "suboptimal" || lower.includes("sous")) return "suboptimal";
+  if (lower === "critical" || lower.includes("crit")) return "critical";
+  return "normal";
+};
+
+const computeGlobalScoreFromStatuses = (statuses: MarkerStatus[]): number => {
+  if (!statuses.length) return 0;
+  const total = statuses.reduce((sum, status) => sum + SCORE_BY_STATUS[status], 0);
+  return Math.round(total / statuses.length);
+};
+
+const getGlobalLevel = (score: number): "excellent" | "bon" | "moyen" | "faible" => {
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "bon";
+  if (score >= 50) return "moyen";
+  return "faible";
+};
+
+const normalizeLegacyReportMarker = (
+  marker: Record<string, unknown>,
+  analysisByMarkerId: Map<string, { status: MarkerStatus; interpretation?: string; name?: string }>
+) => {
+  const markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
+  if (!markerId) return null;
+  const value = Number(marker.value);
+  if (!Number.isFinite(value)) return null;
+  const range = BIOMARKER_RANGES[markerId];
+  const analysis = analysisByMarkerId.get(markerId);
+
+  return {
+    markerId,
+    name: String(marker.name || analysis?.name || range?.name || markerId),
+    value,
+    unit: String(marker.unit || range?.unit || ""),
+    status: analysis?.status || normalizeMarkerStatus(marker.status),
+    normalRange:
+      marker.refMin != null && marker.refMax != null
+        ? `${marker.refMin} - ${marker.refMax}`
+        : range
+        ? `${range.normalMin} - ${range.normalMax}`
+        : undefined,
+    optimalRange:
+      marker.optimalMin != null && marker.optimalMax != null
+        ? `${marker.optimalMin} - ${marker.optimalMax}`
+        : range
+        ? `${range.optimalMin} - ${range.optimalMax}`
+        : undefined,
+    interpretation:
+      String(marker.interpretation || analysis?.interpretation || "").trim(),
+    category:
+      String(marker.category || "").trim() ||
+      CATEGORY_BY_MARKER[markerId] ||
+      "general",
+  };
 };
 
 export function registerBloodAnalysisRoutes(app: Express): void {
@@ -118,12 +233,30 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      // Generate AI-powered analysis
-      const aiAnalysis = await generateAIBloodAnalysis(
-        analysisResult,
-        profile,
-        knowledgeContext
-      );
+      let aiAnalysis = "";
+      if (process.env.ANTHROPIC_API_KEY) {
+        try {
+          aiAnalysis = await withAIGenerationTimeout(
+            () =>
+              generateAIBloodAnalysis(
+                analysisResult,
+                profile,
+                knowledgeContext
+              ),
+            "blood-analysis/analyze sync report"
+          );
+        } catch (aiError) {
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodAnalysis] Analyze AI timed out, returning fallback.");
+          } else {
+            console.error("[BloodAnalysis] Analyze AI failed, returning fallback:", aiError);
+          }
+        }
+      }
+
+      if (!aiAnalysis) {
+        aiAnalysis = buildFallbackAnalysis(analysisResult, profile as any, knowledgeContext);
+      }
 
       res.json({
         success: true,
@@ -403,32 +536,56 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const shouldIncludeAI = includeAI !== false;
       const shouldAsyncAI = asyncAI !== false;
+      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const profileWithAge = {
+        ...profile,
+        age: computedAge,
+      };
       let aiAnalysis = "";
-      if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
-        aiAnalysis = await generateAIBloodAnalysis(
-          analysisResult,
-          profile,
-          knowledgeContext
-        );
+      let syncAiNeedsBackgroundRetry = false;
+      if (shouldIncludeAI) {
+        if (!shouldAsyncAI && hasAnthropicKey) {
+          try {
+            aiAnalysis = await withAIGenerationTimeout(
+              () =>
+                generateAIBloodAnalysis(
+                  analysisResult,
+                  profileWithAge as any,
+                  knowledgeContext
+                ),
+              "blood-analysis/submit sync report"
+            );
+          } catch (aiError) {
+            syncAiNeedsBackgroundRetry = true;
+            if (isAIGenerationTimeoutError(aiError)) {
+              console.warn("[BloodAnalysis] Submit sync AI timed out, returning fallback and queuing retry.");
+            } else {
+              console.error("[BloodAnalysis] Submit sync AI failed, returning fallback and queuing retry:", aiError);
+            }
+            aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any, knowledgeContext);
+          }
+        } else if (!hasAnthropicKey) {
+          // Never leave the report in a perpetual "processing" state when AI key is unavailable.
+          aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any, knowledgeContext);
+        }
       }
 
       const reportRecord = await storage.createBloodReport({
         email: recipientEmail,
-        profile: {
-          ...profile,
-          age: computedAge,
-        },
+        profile: profileWithAge,
         markers: resolvedMarkers,
         analysis: analysisResult,
         aiReport: aiAnalysis,
       });
 
-      if (shouldIncludeAI && shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
+      const shouldQueueBackgroundAI =
+        shouldIncludeAI && hasAnthropicKey && (shouldAsyncAI || syncAiNeedsBackgroundRetry);
+      if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
             const enriched = await generateAIBloodAnalysis(
               analysisResult,
-              profile,
+              profileWithAge as any,
               knowledgeContext
             );
             await storage.updateBloodReport(reportRecord.id, { aiReport: enriched });
@@ -449,7 +606,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         reportId: reportRecord.id,
         analysis: analysisResult,
         aiReport: aiAnalysis,
-        status: shouldIncludeAI && shouldAsyncAI ? "processing" : "completed"
+        status: shouldIncludeAI && hasAnthropicKey && !aiAnalysis ? "processing" : "completed"
       });
     } catch (error) {
       console.error("[BloodAnalysis] Submit error:", error);
@@ -517,11 +674,25 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult.patterns
         );
 
-        const aiReport = await generateAIBloodAnalysis(
-          analysisResult,
-          normalizedProfile,
-          knowledgeContext
-        );
+        let aiReport = "";
+        try {
+          aiReport = await withAIGenerationTimeout(
+            () =>
+              generateAIBloodAnalysis(
+                analysisResult,
+                normalizedProfile,
+                knowledgeContext
+              ),
+            "blood-analysis/admin-regenerate sync report"
+          );
+        } catch (aiError) {
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodAnalysis] Admin regenerate sync AI timed out, storing fallback.");
+          } else {
+            console.error("[BloodAnalysis] Admin regenerate sync AI failed, storing fallback:", aiError);
+          }
+          aiReport = buildFallbackAnalysis(analysisResult, normalizedProfile, knowledgeContext);
+        }
 
         await storage.updateBloodReport(report.id, { analysis: analysisResult, aiReport });
       };
@@ -599,6 +770,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             normalRange: (m.refMin != null && m.refMax != null) ? `${m.refMin} - ${m.refMax}` : undefined,
             optimalRange: (m.optimalMin != null && m.optimalMax != null) ? `${m.optimalMin} - ${m.optimalMax}` : undefined,
             interpretation: m.interpretation || "",
+            category: CATEGORY_BY_MARKER[m.code || m.markerId || ""] || "general",
           }));
 
           report = {
@@ -627,9 +799,35 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       // If the AI report is missing, kick off background generation.
       // This unblocks cases where async generation never ran (dyno sleep / crash / seed rows).
+      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
       const aiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
-      const shouldGenerateAi =
-        !!process.env.ANTHROPIC_API_KEY && aiReportText.trim().length === 0;
+      let effectiveAiReport = aiReportText.trim();
+
+      if (!effectiveAiReport && !hasAnthropicKey) {
+        try {
+          const fallbackAnalysis = (report as any).analysis;
+          const fallbackProfile = ((report as any).profile || {}) as Record<string, unknown>;
+          if (fallbackAnalysis && Array.isArray(fallbackAnalysis.markers)) {
+            const fallbackKnowledgeContext = await getBloodworkKnowledgeContext(
+              (fallbackAnalysis.markers || []) as any,
+              (fallbackAnalysis.patterns || []) as any
+            );
+            effectiveAiReport = buildFallbackAnalysis(
+              fallbackAnalysis as any,
+              {
+                ...(fallbackProfile as any),
+                gender: fallbackProfile.gender === "femme" ? "femme" : "homme",
+              } as any,
+              fallbackKnowledgeContext
+            );
+            (report as any).aiReport = effectiveAiReport;
+          }
+        } catch (fallbackError) {
+          console.error(`[BloodAnalysis] Fallback generation failed for ${reportId}:`, fallbackError);
+        }
+      }
+
+      const shouldGenerateAi = hasAnthropicKey && effectiveAiReport.length === 0;
 
       if (shouldGenerateAi && !BLOOD_AI_REPORT_IN_FLIGHT.has(reportId)) {
         BLOOD_AI_REPORT_IN_FLIGHT.add(reportId);
@@ -676,7 +874,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             } catch (err) {
               aiError = err;
               console.error(`[BloodAnalysis] AI generation failed for ${reportId}, using fallback:`, err);
-              aiReport = buildFallbackAnalysis(analysisResult as any, { ...(rawProfile as any), gender } as any);
+              aiReport = buildFallbackAnalysis(
+                analysisResult as any,
+                { ...(rawProfile as any), gender } as any,
+                knowledgeContext
+              );
             }
 
             if (reportSource === "legacy") {
@@ -723,6 +925,107 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         });
       }
 
+      // Always recompute marker statuses/scores from raw values to avoid stale 100/100 legacy payloads.
+      const reportProfile = (((report as any).profile || {}) as Record<string, unknown>);
+      const reportGender = reportProfile.gender === "femme" ? "femme" : "homme";
+      const reportMarkers = Array.isArray((report as any).markers) ? ((report as any).markers as Array<Record<string, unknown>>) : [];
+      const recomputeInputs: BloodMarkerInput[] = reportMarkers
+        .map((marker) => {
+          const markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
+          const value = Number(marker.value);
+          const unit = typeof marker.unit === "string" ? marker.unit : undefined;
+          return { markerId, value, unit };
+        })
+        .filter((marker) => marker.markerId && Number.isFinite(marker.value));
+
+      if (recomputeInputs.length) {
+        const recomputedAnalysis = await analyzeBloodwork(recomputeInputs, {
+          gender: reportGender,
+          age: typeof reportProfile.age === "string" ? reportProfile.age : undefined,
+          objectives: undefined,
+          medications: undefined,
+        });
+        const analysisByMarkerId = new Map(
+          recomputedAnalysis.markers.map((marker) => [
+            marker.markerId,
+            {
+              status: marker.status,
+              interpretation: marker.interpretation,
+              name: marker.name,
+            },
+          ])
+        );
+
+        const normalizedMarkers = reportMarkers
+          .map((marker) => normalizeLegacyReportMarker(marker, analysisByMarkerId))
+          .filter((marker): marker is NonNullable<ReturnType<typeof normalizeLegacyReportMarker>> => Boolean(marker));
+
+        const fallbackMarkers = recomputedAnalysis.markers.map((marker) => {
+          const range = BIOMARKER_RANGES[marker.markerId];
+          return {
+            markerId: marker.markerId,
+            name: marker.name,
+            value: marker.value,
+            unit: marker.unit || range?.unit || "",
+            status: marker.status,
+            normalRange: range ? `${range.normalMin} - ${range.normalMax}` : undefined,
+            optimalRange: range ? `${range.optimalMin} - ${range.optimalMax}` : undefined,
+            interpretation: marker.interpretation || "",
+            category: CATEGORY_BY_MARKER[marker.markerId] || "general",
+          };
+        });
+
+        const effectiveMarkers = normalizedMarkers.length ? normalizedMarkers : fallbackMarkers;
+        const globalScore = computeGlobalScoreFromStatuses(
+          effectiveMarkers.map((marker) => marker.status)
+        );
+        const globalLevel = getGlobalLevel(globalScore);
+        const existingAnalysis =
+          (report as any).analysis && typeof (report as any).analysis === "object"
+            ? ((report as any).analysis as Record<string, unknown>)
+            : {};
+
+        (report as any).markers = effectiveMarkers;
+        (report as any).analysis = {
+          ...existingAnalysis,
+          summary: recomputedAnalysis.summary,
+          patterns: recomputedAnalysis.patterns,
+          recommendations: existingAnalysis.recommendations ?? recomputedAnalysis.recommendations,
+          followUp: existingAnalysis.followUp ?? recomputedAnalysis.followUp,
+          alerts: existingAnalysis.alerts ?? recomputedAnalysis.alerts,
+          markers: effectiveMarkers,
+          globalScore,
+          globalLevel,
+        };
+      }
+
+      if (!effectiveAiReport) {
+        try {
+          const fallbackAnalysis =
+            (report as any).analysis && typeof (report as any).analysis === "object"
+              ? ((report as any).analysis as Record<string, unknown>)
+              : null;
+          const fallbackProfile = (((report as any).profile || {}) as Record<string, unknown>);
+          if (fallbackAnalysis && Array.isArray((fallbackAnalysis as any).markers)) {
+            const fallbackKnowledgeContext = await getBloodworkKnowledgeContext(
+              ((fallbackAnalysis as any).markers || []) as any,
+              ((fallbackAnalysis as any).patterns || []) as any
+            );
+            effectiveAiReport = buildFallbackAnalysis(
+              fallbackAnalysis as any,
+              {
+                ...(fallbackProfile as any),
+                gender: fallbackProfile.gender === "femme" ? "femme" : "homme",
+              } as any,
+              fallbackKnowledgeContext
+            );
+            (report as any).aiReport = effectiveAiReport;
+          }
+        } catch (fallbackError) {
+          console.error(`[BloodAnalysis] On-demand fallback generation failed for ${reportId}:`, fallbackError);
+        }
+      }
+
       res.json({ success: true, report });
     } catch (error) {
       console.error("[BloodAnalysis] Report fetch error:", error);
@@ -744,46 +1047,133 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return next();
       }
 
-      console.log(`[BloodAnalysis] Serving report ${req.params.id} via bridge endpoint`);
+        console.log(`[BloodAnalysis] Serving report ${req.params.id} via bridge endpoint`);
 
-      // Transform blood-analysis format to blood-tests format
-      const profile = report.profile as Record<string, unknown> || {};
-      const analysis = report.analysis as Record<string, unknown> || {};
-      const markers = report.markers as Array<Record<string, unknown>> || [];
+        // Transform blood-analysis format to blood-tests format
+        const profile = report.profile as Record<string, unknown> || {};
+        const analysis = report.analysis as Record<string, unknown> || {};
+        const markers = report.markers as Array<Record<string, unknown>> || [];
+        const markerInputs: BloodMarkerInput[] = markers
+          .map((marker) => {
+            const markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
+            const value = Number(marker.value);
+            const unit = typeof marker.unit === "string" ? marker.unit : undefined;
+            return { markerId, value, unit };
+          })
+          .filter((marker) => marker.markerId && Number.isFinite(marker.value));
 
-      // Build markers in frontend expected format
-      const formattedMarkers = markers.map((m: Record<string, unknown>) => {
-        const rawMarkerId = (m.markerId || m.name || "") as string;
-        const markerId = normalizeMarkerName(rawMarkerId);
-        const range = BIOMARKER_RANGES[markerId];
-        const analysisMarker = (analysis.markers as any[])?.find((am: any) =>
-          (am.markerId || am.name || am.id) === markerId
+        const profileGender = profile.gender === "femme" ? "femme" : "homme";
+        const profileAge =
+          typeof profile.age === "string"
+            ? profile.age
+            : typeof profile.dob === "string"
+            ? (() => {
+                const dob = new Date(profile.dob);
+                if (Number.isNaN(dob.getTime())) return undefined;
+                return String(Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
+              })()
+            : undefined;
+
+        const recomputedAnalysis =
+          markerInputs.length > 0
+            ? await analyzeBloodwork(markerInputs, {
+                gender: profileGender,
+                age: profileAge,
+                objectives: undefined,
+                medications: undefined,
+              })
+            : null;
+
+        const recomputedByMarkerId = new Map(
+          (recomputedAnalysis?.markers || []).map((marker) => [marker.markerId, marker])
         );
-        return {
-          name: range?.name || markerId,
-          code: markerId,
-          category: "metabolic", // Default category
-          value: m.value as number,
-          unit: (m.unit || range?.unit || "") as string,
-          refMin: range?.normalMin ?? null,
-          refMax: range?.normalMax ?? null,
-          optimalMin: range?.optimalMin ?? null,
-          optimalMax: range?.optimalMax ?? null,
-          status: analysisMarker?.status || "normal",
-          interpretation: analysisMarker?.interpretation || "",
-        };
-      });
 
-      // Calculate global score from analysis
-      const analysisMarkers = (analysis.markers || []) as Array<{ status: string }>;
-      const optimalCount = analysisMarkers.filter(m => m.status === "optimal").length;
-      const normalCount = analysisMarkers.filter(m => m.status === "normal").length;
-      const totalMarkers = analysisMarkers.length || 1;
-      const globalScore = Math.round(((optimalCount * 100 + normalCount * 70) / totalMarkers));
-      const globalLevel = globalScore >= 85 ? "excellent" : globalScore >= 70 ? "bon" : globalScore >= 50 ? "moyen" : "faible";
+        let formattedMarkers = markers
+          .map((marker) => {
+            const markerId = normalizeMarkerName(String(marker.markerId || marker.code || marker.name || ""));
+            if (!markerId) return null;
+            const value = Number(marker.value);
+            if (!Number.isFinite(value)) return null;
+            const range = BIOMARKER_RANGES[markerId];
+            const recomputed = recomputedByMarkerId.get(markerId);
+            const status = recomputed?.status || normalizeMarkerStatus(marker.status);
+            return {
+              name:
+                String(marker.name || "").trim() ||
+                recomputed?.name ||
+                range?.name ||
+                markerId,
+              code: markerId,
+              category: CATEGORY_BY_MARKER[markerId] || "general",
+              value,
+              unit:
+                String(marker.unit || "").trim() ||
+                recomputed?.unit ||
+                range?.unit ||
+                "",
+              refMin:
+                marker.refMin != null
+                  ? Number(marker.refMin)
+                  : range?.normalMin ?? null,
+              refMax:
+                marker.refMax != null
+                  ? Number(marker.refMax)
+                  : range?.normalMax ?? null,
+              optimalMin:
+                marker.optimalMin != null
+                  ? Number(marker.optimalMin)
+                  : range?.optimalMin ?? null,
+              optimalMax:
+                marker.optimalMax != null
+                  ? Number(marker.optimalMax)
+                  : range?.optimalMax ?? null,
+              status,
+              interpretation:
+                String(marker.interpretation || "").trim() ||
+                recomputed?.interpretation ||
+                "",
+            };
+          })
+          .filter(Boolean) as Array<{
+            name: string;
+            code: string;
+            category: string;
+            value: number;
+            unit: string;
+            refMin: number | null;
+            refMax: number | null;
+            optimalMin: number | null;
+            optimalMax: number | null;
+            status: MarkerStatus;
+            interpretation: string;
+          }>;
 
-      res.json({
-        bloodTest: {
+        if (!formattedMarkers.length && recomputedAnalysis) {
+          formattedMarkers = recomputedAnalysis.markers.map((marker) => {
+            const range = BIOMARKER_RANGES[marker.markerId];
+            return {
+              name: marker.name,
+              code: marker.markerId,
+              category: CATEGORY_BY_MARKER[marker.markerId] || "general",
+              value: marker.value,
+              unit: marker.unit || range?.unit || "",
+              refMin: range?.normalMin ?? null,
+              refMax: range?.normalMax ?? null,
+              optimalMin: range?.optimalMin ?? null,
+              optimalMax: range?.optimalMax ?? null,
+              status: marker.status,
+              interpretation: marker.interpretation || "",
+            };
+          });
+        }
+
+        const globalScore = computeGlobalScoreFromStatuses(
+          formattedMarkers.map((marker) => marker.status)
+        );
+        const globalLevel = getGlobalLevel(globalScore);
+
+        res.json({
+          bloodTest: {
           id: report.id,
           fileName: "blood-analysis-submit",
           uploadedAt: report.createdAt,
@@ -811,16 +1201,17 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             infectionRecent: profile.infectionRecent as string || null,
           },
         },
-        markers: formattedMarkers,
-        derivedMetrics: {},
-        patterns: (analysis.patterns || []) as any[],
-        analysis: {
-          globalScore,
-          globalLevel,
-          patterns: analysis.patterns || [],
-          aiAnalysis: report.aiReport || "",
-          comprehensiveData: {
-            supplements: [],
+          markers: formattedMarkers,
+          derivedMetrics: {},
+          patterns: (recomputedAnalysis?.patterns || analysis.patterns || []) as any[],
+          analysis: {
+            globalScore,
+            globalLevel,
+            summary: recomputedAnalysis?.summary || analysis.summary || { optimal: [], watch: [], action: [] },
+            patterns: recomputedAnalysis?.patterns || analysis.patterns || [],
+            aiAnalysis: report.aiReport || "",
+            comprehensiveData: {
+              supplements: [],
             protocols: [],
           },
           patient: {
@@ -1284,14 +1675,22 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       let aiReport: string;
       try {
-        aiReport = await generateAIBloodAnalysis(
-          basicAnalysis,
-          profileWithAge,
-          knowledgeContext
+        aiReport = await withAIGenerationTimeout(
+          () =>
+            generateAIBloodAnalysis(
+              basicAnalysis,
+              profileWithAge,
+              knowledgeContext
+            ),
+          "blood-analysis/full-analysis sync report"
         );
       } catch (aiError) {
-        console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
-        aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
+        if (isAIGenerationTimeoutError(aiError)) {
+          console.warn("[BloodAnalysis] Full analysis AI timed out, using fallback.");
+        } else {
+          console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        }
+        aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge, knowledgeContext);
       }
 
       res.json({
@@ -1417,14 +1816,22 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       let aiReport: string;
       try {
-        aiReport = await generateAIBloodAnalysis(
-          basicAnalysis,
-          profileWithAge,
-          knowledgeContext
+        aiReport = await withAIGenerationTimeout(
+          () =>
+            generateAIBloodAnalysis(
+              basicAnalysis,
+              profileWithAge,
+              knowledgeContext
+            ),
+          "blood-analysis/comprehensive-report sync report"
         );
       } catch (aiError) {
-        console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
-        aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge);
+        if (isAIGenerationTimeoutError(aiError)) {
+          console.warn("[BloodAnalysis] Comprehensive report AI timed out, using fallback.");
+        } else {
+          console.error("[BloodAnalysis] AI generation failed, using fallback:", aiError);
+        }
+        aiReport = buildFallbackAnalysis(basicAnalysis, profileWithAge, knowledgeContext);
       }
 
       res.json({
