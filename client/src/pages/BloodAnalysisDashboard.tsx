@@ -105,7 +105,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
 
   return (
     <div
-      className="ultrahuman-report min-h-screen flex"
+      className="ultrahuman-report min-h-screen flex overflow-x-hidden"
       style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
     >
       <aside
@@ -138,7 +138,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
         />
       )}
 
-      <main className="flex-1 overflow-y-auto h-screen">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden h-screen">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg"
@@ -159,7 +159,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="mb-6 overflow-x-auto -mx-6 px-6 lg:mx-0 lg:px-0">
+            <div className="mb-6 overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
               <TabsList className="inline-flex lg:grid lg:grid-cols-8 gap-2 h-auto w-full lg:w-full p-2 min-w-max lg:min-w-0">
                 <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
                 <TabsTrigger value="biomarkers" className="whitespace-nowrap">Biomarqueurs</TabsTrigger>
