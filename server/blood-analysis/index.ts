@@ -2424,6 +2424,19 @@ export function buildFallbackAnalysis(
     infectionRecent?: string;
   }
 ): string {
+  const STATUS_WEIGHT: Record<MarkerStatus, number> = {
+    critical: 4,
+    suboptimal: 3,
+    normal: 1,
+    optimal: 0,
+  };
+  const STATUS_SCORE: Record<MarkerStatus, number> = {
+    optimal: 100,
+    normal: 80,
+    suboptimal: 55,
+    critical: 30,
+  };
+
   const statusLabel = (status: MarkerStatus) =>
     status === "critical" ? "CRITIQUE" : status === "suboptimal" ? "IMPORTANT" : status === "optimal" ? "OPTIMISATION" : "NORMAL";
 
@@ -2433,189 +2446,657 @@ export function buildFallbackAnalysis(
     return txt.length ? txt : "Non renseigne";
   };
 
+  const parseRangeTuple = (text?: string): { min?: number; max?: number } => {
+    if (!text) return {};
+    const nums = String(text)
+      .replace(/,/g, ".")
+      .match(/-?\d+(?:\.\d+)?/g)
+      ?.map((v) => Number(v))
+      .filter((v) => Number.isFinite(v));
+    if (!nums?.length) return {};
+    if (nums.length === 1) return { min: nums[0], max: nums[0] };
+    return { min: nums[0], max: nums[1] };
+  };
+
+  const pctDeltaVsOptimal = (m: MarkerAnalysis): string => {
+    const range = parseRangeTuple(m.optimalRange);
+    if (!Number.isFinite(m.value) || range.min === undefined || range.max === undefined) return "Non renseigne";
+    if (m.value < range.min && range.min > 0) {
+      return `-${Math.round(((range.min - m.value) / range.min) * 100)}% sous l'optimal`;
+    }
+    if (m.value > range.max && range.max > 0) {
+      return `+${Math.round(((m.value - range.max) / range.max) * 100)}% au-dessus de l'optimal`;
+    }
+    return "dans la zone optimale";
+  };
+
   const formatMarkerTable = (markers: MarkerAnalysis[]): string => {
     if (!markers.length) return "| - | - | - | - | - |\n";
     return markers
       .map((m) => {
-        const status = statusLabel(m.status);
-        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "N/A"} | ${m.optimalRange || "N/A"} | ${status} |`;
+        return `| ${m.name} | ${m.value} ${m.unit || ""} | ${m.normalRange || "N/A"} | ${m.optimalRange || "N/A"} | ${statusLabel(m.status)} |`;
       })
       .join("\n");
   };
 
+  const markerMechanism: Record<string, string> = {
+    lpa: "risque cardio-athérogène génétique, indépendant des habitudes",
+    apob: "charge en particules athérogènes et vitesse de progression du risque vasculaire",
+    triglycerides: "gestion glucido-lipidique et sensibilité à l'insuline",
+    glycemie_jeun: "contrôle glycémique basal et flexibilité métabolique",
+    hba1c: "exposition moyenne au glucose sur 8-12 semaines",
+    homa_ir: "efficacité de la réponse insulinique",
+    tsh: "pilotage thyroïdien central et signal de dépense énergétique",
+    t3_libre: "hormone thyroïdienne active pour métabolisme, chaleur et récupération",
+    vitamine_d: "signal immuno-hormonal, force et récupération",
+    b12: "methylation, système nerveux et production d'énergie",
+    crp_us: "inflammation de bas grade et charge systémique",
+    homocysteine: "terrain vasculaire, stress oxydatif et statut B-vitamines",
+    ferritine: "stock de fer et capacité de récupération",
+    testosterone_libre: "fraction androgénique bioactive pour performance et recomposition",
+    cortisol: "balance stress-récupération",
+  };
+
+  const markerAction: Record<string, string> = {
+    lpa: "sécuriser agressivement les autres leviers du risque cardio: ApoB, tension, inflammation, sommeil et activité zone 2.",
+    apob: "réduire charge athérogène avec fibres solubles quotidiennes, qualité lipidique et volume cardio structuré.",
+    triglycerides: "réduire glucides rapides hors entraînement, prioriser marche post-prandiale et déficit modéré.",
+    glycemie_jeun: "stabiliser fenêtre de repas, protéines au petit-déjeuner et exposition matinale à la lumière.",
+    hba1c: "organiser la semaine autour d'un contrôle glycémique continu (NEAT, timing glucides, sommeil).",
+    homa_ir: "hausser sensibilité insulinique via entraînement de force + cardio zone 2 + gestion du stress.",
+    tsh: "sécuriser apport iodé/selenium/protéines, charge calorique non agressive, suivi T3/T4 au retest.",
+    t3_libre: "éviter déficit calorique trop brutal, augmenter sommeil profond et gérer la charge d'entraînement.",
+    vitamine_d: "mettre en place une supplémentation titrée et retest 8-12 semaines.",
+    b12: "corriger le statut avec forme active, suivi homocystéine et symptômes neuro-énergétiques.",
+    crp_us: "réduire inflammation de fond: sommeil, alcool bas, récupération et charge d'entraînement pilotée.",
+    homocysteine: "renforcer B9/B12/B6 et vérifier la réponse biologique au retest.",
+    ferritine: "adapter stratégie fer selon contexte inflammatoire et performance, sans supplémentation aveugle.",
+    testosterone_libre: "optimiser sommeil, apports lipidiques de qualité et stress avant toute décision avancée.",
+    cortisol: "installer routine anti-cortisol matin/soir et éviter surcharge d'intensité chronique.",
+  };
+
+  const panelDefinitions: Array<{
+    id: number;
+    title: string;
+    focus: string;
+    markerIds: string[];
+  }> = [
+    {
+      id: 1,
+      title: "Axe 1 — Potentiel musculaire & androgenes",
+      focus: "capacité anabolique, libido, progression en force et récupération tissulaire",
+      markerIds: ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1"],
+    },
+    {
+      id: 2,
+      title: "Axe 2 — Metabolisme & gestion du risque diabete",
+      focus: "sensibilité insulinique, énergie stable et gestion du stockage",
+      markerIds: ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "acide_urique"],
+    },
+    {
+      id: 3,
+      title: "Axe 3 — Lipides & risque cardio-metabolique",
+      focus: "charge athérogène, stabilité vasculaire et longévité cardiovasculaire",
+      markerIds: ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa", "apo_a1"],
+    },
+    {
+      id: 4,
+      title: "Axe 4 — Thyroide & depense energetique",
+      focus: "rythme métabolique, température, fatigue et adaptation au déficit",
+      markerIds: ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"],
+    },
+    {
+      id: 5,
+      title: "Axe 5 — Foie, bile & detox metabolique",
+      focus: "gestion hépatique des substrats, tolérance à la charge alimentaire et inflammatoire",
+      markerIds: ["alt", "ast", "ggt", "bilirubine", "albumine", "phosphatases_alcalines"],
+    },
+    {
+      id: 6,
+      title: "Axe 6 — Rein, hydratation & performance",
+      focus: "filtration, équilibre hydrique et robustesse rénale à l'effort",
+      markerIds: ["creatinine", "uree", "egfr", "cystatine_c", "sodium", "potassium"],
+    },
+    {
+      id: 7,
+      title: "Axe 7 — Inflammation, immunite & terrain",
+      focus: "inflammation de fond, réponse immunitaire et coût récupération",
+      markerIds: ["crp_us", "homocysteine", "fibrinogene", "ferritine", "vs"],
+    },
+    {
+      id: 8,
+      title: "Axe 8 — Hematologie, oxygenation & endurance",
+      focus: "transport d'oxygène, fatigue périphérique et performance d'endurance",
+      markerIds: ["hemoglobine", "hematocrite", "vgm", "tcmh", "plaquettes", "globules_blancs"],
+    },
+    {
+      id: 9,
+      title: "Axe 9 — Micronutriments (vitamines & mineraux)",
+      focus: "cofacteurs enzymatiques, énergie, immunité et adaptation à l'entraînement",
+      markerIds: ["vitamine_d", "b12", "folate", "fer_serique", "ferritine", "transferrine_sat", "zinc", "magnesium_rbc", "selenium"],
+    },
+    {
+      id: 10,
+      title: "Axe 10 — Electrolytes, crampes, pression & performance",
+      focus: "conduction neuromusculaire, crampes, tension et qualité de contraction",
+      markerIds: ["sodium", "potassium", "chlore", "calcium", "phosphore", "magnesium"],
+    },
+    {
+      id: 11,
+      title: "Axe 11 — Stress, sommeil, recuperation (si donnees)",
+      focus: "charge allostatique, récupération nerveuse et tolérance au training",
+      markerIds: ["cortisol", "dhea_s"],
+    },
+  ];
+
   const critical = analysisResult.markers.filter((m) => m.status === "critical");
   const suboptimal = analysisResult.markers.filter((m) => m.status === "suboptimal");
-  const priorities = [...critical, ...suboptimal];
+  const totalMarkers = analysisResult.markers.length;
+  const globalScore =
+    totalMarkers > 0
+      ? Math.round(analysisResult.markers.reduce((sum, m) => sum + (STATUS_SCORE[m.status] || 80), 0) / totalMarkers)
+      : 0;
+
+  const priorities = [...analysisResult.markers]
+    .sort((a, b) => {
+      const w = (STATUS_WEIGHT[b.status] || 0) - (STATUS_WEIGHT[a.status] || 0);
+      if (w !== 0) return w;
+      const aDelta = pctDeltaVsOptimal(a).includes("sous") || pctDeltaVsOptimal(a).includes("au-dessus") ? 1 : 0;
+      const bDelta = pctDeltaVsOptimal(b).includes("sous") || pctDeltaVsOptimal(b).includes("au-dessus") ? 1 : 0;
+      return bDelta - aDelta;
+    })
+    .filter((m) => m.status !== "optimal")
+    .slice(0, 12);
 
   const testedIds = new Set(analysisResult.markers.map((m) => m.markerId));
-  const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"].filter(
-    (id) => !testedIds.has(id)
+  const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us", "apob", "lpa"]
+    .filter((id) => !testedIds.has(id));
+
+  const unknownPreAnalytics = [
+    typeof userProfile.fastingHours !== "number",
+    !userProfile.drawTime,
+    !userProfile.lastTraining,
+    !userProfile.alcoholLast72h,
+    !userProfile.infectionRecent,
+  ].filter(Boolean).length;
+  const confidenceScore = Math.max(42, 100 - criticalMissing.length * 5 - unknownPreAnalytics * 4);
+
+  const axisMarkers = panelDefinitions.map((axis) => {
+    const markers = analysisResult.markers.filter((m) => axis.markerIds.includes(m.markerId));
+    const flagged = markers.filter((m) => m.status === "critical" || m.status === "suboptimal");
+    const axisScore = markers.length
+      ? Math.round(markers.reduce((sum, m) => sum + (STATUS_SCORE[m.status] || 80), 0) / markers.length)
+      : 0;
+    return {
+      ...axis,
+      markers,
+      flagged,
+      score: axisScore,
+    };
+  });
+
+  const panelScoreRows = axisMarkers.map((axis) => {
+    const level =
+      axis.score >= 85 ? "solide" : axis.score >= 70 ? "correct" : axis.score >= 55 ? "fragile" : "prioritaire";
+    return `| Axe ${axis.id} | ${axis.score}/100 | ${axis.markers.length} | ${axis.flagged.length} | ${level} |`;
+  });
+
+  const correlations = buildLifestyleCorrelations(analysisResult.markers, {
+    sleepHours: userProfile.sleepHours,
+    trainingHours: userProfile.trainingHours,
+    calorieDeficit: userProfile.calorieDeficit,
+    alcoholWeekly: userProfile.alcoholWeekly,
+    stressLevel: userProfile.stressLevel,
+    poids: userProfile.poids,
+    taille: userProfile.taille,
+  });
+
+  const hasMarker = (id: string) => analysisResult.markers.some((m) => m.markerId === id);
+  const getMarker = (id: string) => analysisResult.markers.find((m) => m.markerId === id);
+  const hasGlycemicStress = ["glycemie_jeun", "hba1c", "homa_ir", "insuline_jeun"].some((id) => {
+    const m = getMarker(id);
+    return m ? m.status === "suboptimal" || m.status === "critical" : false;
+  });
+  const hasLipidStress = ["apob", "lpa", "ldl", "triglycerides"].some((id) => {
+    const m = getMarker(id);
+    return m ? m.status === "suboptimal" || m.status === "critical" : false;
+  });
+  const hasInflammationStress = ["crp_us", "homocysteine", "ferritine"].some((id) => {
+    const m = getMarker(id);
+    return m ? m.status === "suboptimal" || m.status === "critical" : false;
+  });
+
+  const followUpByName = new Map(
+    (analysisResult.followUp || []).map((item) => [item.test.toLowerCase(), item])
   );
 
-  const followUp = analysisResult.followUp.map((item) => `- ${item.test}: ${item.delay} - ${item.objective}`);
-  const alerts = analysisResult.alerts.map((a) => `- ${a}`);
-
-  const axisMarkers = {
-    axe1: analysisResult.markers.filter((m) =>
-      ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1"].includes(m.markerId)
-    ),
-    axe2: analysisResult.markers.filter((m) =>
-      ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "acide_urique"].includes(m.markerId)
-    ),
-    axe3: analysisResult.markers.filter((m) =>
-      ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa"].includes(m.markerId)
-    ),
-    axe4: analysisResult.markers.filter((m) =>
-      ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId)
-    ),
-    axe5: analysisResult.markers.filter((m) =>
-      ["alt", "ast", "ggt", "bilirubine", "albumine", "phosphatases_alcalines"].includes(m.markerId)
-    ),
-    axe6: analysisResult.markers.filter((m) =>
-      ["creatinine", "uree", "egfr", "cystatine_c", "sodium", "potassium"].includes(m.markerId)
-    ),
-    axe7: analysisResult.markers.filter((m) =>
-      ["crp_us", "homocysteine", "fibrinogene", "ferritine", "vs"].includes(m.markerId)
-    ),
-    axe8: analysisResult.markers.filter((m) =>
-      ["hemoglobine", "hematocrite", "vgm", "tcmh", "plaquettes", "globules_blancs"].includes(m.markerId)
-    ),
-    axe9: analysisResult.markers.filter((m) =>
-      ["vitamine_d", "b12", "folate", "fer_serique", "ferritine", "transferrine_sat", "zinc", "magnesium_rbc", "selenium"].includes(m.markerId)
-    ),
-    axe10: analysisResult.markers.filter((m) =>
-      ["sodium", "potassium", "chlore", "calcium", "phosphore", "magnesium"].includes(m.markerId)
-    ),
-    axe11: analysisResult.markers.filter((m) => ["cortisol", "dhea_s"].includes(m.markerId)),
+  const makeSupplementBlock = (
+    title: string,
+    details: {
+      form: string;
+      dose: string;
+      timing: string;
+      duration: string;
+      why: string;
+      quality: string;
+      cautions: string;
+      retest: string;
+    }
+  ) => {
+    return [
+      `### ${title}`,
+      `Forme cible: ${details.form}.`,
+      `Dosage: ${details.dose}.`,
+      `Timing: ${details.timing}.`,
+      `Duree: ${details.duration}.`,
+      `Pourquoi pour ton dossier: ${details.why}.`,
+      `Qualite achat: ${details.quality}.`,
+      `Precautions: ${details.cautions}.`,
+      `Retest/monitoring: ${details.retest}.`,
+      "",
+    ].join("\n");
   };
 
   const sections: string[] = [];
 
   sections.push("## Synthese executive\n");
-  sections.push(`- Critiques: ${critical.length}\n- Importants: ${suboptimal.length}\n`);
-  if (priorities.length) {
-    sections.push("\nPriorites:");
-    priorities.slice(0, 8).forEach((m) => sections.push(`- ${statusLabel(m.status)}: ${m.name}`));
-  }
-  if (alerts.length) {
-    sections.push("\nVigilance:");
-    sections.push(alerts.join("\n"));
-  }
+  sections.push(
+    [
+      `Verdict global: ${globalScore}/100 sur ${totalMarkers} biomarqueurs, avec ${critical.length} point(s) critique(s) et ${suboptimal.length} point(s) important(s).`,
+      `Lecture rapide: ton dossier est ${globalScore >= 85 ? "solide" : globalScore >= 70 ? "globalement correct mais perfectible" : "sous contrainte métabolique/hormonale"} et demande une priorisation stricte des leviers à fort impact.`,
+      `Objectif 90 jours: réduire les marqueurs critiques, stabiliser les marqueurs importants et transformer les gains biologiques en performance (énergie, recomposition, récupération, progression à l'entraînement).`,
+      "",
+      "Priorites immediates (ordre d'attaque):",
+      ...(priorities.length
+        ? priorities.slice(0, 5).map((m, idx) => {
+            const mech = markerMechanism[m.markerId] || "signal biologique de priorité systémique";
+            const action = markerAction[m.markerId] || "mettre en place une correction ciblée puis retester.";
+            return `${idx + 1}. ${m.name} (${statusLabel(m.status)}): ${m.value} ${m.unit || ""} (${pctDeltaVsOptimal(
+              m
+            )}). Cela traduit surtout ${mech}. Action immédiate: ${action}`;
+          })
+        : ["1. Aucune priorité critique détectée: on passe en mode optimisation fine et consolidation."]),
+      "",
+      "Scoreboard par axes (vue stratégique):",
+      "| Axe | Score | Marqueurs | Flags | Niveau |",
+      "|---|---|---|---|---|",
+      ...panelScoreRows,
+      "",
+      ...(analysisResult.alerts.length
+        ? ["Vigilance:", ...analysisResult.alerts.map((a) => `- ${a}`)]
+        : ["Vigilance: aucun drapeau clinique immédiat en dehors des priorités listées."]),
+    ].join("\n")
+  );
   sections.push("\n---\n");
 
   sections.push("## Qualite des donnees & limites\n");
   sections.push(
     [
+      `Indice de confiance actuel: ${confidenceScore}/100.`,
+      `Plus l'indice est haut, plus l'interprétation est robuste et directement actionnable.`,
+      "",
+      "Conditions de prelevement et biais potentiels:",
       `- Jeune: ${typeof userProfile.fastingHours === "number" ? `${userProfile.fastingHours} h` : "Non renseigne"}`,
       `- Heure de prelevement: ${fmt(userProfile.drawTime)}`,
-      `- Dernier entrainement: ${fmt(userProfile.lastTraining)}`,
-      `- Alcool (72h): ${fmt(userProfile.alcoholLast72h)}`,
-      `- Infection recente: ${fmt(userProfile.infectionRecent)}`,
-      `- Notes: sommeil, stress, hydratation et activite 48h avant peuvent modifier l'interpretation.`,
+      `- Dernier entrainement avant prise de sang: ${fmt(userProfile.lastTraining)}`,
+      `- Alcool dans les 72h: ${fmt(userProfile.alcoholLast72h)}`,
+      `- Infection / inflammation recente: ${fmt(userProfile.infectionRecent)}`,
+      "- Note méthodologique: un stress aigu, un mauvais sommeil, une séance intense <48h et l'alcool faussent fréquemment CRP, enzymes hépatiques, glycémie, cortisol et marqueurs de récupération.",
+      "",
+      criticalMissing.length
+        ? `Marqueurs critiques manquants a securiser au prochain cycle: ${criticalMissing.join(", ")}.`
+        : "Marqueurs critiques manquants: aucun, la couverture biologique est bonne.",
+      "",
+      "Paquet de retest recommande (8-12 semaines):",
+      "| Bloc | Cibles | Objectif |",
+      "|---|---|---|",
+      "| Metabolique | Glycemie a jeun, HbA1c, Insuline, HOMA-IR, Triglycerides | Verifier la baisse de charge insulinique |",
+      "| Cardio | ApoB, Lp(a), LDL, HDL, CRP-us | Valider la reduction du risque residuel |",
+      "| Hormono-thyroidien | Testo totale/libre, SHBG, TSH, T3 libre, Cortisol | Stabiliser anabolisme et depense energetique |",
+      "| Micro-nutrition | Vitamine D, B12, Folates, Ferritine, Zinc/Magnesium | Lever les freins de recuperation |",
     ].join("\n")
   );
-  if (criticalMissing.length) {
-    sections.push("\nMarqueurs manquants critiques (a ajouter):");
-    criticalMissing.forEach((id) => sections.push(`- ${id}`));
-  } else {
-    sections.push("\nMarqueurs manquants critiques: aucun detecte.");
-  }
   sections.push("\n---\n");
 
   sections.push("## Tableau de bord (scores & priorites)\n");
-  sections.push(`- Total marqueurs: ${analysisResult.markers.length}\n- A surveiller: ${analysisResult.summary.watch.length}\n- Action: ${analysisResult.summary.action.length}\n`);
+  sections.push(
+    [
+      `Volume analyse: ${totalMarkers} marqueurs (${analysisResult.summary.optimal.length} optimaux, ${analysisResult.summary.watch.length} a surveiller, ${analysisResult.summary.action.length} en action requise).`,
+      "",
+      "Matrice d'intervention (impact x urgence):",
+      "| Priorite | Criteres | Delai cible | KPI principal |",
+      "|---|---|---|---|",
+      `| P1 | Marqueurs critiques + signaux cardio/metaboliques | J+14 | disparition des flags critiques principaux |`,
+      `| P2 | Marqueurs importants persistants | J+30 | tendance favorable de >50% des ecarts |`,
+      `| P3 | Consolidation / optimisation | J+60 a J+90 | stabilite + progression performance |`,
+      "",
+      "Vue execution:",
+      ...priorities.slice(0, 8).map((m, idx) => {
+        const follow = followUpByName.get(m.name.toLowerCase());
+        return `- P${idx + 1}: ${m.name} (${m.value} ${m.unit || ""}, ${statusLabel(m.status)}). Cible: ${m.optimalRange || "Non renseigne"}. Retest: ${
+          follow?.delay || "8-12 semaines"
+        }.`;
+      }),
+    ].join("\n")
+  );
   sections.push("\n---\n");
 
   sections.push("## Potentiel recomposition (perte de gras + gain de muscle)\n");
   sections.push(
-    "Priorite: solidifier sante metabolique + recuperation, puis pousser progressivement volume/deficit. Si des freins sont presents (inflammation, energie, hormones), on les corrige d'abord.\n"
+    [
+      `Potentiel actuel estime: ${globalScore >= 85 ? "élevé" : globalScore >= 70 ? "bon mais freiné par quelques marqueurs" : "modéré, nécessite d'abord une remise à niveau biologique"}.`,
+      "Logique de progression: tu ne cherches pas seulement à perdre du gras, tu veux protéger la performance et la masse maigre. Donc on traite d'abord les freins systémiques (insuline, inflammation, thyroïde, stress), puis on augmente l'intensité du plan recomposition.",
+      "",
+      "Leviers prioritaires pour ton 90 jours:",
+      `1. Axe metabolique: ${hasGlycemicStress ? "prioritaire (charge glucidique et insulino-résistance à corriger rapidement)." : "globalement stable, maintien des routines actuelles."}`,
+      `2. Axe cardio-lipidique: ${hasLipidStress ? "prioritaire (risque résiduel à réduire via nutrition, cardio et suivi ApoB/Lp(a))." : "surveillance standard et consolidation."}`,
+      `3. Axe inflammation-recuperation: ${hasInflammationStress ? "prioritaire (sommeil, charge d'entraînement, alcool, récupération)." : "niveau acceptable, poursuivre stratégie anti-inflammatoire de base."}`,
+      "4. Axe anabolique/hormonal: préserver la capacité de progression (force, libido, récupération, adaptation).",
+      "",
+      "Traduction pratique:",
+      "- Si 2 leviers ou plus sont en alerte, privilégie déficit modéré (pas agressif), augmentation du NEAT et progression de force technique.",
+      "- Si les leviers se stabilisent au retest intermédiaire, tu peux accélérer la perte de gras par micro-cycles sans casser la récupération.",
+      "- Les décisions d'intensification se prennent sur biomarqueurs + ressenti + performance, jamais sur le poids seul.",
+    ].join("\n")
   );
   sections.push("\n---\n");
 
   sections.push("## Lecture compartimentee par axes\n");
-  const pushAxis = (title: string, markers: MarkerAnalysis[]) => {
-    sections.push(`### ${title}\n`);
-    if (!markers.length) {
-      sections.push("Non renseigne (aucun marqueur de cet axe dans ce bilan).\n");
-      return;
+  for (const axis of axisMarkers) {
+    sections.push(`### ${axis.title}\n`);
+    sections.push(`Focus de lecture: ${axis.focus}.`);
+    if (!axis.markers.length) {
+      sections.push(
+        "Non renseigne pour ce dossier. Pour rendre cet axe réellement actionnable, il faut l'ajouter au prochain retest avec un protocole de prélèvement strict."
+      );
+      sections.push("");
+      continue;
     }
     sections.push("| Marqueur | Valeur | Range labo | Range optimal | Statut |");
     sections.push("|---|---|---|---|---|");
-    sections.push(formatMarkerTable(markers));
+    sections.push(formatMarkerTable(axis.markers));
+    const mainFlags = axis.flagged.slice(0, 4);
+    if (mainFlags.length) {
+      sections.push("");
+      sections.push(
+        `Interprétation axe ${axis.id}: ${mainFlags
+          .map((m) => `${m.name} (${pctDeltaVsOptimal(m)})`)
+          .join(", ")}.`
+      );
+      sections.push(
+        "Action axe: prioriser les correctifs ciblés, garder un suivi hebdomadaire de symptômes/performance, puis confirmer biologiquement au retest."
+      );
+    } else {
+      sections.push("");
+      sections.push(
+        `Interprétation axe ${axis.id}: pas de signal d'alerte majeur sur les marqueurs disponibles, objectif = stabiliser et éviter la dérive avec une hygiène d'exécution régulière.`
+      );
+    }
     sections.push("");
-  };
-  pushAxis("Axe 1 — Potentiel musculaire & androgenes", axisMarkers.axe1);
-  pushAxis("Axe 2 — Metabolisme & gestion du risque diabete", axisMarkers.axe2);
-  pushAxis("Axe 3 — Lipides & risque cardio-metabolique", axisMarkers.axe3);
-  pushAxis("Axe 4 — Thyroide & depense energetique", axisMarkers.axe4);
-  pushAxis("Axe 5 — Foie, bile & detox metabolique", axisMarkers.axe5);
-  pushAxis("Axe 6 — Rein, hydratation & performance", axisMarkers.axe6);
-  pushAxis("Axe 7 — Inflammation, immunite & terrain", axisMarkers.axe7);
-  pushAxis("Axe 8 — Hematologie, oxygenation & endurance", axisMarkers.axe8);
-  pushAxis("Axe 9 — Micronutriments (vitamines & mineraux)", axisMarkers.axe9);
-  pushAxis("Axe 10 — Electrolytes, crampes, pression & performance", axisMarkers.axe10);
-  pushAxis("Axe 11 — Stress, sommeil, recuperation (si donnees)", axisMarkers.axe11);
+  }
   sections.push("\n---\n");
 
   sections.push("## Interconnexions majeures (le pattern)\n");
   if (analysisResult.patterns.length) {
-    analysisResult.patterns.slice(0, 10).forEach((p) => {
-      sections.push(`- ${p.name}${p.causes?.length ? ` (causes possibles: ${p.causes.join(", ")})` : ""}`);
+    sections.push("Patterns détectés automatiquement:");
+    analysisResult.patterns.slice(0, 8).forEach((p) => {
+      sections.push(`- ${p.name}${p.causes?.length ? ` | causes probables: ${p.causes.join(", ")}` : ""}`);
     });
-  } else {
-    sections.push("- Aucun pattern fort detecte.\n");
+    sections.push("");
   }
+  const inferredLinks: string[] = [];
+  if (hasGlycemicStress && hasLipidStress) {
+    inferredLinks.push(
+      "Le couple glycemie/insuline + triglycérides/lipoprotéines suggère une pression métabolique qui freine simultanément perte de gras et sécurité cardio: la stratégie nutritionnelle doit donc cibler les deux dimensions en même temps."
+    );
+  }
+  if (hasInflammationStress && hasLipidStress) {
+    inferredLinks.push(
+      "Inflammation de bas grade + lipides défavorables = terrain vasculaire plus coûteux: sans réduction de charge inflammatoire, le risque cardio résiduel reste élevé même avec entraînement."
+    );
+  }
+  if (hasMarker("vitamine_d") && hasMarker("testosterone_libre")) {
+    const vitD = getMarker("vitamine_d");
+    const testFree = getMarker("testosterone_libre");
+    if (
+      vitD &&
+      testFree &&
+      (vitD.status === "suboptimal" || vitD.status === "critical" || testFree.status === "suboptimal" || testFree.status === "critical")
+    ) {
+      inferredLinks.push(
+        "Le tandem vitamine D / androgènes peut limiter récupération, force et motivation à l'effort: corriger les cofacteurs micronutritionnels peut amplifier la réponse anabolique."
+      );
+    }
+  }
+  if (correlations.length) {
+    inferredLinks.push(
+      `Les données lifestyle disponibles renforcent la lecture: ${correlations
+        .map((c) => `${c.factor} (${c.current})`)
+        .join(", ")}.`
+    );
+  }
+  if (!inferredLinks.length) {
+    inferredLinks.push(
+      "Pas de pattern transversal sévère isolé, mais la somme de plusieurs signaux modérés peut déjà freiner recomposition et récupération: la cohérence d'exécution devient la priorité."
+    );
+  }
+  inferredLinks.forEach((line, idx) => {
+    sections.push(`${idx + 1}. ${line}`);
+  });
+  sections.push("");
+  sections.push(
+    "Point clé: on ne corrige pas marqueur par marqueur en silo. On corrige des systèmes biologiques interconnectés, avec le minimum d'actions qui produisent le maximum de levier."
+  );
+  sections.push(
+    "Lecture décisionnelle: si un levier ne bouge pas après 4 à 6 semaines malgré une bonne adhérence, ce n'est pas une question de motivation, c'est un signal qu'il faut changer la variable dominante (sommeil, charge d'entraînement, timing nutritionnel, qualité des apports ou compliance réelle)."
+  );
+  sections.push(
+    "Séquence de vérification: 1) observer la tendance clinique hebdo (énergie, faim, récupération, performance), 2) confirmer au retest biologique, 3) recalibrer le plan uniquement sur ce qui modifie les deux niveaux."
+  );
   sections.push("\n---\n");
 
   sections.push("## Deep dive — marqueurs prioritaires (top 8 a 15)\n");
-  priorities.slice(0, 10).forEach((m) => {
-    sections.push(`### ${m.name}\n- Valeur: ${m.value} ${m.unit || ""}\n- Statut: ${statusLabel(m.status)}\n- Note: ${m.interpretation || "Non renseigne"}\n`);
-  });
-  if (!priorities.length) sections.push("Aucun marqueur prioritaire detecte.\n");
+  if (!priorities.length) {
+    sections.push("Aucun marqueur prioritaire détecté dans ce bilan: mode optimisation fine et consolidation.");
+  } else {
+    priorities.slice(0, 10).forEach((m, idx) => {
+      const mech = markerMechanism[m.markerId] || "un levier de régulation métabolique/hormonale";
+      const action = markerAction[m.markerId] || "déployer un correctif ciblé, monitorer les effets puis retester.";
+      const follow = followUpByName.get(m.name.toLowerCase());
+      sections.push(`### ${idx + 1}. ${m.name}`);
+      sections.push(`C'est quoi: ${m.name} est un indicateur de ${mech}.`);
+      sections.push(
+        `Ton signal aujourd'hui: ${m.value} ${m.unit || ""} (${statusLabel(m.status)}), ${pctDeltaVsOptimal(m)}. Range labo ${m.normalRange || "Non renseigne"} | range optimal ${
+          m.optimalRange || "Non renseigne"
+        }.`
+      );
+      sections.push(
+        `Ce que ca change pour ton objectif: tant que ce marqueur reste hors cible, tu paies un coût en récupération, en capacité d'adaptation et en vitesse de recomposition.`
+      );
+      sections.push(`Plan concret: ${action}`);
+      sections.push(`Retest recommandé: ${follow?.delay || "8-12 semaines"} (${follow?.objective || "valider retour vers zone optimale"}).`);
+      sections.push("");
+    });
+  }
   sections.push("\n---\n");
 
   sections.push("## Plan d'action 90 jours (hyper concret)\n");
-  sections.push("### Jours 1-14 (Stabilisation)\n- Stabiliser sommeil, hydratation, regularite des repas.\n- Eviter alcool et entrainement tres intense 48h avant retest.\n");
-  sections.push("### Jours 15-30 (Phase d'Attaque)\n- Appliquer les corrections sur les marqueurs CRITIQUES/IMPORTANTS.\n");
-  sections.push("### Jours 31-60 (Consolidation)\n- Iterer nutrition/entrainement selon energie/recuperation.\n");
-  sections.push("### Jours 61-90 (Optimisation)\n- Stabiliser et preparer le retest.\n");
-  sections.push("### Retest & conditions de prelevement\n");
-  sections.push(followUp.length ? followUp.join("\n") : "- Retest selon contexte.\n");
+  sections.push(
+    [
+      "### Jours 1-14 (Stabilisation)",
+      "- Standardiser le contexte: horaires fixes de sommeil, hydratation, exposition lumière matin, régularité des repas.",
+      "- Calmer le bruit biologique: alcool minimal, pas d'entraînement maximal 48h avant futures prises de sang, récupération active quotidienne.",
+      "- Lancer uniquement les 2-3 actions les plus rentables, pas un protocole saturé.",
+      "",
+      "### Jours 15-30 (Phase d'Attaque)",
+      "- Déployer la stratégie nutrition/training complète avec suivi hebdomadaire (énergie, faim, performance, sommeil).",
+      "- Ajuster selon les retours terrain, pas selon l'émotion du jour.",
+      "- Vérifier la tolérance des compléments (digestif, sommeil, tension, récupération).",
+      "",
+      "### Jours 31-60 (Consolidation)",
+      "- Stabiliser les gains: conserver les actions efficaces, supprimer les actions sans retour mesurable.",
+      "- Monter progressivement la charge utile d'entraînement sans exploser la fatigue systémique.",
+      "- Prioriser le maintien de la masse maigre et la qualité de récupération.",
+      "",
+      "### Jours 61-90 (Optimisation)",
+      "- Préparer le retest dans des conditions strictes pour comparer des données exploitables.",
+      "- Affiner les dosages et le timing selon ce qui a réellement changé dans la clinique + performance.",
+      "- Basculer vers un plan durable (maintenance intelligente) si les indicateurs sont revenus en zone correcte.",
+      "",
+      "### Retest & conditions de prelevement",
+      ...(analysisResult.followUp.length
+        ? analysisResult.followUp.map((item) => `- ${item.test}: ${item.delay} | objectif: ${item.objective}`)
+        : ["- Retest global à 8-12 semaines avec protocole pré-analytique strict."]),
+      "- Pré-analytique recommandé: 10-12h de jeûne, hydratation stable, pas d'alcool 72h, pas de séance intense 24-48h, prélèvement matinal si possible.",
+    ].join("\n")
+  );
   sections.push("\n---\n");
+
+  const weightKg = typeof userProfile.poids === "number" ? userProfile.poids : null;
+  const proteinMin = weightKg ? Math.round(weightKg * 1.8) : null;
+  const proteinMax = weightKg ? Math.round(weightKg * 2.2) : null;
 
   sections.push("## Nutrition & entrainement (traduction pratique)\n");
   sections.push(
-    "- Nutrition: proteines suffisantes, fibres, qualite des lipides, glucides periodises autour du training.\n- Entrainement: volume progressif, deload si fatigue/inflammation, NEAT quotidien.\n"
+    [
+      "Stratégie nutritionnelle: ta diète doit d'abord améliorer tes marqueurs, puis accélérer la recomposition. On évite les extrêmes qui cassent thyroïde, sommeil ou récupération.",
+      `Protéines: ${proteinMin && proteinMax ? `${proteinMin}-${proteinMax} g/j` : "1.8-2.2 g/kg/j"} réparties sur 3-4 prises, avec une dose post-entraînement.`,
+      "Glucides: concentrés autour de l'entraînement, plus bas les jours off si la glycémie/insuline sont sous pression.",
+      "Lipides: qualité prioritaire (poissons gras, huile d'olive, œufs, oléagineux), avec contrôle des excès ultra-transformés.",
+      "Fibres: objectif 25-40 g/j pour soutenir satiété, microbiote et profil lipidique.",
+      "",
+      "Traduction entraînement:",
+      "- 3-5 séances de force/semaine orientées progression technique + surcharge progressive.",
+      "- 2-4 séances zone 2 (20-45 min) pour améliorer métabolisme et récupération autonome.",
+      "- NEAT quotidien (marche active) après les repas pour levier glycémique immédiat.",
+      "- Deload programmé si fatigue systémique, sommeil cassé ou inflammation qui monte.",
+      "",
+      "Cadence hebdomadaire type:",
+      "| Jour | Priorité | Nutrition |",
+      "|---|---|---|",
+      "| Lundi-Mercredi-Vendredi | Force + progression | Glucides plus hauts autour de la séance |",
+      "| Mardi-Jeudi | Zone 2 / mobilité | Apports glucidiques modérés, focus récupération |",
+      "| Week-end | Consolidation / marche / technique | Stabilité calorique, sommeil et hydratation |",
+      "",
+      "Règle d'ajustement: si énergie chute, sommeil se dégrade ou performance recule >2 semaines, on réduit le déficit avant d'augmenter le volume.",
+    ].join("\n")
   );
   sections.push("\n---\n");
 
   sections.push("## Supplements & stack (minimaliste mais impact)\n");
   sections.push(
     [
-      "- Base (si tolere): omega-3, magnesium, vitamine D (si basse), creatine monohydrate.",
-      "- Lipides (si LDL/ApoB hauts): fibres solubles (psyllium), phytosterols; bergamote possible (prudence si traitement).",
-      "- Glycemie (si HOMA-IR/insuline/HbA1c hauts): marche post-prandiale; berberine possible (prudence interactions).",
-      "- Inflammation (si CRP-us/homocysteine hauts): omega-3 + sommeil + gestion stress; B-vitamines si homocysteine elevee selon contexte.",
+      "Principe: stack court, lisible, mesurable. Chaque intervention doit cibler un marqueur ou un pattern de ton dossier, avec dose/timing/durée et condition de retest.",
       "",
-      "Precautions: si tu as des traitements ou antecedents, on valide chaque supplement (interactions possibles).",
+      makeSupplementBlock("1) Omega-3 (EPA+DHA)", {
+        form: "huile de poisson concentrée, certifiée pureté/métaux lourds",
+        dose: "2-3 g d'EPA+DHA cumulés par jour",
+        timing: "au milieu de 2 repas principaux",
+        duration: "12 semaines minimum",
+        why: hasLipidStress || hasInflammationStress
+          ? "tes marqueurs lipidiques/inflammatoires justifient une action anti-inflammatoire et vasculaire directe"
+          : "socle de prévention métabolique et récupération membranaire",
+        quality: "chercher IFOS/NSF/USP, vérifier quantité réelle EPA+DHA par capsule, lot traçable, conservation à l'abri de la chaleur",
+        cautions: "prudence si anticoagulants ou chirurgie programmée",
+        retest: "profil lipidique + CRP-us à 8-12 semaines",
+      }),
+      makeSupplementBlock("2) Magnesium bisglycinate", {
+        form: "bisglycinate ou glycinate (pas d'oxyde en base)",
+        dose: "300-400 mg de magnésium élément/j",
+        timing: "soir, 60-90 min avant le coucher",
+        duration: "8-12 semaines puis ajustement",
+        why: "améliore récupération nerveuse, qualité de sommeil et tolérance au stress d'entraînement",
+        quality: "étiquette claire sur magnésium élément, peu d'additifs, marque testée tiers",
+        cautions: "adapter à la tolérance digestive, réduire en cas de selles trop molles",
+        retest: "symptômes + éventuellement magnesium RBC si disponible",
+      }),
+      makeSupplementBlock("3) Vitamine D3 + K2", {
+        form: "D3 cholécalciférol + K2 MK-7",
+        dose: "2000-4000 UI/j de D3 (titrer selon bilan)",
+        timing: "repas contenant lipides",
+        duration: "8-12 semaines avant ajustement",
+        why: hasMarker("vitamine_d") && (getMarker("vitamine_d")?.status !== "optimal")
+          ? "ta vitamine D n'est pas optimale et peut freiner immunité, force et récupération"
+          : "sécurisation hormonale/immunitaire de base",
+        quality: "forme huileuse, dosage explicite, fabricant transparent, lot et date de péremption visibles",
+        cautions: "surveiller calcium si antécédent spécifique, éviter surdosage prolongé",
+        retest: "25(OH)D + calcium à 8-12 semaines",
+      }),
+      makeSupplementBlock("4) Creatine monohydrate", {
+        form: "monohydrate pure (Creapure ou équivalent qualité)",
+        dose: "3-5 g/j sans phase de charge obligatoire",
+        timing: "quotidien, idéalement post-training ou avec un repas",
+        duration: "continu 12+ semaines",
+        why: "soutien de force, puissance, récupération et cognition, particulièrement utile en recomposition",
+        quality: "poudre mono-ingrédient, pureté et analyses tiers disponibles",
+        cautions: "hydrater correctement, contrôler tolérance digestive",
+        retest: "suivi performance + créatinine/eGFR interprétés dans le contexte supplémentation",
+      }),
+      makeSupplementBlock("5) Berberine (si glycemie/insuline sous tension)", {
+        form: "berbérine HCl standardisée",
+        dose: hasGlycemicStress ? "500 mg, 1 à 2 fois/j avant repas glucidiques" : "optionnelle, 500 mg/j si besoin métabolique confirmé",
+        timing: "15-30 min avant repas riches en glucides",
+        duration: "6-10 semaines puis réévaluation",
+        why: hasGlycemicStress
+          ? "tes marqueurs métaboliques justifient un levier direct sur la glycémie post-prandiale"
+          : "levier secondaire à activer seulement si les marqueurs se dégradent",
+        quality: "standardisation claire, marque avec tests contaminants et dosage vérifiable",
+        cautions: "interactions possibles (traitements glycémiques, digestif), commencer progressif",
+        retest: "glycémie à jeun, HbA1c, insuline/HOMA-IR",
+      }),
+      makeSupplementBlock("6) Fibres solubles (psyllium) / support lipidique", {
+        form: "psyllium blond qualité alimentaire",
+        dose: "5 g, 1 à 2 fois/j avec eau suffisante",
+        timing: "avant ou pendant repas principaux",
+        duration: "8-12 semaines",
+        why: hasLipidStress
+          ? "réduction de charge lipidique et amélioration réponse glycémique post-prandiale"
+          : "amélioration de satiété, transit et stabilité métabolique",
+        quality: "produit pur sans édulcorants inutiles, traçabilité lot",
+        cautions: "espacer de certains médicaments/suppléments (2-3h), hydrater correctement",
+        retest: "triglycérides, ApoB/LDL selon disponibilité",
+      }),
+      "",
+      "Guide d'achat premium (obligatoire):",
+      "- Vérifier la dose réelle par portion, pas la dose marketing en façade.",
+      "- Privilégier marques avec certificat d'analyse (COA) et tests tiers indépendants.",
+      "- Éviter les blends propriétaires opaques et les excipients inutiles en forte charge.",
+      "- Conserver à l'abri chaleur/humidité/lumière, surtout huiles et probiotiques.",
+      "- Budget: prioriser les 3 premiers leviers avant d'ajouter des options secondaires.",
+      "",
+      "Monitoring tolérance (semaine 1 a 3): sommeil, digestion, énergie, récupération, FC repos, ressenti entraînement. Toute intolérance persistante implique ajustement dose/timing, pas abandon global du plan.",
     ].join("\n")
   );
   sections.push("\n---\n");
 
   sections.push("## Annexes (ultra long)\n");
   sections.push("### Annex A — Marqueurs secondaires (lecture rapide)\n");
-  analysisResult.markers.slice(0, 60).forEach((m) => {
-    sections.push(`- ${m.name}: ${m.value} ${m.unit || ""} (${statusLabel(m.status)})`);
+  sections.push("| Marqueur | Valeur | Statut | Lecture express |");
+  sections.push("|---|---|---|---|");
+  analysisResult.markers.slice(0, 80).forEach((m) => {
+    const mech = markerMechanism[m.markerId] || "signal biologique de contexte";
+    sections.push(`| ${m.name} | ${m.value} ${m.unit || ""} | ${statusLabel(m.status)} | ${mech} |`);
   });
   sections.push("\n### Annex B — Hypotheses & tests de confirmation\n");
-  sections.push("- Hypotheses: a confirmer par retest + contexte (prelevement, sommeil, alcool, infection, training).\n");
-  if (criticalMissing.length) sections.push(`- Tests a ajouter: ${criticalMissing.join(", ")}`);
+  sections.push(
+    [
+      "- Hypothèse 1: une partie des écarts est structurelle (terrain de base) et nécessite une stratégie de fond, pas une correction ponctuelle.",
+      "- Hypothèse 2: une partie des écarts est contextuelle (sommeil, stress, charge training, pré-analytique) et peut s'améliorer rapidement avec exécution stricte.",
+      "- Hypothèse 3: les marqueurs non dosés peuvent modifier la hiérarchie finale des priorités; ils doivent être ajoutés au prochain cycle.",
+      criticalMissing.length ? `- Tests à ajouter en priorité: ${criticalMissing.join(", ")}.` : "- Aucun manque critique identifié sur le panel essentiel.",
+    ].join("\n")
+  );
   sections.push("\n### Annex C — Glossaire utile\n");
-  sections.push("- Range labo: reference population generale.\n- Range optimal: cible performance (contextuelle).\n- CRP-us: inflammation de bas grade.\n");
+  sections.push(
+    [
+      "- Range labo: intervalle de référence populationnel, pas une cible performance.",
+      "- Range optimal: zone de fonctionnement généralement plus exigeante pour recomposition et longévité.",
+      "- Marqueur critique: signal nécessitant action rapide + recontrôle.",
+      "- Marqueur important: signal perturbé mais souvent réversible en 6-12 semaines.",
+      "- Retest: validation objective qu'une action fonctionne réellement sur la biologie.",
+    ].join("\n")
+  );
   sections.push("\n---\n");
-
-  sections.push("## Sources (bibliotheque)\n");
-  sections.push(buildSourcesSection());
 
   return trimAiAnalysis(sections.join("\n"));
 }
