@@ -57,6 +57,24 @@ import {
 
 // Prevent duplicate background generation per instance.
 const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
+const BLOOD_AI_REPORT_RETRY_NOT_BEFORE = new Map<string, number>();
+
+const parseMsEnv = (name: string, fallbackMs: number): number => {
+  const raw = Number(process.env[name]);
+  if (!Number.isFinite(raw) || raw < 1000) {
+    return fallbackMs;
+  }
+  return Math.floor(raw);
+};
+
+const BLOOD_AI_FALLBACK_REFRESH_MIN_AGE_MS = parseMsEnv(
+  "BLOOD_AI_FALLBACK_REFRESH_MIN_AGE_MS",
+  3 * 60 * 1000
+);
+const BLOOD_AI_FALLBACK_REFRESH_COOLDOWN_MS = parseMsEnv(
+  "BLOOD_AI_FALLBACK_REFRESH_COOLDOWN_MS",
+  12 * 60 * 1000
+);
 
 const getBaseUrl = (): string => {
   return (
@@ -473,6 +491,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
         aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
+      const aiNowIso = new Date().toISOString();
+      const aiFallbackReason =
+        aiMeta?.status === "fallback"
+          ? (!process.env.ANTHROPIC_API_KEY
+              ? "anthropic_key_missing"
+              : syncAiNeedsBackgroundRetry
+              ? "sync_timeout_or_error"
+              : "sync_fallback")
+          : null;
 
       const reportRecord = await storage.createBloodReport({
         email: recipientEmail,
@@ -485,7 +512,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 aiStatus: shouldAsyncAI ? "processing" : (aiMeta?.status || "unknown"),
                 aiModel: shouldAsyncAI ? "claude-opus-4-6" : (aiMeta?.model || "unknown"),
                 aiValidationMissing: shouldAsyncAI ? null : (aiMeta?.validationMissing || null),
-                ...(shouldAsyncAI ? {} : { aiGeneratedAt: new Date().toISOString() }),
+                ...(shouldAsyncAI
+                  ? {}
+                  : {
+                      aiGeneratedAt: aiNowIso,
+                      aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
+                      aiFallbackReason,
+                    }),
               }
             : {}),
         } as any,
@@ -510,6 +543,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 aiModel: enriched.model,
                 aiGeneratedAt: new Date().toISOString(),
                 aiValidationMissing: enriched.validationMissing || null,
+                aiFallbackAt: enriched.status === "fallback" ? new Date().toISOString() : null,
+                aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
               } as any,
             });
           } catch (err) {
@@ -801,12 +836,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	      const aiReport = buildFallbackAnalysis(analysisResult, normalizedProfile);
 
 	      if (report) {
+          const fallbackAt = new Date().toISOString();
 	        await storage.updateBloodReport(report.id, {
 	          analysis: {
 	            ...analysisResult,
 	            aiStatus: "fallback",
 	            aiModel: "fallback",
-	            aiGeneratedAt: new Date().toISOString(),
+	            aiGeneratedAt: fallbackAt,
+	            aiFallbackAt: fallbackAt,
+	            aiFallbackReason: "admin_rewrite_fallback",
 	          } as any,
 	          aiReport,
 	        });
@@ -828,6 +866,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	        aiStatus: "fallback",
 	        aiGeneratedAt: new Date().toISOString(),
 	        aiModel: "fallback",
+	        aiFallbackAt: new Date().toISOString(),
+	        aiFallbackReason: "admin_rewrite_fallback",
 	      };
 	      await db.update(bloodTests).set({ analysis: updatedAnalysis }).where(eq(bloodTests.id, targetId));
 
@@ -888,6 +928,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	            : ((bloodTestRow?.analysis as any)?.aiModel || "claude-opus-4-6"),
 	        aiGeneratedAt: nowIso,
 	        aiValidationMissing: issues.length ? issues : null,
+	        aiFallbackAt: null,
+	        aiFallbackReason: null,
 	      };
 
 	      if (report) {
@@ -1515,19 +1557,56 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return;
       }
 
+      const analysisMeta =
+        (report as any).analysis && typeof (report as any).analysis === "object"
+          ? ((report as any).analysis as Record<string, unknown>)
+          : {};
+      const existingAiMeta =
+        (report as any).aiMeta && typeof (report as any).aiMeta === "object"
+          ? ((report as any).aiMeta as Record<string, unknown>)
+          : {};
+      (report as any).aiMeta = {
+        status: existingAiMeta.status ?? analysisMeta.aiStatus ?? null,
+        model: existingAiMeta.model ?? analysisMeta.aiModel ?? null,
+        generatedAt: existingAiMeta.generatedAt ?? analysisMeta.aiGeneratedAt ?? null,
+        validationMissing: existingAiMeta.validationMissing ?? analysisMeta.aiValidationMissing ?? null,
+        fallbackAt: existingAiMeta.fallbackAt ?? analysisMeta.aiFallbackAt ?? null,
+        fallbackReason: existingAiMeta.fallbackReason ?? analysisMeta.aiFallbackReason ?? null,
+      };
+
       // Safety: sanitize register/tone for legacy reports before returning to frontend.
       if (typeof (report as any).aiReport === "string" && (report as any).aiReport) {
         (report as any).aiReport = ensureAxesSectionTemplate(sanitizeBloodReportRegister((report as any).aiReport));
       }
 
-      // If the AI report is missing, kick off background generation.
-      // This unblocks cases where async generation never ran (dyno sleep / crash / seed rows).
+      // If the AI report is missing OR stuck in fallback for too long,
+      // kick off background generation with cooldown protection.
       const aiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
-      const shouldGenerateAi =
-        !!process.env.ANTHROPIC_API_KEY && aiReportText.trim().length === 0;
+      const aiStatus = String((report as any)?.aiMeta?.status || "").toLowerCase();
+      const aiGeneratedAtRaw = String((report as any)?.aiMeta?.generatedAt || "");
+      const aiGeneratedAtMs = Date.parse(aiGeneratedAtRaw);
+      const aiAgeMs = Number.isFinite(aiGeneratedAtMs) ? Math.max(0, Date.now() - aiGeneratedAtMs) : Number.POSITIVE_INFINITY;
+      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const shouldGenerateMissingAi = hasAnthropicKey && aiReportText.trim().length === 0;
+      const shouldRefreshFallbackAi =
+        hasAnthropicKey &&
+        aiStatus === "fallback" &&
+        aiAgeMs >= BLOOD_AI_FALLBACK_REFRESH_MIN_AGE_MS;
+      const regenReason = shouldGenerateMissingAi
+        ? "missing-ai-report"
+        : shouldRefreshFallbackAi
+        ? "fallback-refresh"
+        : null;
+      const now = Date.now();
+      const nextAllowedAt = BLOOD_AI_REPORT_RETRY_NOT_BEFORE.get(reportId) || 0;
+      const canAttemptNow = now >= nextAllowedAt;
 
-      if (shouldGenerateAi && !BLOOD_AI_REPORT_IN_FLIGHT.has(reportId)) {
+      if (regenReason && canAttemptNow && !BLOOD_AI_REPORT_IN_FLIGHT.has(reportId)) {
         BLOOD_AI_REPORT_IN_FLIGHT.add(reportId);
+        BLOOD_AI_REPORT_RETRY_NOT_BEFORE.set(reportId, now + BLOOD_AI_FALLBACK_REFRESH_COOLDOWN_MS);
+        console.log(
+          `[BloodAnalysis] Scheduling background AI generation for ${reportId} (${regenReason}, aiStatus=${aiStatus || "none"}, aiAgeMs=${Number.isFinite(aiAgeMs) ? aiAgeMs : -1})`
+        );
 
         setImmediate(async () => {
           try {
@@ -1577,6 +1656,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               aiReport = buildFallbackAnalysis(analysisResult as any, { ...(rawProfile as any), gender } as any);
               aiMeta = { status: "fallback", model: "fallback" };
             }
+            const aiNowIso = new Date().toISOString();
+            const fallbackReason =
+              aiMeta?.status === "fallback"
+                ? (aiError ? "background_generation_error" : "background_generation_fallback")
+                : null;
 
             if (reportSource === "legacy") {
               await storage.updateBloodReport(reportId, {
@@ -1584,13 +1668,18 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                   ...analysisResult,
                   aiStatus: aiMeta?.status || "unknown",
                   aiModel: aiMeta?.model || "unknown",
-                  aiGeneratedAt: new Date().toISOString(),
+                  aiGeneratedAt: aiNowIso,
                   aiValidationMissing: aiMeta?.validationMissing || null,
+                  aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
+                  aiFallbackReason: fallbackReason,
                   ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
                 } as any,
                 aiReport,
               } as any);
               console.log(`[BloodAnalysis] AI report generated for legacy report ${reportId} (${aiReport.length} chars)`);
+              if (aiMeta?.status === "generated") {
+                BLOOD_AI_REPORT_RETRY_NOT_BEFORE.delete(reportId);
+              }
               return;
             }
 
@@ -1613,14 +1702,19 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                     aiReport,
                     aiStatus: aiMeta?.status || "unknown",
                     aiModel: aiMeta?.model || "unknown",
-                    aiGeneratedAt: new Date().toISOString(),
+                    aiGeneratedAt: aiNowIso,
                     ...(aiError ? { aiError: String((aiError as any)?.message || aiError) } : {}),
                     aiValidationMissing: aiMeta?.validationMissing || null,
+                    aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
+                    aiFallbackReason: fallbackReason,
                   } as any,
                 })
                 .where(eq(bloodTests.id, reportId));
 
               console.log(`[BloodAnalysis] AI report generated for blood_tests ${reportId} (${aiReport.length} chars)`);
+              if (aiMeta?.status === "generated") {
+                BLOOD_AI_REPORT_RETRY_NOT_BEFORE.delete(reportId);
+              }
             }
           } catch (err) {
             console.error(`[BloodAnalysis] Background AI generation failed for ${reportId}:`, err);

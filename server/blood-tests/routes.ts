@@ -447,6 +447,11 @@ export function registerBloodTestsRoutes(app: Express): void {
             });
             aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
           }
+          const aiNowIso = new Date().toISOString();
+          const aiFallbackReason =
+            aiMeta?.status === "fallback"
+              ? (syncAiNeedsBackgroundRetry ? "sync_timeout_or_error" : "sync_fallback")
+              : null;
 
           const markers = analysisResult.markers.map((marker) => {
             const range = BIOMARKER_RANGES[marker.markerId];
@@ -487,7 +492,9 @@ export function registerBloodTestsRoutes(app: Express): void {
             aiAnalysis,
             aiStatus: aiMeta?.status || "unknown",
             aiModel: aiMeta?.model || "unknown",
-            aiGeneratedAt: new Date().toISOString(),
+            aiGeneratedAt: aiNowIso,
+            aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
+            aiFallbackReason,
             ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
             protocolPhases,
             lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
@@ -524,6 +531,8 @@ export function registerBloodTestsRoutes(app: Express): void {
                   aiStatus: enriched.status,
                   aiModel: enriched.model,
                   aiGeneratedAt: new Date().toISOString(),
+                  aiFallbackAt: enriched.status === "fallback" ? new Date().toISOString() : null,
+                  aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
                   ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
                 };
                 await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
@@ -742,6 +751,11 @@ export function registerBloodTestsRoutes(app: Express): void {
         });
         aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
+      const aiNowIso = new Date().toISOString();
+      const aiFallbackReason =
+        aiMeta?.status === "fallback"
+          ? (syncAiNeedsBackgroundRetry ? "sync_timeout_or_error" : "sync_fallback")
+          : null;
 
       const markers = analysisResult.markers.map((marker) => {
         const range = BIOMARKER_RANGES[marker.markerId];
@@ -782,7 +796,9 @@ export function registerBloodTestsRoutes(app: Express): void {
         aiAnalysis,
         aiStatus: aiMeta?.status || "unknown",
         aiModel: aiMeta?.model || "unknown",
-        aiGeneratedAt: new Date().toISOString(),
+        aiGeneratedAt: aiNowIso,
+        aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
+        aiFallbackReason,
         ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
         protocolPhases,
         lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
@@ -813,6 +829,8 @@ export function registerBloodTestsRoutes(app: Express): void {
               aiStatus: enriched.status,
               aiModel: enriched.model,
               aiGeneratedAt: new Date().toISOString(),
+              aiFallbackAt: enriched.status === "fallback" ? new Date().toISOString() : null,
+              aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
               ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
             };
             await storage.updateBloodTest(baseRecord.id, { analysis: refreshedAnalysis });
