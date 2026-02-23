@@ -39,7 +39,7 @@ export const InteractiveHeatmap = ({
 
   return (
     <div
-      className="grid grid-cols-2 lg:grid-cols-3 gap-4"
+      className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3"
       role="region"
       aria-label="Heatmap des catégories de biomarqueurs"
     >
@@ -73,7 +73,7 @@ export const InteractiveHeatmap = ({
             whileTap={{ scale: 0.98 }}
           >
             <div
-              className="relative overflow-hidden rounded-xl p-6 h-full"
+              className="relative overflow-hidden rounded-xl p-4 sm:p-6 h-full min-w-0"
               style={{
                 background: isHovered || isSelected ? colors.bg : theme.surfaceMuted,
                 backdropFilter: 'blur(8px)',
@@ -103,14 +103,17 @@ export const InteractiveHeatmap = ({
               {/* Content */}
               <div className="relative z-10">
                 {/* Label */}
-                <h3 className="text-sm uppercase tracking-wider font-semibold mb-4" style={{ color: theme.textTertiary }}>
+                <h3
+                  className="text-[11px] sm:text-sm uppercase tracking-[0.14em] font-semibold mb-3 sm:mb-4 leading-tight break-words"
+                  style={{ color: theme.textTertiary }}
+                >
                   {category.label}
                 </h3>
 
                 {/* Score */}
-                <div className="flex items-baseline gap-2 mb-3">
+                <div className="flex items-baseline gap-1 sm:gap-2 mb-3">
                   <motion.span
-                    className="text-5xl font-bold font-mono tabular-nums"
+                    className="text-4xl sm:text-5xl font-bold font-mono tabular-nums leading-none"
                     style={{
                       color: colors.text,
                       textShadow: mode === 'dark' ? `0 0 30px ${colors.bg}` : 'none',
@@ -127,11 +130,11 @@ export const InteractiveHeatmap = ({
                   >
                     {category.score}
                   </motion.span>
-                  <span className="text-xl" style={{ color: theme.textTertiary }}>/100</span>
+                  <span className="text-base sm:text-xl" style={{ color: theme.textTertiary }}>/100</span>
                 </div>
 
                 {/* Metadata */}
-                <div className="flex items-center gap-3 text-xs" style={{ color: theme.textTertiary }}>
+                <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs" style={{ color: theme.textTertiary }}>
                   <span>{category.markerCount} marqueurs</span>
                   {category.criticalCount > 0 && (
                     <span
@@ -147,7 +150,7 @@ export const InteractiveHeatmap = ({
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: theme.borderSubtle }}>
+                <div className="mt-3 sm:mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: theme.borderSubtle }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{ background: `linear-gradient(90deg, ${colors.border}, ${colors.text})` }}
