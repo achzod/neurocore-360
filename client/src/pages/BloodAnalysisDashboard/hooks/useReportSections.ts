@@ -25,11 +25,18 @@ const normalizeSectionId = (text: string) => {
 };
 
 export const useReportSections = (aiReport: string | undefined) => {
+  const sanitizedReport = useMemo(() => {
+    if (!aiReport) return undefined;
+    return aiReport
+      .replace(/\r\n/g, '\n')
+      .replace(/^##\s+Annexes\s*\(ultra long\)\s*$/gim, "## Annexes (references et vigilance)");
+  }, [aiReport]);
+
   // Parse AI report into sections based on robust H2 detection.
   // Handles "##Title", extra indentation and small markdown variations.
   const reportSections = useMemo(() => {
-    if (!aiReport) return [];
-    const text = aiReport.replace(/\r\n/g, '\n');
+    if (!sanitizedReport) return [];
+    const text = sanitizedReport;
     const headingMatches = Array.from(text.matchAll(H2_HEADING_REGEX));
     if (headingMatches.length === 0) {
       return [];
@@ -47,12 +54,12 @@ export const useReportSections = (aiReport: string | undefined) => {
         content,
       };
     });
-  }, [aiReport]);
+  }, [sanitizedReport]);
 
   // Dynamically extract axe sections from all H3 headings.
   const axeSections = useMemo(() => {
-    if (!aiReport) return [];
-    const text = aiReport.replace(/\r\n/g, '\n');
+    if (!sanitizedReport) return [];
+    const text = sanitizedReport;
     const matches = Array.from(text.matchAll(H3_HEADING_REGEX));
     const byAxis = new Map<number, string>();
 
@@ -69,7 +76,7 @@ export const useReportSections = (aiReport: string | undefined) => {
     return Array.from(byAxis.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([, id]) => id);
-  }, [aiReport]);
+  }, [sanitizedReport]);
 
   return {
     reportSections,

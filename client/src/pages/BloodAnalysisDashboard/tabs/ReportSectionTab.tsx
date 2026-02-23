@@ -24,7 +24,11 @@ export function ReportSectionTab({
   currentTheme,
   normalizeSectionId,
 }: ReportSectionTabProps) {
-  if (!aiReport) {
+  const sanitizedAiReport = aiReport
+    ? aiReport.replace(/^##\s+Annexes\s*\(ultra long\)\s*$/gim, "## Annexes (references et vigilance)")
+    : aiReport;
+
+  if (!sanitizedAiReport) {
     return (
       <div
         className="rounded border p-6"
@@ -107,7 +111,7 @@ export function ReportSectionTab({
   if (sectionsToShow.length === 0) {
     // Last-resort fallback: AI report exists but headings parsing didn't match this tab.
     // Show full report content instead of empty premium tab.
-    if (reportSections.length === 0 && aiReport.trim().length > 0) {
+    if (reportSections.length === 0 && sanitizedAiReport.trim().length > 0) {
       return (
         <div
           className={`rounded border p-4 sm:p-6 max-w-none ${
@@ -132,7 +136,7 @@ export function ReportSectionTab({
           } as React.CSSProperties}
         >
           <div className="overflow-x-auto">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiReport}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sanitizedAiReport}</ReactMarkdown>
           </div>
         </div>
       );
