@@ -22,22 +22,24 @@ export const AnimatedStatCard = ({
   value,
   unit,
   icon: Icon,
-  color = '#06b6d4',
+  color,
   trend,
 }: AnimatedStatCardProps) => {
   const { theme } = useBloodTheme();
+  const safeValue = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+  const resolvedColor = color || theme.primaryBlue;
   const [displayValue, setDisplayValue] = useState(0);
 
   // Always animate on mount/value change to avoid stale "0" when inside custom scroll containers.
   useEffect(() => {
     let start = 0;
     const duration = 2000;
-    const increment = Math.max(value / (duration / 16), 0.1);
+    const increment = Math.max(safeValue / (duration / 16), 0.1);
 
     const timer = setInterval(() => {
       start += increment;
-      if (start >= value) {
-        setDisplayValue(value);
+      if (start >= safeValue) {
+        setDisplayValue(safeValue);
         clearInterval(timer);
       } else {
         setDisplayValue(Math.floor(start));
@@ -45,7 +47,7 @@ export const AnimatedStatCard = ({
     }, 16);
 
     return () => clearInterval(timer);
-  }, [value]);
+  }, [safeValue]);
 
   return (
     <motion.div
@@ -55,7 +57,7 @@ export const AnimatedStatCard = ({
       transition={{ duration: 0.5 }}
       whileHover={{ scale: 1.05, y: -4 }}
       role="article"
-      aria-label={`${label}: ${value}${unit || ''}${trend ? `, tendance ${trend.direction === 'up' ? 'en hausse' : 'en baisse'} de ${trend.value}` : ''}`}
+      aria-label={`${label}: ${safeValue}${unit || ''}${trend ? `, tendance ${trend.direction === 'up' ? 'en hausse' : 'en baisse'} de ${trend.value}` : ''}`}
     >
       <div
         className="rounded-xl p-6"
@@ -69,13 +71,13 @@ export const AnimatedStatCard = ({
         <motion.div
           className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
           style={{
-            background: `${color}20`,
-            border: `1px solid ${color}40`,
+            background: `${resolvedColor}20`,
+            border: `1px solid ${resolvedColor}40`,
           }}
           whileHover={{ rotate: 15 }}
           transition={{ duration: 0.3 }}
         >
-          <Icon className="w-6 h-6" style={{ color }} />
+          <Icon className="w-6 h-6" style={{ color: resolvedColor }} />
         </motion.div>
 
         {/* Value */}
@@ -83,20 +85,20 @@ export const AnimatedStatCard = ({
           <motion.span
             className="text-4xl font-bold font-mono tabular-nums"
             style={{
-              color,
-              textShadow: `0 0 20px ${color}40`,
+              color: resolvedColor,
+              textShadow: `0 0 20px ${resolvedColor}40`,
             }}
           >
             {displayValue}
           </motion.span>
-          {unit && <span className="text-lg" style={{ color: theme.textTertiary }}>{unit}</span>}
+          {unit && <span className="text-lg" style={{ color: theme.textPrimary }}>{unit}</span>}
         </div>
         <span className="sr-only" aria-live="polite" aria-atomic="true">
           {`${label}: ${displayValue}${unit || ''}`}
         </span>
 
         {/* Label */}
-        <div className="text-sm font-medium" style={{ color: theme.textSecondary }}>{label}</div>
+        <div className="text-sm font-medium" style={{ color: theme.textPrimary }}>{label}</div>
 
         {/* Trend (if provided) */}
         {trend && (
@@ -115,7 +117,7 @@ export const AnimatedStatCard = ({
         <motion.div
           className="absolute inset-0 rounded-xl pointer-events-none"
           style={{
-            boxShadow: `inset 0 0 40px ${color}20`,
+            boxShadow: `inset 0 0 40px ${resolvedColor}20`,
             opacity: 0,
           }}
           whileHover={{ opacity: 1 }}

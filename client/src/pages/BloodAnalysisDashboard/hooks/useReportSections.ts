@@ -4,6 +4,9 @@ import { useMemo } from 'react';
 // matches "nutrition-entrainement" regardless of AI title wording.
 const STOP_WORDS = new Set(['et', 'de', 'des', 'du', 'le', 'la', 'les', 'un', 'une', 'en', 'par', 'au', 'aux', 'd', 'l']);
 
+const H2_HEADING_REGEX = /^ {0,3}##(?!#)\s*(.+?)\s*$/gim;
+const H3_HEADING_REGEX = /^ {0,3}###(?!#)\s*(.+?)\s*$/gim;
+
 // Function to normalize section IDs for flexible matching
 const normalizeSectionId = (text: string) => {
   return text
@@ -22,40 +25,51 @@ const normalizeSectionId = (text: string) => {
 };
 
 export const useReportSections = (aiReport: string | undefined) => {
-  // Parse AI report into sections based on ## headings
+  // Parse AI report into sections based on robust H2 detection.
+  // Handles "##Title", extra indentation and small markdown variations.
   const reportSections = useMemo(() => {
     if (!aiReport) return [];
-
-    const sections: Array<{ id: string; title: string; content: string }> = [];
-    const lines = aiReport.split('\n');
-    let currentSection: { id: string; title: string; content: string } | null = null;
-
-    for (const line of lines) {
-      if (line.startsWith('## ')) {
-        if (currentSection) {
-          sections.push(currentSection);
-        }
-        const title = line.replace('## ', '').trim();
-        const id = normalizeSectionId(title);
-        currentSection = { id, title, content: line + '\n' };
-      } else if (currentSection) {
-        currentSection.content += line + '\n';
-      }
+    const text = aiReport.replace(/\r\n/g, '\n');
+    const headingMatches = Array.from(text.matchAll(H2_HEADING_REGEX));
+    if (headingMatches.length === 0) {
+      return [];
     }
 
-    if (currentSection) {
-      sections.push(currentSection);
-    }
-
-    return sections;
+    return headingMatches.map((match, index) => {
+      const start = match.index ?? 0;
+      const nextStart = headingMatches[index + 1]?.index ?? text.length;
+      const rawTitle = String(match[1] || '').trim().replace(/\*\*/g, '');
+      const title = rawTitle || `Section ${index + 1}`;
+      const content = text.slice(start, nextStart).trim() + '\n';
+      return {
+        id: normalizeSectionId(title),
+        title,
+        content,
+      };
+    });
   }, [aiReport]);
 
-  // Dynamically extract axe sections
+  // Dynamically extract axe sections from all H3 headings.
   const axeSections = useMemo(() => {
-    return reportSections
-      .filter((section) => section.id.startsWith('axe-') && /axe-\d+/.test(section.id))
-      .map((section) => section.id);
-  }, [reportSections]);
+    if (!aiReport) return [];
+    const text = aiReport.replace(/\r\n/g, '\n');
+    const matches = Array.from(text.matchAll(H3_HEADING_REGEX));
+    const byAxis = new Map<number, string>();
+
+    for (const match of matches) {
+      const title = String(match[1] || '').trim();
+      const id = normalizeSectionId(title);
+      const axisNumber = id.match(/^axe-(\d{1,2})\b/);
+      if (!axisNumber) continue;
+      const n = Number(axisNumber[1]);
+      if (!Number.isFinite(n) || n < 1 || n > 20) continue;
+      if (!byAxis.has(n)) byAxis.set(n, id);
+    }
+
+    return Array.from(byAxis.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, id]) => id);
+  }, [aiReport]);
 
   return {
     reportSections,

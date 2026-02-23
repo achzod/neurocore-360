@@ -6,12 +6,13 @@ type RawMarker = {
   markerId?: string;
   id?: string;
   name: string;
-  value: number;
-  unit: string;
-  status: string;
+  value: number | string;
+  unit?: string;
+  status?: string;
   normalRange?: string;
   optimalRange?: string;
   interpretation?: string;
+  category?: string;
   history?: Array<{ date: string; value: number }>;
 };
 
@@ -36,9 +37,23 @@ const STATUS_SCORE: Record<BiomarkerStatus, number> = {
   critical: 30,
 };
 
+const CATEGORY_TO_PANEL: Record<string, string> = {
+  hormonal: "hormonal",
+  thyroid: "thyroid",
+  metabolique: "metabolic",
+  metabolic: "metabolic",
+  inflammation: "inflammation",
+  vitamines: "vitamins",
+  vitamins: "vitamins",
+  liver_kidney: "liver_kidney",
+  renal: "liver_kidney",
+  renal_hepatique: "liver_kidney",
+};
+
 const parseRange = (range?: string): { min?: number; max?: number } => {
   if (!range) return {};
-  const numbers = range.match(/-?\d+(\.\d+)?/g);
+  const normalizedRange = String(range).replace(/,/g, '.').replace(/−/g, '-');
+  const numbers = normalizedRange.match(/-?\d+(?:\.\d+)?/g);
   if (!numbers || numbers.length === 0) return {};
   if (numbers.length === 1) {
     const value = Number(numbers[0]);
@@ -56,17 +71,22 @@ const scoreToStatus = (score: number): BiomarkerStatus => {
 
 export const useBloodCalculations = (report: BloodAnalysisReport | null) => {
   const normalizedMarkers = useMemo(() => {
-    const raw = report?.analysis?.markers || [];
-    return raw.map((marker) => {
-      const markerId = marker.markerId || marker.id || marker.name.toLowerCase().replace(/\s+/g, "_");
+    const raw = (report?.analysis?.markers || []) as RawMarker[];
+    const fallbackRaw = (Array.isArray(report?.markers) ? (report?.markers as RawMarker[]) : []);
+    const source = raw.length ? raw : fallbackRaw;
+    return source.map((marker) => {
+      const markerName = String(marker.name || marker.markerId || marker.id || "Marqueur");
+      const markerId = marker.markerId || marker.id || markerName.toLowerCase().replace(/\s+/g, "_");
       const meta = getMarkerById(markerId);
+      const rawCategory = String(marker.category || "").trim().toLowerCase();
+      const parsedValue = Number(marker.value);
       const normal = parseRange(marker.normalRange);
       const optimal = parseRange(marker.optimalRange);
       return {
         id: markerId,
-        name: marker.name,
-        value: marker.value,
-        unit: marker.unit,
+        name: markerName,
+        value: Number.isFinite(parsedValue) ? parsedValue : 0,
+        unit: marker.unit || "",
         status: normalizeBiomarkerStatus(marker.status),
         normalMin: normal.min,
         normalMax: normal.max,
@@ -74,7 +94,7 @@ export const useBloodCalculations = (report: BloodAnalysisReport | null) => {
         optimalMax: optimal.max,
         interpretation: marker.interpretation,
         history: marker.history,
-        panelId: meta?.panel,
+        panelId: meta?.panel || CATEGORY_TO_PANEL[rawCategory],
         panelTitle: meta ? BLOOD_PANELS.find((p) => p.id === meta.panel)?.title : undefined,
       };
     });

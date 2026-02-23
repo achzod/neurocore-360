@@ -25,6 +25,11 @@ export const InteractiveHeatmap = ({
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
+  const clampScore = (score: number) => {
+    if (!Number.isFinite(score)) return 0;
+    return Math.max(0, Math.min(100, Math.round(score)));
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 85) return { bg: `${theme.status.optimal}33`, border: theme.status.optimal, text: theme.status.optimal };
     if (score >= 70) return { bg: `${theme.status.normal}33`, border: theme.status.normal, text: theme.status.normal };
@@ -44,7 +49,8 @@ export const InteractiveHeatmap = ({
       aria-label="Heatmap des catégories de biomarqueurs"
     >
       {categories.map((category, index) => {
-        const colors = getScoreColor(category.score);
+        const safeScore = clampScore(category.score);
+        const colors = getScoreColor(safeScore);
         const isHovered = hoveredKey === category.key;
         const isSelected = selectedKey === category.key;
 
@@ -53,7 +59,7 @@ export const InteractiveHeatmap = ({
             key={category.key}
             type="button"
             role="button"
-            aria-label={`${category.label}: score ${category.score}%, ${category.markerCount} biomarqueurs, ${category.criticalCount} critiques`}
+            aria-label={`${category.label}: score ${safeScore}%, ${category.markerCount} biomarqueurs, ${category.criticalCount} critiques`}
             aria-pressed={isSelected}
             tabIndex={0}
             className="relative group text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 focus-visible:outline-offset-2"
@@ -105,7 +111,7 @@ export const InteractiveHeatmap = ({
                 {/* Label */}
                 <h3
                   className="text-[11px] sm:text-sm uppercase tracking-[0.14em] font-semibold mb-3 sm:mb-4 leading-tight break-words"
-                  style={{ color: theme.textTertiary }}
+                  style={{ color: theme.textSecondary }}
                 >
                   {category.label}
                 </h3>
@@ -128,13 +134,13 @@ export const InteractiveHeatmap = ({
                     } : {}}
                     transition={{ duration: 0.6 }}
                   >
-                    {category.score}
+                    {safeScore}
                   </motion.span>
                   <span className="text-base sm:text-xl" style={{ color: theme.textTertiary }}>/100</span>
                 </div>
 
                 {/* Metadata */}
-                <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs" style={{ color: theme.textTertiary }}>
+                <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs" style={{ color: theme.textSecondary }}>
                   <span>{category.markerCount} marqueurs</span>
                   {category.criticalCount > 0 && (
                     <span
@@ -155,7 +161,7 @@ export const InteractiveHeatmap = ({
                     className="h-full rounded-full"
                     style={{ background: `linear-gradient(90deg, ${colors.border}, ${colors.text})` }}
                     initial={{ width: 0 }}
-                    animate={{ width: `${category.score}%` }}
+                    animate={{ width: `${safeScore}%` }}
                     transition={{ delay: index * 0.1 + 0.5, duration: 1, ease: 'easeOut' }}
                   />
                 </div>

@@ -47,8 +47,10 @@ export function ReportSectionTab({
 
   // Build normalized ids once (avoid re-normalizing in nested loops)
   const normalizedById = new Map<string, string>();
+  const normalizedByTitle = new Map<string, string>();
   for (const section of reportSections) {
     normalizedById.set(section.id, normalizeSectionId(section.id));
+    normalizedByTitle.set(section.id, normalizeSectionId(section.title));
   }
 
   // Use Set to prevent duplicate sections
@@ -64,27 +66,31 @@ export function ReportSectionTab({
 
     for (const section of reportSections) {
       const normalizedSectionId = normalizedById.get(section.id) || "";
+      const normalizedTitle = normalizedByTitle.get(section.id) || "";
+      const normalizedCandidates = [normalizedSectionId, normalizedTitle].filter(Boolean);
 
       // Exact normalized match: strongest signal
-      if (normalizedSectionId === searchId) {
-        const score = 1000 - normalizedSectionId.length; // tie-break: shorter id wins
-        if (score > bestScore) {
-          bestScore = score;
-          bestId = section.id;
+      for (const candidate of normalizedCandidates) {
+        if (candidate === searchId) {
+          const score = 1000 - candidate.length; // tie-break: shorter id wins
+          if (score > bestScore) {
+            bestScore = score;
+            bestId = section.id;
+          }
+          continue;
         }
-        continue;
-      }
 
-      // Fuzzy match: substring containment, but only for meaningful searchIds
-      if (searchId.length >= 5 && (normalizedSectionId.includes(searchId) || searchId.includes(normalizedSectionId))) {
-        // Prefer close-length matches + prefix matches
-        const lenDelta = Math.abs(normalizedSectionId.length - searchId.length);
-        const prefixBonus =
-          normalizedSectionId.startsWith(searchId) || searchId.startsWith(normalizedSectionId) ? 25 : 0;
-        const score = 500 - lenDelta + prefixBonus;
-        if (score > bestScore) {
-          bestScore = score;
-          bestId = section.id;
+        // Fuzzy match: substring containment, but only for meaningful searchIds
+        if (searchId.length >= 5 && (candidate.includes(searchId) || searchId.includes(candidate))) {
+          // Prefer close-length matches + prefix matches
+          const lenDelta = Math.abs(candidate.length - searchId.length);
+          const prefixBonus =
+            candidate.startsWith(searchId) || searchId.startsWith(candidate) ? 25 : 0;
+          const score = 500 - lenDelta + prefixBonus;
+          if (score > bestScore) {
+            bestScore = score;
+            bestId = section.id;
+          }
         }
       }
     }
