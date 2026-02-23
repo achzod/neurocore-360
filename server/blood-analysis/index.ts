@@ -1695,7 +1695,7 @@ STYLE OBLIGATOIRE
 Tutoiement integral et ton incarne: tu parles au client comme un expert de confiance.
 Registre premium: clair, dense, direct, jamais familier, jamais vulgaire.
 Francais impeccable avec accents.
-Uniquement des paragraphes narratifs. Interdiction totale des listes a puces, des listes numerotees, des tableaux markdown et des lignes telegraphiques.
+Markdown professionnel autorise: paragraphes, listes, sous-titres et tableaux lorsque cela clarifie la lecture.
 Interdiction des formulations impersonnelles (exemple: le patient, on observe, il convient de).
 
 SECURITE ET VERITE D'ENTREE
@@ -1767,8 +1767,7 @@ Aucun contenu vague de type "optimiser" ou "a envisager" sans parametres concret
 
 CONTROLE FINAL AVANT REPONSE
 Verifie que toutes les sections et sous-sections sont presentes dans le bon ordre.
-Verifie qu'il n'y a ni [SRC], ni section Sources, ni puces, ni listes numerotees.
-Verifie qu'il n'y a aucun caractere de tiret visible dans le rapport final.
+Verifie qu'il n'y a ni [SRC], ni section Sources.
 Verifie que Nutrition et Supplements sont detaillees et actionnables avec dosages, timing, duree et retest.
 Tu renvoies uniquement le rapport final markdown.`;
 
@@ -2120,9 +2119,6 @@ export const sanitizeBloodReportRegister = (text: string): string => {
   out = out.replace(/\bsources\b/gi, "origines");
   out = out.replace(/\bsource\b/gi, "origine");
 
-  // Strict user rule: remove all dash-like characters in client-facing text.
-  out = out.replace(/[-‐‑‒–—―−]+/g, " ");
-
   // Normalize misplaced axis headings: they must be H3 under the axis section.
   out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
 
@@ -2205,15 +2201,15 @@ const auditSectionMinimums = (output: string) => {
   const issues: string[] = [];
 
   const minChars: Record<string, number> = {
-    synthese: 7000,
-    qualite: 3500,
-    dashboard: 3500,
-    axes: 9000,
-    deep_dive: 9000,
-    plan90: 7000,
-    nutrition: 4500,
-    supplements: 6000,
-    annexes: 4500,
+    synthese: 1800,
+    qualite: 700,
+    dashboard: 700,
+    axes: 2500,
+    deep_dive: 2200,
+    plan90: 1200,
+    nutrition: 1400,
+    supplements: 1800,
+    annexes: 1000,
   };
 
   const synthese = findSection(sections, ["Synthese"]);
@@ -2332,9 +2328,6 @@ const auditStyleIssues = (output: string) => {
   ];
 
   // Global checks
-  if (/^\s*[-*]\s+/m.test(output) || /^\s*\d+\.\s+/m.test(output)) {
-    issues.push("bullets_present");
-  }
   if (impersonal.some((p) => p.pattern.test(normalized))) {
     issues.push("impersonal_tone");
   }
@@ -2350,9 +2343,6 @@ const auditStyleIssues = (output: string) => {
     }
     for (const p of impersonal) {
       if (p.pattern.test(sNorm)) addHit(s.title, `impersonal:${p.id}`);
-    }
-    if (/^\s*[-*]\s+/m.test(s.content || "") || /^\s*\d+\.\s+/m.test(s.content || "")) {
-      addHit(s.title, "bullets_present");
     }
   }
 
@@ -2930,7 +2920,7 @@ export async function generateAIBloodAnalysis(
     `- Tu dois produire un rapport COMPLET avec TOUTES les sections/titres dans l'ordre EXACT defini par le system prompt (## / ###).`,
     `- Pas d'emoji.`,
     `- AUCUN tag de citation visible (pas de [SRC:...], pas de section "Sources").`,
-    `- AUCUNE liste a puces ni numerotee. Pas de '-', pas de '*', pas de '1.' en debut de ligne.`,
+    `- Tu peux utiliser des listes et des tableaux Markdown quand ils rendent le plan plus lisible.`,
     `- Section "Supplements & stack" obligatoire: ultra detaillee, explicative, mecanismes, dosages, timing, duree, interactions et conditions de retest.`,
     `- Section "Nutrition & entrainement" obligatoire: plan narratif concret et progressif, avec logique physiologique explicite.`,
     `- Si une info manque: ecris "Non renseigne" et baisse le niveau de confiance.`,
@@ -3107,7 +3097,21 @@ export async function generateAIBloodAnalysis(
   let validation = { ok: false, missing: ["no_attempt"] as string[] };
   let qualityIssues: string[] = [];
 
-  const SECTION_REWRITE_SYSTEM = `Tu es un expert en lecture de bilan sanguin.\n\nMISSION:\n- Tu REECRIS UNE SEULE section de rapport (Markdown) avec un titre '##' deja fourni.\n- Tu renvoies UNIQUEMENT cette section (du '##' jusqu'avant le prochain '##').\n\nREGLES STRICTES:\n- Francais impeccable (accents, orthographe), tutoiement.\n- Registre premium: calme, precis, jamais familier.\n- Interdiction: pas de \"mec\", pas de \"franchement\", pas de \"ecoute\", pas de \"je vais etre direct\", pas de vulgarites.\n- ZERO listes: pas de '- ', pas de '* ', pas de listes numerotees.\n- Pas d'emoji.\n- Tu n'inventes pas de donnees: si une info manque, ecris 'Non renseigne' en phrase.\n- Structure narrative: paragraphes fluides.\n`;
+const SECTION_REWRITE_SYSTEM = `Tu es un expert en lecture de bilan sanguin.
+
+MISSION:
+- Tu REECRIS UNE SEULE section de rapport (Markdown) avec un titre '##' deja fourni.
+- Tu renvoies UNIQUEMENT cette section (du '##' jusqu'avant le prochain '##').
+
+REGLES STRICTES:
+- Francais impeccable (accents, orthographe), tutoiement.
+- Registre premium: calme, precis, jamais familier.
+- Interdiction: pas de "mec", pas de "franchement", pas de "ecoute", pas de "je vais etre direct", pas de vulgarites.
+- Listes et tableaux Markdown autorises si cela clarifie l'action.
+- Pas d'emoji.
+- Tu n'inventes pas de donnees: si une info manque, ecris "Non renseigne".
+- Structure narrative claire, avec paragraphes argumentes.
+`;
 
   const rewriteIfNeeded = async () => {
     const audit = auditBloodReportAllIssues(output);
@@ -3180,7 +3184,7 @@ export async function generateAIBloodAnalysis(
       const isSynthese = normalizeForCheck(title).includes("synthese");
       const isSupplements = normalizeForCheck(title).includes("supplements");
       const isNutrition = normalizeForCheck(title).includes("nutrition");
-      const minChars = isSynthese ? 7000 : isSupplements ? 6500 : isNutrition ? 5200 : 3200;
+      const minChars = isSynthese ? 2200 : isSupplements ? 1900 : isNutrition ? 1600 : 900;
 
       const rewritePrompt = [
         basePrompt,
@@ -3190,10 +3194,9 @@ export async function generateAIBloodAnalysis(
         ``,
         `OBJECTIF:`,
         `- Minimum ${minChars} caracteres (hors espaces)`,
-        `- Paragraphes narratifs uniquement`,
+        `- Structure lisible: paragraphes + listes/tableaux si utile`,
         `- Concrete: donne des exemples, conditions de prelevement, limites, retest, et implications pratiques`,
         `- Registre premium, accents, et suppression explicite de toute familiarite / vulgarite`,
-        `- Interdiction de listes (pas de tirets, pas de bullets, pas de "1.")`,
         `- Interdiction absolue de tags [SRC:...] et de section Sources`,
         isSupplements
           ? `- Pour Supplements: minimum 6 interventions clairement detaillees avec forme, dosage, timing, duree, precautions/interactions et condition de retest.`
@@ -3232,7 +3235,7 @@ export async function generateAIBloodAnalysis(
   // Pass 1: full report
   try {
     output = await callClaudeOnce(
-      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET et DETAILLE (35000-70000 caracteres) avec TOUTES les sections/axes du template. Tu as un budget de 16000 tokens. REGLES CRITIQUES:\n1. La Synthese executive DOIT faire minimum 7000 caracteres — c'est la premiere chose que le client lit. Detaille CHAQUE marqueur problematique, explique les interconnexions, donne ton verdict global avec des chiffres precis.\n2. ZERO tiret, ZERO bullet point, ZERO liste a puces. Uniquement des paragraphes narratifs fluides. Pas de \"- \", pas de \"* \", pas de listes numerotees \"1. 2. 3.\".\n3. Les sections \"Nutrition & entrainement\" et \"Supplements & stack\" doivent etre ultra detaillees, pedagogiques et actionnables, avec mecanismes, dosages, timing, interactions et retest.\n4. Interdit de montrer les sources au client: pas de tags [SRC:...], pas de section Sources.\n5. Assure-toi d'inclure les 11 sections ## et tous les ### Axe 1 a 11.`
+      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET, COHERENT et ACTIONNABLE (environ 12000-22000 caracteres) avec TOUTES les sections/axes du template. REGLES CRITIQUES:\n1. La Synthese executive doit etre dense et priorisee (minimum 1800 caracteres), avec verdict global et impact concret.\n2. Les sections \"Nutrition & entrainement\" et \"Supplements & stack\" doivent etre detaillees, mecanistiques et reliees aux marqueurs anormaux.\n3. Listes et tableaux Markdown autorises s'ils clarifient les decisions.\n4. Interdit de montrer les sources au client: pas de tags [SRC:...], pas de section Sources.\n5. Assure-toi d'inclure les 11 sections ## et tous les ### Axe 1 a 11.`
     );
     output = ensureAxesSectionTemplate(output);
     validation = validateBloodAnalysisReport(output);
@@ -3274,8 +3277,8 @@ export async function generateAIBloodAnalysis(
         `- Si une section manque de donnees, ecris 'Non renseigne' mais garde le titre.`,
         `- Pas d'emoji.`,
         `- Pas de [SRC:...] ni de section Sources.`,
-        `- ZERO tiret, ZERO bullet point, ZERO "- ", ZERO "* ", ZERO liste numerotee. Uniquement des paragraphes narratifs fluides.`,
-        `- Pas de pattern "Label : valeur" en debut de ligne. Integre les informations dans des phrases completes.`,
+        `- Tu peux utiliser listes et tableaux markdown quand c'est plus clair.`,
+        `- Evite les blocs telegraphiques: contextualise chaque mesure avec interpretation + action.`,
       ].join("\n");
 
       const continuation = await callClaudeOnce(continuationPrompt);

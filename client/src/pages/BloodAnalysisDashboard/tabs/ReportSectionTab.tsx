@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Theme } from "@/components/ultrahuman/types";
 
 type ReportSection = {
@@ -125,7 +126,7 @@ export function ReportSectionTab({
           } as React.CSSProperties}
         >
           <div className="overflow-x-auto">
-            <ReactMarkdown>{aiReport}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiReport}</ReactMarkdown>
           </div>
         </div>
       );
@@ -168,7 +169,7 @@ export function ReportSectionTab({
     >
       {sectionsToShow.map((section, idx) => (
         <div key={section.id} className="overflow-x-auto">
-          <ReactMarkdown>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
           {idx < sectionsToShow.length - 1 && <hr className="my-4 sm:my-6" style={{ borderColor: currentTheme.colors.border }} />}
         </div>
       ))}
