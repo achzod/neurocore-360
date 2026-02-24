@@ -3570,8 +3570,8 @@ export async function generateAIBloodAnalysis(
       return false;
     };
 
-    const MAX_ATTEMPTS = 2;
-    const TIMEOUT_MS = 90_000;
+    const MAX_ATTEMPTS = Math.max(1, Math.min(2, Number(process.env.BLOOD_AI_CLAUDE_RETRIES ?? "1")));
+    const TIMEOUT_MS = Math.max(60_000, Number(process.env.BLOOD_AI_CLAUDE_CALL_TIMEOUT_MS ?? "240000"));
     const systemPrompt = opts?.system || BLOOD_ANALYSIS_SYSTEM_PROMPT_V6;
 
     let lastError: unknown = null;
