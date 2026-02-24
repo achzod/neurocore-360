@@ -8,6 +8,7 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "test:blood:regression": "tsx scripts/validate-blood-score-regression.ts",
     "qa:blood:dashboard": "tsx scripts/qa-blood-dashboard.ts",
     "db:push": "drizzle-kit push",
     "test:e2e": "playwright test",
