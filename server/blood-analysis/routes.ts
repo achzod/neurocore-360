@@ -51,6 +51,7 @@ import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
 import {
+  runAIGenerationWithRetry,
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
 } from "./ai-timeout";
@@ -530,15 +531,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
-            const enriched = await withAIGenerationTimeout(
+            const enriched = await runAIGenerationWithRetry(
               () =>
                 generateAIBloodAnalysis(
                   analysisResult,
                   profileWithAge as any,
                   knowledgeContext
                 ),
-              "blood-analysis/submit async report",
-              180_000
+              "blood-analysis/submit async report"
             );
             await storage.updateBloodReport(reportRecord.id, {
               aiReport: enriched.report,
@@ -1767,15 +1767,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             let aiMeta: { status: string; model: string; validationMissing?: string[] } | null = null;
             let aiError: unknown = null;
             try {
-              const generated = await withAIGenerationTimeout(
+              const generated = await runAIGenerationWithRetry(
                 () =>
                   generateAIBloodAnalysis(
                     analysisResult,
                     { ...(rawProfile as any), gender } as any,
                     knowledgeContext
                   ),
-                "blood-analysis/report async refresh",
-                180_000
+                "blood-analysis/report async refresh"
               );
               aiReport = generated.report;
               aiMeta = { status: generated.status, model: generated.model, validationMissing: generated.validationMissing };

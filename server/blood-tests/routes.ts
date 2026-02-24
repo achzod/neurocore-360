@@ -15,6 +15,7 @@ import {
   buildLifestyleCorrelations,
 } from "../blood-analysis";
 import {
+  runAIGenerationWithRetry,
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
 } from "../blood-analysis/ai-timeout";
@@ -520,10 +521,14 @@ export function registerBloodTestsRoutes(app: Express): void {
           if (includeAI && process.env.ANTHROPIC_API_KEY && (asyncAI || syncAiNeedsBackgroundRetry)) {
             setImmediate(async () => {
               try {
-                const enriched = await generateAIBloodAnalysis(
-                  analysisResult,
-                  aiProfile,
-                  knowledgeContext
+                const enriched = await runAIGenerationWithRetry(
+                  () =>
+                    generateAIBloodAnalysis(
+                      analysisResult,
+                      aiProfile,
+                      knowledgeContext
+                    ),
+                  "blood-tests/seed async report"
                 );
                 const updatedAnalysis = {
                   ...analysisPayload,
@@ -829,15 +834,14 @@ export function registerBloodTestsRoutes(app: Express): void {
           try {
             let enriched;
             try {
-              enriched = await withAIGenerationTimeout(
+              enriched = await runAIGenerationWithRetry(
                 () =>
                   generateAIBloodAnalysis(
                     analysisResult,
                     aiProfile,
                     knowledgeContext
                   ),
-                "blood-tests/upload async retry",
-                180_000
+                "blood-tests/upload async retry"
               );
             } catch (err) {
               console.error("[BloodTests] Upload async AI retry failed, storing deterministic fallback:", err);
