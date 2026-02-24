@@ -5,11 +5,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import OpenAI from "openai";
 import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "../anthropicConfig";
-import { GEMINI_CONFIG } from "../geminiConfig";
-import { OPENAI_CONFIG, validateOpenAIConfig } from "../openaiConfig";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 
@@ -1955,32 +1951,6 @@ function getBloodAnthropicClient(): Anthropic {
   return bloodAnthropicClient;
 }
 
-let bloodOpenAIClient: OpenAI | null = null;
-function getBloodOpenAIClient(): OpenAI {
-  if (!bloodOpenAIClient) {
-    if (!validateOpenAIConfig()) {
-      throw new Error("OPENAI_API_KEY not configured");
-    }
-    bloodOpenAIClient = new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY });
-  }
-  return bloodOpenAIClient;
-}
-
-let bloodGeminiModel: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null = null;
-function getBloodGeminiModel() {
-  const key = process.env.GEMINI_API_KEY || GEMINI_CONFIG.GEMINI_API_KEY;
-  if (!key) {
-    throw new Error("GEMINI_API_KEY not configured");
-  }
-  if (!bloodGeminiModel) {
-    const genAI = new GoogleGenerativeAI(key);
-    bloodGeminiModel = genAI.getGenerativeModel({
-      model: process.env.BLOOD_AI_GEMINI_MODEL || GEMINI_CONFIG.GEMINI_MODEL || "gemini-2.5-pro",
-    });
-  }
-  return bloodGeminiModel;
-}
-
 const normalizeForCheck = (text: string) =>
   String(text || "")
     .normalize("NFD")
@@ -3396,18 +3366,16 @@ export async function generateAIBloodAnalysis(
   },
   knowledgeContext?: string
 ): Promise<{ report: string; status: "generated" | "fallback"; model: string; validationMissing?: string[] }> {
-  let client: ReturnType<typeof getBloodAnthropicClient> | null = null;
+  let client: ReturnType<typeof getBloodAnthropicClient>;
   try {
     client = getBloodAnthropicClient();
   } catch (initErr: any) {
-    console.warn("[BloodAnalysis] Anthropic client init failed, will try OpenAI fallback:", initErr?.message || initErr);
-  }
-  if (!client && !validateOpenAIConfig()) {
+    console.error("[BloodAnalysis] Anthropic client init failed:", initErr?.message || initErr);
     return {
       report: buildFallbackAnalysis(analysisResult, userProfile),
       status: "fallback",
       model: "fallback",
-      validationMissing: ["init_error:anthropic+openai_unavailable"],
+      validationMissing: [`init_error:${String(initErr?.message || initErr).slice(0, 200)}`],
     };
   }
 
@@ -3476,9 +3444,6 @@ export async function generateAIBloodAnalysis(
     .join("\n");
 
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
-  const openAiFallbackModel = process.env.BLOOD_AI_OPENAI_MODEL || OPENAI_CONFIG.OPENAI_MODEL || "gpt-4o";
-  const geminiFallbackModel = process.env.BLOOD_AI_GEMINI_MODEL || GEMINI_CONFIG.GEMINI_MODEL || "gemini-2.5-pro";
-  let modelUsed = client ? model : openAiFallbackModel;
   // Keep output bounded to avoid long-running requests in production.
   // Prioritise completeness/structure over extreme length.
   const maxTokens = 16000;
@@ -3609,120 +3574,37 @@ export async function generateAIBloodAnalysis(
     const TIMEOUT_MS = 90_000;
     const systemPrompt = opts?.system || BLOOD_ANALYSIS_SYSTEM_PROMPT_V6;
 
-    let lastClaudeErr: unknown = null;
-    if (client) {
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        try {
-          const requestPromise = async () => {
-            const message = await client!.messages.create({
-              model,
-              max_tokens: maxTokens,
-              temperature: 0.4,
-              system: systemPrompt,
-              messages: [{ role: "user", content: prompt }],
-            } as any);
-            const textContent = (message as any).content?.find((c: any) => c.type === "text");
-            return String(textContent?.text || "").trim();
-          };
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const requestPromise = async () => {
+          const message = await client.messages.create({
+            model,
+            max_tokens: maxTokens,
+            temperature: 0.4,
+            system: systemPrompt,
+            messages: [{ role: "user", content: prompt }],
+          } as any);
+          const textContent = (message as any).content?.find((c: any) => c.type === "text");
+          return String(textContent?.text || "").trim();
+        };
 
-          const candidate = await withTimeout(requestPromise(), TIMEOUT_MS, "CLAUDE_TIMEOUT");
-          if (!candidate) throw new Error("Claude returned empty report");
-          modelUsed = model;
-          return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
-        } catch (err: any) {
-          lastClaudeErr = err;
-          if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
-            const backoff = attempt === 1 ? 1500 : 3500;
-            console.warn(`[BloodAnalysis] Claude retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
-            await sleep(backoff);
-            continue;
-          }
-          console.warn("[BloodAnalysis] Claude failed, switching to OpenAI fallback:", err?.message || err);
-          break;
+        const candidate = await withTimeout(requestPromise(), TIMEOUT_MS, "CLAUDE_TIMEOUT");
+        if (!candidate) throw new Error("Claude returned empty report");
+        return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
+      } catch (err: any) {
+        lastError = err;
+        if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
+          const backoff = attempt === 1 ? 1500 : 3500;
+          console.warn(`[BloodAnalysis] Claude retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
+          await sleep(backoff);
+          continue;
         }
+        throw err;
       }
     }
 
-    let lastOpenAiErr: unknown = null;
-    if (validateOpenAIConfig()) {
-      const openai = getBloodOpenAIClient();
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        try {
-          const completion = await withTimeout(
-            openai.chat.completions.create({
-              model: openAiFallbackModel,
-              temperature: 0.3,
-              max_tokens: maxTokens,
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: prompt },
-              ],
-            }),
-            TIMEOUT_MS,
-            "OPENAI_TIMEOUT"
-          );
-          const raw = completion.choices?.[0]?.message?.content;
-          const candidate = Array.isArray(raw)
-            ? raw.map((chunk: any) => String(chunk?.text || "")).join("\n").trim()
-            : String(raw || "").trim();
-          if (!candidate) throw new Error("OpenAI returned empty report");
-          modelUsed = openAiFallbackModel;
-          console.warn(`[BloodAnalysis] Generated with OpenAI fallback model: ${openAiFallbackModel}`);
-          return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
-        } catch (err: any) {
-          lastOpenAiErr = err;
-          if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
-            const backoff = attempt === 1 ? 1500 : 3500;
-            console.warn(`[BloodAnalysis] OpenAI retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
-            await sleep(backoff);
-            continue;
-          }
-          break;
-        }
-      }
-    }
-
-    let lastGeminiErr: unknown = null;
-    const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY || GEMINI_CONFIG.GEMINI_API_KEY);
-    if (hasGeminiKey) {
-      const gemini = getBloodGeminiModel();
-      const geminiMaxTokens = Math.max(
-        2048,
-        Math.min(maxTokens, Number(process.env.BLOOD_AI_GEMINI_MAX_TOKENS || "8192"))
-      );
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        try {
-          const result = await withTimeout(
-            gemini.generateContent({
-              contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
-              generationConfig: {
-                temperature: 0.35,
-                maxOutputTokens: geminiMaxTokens,
-              },
-            } as any),
-            TIMEOUT_MS,
-            "GEMINI_TIMEOUT"
-          );
-          const candidate = String(result?.response?.text?.() || "").trim();
-          if (!candidate) throw new Error("Gemini returned empty report");
-          modelUsed = geminiFallbackModel;
-          console.warn(`[BloodAnalysis] Generated with Gemini fallback model: ${geminiFallbackModel}`);
-          return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
-        } catch (err: any) {
-          lastGeminiErr = err;
-          if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
-            const backoff = attempt === 1 ? 1500 : 3500;
-            console.warn(`[BloodAnalysis] Gemini retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
-            await sleep(backoff);
-            continue;
-          }
-          break;
-        }
-      }
-    }
-
-    const rootErr = lastGeminiErr || lastOpenAiErr || lastClaudeErr;
-    throw rootErr instanceof Error ? rootErr : new Error("Claude/OpenAI/Gemini generation failed");
+    throw lastError instanceof Error ? lastError : new Error("Claude generation failed");
   };
 
   let output = "";
@@ -3882,7 +3764,7 @@ REGLES STRICTES:
         return {
           report: after,
           status: "generated",
-          model: modelUsed,
+          model,
           ...(remaining.length ? { validationMissing: remaining } : {}),
         };
       }
@@ -3935,7 +3817,7 @@ REGLES STRICTES:
           return {
             report: after,
             status: "generated",
-            model: modelUsed,
+            model,
             ...(remaining.length ? { validationMissing: remaining } : {}),
           };
         }
