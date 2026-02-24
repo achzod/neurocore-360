@@ -2376,6 +2376,18 @@ const auditBloodReportAllIssues = (aiReport: string) => {
   return { issues: merged, sections: base.sections, style };
 };
 
+const isBlockingQualityIssue = (issue: string): boolean => {
+  return (
+    issue.startsWith("missing_section:") ||
+    issue.startsWith("short_section:") ||
+    issue.startsWith("low_specificity:")
+  );
+};
+
+const collectBlockingQualityIssues = (issues: string[]): string[] => {
+  return Array.from(new Set((issues || []).filter((issue) => isBlockingQualityIssue(String(issue || "")))));
+};
+
 // Exposed for admin/meta refresh (no AI calls).
 export const auditBloodReportQualityForMeta = (aiReport: string) => {
   return auditBloodReportAllIssues(aiReport || "").issues;
@@ -3741,12 +3753,18 @@ REGLES STRICTES:
       await rewriteIfNeeded();
       const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(output)));
       const remaining = auditSectionMinimums(after).issues;
-      return {
-        report: after,
-        status: "generated",
-        model,
-        ...(remaining.length ? { validationMissing: remaining } : {}),
-      };
+      const blockingIssues = collectBlockingQualityIssues(remaining);
+      if (!blockingIssues.length) {
+        return {
+          report: after,
+          status: "generated",
+          model,
+          ...(remaining.length ? { validationMissing: remaining } : {}),
+        };
+      }
+      output = after;
+      validation.missing.push(...blockingIssues.map((issue) => `quality_gate:${issue}`));
+      console.warn("[BloodAnalysis] Quality gate failed after pass1:", blockingIssues.join(", "));
     }
   } catch (err: any) {
     console.error("[BloodAnalysis] Claude generation failed (pass1):", err?.message || err);
@@ -3788,12 +3806,18 @@ REGLES STRICTES:
         await rewriteIfNeeded();
         const after = ensureAxesSectionTemplate(sanitizeBloodReportRegister(trimAiAnalysis(output)));
         const remaining = auditSectionMinimums(after).issues;
-        return {
-          report: after,
-          status: "generated",
-          model,
-          ...(remaining.length ? { validationMissing: remaining } : {}),
-        };
+        const blockingIssues = collectBlockingQualityIssues(remaining);
+        if (!blockingIssues.length) {
+          return {
+            report: after,
+            status: "generated",
+            model,
+            ...(remaining.length ? { validationMissing: remaining } : {}),
+          };
+        }
+        output = after;
+        validation.missing.push(...blockingIssues.map((issue) => `quality_gate:${issue}`));
+        console.warn(`[BloodAnalysis] Quality gate failed after pass${pass}:`, blockingIssues.join(", "));
       }
       console.warn(`[BloodAnalysis] Continuation pass ${pass} still invalid:`, validation.missing.join(", "));
     } catch (err: any) {

@@ -5,7 +5,7 @@ import { ULTRAHUMAN_THEMES } from "@/components/ultrahuman/themes";
 import { SectionContent, Theme } from "@/components/ultrahuman/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BloodThemeProvider } from "@/components/blood/BloodThemeContext";
-import { AlertTriangle, Menu } from "lucide-react";
+import { AlertTriangle, Menu, Sparkles } from "lucide-react";
 
 // Custom hooks
 import { useBloodReport } from "./BloodAnalysisDashboard/hooks/useBloodReport";
@@ -65,6 +65,24 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
   }, [currentTheme]);
 
   const summary = report?.analysis?.summary || { optimal: [], watch: [], action: [] };
+  const aiMeta = report?.aiMeta;
+  const aiStatus = String(aiMeta?.status || "").toLowerCase();
+  const aiBadgeLabel =
+    aiStatus === "generated"
+      ? "Rapport premium généré"
+      : aiStatus === "processing"
+      ? "Génération en cours"
+      : aiStatus === "fallback"
+      ? "Version déterministe active"
+      : "Statut non défini";
+  const aiBadgeColors =
+    aiStatus === "generated"
+      ? { bg: "rgba(16, 185, 129, 0.12)", border: "rgba(16, 185, 129, 0.35)", text: "#059669" }
+      : aiStatus === "processing"
+      ? { bg: "rgba(59, 130, 246, 0.12)", border: "rgba(59, 130, 246, 0.35)", text: "#2563EB" }
+      : aiStatus === "fallback"
+      ? { bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.35)", text: "#B45309" }
+      : { bg: currentTheme.colors.background, border: currentTheme.colors.border, text: currentTheme.colors.textMuted };
 
   const sidebarSections: SectionContent[] = [
     { id: "overview", title: "Overview", subtitle: "Vue d'ensemble", content: "" },
@@ -157,21 +175,82 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
             <p className="text-xs sm:text-sm mt-2" style={{ color: currentTheme.colors.textMuted }}>
               Lecture premium de ton bilan sanguin, ranges optimaux et axes de correction.
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+                style={{
+                  backgroundColor: aiBadgeColors.bg,
+                  border: `1px solid ${aiBadgeColors.border}`,
+                  color: aiBadgeColors.text,
+                }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {aiBadgeLabel}
+              </span>
+              {reportId && (
+                <span className="text-[11px] sm:text-xs" style={{ color: currentTheme.colors.textMuted }}>
+                  ID: {reportId}
+                </span>
+              )}
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div
               className="mb-6 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0"
             >
-              <TabsList className="inline-flex lg:grid lg:grid-cols-8 gap-2 h-auto w-full lg:w-full p-2 min-w-max lg:min-w-0">
-                <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
-                <TabsTrigger value="biomarkers" className="whitespace-nowrap">Biomarqueurs</TabsTrigger>
-                <TabsTrigger value="synthese" className="whitespace-nowrap">Synthèse</TabsTrigger>
-                <TabsTrigger value="donnees" className="whitespace-nowrap">Données & Tests</TabsTrigger>
-                <TabsTrigger value="axes" className="whitespace-nowrap">Analyse Axes</TabsTrigger>
-                <TabsTrigger value="plan" className="whitespace-nowrap">Plan 90j</TabsTrigger>
-                <TabsTrigger value="protocoles" className="whitespace-nowrap">Protocoles</TabsTrigger>
-                <TabsTrigger value="annexes" className="whitespace-nowrap">Annexes</TabsTrigger>
+              <TabsList
+                className="inline-flex lg:grid lg:grid-cols-8 gap-2 h-auto w-full lg:w-full min-w-max lg:min-w-0 rounded-lg p-2 border bg-[#1F2329]"
+                style={{ borderColor: "rgba(255, 255, 255, 0.08)" }}
+              >
+                <TabsTrigger
+                  value="overview"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="biomarkers"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Biomarqueurs
+                </TabsTrigger>
+                <TabsTrigger
+                  value="synthese"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Synthèse
+                </TabsTrigger>
+                <TabsTrigger
+                  value="donnees"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Données & Tests
+                </TabsTrigger>
+                <TabsTrigger
+                  value="axes"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Analyse Axes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="plan"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Plan 90j
+                </TabsTrigger>
+                <TabsTrigger
+                  value="protocoles"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Protocoles
+                </TabsTrigger>
+                <TabsTrigger
+                  value="annexes"
+                  className="whitespace-nowrap rounded-md px-3 py-2 text-sm text-[#B4BBC8] data-[state=active]:bg-[#06080B] data-[state=active]:text-white data-[state=active]:shadow-none"
+                >
+                  Annexes
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -211,6 +290,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
+                  aiMeta={aiMeta}
                   currentTheme={currentTheme}
                   normalizeSectionId={normalizeSectionId}
                 />
@@ -232,6 +312,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
+                  aiMeta={aiMeta}
                   currentTheme={currentTheme}
                   normalizeSectionId={normalizeSectionId}
                 />
@@ -256,6 +337,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
+                  aiMeta={aiMeta}
                   currentTheme={currentTheme}
                   normalizeSectionId={normalizeSectionId}
                 />
@@ -276,6 +358,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
+                  aiMeta={aiMeta}
                   currentTheme={currentTheme}
                   normalizeSectionId={normalizeSectionId}
                 />
@@ -301,6 +384,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
+                  aiMeta={aiMeta}
                   currentTheme={currentTheme}
                   normalizeSectionId={normalizeSectionId}
                 />
@@ -324,6 +408,7 @@ const BloodAnalysisDashboardInner = memo(function BloodAnalysisDashboardInner() 
                   ]}
                   reportSections={reportSections}
                   aiReport={report?.aiReport}
+                  aiMeta={aiMeta}
                   currentTheme={currentTheme}
                   normalizeSectionId={normalizeSectionId}
                 />

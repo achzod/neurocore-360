@@ -1,4 +1,5 @@
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Theme } from "@/components/ultrahuman/types";
@@ -13,6 +14,14 @@ interface ReportSectionTabProps {
   sectionIds: string[];
   reportSections: ReportSection[];
   aiReport?: string;
+  aiMeta?: {
+    status?: string | null;
+    model?: string | null;
+    generatedAt?: string | null;
+    validationMissing?: string[] | null;
+    fallbackAt?: string | null;
+    fallbackReason?: string | null;
+  };
   currentTheme: Theme;
   normalizeSectionId: (text: string) => string;
 }
@@ -21,26 +30,157 @@ export function ReportSectionTab({
   sectionIds,
   reportSections,
   aiReport,
+  aiMeta,
   currentTheme,
   normalizeSectionId,
 }: ReportSectionTabProps) {
   const sanitizedAiReport = aiReport
     ? aiReport.replace(/^##\s+Annexes\s*\(ultra long\)\s*$/gim, "## Annexes (references et vigilance)")
     : aiReport;
+  const aiStatus = String(aiMeta?.status || "").toLowerCase();
+  const validationHints = Array.isArray(aiMeta?.validationMissing)
+    ? aiMeta?.validationMissing.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const generatedAtText = aiMeta?.generatedAt
+    ? new Date(aiMeta.generatedAt).toLocaleString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const statusBadge =
+    aiStatus === "generated"
+      ? { label: "Rapport premium", bg: "rgba(16, 185, 129, 0.12)", border: "rgba(16, 185, 129, 0.35)", text: "#059669" }
+      : aiStatus === "fallback"
+      ? { label: "Mode déterministe", bg: "rgba(245, 158, 11, 0.12)", border: "rgba(245, 158, 11, 0.35)", text: "#B45309" }
+      : aiStatus === "processing"
+      ? { label: "Génération en cours", bg: "rgba(59, 130, 246, 0.12)", border: "rgba(59, 130, 246, 0.35)", text: "#2563EB" }
+      : null;
+
+  const markdownComponents = {
+    h2: ({ children }: { children?: ReactNode }) => (
+      <h2
+        className="mt-7 mb-3 text-xl sm:text-2xl font-semibold tracking-tight"
+        style={{ color: currentTheme.colors.text }}
+      >
+        {children}
+      </h2>
+    ),
+    h3: ({ children }: { children?: ReactNode }) => (
+      <h3
+        className="mt-6 mb-2 text-lg sm:text-xl font-semibold"
+        style={{ color: currentTheme.colors.text }}
+      >
+        {children}
+      </h3>
+    ),
+    h4: ({ children }: { children?: ReactNode }) => (
+      <h4 className="mt-4 mb-1 text-base font-semibold" style={{ color: currentTheme.colors.text }}>
+        {children}
+      </h4>
+    ),
+    p: ({ children }: { children?: ReactNode }) => (
+      <p className="mt-3 leading-7 text-sm sm:text-[15px]" style={{ color: currentTheme.colors.text }}>
+        {children}
+      </p>
+    ),
+    ul: ({ children }: { children?: ReactNode }) => (
+      <ul className="mt-3 space-y-1 pl-5 list-disc" style={{ color: currentTheme.colors.text }}>
+        {children}
+      </ul>
+    ),
+    ol: ({ children }: { children?: ReactNode }) => (
+      <ol className="mt-3 space-y-1 pl-5 list-decimal" style={{ color: currentTheme.colors.text }}>
+        {children}
+      </ol>
+    ),
+    li: ({ children }: { children?: ReactNode }) => (
+      <li className="leading-7 text-sm sm:text-[15px]">
+        {children}
+      </li>
+    ),
+    strong: ({ children }: { children?: ReactNode }) => (
+      <strong style={{ color: currentTheme.colors.text, fontWeight: 700 }}>{children}</strong>
+    ),
+    blockquote: ({ children }: { children?: ReactNode }) => (
+      <blockquote
+        className="mt-4 border-l-4 pl-4 py-1"
+        style={{ borderColor: currentTheme.colors.primary, color: currentTheme.colors.text }}
+      >
+        {children}
+      </blockquote>
+    ),
+    table: ({ children }: { children?: ReactNode }) => (
+      <div className="mt-4 mb-2 overflow-x-auto rounded border" style={{ borderColor: currentTheme.colors.border }}>
+        <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+          {children}
+        </table>
+      </div>
+    ),
+    th: ({ children }: { children?: ReactNode }) => (
+      <th
+        className="px-3 py-2 text-left text-xs uppercase tracking-[0.08em]"
+        style={{
+          borderBottom: `1px solid ${currentTheme.colors.border}`,
+          backgroundColor: currentTheme.colors.background,
+          color: currentTheme.colors.text,
+        }}
+      >
+        {children}
+      </th>
+    ),
+    td: ({ children }: { children?: ReactNode }) => (
+      <td
+        className="px-3 py-2 align-top"
+        style={{ borderBottom: `1px solid ${currentTheme.colors.border}`, color: currentTheme.colors.text }}
+      >
+        {children}
+      </td>
+    ),
+    code: ({ children }: { children?: ReactNode }) => (
+      <code
+        className="px-1.5 py-0.5 rounded text-[0.9em]"
+        style={{ backgroundColor: currentTheme.colors.background, color: currentTheme.colors.text }}
+      >
+        {children}
+      </code>
+    ),
+    hr: () => <hr className="my-5" style={{ borderColor: currentTheme.colors.border }} />,
+  };
+
+  const proseStyle = {
+    backgroundColor: currentTheme.colors.surface,
+    borderColor: currentTheme.colors.border,
+    color: currentTheme.colors.text,
+  } as CSSProperties;
 
   if (!sanitizedAiReport) {
+    const isProcessing = aiStatus === "processing";
     return (
       <div
         className="rounded border p-6"
         style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
       >
         <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: currentTheme.colors.primary }} />
-          <h2 className="text-xl font-semibold mb-2">Génération du rapport AI en cours...</h2>
+          {isProcessing ? (
+            <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: currentTheme.colors.primary }} />
+          ) : (
+            <RefreshCw className="w-10 h-10 mb-4" style={{ color: currentTheme.colors.primary }} />
+          )}
+          <h2 className="text-xl font-semibold mb-2" style={{ color: currentTheme.colors.text }}>
+            {isProcessing ? "Génération premium en cours" : "Rafraîchissement du rapport"}
+          </h2>
           <p className="text-sm text-center max-w-md" style={{ color: currentTheme.colors.textMuted }}>
-            L'analyse approfondie de tes biomarqueurs est en cours de génération.
-            Le rapport complet sera disponible sous peu.
+            {isProcessing
+              ? "Le rapport complet est en construction. La page se mettra à jour automatiquement dès que le contenu final sera disponible."
+              : "Le contenu n'est pas encore disponible. Le moteur relance la génération en arrière-plan."}
           </p>
+          {!!aiMeta?.fallbackReason && (
+            <p className="mt-3 text-xs text-center" style={{ color: currentTheme.colors.textMuted }}>
+              Diagnostic: {aiMeta.fallbackReason}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -114,29 +254,13 @@ export function ReportSectionTab({
     if (reportSections.length === 0 && sanitizedAiReport.trim().length > 0) {
       return (
         <div
-          className={`rounded border p-4 sm:p-6 max-w-none ${
-            currentTheme.type === 'dark' ? 'prose prose-slate prose-sm sm:prose-base' : 'prose prose-stone prose-sm sm:prose-base'
-          }`}
-          style={{
-            backgroundColor: currentTheme.colors.surface,
-            borderColor: currentTheme.colors.border,
-            color: currentTheme.colors.text,
-            '--tw-prose-headings': currentTheme.colors.text,
-            '--tw-prose-body': currentTheme.colors.text,
-            '--tw-prose-bold': currentTheme.colors.text,
-            '--tw-prose-links': currentTheme.colors.primary,
-            '--tw-prose-code': currentTheme.colors.primary,
-            '--tw-prose-pre-bg': currentTheme.colors.surface,
-            '--tw-prose-pre-code': currentTheme.colors.text,
-            '--tw-prose-quotes': currentTheme.colors.textMuted,
-            '--tw-prose-quote-borders': currentTheme.colors.border,
-            '--tw-prose-hr': currentTheme.colors.border,
-            '--tw-prose-th-borders': currentTheme.colors.border,
-            '--tw-prose-td-borders': currentTheme.colors.border,
-          } as React.CSSProperties}
+          className="rounded border p-4 sm:p-6 max-w-none"
+          style={proseStyle}
         >
           <div className="overflow-x-auto">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{sanitizedAiReport}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {sanitizedAiReport}
+            </ReactMarkdown>
           </div>
         </div>
       );
@@ -147,39 +271,67 @@ export function ReportSectionTab({
         className="rounded border p-6"
         style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
       >
-        <p style={{ color: currentTheme.colors.textMuted }}>
-          Cette section sera disponible une fois le rapport complet généré.
-        </p>
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 mt-0.5" style={{ color: currentTheme.colors.primary }} />
+          <p style={{ color: currentTheme.colors.textMuted }}>
+            Aucune section correspondante trouvée pour cet onglet. Le contenu brut existe, mais sa structure ne
+            correspond pas encore à la découpe attendue.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className={`rounded border p-4 sm:p-6 max-w-none ${
-        currentTheme.type === 'dark' ? 'prose prose-slate prose-sm sm:prose-base' : 'prose prose-stone prose-sm sm:prose-base'
-      }`}
-      style={{
-        backgroundColor: currentTheme.colors.surface,
-        borderColor: currentTheme.colors.border,
-        color: currentTheme.colors.text,
-        '--tw-prose-headings': currentTheme.colors.text,
-        '--tw-prose-body': currentTheme.colors.text,
-        '--tw-prose-bold': currentTheme.colors.text,
-        '--tw-prose-links': currentTheme.colors.primary,
-        '--tw-prose-code': currentTheme.colors.primary,
-        '--tw-prose-pre-bg': currentTheme.colors.surface,
-        '--tw-prose-pre-code': currentTheme.colors.text,
-        '--tw-prose-quotes': currentTheme.colors.textMuted,
-        '--tw-prose-quote-borders': currentTheme.colors.border,
-        '--tw-prose-hr': currentTheme.colors.border,
-        '--tw-prose-th-borders': currentTheme.colors.border,
-        '--tw-prose-td-borders': currentTheme.colors.border,
-      } as React.CSSProperties}
+      className="rounded border p-4 sm:p-6 max-w-none"
+      style={proseStyle}
     >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {statusBadge && (
+          <span
+            className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] sm:text-xs"
+            style={{
+              backgroundColor: statusBadge.bg,
+              border: `1px solid ${statusBadge.border}`,
+              color: statusBadge.text,
+            }}
+          >
+            {statusBadge.label}
+          </span>
+        )}
+        {sectionsToShow.map((section) => (
+          <span
+            key={`chip-${section.id}`}
+            className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] sm:text-xs"
+            style={{
+              backgroundColor: currentTheme.colors.background,
+              border: `1px solid ${currentTheme.colors.border}`,
+              color: currentTheme.colors.textMuted,
+            }}
+          >
+            {section.title}
+          </span>
+        ))}
+        {(aiStatus === "generated" || aiStatus === "fallback") && generatedAtText && (
+          <span className="text-[11px] sm:text-xs ml-auto" style={{ color: currentTheme.colors.textMuted }}>
+            Mis à jour: {generatedAtText}
+          </span>
+        )}
+      </div>
+      {aiStatus === "fallback" && validationHints.length > 0 && (
+        <div className="mb-4 rounded border px-3 py-2" style={{ borderColor: currentTheme.colors.border, backgroundColor: currentTheme.colors.background }}>
+          <p className="text-[11px] sm:text-xs" style={{ color: currentTheme.colors.textMuted }}>
+            Vérifications automatiques restantes: {validationHints.slice(0, 4).join(" · ")}
+          </p>
+        </div>
+      )}
+
       {sectionsToShow.map((section, idx) => (
         <div key={section.id} className="overflow-x-auto">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+            {section.content}
+          </ReactMarkdown>
           {idx < sectionsToShow.length - 1 && <hr className="my-4 sm:my-6" style={{ borderColor: currentTheme.colors.border }} />}
         </div>
       ))}

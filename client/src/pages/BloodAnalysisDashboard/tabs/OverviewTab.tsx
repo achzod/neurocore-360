@@ -15,13 +15,6 @@ const PANEL_ICONS: Record<string, LucideIcon> = {
   liver_kidney: BeakerIcon,
 };
 
-const scoreToStatus = (score: number): "optimal" | "normal" | "suboptimal" | "critical" => {
-  if (score >= 80) return "optimal";
-  if (score >= 65) return "normal";
-  if (score >= 45) return "suboptimal";
-  return "critical";
-};
-
 type PanelGroup = {
   id: string;
   title: string;
@@ -59,6 +52,23 @@ export function OverviewTab({
   currentTheme,
   setActiveTab,
 }: OverviewTabProps) {
+  const optimalCount = summary.optimal?.length || 0;
+  const watchCount = summary.watch?.length || 0;
+  const actionCount = summary.action?.length || 0;
+  const bestPanel = [...panelGroups]
+    .filter((panel) => panel.markers.length > 0)
+    .sort((a, b) => b.score - a.score)[0];
+  const weakestPanel = [...panelGroups]
+    .filter((panel) => panel.markers.length > 0)
+    .sort((a, b) => a.score - b.score)[0];
+  const kpiCards = [
+    { label: "Biomarqueurs analysés", value: String(normalizedMarkers.length) },
+    { label: "Marqueurs optimaux", value: `${optimalCount}` },
+    { label: "Sous surveillance", value: `${watchCount}` },
+    { label: "Points en action", value: `${actionCount}` },
+    { label: "Panels couverts", value: `${panelGroups.filter((p) => p.markers.length > 0).length}/6` },
+  ];
+
   return (
     <>
       {/* Storytelling Introduction */}
@@ -66,34 +76,36 @@ export function OverviewTab({
         className="rounded border p-4 sm:p-6 mb-6 sm:mb-8"
         style={{ backgroundColor: currentTheme.colors.surface, borderColor: currentTheme.colors.border }}
       >
-        <div className="max-w-3xl">
+        <div className="max-w-5xl">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-3 sm:mb-4" style={{ color: currentTheme.colors.text }}>
-            Bienvenue dans ton Blood Analysis
+            Synthèse stratégique de ton Blood Analysis
           </h2>
-          <div className="space-y-3 sm:space-y-4 text-sm sm:text-base" style={{ color: currentTheme.colors.text, lineHeight: '1.7' }}>
+          <div className="space-y-3 sm:space-y-4 text-sm sm:text-base" style={{ color: currentTheme.colors.text, lineHeight: "1.7" }}>
             <p>
-              Tes biomarqueurs racontent une histoire. Chaque valeur, chaque marqueur est une pièce du puzzle qui révèle
-              comment ton corps fonctionne réellement, au dela des symptomes, au dela des sensations.
-            </p>
-            <p>
-              Cette analyse premium va au dela des "ranges normaux" classiques. Nous utilisons des ranges optimaux,
-              une lecture systémique et une approche de performance pour identifier non seulement ce qui ne va pas,
-              mais surtout <strong>comment maximiser ton potentiel physiologique</strong>.
+              Cette vue d&apos;ensemble condense ton dossier en décisions prioritaires. Le but est de transformer des chiffres
+              biologiques en plan d&apos;exécution concret: quoi corriger en premier, quoi stabiliser et quoi optimiser.
             </p>
             <p>
-              Tu trouveras ici:
+              On s&apos;appuie sur des ranges optimaux et une lecture systémique pour dépasser la logique &quot;normal/anormal&quot;.
+              L&apos;objectif final reste la performance réelle: énergie, récupération, recomposition et progression durable.
             </p>
-            <ul className="list-disc list-outside space-y-2 pl-5 sm:pl-6 text-sm sm:text-base">
-              <li>Une vue d'ensemble de ton profil métabolique complet</li>
-              <li>Une analyse détaillée de chaque biomarqueur avec interprétation contextuelle</li>
-              <li>Des axes d'optimisation prioritaires basés sur l'interconnexion de tes marqueurs</li>
-              <li>Un plan d'action 90 jours concret et personnalisé</li>
-              <li>Des protocoles de nutrition et supplémentation evidence based</li>
-            </ul>
-            <p className="pt-2">
-              Prends le temps d'explorer chaque section. Chaque insight a été généré en analysant l'ensemble de tes données,
-              pas juste marqueur par marqueur, mais dans leur contexte global.
-            </p>
+          </div>
+
+          <div className="mt-5 sm:mt-6 grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {kpiCards.map((card) => (
+              <div
+                key={card.label}
+                className="rounded border px-3 py-3 sm:px-4"
+                style={{ backgroundColor: currentTheme.colors.background, borderColor: currentTheme.colors.border }}
+              >
+                <p className="text-xs uppercase tracking-[0.14em]" style={{ color: currentTheme.colors.textMuted }}>
+                  {card.label}
+                </p>
+                <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: currentTheme.colors.text }}>
+                  {card.value}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -113,6 +125,11 @@ export function OverviewTab({
           />
           <p className="text-xs mt-4 text-caption text-center" style={{ color: currentTheme.colors.textMuted }}>
             Synthèse issue de {normalizedMarkers.length} biomarqueurs analysés
+          </p>
+          <p className="text-xs text-center mt-2" style={{ color: currentTheme.colors.textMuted }}>
+            {bestPanel ? `Point fort: ${bestPanel.title} (${bestPanel.score}%)` : "Point fort: non disponible"}
+            {" · "}
+            {weakestPanel ? `Priorité: ${weakestPanel.title} (${weakestPanel.score}%)` : "Priorité: non disponible"}
           </p>
         </div>
 
@@ -165,17 +182,17 @@ export function OverviewTab({
           <StatusIndicator status="optimal" label="Optimal" />
           <ul className="mt-3 space-y-2 text-xs sm:text-sm">
             {(summary.optimal || []).slice(0, 6).map((item) => (
-              <li key={item} className="text-muted-foreground break-words">
+              <li key={item} className="break-words" style={{ color: currentTheme.colors.text }}>
                 {item}
               </li>
             ))}
             {(summary.optimal || []).length > 6 && (
-              <li className="text-muted-foreground font-medium">
+              <li className="font-medium" style={{ color: currentTheme.colors.textMuted }}>
                 +{(summary.optimal || []).length - 6} autres...
               </li>
             )}
             {(summary.optimal || []).length === 0 && (
-              <li className="text-muted-foreground">Aucun marqueur optimal détecté.</li>
+              <li style={{ color: currentTheme.colors.textMuted }}>Aucun marqueur optimal détecté.</li>
             )}
           </ul>
         </div>
@@ -186,17 +203,17 @@ export function OverviewTab({
           <StatusIndicator status="suboptimal" label="A surveiller" />
           <ul className="mt-3 space-y-2 text-xs sm:text-sm">
             {(summary.watch || []).slice(0, 6).map((item) => (
-              <li key={item} className="text-muted-foreground break-words">
+              <li key={item} className="break-words" style={{ color: currentTheme.colors.text }}>
                 {item}
               </li>
             ))}
             {(summary.watch || []).length > 6 && (
-              <li className="text-muted-foreground font-medium">
+              <li className="font-medium" style={{ color: currentTheme.colors.textMuted }}>
                 +{(summary.watch || []).length - 6} autres...
               </li>
             )}
             {(summary.watch || []).length === 0 && (
-              <li className="text-muted-foreground">Aucun marqueur sous surveillance.</li>
+              <li style={{ color: currentTheme.colors.textMuted }}>Aucun marqueur sous surveillance.</li>
             )}
           </ul>
         </div>
@@ -207,17 +224,17 @@ export function OverviewTab({
           <StatusIndicator status="critical" label="Action requise" />
           <ul className="mt-3 space-y-2 text-xs sm:text-sm">
             {(summary.action || []).slice(0, 6).map((item) => (
-              <li key={item} className="text-muted-foreground break-words">
+              <li key={item} className="break-words" style={{ color: currentTheme.colors.text }}>
                 {item}
               </li>
             ))}
             {(summary.action || []).length > 6 && (
-              <li className="text-muted-foreground font-medium">
+              <li className="font-medium" style={{ color: currentTheme.colors.textMuted }}>
                 +{(summary.action || []).length - 6} autres...
               </li>
             )}
             {(summary.action || []).length === 0 && (
-              <li className="text-muted-foreground">Aucune action critique détectée.</li>
+              <li style={{ color: currentTheme.colors.textMuted }}>Aucune action critique détectée.</li>
             )}
           </ul>
         </div>
