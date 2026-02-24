@@ -3554,7 +3554,8 @@ export async function generateAIBloodAnalysis(
     };
 
     const MAX_ATTEMPTS = 2;
-    const TIMEOUT_MS = 600_000;
+    // Keep async generation bounded: avoid reports stuck in "processing" for many minutes.
+    const TIMEOUT_MS = 90_000;
 
     let lastErr: unknown = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
