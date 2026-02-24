@@ -5,8 +5,10 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "../anthropicConfig";
+import { GEMINI_CONFIG } from "../geminiConfig";
 import { OPENAI_CONFIG, validateOpenAIConfig } from "../openaiConfig";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
@@ -1964,6 +1966,21 @@ function getBloodOpenAIClient(): OpenAI {
   return bloodOpenAIClient;
 }
 
+let bloodGeminiModel: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null = null;
+function getBloodGeminiModel() {
+  const key = process.env.GEMINI_API_KEY || GEMINI_CONFIG.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("GEMINI_API_KEY not configured");
+  }
+  if (!bloodGeminiModel) {
+    const genAI = new GoogleGenerativeAI(key);
+    bloodGeminiModel = genAI.getGenerativeModel({
+      model: process.env.BLOOD_AI_GEMINI_MODEL || GEMINI_CONFIG.GEMINI_MODEL || "gemini-2.5-pro",
+    });
+  }
+  return bloodGeminiModel;
+}
+
 const normalizeForCheck = (text: string) =>
   String(text || "")
     .normalize("NFD")
@@ -3460,6 +3477,7 @@ export async function generateAIBloodAnalysis(
 
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
   const openAiFallbackModel = process.env.BLOOD_AI_OPENAI_MODEL || OPENAI_CONFIG.OPENAI_MODEL || "gpt-4o";
+  const geminiFallbackModel = process.env.BLOOD_AI_GEMINI_MODEL || GEMINI_CONFIG.GEMINI_MODEL || "gemini-2.5-pro";
   let modelUsed = client ? model : openAiFallbackModel;
   // Keep output bounded to avoid long-running requests in production.
   // Prioritise completeness/structure over extreme length.
@@ -3664,8 +3682,47 @@ export async function generateAIBloodAnalysis(
       }
     }
 
-    const rootErr = lastOpenAiErr || lastClaudeErr;
-    throw rootErr instanceof Error ? rootErr : new Error("Claude/OpenAI generation failed");
+    let lastGeminiErr: unknown = null;
+    const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY || GEMINI_CONFIG.GEMINI_API_KEY);
+    if (hasGeminiKey) {
+      const gemini = getBloodGeminiModel();
+      const geminiMaxTokens = Math.max(
+        2048,
+        Math.min(maxTokens, Number(process.env.BLOOD_AI_GEMINI_MAX_TOKENS || "8192"))
+      );
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const result = await withTimeout(
+            gemini.generateContent({
+              contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
+              generationConfig: {
+                temperature: 0.35,
+                maxOutputTokens: geminiMaxTokens,
+              },
+            } as any),
+            TIMEOUT_MS,
+            "GEMINI_TIMEOUT"
+          );
+          const candidate = String(result?.response?.text?.() || "").trim();
+          if (!candidate) throw new Error("Gemini returned empty report");
+          modelUsed = geminiFallbackModel;
+          console.warn(`[BloodAnalysis] Generated with Gemini fallback model: ${geminiFallbackModel}`);
+          return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
+        } catch (err: any) {
+          lastGeminiErr = err;
+          if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
+            const backoff = attempt === 1 ? 1500 : 3500;
+            console.warn(`[BloodAnalysis] Gemini retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
+            await sleep(backoff);
+            continue;
+          }
+          break;
+        }
+      }
+    }
+
+    const rootErr = lastGeminiErr || lastOpenAiErr || lastClaudeErr;
+    throw rootErr instanceof Error ? rootErr : new Error("Claude/OpenAI/Gemini generation failed");
   };
 
   let output = "";
