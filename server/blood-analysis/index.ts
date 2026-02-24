@@ -5,7 +5,9 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { ANTHROPIC_CONFIG, validateAnthropicConfig } from "../anthropicConfig";
+import { OPENAI_CONFIG, validateOpenAIConfig } from "../openaiConfig";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 
@@ -1951,6 +1953,17 @@ function getBloodAnthropicClient(): Anthropic {
   return bloodAnthropicClient;
 }
 
+let bloodOpenAIClient: OpenAI | null = null;
+function getBloodOpenAIClient(): OpenAI {
+  if (!bloodOpenAIClient) {
+    if (!validateOpenAIConfig()) {
+      throw new Error("OPENAI_API_KEY not configured");
+    }
+    bloodOpenAIClient = new OpenAI({ apiKey: OPENAI_CONFIG.OPENAI_API_KEY });
+  }
+  return bloodOpenAIClient;
+}
+
 const normalizeForCheck = (text: string) =>
   String(text || "")
     .normalize("NFD")
@@ -3366,16 +3379,18 @@ export async function generateAIBloodAnalysis(
   },
   knowledgeContext?: string
 ): Promise<{ report: string; status: "generated" | "fallback"; model: string; validationMissing?: string[] }> {
-  let client: ReturnType<typeof getBloodAnthropicClient>;
+  let client: ReturnType<typeof getBloodAnthropicClient> | null = null;
   try {
     client = getBloodAnthropicClient();
   } catch (initErr: any) {
-    console.error("[BloodAnalysis] Anthropic client init failed:", initErr?.message || initErr);
+    console.warn("[BloodAnalysis] Anthropic client init failed, will try OpenAI fallback:", initErr?.message || initErr);
+  }
+  if (!client && !validateOpenAIConfig()) {
     return {
       report: buildFallbackAnalysis(analysisResult, userProfile),
       status: "fallback",
       model: "fallback",
-      validationMissing: [`init_error:${String(initErr?.message || initErr).slice(0, 200)}`],
+      validationMissing: ["init_error:anthropic+openai_unavailable"],
     };
   }
 
@@ -3444,6 +3459,8 @@ export async function generateAIBloodAnalysis(
     .join("\n");
 
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
+  const openAiFallbackModel = process.env.BLOOD_AI_OPENAI_MODEL || OPENAI_CONFIG.OPENAI_MODEL || "gpt-4o";
+  let modelUsed = client ? model : openAiFallbackModel;
   // Keep output bounded to avoid long-running requests in production.
   // Prioritise completeness/structure over extreme length.
   const maxTokens = 16000;
@@ -3555,10 +3572,10 @@ export async function generateAIBloodAnalysis(
   const callClaudeOnce = async (prompt: string, opts?: { system?: string }) => {
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+    const withTimeout = <T,>(p: Promise<T>, ms: number, timeoutLabel: string): Promise<T> =>
       Promise.race([
         p,
-        new Promise<T>((_, reject) => setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), ms)),
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error(timeoutLabel)), ms)),
       ]);
 
     const isRetryable = (err: any) => {
@@ -3571,41 +3588,85 @@ export async function generateAIBloodAnalysis(
     };
 
     const MAX_ATTEMPTS = 2;
-    // Keep async generation bounded: avoid reports stuck in "processing" for many minutes.
     const TIMEOUT_MS = 90_000;
+    const systemPrompt = opts?.system || BLOOD_ANALYSIS_SYSTEM_PROMPT_V6;
 
-    let lastErr: unknown = null;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
-        const streamPromise = async () => {
-          const stream = client.messages.stream({
-            model,
-            max_tokens: maxTokens,
-            temperature: 0.4,
-            system: opts?.system || BLOOD_ANALYSIS_SYSTEM_PROMPT_V6,
-            messages: [{ role: "user", content: prompt }],
-          } as any);
-          const finalMessage = await stream.finalMessage();
-          const textContent = (finalMessage as any).content?.find((c: any) => c.type === "text");
-          return String(textContent?.text || "").trim();
-        };
+    let lastClaudeErr: unknown = null;
+    if (client) {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const streamPromise = async () => {
+            const stream = client!.messages.stream({
+              model,
+              max_tokens: maxTokens,
+              temperature: 0.4,
+              system: systemPrompt,
+              messages: [{ role: "user", content: prompt }],
+            } as any);
+            const finalMessage = await stream.finalMessage();
+            const textContent = (finalMessage as any).content?.find((c: any) => c.type === "text");
+            return String(textContent?.text || "").trim();
+          };
 
-        const candidate = await withTimeout(streamPromise(), TIMEOUT_MS);
-        if (!candidate) throw new Error("Claude returned empty report");
-        return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
-      } catch (err: any) {
-        lastErr = err;
-        if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
-          const backoff = attempt === 1 ? 1500 : 3500;
-          console.warn(`[BloodAnalysis] Claude retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
-          await sleep(backoff);
-          continue;
+          const candidate = await withTimeout(streamPromise(), TIMEOUT_MS, "CLAUDE_TIMEOUT");
+          if (!candidate) throw new Error("Claude returned empty report");
+          modelUsed = model;
+          return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
+        } catch (err: any) {
+          lastClaudeErr = err;
+          if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
+            const backoff = attempt === 1 ? 1500 : 3500;
+            console.warn(`[BloodAnalysis] Claude retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
+            await sleep(backoff);
+            continue;
+          }
+          console.warn("[BloodAnalysis] Claude failed, switching to OpenAI fallback:", err?.message || err);
+          break;
         }
-        throw err;
       }
     }
 
-    throw lastErr instanceof Error ? lastErr : new Error("Claude failed");
+    let lastOpenAiErr: unknown = null;
+    if (validateOpenAIConfig()) {
+      const openai = getBloodOpenAIClient();
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const completion = await withTimeout(
+            openai.chat.completions.create({
+              model: openAiFallbackModel,
+              temperature: 0.3,
+              max_tokens: maxTokens,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: prompt },
+              ],
+            }),
+            TIMEOUT_MS,
+            "OPENAI_TIMEOUT"
+          );
+          const raw = completion.choices?.[0]?.message?.content;
+          const candidate = Array.isArray(raw)
+            ? raw.map((chunk: any) => String(chunk?.text || "")).join("\n").trim()
+            : String(raw || "").trim();
+          if (!candidate) throw new Error("OpenAI returned empty report");
+          modelUsed = openAiFallbackModel;
+          console.warn(`[BloodAnalysis] Generated with OpenAI fallback model: ${openAiFallbackModel}`);
+          return sanitizeBloodReportRegister(stripEmojis(candidate)).trim();
+        } catch (err: any) {
+          lastOpenAiErr = err;
+          if (attempt < MAX_ATTEMPTS && isRetryable(err)) {
+            const backoff = attempt === 1 ? 1500 : 3500;
+            console.warn(`[BloodAnalysis] OpenAI retry ${attempt}/${MAX_ATTEMPTS - 1} after error:`, err?.message || err);
+            await sleep(backoff);
+            continue;
+          }
+          break;
+        }
+      }
+    }
+
+    const rootErr = lastOpenAiErr || lastClaudeErr;
+    throw rootErr instanceof Error ? rootErr : new Error("Claude/OpenAI generation failed");
   };
 
   let output = "";
@@ -3765,7 +3826,7 @@ REGLES STRICTES:
         return {
           report: after,
           status: "generated",
-          model,
+          model: modelUsed,
           ...(remaining.length ? { validationMissing: remaining } : {}),
         };
       }
@@ -3818,7 +3879,7 @@ REGLES STRICTES:
           return {
             report: after,
             status: "generated",
-            model,
+            model: modelUsed,
             ...(remaining.length ? { validationMissing: remaining } : {}),
           };
         }
