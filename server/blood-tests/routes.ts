@@ -829,10 +829,15 @@ export function registerBloodTestsRoutes(app: Express): void {
           try {
             let enriched;
             try {
-              enriched = await generateAIBloodAnalysis(
-                analysisResult,
-                aiProfile,
-                knowledgeContext
+              enriched = await withAIGenerationTimeout(
+                () =>
+                  generateAIBloodAnalysis(
+                    analysisResult,
+                    aiProfile,
+                    knowledgeContext
+                  ),
+                "blood-tests/upload async retry",
+                180_000
               );
             } catch (err) {
               console.error("[BloodTests] Upload async AI retry failed, storing deterministic fallback:", err);

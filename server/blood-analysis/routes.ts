@@ -530,10 +530,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
-            const enriched = await generateAIBloodAnalysis(
-              analysisResult,
-              profileWithAge as any,
-              knowledgeContext
+            const enriched = await withAIGenerationTimeout(
+              () =>
+                generateAIBloodAnalysis(
+                  analysisResult,
+                  profileWithAge as any,
+                  knowledgeContext
+                ),
+              "blood-analysis/submit async report",
+              180_000
             );
             await storage.updateBloodReport(reportRecord.id, {
               aiReport: enriched.report,
@@ -1762,10 +1767,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             let aiMeta: { status: string; model: string; validationMissing?: string[] } | null = null;
             let aiError: unknown = null;
             try {
-              const generated = await generateAIBloodAnalysis(
-                analysisResult,
-                { ...(rawProfile as any), gender } as any,
-                knowledgeContext
+              const generated = await withAIGenerationTimeout(
+                () =>
+                  generateAIBloodAnalysis(
+                    analysisResult,
+                    { ...(rawProfile as any), gender } as any,
+                    knowledgeContext
+                  ),
+                "blood-analysis/report async refresh",
+                180_000
               );
               aiReport = generated.report;
               aiMeta = { status: generated.status, model: generated.model, validationMissing: generated.validationMissing };
