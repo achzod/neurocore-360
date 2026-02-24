@@ -2450,12 +2450,17 @@ export function buildFallbackAnalysis(
     if (!text) return {};
     const nums = String(text)
       .replace(/,/g, ".")
-      .match(/-?\d+(?:\.\d+)?/g)
+      .replace(/[−–—]/g, "-")
+      // Keep numeric ranges like "10-40" from being parsed as [10, -40]
+      .replace(/(\d)\s*-\s*(?=\d)/g, "$1 to ")
+      .match(/[+-]?\d+(?:\.\d+)?/g)
       ?.map((v) => Number(v))
       .filter((v) => Number.isFinite(v));
     if (!nums?.length) return {};
     if (nums.length === 1) return { min: nums[0], max: nums[0] };
-    return { min: nums[0], max: nums[1] };
+    const first = nums[0];
+    const second = nums[1];
+    return { min: Math.min(first, second), max: Math.max(first, second) };
   };
 
   const pctDeltaVsOptimal = (m: MarkerAnalysis): string => {
@@ -2467,7 +2472,18 @@ export function buildFallbackAnalysis(
     if (m.value > range.max && range.max > 0) {
       return `+${Math.round(((m.value - range.max) / range.max) * 100)}% au-dessus de l'optimal`;
     }
+    if (m.value > range.max) {
+      return "au-dessus de l'optimal (ecart non quantifiable)";
+    }
     return "dans la zone optimale";
+  };
+
+  const describeDeltaVsOptimal = (m: MarkerAnalysis): string => {
+    const delta = pctDeltaVsOptimal(m);
+    if (delta === "dans la zone optimale" && m.status !== "optimal") {
+      return "ecart hors zone optimale (quantification indisponible)";
+    }
+    return delta;
   };
 
   const formatMarkerTable = (markers: MarkerAnalysis[]): string => {
@@ -2711,7 +2727,7 @@ export function buildFallbackAnalysis(
         ? priorities.slice(0, 5).map((m, idx) => {
             const mech = markerMechanism[m.markerId] || "signal biologique de priorité systémique";
             const action = markerAction[m.markerId] || "mettre en place une correction ciblée puis retester.";
-            return `${idx + 1}. ${m.name} (${statusLabel(m.status)}): ${m.value} ${m.unit || ""} (${pctDeltaVsOptimal(
+            return `${idx + 1}. ${m.name} (${statusLabel(m.status)}): ${m.value} ${m.unit || ""} (${describeDeltaVsOptimal(
               m
             )}). Cela traduit surtout ${mech}. Action immédiate: ${action}`;
           })
@@ -2820,7 +2836,7 @@ export function buildFallbackAnalysis(
       sections.push("");
       sections.push(
         `Interprétation axe ${axis.id}: ${mainFlags
-          .map((m) => `${m.name} (${pctDeltaVsOptimal(m)})`)
+          .map((m) => `${m.name} (${describeDeltaVsOptimal(m)})`)
           .join(", ")}.`
       );
       sections.push(
@@ -2906,7 +2922,7 @@ export function buildFallbackAnalysis(
       sections.push(`### ${idx + 1}. ${m.name}`);
       sections.push(`C'est quoi: ${m.name} est un indicateur de ${mech}.`);
       sections.push(
-        `Ton signal aujourd'hui: ${m.value} ${m.unit || ""} (${statusLabel(m.status)}), ${pctDeltaVsOptimal(m)}. Range labo ${m.normalRange || "Non renseigne"} | range optimal ${
+        `Ton signal aujourd'hui: ${m.value} ${m.unit || ""} (${statusLabel(m.status)}), ${describeDeltaVsOptimal(m)}. Range labo ${m.normalRange || "Non renseigne"} | range optimal ${
           m.optimalRange || "Non renseigne"
         }.`
       );

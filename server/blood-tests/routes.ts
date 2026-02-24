@@ -733,29 +733,38 @@ export function registerBloodTestsRoutes(app: Express): void {
 	        }
 	      }
       if (!aiAnalysis) {
-        aiAnalysis = buildFallbackAnalysis(analysisResult, {
-          gender: profile.gender as "homme" | "femme",
-          age,
-          sleepHours: profile.sleepHours,
-          stressLevel: profile.stressLevel,
-          fastingHours: profile.fastingHours,
-          drawTime: profile.drawTime,
-          lastTraining: profile.lastTraining,
-          alcoholLast72h: profile.alcoholLast72h,
-          nutritionPhase: profile.nutritionPhase,
-          supplementsUsed: profile.supplementsUsed,
-          medications: profile.medications,
-          infectionRecent: profile.infectionRecent,
-          poids: profile.poids,
-          taille: profile.taille,
-        });
-        aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
+        if (syncAiNeedsBackgroundRetry && process.env.ANTHROPIC_API_KEY) {
+          aiMeta = {
+            status: "processing",
+            model: "claude-opus-4-6",
+            validationMissing: null,
+          };
+        } else {
+          aiAnalysis = buildFallbackAnalysis(analysisResult, {
+            gender: profile.gender as "homme" | "femme",
+            age,
+            sleepHours: profile.sleepHours,
+            stressLevel: profile.stressLevel,
+            fastingHours: profile.fastingHours,
+            drawTime: profile.drawTime,
+            lastTraining: profile.lastTraining,
+            alcoholLast72h: profile.alcoholLast72h,
+            nutritionPhase: profile.nutritionPhase,
+            supplementsUsed: profile.supplementsUsed,
+            medications: profile.medications,
+            infectionRecent: profile.infectionRecent,
+            poids: profile.poids,
+            taille: profile.taille,
+          });
+          aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
+        }
       }
       const aiNowIso = new Date().toISOString();
       const aiFallbackReason =
         aiMeta?.status === "fallback"
           ? (syncAiNeedsBackgroundRetry ? "sync_timeout_or_error" : "sync_fallback")
           : null;
+      const aiIsProcessing = aiMeta?.status === "processing";
 
       const markers = analysisResult.markers.map((marker) => {
         const range = BIOMARKER_RANGES[marker.markerId];
@@ -796,7 +805,7 @@ export function registerBloodTestsRoutes(app: Express): void {
         aiAnalysis,
         aiStatus: aiMeta?.status || "unknown",
         aiModel: aiMeta?.model || "unknown",
-        aiGeneratedAt: aiNowIso,
+        aiGeneratedAt: aiIsProcessing ? null : aiNowIso,
         aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
         aiFallbackReason,
         ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
@@ -806,36 +815,67 @@ export function registerBloodTestsRoutes(app: Express): void {
       };
 
       const updatedRecord = await storage.updateBloodTest(baseRecord.id, {
-        status: "completed",
+        status: aiIsProcessing ? "processing" : "completed",
         markers,
         analysis: analysisPayload,
         patientProfile: profile,
         globalScore,
         globalLevel,
-        completedAt: new Date(),
+        completedAt: aiIsProcessing ? undefined : new Date(),
       });
 
       if (syncAiNeedsBackgroundRetry && process.env.ANTHROPIC_API_KEY) {
         setImmediate(async () => {
           try {
-            const enriched = await generateAIBloodAnalysis(
-              analysisResult,
-              aiProfile,
-              knowledgeContext
-            );
+            let enriched;
+            try {
+              enriched = await generateAIBloodAnalysis(
+                analysisResult,
+                aiProfile,
+                knowledgeContext
+              );
+            } catch (err) {
+              console.error("[BloodTests] Upload async AI retry failed, storing deterministic fallback:", err);
+              enriched = {
+                report: buildFallbackAnalysis(analysisResult, {
+                  gender: profile.gender as "homme" | "femme",
+                  age,
+                  sleepHours: profile.sleepHours,
+                  stressLevel: profile.stressLevel,
+                  fastingHours: profile.fastingHours,
+                  drawTime: profile.drawTime,
+                  lastTraining: profile.lastTraining,
+                  alcoholLast72h: profile.alcoholLast72h,
+                  nutritionPhase: profile.nutritionPhase,
+                  supplementsUsed: profile.supplementsUsed,
+                  medications: profile.medications,
+                  infectionRecent: profile.infectionRecent,
+                  poids: profile.poids,
+                  taille: profile.taille,
+                }),
+                status: "fallback" as const,
+                model: "fallback",
+                validationMissing: [] as string[],
+              };
+            }
+            const asyncNowIso = new Date().toISOString();
             const refreshedAnalysis = {
               ...analysisPayload,
               aiAnalysis: enriched.report,
               aiStatus: enriched.status,
               aiModel: enriched.model,
-              aiGeneratedAt: new Date().toISOString(),
-              aiFallbackAt: enriched.status === "fallback" ? new Date().toISOString() : null,
+              aiGeneratedAt: asyncNowIso,
+              aiFallbackAt: enriched.status === "fallback" ? asyncNowIso : null,
               aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
               ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
             };
-            await storage.updateBloodTest(baseRecord.id, { analysis: refreshedAnalysis });
+            await storage.updateBloodTest(baseRecord.id, {
+              status: "completed",
+              analysis: refreshedAnalysis,
+              completedAt: new Date(),
+            });
           } catch (err) {
-            console.error("[BloodTests] Upload async AI retry failed:", err);
+            console.error("[BloodTests] Upload async AI retry persistence failed:", err);
           }
         });
       }

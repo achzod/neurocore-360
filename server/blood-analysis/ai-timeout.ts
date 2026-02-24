@@ -1,4 +1,6 @@
-const DEFAULT_AI_SYNC_TIMEOUT_MS = 25000;
+// 25s was too short for premium blood reports on production cold starts,
+// causing avoidable fallback responses.
+const DEFAULT_AI_SYNC_TIMEOUT_MS = 70000;
 
 const parseTimeoutFromEnv = (): number => {
   const raw = Number(process.env.BLOOD_AI_SYNC_TIMEOUT_MS);

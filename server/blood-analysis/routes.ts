@@ -480,12 +480,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         } catch (aiError) {
           syncAiNeedsBackgroundRetry = true;
           if (isAIGenerationTimeoutError(aiError)) {
-            console.warn("[BloodAnalysis] Submit sync AI timed out, returning fallback and queuing retry.");
+            console.warn("[BloodAnalysis] Submit sync AI timed out, keeping processing state and queuing retry.");
           } else {
-            console.error("[BloodAnalysis] Submit sync AI failed, returning fallback and queuing retry:", aiError);
+            console.error("[BloodAnalysis] Submit sync AI failed, keeping processing state and queuing retry:", aiError);
           }
-          aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
-          aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
+          aiAnalysis = "";
+          aiMeta = { status: "processing", model: "claude-opus-4-6", validationMissing: null };
         }
       } else if (shouldIncludeAI && !process.env.ANTHROPIC_API_KEY) {
         aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
@@ -515,7 +515,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 ...(shouldAsyncAI
                   ? {}
                   : {
-                      aiGeneratedAt: aiNowIso,
+                      aiGeneratedAt: aiMeta?.status === "processing" ? null : aiNowIso,
                       aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
                       aiFallbackReason,
                     }),
@@ -566,7 +566,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiReport: aiAnalysis,
         aiMeta,
         status:
-          shouldIncludeAI && shouldAsyncAI && Boolean(process.env.ANTHROPIC_API_KEY) && !aiAnalysis
+          shouldIncludeAI &&
+          Boolean(process.env.ANTHROPIC_API_KEY) &&
+          (aiMeta?.status === "processing" || (shouldAsyncAI && !aiAnalysis))
             ? "processing"
             : "completed"
       });
@@ -1579,11 +1581,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         (report as any).aiReport = ensureAxesSectionTemplate(sanitizeBloodReportRegister((report as any).aiReport));
       }
 
+      const aiStatus = String((report as any)?.aiMeta?.status || "").toLowerCase();
+
       // If AI report text is missing, return a deterministic fallback immediately
-      // so downstream tabs are never blocked on "processing".
+      // unless the report is explicitly in "processing" mode.
       const initialAiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
       const missingAiReport = initialAiReportText.trim().length === 0;
-      if (missingAiReport) {
+      if (missingAiReport && aiStatus !== "processing") {
         const rawProfile =
           (report as any).profile && typeof (report as any).profile === "object"
             ? ((report as any).profile as Record<string, unknown>)
@@ -1673,19 +1677,23 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       // If the AI report is missing OR stuck in fallback for too long,
       // kick off background generation with cooldown protection.
-      const aiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
-      const aiStatus = String((report as any)?.aiMeta?.status || "").toLowerCase();
       const aiGeneratedAtRaw = String((report as any)?.aiMeta?.generatedAt || "");
       const aiGeneratedAtMs = Date.parse(aiGeneratedAtRaw);
       const aiAgeMs = Number.isFinite(aiGeneratedAtMs) ? Math.max(0, Date.now() - aiGeneratedAtMs) : Number.POSITIVE_INFINITY;
       const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
-      const shouldGenerateMissingAi = hasAnthropicKey && missingAiReport;
+      const shouldGenerateMissingAi = hasAnthropicKey && missingAiReport && aiStatus !== "processing";
+      const shouldRetryProcessingAi =
+        hasAnthropicKey &&
+        aiStatus === "processing" &&
+        aiAgeMs >= BLOOD_AI_FALLBACK_REFRESH_MIN_AGE_MS;
       const shouldRefreshFallbackAi =
         hasAnthropicKey &&
         aiStatus === "fallback" &&
         aiAgeMs >= BLOOD_AI_FALLBACK_REFRESH_MIN_AGE_MS;
       const regenReason = shouldGenerateMissingAi
         ? "missing-ai-report"
+        : shouldRetryProcessingAi
+        ? "processing-retry"
         : shouldRefreshFallbackAi
         ? "fallback-refresh"
         : null;
