@@ -76,6 +76,10 @@ const BLOOD_AI_FALLBACK_REFRESH_COOLDOWN_MS = parseMsEnv(
   "BLOOD_AI_FALLBACK_REFRESH_COOLDOWN_MS",
   12 * 60 * 1000
 );
+const BLOOD_AI_PROCESSING_GRACE_MS = parseMsEnv(
+  "BLOOD_AI_PROCESSING_GRACE_MS",
+  90 * 1000
+);
 
 const getBaseUrl = (): string => {
   return (
@@ -1607,12 +1611,19 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       }
 
       const aiStatus = String((report as any)?.aiMeta?.status || "").toLowerCase();
+      const aiGeneratedAtRawEarly = String((report as any)?.aiMeta?.generatedAt || "");
+      const aiGeneratedAtMsEarly = Date.parse(aiGeneratedAtRawEarly);
+      const aiAgeMsEarly = Number.isFinite(aiGeneratedAtMsEarly)
+        ? Math.max(0, Date.now() - aiGeneratedAtMsEarly)
+        : Number.POSITIVE_INFINITY;
+      const processingStaleForImmediateFallback =
+        aiStatus === "processing" && aiAgeMsEarly >= BLOOD_AI_PROCESSING_GRACE_MS;
 
       // If AI report text is missing, return a deterministic fallback immediately
-      // unless the report is explicitly in "processing" mode.
+      // unless the report is explicitly in fresh "processing" mode.
       const initialAiReportText = typeof (report as any).aiReport === "string" ? (report as any).aiReport : "";
       const missingAiReport = initialAiReportText.trim().length === 0;
-      if (missingAiReport && aiStatus !== "processing") {
+      if (missingAiReport && (aiStatus !== "processing" || processingStaleForImmediateFallback)) {
         const rawProfile =
           (report as any).profile && typeof (report as any).profile === "object"
             ? ((report as any).profile as Record<string, unknown>)
@@ -1636,7 +1647,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               model: "fallback",
               generatedAt: (report as any)?.aiMeta?.generatedAt || fallbackAt,
               fallbackAt,
-              fallbackReason: "missing_ai_report_fallback",
+              fallbackReason: processingStaleForImmediateFallback
+                ? "processing_stale_fallback"
+                : "missing_ai_report_fallback",
             };
 
             // Persist fallback asynchronously so subsequent reads are deterministic.
@@ -1650,7 +1663,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                       aiModel: "fallback",
                       aiGeneratedAt: fallbackAt,
                       aiFallbackAt: fallbackAt,
-                      aiFallbackReason: "missing_ai_report_fallback",
+                      aiFallbackReason: processingStaleForImmediateFallback
+                        ? "processing_stale_fallback"
+                        : "missing_ai_report_fallback",
                     } as any,
                     aiReport: fallbackReport,
                   } as any);
@@ -1679,7 +1694,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                         aiModel: "fallback",
                         aiGeneratedAt: fallbackAt,
                         aiFallbackAt: fallbackAt,
-                        aiFallbackReason: "missing_ai_report_fallback",
+                        aiFallbackReason: processingStaleForImmediateFallback
+                          ? "processing_stale_fallback"
+                          : "missing_ai_report_fallback",
                       } as any,
                     })
                     .where(eq(bloodTests.id, reportId));
