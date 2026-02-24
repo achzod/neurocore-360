@@ -2149,7 +2149,6 @@ const validateBloodAnalysisReport = (output: string) => {
     { id: "plan90", checks: ["## plan d'action 90 jours", "## plan d action 90 jours", "## plan 90 jours"] },
     { id: "nutrition", checks: ["## nutrition"] },
     { id: "supplements", checks: ["## supplements"] },
-    { id: "annexes", checks: ["## annexes"] },
   ];
 
   const missing = required
@@ -2163,7 +2162,7 @@ const validateBloodAnalysisReport = (output: string) => {
   if (!axesOk) missing.push("axes_subsections");
 
   const headings = (output.match(/^##\s+/gm) || []).length;
-  if (headings < 11) missing.push("headings_count");
+  if (headings < 10) missing.push("headings_count");
 
   if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(output)) missing.push("emoji_present");
 
