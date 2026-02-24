@@ -1774,10 +1774,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                     analysisResult,
                     { ...(rawProfile as any), gender } as any,
                     knowledgeContext
-                  ),
+                ),
                 "blood-analysis/report async refresh"
               );
               aiReport = generated.report;
+              if (!aiReport || !aiReport.trim()) {
+                throw new Error("AI_EMPTY_REPORT");
+              }
               aiMeta = { status: generated.status, model: generated.model, validationMissing: generated.validationMissing };
             } catch (err) {
               aiError = err;
@@ -1850,6 +1853,99 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             }
           } catch (err) {
             console.error(`[BloodAnalysis] Background AI generation failed for ${reportId}:`, err);
+            try {
+              const fallbackAt = new Date().toISOString();
+              const fallbackErr = String((err as any)?.message || err || "").slice(0, 140);
+              const profileSafe =
+                (report as any).profile && typeof (report as any).profile === "object"
+                  ? ((report as any).profile as Record<string, unknown>)
+                  : {};
+              let fallbackAnalysis: any =
+                (report as any).analysis && typeof (report as any).analysis === "object"
+                  ? ((report as any).analysis as Record<string, unknown>)
+                  : null;
+              if (!fallbackAnalysis || !Array.isArray((fallbackAnalysis as any).markers)) {
+                const rawMarkers = Array.isArray((report as any).markers) ? ((report as any).markers as any[]) : [];
+                const resolvedMarkers: BloodMarkerInput[] = rawMarkers
+                  .map((m) => {
+                    const rawId = String(m?.markerId || m?.code || m?.name || "");
+                    const markerId = normalizeMarkerName(rawId);
+                    const value = Number(m?.value);
+                    const unit = typeof m?.unit === "string" ? m.unit : undefined;
+                    return { markerId, value, unit };
+                  })
+                  .filter((m) => m.markerId && Number.isFinite(m.value));
+                if (resolvedMarkers.length) {
+                  const gender = profileSafe.gender === "femme" ? "femme" : "homme";
+                  fallbackAnalysis = await analyzeBloodwork(resolvedMarkers, {
+                    ...(profileSafe as any),
+                    gender,
+                  });
+                }
+              }
+
+              if (!fallbackAnalysis || !Array.isArray((fallbackAnalysis as any).markers)) {
+                throw new Error("FALLBACK_ANALYSIS_UNAVAILABLE");
+              }
+
+              const fallbackGender = profileSafe.gender === "femme" ? "femme" : "homme";
+              const fallbackReport = ensureAxesSectionTemplate(
+                sanitizeBloodReportRegister(
+                  buildFallbackAnalysis(
+                    fallbackAnalysis as any,
+                    { ...(profileSafe as any), gender: fallbackGender } as any
+                  )
+                )
+              );
+
+              if (reportSource === "legacy") {
+                await storage.updateBloodReport(reportId, {
+                  analysis: {
+                    ...(fallbackAnalysis as any),
+                    aiStatus: "fallback",
+                    aiModel: "fallback",
+                    aiGeneratedAt: fallbackAt,
+                    aiFallbackAt: fallbackAt,
+                    aiFallbackReason: fallbackErr
+                      ? `background_refresh_error:${fallbackErr}`
+                      : "background_refresh_error",
+                  } as any,
+                  aiReport: fallbackReport,
+                } as any);
+              } else if (reportSource === "blood_tests" && bloodTestRow) {
+                const { db } = await import("../db.js");
+                const { bloodTests } = await import("../../shared/drizzle-schema.js");
+                const { eq } = await import("drizzle-orm");
+
+                const existingAnalysis =
+                  bloodTestRow.analysis && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+                    ? (bloodTestRow.analysis as Record<string, unknown>)
+                    : {};
+
+                await db
+                  .update(bloodTests)
+                  .set({
+                    analysis: {
+                      ...existingAnalysis,
+                      ...(fallbackAnalysis as any),
+                      aiReport: fallbackReport,
+                      aiStatus: "fallback",
+                      aiModel: "fallback",
+                      aiGeneratedAt: fallbackAt,
+                      aiFallbackAt: fallbackAt,
+                      aiFallbackReason: fallbackErr
+                        ? `background_refresh_error:${fallbackErr}`
+                        : "background_refresh_error",
+                    } as any,
+                  })
+                  .where(eq(bloodTests.id, reportId));
+              }
+            } catch (fallbackPersistErr) {
+              console.error(
+                `[BloodAnalysis] Failed to persist crash fallback for ${reportId}:`,
+                fallbackPersistErr
+              );
+            }
           } finally {
             BLOOD_AI_REPORT_IN_FLIGHT.delete(reportId);
           }
