@@ -556,6 +556,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             console.error("[BloodAnalysis] async AI failed:", err);
             try {
               const fallbackNowIso = new Date().toISOString();
+              const fallbackErr = String((err as any)?.message || err || "").slice(0, 140);
               const fallbackReport = buildFallbackAnalysis(analysisResult, profileWithAge as any);
               await storage.updateBloodReport(reportRecord.id, {
                 aiReport: fallbackReport,
@@ -566,7 +567,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                   aiGeneratedAt: fallbackNowIso,
                   aiValidationMissing: null,
                   aiFallbackAt: fallbackNowIso,
-                  aiFallbackReason: "async_generation_error",
+                  aiFallbackReason: fallbackErr ? `async_generation_error:${fallbackErr}` : "async_generation_error",
                   aiError: String((err as any)?.message || err),
                 } as any,
               });
@@ -1785,9 +1786,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               aiMeta = { status: "fallback", model: "fallback" };
             }
             const aiNowIso = new Date().toISOString();
+            const aiErrorText = aiError ? String((aiError as any)?.message || aiError).slice(0, 140) : "";
             const fallbackReason =
               aiMeta?.status === "fallback"
-                ? (aiError ? "background_generation_error" : "background_generation_fallback")
+                ? (aiError
+                    ? (aiErrorText ? `background_generation_error:${aiErrorText}` : "background_generation_error")
+                    : "background_generation_fallback")
                 : null;
 
             if (reportSource === "legacy") {
