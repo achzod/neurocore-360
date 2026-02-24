@@ -3404,8 +3404,9 @@ export async function generateAIBloodAnalysis(
     nom: userProfile.nom,
     age: userProfile.age,
   });
-  const deepDiveContext = deepDivePayload.context ? deepDivePayload.context.slice(0, 14000) : "";
-  const knowledgeContextTrimmed = knowledgeContext ? knowledgeContext.slice(0, 14000) : "";
+  // Keep prompt payload bounded for Claude Opus latency/stability on production.
+  const deepDiveContext = deepDivePayload.context ? deepDivePayload.context.slice(0, 7000) : "";
+  const knowledgeContextTrimmed = knowledgeContext ? knowledgeContext.slice(0, 7000) : "";
 
   const basePrompt = [
     `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).`,
@@ -3446,7 +3447,7 @@ export async function generateAIBloodAnalysis(
   const model = ANTHROPIC_CONFIG.ANTHROPIC_MODEL || "claude-opus-4-6";
   // Keep output bounded to avoid long-running requests in production.
   // Prioritise completeness/structure over extreme length.
-  const maxTokens = 16000;
+  const maxTokens = 7000;
 
   const CANONICAL_ORDER = [
     "## Synthese executive",
@@ -3751,7 +3752,7 @@ REGLES STRICTES:
   // Pass 1: full report
   try {
     output = await callClaudeOnce(
-      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET, COHERENT et ACTIONNABLE (environ 12000-22000 caracteres) avec TOUTES les sections/axes du template. REGLES CRITIQUES:\n1. La Synthese executive doit etre dense et priorisee (minimum 1800 caracteres), avec verdict global et impact concret.\n2. Les sections \"Nutrition & entrainement\" et \"Supplements & stack\" doivent etre detaillees, mecanistiques et reliees aux marqueurs anormaux.\n3. Priorite aux paragraphes narratifs incarnes (je/tu). Listes courtes uniquement si indispensables. Tableaux a eviter (maximum 2).\n4. Interdit de montrer les sources au client: pas de tags [SRC:...], pas de section Sources.\n5. Assure-toi d'inclure les 11 sections ## et tous les ### Axe 1 a 11.`
+      `${basePrompt}\n\nPRIORITE ABSOLUE: genere un rapport COMPLET, COHERENT et ACTIONNABLE (environ 9000-15000 caracteres) avec TOUTES les sections/axes du template. REGLES CRITIQUES:\n1. La Synthese executive doit etre dense et priorisee (minimum 1600 caracteres), avec verdict global et impact concret.\n2. Les sections \"Nutrition & entrainement\" et \"Supplements & stack\" doivent etre detaillees, mecanistiques et reliees aux marqueurs anormaux.\n3. Priorite aux paragraphes narratifs incarnes (je/tu). Listes courtes uniquement si indispensables. Tableaux a eviter (maximum 2).\n4. Interdit de montrer les sources au client: pas de tags [SRC:...], pas de section Sources.\n5. Assure-toi d'inclure les 11 sections ## et tous les ### Axe 1 a 11.`
     );
     output = ensureAxesSectionTemplate(output);
     validation = validateBloodAnalysisReport(output);
