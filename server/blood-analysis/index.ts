@@ -2407,7 +2407,17 @@ const isBlockingQualityIssue = (issue: string): boolean => {
 };
 
 const collectBlockingQualityIssues = (issues: string[]): string[] => {
-  return Array.from(new Set((issues || []).filter((issue) => isBlockingQualityIssue(String(issue || "")))));
+  const blocking = Array.from(new Set((issues || []).filter((issue) => isBlockingQualityIssue(String(issue || "")))));
+  const isAnnexesOnlyIssue = (issue: string) =>
+    issue === "missing_section:annexes" || issue === "short_section:annexes" || issue === "low_specificity:annexes";
+
+  // Do not hard-fail an otherwise solid report only because annexes are weak/missing.
+  // Keep the issue in validationMissing, but allow status="generated" when core sections pass.
+  const nonAnnexBlocking = blocking.filter((issue) => !isAnnexesOnlyIssue(issue));
+  if (nonAnnexBlocking.length === 0) {
+    return [];
+  }
+  return nonAnnexBlocking;
 };
 
 // Exposed for admin/meta refresh (no AI calls).
