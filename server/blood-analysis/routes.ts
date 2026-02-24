@@ -549,6 +549,25 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             });
           } catch (err) {
             console.error("[BloodAnalysis] async AI failed:", err);
+            try {
+              const fallbackNowIso = new Date().toISOString();
+              const fallbackReport = buildFallbackAnalysis(analysisResult, profileWithAge as any);
+              await storage.updateBloodReport(reportRecord.id, {
+                aiReport: fallbackReport,
+                analysis: {
+                  ...analysisResult,
+                  aiStatus: "fallback",
+                  aiModel: "fallback",
+                  aiGeneratedAt: fallbackNowIso,
+                  aiValidationMissing: null,
+                  aiFallbackAt: fallbackNowIso,
+                  aiFallbackReason: "async_generation_error",
+                  aiError: String((err as any)?.message || err),
+                } as any,
+              });
+            } catch (persistErr) {
+              console.error("[BloodAnalysis] async AI fallback persistence failed:", persistErr);
+            }
           }
         });
       }
