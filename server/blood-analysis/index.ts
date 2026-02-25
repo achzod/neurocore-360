@@ -790,7 +790,7 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
 
 const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   testosterone_total: [/^testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i],
-  testosterone_libre: [/testost[ée]rone\s*libre/i, /testost[ée]rone\s*bio/i],
+  testosterone_libre: [/testost[ée]rone\s*libre/i, /free\s*testosterone/i],
   shbg: [/shbg/i, /globuline.*sex/i],
   estradiol: [/estradiol/i, /\be2\b/i],
   lh: [/\blh\b/i, /luteinis/i],
@@ -813,7 +813,7 @@ const MARKER_SYNONYMS: Record<string, RegExp[]> = {
   hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
   ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /\bl\.?d\.?l\s+mesur[eé]/i],
   apob: [/apolipoprot[ée]ine.*b/i, /apo\s*b/i],
-  lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*a/i],
+  lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*\(a\)/i],
   cholesterol_total: [/cholest[ée]rol\s*total/i],
   apo_a1: [/apolipoprot[ée]ine.*a1/i, /apo\s*a1/i],
   crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
@@ -943,11 +943,14 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
     const end = start + match[0].length;
     const beforeChar = snippet[start - 1] || "";
     const afterChar = snippet[end] || "";
+    const afterSegment = snippet.slice(end, end + 14).replace(/^[\s:]+/, "");
+    const beforeSegment = snippet.slice(Math.max(0, start - 14), start).replace(/[\s:]+$/, "");
+    const hasAttachedUnit = Boolean(findUnit(afterSegment) || findUnit(beforeSegment));
 
     // CRITICAL FIX: Skip numbers in parentheses like (1), (2) - lab references
     if (beforeChar === "(" || afterChar === ")") continue;
 
-    if (/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) continue;
+    if ((/[A-Za-zÀ-ÿ]/.test(beforeChar) || /[A-Za-zÀ-ÿ]/.test(afterChar)) && !hasAttachedUnit) continue;
     if (dateMatches.some((range) => start >= range.start && end <= range.end)) continue;
     if (isYearLike(value, raw) || isHugeNumber(raw, value)) continue;
     const before = snippet.slice(Math.max(0, start - 3), start);
@@ -1000,7 +1003,7 @@ const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
   insuline_jeun: { min: 1, max: 50 },
   homa_ir: { min: 0.1, max: 10 },
   triglycerides: { min: 20, max: 1000 },
-  hdl: { min: 20, max: 120 },
+  hdl: { min: 10, max: 150 },
   ldl: { min: 30, max: 250 },
   apob: { min: 40, max: 200 },
   lpa: { min: 0, max: 300 },
