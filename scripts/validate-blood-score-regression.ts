@@ -18,6 +18,11 @@ type ScoredPdf = {
   statusCounts: Record<MarkerStatus, number>;
 };
 
+type ExtractedMarker = {
+  markerId: string;
+  value: number;
+};
+
 type SkippedPdf = {
   file: string;
   reason: string;
@@ -61,12 +66,14 @@ async function main() {
 
   const scored: ScoredPdf[] = [];
   const skipped: SkippedPdf[] = [];
+  const extractedByFile = new Map<string, ExtractedMarker[]>();
 
   for (const file of pdfFiles) {
     try {
       const buffer = fs.readFileSync(file);
       const parsed = await pdf(buffer);
       const extracted = await extractMarkersFromPdfText(parsed.text || "", path.basename(file));
+      extractedByFile.set(path.relative(process.cwd(), file), extracted as ExtractedMarker[]);
       const analysis = await analyzeBloodwork(extracted, { gender: "homme" });
 
       const statuses = analysis.markers.map((marker) => marker.status as MarkerStatus);
@@ -109,6 +116,24 @@ async function main() {
 
   const allHundred = withMarkers.every((item) => item.globalScore === 100);
   assert(!allHundred, "Regression: all analyzed PDFs are scored at 100.");
+
+  const crFixturePath = "data/CR_195452.pdf";
+  const crMarkers = extractedByFile.get(crFixturePath) || [];
+  if (crMarkers.length) {
+    const byId = new Map(crMarkers.map((m) => [m.markerId, m.value]));
+    assert(
+      byId.get("hdl") === 19,
+      `Regression: ${crFixturePath} expected HDL=19 mg/dL, got ${String(byId.get("hdl"))}.`
+    );
+    assert(
+      byId.get("testosterone_libre") === 11,
+      `Regression: ${crFixturePath} expected testosterone_libre=11 pg/mL, got ${String(byId.get("testosterone_libre"))}.`
+    );
+    assert(
+      !byId.has("lpa"),
+      `Regression: ${crFixturePath} should not extract Lp(a) when only Apolipoproteine A1 is present.`
+    );
+  }
 
   for (const item of sortedByMarkers) {
     const nonOptimal = item.statusCounts.suboptimal + item.statusCounts.critical;
