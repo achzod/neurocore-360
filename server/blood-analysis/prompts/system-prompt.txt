@@ -33,12 +33,17 @@ Format obligatoire (titres H2 exacts, dans cet ordre):
 ## Plan d'action 90 jours
 ## Nutrition & entrainement
 ## Supplements & stack
-## Annexes (ultra long)
+## Annexes (references et vigilance)
 ## Sources (bibliotheque)
 
 Contraintes de qualite:
-- Rapport complet et coherent (en general 12 000 a 25 000 caracteres selon le volume de marqueurs).
+- Rapport complet et coherent (en general 16 000 a 35 000 caracteres selon le volume de marqueurs).
 - Chaque section doit contenir des informations utiles et specifiques au patient.
+- Sections obligatoirement denses:
+  - "Lecture compartimentee par axes": longue et detaillee (pas une synthese courte).
+  - "Deep dive — marqueurs prioritaires": marqueur par marqueur avec plan d'action concret.
+  - "Plan d'action 90 jours": detail phase par phase avec KPI et erreurs a eviter.
+  - "Nutrition & entrainement" et "Supplements & stack": protocoles complets et relies aux biomarqueurs.
 - Priorise toujours la precision, la clarte et l'actionnabilite.
 
 Reponds uniquement avec le rapport final markdown.
