@@ -14,6 +14,10 @@ import {
   buildFallbackAnalysis,
   buildLifestyleCorrelations,
 } from "../blood-analysis";
+import {
+  withAIGenerationTimeout,
+  isAIGenerationTimeoutError,
+} from "../blood-analysis/ai-timeout";
 import { generateComprehensiveBloodReport } from "../blood-analysis/recommendations-engine";
 import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores";
 import { storage } from "../storage";
@@ -182,6 +186,127 @@ const computeSystemScores = (markers: Array<{ code?: string; status?: MarkerStat
   );
 };
 
+type AnalysisMarker = {
+  markerId: string;
+  name: string;
+  value: number;
+  unit: string;
+  status: MarkerStatus;
+  interpretation?: string;
+};
+
+type ResponseMarker = {
+  name: string;
+  code: string;
+  category: string;
+  value: number;
+  unit: string;
+  refMin: number | null;
+  refMax: number | null;
+  optimalMin: number | null;
+  optimalMax: number | null;
+  status: MarkerStatus;
+  interpretation?: string;
+};
+
+const toFiniteNumberOrNull = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  return toFiniteNumberOrNull(value);
+};
+
+const normalizeStoredStatus = (status: unknown): MarkerStatus => {
+  const lower = String(status || "").toLowerCase();
+  if (lower === "optimal") return "optimal";
+  if (lower === "normal") return "normal";
+  if (lower === "suboptimal" || lower.includes("sous")) return "suboptimal";
+  if (lower === "critical" || lower.includes("crit")) return "critical";
+  return "normal";
+};
+
+const normalizeCategoryId = (category: unknown, markerCode: string): string => {
+  const raw = String(category || "").trim().toLowerCase();
+  if (raw === "inflammatory") return "inflammation";
+  if (raw) return raw;
+  const mapped = CATEGORY_BY_MARKER[markerCode] || "general";
+  return mapped === "inflammatory" ? "inflammation" : mapped;
+};
+
+const normalizeMarkersForResponse = (
+  rawMarkers: unknown[],
+  analysisMarkers: AnalysisMarker[]
+): ResponseMarker[] => {
+  const analysisByCode = new Map(analysisMarkers.map((marker) => [marker.markerId, marker]));
+  const normalizedByCode = new Map<string, ResponseMarker>();
+
+  for (const raw of rawMarkers) {
+    if (!raw || typeof raw !== "object") continue;
+    const marker = raw as Record<string, unknown>;
+    const code = String(marker.code || marker.markerId || "").trim();
+    if (!code) continue;
+
+    const range = BIOMARKER_RANGES[code];
+    const analysisMarker = analysisByCode.get(code);
+    const value =
+      toFiniteNumberOrNull(marker.value) ??
+      (analysisMarker && Number.isFinite(analysisMarker.value) ? analysisMarker.value : null);
+    if (value === null) continue;
+
+    const normalized: ResponseMarker = {
+      name:
+        String(marker.name || "").trim() ||
+        analysisMarker?.name ||
+        range?.name ||
+        code,
+      code,
+      category: normalizeCategoryId(marker.category, code),
+      value,
+      unit:
+        String(marker.unit || "").trim() ||
+        analysisMarker?.unit ||
+        range?.unit ||
+        "",
+      refMin: toNullableNumber(marker.refMin) ?? range?.normalMin ?? null,
+      refMax: toNullableNumber(marker.refMax) ?? range?.normalMax ?? null,
+      optimalMin: toNullableNumber(marker.optimalMin) ?? range?.optimalMin ?? null,
+      optimalMax: toNullableNumber(marker.optimalMax) ?? range?.optimalMax ?? null,
+      status: analysisMarker?.status || normalizeStoredStatus(marker.status),
+      interpretation:
+        String(marker.interpretation || "").trim() ||
+        analysisMarker?.interpretation ||
+        "",
+    };
+
+    normalizedByCode.set(code, normalized);
+  }
+
+  if (!normalizedByCode.size && analysisMarkers.length) {
+    for (const marker of analysisMarkers) {
+      const range = BIOMARKER_RANGES[marker.markerId];
+      normalizedByCode.set(marker.markerId, {
+        name: marker.name || range?.name || marker.markerId,
+        code: marker.markerId,
+        category: normalizeCategoryId(undefined, marker.markerId),
+        value: marker.value,
+        unit: marker.unit || range?.unit || "",
+        refMin: range?.normalMin ?? null,
+        refMax: range?.normalMax ?? null,
+        optimalMin: range?.optimalMin ?? null,
+        optimalMax: range?.optimalMax ?? null,
+        status: marker.status,
+        interpretation: marker.interpretation || "",
+      });
+    }
+  }
+
+  return Array.from(normalizedByCode.values());
+};
+
 const computeTemporalRisk = (markers: Array<{ status?: MarkerStatus }>) => {
   const critical = markers.filter((m) => m.status === "critical").length;
   const warning = markers.filter((m) => m.status === "suboptimal").length;
@@ -208,6 +333,88 @@ const buildProtocolPhases = (markers: Array<{ name: string; status?: MarkerStatu
     { id: "phase-2", title: "Jours 31-90", items: phase2.length ? phase2 : ["Conserver les marqueurs dans le range optimal."] },
     { id: "phase-3", title: "Jours 91-180", items: phase3 },
   ];
+};
+
+const FALLBACK_REPORT_FOOTER_PATTERN = /\*Rapport fallback deterministic/i;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isFallbackAnalysisText = (analysis: string): boolean => {
+  const normalized = String(analysis || "").trim();
+  if (!normalized) return true;
+  return FALLBACK_REPORT_FOOTER_PATTERN.test(normalized);
+};
+
+const deriveAiMeta = (analysis: string, fallbackReason?: string) => {
+  const isFallback = isFallbackAnalysisText(analysis);
+  const generatedAt = new Date().toISOString();
+  if (isFallback) {
+    return {
+      aiStatus: "fallback" as const,
+      aiModel: "fallback",
+      aiGeneratedAt: generatedAt,
+      aiFallbackAt: generatedAt,
+      aiFallbackReason: fallbackReason || "fallback_generated",
+    };
+  }
+  return {
+    aiStatus: "generated" as const,
+    aiModel: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+    aiGeneratedAt: generatedAt,
+    aiFallbackAt: null,
+    aiFallbackReason: null,
+  };
+};
+
+const deriveAiProcessingMeta = (reason?: string) => ({
+  aiStatus: "processing" as const,
+  aiModel: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+  aiGeneratedAt: null,
+  aiFallbackAt: null,
+  aiFallbackReason: reason || "generation_pending",
+});
+
+const generateAIBloodAnalysisWithFallbackRetry = async (
+  analysisResult: Awaited<ReturnType<typeof analyzeBloodwork>>,
+  profile: {
+    gender: "homme" | "femme";
+    age?: string;
+    objectives?: string;
+    medications?: string;
+    prenom?: string;
+    nom?: string;
+    poids?: number;
+    taille?: number;
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string[];
+    infectionRecent?: string;
+  },
+  knowledgeContext?: string,
+): Promise<string> => {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const report = await generateAIBloodAnalysis(analysisResult, profile, knowledgeContext);
+      if (report && !isFallbackAnalysisText(report)) {
+        return report;
+      }
+      console.warn(`[BloodTests] Async AI attempt ${attempt} returned fallback-shaped report.`);
+    } catch (error) {
+      console.error(`[BloodTests] Async AI attempt ${attempt} failed:`, error);
+    }
+    if (attempt < 3) {
+      await sleep(6000);
+    }
+  }
+  return "";
 };
 
 const isAdminRequest = (req: Request): boolean => {
@@ -374,54 +581,80 @@ export function registerBloodTestsRoutes(app: Express): void {
           );
 
           let aiAnalysis = "";
+          let aiFallbackReason: string | undefined;
+          let syncAiNeedsBackgroundRetry = false;
           const includeAI = body.includeAI !== false;
           const asyncAI = body.asyncAI === true;
-          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
+          const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+          const aiProfile = {
+            gender: patientProfile.gender as "homme" | "femme",
+            age,
+            prenom: patientProfile.prenom,
+            nom: patientProfile.nom,
+            poids: patientProfile.poids,
+            taille: patientProfile.taille,
+            sleepHours: patientProfile.sleepHours,
+            stressLevel: patientProfile.stressLevel,
+            fastingHours: patientProfile.fastingHours,
+            drawTime: patientProfile.drawTime,
+            lastTraining: patientProfile.lastTraining,
+            alcoholLast72h: patientProfile.alcoholLast72h,
+            nutritionPhase: patientProfile.nutritionPhase,
+            supplementsUsed: patientProfile.supplementsUsed,
+            medications: patientProfile.medications,
+            infectionRecent: patientProfile.infectionRecent,
+          };
+          if (includeAI && !asyncAI && hasAnthropicKey) {
             try {
-              aiAnalysis = await generateAIBloodAnalysis(
-                analysisResult,
-                {
-                  gender: patientProfile.gender as "homme" | "femme",
-                  age,
-                  prenom: patientProfile.prenom,
-                  nom: patientProfile.nom,
-                  poids: patientProfile.poids,
-                  taille: patientProfile.taille,
-                  sleepHours: patientProfile.sleepHours,
-                  stressLevel: patientProfile.stressLevel,
-                  fastingHours: patientProfile.fastingHours,
-                  drawTime: patientProfile.drawTime,
-                  lastTraining: patientProfile.lastTraining,
-                  alcoholLast72h: patientProfile.alcoholLast72h,
-                  nutritionPhase: patientProfile.nutritionPhase,
-                  supplementsUsed: patientProfile.supplementsUsed,
-                  medications: patientProfile.medications,
-                  infectionRecent: patientProfile.infectionRecent,
-                },
-                knowledgeContext
+              aiAnalysis = await withAIGenerationTimeout(
+                () =>
+                  generateAIBloodAnalysis(
+                    analysisResult,
+                    aiProfile,
+                    knowledgeContext
+                  ),
+                "blood-tests/seed sync report"
               );
-            } catch {
+            } catch (aiError) {
+              syncAiNeedsBackgroundRetry = true;
+              aiFallbackReason = "sync_timeout_or_error";
+              if (isAIGenerationTimeoutError(aiError)) {
+                console.warn("[BloodTests] Seed sync AI timed out, queuing async retry.");
+              } else {
+                console.error("[BloodTests] Seed sync AI failed, queuing async retry:", aiError);
+              }
               aiAnalysis = "";
             }
           }
           if (!aiAnalysis) {
-            aiAnalysis = buildFallbackAnalysis(analysisResult, {
-              gender: patientProfile.gender as "homme" | "femme",
-              age,
-              sleepHours: patientProfile.sleepHours,
-              stressLevel: patientProfile.stressLevel,
-              fastingHours: patientProfile.fastingHours,
-              drawTime: patientProfile.drawTime,
-              lastTraining: patientProfile.lastTraining,
-              alcoholLast72h: patientProfile.alcoholLast72h,
-              nutritionPhase: patientProfile.nutritionPhase,
-              supplementsUsed: patientProfile.supplementsUsed,
-              medications: patientProfile.medications,
-              infectionRecent: patientProfile.infectionRecent,
-              poids: patientProfile.poids,
-              taille: patientProfile.taille,
-            });
+            if (!includeAI || !hasAnthropicKey) {
+              aiAnalysis = buildFallbackAnalysis(analysisResult, {
+                gender: patientProfile.gender as "homme" | "femme",
+                age,
+                sleepHours: patientProfile.sleepHours,
+                stressLevel: patientProfile.stressLevel,
+                fastingHours: patientProfile.fastingHours,
+                drawTime: patientProfile.drawTime,
+                lastTraining: patientProfile.lastTraining,
+                alcoholLast72h: patientProfile.alcoholLast72h,
+                nutritionPhase: patientProfile.nutritionPhase,
+                supplementsUsed: patientProfile.supplementsUsed,
+                medications: patientProfile.medications,
+                infectionRecent: patientProfile.infectionRecent,
+                poids: patientProfile.poids,
+                taille: patientProfile.taille,
+              });
+              if (!aiFallbackReason) {
+                aiFallbackReason = includeAI ? "anthropic_key_missing" : "ai_disabled";
+              }
+            } else {
+              syncAiNeedsBackgroundRetry = true;
+              aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
+            }
           }
+          const aiMeta = aiAnalysis
+            ? deriveAiMeta(aiAnalysis, aiFallbackReason)
+            : deriveAiProcessingMeta(aiFallbackReason);
 
           const markers = analysisResult.markers.map((marker) => {
             const range = BIOMARKER_RANGES[marker.markerId];
@@ -460,17 +693,19 @@ export function registerBloodTestsRoutes(app: Express): void {
             followUp: analysisResult.followUp,
             alerts: analysisResult.alerts,
             aiAnalysis,
+            ...aiMeta,
             protocolPhases,
             lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
             patient: patientProfile,
           };
+          const initialStatus = aiAnalysis ? "completed" : "processing";
 
           const createdRecord = await storage.createBloodTest({
             userId: user.id,
             fileName: file,
             fileType: "application/pdf",
             fileSize: buffer.length,
-            status: "completed",
+            status: initialStatus,
             error: null,
             markers,
             analysis: analysisPayload,
@@ -478,21 +713,21 @@ export function registerBloodTestsRoutes(app: Express): void {
             globalScore,
             globalLevel,
             createdAt: new Date(),
-            completedAt: new Date(),
+            completedAt: initialStatus === "completed" ? new Date() : undefined,
           });
 
-          if (includeAI && asyncAI && process.env.ANTHROPIC_API_KEY) {
+          if (includeAI && hasAnthropicKey && (asyncAI || syncAiNeedsBackgroundRetry || !aiAnalysis)) {
             setImmediate(async () => {
               try {
-                const enriched = await generateAIBloodAnalysis(
+                const enriched = await generateAIBloodAnalysisWithFallbackRetry(
                   analysisResult,
-                  {
+                  aiProfile,
+                  knowledgeContext
+                );
+                if (!enriched) {
+                  const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
                     gender: patientProfile.gender as "homme" | "femme",
                     age,
-                    prenom: patientProfile.prenom,
-                    nom: patientProfile.nom,
-                    poids: patientProfile.poids,
-                    taille: patientProfile.taille,
                     sleepHours: patientProfile.sleepHours,
                     stressLevel: patientProfile.stressLevel,
                     fastingHours: patientProfile.fastingHours,
@@ -503,14 +738,34 @@ export function registerBloodTestsRoutes(app: Express): void {
                     supplementsUsed: patientProfile.supplementsUsed,
                     medications: patientProfile.medications,
                     infectionRecent: patientProfile.infectionRecent,
-                  },
-                  knowledgeContext
-                );
+                    poids: patientProfile.poids,
+                    taille: patientProfile.taille,
+                  });
+                  const fallbackPayload = {
+                    ...analysisPayload,
+                    aiAnalysis: fallbackAnalysis,
+                    ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_fallback"),
+                  };
+                  await storage.updateBloodTest(createdRecord.id, {
+                    analysis: fallbackPayload,
+                    status: "completed",
+                    completedAt: new Date(),
+                  });
+                  return;
+                }
                 const updatedAnalysis = {
                   ...analysisPayload,
                   aiAnalysis: enriched,
+                  ...deriveAiMeta(
+                    enriched,
+                    isFallbackAnalysisText(enriched) ? "async_generation_returned_fallback" : undefined
+                  ),
                 };
-                await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
+                await storage.updateBloodTest(createdRecord.id, {
+                  analysis: updatedAnalysis,
+                  status: "completed",
+                  completedAt: new Date(),
+                });
               } catch (err) {
                 console.error("[BloodTests] async AI seed failed:", err);
               }
@@ -659,52 +914,76 @@ export function registerBloodTestsRoutes(app: Express): void {
       );
 
       let aiAnalysis = "";
-      if (process.env.ANTHROPIC_API_KEY) {
+      let aiFallbackReason: string | undefined;
+      let syncAiNeedsBackgroundRetry = false;
+      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+      const aiProfile = {
+        gender: profile.gender as "homme" | "femme",
+        age,
+        prenom: profile.prenom,
+        nom: profile.nom,
+        poids: profile.poids,
+        taille: profile.taille,
+        sleepHours: profile.sleepHours,
+        stressLevel: profile.stressLevel,
+        fastingHours: profile.fastingHours,
+        drawTime: profile.drawTime,
+        lastTraining: profile.lastTraining,
+        alcoholLast72h: profile.alcoholLast72h,
+        nutritionPhase: profile.nutritionPhase,
+        supplementsUsed: profile.supplementsUsed,
+        medications: profile.medications,
+        infectionRecent: profile.infectionRecent,
+      };
+      if (hasAnthropicKey) {
         try {
-          aiAnalysis = await generateAIBloodAnalysis(
-            analysisResult,
-            {
-              gender: profile.gender as "homme" | "femme",
-              age,
-              prenom: profile.prenom,
-              nom: profile.nom,
-              poids: profile.poids,
-              taille: profile.taille,
-              sleepHours: profile.sleepHours,
-              stressLevel: profile.stressLevel,
-              fastingHours: profile.fastingHours,
-              drawTime: profile.drawTime,
-              lastTraining: profile.lastTraining,
-              alcoholLast72h: profile.alcoholLast72h,
-              nutritionPhase: profile.nutritionPhase,
-              supplementsUsed: profile.supplementsUsed,
-              medications: profile.medications,
-              infectionRecent: profile.infectionRecent,
-            },
-            knowledgeContext
+          aiAnalysis = await withAIGenerationTimeout(
+            () =>
+              generateAIBloodAnalysis(
+                analysisResult,
+                aiProfile,
+                knowledgeContext
+              ),
+            "blood-tests/upload sync report"
           );
-        } catch {
+        } catch (aiError) {
+          syncAiNeedsBackgroundRetry = true;
+          aiFallbackReason = "sync_timeout_or_error";
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodTests] Upload sync AI timed out, queuing async retry.");
+          } else {
+            console.error("[BloodTests] Upload sync AI failed, queuing async retry:", aiError);
+          }
           aiAnalysis = "";
         }
       }
       if (!aiAnalysis) {
-        aiAnalysis = buildFallbackAnalysis(analysisResult, {
-          gender: profile.gender as "homme" | "femme",
-          age,
-          sleepHours: profile.sleepHours,
-          stressLevel: profile.stressLevel,
-          fastingHours: profile.fastingHours,
-          drawTime: profile.drawTime,
-          lastTraining: profile.lastTraining,
-          alcoholLast72h: profile.alcoholLast72h,
-          nutritionPhase: profile.nutritionPhase,
-          supplementsUsed: profile.supplementsUsed,
-          medications: profile.medications,
-          infectionRecent: profile.infectionRecent,
-          poids: profile.poids,
-          taille: profile.taille,
-        });
+        if (!hasAnthropicKey) {
+          aiAnalysis = buildFallbackAnalysis(analysisResult, {
+            gender: profile.gender as "homme" | "femme",
+            age,
+            sleepHours: profile.sleepHours,
+            stressLevel: profile.stressLevel,
+            fastingHours: profile.fastingHours,
+            drawTime: profile.drawTime,
+            lastTraining: profile.lastTraining,
+            alcoholLast72h: profile.alcoholLast72h,
+            nutritionPhase: profile.nutritionPhase,
+            supplementsUsed: profile.supplementsUsed,
+            medications: profile.medications,
+            infectionRecent: profile.infectionRecent,
+            poids: profile.poids,
+            taille: profile.taille,
+          });
+          aiFallbackReason = aiFallbackReason || "anthropic_key_missing";
+        } else {
+          syncAiNeedsBackgroundRetry = true;
+          aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
+        }
       }
+      const aiMeta = aiAnalysis
+        ? deriveAiMeta(aiAnalysis, aiFallbackReason)
+        : deriveAiProcessingMeta(aiFallbackReason);
 
       const markers = analysisResult.markers.map((marker) => {
         const range = BIOMARKER_RANGES[marker.markerId];
@@ -743,20 +1022,78 @@ export function registerBloodTestsRoutes(app: Express): void {
         followUp: analysisResult.followUp,
         alerts: analysisResult.alerts,
         aiAnalysis,
+        ...aiMeta,
         protocolPhases,
         lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
         patient: profile,
       };
+      const initialStatus = aiAnalysis ? "completed" : "processing";
 
       const updatedRecord = await storage.updateBloodTest(baseRecord.id, {
-        status: "completed",
+        status: initialStatus,
         markers,
         analysis: analysisPayload,
         patientProfile: profile,
         globalScore,
         globalLevel,
-        completedAt: new Date(),
+        completedAt: initialStatus === "completed" ? new Date() : undefined,
       });
+
+      if (hasAnthropicKey && (syncAiNeedsBackgroundRetry || !aiAnalysis)) {
+        setImmediate(async () => {
+          try {
+            const enriched = await generateAIBloodAnalysisWithFallbackRetry(
+              analysisResult,
+              aiProfile,
+              knowledgeContext
+            );
+            if (!enriched) {
+              const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
+                gender: profile.gender as "homme" | "femme",
+                age,
+                sleepHours: profile.sleepHours,
+                stressLevel: profile.stressLevel,
+                fastingHours: profile.fastingHours,
+                drawTime: profile.drawTime,
+                lastTraining: profile.lastTraining,
+                alcoholLast72h: profile.alcoholLast72h,
+                nutritionPhase: profile.nutritionPhase,
+                supplementsUsed: profile.supplementsUsed,
+                medications: profile.medications,
+                infectionRecent: profile.infectionRecent,
+                poids: profile.poids,
+                taille: profile.taille,
+              });
+              const fallbackPayload = {
+                ...analysisPayload,
+                aiAnalysis: fallbackAnalysis,
+                ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_fallback"),
+              };
+              await storage.updateBloodTest(baseRecord.id, {
+                analysis: fallbackPayload,
+                status: "completed",
+                completedAt: new Date(),
+              });
+              return;
+            }
+            const refreshedAnalysis = {
+              ...analysisPayload,
+              aiAnalysis: enriched,
+              ...deriveAiMeta(
+                enriched,
+                isFallbackAnalysisText(enriched) ? "async_generation_returned_fallback" : undefined
+              ),
+            };
+            await storage.updateBloodTest(baseRecord.id, {
+              analysis: refreshedAnalysis,
+              status: "completed",
+              completedAt: new Date(),
+            });
+          } catch (err) {
+            console.error("[BloodTests] Upload async AI retry failed:", err);
+          }
+        });
+      }
 
       res.json({
         bloodTest: updatedRecord || baseRecord,
@@ -845,6 +1182,34 @@ export function registerBloodTestsRoutes(app: Express): void {
         medications: undefined,
       });
 
+      const normalizedMarkers = normalizeMarkersForResponse(
+        Array.isArray(test.markers) ? test.markers : [],
+        analysis.markers.map((marker) => ({
+          markerId: marker.markerId,
+          name: marker.name,
+          value: marker.value,
+          unit: marker.unit,
+          status: marker.status,
+          interpretation: marker.interpretation,
+        }))
+      );
+
+      const categoryScores = computeCategoryScores(
+        normalizedMarkers.map((marker) => ({
+          category: marker.category,
+          status: marker.status,
+        }))
+      );
+      const systemScores = computeSystemScores(
+        normalizedMarkers.map((marker) => ({
+          code: marker.code,
+          status: marker.status,
+        }))
+      );
+      const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
+      const recomputedGlobalScore = computeGlobalScore(scoreSource);
+      const recomputedGlobalLevel = getGlobalLevel(recomputedGlobalScore);
+
       const riskProfile = resolvedMarkers.length
         ? generateComprehensiveRiskProfile(resolvedMarkers, profileWithAge)
         : null;
@@ -873,15 +1238,33 @@ export function registerBloodTestsRoutes(app: Express): void {
           uploadedAt: test.createdAt,
           status: test.status,
           error: test.error ?? null,
-          globalScore: test.globalScore ?? null,
-          globalLevel: test.globalLevel ?? null,
+          globalScore:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalScore
+              : test.globalScore ?? null,
+          globalLevel:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalLevel
+              : test.globalLevel ?? null,
           patient: test.patientProfile || (test.analysis as any)?.patient || null,
         },
-        markers: test.markers,
+        markers: normalizedMarkers,
         derivedMetrics: {},
-        patterns: (test.analysis as any)?.patterns || [],
+        patterns: analysis.patterns || [],
         analysis: {
           ...(test.analysis || {}),
+          summary: analysis.summary,
+          patterns: analysis.patterns,
+          globalScore:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalScore
+              : test.globalScore ?? null,
+          globalLevel:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalLevel
+              : test.globalLevel ?? null,
+          categoryScores,
+          systemScores,
           comprehensiveData
         },
       });
