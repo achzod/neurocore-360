@@ -1591,44 +1591,49 @@ const parseH2Sections = (markdown: string): ParsedH2Section[] => {
 };
 
 const REQUIRED_REPORT_SECTIONS: Array<{ key: string; aliases: string[]; minChars: number }> = [
-  { key: "synthese", aliases: ["synthese-executive"], minChars: 600 },
-  { key: "qualite", aliases: ["qualite-des-donnees-limites"], minChars: 450 },
-  { key: "tableau", aliases: ["tableau-de-bord-scores-priorites"], minChars: 550 },
+  { key: "synthese", aliases: ["synthese-executive"], minChars: 1200 },
+  { key: "qualite", aliases: ["qualite-des-donnees-limites"], minChars: 850 },
+  { key: "tableau", aliases: ["tableau-de-bord-scores-priorites"], minChars: 900 },
+  {
+    key: "recomposition",
+    aliases: ["potentiel-recomposition-perte-de-gras-gain-de-muscle", "potentiel-recomposition"],
+    minChars: 1200,
+  },
   {
     key: "axes",
     aliases: ["lecture-compartimentee-par-axes", "analyse-par-axe"],
-    minChars: 3300,
+    minChars: 6000,
   },
   {
     key: "interconnexions",
     aliases: ["interconnexions-majeures-le-pattern", "interconnexions-majeures"],
-    minChars: 1200,
+    minChars: 1500,
   },
   {
     key: "deep_dive",
     aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"],
-    minChars: 3000,
+    minChars: 4600,
   },
   {
     key: "plan",
     aliases: ["plan-d-action-90-jours", "plan-90-jours"],
-    minChars: 2400,
+    minChars: 3400,
   },
   {
     key: "nutrition",
     aliases: ["nutrition-entrainement", "nutrition-entrainement-traduction-pratique", "protocole-nutrition"],
-    minChars: 1700,
+    minChars: 2600,
   },
   {
     key: "supplements",
     aliases: ["supplements-stack", "supplements-stack-minimaliste-mais-impact", "protocole-supplements"],
-    minChars: 1900,
+    minChars: 3000,
   },
-  { key: "annexes", aliases: ["annexes-references-et-vigilance", "annexes-ultra-long", "annexes"], minChars: 550 },
+  { key: "annexes", aliases: ["annexes-references-et-vigilance", "annexes-ultra-long", "annexes"], minChars: 900 },
   { key: "sources", aliases: ["sources-bibliotheque", "sources-scientifiques"], minChars: 120 },
 ];
 
-const DEPTH_CRITICAL_SECTION_KEYS = new Set(["axes", "deep_dive", "plan", "nutrition", "supplements"]);
+const DEPTH_CRITICAL_SECTION_KEYS = new Set(["axes", "interconnexions", "deep_dive", "plan", "nutrition", "supplements"]);
 
 const getSectionLengthMultiplier = (markerCount: number): number => {
   if (markerCount >= 22) return 1.2;
@@ -1683,7 +1688,7 @@ const validateReportStructure = (
   const thin: string[] = [];
   const sections = parseH2Sections(output);
 
-  if (sections.length < 10) {
+  if (sections.length < 12) {
     reasons.push("insufficient_h2_sections");
   }
 
@@ -1709,7 +1714,7 @@ const validateReportStructure = (
   if (missing.length) reasons.push(`missing_sections:${missing.join(",")}`);
   const thinCritical = thin.filter((key) => DEPTH_CRITICAL_SECTION_KEYS.has(key));
   if (thinCritical.length) reasons.push(`thin_priority_sections:${thinCritical.join(",")}`);
-  if (!thinCritical.length && thin.length > 1) reasons.push(`thin_sections:${thin.join(",")}`);
+  if (!thinCritical.length && thin.length) reasons.push(`thin_sections:${thin.join(",")}`);
 
   const focusMarkers = markers
     .filter((marker) => marker.status === "critical" || marker.status === "suboptimal")
@@ -1724,11 +1729,11 @@ const validateReportStructure = (
   }
 
   const outputLength = output.trim().length;
-  if (markerCount >= 18 && outputLength < 18000) {
+  if (markerCount >= 18 && outputLength < 20000) {
     reasons.push("report_too_short_for_marker_volume");
-  } else if (markerCount >= 12 && outputLength < 13000) {
+  } else if (markerCount >= 12 && outputLength < 15000) {
     reasons.push("report_too_short");
-  } else if (markerCount >= 8 && outputLength < 9000) {
+  } else if (markerCount >= 8 && outputLength < 10500) {
     reasons.push("report_too_short_low_data");
   }
 
@@ -2335,6 +2340,17 @@ export function buildFallbackAnalysis(
     (id) => !testedIds.has(id)
   );
   const criticalMissingLabels = criticalMissing.map((id) => id.replace(/_/g, " ").toUpperCase());
+  const dashboardAxes: Array<{ label: string; markers: MarkerAnalysis[] }> = [
+    { label: "Hormonal", markers: axisMarkers.hormonal },
+    { label: "Metabolique", markers: axisMarkers.metabolique },
+    { label: "Lipidique", markers: axisMarkers.lipidique },
+    { label: "Thyroidien", markers: axisMarkers.thyroide },
+    { label: "Inflammation", markers: axisMarkers.inflammation },
+    { label: "Micronutriments", markers: axisMarkers.micronutriments },
+    { label: "Foie/Rein", markers: [...axisMarkers.hepatique, ...axisMarkers.renal] },
+    { label: "Stress/Recuperation", markers: axisMarkers.stress },
+  ];
+  const topPriorityMarkers = [...critical, ...suboptimal].slice(0, 12);
 
   sections.push("## Synthese executive\n");
   sections.push(`Profil ${profileLabel} avec ${analysisResult.markers.length} biomarqueur(s) interprete(s).`);
@@ -2367,6 +2383,24 @@ export function buildFallbackAnalysis(
       "Maintenir les routines actuelles."
     )
   );
+  sections.push("### Lecture systemique (leviers 80/20)");
+  sections.push(
+    formatList(
+      topPriorityMarkers.slice(0, 8).map(
+        (marker) =>
+          `${marker.name}: signal ${statusToPriority(marker.status)} (${marker.value} ${marker.unit || ""}) avec impact direct probable sur ${getMarkerPanelName(
+            marker.markerId,
+            marker.category
+          ).toLowerCase()}, recuperation et progression training.`
+      ),
+      "Panel globalement stable, strategie = consolidation des habitudes."
+    )
+  );
+  sections.push("### Sequencement recommande (90 jours)");
+  sections.push("- Etape 1: stabiliser le contexte (sommeil, horaires repas, hydratation, charge de training).");
+  sections.push("- Etape 2: corriger les marqueurs critiques puis les marqueurs suboptimaux les plus impactants.");
+  sections.push("- Etape 3: monter la charge de progression uniquement quand les signaux biologiques se normalisent.");
+  sections.push("- Etape 4: valider objectivement par retest standardise et ajuster sans improvisation.");
 
   sections.push("\n## Qualite des donnees & limites\n");
   sections.push(`- Marqueurs interpretes: ${analysisResult.markers.length}`);
@@ -2382,6 +2416,33 @@ export function buildFallbackAnalysis(
       ? `- Limite principale: ${criticalMissingLabels.length} marqueur(s) cle(s) manquant(s): ${criticalMissingLabels.join(", ")}.`
       : "- Limite principale: manque d'informations lifestyle pour expliquer certains patterns (sommeil, stress, charge d'entrainement)."
   );
+  sections.push("### Couverture par axe");
+  dashboardAxes.forEach((axis) => {
+    const axisScore = scoreFromMarkers(axis.markers);
+    if (!axis.markers.length) {
+      sections.push(`- ${axis.label}: Non renseigne (score indisponible).`);
+      return;
+    }
+    const axisCritical = axis.markers.filter((marker) => marker.status === "critical").length;
+    const axisSuboptimal = axis.markers.filter((marker) => marker.status === "suboptimal").length;
+    sections.push(
+      `- ${axis.label}: ${axis.markers.length} marqueur(s), score estime ${axisScore ?? "N/A"}/10, ${axisCritical} critique(s), ${axisSuboptimal} important(s).`
+    );
+  });
+  sections.push("### Facteurs confondants a controler");
+  sections.push(`- Heure de prelevement: ${userProfile.drawTime || "Non renseigne"} | Jeune: ${userProfile.fastingHours ?? "Non renseigne"} h.`);
+  sections.push(`- Dernier entrainement: ${userProfile.lastTraining || "Non renseigne"} | Alcool 72h: ${userProfile.alcoholLast72h || "Non renseigne"}.`);
+  sections.push(`- Sommeil moyen: ${userProfile.sleepHours ?? "Non renseigne"} h | Stress: ${userProfile.stressLevel ?? "Non renseigne"}/10.`);
+  sections.push(
+    "- Si ces conditions ne sont pas stables, la comparaison inter-bilans peut etre biaisee (faux positifs/faux negatifs sur inflammation, glycemie, enzymes, cortisol)."
+  );
+  sections.push("### Impact decisionnel des limites");
+  sections.push(
+    "- Sans couverture complete, on pilote en mode prudent: prioriser les actions peu risquées et fort ROI, puis confirmer par tests cibles avant d'intensifier."
+  );
+  sections.push(
+    "- Les hypotheses mecanistiques doivent rester hypotheses tant qu'elles ne sont pas validees par retest + contexte lifestyle propre."
+  );
 
   sections.push("\n## Donnees & tests complementaires\n");
   sections.push("### Tests prioritaires a ajouter");
@@ -2393,6 +2454,22 @@ export function buildFallbackAnalysis(
   sections.push(`- Priorites critiques: ${critical.length}`);
   sections.push(`- Priorites importantes: ${suboptimal.length}`);
   sections.push(`- Quick wins exploitables: ${Math.max(1, Math.min(6, analysisResult.markers.length - critical.length))}`);
+  sections.push("### Scoreboard systemique");
+  sections.push("| Axe | Couverture | Score estime | Signal dominant |");
+  sections.push("|---|---:|---:|---|");
+  dashboardAxes.forEach((axis) => {
+    const axisScore = scoreFromMarkers(axis.markers);
+    const axisCritical = axis.markers.filter((marker) => marker.status === "critical").length;
+    const axisSuboptimal = axis.markers.filter((marker) => marker.status === "suboptimal").length;
+    const dominantSignal = axisCritical
+      ? `${axisCritical} critique(s)`
+      : axisSuboptimal
+      ? `${axisSuboptimal} important(s)`
+      : axis.markers.length
+      ? "stabilite relative"
+      : "donnees manquantes";
+    sections.push(`| ${axis.label} | ${axis.markers.length} | ${axisScore ?? "N/A"} | ${dominantSignal} |`);
+  });
   sections.push("### TOP priorites");
   sections.push(
     formatList(
@@ -2412,6 +2489,11 @@ export function buildFallbackAnalysis(
       "Maintenir le cap."
     )
   );
+  sections.push("### KPI de pilotage");
+  sections.push("- Hebdo: adherence sommeil/nutrition/training, energie, digestion, qualite de recuperation.");
+  sections.push("- Mensuel: tendance poids/tour de taille, progression charge utile, tolerance volume.");
+  sections.push("- Biologique: retest J+60/J+90 des marqueurs prioritaires avec meme protocole de prelevement.");
+  sections.push("- Criteres d'escalade medicale: persistance de signaux critiques malgre adherence solide.");
 
   sections.push("\n## Potentiel recomposition (perte de gras + gain de muscle)\n");
   sections.push(
@@ -2421,6 +2503,20 @@ export function buildFallbackAnalysis(
     `Concretement, si tu deplaces ${[...critical, ...suboptimal].slice(0, 2).map((m) => m.name).join(" + ") || "les marqueurs dominants"} vers leur zone optimale, tu facilites la perte de gras, la recuperation et la progression en force/hypertrophie.`
   );
   sections.push("Les 3 leviers qui debloquent le plus vite: sommeil regularise, nutrition periodisee, retest objectif sur les biomarqueurs prioritaires.");
+  sections.push("### Freins biologiques dominants");
+  sections.push(
+    formatList(
+      topPriorityMarkers.slice(0, 6).map(
+        (marker) =>
+          `${marker.name}: frein ${statusToPriority(marker.status)} sur la capacite a tenir volume d'entrainement, recuperer proprement et maintenir un deficit soutenable.`
+      ),
+      "Aucun frein majeur identifie."
+    )
+  );
+  sections.push("### Conditions de progression");
+  sections.push("- Tu augmentes volume/intensite uniquement si sommeil + energie + recuperation restent stables sur 2-3 semaines.");
+  sections.push("- Tu ajustes les calories par petits pas (pas de cuts agressifs) pour proteger thyroide, hormones et adherence.");
+  sections.push("- Tu valides les gains de strategie sur marqueurs + performance, jamais sur le ressenti seul.");
 
   sections.push("\n## Lecture compartimentee par axes\n");
   const axisConfig: Array<{
@@ -2615,7 +2711,7 @@ export function buildFallbackAnalysis(
     sections.push("");
   }
 
-  const priorityMarkers = [...critical, ...suboptimal].slice(0, 8);
+  const priorityMarkers = topPriorityMarkers;
   sections.push("## Deep dive — marqueurs prioritaires\n");
   if (!priorityMarkers.length) {
     sections.push("Aucun marqueur hors zone optimale majeure sur ce bilan.");
@@ -2642,6 +2738,10 @@ export function buildFallbackAnalysis(
       );
       sections.push("- Execution pratique hebdo: check-list quotidienne sommeil, hydratation, adherence nutrition, charge interne entrainement.");
       sections.push("- Cible a 90 jours: sortir de la zone critique/suboptimale et stabiliser au minimum dans la zone normale.");
+      sections.push("- Jalons intermediaires: J+14 adherence, J+30 tendance clinique/performance, J+60 pre-retest.");
+      sections.push("- Signal d'alerte: absence de progression + fatigue accrue + baisse performance = reevaluer charge et contexte.");
+      sections.push("- Strategie d'ajustement: modifier une variable a la fois (nutrition, training, recuperation) pour garder un signal interpretable.");
+      sections.push("- Checklist actionnable: 1 variable prioritaire/semaine, suivi ecrit, revue hebdo objective, decision basee sur tendance et non sur un seul jour.");
       sections.push("- Tests/data a ajouter: panel complementaire cible selon axe + contexte lifestyle detaille.");
       sections.push(`- Confiance: ${marker.status === "critical" ? "moyenne a elevee" : "moyenne"}`);
       sections.push("");
@@ -2663,6 +2763,36 @@ export function buildFallbackAnalysis(
   } else {
     sections.push("Aucune interconnexion robuste n'a pu etre etablie faute de donnees contextuelles suffisantes.");
   }
+  sections.push("### Interconnexions biomarqueurs (mecanismes probables)");
+  if (priorityMarkers.length >= 2) {
+    const connectionDrivers = priorityMarkers.slice(0, 6);
+    connectionDrivers.forEach((marker, index) => {
+      const linked = connectionDrivers
+        .filter((candidate) => candidate.markerId !== marker.markerId)
+        .slice(0, 2)
+        .map((candidate) => `${candidate.name} (${candidate.value} ${candidate.unit || ""})`)
+        .join(" + ");
+      sections.push(
+        `${index + 1}. ${marker.name} (${marker.value} ${marker.unit || ""}) est probablement relie a ${linked || "d'autres signaux du panel"} via un mecanisme commun de recuperation/metabolisme/inflammation.`
+      );
+      sections.push(
+        "   - Validation attendue: amelioration simultanee des marqueurs relies apres stabilisation sommeil/nutrition/charge d'entrainement."
+      );
+      sections.push(
+        "   - Action pratique: prioriser les fondamentaux (sommeil, deficit modere, regularite des repas, volume training soutenable) avant d'ajouter de la complexite."
+      );
+    });
+  } else {
+    sections.push("- Interconnexions biomarqueurs limitees: panel trop favorable ou trop incomplet pour une lecture mecanistique dense.");
+  }
+  if (analysisResult.patterns.length) {
+    sections.push("### Interconnexions issues des patterns detectes");
+    analysisResult.patterns.slice(0, 6).forEach((pattern, idx) => {
+      sections.push(`- Pattern ${idx + 1} (${pattern.name}): causes probables = ${pattern.causes.join(", ") || "Non renseigne"}.`);
+      sections.push("- Hypothese mecanistique: accumulation de freins multi-axes qui se renforcent mutuellement si le contexte lifestyle reste instable.");
+      sections.push("- Test de confirmation: retest standardise + suivi hebdo adherence/performance pour verifier la coherence du pattern.");
+    });
+  }
   sections.push("### Correlations lifestyle");
   sections.push(...correlationLines);
 
@@ -2676,6 +2806,12 @@ export function buildFallbackAnalysis(
   sections.push("- 4) Hydratation/electrolytes calibres selon transpiration.");
   sections.push("- Indicateurs: energie matinale, latence d'endormissement, adherence >80%, variabilite faim/cravings.");
   sections.push("- Erreurs a eviter: deficit agressif, multiplication des supplements, surcharge training immediate.");
+  sections.push(
+    `- Marqueurs cibles phase 1: ${
+      priorityMarkers.slice(0, 4).map((marker) => marker.name).join(", ") || "stabilisation globale"
+    }.`
+  );
+  sections.push("- Validation fin phase: routines executees de facon stable pendant 10-14 jours.");
   sections.push("");
   sections.push("### Jours 15-30 (Phase d'Attaque)");
   sections.push("- Objectifs: attaquer les biomarqueurs prioritaires sans casser la recuperation.");
@@ -2683,6 +2819,8 @@ export function buildFallbackAnalysis(
   sections.push(formatList(priority1.slice(0, 8), "Ajuster nutrition et charge d'entrainement selon feedback."));
   sections.push("- Indicateurs: tendance poids/tour de taille, performance sur lifts de base, fatigue percue, digestion.");
   sections.push("- Erreurs a eviter: changer 10 variables en meme temps, ignorer les signes de surmenage.");
+  sections.push("- Marqueurs cibles phase 2: baisse des signaux critiques et stabilisation des signaux suboptimaux.");
+  sections.push("- Criteres de progression: sommeil stable + energie acceptable + adherence >80% sur 2 semaines.");
   sections.push("");
   sections.push("### Jours 31-60 (Consolidation)");
   sections.push("- Objectifs: consolider les habitudes a fort ROI et lisser les fluctuations.");
@@ -2690,6 +2828,8 @@ export function buildFallbackAnalysis(
   sections.push(formatList(priority2.slice(0, 8), "Consolider les habitudes qui impactent vraiment les marqueurs prioritaires."));
   sections.push("- Indicateurs: adherence durable, qualite du sommeil, performance stable, baisse des marqueurs hors cible.");
   sections.push("- Erreurs a eviter: retomber dans une strategie extreme ou trop restrictive.");
+  sections.push("- Marqueurs cibles phase 3: passage progressif vers zone normale sur les marqueurs encore hors cible.");
+  sections.push("- Point de controle: reevaluer charge d'entrainement si la recuperation ne suit pas.");
   sections.push("");
   sections.push("### Jours 61-90 (Optimisation)");
   sections.push("- Objectifs: optimiser recomposition et performance en gardant la biologie sous controle.");
@@ -2698,6 +2838,8 @@ export function buildFallbackAnalysis(
   sections.push("- Tester une progression planifiee: bloc intensification ou bloc volume selon recuperation.");
   sections.push("- Indicateurs: progression charge utile, repartition masse grasse/maigre, stabilité energetique.");
   sections.push("- Erreurs a eviter: surestimer la recuperation, supprimer trop vite les fondamentaux.");
+  sections.push("- Marqueurs cibles phase 4: consolidations des gains biologiques et prevention de rechute.");
+  sections.push("- Decision finale: maintenir, intensifier ou corriger selon retest et signaux de terrain.");
   sections.push("");
   sections.push("### Retest & conditions de prelevement");
   if (critical.length || suboptimal.length) {
@@ -2709,6 +2851,11 @@ export function buildFallbackAnalysis(
   }
   sections.push("- Conditions strictes: matin, a jeun 10-12h, sans sport intense 24-48h, sans alcool 72h, hydratation stable.");
   sections.push(followUp.length ? followUp.join("\n") : "- Aucun controle supplementaire impose.");
+  sections.push("- Journal de pilotage recommande: adherence quotidienne, energie, sommeil, performance, signaux digestifs.");
+  sections.push("- Regle d'ajustement: si 2 semaines sans amelioration nette, revenir au dernier protocole stable puis ajuster par palier.");
+  sections.push("- Replanification: si aggravation clinique/performance, reduire complexite du plan et revenir aux fondamentaux sur 7-10 jours.");
+  sections.push("- Critere de succes fin cycle: tendance favorable sur marqueurs prioritaires + progression mesurable sans surcharge physiologique.");
+  sections.push("- Critere d'echec: adherence correcte mais stagnation biologique durable -> tests complementaires et avis medical.");
 
   sections.push("\n## Nutrition & entrainement\n");
   sections.push("### Nutrition");
@@ -2741,6 +2888,20 @@ export function buildFallbackAnalysis(
   sections.push("- Quotidien: heure de coucher/reveil, 2-3 repas structures, hydratation, steps, training note.");
   sections.push("- Hebdo: revue des tendances et ajustement minimal.");
   sections.push("- Mensuel: valider que les marqueurs prioritaires bougent dans la bonne direction.");
+  sections.push("### Traduction par marqueur prioritaire");
+  sections.push(
+    formatList(
+      priorityMarkers.slice(0, 8).map(
+        (marker) =>
+          `${marker.name}: nutrition plus stable + training mieux periodise pour reduire le signal ${statusToPriority(marker.status).toLowerCase()}.`
+      ),
+      "Aucun marqueur prioritaire a traduire en protocole specifique."
+    )
+  );
+  sections.push("### Periodisation pratique");
+  sections.push("- Jours d'entrainement: glucides majoritairement peri-training, proteines reparties sur 3-4 prises.");
+  sections.push("- Jours de repos: maintenir proteines/fibres, ajuster glucides sans couper brutalement.");
+  sections.push("- Deload: conserver qualite nutritionnelle, reduire volume training, proteger le sommeil.");
 
   sections.push("\n## Supplements & stack\n");
   sections.push("### Niveau 1 — Fondamentaux (impact large)");
@@ -2768,6 +2929,29 @@ export function buildFallbackAnalysis(
   sections.push("- Priorite haute: biomarqueurs critiques + forte probabilite de benefice + risque faible.");
   sections.push("- Priorite moyenne: biomarqueurs suboptimaux + objectif performance specifique.");
   sections.push("- Priorite basse: optimisation fine sans signal biologique fort.");
+  sections.push("### Stack personnalise par marqueur");
+  sections.push(
+    formatList(
+      priorityMarkers.slice(0, 10).map((marker) => {
+        const panel = getMarkerPanelName(marker.markerId, marker.category);
+        return `${marker.name} (${panel}): prioriser fondamentaux + option(s) ciblee(s), puis confirmer l'efficacite au retest J+60/J+90.`;
+      }),
+      "Pas de stack cible requis au-dela des fondamentaux."
+    )
+  );
+  sections.push("### Pilotage cout/benefice");
+  sections.push("- Garder un stack court au debut (fort ROI, adherence, tolerance).");
+  sections.push("- N'ajouter une brique que si un marqueur/pattern justifie clairement l'investissement.");
+  sections.push("- Couper ce qui n'apporte pas de signal mesurable sur 4-8 semaines.");
+  sections.push("### Calendrier d'introduction (ordre pratique)");
+  sections.push("- Semaine 1: fondamentaux sommeil/recuperation + 1-2 supplements de base.");
+  sections.push("- Semaine 2-3: ajouter une brique ciblee si les signaux prioritaires restent eleves.");
+  sections.push("- Semaine 4-6: evaluer tolerance/efficacite avant toute escalation.");
+  sections.push("- Semaine 7-12: simplifier le stack autour des options qui montrent un effet concret.");
+  sections.push("### Suivi de tolerance et efficacite");
+  sections.push("- Tolérance: sommeil, digestion, energie, frequence cardiaque au repos, ressenti d'entrainement.");
+  sections.push("- Efficacite: mouvement des marqueurs cibles, baisse des signaux critiques, progression de performance sans fatigue excessive.");
+  sections.push("- Decision: maintenir si signal positif net, ajuster si signal mixte, stopper si signal negatif persistant.");
   sections.push("### Ce qu'on evite volontairement");
   sections.push("- Stack trop large des le debut (bruit + cout + adherence faible).");
   sections.push("- Promesses de resultats sans retest.");
@@ -3127,11 +3311,16 @@ export async function generateAIBloodAnalysis(
   const targetChars = markerCount >= 22 ? 34000 : markerCount >= 16 ? 28000 : markerCount >= 12 ? 22000 : markerCount >= 8 ? 16000 : 11000;
   const minDeepDiveMarkers = Math.max(3, Math.min(10, Math.ceil(markerCount * 0.55)));
   const qualityThresholds = {
-    axes: markerCount >= 16 ? 5000 : 3800,
-    deepDive: markerCount >= 16 ? 4300 : 3000,
-    plan: markerCount >= 16 ? 3200 : 2500,
-    nutrition: markerCount >= 16 ? 2400 : 1800,
-    supplements: markerCount >= 16 ? 2600 : 1900,
+    synthese: markerCount >= 16 ? 1200 : 900,
+    qualite: markerCount >= 16 ? 900 : 700,
+    tableau: markerCount >= 16 ? 900 : 700,
+    recomposition: markerCount >= 16 ? 1300 : 1000,
+    axes: markerCount >= 16 ? 6200 : 4700,
+    interconnexions: markerCount >= 16 ? 1600 : 1300,
+    deepDive: markerCount >= 16 ? 5000 : 3800,
+    plan: markerCount >= 16 ? 3500 : 2800,
+    nutrition: markerCount >= 16 ? 2700 : 2200,
+    supplements: markerCount >= 16 ? 3200 : 2500,
   };
   const focusMarkers = analysisResult.markers
     .filter((marker) => marker.status !== "optimal")
@@ -3146,6 +3335,8 @@ export async function generateAIBloodAnalysis(
     analysisResult.summary.action.length,
     analysisResult.summary.watch.length,
   ].join("-");
+  const buildFallbackReport = () =>
+    trimAiAnalysis(ensureSourcesSection(buildFallbackAnalysis(analysisResult, userProfile, knowledgeContext)));
 
   const userPrompt = `Analyse ce bilan sanguin pour ${userProfile.prenom ? userProfile.prenom : "le client"} (${userProfile.gender} ${userProfile.age || ""}).
 Objectifs: ${userProfile.objectives || "Performance et sante"}
@@ -3188,7 +3379,12 @@ EXIGENCES DE QUALITE:
 - Traiter au moins ${minDeepDiveMarkers} marqueurs en deep dive (ou tous les non-optimaux s'il y en a moins).
 - Pour chaque axe et chaque marqueur prioritaire: lecture clinique + lecture performance + actions concretes.
 - Tu DOIS respecter des seuils de profondeur:
+  - "## Synthese executive": au moins ${qualityThresholds.synthese} caracteres, avec priorites immediates + impact performance + sequence d'action.
+  - "## Qualite des donnees & limites": au moins ${qualityThresholds.qualite} caracteres, avec limites explicites, confondants et tests de confirmation.
+  - "## Tableau de bord (scores & priorites)": au moins ${qualityThresholds.tableau} caracteres, avec priorites, quick wins, KPI.
+  - "## Potentiel recomposition (perte de gras + gain de muscle)": au moins ${qualityThresholds.recomposition} caracteres, avec leviers, freins, conditions de progression.
   - "## Lecture compartimentee par axes": au moins ${qualityThresholds.axes} caracteres, avec un bloc detaille par axe present.
+  - "## Interconnexions majeures (le pattern)": au moins ${qualityThresholds.interconnexions} caracteres, avec patterns relies entre marqueurs.
   - "## Deep dive — marqueurs prioritaires": au moins ${qualityThresholds.deepDive} caracteres, marqueur par marqueur.
   - "## Plan d'action 90 jours": au moins ${qualityThresholds.plan} caracteres, avec objectifs + actions + indicateurs + erreurs a eviter par phase.
   - "## Nutrition & entrainement": au moins ${qualityThresholds.nutrition} caracteres, en liant chaque recommendation aux marqueurs.
@@ -3262,7 +3458,7 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
         console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
         if (attempt === maxAttempts) {
           console.log("[BloodAnalysis] All attempts timed out, using fallback");
-          return buildFallbackAnalysis(analysisResult, userProfile, knowledgeContext);
+          return buildFallbackReport();
         }
       } else {
         throw err;
@@ -3343,6 +3539,79 @@ ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
     prompt: () => string;
   }> = [
     {
+      title: "Synthese executive",
+      aliases: ["synthese-executive"],
+      minChars: qualityThresholds.synthese,
+      maxTokens: 5000,
+      prompt: () => `Genere UNIQUEMENT la section "## Synthese executive".
+
+Contraintes:
+- Longueur minimale: ${qualityThresholds.synthese} caracteres.
+- Inclure obligatoirement: triage des priorites, impact performance/recomposition, sequence logique des actions, risques a surveiller.
+- S'appuyer strictement sur les marqueurs reels et leur statut.
+- Aucun blabla generique.
+
+Contexte:
+Client: ${userProfile.prenom || "le client"} (${userProfile.gender} ${userProfile.age || ""})
+Lifestyle: ${lifestyleLine}
+Marqueurs: ${markersTable}
+Patterns: ${patternsText}`,
+    },
+    {
+      title: "Qualite des donnees & limites",
+      aliases: ["qualite-des-donnees-limites"],
+      minChars: qualityThresholds.qualite,
+      maxTokens: 4200,
+      prompt: () => `Genere UNIQUEMENT la section "## Qualite des donnees & limites".
+
+Contraintes:
+- Longueur minimale: ${qualityThresholds.qualite} caracteres.
+- Inclure: fiabilite du panel, limites de couverture, facteurs confondants, ce qui manque pour conclure, tests prioritaires a ajouter.
+- Quand une info manque: "Non renseigne" + impact concret sur la decision.
+- Rester factuel et actionnable.
+
+Contexte:
+Lifestyle: ${lifestyleLine}
+Marqueurs: ${markersTable}
+Patterns: ${patternsText}`,
+    },
+    {
+      title: "Tableau de bord (scores & priorites)",
+      aliases: ["tableau-de-bord-scores-priorites"],
+      minChars: qualityThresholds.tableau,
+      maxTokens: 4500,
+      prompt: () => `Genere UNIQUEMENT la section "## Tableau de bord (scores & priorites)".
+
+Contraintes:
+- Longueur minimale: ${qualityThresholds.tableau} caracteres.
+- Inclure: priorites critiques/importantes, quick wins, KPI de suivi hebdo et mensuel, criteres d'escalade.
+- Lier explicitement les priorites aux biomarqueurs.
+- Style premium, concret, sans generalites.
+
+Contexte:
+Marqueurs: ${markersTable}
+Patterns: ${patternsText}`,
+    },
+    {
+      title: "Potentiel recomposition",
+      aliases: ["potentiel-recomposition-perte-de-gras-gain-de-muscle", "potentiel-recomposition"],
+      minChars: qualityThresholds.recomposition,
+      maxTokens: 4500,
+      prompt: () => `Genere UNIQUEMENT la section "## Potentiel recomposition (perte de gras + gain de muscle)".
+
+Contraintes:
+- Longueur minimale: ${qualityThresholds.recomposition} caracteres.
+- Inclure: freins biologiques dominants, opportunites court terme, conditions de progression training/nutrition, indicateurs de validation.
+- Relier explicitement les conclusions aux marqueurs prioritaires.
+- Rester concret et mesurable.
+
+Contexte:
+Client: ${userProfile.prenom || "le client"} (${userProfile.gender} ${userProfile.age || ""})
+Lifestyle: ${lifestyleLine}
+Marqueurs: ${markersTable}
+Patterns: ${patternsText}`,
+    },
+    {
       title: "Lecture compartimentee par axes",
       aliases: ["lecture-compartimentee-par-axes", "analyse-par-axe"],
       minChars: qualityThresholds.axes,
@@ -3365,12 +3634,12 @@ ${patternsText}`,
     {
       title: "Interconnexions majeures",
       aliases: ["interconnexions-majeures-le-pattern", "interconnexions-majeures"],
-      minChars: 1400,
+      minChars: qualityThresholds.interconnexions,
       maxTokens: 6000,
       prompt: () => `Genere UNIQUEMENT la section "## Interconnexions majeures (le pattern)".
 
 Contraintes:
-- Longueur minimale: 1400 caracteres.
+- Longueur minimale: ${qualityThresholds.interconnexions} caracteres.
 - 5 a 12 interconnexions concretes maximum.
 - Chaque interconnexion doit contenir: pattern observe, hypothese mecanistique, ce qui confirmerait, action concrete.
 - Lier explicitement les marqueurs entre eux.
@@ -3477,12 +3746,12 @@ ${markersTable}`,
     {
       title: "Annexes",
       aliases: ["annexes-references-et-vigilance", "annexes-ultra-long", "annexes"],
-      minChars: 700,
+      minChars: 900,
       maxTokens: 5000,
       prompt: () => `Genere UNIQUEMENT la section "## Annexes (references et vigilance)".
 
 Contraintes:
-- Longueur minimale: 700 caracteres.
+- Longueur minimale: 900 caracteres.
 - Inclure:
   - Annexe A: marqueurs secondaires (statut + interpretation + action rapide)
   - Annexe B: hypotheses ouvertes + tests de confirmation
@@ -3548,7 +3817,14 @@ ${markersTable}`,
     console.warn(
       `[BloodAnalysis] Final report failed quality gate: ${finalStructureCheck.reasons.join(" | ")}. Using deterministic fallback.`
     );
-    return buildFallbackAnalysis(analysisResult, userProfile, knowledgeContext);
+    const fallbackReport = buildFallbackReport();
+    const fallbackStructureCheck = validateReportStructure(fallbackReport, analysisResult.markers);
+    if (!fallbackStructureCheck.ok) {
+      console.warn(
+        `[BloodAnalysis] Deterministic fallback still below target: ${fallbackStructureCheck.reasons.join(" | ")}`
+      );
+    }
+    return fallbackReport;
   }
   return trimmedOutput;
 }

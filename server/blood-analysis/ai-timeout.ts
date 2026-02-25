@@ -1,6 +1,6 @@
 // 25s was too short for premium blood reports on production cold starts,
 // causing avoidable fallback responses.
-const DEFAULT_AI_SYNC_TIMEOUT_MS = 70000;
+const DEFAULT_AI_SYNC_TIMEOUT_MS = 120000;
 // Async blood reports can require multiple generation/rewrite passes.
 // Keep a single long attempt by default to avoid double-running expensive pipelines.
 const DEFAULT_AI_ASYNC_TIMEOUT_MS = 900000;
