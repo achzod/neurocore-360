@@ -1665,6 +1665,174 @@ const upsertSectionByAliases = (report: string, aliases: string[], newSectionCon
   return [before, nextSection, after].filter(Boolean).join("\n\n").trim();
 };
 
+const AXES_CANONICAL_HEADINGS = [
+  "### Axe 1 — Potentiel musculaire & androgenes",
+  "### Axe 2 — Metabolisme & gestion du risque diabete",
+  "### Axe 3 — Lipides & risque cardio-metabolique",
+  "### Axe 4 — Thyroide & depense energetique",
+  "### Axe 5 — Foie, bile & detox metabolique",
+  "### Axe 6 — Rein, hydratation & performance",
+  "### Axe 7 — Inflammation, immunite & terrain",
+  "### Axe 8 — Hematologie, oxygenation & endurance",
+  "### Axe 9 — Micronutriments (vitamines & mineraux)",
+  "### Axe 10 — Electrolytes, crampes, pression & performance",
+  "### Axe 11 — Stress, sommeil, recuperation",
+];
+
+const normalizeForCheck = (value: string) => normalizePlain(String(value || "")).replace(/\s+/g, " ").trim();
+
+const inferAxisIndexFromHeading = (heading: string): number | null => {
+  const match = heading.match(/axe\s*(\d{1,2})/i);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isInteger(value) || value < 1 || value > 11) return null;
+  return value;
+};
+
+const rebuildAxesSection = (axesSectionContent: string): string => {
+  const raw = String(axesSectionContent || "").trim();
+  if (!raw) {
+    return [
+      "## Lecture compartimentee par axes",
+      ...AXES_CANONICAL_HEADINGS.map(
+        (heading) =>
+          `${heading}\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et proposer un retest cible.`
+      ),
+    ].join("\n\n");
+  }
+
+  const lines = raw.split("\n");
+  const h2Line = lines.find((line) => /^\s*##\s+/i.test(line)) || "## Lecture compartimentee par axes";
+  const body = lines.slice(lines.indexOf(h2Line) + 1);
+
+  const intro: string[] = [];
+  const axisBlocks = new Map<number, string[]>();
+  let current: { axis: number | null; lines: string[] } | null = null;
+
+  for (const line of body) {
+    const h3Match = line.match(/^\s*###\s+(.+)$/);
+    if (h3Match) {
+      if (current && current.axis && !axisBlocks.has(current.axis)) {
+        axisBlocks.set(current.axis, current.lines);
+      }
+      const title = h3Match[1].trim();
+      current = {
+        axis: inferAxisIndexFromHeading(title),
+        lines: [`### ${title}`],
+      };
+      continue;
+    }
+
+    if (current) {
+      current.lines.push(line);
+    } else {
+      intro.push(line);
+    }
+  }
+
+  if (current && current.axis && !axisBlocks.has(current.axis)) {
+    axisBlocks.set(current.axis, current.lines);
+  }
+
+  const out: string[] = [h2Line.trim()];
+  const introText = intro.join("\n").trim();
+  if (introText) out.push("", introText);
+
+  for (let axis = 1; axis <= 11; axis++) {
+    const existing = axisBlocks.get(axis);
+    if (existing && existing.length) {
+      const canonical = AXES_CANONICAL_HEADINGS[axis - 1];
+      out.push("", canonical, ...existing.slice(1));
+      continue;
+    }
+    out.push(
+      "",
+      `${AXES_CANONICAL_HEADINGS[axis - 1]}\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et proposer un retest cible.`
+    );
+  }
+
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+};
+
+export const ensureAxesSectionTemplate = (fullText: string): string => {
+  const report = String(fullText || "").trim();
+  if (!report) return report;
+
+  const aliases = ["lecture-compartimentee-par-axes", "analyse-par-axe", "analyse-par-axes"];
+  const sections = parseH2Sections(report);
+  const axes = findSectionByAliases(sections, aliases);
+  if (!axes) return report;
+
+  const rebuilt = rebuildAxesSection(axes.content || "");
+  return upsertSectionByAliases(report, aliases, rebuilt);
+};
+
+export const sanitizeBloodReportRegister = (text: string): string => {
+  let out = String(text || "");
+  if (!out) return out;
+
+  const replacements: Array<{ pattern: RegExp; value: string }> = [
+    { pattern: /\bje vais etre direct(?: avec toi)?\b/gi, value: "je vais etre clair avec toi" },
+    { pattern: /\bfranchement\b/gi, value: "honnêtement" },
+    { pattern: /\becoute\b/gi, value: "regarde" },
+    { pattern: /\ble patient\b/gi, value: "tu" },
+    { pattern: /\bla patiente\b/gi, value: "tu" },
+    { pattern: /\bputain\b/gi, value: "" },
+    { pattern: /\bbordel\b/gi, value: "" },
+  ];
+  for (const replacement of replacements) {
+    out = out.replace(replacement.pattern, replacement.value);
+  }
+
+  out = out.replace(/\s*\[SRC:[^\]]+\]\s*/gi, " ");
+  out = out.replace(/\n##\s+Sources[^\n]*[\s\S]*$/i, "");
+  out = out.replace(/[ \t]{2,}/g, " ");
+  out = out.replace(/[ \t]+\n/g, "\n");
+  out = out.replace(/\n{3,}/g, "\n\n");
+  return out.trim();
+};
+
+export const auditBloodReportQualityForMeta = (aiReport: string): string[] => {
+  const report = String(aiReport || "");
+  if (!report.trim()) return ["missing_report"];
+
+  const sections = parseH2Sections(report);
+  const required: Array<{ key: string; aliases: string[]; minChars: number }> = [
+    { key: "synthese", aliases: ["synthese-executive"], minChars: 450 },
+    { key: "axes", aliases: ["lecture-compartimentee-par-axes", "analyse-par-axe", "analyse-par-axes"], minChars: 1800 },
+    { key: "deep_dive", aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"], minChars: 1600 },
+    { key: "plan", aliases: ["plan-d-action-90-jours", "plan-90-jours"], minChars: 1200 },
+    { key: "nutrition", aliases: ["nutrition-entrainement", "nutrition-entrainement-traduction-pratique"], minChars: 900 },
+    { key: "supplements", aliases: ["supplements-stack", "supplements-stack-minimaliste-mais-impact"], minChars: 900 },
+  ];
+
+  const issues: string[] = [];
+  for (const rule of required) {
+    const section = findSectionByAliases(sections, rule.aliases);
+    if (!section) {
+      issues.push(`missing_section:${rule.key}`);
+      continue;
+    }
+    if ((section.content || "").trim().length < rule.minChars) {
+      issues.push(`short_section:${rule.key}`);
+    }
+  }
+
+  const axesSection = findSectionByAliases(sections, ["lecture-compartimentee-par-axes", "analyse-par-axe", "analyse-par-axes"]);
+  if (axesSection) {
+    for (let axis = 1; axis <= 11; axis++) {
+      if (!new RegExp(`^###\\s+Axe\\s+${axis}\\b`, "mi").test(axesSection.content || "")) {
+        issues.push(`missing_axis:${axis}`);
+      }
+    }
+  }
+
+  if (/\[SRC:[^\]]+\]/i.test(report)) issues.push("visible_source_tags");
+  if (/[\p{Extended_Pictographic}\uFE0F]/gu.test(report)) issues.push("emoji_present");
+
+  return issues;
+};
+
 const validateReportStructure = (
   output: string,
   markers: MarkerAnalysis[],
