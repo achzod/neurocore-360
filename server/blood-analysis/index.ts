@@ -1770,6 +1770,128 @@ const validateDeepDive = (output: string, markerNames: string[]) => {
   return { ok: true, reason: "" };
 };
 
+const AXES_SECTION_ALIASES = [
+  "lecture-compartimentee-par-axes",
+  "analyse-par-axe",
+  "analyse-par-axes",
+];
+
+const normalizeReportWhitespace = (text: string): string =>
+  text
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+export const sanitizeBloodReportRegister = (text: string): string => {
+  if (!text) return "";
+  let out = String(text);
+
+  const replacements: Array<{ pattern: RegExp; value: string }> = [
+    { pattern: /\bje vais etre direct avec toi\b/gi, value: "je vais etre clair avec toi" },
+    { pattern: /\bje vais etre direct\b/gi, value: "je vais etre clair" },
+    { pattern: /\bfranchement\b/gi, value: "honnêtement" },
+    { pattern: /\becoute\b/gi, value: "regarde" },
+    { pattern: /\bmec\b/gi, value: "tu" },
+    { pattern: /\bon observe que\b/gi, value: "je vois que" },
+    { pattern: /\bon observe\b/gi, value: "je vois" },
+    { pattern: /\bil convient de\b/gi, value: "je te recommande de" },
+    { pattern: /\bil est recommande de\b/gi, value: "je te recommande de" },
+    { pattern: /\bil est recommande\b/gi, value: "je te recommande" },
+    { pattern: /\bil est conseille de\b/gi, value: "je te recommande de" },
+    { pattern: /\ble patient\b/gi, value: "tu" },
+    { pattern: /\bla patiente\b/gi, value: "tu" },
+    { pattern: /\bputain\b/gi, value: "" },
+    { pattern: /\bbordel\b/gi, value: "" },
+  ];
+
+  for (const replacement of replacements) {
+    out = out.replace(replacement.pattern, replacement.value);
+  }
+
+  out = stripEmojis(out);
+  out = out.replace(/\s*\[SRC:[^\]]+\]\s*/g, " ");
+  out = out.replace(/\n##\s+Sources[^\n]*[\s\S]*$/i, "");
+  out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
+
+  return normalizeReportWhitespace(out);
+};
+
+export const ensureAxesSectionTemplate = (fullText: string): string => {
+  if (!fullText) return fullText;
+  const report = String(fullText);
+  const sections = parseH2Sections(report);
+  const axesSection = findSectionByAliases(sections, AXES_SECTION_ALIASES);
+  if (!axesSection) return normalizeReportWhitespace(report);
+
+  const lines = (axesSection.content || "").split("\n");
+  const headingLine =
+    lines.find((line) => /^\s*(?:\*\*)?##\s+/.test(line))?.trim() ||
+    "## Lecture compartimentee par axes";
+
+  let body = lines.join("\n");
+  if (/^\s*(?:\*\*)?##\s+/.test(lines[0] || "")) {
+    body = lines.slice(1).join("\n");
+  }
+
+  body = body.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
+
+  for (let axis = 1; axis <= 11; axis += 1) {
+    const axisRegex = new RegExp(`^###\\s+Axe\\s+${axis}\\b`, "mi");
+    if (axisRegex.test(body)) continue;
+    body = `${body.trim()}\n\n### Axe ${axis} — Non renseigne\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et je te recommande de le confirmer au prochain retest avec les marqueurs associes.`.trim();
+  }
+
+  const rebuiltSection = `${headingLine}\n\n${normalizeReportWhitespace(body)}`.trim();
+  return normalizeReportWhitespace(upsertSectionByAliases(report, AXES_SECTION_ALIASES, rebuiltSection));
+};
+
+export const auditBloodReportQualityForMeta = (aiReport: string): string[] => {
+  const report = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReport || ""));
+  if (!report) return ["empty_report"];
+
+  const issues: string[] = [];
+  const sections = parseH2Sections(report);
+
+  if (sections.length < 10) {
+    issues.push("insufficient_h2_sections");
+  }
+
+  for (const spec of REQUIRED_REPORT_SECTIONS) {
+    if (spec.key === "sources") continue;
+    const found = findSectionByAliases(sections, spec.aliases);
+    if (!found) {
+      issues.push(`missing_section:${spec.key}`);
+      continue;
+    }
+    const minimum = Math.max(250, Math.round(spec.minChars * 0.28));
+    if (found.content.trim().length < minimum) {
+      issues.push(`short_section:${spec.key}`);
+    }
+  }
+
+  const axesSection = findSectionByAliases(sections, AXES_SECTION_ALIASES);
+  if (!axesSection) {
+    issues.push("missing_section:axes");
+  } else {
+    for (let axis = 1; axis <= 11; axis += 1) {
+      if (!new RegExp(`^###\\s+Axe\\s+${axis}\\b`, "mi").test(axesSection.content || "")) {
+        issues.push(`missing_axis:${axis}`);
+      }
+    }
+  }
+
+  if (
+    /(Cette section sera disponible une fois le rapport complet généré|Génération du rapport AI en cours|Le rapport complet sera disponible sous peu)/i.test(
+      report
+    )
+  ) {
+    issues.push("placeholder_text");
+  }
+
+  return Array.from(new Set(issues));
+};
+
 export async function analyzeBloodwork(
   markers: BloodMarkerInput[],
   userProfile: {
