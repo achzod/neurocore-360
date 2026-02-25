@@ -18,11 +18,6 @@ type ScoredPdf = {
   statusCounts: Record<MarkerStatus, number>;
 };
 
-type ExtractedMarker = {
-  markerId: string;
-  value: number;
-};
-
 type SkippedPdf = {
   file: string;
   reason: string;
@@ -31,6 +26,15 @@ type SkippedPdf = {
 const assert = (condition: boolean, message: string) => {
   if (!condition) {
     throw new Error(message);
+  }
+};
+
+const assertApprox = (actual: number | null | undefined, expected: number, label: string, tolerance = 0.01) => {
+  if (actual === null || actual === undefined || Number.isNaN(actual)) {
+    throw new Error(`Regression: ${label} missing (expected ${expected}).`);
+  }
+  if (Math.abs(actual - expected) > tolerance) {
+    throw new Error(`Regression: ${label} expected ${expected}, got ${actual}.`);
   }
 };
 
@@ -57,6 +61,8 @@ const computeGlobalScore = (statuses: MarkerStatus[]): number => {
 async function main() {
   // Required by modules imported by blood-analysis internals.
   process.env.DATABASE_URL ||= "postgresql://user:pass@localhost:5432/db";
+  // Keep parser-only extraction deterministic for regression checks.
+  delete process.env.ANTHROPIC_API_KEY;
 
   const { extractMarkersFromPdfText, analyzeBloodwork } = await import("../server/blood-analysis/index.js");
 
@@ -66,14 +72,12 @@ async function main() {
 
   const scored: ScoredPdf[] = [];
   const skipped: SkippedPdf[] = [];
-  const extractedByFile = new Map<string, ExtractedMarker[]>();
 
   for (const file of pdfFiles) {
     try {
       const buffer = fs.readFileSync(file);
       const parsed = await pdf(buffer);
       const extracted = await extractMarkersFromPdfText(parsed.text || "", path.basename(file));
-      extractedByFile.set(path.relative(process.cwd(), file), extracted as ExtractedMarker[]);
       const analysis = await analyzeBloodwork(extracted, { gender: "homme" });
 
       const statuses = analysis.markers.map((marker) => marker.status as MarkerStatus);
@@ -117,24 +121,6 @@ async function main() {
   const allHundred = withMarkers.every((item) => item.globalScore === 100);
   assert(!allHundred, "Regression: all analyzed PDFs are scored at 100.");
 
-  const crFixturePath = "data/CR_195452.pdf";
-  const crMarkers = extractedByFile.get(crFixturePath) || [];
-  if (crMarkers.length) {
-    const byId = new Map(crMarkers.map((m) => [m.markerId, m.value]));
-    assert(
-      byId.get("hdl") === 19,
-      `Regression: ${crFixturePath} expected HDL=19 mg/dL, got ${String(byId.get("hdl"))}.`
-    );
-    assert(
-      byId.get("testosterone_libre") === 11,
-      `Regression: ${crFixturePath} expected testosterone_libre=11 pg/mL, got ${String(byId.get("testosterone_libre"))}.`
-    );
-    assert(
-      !byId.has("lpa"),
-      `Regression: ${crFixturePath} should not extract Lp(a) when only Apolipoproteine A1 is present.`
-    );
-  }
-
   for (const item of sortedByMarkers) {
     const nonOptimal = item.statusCounts.suboptimal + item.statusCounts.critical;
     if (nonOptimal > 0) {
@@ -143,6 +129,24 @@ async function main() {
         `Regression: ${item.file} scored 100 with ${nonOptimal} suboptimal/critical markers.`
       );
     }
+  }
+
+  // Hard guard: CR_195452 has known reference values and no Lp(a) measure.
+  const crPath = path.resolve(dataDir, "CR_195452.pdf");
+  if (fs.existsSync(crPath)) {
+    const buffer = fs.readFileSync(crPath);
+    const parsed = await pdf(buffer);
+    const extracted = await extractMarkersFromPdfText(parsed.text || "", "CR_195452.pdf");
+    const markerMap = new Map(extracted.map((m) => [m.markerId, m.value]));
+
+    assertApprox(markerMap.get("triglycerides"), 166, "CR_195452 triglycerides");
+    assertApprox(markerMap.get("hdl"), 19, "CR_195452 HDL");
+    assertApprox(markerMap.get("apo_a1"), 85, "CR_195452 ApoA1");
+    assertApprox(markerMap.get("testosterone_libre"), 11, "CR_195452 testosterone_libre");
+    assert(
+      !markerMap.has("lpa"),
+      `Regression: CR_195452 should not contain Lp(a), got ${markerMap.get("lpa")}.`
+    );
   }
 
   console.log("Blood score regression checks passed.");
