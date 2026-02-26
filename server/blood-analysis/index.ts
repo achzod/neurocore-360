@@ -2545,21 +2545,21 @@ export function buildFallbackAnalysis(
   sections.push("## Synthese executive\n");
   const normalCount = analysisResult.markers.filter((m) => m.status === "normal").length;
   sections.push(
-    `Ce bilan sanguin concerne un profil ${profileLabel} avec ${analysisResult.markers.length} biomarqueurs interpretes. ` +
-    `Le triage revele ${critical.length} marqueur${critical.length > 1 ? "s" : ""} critique${critical.length > 1 ? "s" : ""}, ` +
-    `${suboptimal.length} marqueur${suboptimal.length > 1 ? "s" : ""} important${suboptimal.length > 1 ? "s" : ""}, ` +
-    `${normalCount} en zone de surveillance et ${optimal.length} dans la zone optimale.`
+    `J'ai analyse ton bilan complet. On a ${analysisResult.markers.length} biomarqueurs a interpreter. ` +
+    `Ce que je vois: ${critical.length} point${critical.length > 1 ? "s" : ""} critique${critical.length > 1 ? "s" : ""}, ` +
+    `${suboptimal.length} point${suboptimal.length > 1 ? "s" : ""} a corriger en priorite, ` +
+    `${normalCount} a surveiller et ${optimal.length} deja dans le vert.`
   );
   sections.push("");
   sections.push(
     critical.length
-      ? `Le goulot d'etranglement principal identifie est ${critical[0].name}, qui constitue la priorite numero un a traiter. `
-      : "Aucun signal d'urgence immediate n'a ete detecte sur ce panel. "
+      ? `Ton goulot d'etranglement numero un, c'est ${critical[0].name}. C'est la qu'on va concentrer nos efforts en premier. `
+      : "Bonne nouvelle: pas de signal d'urgence sur ton panel. "
   );
   sections.push(
     suboptimal.length
-      ? `Le levier secondaire se situe au niveau de ${suboptimal[0].name}, dont l'optimisation permettra d'accelerer la progression.`
-      : "L'objectif principal consiste donc a consolider les acquis actuels et maintenir la trajectoire positive."
+      ? `Ensuite, on va bosser sur ${suboptimal[0].name} pour debloquer ta progression.`
+      : "L'objectif maintenant, c'est de consolider tes acquis et continuer sur cette lancee."
   );
   sections.push("");
 
@@ -2568,21 +2568,20 @@ export function buildFallbackAnalysis(
   if (priorityMarkersList.length) {
     const prioritySentences = priorityMarkersList.map(
       (marker) =>
-        `${marker.name} presente une valeur de ${marker.value} ${marker.unit || ""} avec un statut ${statusToPriority(marker.status).toLowerCase()}, ` +
-        `necessitant une correction vers ${marker.optimalRange || "la zone optimale"}`
+        `Ton ${marker.name} est a ${marker.value} ${marker.unit || ""}, c'est ${statusToPriority(marker.status).toLowerCase()}. ` +
+        `On vise ${marker.optimalRange || "la zone optimale"}`
     );
     sections.push(prioritySentences.join(". ") + ".");
   } else {
-    sections.push("Aucune alerte majeure n'a ete identifiee sur ce panel, ce qui temoigne d'un profil globalement equilibre.");
+    sections.push("Rien d'alarmant sur ton panel, ton profil est globalement equilibre. On va quand meme chercher a optimiser.");
   }
   sections.push("");
 
   sections.push("### Opportunites performance\n");
   sections.push(
-    "Les principales opportunites d'amelioration de la performance resident dans la stabilisation du sommeil et de l'heure de coucher " +
-    "afin de consolider l'axe hormonal et metabolique. La structuration de l'alimentation autour des seances d'entrainement permettra " +
-    "de lisser la glycemie et d'optimiser la recuperation. Un retest dans huit a douze semaines avec des conditions de prelevement standardisees " +
-    "objectivera la progression et validera l'efficacite des interventions."
+    "Tes leviers d'amelioration sont clairs. Premiere chose: stabilise ton sommeil et ton heure de coucher, ca va consolider tout ton axe hormonal. " +
+    "Ensuite, structure ta nutrition autour de tes seances pour mieux gerer ta glycemie et optimiser ta recup. " +
+    "Dans huit a douze semaines, on refait un bilan pour objectiver ta progression."
   );
   sections.push("");
 
@@ -2590,40 +2589,38 @@ export function buildFallbackAnalysis(
   if (topPriorityMarkers.length) {
     const systemicSentences = topPriorityMarkers.slice(0, 6).map(
       (marker) =>
-        `${marker.name} affiche un signal ${statusToPriority(marker.status).toLowerCase()} a ${marker.value} ${marker.unit || ""}, ` +
-        `avec un impact direct probable sur l'axe ${getMarkerPanelName(marker.markerId, marker.category).toLowerCase()}, ` +
-        `la recuperation et la progression a l'entrainement`
+        `Ton ${marker.name} a ${marker.value} ${marker.unit || ""} impacte directement ton ${getMarkerPanelName(marker.markerId, marker.category).toLowerCase()}, ` +
+        `ta recuperation et ta progression en salle`
     );
     sections.push(systemicSentences.join(". ") + ".");
   } else {
-    sections.push("Le panel se revele globalement stable, la strategie optimale consiste donc a consolider les habitudes actuelles et maintenir le cap.");
+    sections.push("Ton panel est stable. On garde le cap et on consolide tes habitudes actuelles.");
   }
   sections.push("");
 
   sections.push("### Sequencement recommande\n");
   sections.push(
-    "Le plan d'action sur quatre-vingt-dix jours se decompose en quatre etapes. " +
-    "La premiere etape consiste a stabiliser le contexte de base incluant le sommeil, les horaires de repas, l'hydratation et la charge d'entrainement. " +
-    "La deuxieme etape vise a corriger les marqueurs critiques puis les marqueurs suboptimaux les plus impactants. " +
-    "La troisieme etape permet de monter la charge de progression uniquement lorsque les signaux biologiques se normalisent. " +
-    "Enfin, la quatrieme etape valide objectivement les gains par un retest standardise et ajuste le protocole sans improvisation."
+    "Voici ton plan sur 90 jours. " +
+    "Etape 1: tu stabilises les bases, sommeil, repas, hydratation et charge d'entrainement. " +
+    "Etape 2: on corrige tes marqueurs prioritaires. " +
+    "Etape 3: tu montes en charge seulement quand tes marqueurs se normalisent. " +
+    "Etape 4: on valide par un retest et on ajuste si besoin."
   );
 
   sections.push("\n## Qualite des donnees & limites\n");
-  const confidenceLevel = analysisResult.markers.length >= 15 ? "eleve" : analysisResult.markers.length >= 9 ? "moyen" : "modere en raison d'un panel incomplet";
+  const confidenceLevel = analysisResult.markers.length >= 15 ? "eleve" : analysisResult.markers.length >= 9 ? "correct" : "limite vu le panel incomplet";
   sections.push(
-    `Ce bilan comprend ${analysisResult.markers.length} marqueurs interpretes avec ${analysisResult.patterns.length} patterns detectes, ` +
-    `conferant un niveau de confiance ${confidenceLevel}. Les conditions de prelevement recommandees pour une interpretation optimale ` +
-    `incluent un prelevement matinal, un jeune de dix a douze heures, l'absence de sport intense dans les vingt-quatre a quarante-huit heures precedentes, ` +
-    `l'evitement de l'alcool pendant soixante-douze heures et une hydratation stable.`
+    `Ton bilan comprend ${analysisResult.markers.length} marqueurs et j'ai detecte ${analysisResult.patterns.length} pattern${analysisResult.patterns.length > 1 ? "s" : ""}. ` +
+    `Mon niveau de confiance est ${confidenceLevel}. Pour la prochaine fois, rappelle-toi: prise de sang le matin, a jeun 10-12h, ` +
+    `pas de sport intense 24-48h avant, pas d'alcool 72h avant, et bien hydrate.`
   );
   sections.push("");
   sections.push(
     criticalMissingLabels.length
-      ? `La limite principale de ce bilan reside dans l'absence de ${criticalMissingLabels.length} marqueur${criticalMissingLabels.length > 1 ? "s" : ""} cle${criticalMissingLabels.length > 1 ? "s" : ""}, ` +
-        `a savoir ${toProse(criticalMissingLabels)}, qui auraient permis une lecture plus complete des axes metabolique et hormonal.`
-      : "La limite principale de ce bilan concerne le manque d'informations lifestyle detaillees pour expliquer certains patterns, " +
-        "notamment sur le sommeil, le niveau de stress et la charge d'entrainement."
+      ? `Ce qui me manque pour aller plus loin: ${toProse(criticalMissingLabels)}. ` +
+        `Avec ces marqueurs en plus, j'aurais une lecture plus complete de ton metabolisme et de tes hormones.`
+      : "Ce qui me manque, c'est plus d'infos sur ton lifestyle, ton sommeil, ton stress et ta charge d'entrainement. " +
+        "Ca m'aiderait a mieux expliquer certains patterns."
   );
   sections.push("");
 
@@ -2631,42 +2628,40 @@ export function buildFallbackAnalysis(
   const axisDescriptions = dashboardAxes.map((axis) => {
     const axisScore = scoreFromMarkers(axis.markers);
     if (!axis.markers.length) {
-      return `L'axe ${axis.label} n'est pas renseigne sur ce panel et son score reste indisponible`;
+      return `Ton axe ${axis.label} n'est pas couvert, je n'ai pas de donnees`;
     }
     const axisCritical = axis.markers.filter((marker) => marker.status === "critical").length;
     const axisSuboptimal = axis.markers.filter((marker) => marker.status === "suboptimal").length;
-    return `L'axe ${axis.label} dispose de ${axis.markers.length} marqueur${axis.markers.length > 1 ? "s" : ""} avec un score estime de ${axisScore ?? "N/A"} sur dix, ` +
-      `dont ${axisCritical} critique${axisCritical > 1 ? "s" : ""} et ${axisSuboptimal} important${axisSuboptimal > 1 ? "s" : ""}`;
+    return `Ton axe ${axis.label}: ${axis.markers.length} marqueur${axis.markers.length > 1 ? "s" : ""}, score ${axisScore ?? "N/A"}/10, ` +
+      `${axisCritical} critique${axisCritical > 1 ? "s" : ""} et ${axisSuboptimal} a corriger`;
   });
   sections.push(axisDescriptions.join(". ") + ".");
   sections.push("");
 
   sections.push("### Facteurs confondants\n");
   sections.push(
-    `Les conditions de prelevement declarees indiquent une heure de prelevement ${userProfile.drawTime || "non renseignee"} ` +
-    `avec un jeune de ${userProfile.fastingHours ?? "duree non renseignee"} heures. ` +
-    `Le dernier entrainement a eu lieu ${userProfile.lastTraining || "a une date non renseignee"} ` +
-    `et la consommation d'alcool dans les soixante-douze heures etait ${userProfile.alcoholLast72h || "non renseignee"}. ` +
-    `Le sommeil moyen rapporte est de ${userProfile.sleepHours ?? "valeur non renseignee"} heures ` +
-    `avec un niveau de stress de ${userProfile.stressLevel ?? "valeur non renseignee"} sur dix. ` +
-    `Si ces conditions ne sont pas stables entre les bilans, la comparaison peut etre biaisee avec des faux positifs ou faux negatifs ` +
-    `sur les marqueurs d'inflammation, de glycemie, les enzymes hepatiques et le cortisol.`
+    `Tes conditions de prelevement: heure ${userProfile.drawTime || "non renseignee"}, ` +
+    `jeune de ${userProfile.fastingHours ?? "?"} heures, ` +
+    `dernier entrainement ${userProfile.lastTraining || "non renseigne"}, ` +
+    `alcool 72h avant: ${userProfile.alcoholLast72h || "non renseigne"}, ` +
+    `sommeil moyen: ${userProfile.sleepHours ?? "?"} heures, ` +
+    `stress: ${userProfile.stressLevel ?? "?"}/10. ` +
+    `Si ces conditions varient entre tes bilans, ca peut fausser la comparaison, surtout sur l'inflammation, la glycemie et le cortisol.`
   );
   sections.push("");
 
   sections.push("### Impact decisionnel des limites\n");
   sections.push(
-    "Sans couverture complete du panel, le pilotage s'effectue en mode prudent. La strategie consiste a prioriser les actions a faible risque " +
-    "et fort retour sur investissement, puis a confirmer les hypotheses par des tests cibles avant d'intensifier les interventions. " +
-    "Les hypotheses mecanistiques formulees doivent rester au stade d'hypotheses tant qu'elles ne sont pas validees par un retest " +
-    "realise dans des conditions de prelevement standardisees et avec un contexte lifestyle documente."
+    "Vu qu'on n'a pas tout, on avance prudemment. On priorise les actions a fort ROI et faible risque, " +
+    "et on valide par des retests avant d'intensifier. Mes hypotheses restent des hypotheses tant qu'on ne les confirme pas " +
+    "avec un nouveau bilan dans des conditions propres."
   );
 
   sections.push("\n## Tableau de bord (scores & priorites)\n");
   const quickWinsCount = Math.max(1, Math.min(6, analysisResult.markers.length - critical.length));
   sections.push(
-    `Le tableau de bord revele ${critical.length} priorite${critical.length > 1 ? "s" : ""} critique${critical.length > 1 ? "s" : ""}, ` +
-    `${suboptimal.length} priorite${suboptimal.length > 1 ? "s" : ""} importante${suboptimal.length > 1 ? "s" : ""} et ${quickWinsCount} quick win${quickWinsCount > 1 ? "s" : ""} exploitable${quickWinsCount > 1 ? "s" : ""}.`
+    `En resume: ${critical.length} point${critical.length > 1 ? "s" : ""} critique${critical.length > 1 ? "s" : ""}, ` +
+    `${suboptimal.length} a corriger, et ${quickWinsCount} quick win${quickWinsCount > 1 ? "s" : ""} pour des gains rapides.`
   );
   sections.push("");
 
@@ -2676,13 +2671,13 @@ export function buildFallbackAnalysis(
     const axisCritical = axis.markers.filter((marker) => marker.status === "critical").length;
     const axisSuboptimal = axis.markers.filter((marker) => marker.status === "suboptimal").length;
     const dominantSignal = axisCritical
-      ? `avec ${axisCritical} signal${axisCritical > 1 ? "ux" : ""} critique${axisCritical > 1 ? "s" : ""}`
+      ? `${axisCritical} alerte${axisCritical > 1 ? "s" : ""} critique${axisCritical > 1 ? "s" : ""}`
       : axisSuboptimal
-      ? `avec ${axisSuboptimal} signal${axisSuboptimal > 1 ? "ux" : ""} important${axisSuboptimal > 1 ? "s" : ""}`
+      ? `${axisSuboptimal} point${axisSuboptimal > 1 ? "s" : ""} a corriger`
       : axis.markers.length
-      ? "en stabilite relative"
-      : "sans donnees disponibles";
-    return `L'axe ${axis.label} couvre ${axis.markers.length} marqueur${axis.markers.length > 1 ? "s" : ""} avec un score estime de ${axisScore ?? "N/A"} sur dix, ${dominantSignal}`;
+      ? "stable"
+      : "pas de donnees";
+    return `${axis.label}: ${axisScore ?? "N/A"}/10, ${dominantSignal}`;
   });
   sections.push(scoreboardDescriptions.join(". ") + ".");
   sections.push("");
@@ -2691,53 +2686,52 @@ export function buildFallbackAnalysis(
   const topPriorities = [...critical, ...suboptimal].slice(0, 6);
   if (topPriorities.length) {
     const priorityDesc = topPriorities.map(
-      (marker) => `${marker.name} necessite une correction vers ${marker.optimalRange || "la zone optimale"}`
+      (marker) => `ton ${marker.name} doit passer vers ${marker.optimalRange || "la zone optimale"}`
     );
-    sections.push(priorityDesc.join(", ") + ".");
+    sections.push("On se concentre la-dessus: " + priorityDesc.join(", ") + ".");
   } else {
-    sections.push("Aucune alerte majeure n'a ete identifiee, le focus porte donc sur la consolidation des acquis actuels.");
+    sections.push("Pas d'alerte majeure, on consolide tes acquis.");
   }
   sections.push("");
 
   sections.push("### Quick wins\n");
   sections.push(
-    "Les actions a fort retour sur investissement et faible friction incluent les marches post-prandiales de dix a quinze minutes " +
-    "apres les repas principaux, le centrage du timing glucidique autour des seances d'entrainement les plus intenses, " +
-    "l'instauration d'un rituel de sommeil avec des heures de coucher et de reveil stables sept jours sur sept, " +
-    "et l'ajustement de l'hydratation et des electrolytes en fonction de la charge d'entrainement."
+    "Des gains faciles a prendre: marche 10-15 min apres tes repas principaux, " +
+    "place tes glucides autour de tes seances intenses, " +
+    "fixe une heure de coucher et de reveil stable 7j/7, " +
+    "et ajuste ton hydratation selon ta charge d'entrainement."
   );
   sections.push("");
 
   sections.push("### KPI de pilotage\n");
   sections.push(
-    "Le suivi hebdomadaire porte sur l'adherence au sommeil, a la nutrition et a l'entrainement, ainsi que sur l'energie, " +
-    "la digestion et la qualite de recuperation. Le suivi mensuel evalue la tendance du poids et du tour de taille, " +
-    "la progression de la charge utile et la tolerance au volume. Le suivi biologique prevoit un retest a soixante ou quatre-vingt-dix jours " +
-    "des marqueurs prioritaires avec le meme protocole de prelevement. Les criteres d'escalade medicale incluent " +
-    "la persistance de signaux critiques malgre une adherence solide aux protocoles."
+    "Ce que tu suis chaque semaine: ton adherence sommeil/nutrition/training, ton energie, ta digestion et ta recup. " +
+    "Chaque mois: la tendance de ton poids et tour de taille, ta progression en charge et ta tolerance au volume. " +
+    "On refait un bilan dans 60-90 jours sur tes marqueurs prioritaires. " +
+    "Si tes signaux critiques persistent malgre une bonne adherence, on escalade vers un avis medical."
   );
 
   sections.push("\n## Potentiel recomposition (perte de gras + gain de muscle)\n");
-  const mainActionFactor = summary.action[0] || "la qualite metabolique globale";
+  const mainActionFactor = summary.action[0] || "ta qualite metabolique globale";
   sections.push(
-    `Le potentiel de recomposition corporelle depend principalement de ${mainActionFactor}. ` +
-    `Avec ${critical.length} signal${critical.length > 1 ? "ux" : ""} critique${critical.length > 1 ? "s" : ""} et ` +
-    `${suboptimal.length} point${suboptimal.length > 1 ? "s" : ""} important${suboptimal.length > 1 ? "s" : ""}, ` +
-    `l'ordre logique consiste a corriger d'abord les freins biologiques puis a augmenter progressivement la charge d'entrainement.`
+    `Ton potentiel de recomposition depend surtout de ${mainActionFactor}. ` +
+    `Avec ${critical.length} point${critical.length > 1 ? "s" : ""} critique${critical.length > 1 ? "s" : ""} et ` +
+    `${suboptimal.length} a corriger, ` +
+    `la logique c'est de corriger tes freins biologiques d'abord, puis de monter progressivement ta charge.`
   );
   sections.push("");
   const topTwoMarkers = [...critical, ...suboptimal].slice(0, 2).map((m) => m.name);
   sections.push(
     topTwoMarkers.length
-      ? `Concretement, le deplacement de ${toProse(topTwoMarkers)} vers leur zone optimale facilitera la perte de masse grasse, ` +
-        `ameliorera la recuperation et accelerera la progression en force et en hypertrophie.`
-      : "Concretement, le deplacement des marqueurs dominants vers leur zone optimale facilitera la perte de masse grasse, " +
-        "ameliorera la recuperation et accelerera la progression en force et en hypertrophie."
+      ? `Concretement, quand tu ramenes ${toProse(topTwoMarkers)} dans le vert, tu facilites ta perte de gras, ` +
+        `tu ameliores ta recup et tu acceleres tes gains en force et en masse.`
+      : "Concretement, quand tu ramenes tes marqueurs dominants dans le vert, tu facilites ta perte de gras, " +
+        "tu ameliores ta recup et tu acceleres tes gains."
   );
   sections.push("");
   sections.push(
-    "Les trois leviers qui debloquent le plus rapidement la recomposition sont la regularisation du sommeil, " +
-    "la periodisation de la nutrition et le retest objectif sur les biomarqueurs prioritaires."
+    "Les trois leviers qui debloquent le plus vite ta recomposition: regulariser ton sommeil, " +
+    "periodiser ta nutrition, et valider par un retest sur tes marqueurs prioritaires."
   );
   sections.push("");
 
@@ -2745,21 +2739,19 @@ export function buildFallbackAnalysis(
   if (topPriorityMarkers.length) {
     const freinDescriptions = topPriorityMarkers.slice(0, 6).map(
       (marker) =>
-        `${marker.name} constitue un frein ${statusToPriority(marker.status).toLowerCase()} sur la capacite a tenir le volume d'entrainement, ` +
-        `a recuperer proprement et a maintenir un deficit calorique soutenable`
+        `Ton ${marker.name} te freine sur ta capacite a tenir le volume, a recuperer et a maintenir un deficit soutenable`
     );
     sections.push(freinDescriptions.join(". ") + ".");
   } else {
-    sections.push("Aucun frein majeur n'a ete identifie sur ce panel, ce qui laisse un potentiel de progression significatif.");
+    sections.push("Pas de frein majeur identifie, tu as un bon potentiel de progression.");
   }
   sections.push("");
 
   sections.push("### Conditions de progression\n");
   sections.push(
-    "L'augmentation du volume et de l'intensite ne doit intervenir que si le sommeil, l'energie et la recuperation restent stables " +
-    "sur deux a trois semaines consecutives. Les ajustements caloriques s'effectuent par petits paliers plutot que par coupes agressives " +
-    "afin de proteger la fonction thyroidienne, l'equilibre hormonal et l'adherence a long terme. La validation des gains de strategie " +
-    "repose sur l'evolution des marqueurs et de la performance, jamais sur le ressenti seul."
+    "Tu montes en volume et en intensite seulement si ton sommeil, ton energie et ta recup restent stables 2-3 semaines. " +
+    "Les ajustements caloriques se font par petits paliers, pas de coupes agressives, pour proteger ta thyroide et tes hormones. " +
+    "On valide tes gains sur l'evolution de tes marqueurs et ta performance, jamais sur le ressenti seul."
   );
 
   sections.push("\n## Lecture compartimentee par axes\n");
@@ -2880,11 +2872,10 @@ export function buildFallbackAnalysis(
     sections.push(`### ${axis.title}\n`);
     if (!axis.markers.length) {
       sections.push(
-        `Cet axe n'est pas renseigne avec les donnees actuelles. Sans ce bloc de donnees, il est impossible de quantifier proprement ` +
-        `la part de cet axe dans la fatigue, la recomposition ou la recuperation. ` +
+        `Je n'ai pas de donnees sur cet axe pour toi. Sans ces infos, je ne peux pas quantifier son impact sur ta fatigue, ta recomposition ou ta recup. ` +
         (axis.missingTests.length
-          ? `Les tests a ajouter pour couvrir cet axe incluent ${toProse(axis.missingTests)}.`
-          : "Aucun test complementaire specifique n'est requis.")
+          ? `Pour couvrir cet axe, ajoute ${toProse(axis.missingTests)} a ton prochain bilan.`
+          : "Pas de test specifique requis pour le moment.")
       );
       sections.push("");
       continue;
@@ -2897,53 +2888,49 @@ export function buildFallbackAnalysis(
     const flaggedMarkers = axis.markers.filter((marker) => marker.status === "critical" || marker.status === "suboptimal");
 
     // Score and markers description
-    sections.push(`Cet axe affiche un score de ${axisScore ?? "N/A"} sur dix.`);
+    sections.push(`Score de cet axe: ${axisScore ?? "N/A"}/10.`);
     const markerDescriptions = axis.markers.map(
-      (m) => `${m.name} a ${m.value} ${m.unit || ""} (range labo ${m.normalRange || "non specifie"}, range optimal ${m.optimalRange || "non specifie"}, statut ${m.status})`
+      (m) => `${m.name} a ${m.value} ${m.unit || ""} (labo: ${m.normalRange || "?"}, optimal: ${m.optimalRange || "?"}, statut: ${m.status})`
     );
-    sections.push(`Les marqueurs disponibles comprennent ${toProse(markerDescriptions)}.`);
+    sections.push(`Tes marqueurs: ${toProse(markerDescriptions)}.`);
     sections.push("");
 
     // Clinical reading
     const clinicalReading = axisCritical > 0
-      ? `${axisCritical} marqueur${axisCritical > 1 ? "s" : ""} critique${axisCritical > 1 ? "s" : ""} exige${axisCritical > 1 ? "nt" : ""} une action prioritaire sur cet axe`
+      ? `${axisCritical} marqueur${axisCritical > 1 ? "s" : ""} critique${axisCritical > 1 ? "s" : ""}, on doit agir en priorite`
       : axisSuboptimal > 0
-      ? `${axisSuboptimal} marqueur${axisSuboptimal > 1 ? "s" : ""} important${axisSuboptimal > 1 ? "s" : ""} montre${axisSuboptimal > 1 ? "nt" : ""} un axe perfectible mais recuperable`
+      ? `${axisSuboptimal} marqueur${axisSuboptimal > 1 ? "s" : ""} a corriger, c'est recuperable`
       : axisNormal > 0
-      ? "l'axe est globalement stable mais reste perfectible pour la performance"
-      : "l'axe est solide et proche de l'optimal";
+      ? "ton axe est stable mais perfectible"
+      : "ton axe est solide, proche de l'optimal";
 
     const dominantMarkerDesc = flaggedMarkers.length
-      ? `Les marqueurs dominants sont ${toProse(flaggedMarkers.slice(0, 3).map((marker) => `${marker.name} a ${marker.value} ${marker.unit || ""} avec un statut ${statusToPriority(marker.status).toLowerCase()}`))}`
-      : "Aucun signal hors cible significatif n'est observe sur cet axe";
+      ? `Points d'attention: ${toProse(flaggedMarkers.slice(0, 3).map((marker) => `${marker.name} a ${marker.value} ${marker.unit || ""} (${statusToPriority(marker.status).toLowerCase()})`))}`
+      : "Rien d'alarmant sur cet axe";
 
-    sections.push(`Sur le plan clinique, ${clinicalReading}. ${dominantMarkerDesc}.`);
+    sections.push(`Lecture clinique: ${clinicalReading}. ${dominantMarkerDesc}.`);
     sections.push("");
 
     // Performance reading
     sections.push(
-      "Du point de vue de la performance et du bodybuilding, tant que les marqueurs de cet axe restent hors cible, " +
-      "la progression en force, la composition corporelle et la recuperation demeurent sous-optimales. " +
-      "L'objectif du cycle consiste a deplacer d'abord les marqueurs critiques vers la zone normale, " +
-      "puis vers la zone optimale sur soixante a quatre-vingt-dix jours."
+      "Pour ta perf et ta recomposition, tant que ces marqueurs restent hors cible, ta progression en force, ta composition corporelle et ta recup ne seront pas optimales. " +
+      "Objectif: ramener d'abord les marqueurs critiques dans le vert, puis viser l'optimal sur 60-90 jours."
     );
     sections.push("");
 
     // Actions
     const allActions = [
       ...axis.actions,
-      "standardiser le contexte de prelevement avec un prelevement matinal a jeun et au repos pour comparer des valeurs propres",
-      "mettre en place un suivi hebdomadaire simple couvrant le sommeil, l'energie, la performance a l'entrainement et l'adherence nutritionnelle",
+      "standardise tes conditions de prelevement (matin, a jeun, au repos)",
+      "mets en place un suivi hebdo simple: sommeil, energie, perf training, adherence nutrition",
     ];
-    sections.push(`Les actions prioritaires a executer dans l'ordre incluent ${toProse(allActions, ", ", " et enfin ")}.`);
+    sections.push(`Tes actions dans l'ordre: ${toProse(allActions, ", ", " et ")}.`);
     sections.push("");
 
     // KPIs
     sections.push(
-      "Les KPI de suivi sur quatre-vingt-dix jours comprennent le KPI biologique qui mesure la progression des marqueurs de cet axe vers la zone optimale, " +
-      "le KPI performance qui evalue la charge utile, le volume tolerable et la qualite de recuperation, " +
-      "et le KPI adherence qui verifie que l'execution de la nutrition, du sommeil et de l'entrainement atteint au moins quatre-vingts pour cent " +
-      "sur quatre semaines glissantes."
+      "Tes KPI sur 90 jours: progression de tes marqueurs vers l'optimal (biologique), ta charge utile et ta recup (performance), " +
+      "et ton execution nutrition/sommeil/training a minimum 80% sur 4 semaines glissantes (adherence)."
     );
     sections.push("");
 
@@ -2951,8 +2938,8 @@ export function buildFallbackAnalysis(
     const missingForAxis = axis.missingTests.filter((test) => !testedIds.has(normalizeMarkerName(test)));
     sections.push(
       missingForAxis.length
-        ? `Les tests a ajouter pour completer cet axe incluent ${toProse(missingForAxis)}.`
-        : "Le panel est deja couvrant pour cet axe."
+        ? `Pour completer cet axe, ajoute ${toProse(missingForAxis)} a ton prochain bilan.`
+        : "Ton panel est complet pour cet axe."
     );
     sections.push("");
   }
@@ -2960,58 +2947,55 @@ export function buildFallbackAnalysis(
   const priorityMarkers = topPriorityMarkers;
   sections.push("## Deep dive — marqueurs prioritaires\n");
   if (!priorityMarkers.length) {
-    sections.push("Aucun marqueur hors zone optimale majeure n'a ete identifie sur ce bilan, temoignant d'un profil equilibre.");
+    sections.push("Rien d'alarmant sur ton bilan, ton profil est equilibre. On consolide.");
   } else {
     for (const marker of priorityMarkers) {
       sections.push(`### ${marker.name}\n`);
-      const statusReadable = marker.status === "critical" ? "fortement hors cible" : "hors cible pour la performance";
+      const statusReadable = marker.status === "critical" ? "franchement hors cible" : "a optimiser";
       const axisName = getMarkerPanelName(marker.markerId, marker.category);
-      const confidenceLevel = marker.status === "critical" ? "moyenne a elevee" : "moyenne";
+      const confidenceLevel = marker.status === "critical" ? "bonne" : "moyenne";
 
       sections.push(
-        `Ce marqueur presente une priorite ${statusToPriority(marker.status).toLowerCase()} avec une valeur de ${marker.value} ${marker.unit || ""}, ` +
-        `un range laboratoire de ${marker.normalRange || "non specifie"} et un range optimal de ${marker.optimalRange || "non specifie"}.`
+        `Statut: ${statusToPriority(marker.status).toLowerCase()}. Valeur: ${marker.value} ${marker.unit || ""}. ` +
+        `Range labo: ${marker.normalRange || "?"}. Range optimal: ${marker.optimalRange || "?"}.`
       );
       sections.push("");
 
       sections.push(
-        `Sur le plan clinique, cette valeur est ${statusReadable} et necessite une remise sous controle pour securiser l'axe ${axisName}. ` +
-        `Du point de vue de la performance et du bodybuilding, un impact probable sur la recuperation, l'energie, la tolerance au volume d'entrainement ` +
-        `et la progression physique est attendu tant que la correction n'est pas engagee.`
+        `Ton ${marker.name} est ${statusReadable}, on doit le remettre en ordre pour securiser ton axe ${axisName}. ` +
+        `Tant qu'on ne corrige pas, ca impacte ta recup, ton energie et ta progression.`
       );
       sections.push("");
 
       sections.push(
-        `Les causes plausibles par ordre de probabilite incluent le contexte nutritionnel et de recuperation, la charge d'entrainement, ` +
-        `le terrain inflammatoire ou metabolique, les facteurs individuels et le contexte de prelevement. ` +
-        `Les facteurs confondants a considerer comprennent les conditions de prelevement, un eventuel etat infectieux et le manque de donnees lifestyle.`
+        `Causes probables: ton contexte nutrition/recup, ta charge d'entrainement, un terrain inflammatoire/metabolique, ou les conditions de ta prise de sang. ` +
+        `Attention aux facteurs confondants: conditions de prelevement, infection eventuelle, manque d'infos lifestyle.`
       );
       sections.push("");
 
       sections.push(
-        `Le plan d'action se decompose en quatre etapes. La premiere consiste a corriger l'hygiene de base sur le sommeil et la nutrition. ` +
-        `La deuxieme ajuste l'entrainement et la recuperation. La troisieme priorise l'axe dominant. La quatrieme reteste en conditions standardisees.`
+        `Plan d'action: 1) On corrige l'hygiene de base (sommeil, nutrition). 2) On ajuste ton training et ta recup. ` +
+        `3) On priorise l'axe dominant. 4) On reteste en conditions standardisees.`
       );
       sections.push("");
 
       sections.push(
-        `L'execution pratique hebdomadaire repose sur une check-list quotidienne couvrant le sommeil, l'hydratation, l'adherence nutritionnelle et la charge interne d'entrainement. ` +
-        `La cible a quatre-vingt-dix jours vise a sortir de la zone critique ou suboptimale et a stabiliser au minimum dans la zone normale. ` +
-        `Les jalons intermediaires se situent au quatorzieme jour pour l'adherence, au trentieme jour pour la tendance clinique et de performance, et au soixantieme jour pour le pre-retest.`
+        `Chaque semaine, tu check: sommeil, hydratation, adherence nutrition, charge d'entrainement. ` +
+        `Cible a 90 jours: sortir de la zone critique et stabiliser dans le normal minimum. ` +
+        `Jalons: J+14 adherence, J+30 tendance perf, J+60 pre-retest.`
       );
       sections.push("");
 
       sections.push(
-        `Le signal d'alerte se manifeste par une absence de progression combinee a une fatigue accrue et une baisse de performance, ` +
-        `ce qui impose de reevaluer la charge et le contexte. La strategie d'ajustement consiste a modifier une seule variable a la fois ` +
-        `parmi la nutrition, l'entrainement ou la recuperation pour garder un signal interpretable. ` +
-        `La checklist actionnable prevoit une variable prioritaire par semaine, un suivi ecrit, une revue hebdomadaire objective et des decisions basees sur la tendance plutot que sur un seul jour.`
+        `Signal d'alerte: pas de progression + fatigue qui monte + perf qui baisse = on reevalue ta charge et ton contexte. ` +
+        `Strategie: on modifie une seule variable a la fois pour garder un signal clair. ` +
+        `Ta checklist: 1 priorite par semaine, suivi ecrit, revue hebdo, decisions basees sur la tendance pas sur un jour.`
       );
       sections.push("");
 
       sections.push(
-        `Les tests et donnees a ajouter incluent un panel complementaire cible selon l'axe concerne et un contexte lifestyle detaille. ` +
-        `Le niveau de confiance de cette analyse est ${confidenceLevel}.`
+        `Pour aller plus loin: panel complementaire cible selon l'axe + contexte lifestyle detaille. ` +
+        `Ma confiance sur cette analyse: ${confidenceLevel}.`
       );
       sections.push("");
     }
@@ -3022,16 +3006,16 @@ export function buildFallbackAnalysis(
     correlations.forEach((item, idx) => {
       sections.push(`### Pattern ${idx + 1} — ${item.factor}\n`);
       sections.push(
-        `Le pattern observe est le suivant: ${item.current}. L'hypothese la plus probable est que ${item.impact}. ` +
-        `Ce qui confirmerait cette hypothese serait un retest cible combine a un suivi longitudinal des marqueurs relies et un suivi hebdomadaire du lifestyle. ` +
-        `L'action concrete a mettre en place est ${item.recommendation}. ` +
-        (item.evidence ? `La preuve orientative appuyant cette hypothese est ${item.evidence}. ` : "") +
-        `Le KPI de validation sera l'amelioration du symptome ou de la performance combinee au mouvement des marqueurs cibles au retest a soixante ou quatre-vingt-dix jours.`
+        `Ce que je vois: ${item.current}. Mon hypothese: ${item.impact}. ` +
+        `Pour confirmer, on fait un retest cible + suivi hebdo de ton lifestyle. ` +
+        `Action concrete: ${item.recommendation}. ` +
+        (item.evidence ? `Indice qui appuie cette hypothese: ${item.evidence}. ` : "") +
+        `On valide si tes symptomes ou ta perf s'ameliorent et si tes marqueurs bougent dans le bon sens au retest 60-90 jours.`
       );
       sections.push("");
     });
   } else {
-    sections.push("Aucune interconnexion robuste n'a pu etre etablie faute de donnees contextuelles suffisantes.");
+    sections.push("Pas assez de donnees pour etablir des interconnexions robustes. On avance avec ce qu'on a.");
     sections.push("");
   }
 
@@ -3042,21 +3026,19 @@ export function buildFallbackAnalysis(
       const linked = connectionDrivers
         .filter((candidate) => candidate.markerId !== marker.markerId)
         .slice(0, 2)
-        .map((candidate) => `${candidate.name} a ${candidate.value} ${candidate.unit || ""}`);
-      const linkedText = linked.length ? toProse(linked) : "d'autres signaux du panel";
-      return `${marker.name} a ${marker.value} ${marker.unit || ""} est probablement relie a ${linkedText} via un mecanisme commun de recuperation, de metabolisme ou d'inflammation`;
+        .map((candidate) => `${candidate.name}`);
+      const linkedText = linked.length ? toProse(linked) : "d'autres signaux";
+      return `Ton ${marker.name} est probablement lie a ${linkedText} via un mecanisme commun (recup, metabolisme ou inflammation)`;
     });
     sections.push(connectionDescriptions.join(". ") + ".");
     sections.push("");
     sections.push(
-      "La validation attendue de ces interconnexions se manifeste par une amelioration simultanee des marqueurs relies " +
-      "apres stabilisation du sommeil, de la nutrition et de la charge d'entrainement. " +
-      "L'action pratique consiste a prioriser les fondamentaux tels que le sommeil, un deficit calorique modere, " +
-      "la regularite des repas et un volume d'entrainement soutenable avant d'ajouter de la complexite au protocole."
+      "Quand tu stabilises ton sommeil, ta nutrition et ta charge, ces marqueurs devraient bouger ensemble. " +
+      "On priorise les fondamentaux: sommeil, deficit modere, repas reguliers, volume d'entrainement soutenable. Pas de complexite inutile."
     );
   } else {
     sections.push(
-      "Les interconnexions biomarqueurs sont limitees car le panel est soit trop favorable soit trop incomplet pour une lecture mecanistique dense."
+      "Pas assez de marqueurs a croiser pour une lecture mecanistique poussee. On se concentre sur les bases."
     );
   }
   sections.push("");
@@ -3064,14 +3046,13 @@ export function buildFallbackAnalysis(
   if (analysisResult.patterns.length) {
     sections.push("### Patterns detectes\n");
     const patternDescriptions = analysisResult.patterns.slice(0, 6).map(
-      (pattern) => `Le pattern ${pattern.name} suggere des causes probables incluant ${pattern.causes.join(", ") || "des facteurs non renseignes"}`
+      (pattern) => `Je detecte un pattern ${pattern.name} chez toi, probablement lie a ${pattern.causes.join(", ") || "des facteurs qu'on doit encore identifier"}`
     );
     sections.push(patternDescriptions.join(". ") + ".");
     sections.push("");
     sections.push(
-      "L'hypothese mecanistique sous-jacente est une accumulation de freins multi-axes qui se renforcent mutuellement " +
-      "si le contexte lifestyle reste instable. Le test de confirmation repose sur un retest standardise " +
-      "combine a un suivi hebdomadaire de l'adherence et de la performance pour verifier la coherence du pattern."
+      "Mon hypothese: tu cumules plusieurs freins qui se renforcent entre eux tant que ton lifestyle reste instable. " +
+      "On confirme ca avec un retest propre dans 60-90 jours et un suivi hebdo de ton adherence et de ta perf."
     );
     sections.push("");
   }
@@ -3079,11 +3060,11 @@ export function buildFallbackAnalysis(
   sections.push("### Correlations lifestyle\n");
   if (correlations.length) {
     const lifestyleCorr = correlations.map(
-      (item) => `${item.factor} (${item.current}) impacte le profil de la facon suivante: ${item.impact}. L'action recommandee est ${item.recommendation}`
+      (item) => `Ton ${item.factor.toLowerCase()} (${item.current}) impacte directement ton profil: ${item.impact}. Ce que tu fais: ${item.recommendation}`
     );
     sections.push(lifestyleCorr.join(". ") + ".");
   } else {
-    sections.push("Les donnees lifestyle sont insuffisantes pour calculer des correlations significatives.");
+    sections.push("Je n'ai pas assez d'infos sur ton lifestyle pour etablir des correlations solides. On avance avec ce qu'on a.");
   }
 
   sections.push("\n## Plan d'action 90 jours\n");
@@ -3091,150 +3072,148 @@ export function buildFallbackAnalysis(
   sections.push("### Jours 1-14 (Stabilisation)\n");
   const phase1Markers = priorityMarkers.slice(0, 4).map((m) => m.name);
   sections.push(
-    "Les objectifs de cette premiere phase visent a normaliser le sommeil, le rythme des repas, l'adherence aux protocoles et la variabilite du stress. " +
-    "Les actions a mettre en place comprennent l'instauration d'un horaire de sommeil fixe sept jours sur sept avec exposition a la lumiere matinale, " +
-    "la structuration de deux a trois repas avec proteines et fibres a chaque repas, la realisation de dix a quinze minutes de marche post-prandiale " +
-    "apres les deux repas principaux, et le calibrage de l'hydratation et des electrolytes selon la transpiration."
+    "Ton objectif cette premiere phase: stabiliser ton sommeil, tes repas, ton adherence et ton stress. " +
+    "Ce que tu fais: heure de coucher/reveil fixe 7j/7 avec lumiere naturelle le matin, " +
+    "2-3 repas structures avec proteines et fibres a chaque fois, 10-15 min de marche apres tes 2 repas principaux, " +
+    "hydratation et electrolytes calibres selon ta transpiration."
   );
   sections.push("");
   sections.push(
-    "Les indicateurs de suivi incluent l'energie matinale, la latence d'endormissement, une adherence superieure a quatre-vingts pour cent et " +
-    "la variabilite de la faim et des envies. Les erreurs a eviter sont le deficit calorique agressif, la multiplication des supplements et " +
-    "la surcharge d'entrainement immediate. " +
-    (phase1Markers.length ? `Les marqueurs cibles pour cette premiere phase sont ${toProse(phase1Markers)}. ` : "L'objectif principal est la stabilisation globale. ") +
-    "La validation de fin de phase requiert que les routines soient executees de facon stable pendant dix a quatorze jours."
+    "Ce que tu surveilles: ton energie au reveil, ta latence d'endormissement, ton adherence (vise 80%+), ta faim et tes envies. " +
+    "Ce que tu evites: deficit calorique agressif, empilement de supplements, surcharge d'entrainement direct. " +
+    (phase1Markers.length ? `Tes marqueurs cibles phase 1: ${toProse(phase1Markers)}. ` : "On vise la stabilisation globale. ") +
+    "Tu valides la phase quand tes routines tournent de facon stable pendant 10-14 jours."
   );
   sections.push("");
 
   sections.push("### Jours 15-30 (Phase d'Attaque)\n");
   const priority1Actions = priority1.slice(0, 8).map((rec) => rec);
   sections.push(
-    "Les objectifs de cette phase visent a attaquer les biomarqueurs prioritaires sans compromettre la recuperation. " +
+    "Ton objectif: attaquer tes biomarqueurs prioritaires sans te cramer. " +
     (priority1Actions.length
-      ? `Les actions prioritaires incluent ${toProse(priority1Actions)}. `
-      : "L'ajustement de la nutrition et de la charge d'entrainement s'effectue selon le feedback observe. ")
+      ? `Tes actions prioritaires: ${toProse(priority1Actions)}. `
+      : "Tu ajustes ta nutrition et ta charge selon le feedback que tu observes. ")
   );
   sections.push("");
   sections.push(
-    "Les indicateurs a surveiller sont la tendance du poids et du tour de taille, la performance sur les exercices de base, la fatigue percue et la digestion. " +
-    "Les erreurs a eviter sont de changer dix variables en meme temps et d'ignorer les signes de surmenage. " +
-    "Les marqueurs cibles visent la baisse des signaux critiques et la stabilisation des signaux suboptimaux. " +
-    "Les criteres de progression requierent un sommeil stable, une energie acceptable et une adherence superieure a quatre-vingts pour cent sur deux semaines."
+    "Ce que tu surveilles: tendance poids et tour de taille, perf sur tes exercices de base, fatigue ressentie, digestion. " +
+    "Ce que tu evites: changer 10 variables d'un coup, ignorer les signes de surmenage. " +
+    "Tes cibles: faire baisser les signaux critiques, stabiliser les suboptimaux. " +
+    "Tu progresses si ton sommeil est stable, ton energie acceptable et ton adherence au-dessus de 80% sur 2 semaines."
   );
   sections.push("");
 
   sections.push("### Jours 31-60 (Consolidation)\n");
   const priority2Actions = priority2.slice(0, 8).map((rec) => rec);
   sections.push(
-    "Les objectifs de cette phase consistent a consolider les habitudes a fort retour sur investissement et a lisser les fluctuations. " +
+    "Ton objectif: consolider les habitudes qui marchent et lisser les fluctuations. " +
     (priority2Actions.length
-      ? `Les actions de consolidation incluent ${toProse(priority2Actions)}. `
-      : "La consolidation porte sur les habitudes qui impactent veritablement les marqueurs prioritaires. ")
+      ? `Tes actions de consolidation: ${toProse(priority2Actions)}. `
+      : "Tu consolides ce qui impacte vraiment tes marqueurs prioritaires. ")
   );
   sections.push("");
   sections.push(
-    "Les indicateurs sont l'adherence durable, la qualite du sommeil, la performance stable et la baisse des marqueurs hors cible. " +
-    "Les erreurs a eviter sont de retomber dans une strategie extreme ou trop restrictive. " +
-    "Les marqueurs cibles visent le passage progressif vers la zone normale sur les marqueurs encore hors cible. " +
-    "Le point de controle consiste a reevaluer la charge d'entrainement si la recuperation ne suit pas."
+    "Ce que tu surveilles: adherence durable, qualite de sommeil, perf stable, baisse des marqueurs hors cible. " +
+    "Ce que tu evites: retomber dans une strategie extreme ou trop restrictive. " +
+    "Tes cibles: ramener progressivement tes marqueurs encore hors cible vers la zone normale. " +
+    "Point de controle: si ta recup ne suit pas, tu reevalues ta charge d'entrainement."
   );
   sections.push("");
 
   sections.push("### Jours 61-90 (Optimisation)\n");
   sections.push(
-    "Les objectifs de cette phase finale visent a optimiser la recomposition et la performance en gardant la biologie sous controle. " +
-    "La montee progressive de l'intensite n'intervient que si les signaux biologiques se normalisent. " +
-    "L'affinement de la nutrition et de l'entrainement s'effectue selon la tendance des marqueurs prioritaires. " +
-    "Une progression planifiee peut etre testee sous forme de bloc d'intensification ou de bloc volume selon la recuperation."
+    "Ton objectif: optimiser ta recomposition et ta perf tout en gardant ta biologie sous controle. " +
+    "Tu montes l'intensite progressivement seulement si tes signaux biologiques se normalisent. " +
+    "Tu affines ta nutrition et ton entrainement selon la tendance de tes marqueurs prioritaires. " +
+    "Tu peux tester un bloc d'intensification ou un bloc volume selon ta recup."
   );
   sections.push("");
   sections.push(
-    "Les indicateurs portent sur la progression de la charge utile, la repartition masse grasse et masse maigre, et la stabilite energetique. " +
-    "Les erreurs a eviter sont de surestimer la recuperation et de supprimer trop vite les fondamentaux. " +
-    "Les marqueurs cibles visent la consolidation des gains biologiques et la prevention de rechute. " +
-    "La decision finale consiste a maintenir, intensifier ou corriger selon le retest et les signaux de terrain."
+    "Ce que tu surveilles: progression de ta charge utile, repartition masse grasse/maigre, stabilite energetique. " +
+    "Ce que tu evites: surestimer ta recup, supprimer trop vite les fondamentaux. " +
+    "Tes cibles: consolider tes gains biologiques et eviter la rechute. " +
+    "Ta decision finale: maintenir, intensifier ou corriger selon le retest et ce que tu observes sur le terrain."
   );
   sections.push("");
 
   sections.push("### Retest & conditions de prelevement\n");
   if (critical.length || suboptimal.length) {
     const retestMarkers = [...critical, ...suboptimal].slice(0, 8).map(
-      (marker) => `${marker.name} avec une valeur actuelle de ${marker.value} ${marker.unit || ""} et une cible de ${marker.optimalRange || "zone optimale"}`
+      (marker) => `ton ${marker.name} (actuellement ${marker.value} ${marker.unit || ""}, cible: ${marker.optimalRange || "zone optimale"})`
     );
-    sections.push(`Les marqueurs a retester a soixante ou quatre-vingt-dix jours incluent ${toProse(retestMarkers)}.`);
+    sections.push(`Ce que tu retestes a 60-90 jours: ${toProse(retestMarkers)}.`);
   } else {
-    sections.push("Un retest de consolidation est prevu a douze semaines.");
+    sections.push("On prevoit un retest de consolidation a 12 semaines.");
   }
   sections.push("");
   sections.push(
-    "Les conditions strictes de prelevement requierent un prelevement matinal, un jeune de dix a douze heures, l'absence de sport intense " +
-    "dans les vingt-quatre a quarante-huit heures precedentes, pas d'alcool depuis soixante-douze heures et une hydratation stable. " +
+    "Conditions strictes pour ton prelevement: le matin, a jeun depuis 10-12h, pas de sport intense dans les 24-48h avant, " +
+    "pas d'alcool depuis 72h, hydratation stable. " +
     (followUp.length
-      ? `Les controles supplementaires recommandes incluent ${toProse(followUp.map((f) => f.replace(/^- /, "")))}.`
-      : "Aucun controle supplementaire n'est impose pour l'instant.")
+      ? `Controles supplementaires recommandes: ${toProse(followUp.map((f) => f.replace(/^- /, "")))}.`
+      : "Pas de controle supplementaire impose pour l'instant.")
   );
   sections.push("");
   sections.push(
-    "Un journal de pilotage est recommande pour suivre quotidiennement l'adherence, l'energie, le sommeil, la performance et les signaux digestifs. " +
-    "La regle d'ajustement stipule que si deux semaines s'ecoulent sans amelioration nette, il faut revenir au dernier protocole stable puis ajuster par palier. " +
-    "La replanification s'impose en cas d'aggravation clinique ou de performance, avec un retour aux fondamentaux sur sept a dix jours en reduisant la complexite du plan. " +
-    "Le critere de succes en fin de cycle est une tendance favorable sur les marqueurs prioritaires combinee a une progression mesurable sans surcharge physiologique. " +
-    "Le critere d'echec est une adherence correcte mais une stagnation biologique durable, ce qui implique des tests complementaires et un avis medical."
+    "Je te recommande de tenir un journal de pilotage: adherence, energie, sommeil, perf, signaux digestifs, chaque jour. " +
+    "Ma regle: si 2 semaines passent sans amelioration nette, tu reviens au dernier protocole stable et tu ajustes par palier. " +
+    "Si aggravation clinique ou de perf: retour aux fondamentaux pendant 7-10 jours, tu simplifies le plan. " +
+    "Ton critere de succes: tendance favorable sur tes marqueurs prioritaires + progression mesurable sans te cramer. " +
+    "Critere d'echec: adherence correcte mais stagnation biologique durable, la il faut des tests complementaires et un avis medical."
   );
 
   sections.push("\n## Nutrition & entrainement\n");
 
   sections.push("### Nutrition\n");
   sections.push(
-    "La structure hebdomadaire repose sur quatre-vingts a quatre-vingt-dix pour cent de repas simples et repetables, " +
-    "avec dix a vingt pour cent de flexibilite controlee. La priorite va aux proteines, aux fibres et a la densite micronutritionnelle sur chaque repas. " +
-    "Le timing glucidique se concentre autour des entrainements pour optimiser la performance sans degrader la glycemie. " +
-    "Le deficit calorique reste progressif et jamais agressif sur plusieurs semaines. " +
-    "Une rotation alimentaire anti-fatigue maintient les memes bases tout en variant les sources micronutritionnelles."
+    "Ta structure hebdomadaire: 80-90% de repas simples et repetables, 10-20% de flexibilite controlee. " +
+    "Ta priorite: proteines, fibres et densite micronutritionnelle a chaque repas. " +
+    "Tes glucides: concentres autour de tes entrainements pour optimiser ta perf sans degrader ta glycemie. " +
+    "Ton deficit calorique: progressif, jamais agressif sur plusieurs semaines. " +
+    "Rotation alimentaire: tu gardes les memes bases mais tu varies tes sources pour eviter la fatigue."
   );
   sections.push("");
   sections.push(
-    "En cas de biomarqueurs glycemiques alteres, la sequence des repas doit privilegier les fibres et proteines avant les glucides, " +
-    "accompagnee d'une marche post-prandiale. En cas de profil inflammatoire eleve, une reduction progressive de l'alcool et des ultra-transformes " +
-    "s'impose avec un focus sur les omega-3. En cas d'axe hormonal fragile, il convient d'eviter les seches agressives " +
-    "et de maintenir des apports lipidiques de qualite. En cas de donnees manquantes, une approche conservative orientee adherence est recommandee."
+    "Si tes marqueurs glycemiques sont alteres: fibres et proteines avant les glucides + marche post-prandiale. " +
+    "Si ton profil inflammatoire est eleve: tu reduis progressivement l'alcool et les ultra-transformes, focus omega-3. " +
+    "Si ton axe hormonal est fragile: tu evites les seches agressives, tu maintiens des lipides de qualite. " +
+    "Si on a des donnees manquantes: approche conservative orientee adherence."
   );
   sections.push("");
 
   sections.push("### Entrainement\n");
   sections.push(
-    "Le volume recommande est de trois a cinq seances qualitatives par semaine avec un deload planifie. " +
-    "Le cardio en zone deux a raison de cent vingt a cent quatre-vingts minutes par semaine est indique si l'axe metabolique ou lipidique est altere. " +
-    "Un NEAT quotidien eleve soutient la recomposition sans sur-fatigue. " +
-    "Un deload immediat s'impose en cas de cumul de sommeil degrade, baisse de performance et biomarqueurs inflammatoires defavorables. " +
-    "Il est recommande de garder une a deux repetitions en reserve sur la majorite des series en phase de correction biologique " +
-    "et de prioriser la progression de la qualite d'execution avant le volume maximal."
+    "Ton volume: 3-5 seances qualitatives par semaine avec un deload planifie. " +
+    "Cardio zone 2: 120-180 min par semaine si ton axe metabolique ou lipidique est altere. " +
+    "NEAT quotidien eleve: ca soutient ta recomposition sans te cramer. " +
+    "Deload immediat si: sommeil degrade + baisse de perf + marqueurs inflammatoires defavorables. " +
+    "En phase de correction biologique: garde 1-2 reps en reserve sur la majorite de tes series, " +
+    "priorise la qualite d'execution avant le volume maximal."
   );
   sections.push("");
 
   sections.push("### Execution et suivi\n");
   sections.push(
-    "Le dashboard hebdomadaire inclut le sommeil moyen, les steps, la charge interne, l'adherence nutritionnelle et le ressenti de recuperation. " +
-    "La regle d'or consiste a n'ajuster qu'une a deux variables par semaine pour garder un signal lisible. " +
-    "La validation du protocole s'effectue lorsque la performance et les biomarqueurs progressent ensemble."
+    "Ton dashboard hebdo: sommeil moyen, steps, charge interne, adherence nutritionnelle, ressenti de recup. " +
+    "Ma regle d'or: tu n'ajustes qu'1-2 variables par semaine pour garder un signal lisible. " +
+    "Tu valides ton protocole quand ta perf et tes biomarqueurs progressent ensemble."
   );
   sections.push("");
 
   sections.push("### Ajustements conditionnels\n");
   sections.push(
-    "En cas de fatigue persistante combinee a des biomarqueurs inflammatoires eleves, il faut reduire le volume pendant sept a dix jours " +
-    "tout en maintenant l'intensite technique. En cas de stagnation de la perte de gras au-dela de quatorze jours, " +
-    "il convient d'augmenter le NEAT avant de baisser davantage les calories. " +
-    "En cas de faim et d'envies explosives, remonter legerement les glucides peri-training plutot que forcer la restriction. " +
-    "En cas de chute de performance sur deux semaines, un deload court avec priorite au sommeil et verification de l'adherence a l'hydratation s'impose."
+    "Fatigue persistante + marqueurs inflammatoires eleves: tu reduis le volume 7-10 jours tout en gardant l'intensite technique. " +
+    "Stagnation perte de gras au-dela de 14 jours: tu augmentes ton NEAT avant de baisser encore les calories. " +
+    "Faim et envies explosives: tu remontes legerement tes glucides peri-training plutot que de forcer la restriction. " +
+    "Chute de perf sur 2 semaines: deload court + priorite sommeil + verif hydratation."
   );
   sections.push("");
 
   sections.push("### Checklist operationnelle\n");
   sections.push(
-    "Le suivi quotidien porte sur l'heure de coucher et de reveil, les deux a trois repas structures, l'hydratation, les steps et la note d'entrainement. " +
-    "Le suivi hebdomadaire consiste en une revue des tendances et un ajustement minimal. " +
-    "Le suivi mensuel valide que les marqueurs prioritaires evoluent dans la bonne direction."
+    "Ton suivi quotidien: heure de coucher/reveil, tes 2-3 repas structures, hydratation, steps, note d'entrainement. " +
+    "Ton suivi hebdo: revue des tendances + ajustement minimal. " +
+    "Ton suivi mensuel: tu verifies que tes marqueurs prioritaires evoluent dans le bon sens."
   );
   sections.push("");
 
@@ -3242,66 +3221,65 @@ export function buildFallbackAnalysis(
   if (priorityMarkers.length) {
     const markerTranslations = priorityMarkers.slice(0, 8).map(
       (marker) =>
-        `Pour ${marker.name}, une nutrition plus stable et un entrainement mieux periodise permettront de reduire le signal ${statusToPriority(marker.status).toLowerCase()}`
+        `Ton ${marker.name}: avec une nutrition plus stable et un entrainement mieux periodise, tu vas reduire ce signal ${statusToPriority(marker.status).toLowerCase()}`
     );
     sections.push(markerTranslations.join(". ") + ".");
   } else {
-    sections.push("Aucun marqueur prioritaire ne necessite une traduction en protocole specifique.");
+    sections.push("Pas de marqueur prioritaire a traduire en protocole specifique pour toi.");
   }
   sections.push("");
 
   sections.push("### Periodisation pratique\n");
   sections.push(
-    "Les jours d'entrainement privilegient les glucides majoritairement en peri-training avec les proteines reparties sur trois a quatre prises. " +
-    "Les jours de repos maintiennent les proteines et fibres tout en ajustant les glucides sans couper brutalement. " +
-    "Les periodes de deload conservent la qualite nutritionnelle, reduisent le volume d'entrainement et protegent le sommeil."
+    "Tes jours d'entrainement: glucides majoritairement en peri-training, proteines reparties sur 3-4 prises. " +
+    "Tes jours de repos: tu maintiens proteines et fibres, tu ajustes les glucides sans couper brutalement. " +
+    "Tes periodes de deload: tu gardes la qualite nutritionnelle, tu reduis le volume et tu proteges ton sommeil."
   );
 
   sections.push("\n## Supplements & stack\n");
 
   sections.push("### Niveau 1 — Fondamentaux\n");
   sections.push(
-    "Les supplements fondamentaux a impact large comprennent la vitamine D3 a raison de deux mille a cinq mille unites internationales par jour " +
-    "avec un repas gras, selon le statut initial, pour l'immunite, la performance et l'axe hormonal. " +
-    "Le magnesium glycinate a trois cents a quatre cents milligrammes le soir soutient le sommeil, la gestion du stress et la recuperation nerveuse. " +
-    "Les omega-3 EPA et DHA a deux a trois grammes par jour ciblent le terrain inflammatoire et lipidique. " +
-    "La creatine monohydrate a trois a cinq grammes par jour ameliore la force, la masse maigre et la capacite de travail."
+    "Tes fondamentaux a impact large: Vitamine D3 2000-5000 UI/jour avec un repas gras (selon ton statut), ca cible ton immunite, ta perf et ton axe hormonal. " +
+    "Magnesium glycinate 300-400mg le soir pour ton sommeil, ta gestion du stress et ta recup nerveuse. " +
+    "Omega-3 EPA/DHA 2-3g/jour pour ton terrain inflammatoire et lipidique. " +
+    "Creatine monohydrate 3-5g/jour pour ta force, ta masse maigre et ta capacite de travail."
   );
   sections.push("");
 
   sections.push("### Niveau 2 — Cibles metaboliques et inflammatoires\n");
   sections.push(
-    "La berberine est indiquee si la glycemie ou le HOMA-IR sont alteres, a dose fractionnee avec monitoring digestif et precaution concernant " +
-    "les interactions hypoglycemiantes. Le psyllium ou les fibres solubles en pre-repas riches en glucides lissent la reponse glycemique. " +
-    "Les curcuminoides standardises sont utiles en cas d'inflammation, a prendre avec le repas en verifiant la tolerance digestive. " +
-    "La glycine le soir apporte un support sommeil et recuperation chez les profils stresses."
+    "Berberine: si ta glycemie ou ton HOMA-IR sont alteres, dose fractionnee, tu surveilles ta digestion et attention aux interactions hypoglycemiantes. " +
+    "Psyllium ou fibres solubles: en pre-repas riches en glucides pour lisser ta reponse glycemique. " +
+    "Curcuminoides standardises: si ton profil est inflammatoire, avec le repas, tu verifies ta tolerance digestive. " +
+    "Glycine le soir: support sommeil et recup si tu es un profil stresse."
   );
   sections.push("");
 
   sections.push("### Niveau 3 — Ajustements selon panel\n");
   sections.push(
-    "Le zinc est indique si le statut est bas, en courte phase puis reevaluation au retest. " +
-    "La B12 et le folate corrigent d'abord un deficit confirme puis passent en maintenance. " +
-    "Les electrolytes sodium et potassium se calibrent selon la transpiration, le cardio et le volume d'entrainement. " +
-    "La NAC est indiquee si les enzymes hepatiques sont sensibles, en usage transitoire avec verification de la tolerance et retest. " +
-    "Le CoQ10 offre un support mitochondrial potentiel en cas de fatigue combinee a une charge d'entrainement elevee."
+    "Zinc: si ton statut est bas, courte phase puis reevaluation au retest. " +
+    "B12 et folate: tu corriges d'abord un deficit confirme, puis maintenance. " +
+    "Electrolytes sodium/potassium: tu calibres selon ta transpiration, ton cardio et ton volume d'entrainement. " +
+    "NAC: si tes enzymes hepatiques sont sensibles, usage transitoire + verif tolerance + retest. " +
+    "CoQ10: support mitochondrial si tu cumules fatigue et charge d'entrainement elevee."
   );
   sections.push("");
 
   sections.push("### Regles de securite\n");
   sections.push(
-    "L'introduction d'un supplement majeur s'effectue un a la fois pendant cinq a sept jours pour isoler l'effet. " +
-    "Une reevaluation toutes les quatre semaines porte sur l'efficacite percue, la tolerance, l'adherence et le cout. " +
-    "Il faut stopper ou reduire si un effet secondaire persiste et demander un avis medical si necessaire. " +
-    "L'ajustement du stack s'effectue selon le retest biologique a soixante ou quatre-vingt-dix jours, pas uniquement au ressenti."
+    "Tu introduis un supplement majeur a la fois pendant 5-7 jours pour isoler l'effet. " +
+    "Reevaluation toutes les 4 semaines: efficacite percue, tolerance, adherence, cout. " +
+    "Tu stoppes ou reduis si un effet secondaire persiste, avis medical si necessaire. " +
+    "Tu ajustes ton stack selon le retest biologique a 60-90 jours, pas uniquement au ressenti."
   );
   sections.push("");
 
   sections.push("### Matrice decisionnelle\n");
   sections.push(
-    "La priorite haute concerne les biomarqueurs critiques avec une forte probabilite de benefice et un risque faible. " +
-    "La priorite moyenne concerne les biomarqueurs suboptimaux avec un objectif de performance specifique. " +
-    "La priorite basse concerne l'optimisation fine sans signal biologique fort."
+    "Priorite haute: tes biomarqueurs critiques avec forte probabilite de benefice et risque faible. " +
+    "Priorite moyenne: tes biomarqueurs suboptimaux avec objectif de perf specifique. " +
+    "Priorite basse: optimisation fine sans signal biologique fort."
   );
   sections.push("");
 
@@ -3309,43 +3287,43 @@ export function buildFallbackAnalysis(
   if (priorityMarkers.length) {
     const stackByMarker = priorityMarkers.slice(0, 10).map((marker) => {
       const panel = getMarkerPanelName(marker.markerId, marker.category);
-      return `Pour ${marker.name} de l'axe ${panel}, la strategie consiste a prioriser les fondamentaux plus les options ciblees, ` +
-        `puis confirmer l'efficacite au retest a soixante ou quatre-vingt-dix jours`;
+      return `Pour ton ${marker.name} (axe ${panel}): tu priorises les fondamentaux + les options ciblees, ` +
+        `puis tu confirmes l'efficacite au retest a 60-90 jours`;
     });
     sections.push(stackByMarker.join(". ") + ".");
   } else {
-    sections.push("Aucun stack cible n'est requis au-dela des fondamentaux sur ce panel.");
+    sections.push("Pas de stack cible requis au-dela des fondamentaux sur ton panel.");
   }
   sections.push("");
 
   sections.push("### Pilotage cout et benefice\n");
   sections.push(
-    "Le stack doit rester court au debut avec un fort retour sur investissement, une bonne adherence et une bonne tolerance. " +
-    "Une brique supplementaire ne s'ajoute que si un marqueur ou un pattern justifie clairement l'investissement. " +
-    "Ce qui n'apporte pas de signal mesurable sur quatre a huit semaines doit etre coupe."
+    "Ton stack doit rester court au debut: fort ROI, bonne adherence, bonne tolerance. " +
+    "Tu n'ajoutes une brique que si un marqueur ou un pattern justifie clairement l'investissement. " +
+    "Ce qui n'apporte pas de signal mesurable sur 4-8 semaines: tu coupes."
   );
   sections.push("");
 
   sections.push("### Calendrier d'introduction\n");
   sections.push(
-    "La premiere semaine introduit les fondamentaux pour le sommeil et la recuperation plus un a deux supplements de base. " +
-    "Les semaines deux et trois ajoutent une brique ciblee si les signaux prioritaires restent eleves. " +
-    "Les semaines quatre a six evaluent la tolerance et l'efficacite avant toute escalation. " +
-    "Les semaines sept a douze simplifient le stack autour des options qui montrent un effet concret."
+    "Semaine 1: tu introduis les fondamentaux pour ton sommeil et ta recup + 1-2 supplements de base. " +
+    "Semaines 2-3: tu ajoutes une brique ciblee si tes signaux prioritaires restent eleves. " +
+    "Semaines 4-6: tu evalues tolerance et efficacite avant toute escalation. " +
+    "Semaines 7-12: tu simplifies ton stack autour des options qui montrent un effet concret."
   );
   sections.push("");
 
   sections.push("### Suivi de tolerance et efficacite\n");
   sections.push(
-    "La tolerance s'evalue sur le sommeil, la digestion, l'energie, la frequence cardiaque au repos et le ressenti d'entrainement. " +
-    "L'efficacite s'evalue sur le mouvement des marqueurs cibles, la baisse des signaux critiques et la progression de performance sans fatigue excessive. " +
-    "La decision consiste a maintenir si le signal est positif net, ajuster si le signal est mixte, et stopper si le signal est negatif persistant."
+    "Tu evalues ta tolerance sur: sommeil, digestion, energie, FC au repos, ressenti d'entrainement. " +
+    "Tu evalues l'efficacite sur: mouvement de tes marqueurs cibles, baisse des signaux critiques, progression de perf sans fatigue excessive. " +
+    "Ta decision: tu maintiens si signal positif net, tu ajustes si signal mixte, tu stoppes si signal negatif persistant."
   );
   sections.push("");
 
   sections.push("### Pratiques a eviter\n");
   sections.push(
-    "Les pratiques a eviter volontairement incluent un stack trop large des le debut qui genere du bruit, du cout et une adherence faible, " +
+    "Ce que tu evites: un stack trop large des le debut (bruit, cout, adherence faible), " +
     "les promesses de resultats sans retest, et les ajustements de doses agressifs sans donnees de tolerance."
   );
 
@@ -3354,39 +3332,39 @@ export function buildFallbackAnalysis(
   sections.push("### Annexe A — Marqueurs secondaires\n");
   if (analysisResult.markers.length) {
     const markersList = analysisResult.markers.slice(0, 24).map(
-      (marker) => `${marker.name} avec un statut ${marker.status} et une valeur de ${marker.value} ${marker.unit}`
+      (marker) => `ton ${marker.name} (${marker.status}, ${marker.value} ${marker.unit})`
     );
-    sections.push(`La lecture rapide des marqueurs secondaires montre ${toProse(markersList)}.`);
+    sections.push(`Lecture rapide de tes marqueurs secondaires: ${toProse(markersList)}.`);
   } else {
-    sections.push("Aucun marqueur secondaire n'est disponible pour une lecture rapide.");
+    sections.push("Pas de marqueur secondaire disponible pour une lecture rapide.");
   }
   sections.push("");
 
   sections.push("### Annexe B — Hypotheses et tests de confirmation\n");
   if (criticalMissing.length) {
     const hypotheses = criticalMissing.map(
-      (id) => `l'hypothese a confirmer via ${id.replace(/_/g, " ").toUpperCase()}`
+      (id) => `${id.replace(/_/g, " ").toUpperCase()}`
     );
-    sections.push(`Les tests complementaires permettraient de verifier ${toProse(hypotheses)}.`);
+    sections.push(`Des tests complementaires te permettraient de verifier certaines hypotheses via: ${toProse(hypotheses)}.`);
   } else {
-    sections.push("Aucune hypothese critique supplementaire ne necessite de tests de confirmation.");
+    sections.push("Pas d'hypothese critique supplementaire qui necessite des tests de confirmation pour toi.");
   }
   sections.push("");
 
   sections.push("### Annexe C — Glossaire\n");
   sections.push(
-    "Le HOMA-IR designe l'indice de resistance a l'insuline qui evalue la sensibilite des cellules a cette hormone. " +
-    "L'ApoB represente la charge de particules atherogenes, un marqueur de risque cardiovasculaire. " +
-    "La hs-CRP est un marqueur d'inflammation systemique de basse intensite utile pour evaluer le terrain inflammatoire. " +
-    "Le SHBG est une proteine qui module la fraction libre des hormones sexuelles, impactant leur biodisponibilite."
+    "HOMA-IR: indice de resistance a l'insuline, ca evalue la sensibilite de tes cellules a cette hormone. " +
+    "ApoB: charge de particules atherogenes, marqueur de risque cardiovasculaire. " +
+    "hs-CRP: marqueur d'inflammation systemique de basse intensite, utile pour evaluer ton terrain inflammatoire. " +
+    "SHBG: proteine qui module la fraction libre de tes hormones sexuelles, impacte leur biodisponibilite."
   );
   sections.push("");
 
   sections.push("### Vigilance\n");
   if (alerts.length) {
-    sections.push(`Les alertes de vigilance identifiees incluent ${toProse(alerts.map((a) => a.replace(/^- /, "")))}.`);
+    sections.push(`Points de vigilance identifies pour toi: ${toProse(alerts.map((a) => a.replace(/^- /, "")))}.`);
   } else {
-    sections.push("Aucun signal critique majeur ne necessite une consultation medicale immediate sur ce bilan.");
+    sections.push("Pas de signal critique majeur qui necessite une consultation medicale immediate sur ton bilan.");
   }
 
   sections.push("\n## Sources (bibliotheque)\n");
@@ -3398,18 +3376,18 @@ export function buildFallbackAnalysis(
 
   if (knowledgeSourceLines.length) {
     const sourcesDesc = knowledgeSourceLines.slice(0, 12).join(", ");
-    sections.push(`Les sources detectees dans la knowledge base comprennent ${sourcesDesc}.`);
+    sections.push(`Sources utilisees pour ton analyse: ${sourcesDesc}.`);
   } else {
     const fallbackSources = Object.values(PANEL_CITATIONS)
       .flat()
       .slice(0, 10)
-      .map((citation) => `${citation.title} accessible a ${citation.url}`);
-    sections.push(`Les references bibliographiques consultees incluent ${toProse(fallbackSources)}.`);
+      .map((citation) => `${citation.title} (${citation.url})`);
+    sections.push(`References bibliographiques consultees: ${toProse(fallbackSources)}.`);
   }
 
   sections.push("");
   sections.push(
-    "Ce rapport a ete genere automatiquement et personnalise sur les marqueurs reels avec un plan d'action concret et un retest structure."
+    "Ce rapport est personnalise sur tes marqueurs reels avec un plan d'action concret et un retest structure. On avance ensemble."
   );
 
   return reorderReportSections(sections.join("\n"));
