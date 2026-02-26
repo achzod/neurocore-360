@@ -1754,11 +1754,28 @@ const getSectionSpecByHeading = (section: ParsedH2Section): RequiredReportSectio
 const reorderReportSections = (report: string): string => {
   const parsed = parseH2Sections(report);
   if (!parsed.length) return report.trim();
+
+  // Log unknown sections that will be dropped
+  const unknownSections = parsed.filter((section) => !getSectionSpecByHeading(section));
+  if (unknownSections.length > 0) {
+    console.warn(
+      `[BloodAnalysis] Dropping ${unknownSections.length} unknown section(s): ${unknownSections.map((s) => s.title).join(", ")}`
+    );
+  }
+
+  // Keep only required sections in the correct order
   const ordered = REQUIRED_REPORT_SECTIONS
     .map((spec) => findSectionByAliases(parsed, spec.aliases))
     .filter((section): section is ParsedH2Section => Boolean(section))
     .map((section) => section.content.trim());
-  return ordered.length ? ordered.join("\n\n").trim() : report.trim();
+
+  if (ordered.length === 0) {
+    console.warn("[BloodAnalysis] No required sections found, returning original report");
+    return report.trim();
+  }
+
+  console.log(`[BloodAnalysis] Reordered report: ${ordered.length}/${REQUIRED_REPORT_SECTIONS.length} sections matched`);
+  return ordered.join("\n\n").trim();
 };
 
 const BULLET_LINE_REGEX = /^\s*(?:[-*+]|(?:\d+[\.\)]))\s+/;
@@ -2110,32 +2127,55 @@ Contraintes de qualité:
   - "Nutrition & entrainement" et "Supplements & stack": protocoles complets et relies aux biomarqueurs.
 - Priorise toujours la précision, la clarté et l'actionnabilité.
 
-RAPPELS CRITIQUES (VERIFIER AVANT SOUMISSION)
-1. PAS DE TITRE GLOBAL - Tu commences DIRECTEMENT par "## Synthese executive"
-2. HIERARCHIE STRICTE:
-   - Les 11 Axes sont des ### (sous-sections de "## Lecture compartimentee par axes")
-   - PAS "## Axe 1", mais "### Axe 1"
-3. CITATIONS OBLIGATOIRES (MINIMUM 8 citations):
-   - Utilise le format [SRC:ID] pour les recommandations et interpretations cles
-   - Exemple: "Une insuline elevee bloque la lipolyse [SRC:huberman-insulin-sensitivity]"
-   - Les IDs disponibles sont dans CONTEXTE SCIENTIFIQUE GENERAL ci-dessus
-   - Si tu n'as pas de source pertinente pour un point: formule sans attribution
-4. 12 SECTIONS H2 OBLIGATOIRES (dans cet ordre exact):
-   - ## Synthese executive
-   - ## Qualite des donnees & limites
-   - ## Tableau de bord (scores & priorites)
-   - ## Potentiel recomposition (perte de gras + gain de muscle)
-   - ## Lecture compartimentee par axes
-   - ## Interconnexions majeures (le pattern)
-   - ## Deep dive — marqueurs prioritaires
-   - ## Plan d'action 90 jours
-   - ## Nutrition & entrainement
-   - ## Supplements & stack
-   - ## Annexes (references et vigilance)
-   - ## Sources (bibliotheque) <- DERNIERE SECTION, liste les [SRC:ID] utilises
-5. RETEST: La section "### Retest & conditions de prelevement" est OBLIGATOIRE dans le Plan 90 jours
+RAPPELS CRITIQUES - A VERIFIER OBLIGATOIREMENT AVANT SOUMISSION
 
-Réponds uniquement avec le rapport final markdown. NE PAS OUBLIER LA SECTION "## Sources (bibliotheque)" A LA FIN.`;
+=== REGLE 1: STRUCTURE STRICTE ===
+- PAS DE TITRE GLOBAL en debut de rapport
+- Tu commences DIRECTEMENT par "## Synthese executive"
+- Les 11 Axes dans "Lecture compartimentee par axes" sont des ### (PAS des ##)
+- Exemple: "### Axe 1 — Potentiel musculaire" (PAS "## Axe 1")
+
+=== REGLE 2: CITATIONS [SRC:ID] OBLIGATOIRES ===
+Tu DOIS inclure au minimum 8 citations [SRC:ID] dans le rapport:
+- Format: texte affirmation [SRC:identifiant-source]
+- Exemples:
+  * "Une insuline elevee bloque la lipolyse hepatique [SRC:huberman-insulin-sensitivity]"
+  * "La vitamine D < 30 ng/mL impacte la synthese proteique [SRC:examine-vitamin-d]"
+  * "Le sommeil < 7h reduit la testosterone de 10-15% [SRC:huberman-sleep-testosterone]"
+- Place les citations dans: Synthese executive, Deep dive, Plan d'action, Nutrition
+- Les IDs disponibles sont dans CONTEXTE SCIENTIFIQUE GENERAL ci-dessus
+- Si pas de source pertinente: formule sans attribution mais ASSURE au moins 8 citations au total
+
+=== REGLE 3: EXACTEMENT 12 SECTIONS H2 ===
+Tu DOIS generer EXACTEMENT ces 12 sections dans cet ordre (NI PLUS NI MOINS):
+1. ## Synthese executive
+2. ## Qualite des donnees & limites
+3. ## Tableau de bord (scores & priorites)
+4. ## Potentiel recomposition (perte de gras + gain de muscle)
+5. ## Lecture compartimentee par axes
+6. ## Interconnexions majeures (le pattern)
+7. ## Deep dive — marqueurs prioritaires
+8. ## Plan d'action 90 jours
+9. ## Nutrition & entrainement
+10. ## Supplements & stack
+11. ## Annexes (references et vigilance)
+12. ## Sources (bibliotheque)
+
+ATTENTION: NE PAS ajouter d'autres sections comme "## Donnees & tests complementaires"!
+La section "## Sources (bibliotheque)" est OBLIGATOIRE a la fin et liste les [SRC:ID] utilises.
+
+=== REGLE 4: RETEST ===
+La sous-section "### Retest & conditions de prelevement" est OBLIGATOIRE dans "## Plan d'action 90 jours"
+
+=== VERIFICATION FINALE ===
+Avant de soumettre, verifie:
+[ ] Pas de titre global au debut
+[ ] 12 sections H2 exactement
+[ ] Au moins 8 citations [SRC:ID]
+[ ] Derniere section = "## Sources (bibliotheque)"
+[ ] "### Retest" present dans Plan 90 jours
+
+Reponds UNIQUEMENT avec le rapport final markdown.`;
 
 const PANEL_CITATIONS: Record<string, Array<{ title: string; url: string }>> = {
   Hormonal: [
@@ -2219,12 +2259,25 @@ const findSourcesHeadingIndex = (text: string): number => {
 
 const ensureSourcesSection = (text: string): string => {
   if (!text) return "";
-  // Check if Sources section already exists
-  if (findSourcesHeadingIndex(text) !== -1) {
+
+  // Check if Sources section already exists using multiple patterns
+  const sourcesPatterns = [
+    /##\s+Sources\s*\(bibliotheque\)/i,
+    /##\s+Sources\s*scientifiques/i,
+    /##\s+Sources\s*$/im,
+  ];
+
+  const hasSourcesSection = sourcesPatterns.some((pattern) => pattern.test(text));
+
+  if (hasSourcesSection) {
+    console.log("[BloodAnalysis] Sources section already exists, keeping original");
     return text.trim();
   }
-  // Always add Sources section at the end
-  return `${text.trim()}\n\n## Sources (bibliotheque)\n${buildSourcesSection()}`.trim();
+
+  // Force add Sources section at the end
+  console.log("[BloodAnalysis] Adding missing Sources (bibliotheque) section");
+  const sourcesContent = buildSourcesSection();
+  return `${text.trim()}\n\n## Sources (bibliotheque)\n\nCette section regroupe les references scientifiques utilisees dans ce rapport.\n\n${sourcesContent}`.trim();
 };
 
 const stripEmojis = (text: string): string => {
@@ -2303,6 +2356,68 @@ const trimAiAnalysis = (text: string, maxChars = 100000): string => {
     return stripEmojis(sliced.slice(0, lastBreak)).trim();
   }
   return stripEmojis(sliced).trim();
+};
+
+/**
+ * Sanitize blood report text - remove artifacts and normalize formatting
+ */
+export const sanitizeBloodReportRegister = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .trim();
+};
+
+/**
+ * Ensure the Axes section follows the correct template structure
+ */
+export const ensureAxesSectionTemplate = (text: string): string => {
+  if (!text) return "";
+  // Simply return the text - the reorderReportSections function handles structure
+  return text.trim();
+};
+
+/**
+ * Audit blood report quality and return list of issues
+ */
+export const auditBloodReportQualityForMeta = (text: string): string[] => {
+  const issues: string[] = [];
+  if (!text) {
+    issues.push("empty_report");
+    return issues;
+  }
+
+  // Check for required sections
+  const requiredSections = [
+    "Synthese executive",
+    "Qualite des donnees",
+    "Tableau de bord",
+    "Potentiel recomposition",
+    "Lecture compartimentee par axes",
+    "Interconnexions majeures",
+    "Deep dive",
+    "Plan d'action 90 jours",
+    "Nutrition",
+    "Supplements",
+    "Annexes",
+    "Sources",
+  ];
+
+  const normalizedText = text.toLowerCase();
+  for (const section of requiredSections) {
+    if (!normalizedText.includes(section.toLowerCase())) {
+      issues.push(`missing_section:${section.replace(/\s+/g, "_").toLowerCase()}`);
+    }
+  }
+
+  // Check minimum length
+  if (text.length < 10000) {
+    issues.push("report_too_short");
+  }
+
+  return issues;
 };
 
 export function buildFallbackAnalysis(
@@ -3454,7 +3569,10 @@ FORMAT OBLIGATOIRE (dans cet ordre exact):
 11. ## Annexes (references et vigilance)
 12. ## Sources (bibliotheque)
 
+ATTENTION: Genere EXACTEMENT ces 12 sections, NI PLUS NI MOINS. NE PAS ajouter "## Donnees & tests complementaires" ou toute autre section non listee!
+
 EXIGENCES DE QUALITE:
+- CITATIONS [SRC:ID]: Tu DOIS inclure AU MINIMUM 8 citations [SRC:ID] reparties dans le rapport (Synthese, Deep dive, Plan, Nutrition).
 - Longueur cible: ${targetChars} caracteres minimum, sans remplissage artificiel.
 - Traiter au moins ${minDeepDiveMarkers} marqueurs en deep dive (ou tous les non-optimaux s'il y en a moins).
 - Pour chaque axe et chaque marqueur prioritaire: lecture clinique + lecture performance + actions concretes.

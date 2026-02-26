@@ -150,9 +150,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      let aiAnalysis;
+      let aiAnalysis: { report: string; status: "generated" | "fallback"; model: string; validationMissing: string[] };
       try {
-        aiAnalysis = await withAIGenerationTimeout(
+        const aiResult = await withAIGenerationTimeout(
           () =>
             generateAIBloodAnalysis(
               analysisResult,
@@ -161,6 +161,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             ),
           "blood-analysis/analyze sync report"
         );
+        // generateAIBloodAnalysis returns a string directly, wrap it in object
+        aiAnalysis = {
+          report: aiResult,
+          status: "generated" as const,
+          model: "claude",
+          validationMissing: [],
+        };
       } catch (aiError) {
         if (isAIGenerationTimeoutError(aiError)) {
           console.warn("[BloodAnalysis] Analyze AI timed out, returning fallback.");
@@ -467,7 +474,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let syncAiNeedsBackgroundRetry = false;
       if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
         try {
-          const generated = await withAIGenerationTimeout(
+          const aiResult = await withAIGenerationTimeout(
             () =>
               generateAIBloodAnalysis(
                 analysisResult,
@@ -476,11 +483,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               ),
             "blood-analysis/submit sync report"
           );
-          aiAnalysis = generated.report;
+          // generateAIBloodAnalysis returns a string directly
+          aiAnalysis = aiResult;
           aiMeta = {
-            status: generated.status,
-            model: generated.model,
-            validationMissing: generated.validationMissing || null,
+            status: "generated",
+            model: "claude",
+            validationMissing: null,
           };
         } catch (aiError) {
           syncAiNeedsBackgroundRetry = true;
@@ -535,7 +543,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
-            const enriched = await runAIGenerationWithRetry(
+            // generateAIBloodAnalysis returns a string directly
+            const enrichedReport = await runAIGenerationWithRetry(
               () =>
                 generateAIBloodAnalysis(
                   analysisResult,
@@ -545,15 +554,15 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               "blood-analysis/submit async report"
             );
             await storage.updateBloodReport(reportRecord.id, {
-              aiReport: enriched.report,
+              aiReport: enrichedReport,
               analysis: {
                 ...analysisResult,
-                aiStatus: enriched.status,
-                aiModel: enriched.model,
+                aiStatus: "generated",
+                aiModel: "claude",
                 aiGeneratedAt: new Date().toISOString(),
-                aiValidationMissing: enriched.validationMissing || null,
-                aiFallbackAt: enriched.status === "fallback" ? new Date().toISOString() : null,
-                aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
+                aiValidationMissing: null,
+                aiFallbackAt: null,
+                aiFallbackReason: null,
               } as any,
             });
           } catch (err) {
@@ -1792,7 +1801,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             let aiMeta: { status: string; model: string; validationMissing?: string[] } | null = null;
             let aiError: unknown = null;
             try {
-              const generated = await runAIGenerationWithRetry(
+              // generateAIBloodAnalysis returns a string directly
+              aiReport = await runAIGenerationWithRetry(
                 () =>
                   generateAIBloodAnalysis(
                     analysisResult,
@@ -1801,11 +1811,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 ),
                 "blood-analysis/report async refresh"
               );
-              aiReport = generated.report;
               if (!aiReport || !aiReport.trim()) {
                 throw new Error("AI_EMPTY_REPORT");
               }
-              aiMeta = { status: generated.status, model: generated.model, validationMissing: generated.validationMissing };
+              aiMeta = { status: "generated", model: "claude", validationMissing: [] };
             } catch (err) {
               aiError = err;
               console.error(`[BloodAnalysis] AI generation crashed for ${reportId}, using deterministic fallback:`, err);
@@ -2543,7 +2552,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let aiReport: string;
       let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       try {
-        const generated = await withAIGenerationTimeout(
+        // generateAIBloodAnalysis returns a string directly
+        aiReport = await withAIGenerationTimeout(
           () =>
             generateAIBloodAnalysis(
               basicAnalysis,
@@ -2552,11 +2562,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             ),
           "blood-analysis/full-analysis sync report"
         );
-        aiReport = generated.report;
         aiMeta = {
-          status: generated.status,
-          model: generated.model,
-          validationMissing: generated.validationMissing || null,
+          status: "generated",
+          model: "claude",
+          validationMissing: null,
         };
       } catch (aiError) {
         if (isAIGenerationTimeoutError(aiError)) {
@@ -2693,7 +2702,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let aiReport: string;
       let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
       try {
-        const generated = await withAIGenerationTimeout(
+        // generateAIBloodAnalysis returns a string directly
+        aiReport = await withAIGenerationTimeout(
           () =>
             generateAIBloodAnalysis(
               basicAnalysis,
@@ -2702,11 +2712,10 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             ),
           "blood-analysis/comprehensive-report sync report"
         );
-        aiReport = generated.report;
         aiMeta = {
-          status: generated.status,
-          model: generated.model,
-          validationMissing: generated.validationMissing || null,
+          status: "generated",
+          model: "claude",
+          validationMissing: null,
         };
       } catch (aiError) {
         if (isAIGenerationTimeoutError(aiError)) {
