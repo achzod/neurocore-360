@@ -693,9 +693,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult.patterns
         );
 
-	        let generated;
+	        let generated: { report: string; status: "generated" | "fallback"; model: string; validationMissing: string[] };
 	        try {
-	          generated = await withAIGenerationTimeout(
+	          const aiResult = await withAIGenerationTimeout(
 	            () =>
 	              generateAIBloodAnalysis(
 	                analysisResult,
@@ -704,6 +704,13 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	              ),
 	            "blood-analysis/admin-regenerate sync report"
 	          );
+	          // generateAIBloodAnalysis returns a string directly, wrap it in object
+	          generated = {
+	            report: aiResult,
+	            status: "generated" as const,
+	            model: "claude",
+	            validationMissing: [],
+	          };
 	        } catch (aiError) {
 	          if (isAIGenerationTimeoutError(aiError)) {
 	            console.warn("[BloodAnalysis] Admin regenerate sync AI timed out, storing fallback.");

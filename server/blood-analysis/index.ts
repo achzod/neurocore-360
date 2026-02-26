@@ -2115,15 +2115,27 @@ RAPPELS CRITIQUES (VERIFIER AVANT SOUMISSION)
 2. HIERARCHIE STRICTE:
    - Les 11 Axes sont des ### (sous-sections de "## Lecture compartimentee par axes")
    - PAS "## Axe 1", mais "### Axe 1"
-3. CITATIONS OBLIGATOIRES:
-   - Utilise le format [SRC:ID] pour CHAQUE attribution d'expert
-   - Si source fournie: [SRC:HUBERMAN_1], [SRC:ATTIA_2], etc.
-   - Si PAS de source: "selon les donnees actuelles" SANS attribution
-4. SECTION FINALE: "## Sources (bibliotheque)" (PAS "Sources scientifiques")
-   - Liste UNIQUEMENT les IDs [SRC:xxx] que tu as utilises dans le rapport
+3. CITATIONS OBLIGATOIRES (MINIMUM 8 citations):
+   - Utilise le format [SRC:ID] pour les recommandations et interpretations cles
+   - Exemple: "Une insuline elevee bloque la lipolyse [SRC:huberman-insulin-sensitivity]"
+   - Les IDs disponibles sont dans CONTEXTE SCIENTIFIQUE GENERAL ci-dessus
+   - Si tu n'as pas de source pertinente pour un point: formule sans attribution
+4. 12 SECTIONS H2 OBLIGATOIRES (dans cet ordre exact):
+   - ## Synthese executive
+   - ## Qualite des donnees & limites
+   - ## Tableau de bord (scores & priorites)
+   - ## Potentiel recomposition (perte de gras + gain de muscle)
+   - ## Lecture compartimentee par axes
+   - ## Interconnexions majeures (le pattern)
+   - ## Deep dive — marqueurs prioritaires
+   - ## Plan d'action 90 jours
+   - ## Nutrition & entrainement
+   - ## Supplements & stack
+   - ## Annexes (references et vigilance)
+   - ## Sources (bibliotheque) <- DERNIERE SECTION, liste les [SRC:ID] utilises
 5. RETEST: La section "### Retest & conditions de prelevement" est OBLIGATOIRE dans le Plan 90 jours
 
-Réponds uniquement avec le rapport final markdown.`;
+Réponds uniquement avec le rapport final markdown. NE PAS OUBLIER LA SECTION "## Sources (bibliotheque)" A LA FIN.`;
 
 const PANEL_CITATIONS: Record<string, Array<{ title: string; url: string }>> = {
   Hormonal: [
@@ -2207,9 +2219,11 @@ const findSourcesHeadingIndex = (text: string): number => {
 
 const ensureSourcesSection = (text: string): string => {
   if (!text) return "";
+  // Check if Sources section already exists
   if (findSourcesHeadingIndex(text) !== -1) {
     return text.trim();
   }
+  // Always add Sources section at the end
   return `${text.trim()}\n\n## Sources (bibliotheque)\n${buildSourcesSection()}`.trim();
 };
 
