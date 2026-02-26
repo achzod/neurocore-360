@@ -28,7 +28,7 @@ const STATUS_SCORE: Record<string, number> = {
 function BloodReportModernInner() {
   const { reportId } = useParams<{ reportId: string }>();
   const [activeTab, setActiveTab] = useState<BloodTabKey>("overview");
-  const { theme } = useBloodTheme();
+  const { theme, mode } = useBloodTheme();
 
   // Fetch report data
   const { data: report, isLoading, error } = useBloodReport(reportId);
@@ -110,33 +110,66 @@ function BloodReportModernInner() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: theme.background }}>
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: theme.primaryBlue }} />
+      <div
+        className="flex flex-col items-center justify-center min-h-screen gap-4"
+        style={{ background: theme.backgroundGradient }}
+      >
+        <Loader2 className="h-10 w-10 animate-spin" style={{ color: theme.primaryBlue }} />
+        <p className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+          Chargement du rapport...
+        </p>
       </div>
     );
   }
 
   if (error || !report) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: theme.background }}>
-        <div className="text-center space-y-2">
-          <p className="text-lg font-semibold" style={{ color: theme.textPrimary }}>Erreur de chargement</p>
-          <p className="text-sm" style={{ color: theme.textSecondary }}>{error?.message || "Rapport introuvable"}</p>
+      <div
+        className="flex items-center justify-center min-h-screen"
+        style={{ background: theme.backgroundGradient }}
+      >
+        <div
+          className="text-center space-y-4 p-8 rounded-2xl max-w-md"
+          style={{
+            background: theme.surface,
+            border: `1px solid ${theme.borderDefault}`,
+            boxShadow: theme.shadowMedium,
+          }}
+        >
+          <div
+            className="mx-auto w-12 h-12 rounded-xl flex items-center justify-center"
+            style={{ background: theme.status.criticalBg }}
+          >
+            <Loader2 className="h-6 w-6" style={{ color: theme.status.critical }} />
+          </div>
+          <h2 className="text-lg font-semibold" style={{ color: theme.textPrimary }}>
+            Erreur de chargement
+          </h2>
+          <p className="text-sm" style={{ color: theme.textSecondary }}>
+            {error?.message || "Le rapport demandé est introuvable ou une erreur s'est produite."}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: theme.background }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background: theme.backgroundGradient,
+        minHeight: "100vh",
+      }}
+    >
       <BloodHeader
-        title="Analyse Sanguine"
-        subtitle={`Rapport du ${new Date(report.createdAt || Date.now()).toLocaleDateString("fr-FR")}`}
+        title="Analyse Sanguine Premium"
+        subtitle={`Rapport du ${new Date(report.createdAt || Date.now()).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`}
+        showBackButton
       />
 
       <BloodTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="mx-auto max-w-6xl px-6 pt-6">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 pt-6">
         <AnimatePresence mode="wait">
           {activeTab === "overview" ? (
             <OverviewTab
@@ -164,7 +197,7 @@ function BloodReportModernInner() {
             <SourcesTab key="sources" aiSections={aiSections} />
           ) : null}
         </AnimatePresence>
-      </div>
+      </main>
     </div>
   );
 }
