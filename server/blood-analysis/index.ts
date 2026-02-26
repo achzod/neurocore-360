@@ -1590,47 +1590,71 @@ const parseH2Sections = (markdown: string): ParsedH2Section[] => {
   return sections;
 };
 
-const REQUIRED_REPORT_SECTIONS: Array<{ key: string; aliases: string[]; minChars: number }> = [
-  { key: "synthese", aliases: ["synthese-executive"], minChars: 1200 },
-  { key: "qualite", aliases: ["qualite-des-donnees-limites"], minChars: 850 },
-  { key: "tableau", aliases: ["tableau-de-bord-scores-priorites"], minChars: 900 },
+type RequiredReportSection = {
+  key: string;
+  title: string;
+  aliases: string[];
+  minChars: number;
+};
+
+const REQUIRED_REPORT_SECTIONS: RequiredReportSection[] = [
+  { key: "synthese", title: "Synthese executive", aliases: ["synthese-executive"], minChars: 1200 },
+  { key: "qualite", title: "Qualite des donnees & limites", aliases: ["qualite-des-donnees-limites"], minChars: 850 },
+  {
+    key: "tableau",
+    title: "Tableau de bord (scores & priorites)",
+    aliases: ["tableau-de-bord-scores-priorites"],
+    minChars: 900,
+  },
   {
     key: "recomposition",
+    title: "Potentiel recomposition (perte de gras + gain de muscle)",
     aliases: ["potentiel-recomposition-perte-de-gras-gain-de-muscle", "potentiel-recomposition"],
     minChars: 1200,
   },
   {
     key: "axes",
+    title: "Lecture compartimentee par axes",
     aliases: ["lecture-compartimentee-par-axes", "analyse-par-axe"],
     minChars: 6000,
   },
   {
     key: "interconnexions",
+    title: "Interconnexions majeures (le pattern)",
     aliases: ["interconnexions-majeures-le-pattern", "interconnexions-majeures"],
     minChars: 1500,
   },
   {
     key: "deep_dive",
+    title: "Deep dive — marqueurs prioritaires",
     aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"],
     minChars: 4600,
   },
   {
     key: "plan",
+    title: "Plan d'action 90 jours",
     aliases: ["plan-d-action-90-jours", "plan-90-jours"],
     minChars: 3400,
   },
   {
     key: "nutrition",
+    title: "Nutrition & entrainement",
     aliases: ["nutrition-entrainement", "nutrition-entrainement-traduction-pratique", "protocole-nutrition"],
     minChars: 2600,
   },
   {
     key: "supplements",
+    title: "Supplements & stack",
     aliases: ["supplements-stack", "supplements-stack-minimaliste-mais-impact", "protocole-supplements"],
     minChars: 3000,
   },
-  { key: "annexes", aliases: ["annexes-references-et-vigilance", "annexes-ultra-long", "annexes"], minChars: 900 },
-  { key: "sources", aliases: ["sources-bibliotheque", "sources-scientifiques"], minChars: 120 },
+  {
+    key: "annexes",
+    title: "Annexes (references et vigilance)",
+    aliases: ["annexes-references-et-vigilance", "annexes-ultra-long", "annexes"],
+    minChars: 900,
+  },
+  { key: "sources", title: "Sources (bibliotheque)", aliases: ["sources-bibliotheque", "sources-scientifiques"], minChars: 120 },
 ];
 
 const DEPTH_CRITICAL_SECTION_KEYS = new Set(["axes", "interconnexions", "deep_dive", "plan", "nutrition", "supplements"]);
@@ -1648,6 +1672,45 @@ const findSectionByAliases = (
   aliases: string[],
 ): ParsedH2Section | undefined => {
   return sections.find((section) => aliases.some((alias) => sectionMatchesAlias(section.normalizedTitle, alias)));
+};
+
+const getSectionSpecByHeading = (section: ParsedH2Section): RequiredReportSection | undefined => {
+  return REQUIRED_REPORT_SECTIONS.find((spec) => spec.aliases.some((alias) => sectionMatchesAlias(section.normalizedTitle, alias)));
+};
+
+const reorderReportSections = (report: string): string => {
+  const parsed = parseH2Sections(report);
+  if (!parsed.length) return report.trim();
+  const ordered = REQUIRED_REPORT_SECTIONS
+    .map((spec) => findSectionByAliases(parsed, spec.aliases))
+    .filter((section): section is ParsedH2Section => Boolean(section))
+    .map((section) => section.content.trim());
+  return ordered.length ? ordered.join("\n\n").trim() : report.trim();
+};
+
+const BULLET_LINE_REGEX = /^\s*(?:[-*+]|(?:\d+[\.\)]))\s+/;
+const MARKDOWN_TABLE_LINE_REGEX = /^\s*\|(?:[^|\n]+\|)+\s*$/;
+
+const validateNarrativeStyle = (output: string, markerCount: number): string[] => {
+  const reasons: string[] = [];
+  const lines = output.split(/\r?\n/);
+  const bulletLines = lines.filter((line) => BULLET_LINE_REGEX.test(line)).length;
+  const tableLines = lines.filter((line) => MARKDOWN_TABLE_LINE_REGEX.test(line)).length;
+
+  if (bulletLines > 0) {
+    reasons.push(`bullet_points_detected:${bulletLines}`);
+  }
+  if (tableLines > 0) {
+    reasons.push(`markdown_tables_detected:${tableLines}`);
+  }
+
+  const sentenceCount = (output.match(/[.!?](?:\s|$)/g) || []).length;
+  const minSentences = Math.max(35, markerCount * 4);
+  if (sentenceCount < minSentences) {
+    reasons.push(`insufficient_sentence_density:${sentenceCount}/${minSentences}`);
+  }
+
+  return reasons;
 };
 
 const upsertSectionByAliases = (report: string, aliases: string[], newSectionContent: string): string => {
@@ -1688,8 +1751,37 @@ const validateReportStructure = (
   const thin: string[] = [];
   const sections = parseH2Sections(output);
 
-  if (sections.length < 12) {
-    reasons.push("insufficient_h2_sections");
+  if (sections.length !== REQUIRED_REPORT_SECTIONS.length) {
+    reasons.push(`invalid_h2_count:${sections.length}/${REQUIRED_REPORT_SECTIONS.length}`);
+  }
+
+  const unknownSections = sections.filter((section) => !getSectionSpecByHeading(section));
+  if (unknownSections.length) {
+    reasons.push(`unexpected_sections:${unknownSections.map((section) => section.normalizedTitle).join(",")}`);
+  }
+
+  for (const spec of REQUIRED_REPORT_SECTIONS) {
+    const duplicateCount = sections.filter((section) =>
+      spec.aliases.some((alias) => sectionMatchesAlias(section.normalizedTitle, alias))
+    ).length;
+    if (duplicateCount > 1) {
+      reasons.push(`duplicate_section:${spec.key}`);
+    }
+  }
+
+  for (let idx = 0; idx < REQUIRED_REPORT_SECTIONS.length; idx += 1) {
+    const spec = REQUIRED_REPORT_SECTIONS[idx];
+    const sectionAtIndex = sections[idx];
+    if (!sectionAtIndex) continue;
+    const matchesExpected = spec.aliases.some((alias) => sectionMatchesAlias(sectionAtIndex.normalizedTitle, alias));
+    if (!matchesExpected) {
+      const foundIndex = sections.findIndex((section) =>
+        spec.aliases.some((alias) => sectionMatchesAlias(section.normalizedTitle, alias))
+      );
+      if (foundIndex !== -1) {
+        reasons.push(`section_order_mismatch:${spec.key}:${foundIndex}->${idx}`);
+      }
+    }
   }
 
   const markerCount = markers.length;
@@ -1737,6 +1829,8 @@ const validateReportStructure = (
     reasons.push("report_too_short_low_data");
   }
 
+  reasons.push(...validateNarrativeStyle(output, markerCount));
+
   return {
     ok: reasons.length === 0,
     reasons,
@@ -1756,9 +1850,15 @@ const validateDeepDive = (output: string, markerNames: string[]) => {
   const coveredMarkers = markerNames.filter((name) =>
     normalizedDeepDive.includes(normalizePlain(name))
   ).length;
-  const minCoverage = Math.min(2, markerNames.length);
+  const minCoverage = Math.min(markerNames.length, Math.max(2, Math.ceil(markerNames.length * 0.55)));
   if (coveredMarkers < minCoverage) {
     return { ok: false, reason: "insufficient_marker_coverage" };
+  }
+
+  const deepDiveMarkerHeadings = countMatches(deepDive, /^\s*###\s+/gm);
+  const minMarkerHeadings = Math.min(markerNames.length, Math.max(2, Math.ceil(markerNames.length * 0.45)));
+  if (deepDiveMarkerHeadings < minMarkerHeadings) {
+    return { ok: false, reason: "insufficient_deep_dive_marker_blocks" };
   }
 
   const expertMentions = countMatches(deepDive, EXPERT_NAME_REGEX);
@@ -1773,128 +1873,6 @@ const validateDeepDive = (output: string, markerNames: string[]) => {
     return { ok: false, reason: "generic_phrases" };
   }
   return { ok: true, reason: "" };
-};
-
-const AXES_SECTION_ALIASES = [
-  "lecture-compartimentee-par-axes",
-  "analyse-par-axe",
-  "analyse-par-axes",
-];
-
-const normalizeReportWhitespace = (text: string): string =>
-  text
-    .replace(/[ \t]{2,}/g, " ")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-export const sanitizeBloodReportRegister = (text: string): string => {
-  if (!text) return "";
-  let out = String(text);
-
-  const replacements: Array<{ pattern: RegExp; value: string }> = [
-    { pattern: /\bje vais etre direct avec toi\b/gi, value: "je vais etre clair avec toi" },
-    { pattern: /\bje vais etre direct\b/gi, value: "je vais etre clair" },
-    { pattern: /\bfranchement\b/gi, value: "honnêtement" },
-    { pattern: /\becoute\b/gi, value: "regarde" },
-    { pattern: /\bmec\b/gi, value: "tu" },
-    { pattern: /\bon observe que\b/gi, value: "je vois que" },
-    { pattern: /\bon observe\b/gi, value: "je vois" },
-    { pattern: /\bil convient de\b/gi, value: "je te recommande de" },
-    { pattern: /\bil est recommande de\b/gi, value: "je te recommande de" },
-    { pattern: /\bil est recommande\b/gi, value: "je te recommande" },
-    { pattern: /\bil est conseille de\b/gi, value: "je te recommande de" },
-    { pattern: /\ble patient\b/gi, value: "tu" },
-    { pattern: /\bla patiente\b/gi, value: "tu" },
-    { pattern: /\bputain\b/gi, value: "" },
-    { pattern: /\bbordel\b/gi, value: "" },
-  ];
-
-  for (const replacement of replacements) {
-    out = out.replace(replacement.pattern, replacement.value);
-  }
-
-  out = stripEmojis(out);
-  out = out.replace(/\s*\[SRC:[^\]]+\]\s*/g, " ");
-  out = out.replace(/\n##\s+Sources[^\n]*[\s\S]*$/i, "");
-  out = out.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
-
-  return normalizeReportWhitespace(out);
-};
-
-export const ensureAxesSectionTemplate = (fullText: string): string => {
-  if (!fullText) return fullText;
-  const report = String(fullText);
-  const sections = parseH2Sections(report);
-  const axesSection = findSectionByAliases(sections, AXES_SECTION_ALIASES);
-  if (!axesSection) return normalizeReportWhitespace(report);
-
-  const lines = (axesSection.content || "").split("\n");
-  const headingLine =
-    lines.find((line) => /^\s*(?:\*\*)?##\s+/.test(line))?.trim() ||
-    "## Lecture compartimentee par axes";
-
-  let body = lines.join("\n");
-  if (/^\s*(?:\*\*)?##\s+/.test(lines[0] || "")) {
-    body = lines.slice(1).join("\n");
-  }
-
-  body = body.replace(/^##\s+(Axe\s+\d+\b[^\n]*)/gim, "### $1");
-
-  for (let axis = 1; axis <= 11; axis += 1) {
-    const axisRegex = new RegExp(`^###\\s+Axe\\s+${axis}\\b`, "mi");
-    if (axisRegex.test(body)) continue;
-    body = `${body.trim()}\n\n### Axe ${axis} — Non renseigne\n\nNon renseigne pour ce dossier a ce stade. Je garde cet axe visible pour conserver une lecture complete et je te recommande de le confirmer au prochain retest avec les marqueurs associes.`.trim();
-  }
-
-  const rebuiltSection = `${headingLine}\n\n${normalizeReportWhitespace(body)}`.trim();
-  return normalizeReportWhitespace(upsertSectionByAliases(report, AXES_SECTION_ALIASES, rebuiltSection));
-};
-
-export const auditBloodReportQualityForMeta = (aiReport: string): string[] => {
-  const report = ensureAxesSectionTemplate(sanitizeBloodReportRegister(aiReport || ""));
-  if (!report) return ["empty_report"];
-
-  const issues: string[] = [];
-  const sections = parseH2Sections(report);
-
-  if (sections.length < 10) {
-    issues.push("insufficient_h2_sections");
-  }
-
-  for (const spec of REQUIRED_REPORT_SECTIONS) {
-    if (spec.key === "sources") continue;
-    const found = findSectionByAliases(sections, spec.aliases);
-    if (!found) {
-      issues.push(`missing_section:${spec.key}`);
-      continue;
-    }
-    const minimum = Math.max(250, Math.round(spec.minChars * 0.28));
-    if (found.content.trim().length < minimum) {
-      issues.push(`short_section:${spec.key}`);
-    }
-  }
-
-  const axesSection = findSectionByAliases(sections, AXES_SECTION_ALIASES);
-  if (!axesSection) {
-    issues.push("missing_section:axes");
-  } else {
-    for (let axis = 1; axis <= 11; axis += 1) {
-      if (!new RegExp(`^###\\s+Axe\\s+${axis}\\b`, "mi").test(axesSection.content || "")) {
-        issues.push(`missing_axis:${axis}`);
-      }
-    }
-  }
-
-  if (
-    /(Cette section sera disponible une fois le rapport complet généré|Génération du rapport AI en cours|Le rapport complet sera disponible sous peu)/i.test(
-      report
-    )
-  ) {
-    issues.push("placeholder_text");
-  }
-
-  return Array.from(new Set(issues));
 };
 
 export async function analyzeBloodwork(
@@ -2025,8 +2003,9 @@ Règles critiques:
 
 Style:
 - Tutoiement naturel, ton expert, clair, concret, sans jargon inutile.
-- Paragraphes explicatifs + listes actionnables (actions/tests/suppléments).
-- Tableaux markdown autorisés uniquement si cela améliore la lisibilité.
+- Style narratif dense, avec phrases completes et paragraphes consistants.
+- Interdiction de sortie en liste a puces, liste numerotee, checklist ou tableau markdown.
+- Chaque recommandation doit etre integree dans une phrase explicite reliee aux biomarqueurs du patient.
 
 Sources:
 - Tu peux citer des sources uniquement via [SRC:ID] quand l'ID existe dans le contexte fourni.
@@ -2050,6 +2029,7 @@ Format obligatoire (titres H2 exacts, dans cet ordre):
 Contraintes de qualité:
 - Rapport complet et cohérent (en général 16 000 à 35 000 caracteres selon le volume de marqueurs).
 - Chaque section doit contenir des informations utiles et spécifiques au patient.
+- Les 12 sections H2 sont obligatoires, dans l'ordre exact, sans section additionnelle.
 - Sections obligatoirement denses:
   - "Lecture compartimentee par axes": longue et detaillee (pas une synthese courte).
   - "Deep dive — marqueurs prioritaires": marqueur par marqueur avec plan d'action concret.
@@ -2127,7 +2107,7 @@ const buildSourcesSection = (): string => {
   for (const [panel, citations] of Object.entries(PANEL_CITATIONS)) {
     lines.push(`### ${panel}`);
     for (const item of citations) {
-      lines.push(`- ${item.title} ${item.url}`);
+      lines.push(`${item.title}. Lien: ${item.url}.`);
     }
   }
   return lines.join("\n");
@@ -3003,7 +2983,7 @@ export function buildFallbackAnalysis(
   sections.push("");
   sections.push("*Rapport fallback deterministic: personnalise sur les marqueurs reels, avec plan d'action concret et retest structure.*");
 
-  return sections.join("\n");
+  return reorderReportSections(sections.join("\n"));
 }
 
 const isFlaggedStatus = (status?: MarkerStatus): boolean => status === "suboptimal" || status === "critical";
@@ -3378,6 +3358,8 @@ EXIGENCES DE QUALITE:
 - Longueur cible: ${targetChars} caracteres minimum, sans remplissage artificiel.
 - Traiter au moins ${minDeepDiveMarkers} marqueurs en deep dive (ou tous les non-optimaux s'il y en a moins).
 - Pour chaque axe et chaque marqueur prioritaire: lecture clinique + lecture performance + actions concretes.
+- Rediger exclusivement en prose narrative: paragraphes complets et phrases detaillees.
+- Interdiction absolue dans la sortie finale: listes a puces, listes numerotees, tableaux markdown.
 - Tu DOIS respecter des seuils de profondeur:
   - "## Synthese executive": au moins ${qualityThresholds.synthese} caracteres, avec priorites immediates + impact performance + sequence d'action.
   - "## Qualite des donnees & limites": au moins ${qualityThresholds.qualite} caracteres, avec limites explicites, confondants et tests de confirmation.
@@ -3389,7 +3371,6 @@ EXIGENCES DE QUALITE:
   - "## Plan d'action 90 jours": au moins ${qualityThresholds.plan} caracteres, avec objectifs + actions + indicateurs + erreurs a eviter par phase.
   - "## Nutrition & entrainement": au moins ${qualityThresholds.nutrition} caracteres, en liant chaque recommendation aux marqueurs.
   - "## Supplements & stack": au moins ${qualityThresholds.supplements} caracteres, avec rationale, dose, timing, duree, precautions.
-- Utiliser des listes et tableaux markdown quand cela clarifie la lecture.
 - Ne jamais inventer un marqueur, une valeur, un symptome, un contexte ou une source.
 - Si une info est absente: ecrire "Non renseigne", expliquer la limite, proposer le test utile.
 - Citer [SRC:ID] uniquement si l'ID existe dans le contexte fourni.
@@ -3410,7 +3391,7 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
     const retryNote =
       attempt === 1
         ? ""
-        : `\nATTENTION: Ta reponse precedente etait trop generique ou ne respectait pas les sections deep dive. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies. Chaque biomarqueur doit contenir les 4 sous-sections avec au moins 2 citations d'experts.\n`;
+        : `\nATTENTION: Ta reponse precedente etait trop generique ou non conforme. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies, avec les 12 sections H2 exactes dans l'ordre, et un style 100% narratif sans puces, sans numerotation, sans tableaux.\n`;
     const prompt = `${userPrompt}\n${retryNote}`;
 
     try {
@@ -3429,8 +3410,9 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
           candidate += event.delta.text;
         }
       }
-      const deepDiveCheck = validateDeepDive(candidate, deepDivePayload.markerNames);
-      const structureCheck = validateReportStructure(candidate, analysisResult.markers);
+      const normalizedCandidate = reorderReportSections(ensureSourcesSection(candidate));
+      const deepDiveCheck = validateDeepDive(normalizedCandidate, deepDivePayload.markerNames);
+      const structureCheck = validateReportStructure(normalizedCandidate, analysisResult.markers);
       if (!deepDiveCheck.ok) {
         console.warn(`[BloodAnalysis] Candidate deep-dive rejection: ${deepDiveCheck.reason}`);
       }
@@ -3440,25 +3422,24 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
 
       const qualityOk = deepDiveCheck.ok && structureCheck.ok;
       const score =
-        candidate.length +
+        normalizedCandidate.length +
         (deepDiveCheck.ok ? 7000 : 0) +
         structureCheck.matchedSections * 1200 -
         structureCheck.missing.length * 1800 -
         structureCheck.thin.length * 1800;
       if (score > bestScore) {
         bestScore = score;
-        bestCandidate = candidate;
+        bestCandidate = normalizedCandidate;
       }
       if (qualityOk) {
-        output = candidate;
+        output = normalizedCandidate;
         break;
       }
     } catch (err: any) {
       if (err.message === "API_TIMEOUT") {
         console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
         if (attempt === maxAttempts) {
-          console.log("[BloodAnalysis] All attempts timed out, using fallback");
-          return buildFallbackReport();
+          throw new Error("AI_TIMEOUT_ALL_ATTEMPTS");
         }
       } else {
         throw err;
@@ -3482,6 +3463,7 @@ Contraintes:
   ### Jours 61-90 (Optimisation)
   ### Retest & conditions de prelevement
 - Chaque phase contient objectifs, actions, indicateurs, erreurs a eviter.
+- Rediger uniquement en paragraphes complets. Ne pas utiliser de puces, de numerotation ni de tableaux.
 - Longueur minimale: ${qualityThresholds.plan} caracteres.
 - Chaque phase doit relier les actions aux biomarqueurs concernes.
 - Base strictement sur les marqueurs et le contexte fournis.
@@ -3503,7 +3485,8 @@ ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
       const planStream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
         max_tokens: 9000,
-        system: "Tu es un expert bloodwork performance. Genere uniquement la section demandee, en markdown propre.",
+        system:
+          "Tu es un expert bloodwork performance. Genere uniquement la section demandee, en markdown propre, avec style narratif strict sans puces, sans numerotation, sans tableaux.",
         messages: [{ role: "user", content: planPrompt }],
         stream: true,
       });
@@ -3530,6 +3513,7 @@ ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
 
   // Multi-pass generation: repair missing/thin sections with hard depth targets.
   console.log(`[BloodAnalysis] Starting multi-pass check. Output length: ${output.length} chars`);
+  const narrativeConstraint = "Rediger uniquement en paragraphes complets, sans puces, sans numerotation, sans tableaux markdown.";
 
   const sectionRepairSpecs: Array<{
     title: string;
@@ -3546,6 +3530,7 @@ ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
       prompt: () => `Genere UNIQUEMENT la section "## Synthese executive".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.synthese} caracteres.
 - Inclure obligatoirement: triage des priorites, impact performance/recomposition, sequence logique des actions, risques a surveiller.
 - S'appuyer strictement sur les marqueurs reels et leur statut.
@@ -3565,6 +3550,7 @@ Patterns: ${patternsText}`,
       prompt: () => `Genere UNIQUEMENT la section "## Qualite des donnees & limites".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.qualite} caracteres.
 - Inclure: fiabilite du panel, limites de couverture, facteurs confondants, ce qui manque pour conclure, tests prioritaires a ajouter.
 - Quand une info manque: "Non renseigne" + impact concret sur la decision.
@@ -3583,6 +3569,7 @@ Patterns: ${patternsText}`,
       prompt: () => `Genere UNIQUEMENT la section "## Tableau de bord (scores & priorites)".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.tableau} caracteres.
 - Inclure: priorites critiques/importantes, quick wins, KPI de suivi hebdo et mensuel, criteres d'escalade.
 - Lier explicitement les priorites aux biomarqueurs.
@@ -3593,13 +3580,14 @@ Marqueurs: ${markersTable}
 Patterns: ${patternsText}`,
     },
     {
-      title: "Potentiel recomposition",
+      title: "Potentiel recomposition (perte de gras + gain de muscle)",
       aliases: ["potentiel-recomposition-perte-de-gras-gain-de-muscle", "potentiel-recomposition"],
       minChars: qualityThresholds.recomposition,
       maxTokens: 4500,
       prompt: () => `Genere UNIQUEMENT la section "## Potentiel recomposition (perte de gras + gain de muscle)".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.recomposition} caracteres.
 - Inclure: freins biologiques dominants, opportunites court terme, conditions de progression training/nutrition, indicateurs de validation.
 - Relier explicitement les conclusions aux marqueurs prioritaires.
@@ -3619,6 +3607,7 @@ Patterns: ${patternsText}`,
       prompt: () => `Genere UNIQUEMENT la section "## Lecture compartimentee par axes".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.axes} caracteres.
 - Couvre explicitement chaque axe disponible dans les marqueurs du bilan.
 - Pour chaque axe: score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
@@ -3632,13 +3621,14 @@ Patterns:
 ${patternsText}`,
     },
     {
-      title: "Interconnexions majeures",
+      title: "Interconnexions majeures (le pattern)",
       aliases: ["interconnexions-majeures-le-pattern", "interconnexions-majeures"],
       minChars: qualityThresholds.interconnexions,
       maxTokens: 6000,
       prompt: () => `Genere UNIQUEMENT la section "## Interconnexions majeures (le pattern)".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.interconnexions} caracteres.
 - 5 a 12 interconnexions concretes maximum.
 - Chaque interconnexion doit contenir: pattern observe, hypothese mecanistique, ce qui confirmerait, action concrete.
@@ -3651,26 +3641,17 @@ Patterns: ${patternsText}
 ${knowledgeContext ? `\nSources disponibles:\n${knowledgeContext}` : ""}`,
     },
     {
-      title: "Deep dive",
+      title: "Deep dive — marqueurs prioritaires",
       aliases: ["deep-dive-marqueurs-prioritaires", "deep-dive"],
       minChars: qualityThresholds.deepDive,
       maxTokens: 10000,
       prompt: () => `Genere UNIQUEMENT la section "## Deep dive — marqueurs prioritaires".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.deepDive} caracteres.
 - Couvrir au moins ${minDeepDiveMarkers} marqueurs prioritaires, en priorisant critiques/suboptimaux.
-- Format par marqueur:
-  ### Nom du marqueur
-  - Priorite
-  - Valeur + ranges
-  - Lecture clinique
-  - Lecture performance/bodybuilding
-  - Causes plausibles (ordonnees)
-  - Facteurs confondants
-  - Plan d'action concret
-  - Tests/data a ajouter
-  - Confiance
+- Pour chaque marqueur prioritaire, creer un sous-titre "### Nom du marqueur" puis des paragraphes dedies a la priorite, la valeur et les ranges, la lecture clinique, la lecture performance, les causes plausibles, les facteurs confondants, le plan d'action, les tests a ajouter et le niveau de confiance.
 - Ne jamais inventer une valeur.
 
 Contexte:
@@ -3686,6 +3667,7 @@ ${deepDivePayload.context ? `Donnees detaillees:\n${deepDivePayload.context}` : 
       prompt: () => `Genere UNIQUEMENT la section "## Plan d'action 90 jours".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.plan} caracteres.
 - Titres exacts obligatoires:
   ## Plan d'action 90 jours
@@ -3709,9 +3691,10 @@ Patterns: ${patternsText}`,
       aliases: ["nutrition-entrainement", "nutrition-entrainement-traduction-pratique", "protocole-nutrition"],
       minChars: qualityThresholds.nutrition,
       maxTokens: 8000,
-      prompt: () => `Genere UNIQUEMENT la section "## Nutrition & entrainement (traduction pratique)".
+      prompt: () => `Genere UNIQUEMENT la section "## Nutrition & entrainement".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.nutrition} caracteres.
 - Sous-sections obligatoires: Nutrition / Entrainement.
 - Pour chaque recommandation: biomarqueur cible, rationale, implementation pratique.
@@ -3728,9 +3711,10 @@ Marqueurs: ${markersTable}`,
       aliases: ["supplements-stack", "supplements-stack-minimaliste-mais-impact", "protocole-supplements"],
       minChars: qualityThresholds.supplements,
       maxTokens: 9000,
-      prompt: () => `Genere UNIQUEMENT la section "## Supplements & stack (minimaliste mais impact)".
+      prompt: () => `Genere UNIQUEMENT la section "## Supplements & stack".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: ${qualityThresholds.supplements} caracteres.
 - 8 a 16 options max, classees par priorite (Niveau 1/2/3).
 - Pour chaque supplement: pourquoi (marqueur/pattern vise), dose indicative, timing, duree, precautions/interactions, critere d'efficacite au retest.
@@ -3744,13 +3728,14 @@ Marqueurs surveillance: ${analysisResult.summary.watch.join(", ") || "Aucun"}
 ${markersTable}`,
     },
     {
-      title: "Annexes",
+      title: "Annexes (references et vigilance)",
       aliases: ["annexes-references-et-vigilance", "annexes-ultra-long", "annexes"],
       minChars: 900,
       maxTokens: 5000,
       prompt: () => `Genere UNIQUEMENT la section "## Annexes (references et vigilance)".
 
 Contraintes:
+- ${narrativeConstraint}
 - Longueur minimale: 900 caracteres.
 - Inclure:
   - Annexe A: marqueurs secondaires (statut + interpretation + action rapide)
@@ -3782,7 +3767,7 @@ ${markersTable}`,
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
         max_tokens: spec.maxTokens,
         system:
-          "Tu es un expert bloodwork performance. Genere uniquement la section demandee en markdown, sans texte hors section.",
+          "Tu es un expert bloodwork performance. Genere uniquement la section demandee en markdown, sans texte hors section, avec style narratif strict sans puces, sans numerotation, sans tableaux.",
         messages: [{ role: "user", content: spec.prompt() }],
         stream: true,
       });
@@ -3810,19 +3795,22 @@ ${markersTable}`,
 
   console.log(`[BloodAnalysis] Multi-pass complete. Final output length: ${output.length} chars`);
 
-  const withSources = ensureSourcesSection(output);
-  const trimmedOutput = trimAiAnalysis(withSources);
+  const orderedOutput = reorderReportSections(output);
+  const withSources = ensureSourcesSection(orderedOutput);
+  const normalizedOutput = reorderReportSections(withSources);
+  const trimmedOutput = trimAiAnalysis(normalizedOutput);
   const finalStructureCheck = validateReportStructure(trimmedOutput, analysisResult.markers);
   if (!finalStructureCheck.ok) {
-    console.warn(
-      `[BloodAnalysis] Final report failed quality gate: ${finalStructureCheck.reasons.join(" | ")}. Using deterministic fallback.`
-    );
+    const reasons = finalStructureCheck.reasons.join(" | ");
+    const allowDeterministicFallback = process.env.BLOOD_ANALYSIS_ALLOW_FALLBACK === "true";
+    if (!allowDeterministicFallback) {
+      throw new Error(`AI_REPORT_QUALITY_GATE_FAILED:${reasons}`);
+    }
+    console.warn(`[BloodAnalysis] Final report failed quality gate: ${reasons}. Using deterministic fallback.`);
     const fallbackReport = buildFallbackReport();
     const fallbackStructureCheck = validateReportStructure(fallbackReport, analysisResult.markers);
     if (!fallbackStructureCheck.ok) {
-      console.warn(
-        `[BloodAnalysis] Deterministic fallback still below target: ${fallbackStructureCheck.reasons.join(" | ")}`
-      );
+      console.warn(`[BloodAnalysis] Deterministic fallback still below target: ${fallbackStructureCheck.reasons.join(" | ")}`);
     }
     return fallbackReport;
   }

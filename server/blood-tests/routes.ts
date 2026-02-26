@@ -215,6 +215,25 @@ const buildProtocolPhases = (markers: Array<{ name: string; status?: MarkerStatu
   ];
 };
 
+const FALLBACK_REPORT_FOOTER_PATTERN = /\*Rapport fallback deterministic/i;
+
+const isFallbackAnalysisText = (analysis: string): boolean => {
+  const normalized = String(analysis || "").trim();
+  if (!normalized) return true;
+  return FALLBACK_REPORT_FOOTER_PATTERN.test(normalized);
+};
+
+const toAiMetaFromReport = (report: string): { status: string; model: string; validationMissing: string[] | null } => {
+  if (isFallbackAnalysisText(report)) {
+    return { status: "fallback", model: "fallback", validationMissing: null };
+  }
+  return {
+    status: "generated",
+    model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+    validationMissing: null,
+  };
+};
+
 const isAdminRequest = (req: Request): boolean => {
   const adminKey = req.headers["x-admin-key"] || req.query.key;
   const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
@@ -412,12 +431,8 @@ export function registerBloodTestsRoutes(app: Express): void {
 	                  ),
 	                "blood-tests/seed sync report"
 	              );
-	              aiAnalysis = generated.report;
-	              aiMeta = {
-	                status: generated.status,
-	                model: generated.model,
-	                validationMissing: generated.validationMissing || null,
-	              };
+	              aiAnalysis = generated;
+	              aiMeta = toAiMetaFromReport(generated);
 	            } catch (err) {
 	              syncAiNeedsBackgroundRetry = true;
 	              if (isAIGenerationTimeoutError(err)) {
@@ -532,13 +547,12 @@ export function registerBloodTestsRoutes(app: Express): void {
                 );
                 const updatedAnalysis = {
                   ...analysisPayload,
-                  aiAnalysis: enriched.report,
-                  aiStatus: enriched.status,
-                  aiModel: enriched.model,
+                  aiAnalysis: enriched,
+                  aiStatus: toAiMetaFromReport(enriched).status,
+                  aiModel: toAiMetaFromReport(enriched).model,
                   aiGeneratedAt: new Date().toISOString(),
-                  aiFallbackAt: enriched.status === "fallback" ? new Date().toISOString() : null,
-                  aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
-                  ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
+                  aiFallbackAt: isFallbackAnalysisText(enriched) ? new Date().toISOString() : null,
+                  aiFallbackReason: isFallbackAnalysisText(enriched) ? "async_generation_fallback" : null,
                 };
                 await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
               } catch (err) {
@@ -720,12 +734,8 @@ export function registerBloodTestsRoutes(app: Express): void {
 	              ),
 	            "blood-tests/upload sync report"
 	          );
-	          aiAnalysis = generated.report;
-	          aiMeta = {
-	            status: generated.status,
-	            model: generated.model,
-	            validationMissing: generated.validationMissing || null,
-	          };
+	          aiAnalysis = generated;
+	          aiMeta = toAiMetaFromReport(generated);
 	        } catch (err) {
           syncAiNeedsBackgroundRetry = true;
           if (isAIGenerationTimeoutError(err)) {
@@ -845,38 +855,32 @@ export function registerBloodTestsRoutes(app: Express): void {
               );
             } catch (err) {
               console.error("[BloodTests] Upload async AI retry failed, storing deterministic fallback:", err);
-              enriched = {
-                report: buildFallbackAnalysis(analysisResult, {
-                  gender: profile.gender as "homme" | "femme",
-                  age,
-                  sleepHours: profile.sleepHours,
-                  stressLevel: profile.stressLevel,
-                  fastingHours: profile.fastingHours,
-                  drawTime: profile.drawTime,
-                  lastTraining: profile.lastTraining,
-                  alcoholLast72h: profile.alcoholLast72h,
-                  nutritionPhase: profile.nutritionPhase,
-                  supplementsUsed: profile.supplementsUsed,
-                  medications: profile.medications,
-                  infectionRecent: profile.infectionRecent,
-                  poids: profile.poids,
-                  taille: profile.taille,
-                }),
-                status: "fallback" as const,
-                model: "fallback",
-                validationMissing: [] as string[],
-              };
+              enriched = buildFallbackAnalysis(analysisResult, {
+                gender: profile.gender as "homme" | "femme",
+                age,
+                sleepHours: profile.sleepHours,
+                stressLevel: profile.stressLevel,
+                fastingHours: profile.fastingHours,
+                drawTime: profile.drawTime,
+                lastTraining: profile.lastTraining,
+                alcoholLast72h: profile.alcoholLast72h,
+                nutritionPhase: profile.nutritionPhase,
+                supplementsUsed: profile.supplementsUsed,
+                medications: profile.medications,
+                infectionRecent: profile.infectionRecent,
+                poids: profile.poids,
+                taille: profile.taille,
+              });
             }
             const asyncNowIso = new Date().toISOString();
             const refreshedAnalysis = {
               ...analysisPayload,
-              aiAnalysis: enriched.report,
-              aiStatus: enriched.status,
-              aiModel: enriched.model,
+              aiAnalysis: enriched,
+              aiStatus: toAiMetaFromReport(enriched).status,
+              aiModel: toAiMetaFromReport(enriched).model,
               aiGeneratedAt: asyncNowIso,
-              aiFallbackAt: enriched.status === "fallback" ? asyncNowIso : null,
-              aiFallbackReason: enriched.status === "fallback" ? "async_generation_fallback" : null,
-              ...(enriched.validationMissing ? { aiValidationMissing: enriched.validationMissing } : {}),
+              aiFallbackAt: isFallbackAnalysisText(enriched) ? asyncNowIso : null,
+              aiFallbackReason: isFallbackAnalysisText(enriched) ? "async_generation_fallback" : null,
             };
             await storage.updateBloodTest(baseRecord.id, {
               status: "completed",
