@@ -64,7 +64,7 @@ async function main() {
   // Keep parser-only extraction deterministic for regression checks.
   delete process.env.ANTHROPIC_API_KEY;
 
-  const { extractMarkersFromPdfText, analyzeBloodwork } = await import("../server/blood-analysis/index.js");
+  const { extractMarkersFromPdfText, analyzeBloodwork } = await import("../server/blood-analysis/index.ts");
 
   const dataDir = path.resolve(process.cwd(), "data");
   const pdfFiles = walkPdfFiles(dataDir);

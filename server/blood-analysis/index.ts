@@ -1212,6 +1212,72 @@ const hasMarkerValueInText = (text: string, markerId: string): boolean => {
   return false;
 };
 
+const NON_LAB_CONTENT_PATTERNS: RegExp[] = [
+  /product requirements document/i,
+  /table des matieres/i,
+  /\bpartie\s+\d+\s*:/i,
+  /user flow/i,
+  /onboarding/i,
+  /\bdashboard\b/i,
+  /\bfeatures?\b/i,
+  /\bstack\b/i,
+  /vision\s*:/i,
+  /confidentiel/i,
+];
+
+const LAB_REPORT_HINT_PATTERNS: RegExp[] = [
+  /laboratoire/i,
+  /biologie/i,
+  /compte[-\s]?rendu/i,
+  /resultats?\s+analyses?/i,
+  /valeurs?\s+de\s+r[ée]f[ée]rence/i,
+  /pr[ée]l[èe]vement/i,
+  /patient/i,
+  /date de naissance/i,
+];
+
+const countRegexHits = (text: string, regex: RegExp): number => {
+  const flags = regex.flags.includes("g") ? regex.flags : `${regex.flags}g`;
+  const matcher = new RegExp(regex.source, flags);
+  let count = 0;
+  let match: RegExpExecArray | null;
+  while ((match = matcher.exec(text)) !== null) {
+    count += 1;
+    if (match.index === matcher.lastIndex) matcher.lastIndex += 1;
+  }
+  return count;
+};
+
+const isLikelyBloodLabDocument = (
+  pdfText: string,
+  fileName: string
+): { ok: boolean; reason?: string } => {
+  const text = pdfText.replace(/\s+/g, " ").trim();
+  if (!text) return { ok: false, reason: "empty_pdf_text" };
+
+  const nonLabHits = NON_LAB_CONTENT_PATTERNS.filter((pattern) => pattern.test(text)).length;
+  const labHits = LAB_REPORT_HINT_PATTERNS.filter((pattern) => pattern.test(text)).length;
+  const quantifiedLabValueHits = countRegexHits(
+    text,
+    /\b\d+(?:[.,]\d+)?\s*(?:mg\/dL|mg\/L|g\/L|ng\/mL|pg\/mL|ng\/dL|pmol\/L|mmol\/L|µmol\/L|umol\/L|mIU\/L|IU\/L|UI\/L|U\/L|mL\/min|%)\b/gi
+  );
+  const fileNameLooksNonLab = /(prd|requirements?|spec(?:s|ification)?|roadmap|product|manual)/i.test(
+    fileName
+  );
+
+  if (fileNameLooksNonLab && nonLabHits >= 1) {
+    return { ok: false, reason: "non_lab_filename_pattern" };
+  }
+  if (nonLabHits >= 5 && labHits <= 2) {
+    return { ok: false, reason: "non_lab_content_signature" };
+  }
+  if (quantifiedLabValueHits < 4 && nonLabHits >= 3) {
+    return { ok: false, reason: "insufficient_lab_numeric_density" };
+  }
+
+  return { ok: true };
+};
+
 const addComputedMarkers = (markers: BloodMarkerInput[]): BloodMarkerInput[] => {
   const map = new Map(markers.map((marker) => [marker.markerId, marker]));
   if (!map.has("homa_ir")) {
@@ -1231,6 +1297,13 @@ export async function extractMarkersFromPdfText(
 ): Promise<BloodMarkerInput[]> {
   const cleaned = pdfText.replace(/\s+/g, " ").trim();
   if (!cleaned) return [];
+  const docCheck = isLikelyBloodLabDocument(cleaned, fileName);
+  if (!docCheck.ok) {
+    console.warn(
+      `[BloodAnalysis] Ignoring non-lab PDF "${fileName}" (${docCheck.reason || "unknown_reason"})`
+    );
+    return [];
+  }
 
   const lineExtracted = extractMarkersFromLines(pdfText);
   const textExtracted = extractMarkersFromText(cleaned);

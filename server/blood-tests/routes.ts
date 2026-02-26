@@ -15,9 +15,9 @@ import {
   buildLifestyleCorrelations,
 } from "../blood-analysis";
 import {
-  runAIGenerationWithRetry,
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
+  runAIGenerationWithRetry,
 } from "../blood-analysis/ai-timeout";
 import { generateComprehensiveBloodReport } from "../blood-analysis/recommendations-engine";
 import { generateComprehensiveRiskProfile } from "../blood-analysis/risk-scores";
@@ -187,6 +187,127 @@ const computeSystemScores = (markers: Array<{ code?: string; status?: MarkerStat
   );
 };
 
+type AnalysisMarker = {
+  markerId: string;
+  name: string;
+  value: number;
+  unit: string;
+  status: MarkerStatus;
+  interpretation?: string;
+};
+
+type ResponseMarker = {
+  name: string;
+  code: string;
+  category: string;
+  value: number;
+  unit: string;
+  refMin: number | null;
+  refMax: number | null;
+  optimalMin: number | null;
+  optimalMax: number | null;
+  status: MarkerStatus;
+  interpretation?: string;
+};
+
+const toFiniteNumberOrNull = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  return toFiniteNumberOrNull(value);
+};
+
+const normalizeStoredStatus = (status: unknown): MarkerStatus => {
+  const lower = String(status || "").toLowerCase();
+  if (lower === "optimal") return "optimal";
+  if (lower === "normal") return "normal";
+  if (lower === "suboptimal" || lower.includes("sous")) return "suboptimal";
+  if (lower === "critical" || lower.includes("crit")) return "critical";
+  return "normal";
+};
+
+const normalizeCategoryId = (category: unknown, markerCode: string): string => {
+  const raw = String(category || "").trim().toLowerCase();
+  if (raw === "inflammatory") return "inflammation";
+  if (raw) return raw;
+  const mapped = CATEGORY_BY_MARKER[markerCode] || "general";
+  return mapped === "inflammatory" ? "inflammation" : mapped;
+};
+
+const normalizeMarkersForResponse = (
+  rawMarkers: unknown[],
+  analysisMarkers: AnalysisMarker[]
+): ResponseMarker[] => {
+  const analysisByCode = new Map(analysisMarkers.map((marker) => [marker.markerId, marker]));
+  const normalizedByCode = new Map<string, ResponseMarker>();
+
+  for (const raw of rawMarkers) {
+    if (!raw || typeof raw !== "object") continue;
+    const marker = raw as Record<string, unknown>;
+    const code = String(marker.code || marker.markerId || "").trim();
+    if (!code) continue;
+
+    const range = BIOMARKER_RANGES[code];
+    const analysisMarker = analysisByCode.get(code);
+    const value =
+      toFiniteNumberOrNull(marker.value) ??
+      (analysisMarker && Number.isFinite(analysisMarker.value) ? analysisMarker.value : null);
+    if (value === null) continue;
+
+    const normalized: ResponseMarker = {
+      name:
+        String(marker.name || "").trim() ||
+        analysisMarker?.name ||
+        range?.name ||
+        code,
+      code,
+      category: normalizeCategoryId(marker.category, code),
+      value,
+      unit:
+        String(marker.unit || "").trim() ||
+        analysisMarker?.unit ||
+        range?.unit ||
+        "",
+      refMin: toNullableNumber(marker.refMin) ?? range?.normalMin ?? null,
+      refMax: toNullableNumber(marker.refMax) ?? range?.normalMax ?? null,
+      optimalMin: toNullableNumber(marker.optimalMin) ?? range?.optimalMin ?? null,
+      optimalMax: toNullableNumber(marker.optimalMax) ?? range?.optimalMax ?? null,
+      status: analysisMarker?.status || normalizeStoredStatus(marker.status),
+      interpretation:
+        String(marker.interpretation || "").trim() ||
+        analysisMarker?.interpretation ||
+        "",
+    };
+
+    normalizedByCode.set(code, normalized);
+  }
+
+  if (!normalizedByCode.size && analysisMarkers.length) {
+    for (const marker of analysisMarkers) {
+      const range = BIOMARKER_RANGES[marker.markerId];
+      normalizedByCode.set(marker.markerId, {
+        name: marker.name || range?.name || marker.markerId,
+        code: marker.markerId,
+        category: normalizeCategoryId(undefined, marker.markerId),
+        value: marker.value,
+        unit: marker.unit || range?.unit || "",
+        refMin: range?.normalMin ?? null,
+        refMax: range?.normalMax ?? null,
+        optimalMin: range?.optimalMin ?? null,
+        optimalMax: range?.optimalMax ?? null,
+        status: marker.status,
+        interpretation: marker.interpretation || "",
+      });
+    }
+  }
+
+  return Array.from(normalizedByCode.values());
+};
+
 const computeTemporalRisk = (markers: Array<{ status?: MarkerStatus }>) => {
   const critical = markers.filter((m) => m.status === "critical").length;
   const warning = markers.filter((m) => m.status === "suboptimal").length;
@@ -217,21 +338,88 @@ const buildProtocolPhases = (markers: Array<{ name: string; status?: MarkerStatu
 
 const FALLBACK_REPORT_FOOTER_PATTERN = /\*Rapport fallback deterministic/i;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const isFallbackAnalysisText = (analysis: string): boolean => {
   const normalized = String(analysis || "").trim();
   if (!normalized) return true;
   return FALLBACK_REPORT_FOOTER_PATTERN.test(normalized);
 };
 
-const toAiMetaFromReport = (report: string): { status: string; model: string; validationMissing: string[] | null } => {
-  if (isFallbackAnalysisText(report)) {
-    return { status: "fallback", model: "fallback", validationMissing: null };
+const deriveAiMeta = (analysis: string, fallbackReason?: string) => {
+  const isFallback = isFallbackAnalysisText(analysis);
+  const generatedAt = new Date().toISOString();
+  if (isFallback) {
+    return {
+      aiStatus: "fallback" as const,
+      aiModel: "fallback",
+      aiGeneratedAt: generatedAt,
+      aiFallbackAt: generatedAt,
+      aiFallbackReason: fallbackReason || "fallback_generated",
+    };
   }
   return {
-    status: "generated",
-    model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-    validationMissing: null,
+    aiStatus: "generated" as const,
+    aiModel: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+    aiGeneratedAt: generatedAt,
+    aiFallbackAt: null,
+    aiFallbackReason: null,
   };
+};
+
+const deriveAiProcessingMeta = (reason?: string) => ({
+  aiStatus: "processing" as const,
+  aiModel: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+  aiGeneratedAt: null,
+  aiFallbackAt: null,
+  aiFallbackReason: reason || "generation_pending",
+});
+
+const generateAIBloodAnalysisWithFallbackRetry = async (
+  analysisResult: Awaited<ReturnType<typeof analyzeBloodwork>>,
+  profile: {
+    gender: "homme" | "femme";
+    age?: string;
+    objectives?: string;
+    medications?: string;
+    prenom?: string;
+    nom?: string;
+    poids?: number;
+    taille?: number;
+    sleepHours?: number;
+    trainingHours?: number;
+    calorieDeficit?: number;
+    alcoholWeekly?: number;
+    stressLevel?: number;
+    fastingHours?: number;
+    drawTime?: string;
+    lastTraining?: string;
+    alcoholLast72h?: string;
+    nutritionPhase?: string;
+    supplementsUsed?: string[];
+    infectionRecent?: string;
+  },
+  knowledgeContext?: string,
+): Promise<string> => {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const report = await runAIGenerationWithRetry(
+        () => generateAIBloodAnalysis(analysisResult, profile, knowledgeContext),
+        `blood-tests/async-ai-attempt-${attempt}`,
+        { attempts: 1 }
+      );
+      if (report && !isFallbackAnalysisText(report)) {
+        return report;
+      }
+      console.warn(`[BloodTests] Async AI attempt ${attempt} returned fallback-shaped report.`);
+    } catch (error) {
+      console.error(`[BloodTests] Async AI attempt ${attempt} failed:`, error);
+    }
+    if (attempt < 3) {
+      await sleep(6000);
+    }
+  }
+  return "";
 };
 
 const isAdminRequest = (req: Request): boolean => {
@@ -347,6 +535,12 @@ export function registerBloodTestsRoutes(app: Express): void {
 
       for (const file of targetFiles) {
         try {
+          const likelyNonLabSeedFile = /(prd|requirements?|spec(?:s|ification)?|product|manual)/i.test(file);
+          if (likelyNonLabSeedFile) {
+            skipped.push({ fileName: file, error: "Document non medical ignore (seed)." });
+            continue;
+          }
+
           const buffer = fs.readFileSync(path.join(dataDir, file));
           const parsed = await pdf(buffer);
           const pdfText = parsed.text || "";
@@ -398,10 +592,11 @@ export function registerBloodTestsRoutes(app: Express): void {
           );
 
           let aiAnalysis = "";
-          let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
+          let aiFallbackReason: string | undefined;
           let syncAiNeedsBackgroundRetry = false;
           const includeAI = body.includeAI !== false;
           const asyncAI = body.asyncAI === true;
+          const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
           const aiProfile = {
             gender: patientProfile.gender as "homme" | "femme",
             age,
@@ -420,54 +615,57 @@ export function registerBloodTestsRoutes(app: Express): void {
             medications: patientProfile.medications,
             infectionRecent: patientProfile.infectionRecent,
           };
-	          if (includeAI && !asyncAI && process.env.ANTHROPIC_API_KEY) {
-	            try {
-	              const generated = await withAIGenerationTimeout(
-	                () =>
-	                  generateAIBloodAnalysis(
+          if (includeAI && !asyncAI && hasAnthropicKey) {
+            try {
+              aiAnalysis = await withAIGenerationTimeout(
+                () =>
+                  generateAIBloodAnalysis(
                     analysisResult,
                     aiProfile,
-	                    knowledgeContext
-	                  ),
-	                "blood-tests/seed sync report"
-	              );
-	              aiAnalysis = generated;
-	              aiMeta = toAiMetaFromReport(generated);
-	            } catch (err) {
-	              syncAiNeedsBackgroundRetry = true;
-	              if (isAIGenerationTimeoutError(err)) {
-	                console.warn("[BloodTests] Seed sync AI timed out, using fallback and queuing retry.");
-	              } else {
-	                console.error("[BloodTests] AI generation failed (seed sync), using fallback and queuing retry:", err);
-	              }
-	              aiAnalysis = "";
-	              aiMeta = null;
-	            }
-	          }
-          if (!aiAnalysis) {
-            aiAnalysis = buildFallbackAnalysis(analysisResult, {
-              gender: patientProfile.gender as "homme" | "femme",
-              age,
-              sleepHours: patientProfile.sleepHours,
-              stressLevel: patientProfile.stressLevel,
-              fastingHours: patientProfile.fastingHours,
-              drawTime: patientProfile.drawTime,
-              lastTraining: patientProfile.lastTraining,
-              alcoholLast72h: patientProfile.alcoholLast72h,
-              nutritionPhase: patientProfile.nutritionPhase,
-              supplementsUsed: patientProfile.supplementsUsed,
-              medications: patientProfile.medications,
-              infectionRecent: patientProfile.infectionRecent,
-              poids: patientProfile.poids,
-              taille: patientProfile.taille,
-            });
-            aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
+                    knowledgeContext
+                  ),
+                "blood-tests/seed sync report"
+              );
+            } catch (aiError) {
+              syncAiNeedsBackgroundRetry = true;
+              aiFallbackReason = "sync_timeout_or_error";
+              if (isAIGenerationTimeoutError(aiError)) {
+                console.warn("[BloodTests] Seed sync AI timed out, queuing async retry.");
+              } else {
+                console.error("[BloodTests] Seed sync AI failed, queuing async retry:", aiError);
+              }
+              aiAnalysis = "";
+            }
           }
-          const aiNowIso = new Date().toISOString();
-          const aiFallbackReason =
-            aiMeta?.status === "fallback"
-              ? (syncAiNeedsBackgroundRetry ? "sync_timeout_or_error" : "sync_fallback")
-              : null;
+          if (!aiAnalysis) {
+            if (!includeAI || !hasAnthropicKey) {
+              aiAnalysis = buildFallbackAnalysis(analysisResult, {
+                gender: patientProfile.gender as "homme" | "femme",
+                age,
+                sleepHours: patientProfile.sleepHours,
+                stressLevel: patientProfile.stressLevel,
+                fastingHours: patientProfile.fastingHours,
+                drawTime: patientProfile.drawTime,
+                lastTraining: patientProfile.lastTraining,
+                alcoholLast72h: patientProfile.alcoholLast72h,
+                nutritionPhase: patientProfile.nutritionPhase,
+                supplementsUsed: patientProfile.supplementsUsed,
+                medications: patientProfile.medications,
+                infectionRecent: patientProfile.infectionRecent,
+                poids: patientProfile.poids,
+                taille: patientProfile.taille,
+              });
+              if (!aiFallbackReason) {
+                aiFallbackReason = includeAI ? "anthropic_key_missing" : "ai_disabled";
+              }
+            } else {
+              syncAiNeedsBackgroundRetry = true;
+              aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
+            }
+          }
+          const aiMeta = aiAnalysis
+            ? deriveAiMeta(aiAnalysis, aiFallbackReason)
+            : deriveAiProcessingMeta(aiFallbackReason);
 
           const markers = analysisResult.markers.map((marker) => {
             const range = BIOMARKER_RANGES[marker.markerId];
@@ -506,23 +704,19 @@ export function registerBloodTestsRoutes(app: Express): void {
             followUp: analysisResult.followUp,
             alerts: analysisResult.alerts,
             aiAnalysis,
-            aiStatus: aiMeta?.status || "unknown",
-            aiModel: aiMeta?.model || "unknown",
-            aiGeneratedAt: aiNowIso,
-            aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
-            aiFallbackReason,
-            ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
+            ...aiMeta,
             protocolPhases,
             lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, patientProfile),
             patient: patientProfile,
           };
+          const initialStatus = aiAnalysis ? "completed" : "processing";
 
           const createdRecord = await storage.createBloodTest({
             userId: user.id,
             fileName: file,
             fileType: "application/pdf",
             fileSize: buffer.length,
-            status: "completed",
+            status: initialStatus,
             error: null,
             markers,
             analysis: analysisPayload,
@@ -530,31 +724,59 @@ export function registerBloodTestsRoutes(app: Express): void {
             globalScore,
             globalLevel,
             createdAt: new Date(),
-            completedAt: new Date(),
+            completedAt: initialStatus === "completed" ? new Date() : undefined,
           });
 
-          if (includeAI && process.env.ANTHROPIC_API_KEY && (asyncAI || syncAiNeedsBackgroundRetry)) {
+          if (includeAI && hasAnthropicKey && (asyncAI || syncAiNeedsBackgroundRetry || !aiAnalysis)) {
             setImmediate(async () => {
               try {
-                const enriched = await runAIGenerationWithRetry(
-                  () =>
-                    generateAIBloodAnalysis(
-                      analysisResult,
-                      aiProfile,
-                      knowledgeContext
-                    ),
-                  "blood-tests/seed async report"
+                const enriched = await generateAIBloodAnalysisWithFallbackRetry(
+                  analysisResult,
+                  aiProfile,
+                  knowledgeContext
                 );
+                if (!enriched) {
+                  const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
+                    gender: patientProfile.gender as "homme" | "femme",
+                    age,
+                    sleepHours: patientProfile.sleepHours,
+                    stressLevel: patientProfile.stressLevel,
+                    fastingHours: patientProfile.fastingHours,
+                    drawTime: patientProfile.drawTime,
+                    lastTraining: patientProfile.lastTraining,
+                    alcoholLast72h: patientProfile.alcoholLast72h,
+                    nutritionPhase: patientProfile.nutritionPhase,
+                    supplementsUsed: patientProfile.supplementsUsed,
+                    medications: patientProfile.medications,
+                    infectionRecent: patientProfile.infectionRecent,
+                    poids: patientProfile.poids,
+                    taille: patientProfile.taille,
+                  });
+                  const fallbackPayload = {
+                    ...analysisPayload,
+                    aiAnalysis: fallbackAnalysis,
+                    ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_fallback"),
+                  };
+                  await storage.updateBloodTest(createdRecord.id, {
+                    analysis: fallbackPayload,
+                    status: "completed",
+                    completedAt: new Date(),
+                  });
+                  return;
+                }
                 const updatedAnalysis = {
                   ...analysisPayload,
                   aiAnalysis: enriched,
-                  aiStatus: toAiMetaFromReport(enriched).status,
-                  aiModel: toAiMetaFromReport(enriched).model,
-                  aiGeneratedAt: new Date().toISOString(),
-                  aiFallbackAt: isFallbackAnalysisText(enriched) ? new Date().toISOString() : null,
-                  aiFallbackReason: isFallbackAnalysisText(enriched) ? "async_generation_fallback" : null,
+                  ...deriveAiMeta(
+                    enriched,
+                    isFallbackAnalysisText(enriched) ? "async_generation_returned_fallback" : undefined
+                  ),
                 };
-                await storage.updateBloodTest(createdRecord.id, { analysis: updatedAnalysis });
+                await storage.updateBloodTest(createdRecord.id, {
+                  analysis: updatedAnalysis,
+                  status: "completed",
+                  completedAt: new Date(),
+                });
               } catch (err) {
                 console.error("[BloodTests] async AI seed failed:", err);
               }
@@ -630,9 +852,14 @@ export function registerBloodTestsRoutes(app: Express): void {
       const pdfText = parsed.text || "";
       const extractedMarkers = await extractMarkersFromPdfText(pdfText, req.file.originalname);
       if (!extractedMarkers.length) {
+        const likelyNonLabUploadFile = /(prd|requirements?|spec(?:s|ification)?|product|manual)/i.test(
+          req.file.originalname
+        );
         const updated = await storage.updateBloodTest(baseRecord.id, {
           status: "error",
-          error: "Aucun biomarqueur detecte dans le PDF.",
+          error: likelyNonLabUploadFile
+            ? "Document non medical detecte (PDF de spec/contenu)."
+            : "Aucun biomarqueur detecte dans le PDF.",
         });
         res.json({
           bloodTest: updated || baseRecord,
@@ -702,9 +929,10 @@ export function registerBloodTestsRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-	      let aiAnalysis = "";
-	      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
+      let aiAnalysis = "";
+      let aiFallbackReason: string | undefined;
       let syncAiNeedsBackgroundRetry = false;
+      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
       const aiProfile = {
         gender: profile.gender as "homme" | "femme",
         age,
@@ -723,38 +951,30 @@ export function registerBloodTestsRoutes(app: Express): void {
         medications: profile.medications,
         infectionRecent: profile.infectionRecent,
       };
-	      if (process.env.ANTHROPIC_API_KEY) {
-	        try {
-	          const generated = await withAIGenerationTimeout(
-	            () =>
-	              generateAIBloodAnalysis(
+      if (hasAnthropicKey) {
+        try {
+          aiAnalysis = await withAIGenerationTimeout(
+            () =>
+              generateAIBloodAnalysis(
                 analysisResult,
                 aiProfile,
-	                knowledgeContext
-	              ),
-	            "blood-tests/upload sync report"
-	          );
-	          aiAnalysis = generated;
-	          aiMeta = toAiMetaFromReport(generated);
-	        } catch (err) {
+                knowledgeContext
+              ),
+            "blood-tests/upload sync report"
+          );
+        } catch (aiError) {
           syncAiNeedsBackgroundRetry = true;
-          if (isAIGenerationTimeoutError(err)) {
-            console.warn("[BloodTests] Upload sync AI timed out, using fallback and queuing retry.");
+          aiFallbackReason = "sync_timeout_or_error";
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodTests] Upload sync AI timed out, queuing async retry.");
           } else {
-            console.error("[BloodTests] AI generation failed (upload sync), using fallback and queuing retry:", err);
+            console.error("[BloodTests] Upload sync AI failed, queuing async retry:", aiError);
           }
-	          aiAnalysis = "";
-	          aiMeta = null;
-	        }
-	      }
+          aiAnalysis = "";
+        }
+      }
       if (!aiAnalysis) {
-        if (syncAiNeedsBackgroundRetry && process.env.ANTHROPIC_API_KEY) {
-          aiMeta = {
-            status: "processing",
-            model: "claude-opus-4-6",
-            validationMissing: null,
-          };
-        } else {
+        if (!hasAnthropicKey) {
           aiAnalysis = buildFallbackAnalysis(analysisResult, {
             gender: profile.gender as "homme" | "femme",
             age,
@@ -771,15 +991,15 @@ export function registerBloodTestsRoutes(app: Express): void {
             poids: profile.poids,
             taille: profile.taille,
           });
-          aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
+          aiFallbackReason = aiFallbackReason || "anthropic_key_missing";
+        } else {
+          syncAiNeedsBackgroundRetry = true;
+          aiFallbackReason = aiFallbackReason || "sync_empty_response_or_error";
         }
       }
-      const aiNowIso = new Date().toISOString();
-      const aiFallbackReason =
-        aiMeta?.status === "fallback"
-          ? (syncAiNeedsBackgroundRetry ? "sync_timeout_or_error" : "sync_fallback")
-          : null;
-      const aiIsProcessing = aiMeta?.status === "processing";
+      const aiMeta = aiAnalysis
+        ? deriveAiMeta(aiAnalysis, aiFallbackReason)
+        : deriveAiProcessingMeta(aiFallbackReason);
 
       const markers = analysisResult.markers.map((marker) => {
         const range = BIOMARKER_RANGES[marker.markerId];
@@ -818,44 +1038,33 @@ export function registerBloodTestsRoutes(app: Express): void {
         followUp: analysisResult.followUp,
         alerts: analysisResult.alerts,
         aiAnalysis,
-        aiStatus: aiMeta?.status || "unknown",
-        aiModel: aiMeta?.model || "unknown",
-        aiGeneratedAt: aiIsProcessing ? null : aiNowIso,
-        aiFallbackAt: aiMeta?.status === "fallback" ? aiNowIso : null,
-        aiFallbackReason,
-        ...(aiMeta?.validationMissing ? { aiValidationMissing: aiMeta.validationMissing } : {}),
+        ...aiMeta,
         protocolPhases,
         lifestyleCorrelations: buildLifestyleCorrelations(analysisResult.markers, profile),
         patient: profile,
       };
+      const initialStatus = aiAnalysis ? "completed" : "processing";
 
       const updatedRecord = await storage.updateBloodTest(baseRecord.id, {
-        status: aiIsProcessing ? "processing" : "completed",
+        status: initialStatus,
         markers,
         analysis: analysisPayload,
         patientProfile: profile,
         globalScore,
         globalLevel,
-        completedAt: aiIsProcessing ? undefined : new Date(),
+        completedAt: initialStatus === "completed" ? new Date() : undefined,
       });
 
-      if (syncAiNeedsBackgroundRetry && process.env.ANTHROPIC_API_KEY) {
+      if (hasAnthropicKey && (syncAiNeedsBackgroundRetry || !aiAnalysis)) {
         setImmediate(async () => {
           try {
-            let enriched;
-            try {
-              enriched = await runAIGenerationWithRetry(
-                () =>
-                  generateAIBloodAnalysis(
-                    analysisResult,
-                    aiProfile,
-                    knowledgeContext
-                  ),
-                "blood-tests/upload async retry"
-              );
-            } catch (err) {
-              console.error("[BloodTests] Upload async AI retry failed, storing deterministic fallback:", err);
-              enriched = buildFallbackAnalysis(analysisResult, {
+            const enriched = await generateAIBloodAnalysisWithFallbackRetry(
+              analysisResult,
+              aiProfile,
+              knowledgeContext
+            );
+            if (!enriched) {
+              const fallbackAnalysis = buildFallbackAnalysis(analysisResult, {
                 gender: profile.gender as "homme" | "femme",
                 age,
                 sleepHours: profile.sleepHours,
@@ -871,24 +1080,33 @@ export function registerBloodTestsRoutes(app: Express): void {
                 poids: profile.poids,
                 taille: profile.taille,
               });
+              const fallbackPayload = {
+                ...analysisPayload,
+                aiAnalysis: fallbackAnalysis,
+                ...deriveAiMeta(fallbackAnalysis, "async_generation_failed_fallback"),
+              };
+              await storage.updateBloodTest(baseRecord.id, {
+                analysis: fallbackPayload,
+                status: "completed",
+                completedAt: new Date(),
+              });
+              return;
             }
-            const asyncNowIso = new Date().toISOString();
             const refreshedAnalysis = {
               ...analysisPayload,
               aiAnalysis: enriched,
-              aiStatus: toAiMetaFromReport(enriched).status,
-              aiModel: toAiMetaFromReport(enriched).model,
-              aiGeneratedAt: asyncNowIso,
-              aiFallbackAt: isFallbackAnalysisText(enriched) ? asyncNowIso : null,
-              aiFallbackReason: isFallbackAnalysisText(enriched) ? "async_generation_fallback" : null,
+              ...deriveAiMeta(
+                enriched,
+                isFallbackAnalysisText(enriched) ? "async_generation_returned_fallback" : undefined
+              ),
             };
             await storage.updateBloodTest(baseRecord.id, {
-              status: "completed",
               analysis: refreshedAnalysis,
+              status: "completed",
               completedAt: new Date(),
             });
           } catch (err) {
-            console.error("[BloodTests] Upload async AI retry persistence failed:", err);
+            console.error("[BloodTests] Upload async AI retry failed:", err);
           }
         });
       }
@@ -980,6 +1198,34 @@ export function registerBloodTestsRoutes(app: Express): void {
         medications: undefined,
       });
 
+      const normalizedMarkers = normalizeMarkersForResponse(
+        Array.isArray(test.markers) ? test.markers : [],
+        analysis.markers.map((marker) => ({
+          markerId: marker.markerId,
+          name: marker.name,
+          value: marker.value,
+          unit: marker.unit,
+          status: marker.status,
+          interpretation: marker.interpretation,
+        }))
+      );
+
+      const categoryScores = computeCategoryScores(
+        normalizedMarkers.map((marker) => ({
+          category: marker.category,
+          status: marker.status,
+        }))
+      );
+      const systemScores = computeSystemScores(
+        normalizedMarkers.map((marker) => ({
+          code: marker.code,
+          status: marker.status,
+        }))
+      );
+      const scoreSource = Object.keys(systemScores).length ? systemScores : categoryScores;
+      const recomputedGlobalScore = computeGlobalScore(scoreSource);
+      const recomputedGlobalLevel = getGlobalLevel(recomputedGlobalScore);
+
       const riskProfile = resolvedMarkers.length
         ? generateComprehensiveRiskProfile(resolvedMarkers, profileWithAge)
         : null;
@@ -1008,15 +1254,33 @@ export function registerBloodTestsRoutes(app: Express): void {
           uploadedAt: test.createdAt,
           status: test.status,
           error: test.error ?? null,
-          globalScore: test.globalScore ?? null,
-          globalLevel: test.globalLevel ?? null,
+          globalScore:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalScore
+              : test.globalScore ?? null,
+          globalLevel:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalLevel
+              : test.globalLevel ?? null,
           patient: test.patientProfile || (test.analysis as any)?.patient || null,
         },
-        markers: test.markers,
+        markers: normalizedMarkers,
         derivedMetrics: {},
-        patterns: (test.analysis as any)?.patterns || [],
+        patterns: analysis.patterns || [],
         analysis: {
           ...(test.analysis || {}),
+          summary: analysis.summary,
+          patterns: analysis.patterns,
+          globalScore:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalScore
+              : test.globalScore ?? null,
+          globalLevel:
+            normalizedMarkers.length > 0
+              ? recomputedGlobalLevel
+              : test.globalLevel ?? null,
+          categoryScores,
+          systemScores,
           comprehensiveData
         },
       });
