@@ -2110,6 +2110,19 @@ Contraintes de qualité:
   - "Nutrition & entrainement" et "Supplements & stack": protocoles complets et relies aux biomarqueurs.
 - Priorise toujours la précision, la clarté et l'actionnabilité.
 
+RAPPELS CRITIQUES (VERIFIER AVANT SOUMISSION)
+1. PAS DE TITRE GLOBAL - Tu commences DIRECTEMENT par "## Synthese executive"
+2. HIERARCHIE STRICTE:
+   - Les 11 Axes sont des ### (sous-sections de "## Lecture compartimentee par axes")
+   - PAS "## Axe 1", mais "### Axe 1"
+3. CITATIONS OBLIGATOIRES:
+   - Utilise le format [SRC:ID] pour CHAQUE attribution d'expert
+   - Si source fournie: [SRC:HUBERMAN_1], [SRC:ATTIA_2], etc.
+   - Si PAS de source: "selon les donnees actuelles" SANS attribution
+4. SECTION FINALE: "## Sources (bibliotheque)" (PAS "Sources scientifiques")
+   - Liste UNIQUEMENT les IDs [SRC:xxx] que tu as utilises dans le rapport
+5. RETEST: La section "### Retest & conditions de prelevement" est OBLIGATOIRE dans le Plan 90 jours
+
 Réponds uniquement avec le rapport final markdown.`;
 
 const PANEL_CITATIONS: Record<string, Array<{ title: string; url: string }>> = {
