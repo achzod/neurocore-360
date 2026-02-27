@@ -30,7 +30,7 @@ interface BloodTabsProps {
 const DEFAULT_TABS: BloodTab[] = [
   { key: "overview", label: "Vue d'ensemble", shortLabel: "Aperçu", icon: Activity },
   { key: "biomarkers", label: "Biomarqueurs", shortLabel: "Bio", icon: BarChart3 },
-  { key: "analysis", label: "Analyse IA", shortLabel: "IA", icon: Brain, premium: true },
+  { key: "analysis", label: "Analyse approfondie", shortLabel: "Analyse", icon: Brain, premium: true },
   { key: "protocols", label: "Protocoles", shortLabel: "Proto", icon: Clipboard },
   { key: "trends", label: "Évolution", shortLabel: "Trends", icon: TrendingUp, badge: "Bientôt" },
   { key: "sources", label: "Sources", shortLabel: "Refs", icon: BookOpen },
