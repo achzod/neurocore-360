@@ -161,7 +161,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         try {
           const parallelResult = await withAIGenerationTimeout(
             () => generateParallelHtmlReport(analysisResult, profile as any, knowledgeContext),
-            "blood-analysis/analyze parallel-html report"
+            "blood-analysis/analyze parallel-html report",
+            300_000 // 5min for 3 sequential batch calls
           );
           aiAnalysis = {
             report: parallelResult.markdown,
@@ -514,7 +515,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           try {
             const parallelResult = await withAIGenerationTimeout(
               () => generateParallelHtmlReport(analysisResult, profileWithAge as any, knowledgeContext),
-              "blood-analysis/submit parallel-html report"
+              "blood-analysis/submit parallel-html report",
+              300_000 // 5min for 3 sequential batch calls
             );
             aiAnalysis = parallelResult.markdown;
             aiHtmlContent = parallelResult.html;
@@ -790,7 +792,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	          if (useParallelHtml) {
 	            const parallelResult = await withAIGenerationTimeout(
 	              () => generateParallelHtmlReport(analysisResult, normalizedProfile, knowledgeContext),
-	              "blood-analysis/admin-regenerate parallel-html report"
+	              "blood-analysis/admin-regenerate parallel-html report",
+	              300_000 // 5min for 3 sequential batch calls
 	            );
 	            generated = {
 	              report: parallelResult.markdown,
