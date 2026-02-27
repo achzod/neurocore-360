@@ -440,6 +440,43 @@ export async function sendReportReadyEmail(
   }
 }
 
+export async function sendBloodReportHtmlEmail(
+  email: string,
+  htmlReport: string,
+  clientName: string
+): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: {
+          html: encodeBase64(htmlReport),
+          text: `Rapport Blood Analysis pour ${clientName} - ApexLabs by Achzod`,
+          subject: `Blood Analysis — ${clientName}`,
+          from: {
+            name: "ApexLabs by Achzod",
+            email: SENDER_EMAIL,
+          },
+          to: [{ email }],
+        },
+      }),
+    });
+
+    const result = await response.json() as { result: boolean; error?: any; message?: any };
+    console.log(`[SendPulse] Blood HTML report sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending blood HTML report:", error);
+    return false;
+  }
+}
+
 export async function sendMagicLinkEmail(
   email: string,
   token: string,
