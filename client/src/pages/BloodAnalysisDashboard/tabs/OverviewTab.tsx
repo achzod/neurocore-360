@@ -37,7 +37,7 @@ type Summary = {
 
 interface OverviewTabProps {
   globalScore: number;
-  normalizedMarkers: unknown[];
+  normalizedMarkers: Array<{ id: string; name: string; value: number; unit: string; status: string }>;
   panelGroups: PanelGroup[];
   summary: Summary;
   currentTheme: Theme;
@@ -62,11 +62,11 @@ export function OverviewTab({
     .filter((panel) => panel.markers.length > 0)
     .sort((a, b) => a.score - b.score)[0];
   const kpiCards = [
-    { label: "Biomarqueurs analysés", value: String(normalizedMarkers.length) },
+    { label: "Biomarqueurs analysés", value: String(normalizedMarkers?.length || 0) },
     { label: "Marqueurs optimaux", value: `${optimalCount}` },
     { label: "Sous surveillance", value: `${watchCount}` },
     { label: "Points en action", value: `${actionCount}` },
-    { label: "Panels couverts", value: `${panelGroups.filter((p) => p.markers.length > 0).length}/6` },
+    { label: "Panels couverts", value: `${panelGroups.filter((p) => p.markers.length > 0).length}/${panelGroups.length}` },
   ];
 
   return (
@@ -121,10 +121,10 @@ export function OverviewTab({
             size={220}
             strokeWidth={8}
             label="SCORE GLOBAL"
-            sublabel={`${normalizedMarkers.length} biomarqueurs`}
+            sublabel={`${(normalizedMarkers?.length || 0)} biomarqueurs`}
           />
           <p className="text-xs mt-4 text-caption text-center" style={{ color: currentTheme.colors.textMuted }}>
-            Synthèse issue de {normalizedMarkers.length} biomarqueurs analysés
+            Synthèse issue de {(normalizedMarkers?.length || 0)} biomarqueurs analysés
           </p>
           <p className="text-xs text-center mt-2" style={{ color: currentTheme.colors.textMuted }}>
             {bestPanel ? `Point fort: ${bestPanel.title} (${bestPanel.score}%)` : "Point fort: non disponible"}
