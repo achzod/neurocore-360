@@ -396,10 +396,15 @@ async function buildDeepDiveContext(
     const optimalMax = range?.optimalMax ?? null;
 
     const keywords = [marker.name.toLowerCase(), marker.markerId];
-    const articles = await searchArticles(keywords, 4, [
-      "huberman", "applied_metabolics", "peter_attia", "mpmd",
-      "chris_masterjohn", "examine", "marek_health", "sbs", "newsletter",
-    ]);
+    let articles: ScrapedArticle[] = [];
+    try {
+      articles = await searchArticles(keywords, 4, [
+        "huberman", "applied_metabolics", "peter_attia", "mpmd",
+        "chris_masterjohn", "examine", "marek_health", "sbs", "newsletter",
+      ]);
+    } catch (err) {
+      console.warn(`[ParallelHTML] searchArticles failed for ${marker.name}, skipping sources:`, (err as any)?.message);
+    }
     const sourceLines = articles.slice(0, 3).map(buildSourceExcerpt);
 
     sections.push(
