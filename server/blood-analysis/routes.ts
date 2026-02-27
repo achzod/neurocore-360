@@ -2943,5 +2943,195 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     }
   });
 
+  /**
+   * POST /api/admin/blood-analysis/report/:id/re-extract
+   * Re-extract markers from an uploaded PDF and update the stored blood test record.
+   * Accepts multipart/form-data with a "file" field (PDF).
+   * After re-extraction, automatically regenerates the fallback report.
+   */
+  app.post("/api/admin/blood-analysis/report/:id/re-extract", async (req, res) => {
+    try {
+      const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
+      const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
+      if (!validKey || adminKey !== validKey) {
+        res.status(401).json({ error: "Unauthorized - admin key required" });
+        return;
+      }
+
+      const targetId = req.params.id;
+
+      // Handle file upload inline (multer-style)
+      const multer = (await import("multer")).default;
+      const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+      await new Promise<void>((resolve, reject) => {
+        upload.single("file")(req as any, res as any, (err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      const file = (req as any).file;
+      if (!file || !file.buffer) {
+        res.status(400).json({ error: "PDF file required (multipart field 'file')" });
+        return;
+      }
+
+      // Parse PDF
+      const pdf = (await import("pdf-parse/lib/pdf-parse.js")).default;
+      const parsed = await pdf(file.buffer);
+      const pdfText = parsed.text || "";
+      if (!pdfText.trim()) {
+        res.status(400).json({ error: "PDF vide ou illisible" });
+        return;
+      }
+
+      // Extract markers with improved regexes
+      const newMarkers = await extractMarkersFromPdfText(pdfText, file.originalname || "bilan.pdf");
+      if (!newMarkers.length) {
+        res.status(400).json({ error: "Aucun biomarqueur detecte dans le PDF" });
+        return;
+      }
+
+      // Try blood_analysis_reports first, then blood_tests
+      let report = await storage.getBloodReport(targetId);
+      let bloodTestRow: any | null = null;
+
+      if (!report) {
+        const { db } = await import("../db.js");
+        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+        const { eq } = await import("drizzle-orm");
+        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, targetId));
+        if (results.length > 0) {
+          bloodTestRow = results[0];
+        }
+      }
+
+      if (!report && !bloodTestRow) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      // Extract patient profile from PDF
+      const pdfProfile = extractPatientInfoFromPdfText(pdfText);
+
+      // Get existing profile
+      const existingProfile =
+        report
+          ? ((report.profile || {}) as Record<string, unknown>)
+          : (bloodTestRow?.patientProfile && typeof bloodTestRow.patientProfile === "object"
+              ? (bloodTestRow.patientProfile as Record<string, unknown>)
+              : {});
+
+      // Merge profiles (existing takes priority)
+      const mergedProfile = { ...pdfProfile, ...existingProfile };
+
+      // Compute age
+      let computedAge: string | undefined;
+      if (typeof mergedProfile.dob === "string") {
+        const dobDate = new Date(mergedProfile.dob as string);
+        if (!Number.isNaN(dobDate.getTime())) {
+          const ageYears = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          computedAge = String(ageYears);
+        }
+      }
+
+      const normalizedProfile = { ...mergedProfile, age: computedAge } as any;
+
+      // Analyze with new markers
+      const analysisResult = await analyzeBloodwork(newMarkers, {
+        gender: (normalizedProfile.gender as "homme" | "femme") || "homme",
+        age: computedAge,
+        objectives: undefined,
+        medications: undefined,
+      });
+
+      // Generate fallback report
+      const aiReport = buildFallbackAnalysis(analysisResult, normalizedProfile);
+
+      const fallbackAt = new Date().toISOString();
+
+      if (report) {
+        await storage.updateBloodReport(report.id, {
+          markers: newMarkers as any,
+          analysis: {
+            ...analysisResult,
+            aiStatus: "fallback",
+            aiModel: "fallback",
+            aiGeneratedAt: fallbackAt,
+            aiFallbackAt: fallbackAt,
+            aiFallbackReason: "admin_re_extract",
+          } as any,
+          aiReport,
+        });
+        res.json({
+          success: true,
+          reportId: report.id,
+          markersCount: newMarkers.length,
+          markers: newMarkers.map((m) => m.markerId),
+          mode: "re-extract+fallback",
+        });
+        return;
+      }
+
+      // Update blood_tests row
+      const { db } = await import("../db.js");
+      const { bloodTests } = await import("../../shared/drizzle-schema.js");
+      const { eq } = await import("drizzle-orm");
+
+      const existingAnalysis =
+        bloodTestRow && typeof bloodTestRow.analysis === "object" && bloodTestRow.analysis !== null
+          ? (bloodTestRow.analysis as Record<string, unknown>)
+          : {};
+
+      const updatedAnalysis = {
+        ...existingAnalysis,
+        ...analysisResult,
+        aiAnalysis: aiReport,
+        aiReport: aiReport,
+        aiStatus: "fallback",
+        aiGeneratedAt: fallbackAt,
+        aiModel: "fallback",
+        aiFallbackAt: fallbackAt,
+        aiFallbackReason: "admin_re_extract",
+      };
+
+      await db.update(bloodTests).set({
+        markers: newMarkers,
+        analysis: updatedAnalysis,
+        globalScore: (() => {
+          const total = analysisResult.markers.length;
+          if (!total) return bloodTestRow?.globalScore;
+          const opt = analysisResult.markers.filter((m) => m.status === "optimal").length;
+          const norm = analysisResult.markers.filter((m) => m.status === "normal").length;
+          const sub = analysisResult.markers.filter((m) => m.status === "suboptimal").length;
+          const crit = analysisResult.markers.filter((m) => m.status === "critical").length;
+          return Math.round((opt * 100 + norm * 80 + sub * 55 + crit * 30) / total);
+        })(),
+        globalLevel: (() => {
+          const total = analysisResult.markers.length;
+          if (!total) return bloodTestRow?.globalLevel;
+          const opt = analysisResult.markers.filter((m) => m.status === "optimal").length;
+          const norm = analysisResult.markers.filter((m) => m.status === "normal").length;
+          const sub = analysisResult.markers.filter((m) => m.status === "suboptimal").length;
+          const crit = analysisResult.markers.filter((m) => m.status === "critical").length;
+          const score = Math.round((opt * 100 + norm * 80 + sub * 55 + crit * 30) / total);
+          return score >= 85 ? "excellent" : score >= 70 ? "bon" : score >= 50 ? "moyen" : "faible";
+        })(),
+        status: "completed",
+      }).where(eq(bloodTests.id, targetId));
+
+      res.json({
+        success: true,
+        reportId: targetId,
+        markersCount: newMarkers.length,
+        markers: newMarkers.map((m) => m.markerId),
+        mode: "re-extract+fallback",
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] re-extract error:", error);
+      res.status(500).json({ error: "Erreur re-extract" });
+    }
+  });
+
   console.log("[BloodAnalysis] Routes registered (comprehensive with recommendations engine)");
 }
