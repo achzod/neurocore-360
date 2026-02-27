@@ -3385,8 +3385,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         return res.status(400).json({ error: "email and markers required" });
       }
 
-      const knowledgeContext = await getBloodworkKnowledgeContext(markers);
       const analysisResult = await analyzeBloodwork(markers, profile);
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        analysisResult.markers,
+        analysisResult.patterns
+      );
 
       const parallelResult = await withAIGenerationTimeout(
         () => generateParallelHtmlReport(analysisResult, profile, knowledgeContext),
