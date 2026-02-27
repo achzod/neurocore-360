@@ -3126,9 +3126,9 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         markers: newMarkers.map((m) => m.markerId),
         mode: "re-extract+fallback",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[BloodAnalysis] re-extract error:", error);
-      res.status(500).json({ error: "Erreur re-extract" });
+      res.status(500).json({ error: "Erreur re-extract", detail: error?.message || String(error) });
     }
   });
 
