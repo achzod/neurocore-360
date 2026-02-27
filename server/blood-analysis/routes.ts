@@ -50,6 +50,7 @@ import { storage } from "../storage";
 import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
+import multer from "multer";
 import {
   runAIGenerationWithRetry,
   withAIGenerationTimeout,
@@ -2961,7 +2962,6 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       const targetId = req.params.id;
 
       // Handle file upload inline (multer-style)
-      const multer = (await import("multer")).default;
       const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
       await new Promise<void>((resolve, reject) => {
         upload.single("file")(req as any, res as any, (err: any) => {
@@ -2977,7 +2977,6 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       }
 
       // Parse PDF
-      const pdf = (await import("pdf-parse/lib/pdf-parse.js")).default;
       const parsed = await pdf(file.buffer);
       const pdfText = parsed.text || "";
       if (!pdfText.trim()) {
