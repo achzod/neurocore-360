@@ -51,6 +51,8 @@ import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
 import multer from "multer";
+
+const reExtractUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 import {
   runAIGenerationWithRetry,
   withAIGenerationTimeout,
@@ -2950,7 +2952,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
    * Accepts multipart/form-data with a "file" field (PDF).
    * After re-extraction, automatically regenerates the fallback report.
    */
-  app.post("/api/admin/blood-analysis/report/:id/re-extract", async (req, res) => {
+  app.post("/api/admin/blood-analysis/report/:id/re-extract", reExtractUpload.single("file"), async (req, res) => {
     try {
       const adminKey = req.headers["x-admin-key"] || req.query.key || (req.body as any)?.adminKey;
       const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY || "Badboy007";
@@ -2960,15 +2962,6 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       }
 
       const targetId = req.params.id;
-
-      // Handle file upload inline (multer-style)
-      const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
-      await new Promise<void>((resolve, reject) => {
-        upload.single("file")(req as any, res as any, (err: any) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
 
       const file = (req as any).file;
       if (!file || !file.buffer) {
