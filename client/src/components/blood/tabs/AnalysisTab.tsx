@@ -489,7 +489,7 @@ export function AnalysisTab({ aiSections }: AnalysisTabProps) {
             className="text-sm max-w-md mx-auto"
             style={{ color: theme.textSecondary }}
           >
-            Notre IA analyse vos biomarqueurs pour générer un rapport personnalisé.
+            Nous analysons vos biomarqueurs pour générer un rapport personnalisé.
             Veuillez patienter quelques instants.
           </p>
 

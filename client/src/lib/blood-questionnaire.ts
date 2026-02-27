@@ -71,7 +71,9 @@ export const BLOOD_PANELS: BloodPanel[] = [
       { id: "triglycerides", panel: "metabolic", name: "Triglycérides", unit: "mg/dL", placeholder: "Ex: 70", hint: "Optimal: <80" },
       { id: "hdl", panel: "metabolic", name: "HDL", unit: "mg/dL", placeholder: "Ex: 60", required: true, hint: "Optimal: >55" },
       { id: "ldl", panel: "metabolic", name: "LDL", unit: "mg/dL", placeholder: "Ex: 90", required: true, hint: "Optimal: 70-100" },
+      { id: "cholesterol_total", panel: "metabolic", name: "Cholestérol total", unit: "mg/dL", placeholder: "Ex: 180", hint: "Optimal: 150-200" },
       { id: "apob", panel: "metabolic", name: "ApoB", unit: "mg/dL", placeholder: "Ex: 75", hint: "Optimal: <80" },
+      { id: "apo_a1", panel: "metabolic", name: "ApoA1", unit: "mg/dL", placeholder: "Ex: 150", hint: "Optimal: 140-180" },
       { id: "lpa", panel: "metabolic", name: "Lp(a)", unit: "mg/dL", placeholder: "Ex: 10", hint: "Optimal: <14" },
     ]
   },

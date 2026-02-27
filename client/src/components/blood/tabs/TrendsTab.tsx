@@ -78,7 +78,7 @@ export function TrendsTab() {
           >
             <TrendingUp className="h-8 w-8 mb-3" style={{ color: theme.status.suboptimal }} />
             <div className="text-sm font-semibold mb-1" style={{ color: theme.textPrimary }}>
-              Prédictions IA
+              Prédictions avancées
             </div>
             <div className="text-xs" style={{ color: theme.textSecondary }}>
               Recevez des alertes si une tendance négative est détectée
