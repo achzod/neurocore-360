@@ -3386,7 +3386,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       }
 
       const knowledgeContext = await getBloodworkKnowledgeContext(markers);
-      const analysisResult = analyzeBloodwork(markers, profile);
+      const analysisResult = await analyzeBloodwork(markers, profile);
 
       const parallelResult = await withAIGenerationTimeout(
         () => generateParallelHtmlReport(analysisResult, profile, knowledgeContext),
