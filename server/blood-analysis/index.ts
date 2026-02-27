@@ -1346,12 +1346,14 @@ export async function extractMarkersFromPdfText(
     return addComputedMarkers(Array.from(unique.values()));
   }
 
-  const anthropic = new Anthropic();
-  const markerList = Object.entries(BIOMARKER_RANGES)
-    .map(([id, range]) => `${id} (${range.name}, ${range.unit})`)
-    .join(", ");
+  // AI-assisted extraction: try Anthropic, gracefully fallback to regex-only
+  try {
+    const anthropic = new Anthropic();
+    const markerList = Object.entries(BIOMARKER_RANGES)
+      .map(([id, range]) => `${id} (${range.name}, ${range.unit})`)
+      .join(", ");
 
-  const userPrompt = `Tu recois le texte extrait d'un bilan sanguin PDF (${fileName}).
+    const userPrompt = `Tu recois le texte extrait d'un bilan sanguin PDF (${fileName}).
 Ta mission: extraire les valeurs numeriques et les associer aux biomarqueurs autorises.
 
 Liste autorisee: ${markerList}
@@ -1372,31 +1374,37 @@ Conversions utiles:
 TEXTE PDF:
 ${cleaned.slice(0, 12000)}`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-opus-4-6",
-    max_tokens: 1200,
-    system: "Tu es un extracteur strict de biomarqueurs. Tu ne renvoies que du JSON valide.",
-    messages: [{ role: "user", content: userPrompt }],
-  });
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-6",
+      max_tokens: 1200,
+      system: "Tu es un extracteur strict de biomarqueurs. Tu ne renvoies que du JSON valide.",
+      messages: [{ role: "user", content: userPrompt }],
+    });
 
-  const textContent = response.content.find((c) => c.type === "text");
-  const extracted = extractJsonArray(textContent?.text || "")
-    .map((item) => ({
-      markerId: String((item as any).markerId || "").trim(),
-      value: normalizeMarkerValue(
-        String((item as any).markerId || "").trim(),
-        Number((item as any).value)
-      ),
-    }))
-    .filter((item) => item.markerId && !Number.isNaN(item.value))
-    .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
-    .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
+    const textContent = response.content.find((c) => c.type === "text");
+    const extracted = extractJsonArray(textContent?.text || "")
+      .map((item) => ({
+        markerId: String((item as any).markerId || "").trim(),
+        value: normalizeMarkerValue(
+          String((item as any).markerId || "").trim(),
+          Number((item as any).value)
+        ),
+      }))
+      .filter((item) => item.markerId && !Number.isNaN(item.value))
+      .filter((item) => Boolean(BIOMARKER_RANGES[item.markerId]))
+      .filter((item) => isPlausibleMarkerValue(item.markerId, item.value));
 
-  for (const item of extracted) {
-    if (!hasMarkerValueInText(cleaned, item.markerId)) continue;
-    if (!unique.has(item.markerId)) {
-      unique.set(item.markerId, item);
+    for (const item of extracted) {
+      if (!hasMarkerValueInText(cleaned, item.markerId)) continue;
+      if (!unique.has(item.markerId)) {
+        unique.set(item.markerId, item);
+      }
     }
+  } catch (aiErr: any) {
+    console.warn(
+      `[BloodAnalysis] AI extraction failed, using regex-only (${unique.size} markers):`,
+      aiErr?.message || aiErr
+    );
   }
 
   return addComputedMarkers(Array.from(unique.values()));
