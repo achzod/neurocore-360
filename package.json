@@ -100,6 +100,7 @@
     "zod-validation-error": "^3.5.4"
   },
   "devDependencies": {
+    "@esbuild/linux-x64": "^0.27.3",
     "@playwright/test": "^1.58.1",
     "@replit/vite-plugin-cartographer": "^0.4.4",
     "@replit/vite-plugin-dev-banner": "^0.1.1",

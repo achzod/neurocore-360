@@ -715,7 +715,7 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
     if (sourceUnit === "mmol/L") return Math.round(value * 18);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
-    if (value < 20) return Math.round(value * 18);
+    if (value < 7) return Math.round(value * 18); // heuristic: mmol/L (normal ~4-6)
   }
 
   if (markerId === "vitamine_d") {
@@ -726,44 +726,65 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
   if (markerId === "creatinine") {
     if (sourceUnit === "µmol/L") return roundValue(value / 88.4, 2);
     if (sourceUnit === "mg/L") return roundValue(value / 10, 2);
-    if (value > 20) return roundValue(value / 88.4, 2);
+    if (value > 20) return roundValue(value / 88.4, 2); // heuristic: µmol/L
   }
 
-  if (markerId === "testosterone_total" && sourceUnit === "nmol/L") {
-    return roundValue(value * 28.84, 1);
+  if (markerId === "testosterone_total") {
+    if (sourceUnit === "nmol/L") return roundValue(value * 28.84, 1);
+    if (sourceUnit === "ng/mL") return roundValue(value * 100, 1); // ng/mL → ng/dL
+    if (value < 50) return roundValue(value * 28.84, 1); // heuristic: nmol/L
   }
-  if (markerId === "testosterone_libre" && sourceUnit === "pmol/L") {
-    return roundValue(value / 3.47, 2);
+  if (markerId === "testosterone_libre") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 3.47, 2);
+    if (value > 40) return roundValue(value / 3.47, 2); // heuristic: pmol/L
   }
-  if (markerId === "estradiol" && sourceUnit === "pmol/L") {
-    return roundValue(value / 3.67, 1);
+  if (markerId === "estradiol") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 3.67, 1);
+    if (value > 100) return roundValue(value / 3.67, 1); // heuristic: pmol/L
   }
-  if (markerId === "t4_libre" && sourceUnit === "pmol/L") {
-    return roundValue(value / 12.87, 2);
+  if (markerId === "t4_libre") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 12.87, 2);
+    if (value > 5) return roundValue(value / 12.87, 2); // heuristic: pmol/L
   }
-  if (markerId === "t3_libre" && sourceUnit === "pmol/L") {
-    return roundValue(value / 1.536, 2);
+  if (markerId === "t3_libre") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 1.536, 2);
   }
-  if (markerId === "cortisol" && sourceUnit === "nmol/L") {
-    return roundValue(value / 27.59, 2);
+  if (markerId === "cortisol") {
+    if (sourceUnit === "nmol/L") return roundValue(value / 27.59, 2);
+    if (value > 60) return roundValue(value / 27.59, 2); // heuristic: nmol/L
   }
-  if (markerId === "igf1" && sourceUnit === "nmol/L") {
-    return roundValue(value * 7.65, 1);
+  if (markerId === "igf1") {
+    if (sourceUnit === "nmol/L") return roundValue(value * 7.65, 1);
   }
-  if (markerId === "dhea_s" && sourceUnit === "µmol/L") {
-    return roundValue(value * 36.85, 1);
+  if (markerId === "dhea_s") {
+    if (sourceUnit === "µmol/L") return roundValue(value * 36.85, 1);
   }
-  if (markerId === "fer_serique" && sourceUnit === "µmol/L") {
-    return roundValue(value * 5.585, 1);
+  if (markerId === "fer_serique") {
+    if (sourceUnit === "µmol/L") return roundValue(value * 5.585, 1);
   }
-  if (markerId === "b12" && sourceUnit === "pmol/L") {
-    return roundValue(value / 0.738, 0);
+  if (markerId === "b12") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 0.738, 0);
+    if (sourceUnit === "ng/L") return roundValue(value, 0); // ng/L = pg/mL
   }
-  if (markerId === "folate" && sourceUnit === "nmol/L") {
-    return roundValue(value / 2.266, 1);
+  if (markerId === "folate") {
+    if (sourceUnit === "nmol/L") return roundValue(value / 2.266, 1);
   }
-  if (markerId === "zinc" && sourceUnit === "µmol/L") {
-    return roundValue(value * 6.538, 1);
+  if (markerId === "zinc") {
+    if (sourceUnit === "µmol/L") return roundValue(value * 6.538, 1);
+  }
+  if (markerId === "prolactine") {
+    if (sourceUnit === "mIU/L") return roundValue(value / 21.2, 1); // mIU/L → ng/mL
+  }
+  if (markerId === "insuline_jeun") {
+    if (sourceUnit === "pmol/L") return roundValue(value / 6.945, 1); // pmol/L → µIU/mL
+  }
+  if (markerId === "ferritine") {
+    // µg/L and ng/mL are equivalent (1:1) so no conversion needed
+    if (sourceUnit === "pmol/L") return roundValue(value * 0.45, 0); // pmol/L → ng/mL
+  }
+  if (markerId === "lpa") {
+    if (sourceUnit === "nmol/L") return roundValue(value * 0.4167, 0); // nmol/L → mg/dL
+    if (sourceUnit === "g/L") return Math.round(value * 100);
   }
 
   const lipidMmolToMg = 38.67;
@@ -773,64 +794,65 @@ const normalizeMarkerValue = (markerId: string, value: number, unit?: string): n
     if (sourceUnit === "mmol/L") return Math.round(value * lipidMmolToMg);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
-    if (value <= 1.9) return Math.round(value * 100);
-    if (value < 10) return Math.round(value * lipidMmolToMg);
+    // Heuristic: French labs report in g/L (0.1-3.5), EU in mmol/L (1-10)
+    if (value < 3.5) return Math.round(value * 100); // g/L → mg/dL
+    if (value < 15) return Math.round(value * lipidMmolToMg); // mmol/L → mg/dL
   }
 
   if (markerId === "triglycerides") {
     if (sourceUnit === "mmol/L") return Math.round(value * trigMmolToMg);
     if (sourceUnit === "g/L") return Math.round(value * 100);
     if (sourceUnit === "mg/L") return Math.round(value / 10);
-    if (value <= 1.9) return Math.round(value * 100);
-    if (value < 10) return Math.round(value * trigMmolToMg);
+    if (value < 4) return Math.round(value * 100); // g/L → mg/dL (normal <1.5 g/L, high ~3 g/L)
+    if (value < 15) return Math.round(value * trigMmolToMg); // mmol/L → mg/dL
   }
 
   return value;
 };
 
 const MARKER_SYNONYMS: Record<string, RegExp[]> = {
-  testosterone_total: [/^testost[ée]rone\s*$/i, /testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i, /testost[ée]rone\s*\(\d\)/i],
+  testosterone_total: [/testost[ée]rone\s*tot/i, /testost[ée]rone\s*totale/i],
   testosterone_libre: [/testost[ée]rone\s*libre/i, /free\s*testosterone/i],
   shbg: [/shbg/i, /globuline.*sex/i],
-  estradiol: [/estradiol/i, /\be2\b/i],
+  estradiol: [/estradiol/i, /\boestradiol\b/i, /\be2\b/i],
   lh: [/\blh\b/i, /luteinis/i],
   fsh: [/\bfsh\b/i, /folliculo/i],
   prolactine: [/prolactine/i],
   dhea_s: [/dhea[-\s]?s/i],
   cortisol: [/cortisol/i],
-  igf1: [/igf[-\s]?1/i],
-  tsh: [/t\.?\s*s\.?\s*h\.?/i, /thyr[eé]o?stim/i],
-  t4_libre: [/t4\s*libre/i, /ft4/i, /thyroxine\s*libre/i],
-  t3_libre: [/t3\s*libre/i, /ft3/i, /triiodothyronine\s*libre/i],
+  igf1: [/igf[-\s]?1/i, /somatom[ée]dine/i],
+  tsh: [/t\.?\s*s\.?\s*h\.?\s*(ultra|us)?/i, /thyr[eé]o?stim/i],
+  t4_libre: [/t4\s*l(ibre)?/i, /ft4/i, /thyroxine\s*libre/i],
+  t3_libre: [/t3\s*l(ibre)?/i, /ft3/i, /triiodothyronine\s*libre/i],
   t3_reverse: [/t3\s*reverse/i, /\brt3\b/i],
   anti_tpo: [/anti[-\s]?tpo/i, /anti[-\s]?thyro/i],
-  glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i, /glyc[ée]mie\s*à\s*jeun/i],
-  hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i],
-  insuline_jeun: [/insuline.*je[uû]n/i],
+  glycemie_jeun: [/glyc[ée]mie.*je[uû]n/i, /glucose.*je[uû]n/i, /glyc[ée]mie\s*[àa]\s*jeun/i, /glyc[ée]mie(?!\s*(post|oral|provoquée))/i],
+  hba1c: [/hba1c/i, /hba\s*1c/i, /h[ée]moglobine\s*gly/i, /h[ée]moglobine\s*a1c/i, /\ba1c\b/i],
+  insuline_jeun: [/insuline.*je[uû]n/i, /insulin[ée]mie(?!\s*post)/i],
   homa_ir: [/homa[-\s]?ir/i, /indice\s*de\s*homa/i],
   fructosamine: [/fructosamine/i],
   triglycerides: [/triglyc[ée]rides/i],
-  hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
-  ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /\bl\.?d\.?l\s+mesur[eé]/i],
-  apob: [/apolipoprot[ée]ine.*b/i, /apo\s*b/i],
-  lpa: [/lp\s*\(?a\)?/i, /lipoprot[ée]ine\s*\(a\)/i],
-  cholesterol_total: [/cholest[ée]rol\s*total/i],
-  apo_a1: [/apolipoprot[ée]ine.*a1/i, /apo\s*a1/i],
-  crp_us: [/crp.*(us|ultra)/i, /crp\s*hs/i, /c[-\s]?r[ée]active/i],
+  hdl: [/cholest[ée]rol\s*h\.?d\.?l/i, /hdl[-\s]?cholest[ée]rol/i, /\bh\.?d\.?l\b/i, /\bhdl[-\s]?c\b/i],
+  ldl: [/cholest[ée]rol\s*l\.?d\.?l.*mesur[eé]/i, /\bl\.?d\.?l\s+mesur[eé]/i, /calcul.*cholest[ée]rol\s*l\.?d\.?l/i, /cholest[ée]rol\s*l\.?d\.?l/i, /ldl[-\s]?cholest[ée]rol/i, /\bl\.?d\.?l\b(?![-\s]?c\b)/i],
+  apob: [/apolipoprot[ée]ine.*b/i, /apo[-\s]?b/i],
+  lpa: [/\blp\s*\(a\)/i, /\blipoprot[ée]ine\s*\(a\)/i],
+  cholesterol_total: [/cholest[ée]rol\s*total/i, /^\s*cholest[ée]rol\s*\*?\s*\.{2,}/i],
+  apo_a1: [/apolipoprot[ée]ine.*a1/i, /apo[-\s]?a1/i],
+  crp_us: [/crp.*(us|ultra|hs)/i, /c[-\s]?r[ée]active/i, /\bcrp\b/i],
   homocysteine: [/homocyst[ée]ine/i],
   ferritine: [/ferritine/i],
-  fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i],
-  transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i],
-  vitamine_d: [/vitamine\s*d\s*25\s*oh/i, /25[-\s]?oh\s*vit/i, /vitamine\s*d/i],
-  b12: [/vitamine\s*b12/i, /cobalamine/i],
-  folate: [/folate/i, /vitamine\s*b9/i],
+  fer_serique: [/fer\s*s[ée]rique/i, /sid[ée]r[ée]mie/i, /^\s*fer\s*\.{2,}/i],
+  transferrine_sat: [/saturation.*transferrine/i, /coef.*saturation/i, /\bsat\s*transferrine/i],
+  vitamine_d: [/25[-\s]?oh[-\s]?vitamine\s*d/i, /vitamine\s*d\s*25\s*oh/i, /25[-\s]?oh\s*vit/i, /vitamine\s*d[23]?\b/i, /25[-\s]?hydroxy[-\s]?vitamine/i],
+  b12: [/vitamine\s*b12/i, /cobalamine/i, /\bb12\b/i],
+  folate: [/folate/i, /vitamine\s*b9/i, /acide\s*folique/i],
   magnesium_rbc: [/magn[eé]sium.*rbc/i, /magn[eé]sium.*intra/i],
   zinc: [/\bzinc\b/i],
-  alt: [/\balt\b/i, /\balat\b/i, /\bsgpt\b/i],
-  ast: [/\bast\b/i, /\basat\b/i, /\bsgot\b/i],
-  ggt: [/\bggt\b/i, /gamma[-\s]*gt/i],
+  alt: [/\balt\b/i, /\balat\b/i, /\bsgpt\b/i, /\btgp\b/i, /alanine\s*amino[-\s]?transf[ée]rase/i],
+  ast: [/\bast\b/i, /\basat\b/i, /\bsgot\b/i, /\btgo\b/i, /aspartate\s*amino[-\s]?transf[ée]rase/i],
+  ggt: [/\bggt\b/i, /gamma[-\s]*gt/i, /gamma[-\s]*glutamyl/i, /[γy][-\s]*gt/i],
   creatinine: [/cr[ée]atinine/i],
-  egfr: [/\begfr\b/i, /d[ée]bit.*filtration/i, /d\.?\s*f\.?\s*g\.?/i],
+  egfr: [/\begfr\b/i, /d[ée]bit.*filtration/i, /d\.?\s*f\.?\s*g\.?/i, /\bgfr\b/i],
 };
 
 const extractFirstNumber = (line: string): number | null => {
@@ -964,8 +986,8 @@ const extractNumberFromSnippet = (snippet: string): number | null => {
 };
 
 const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
-  egfr: { min: 30, max: 200 },
-  crp_us: { min: 0, max: 50 },
+  egfr: { min: 10, max: 200 },
+  crp_us: { min: 0, max: 100 },
   homocysteine: { min: 2, max: 60 },
   apob: { min: 30, max: 300 },
   lpa: { min: 0, max: 300 },
@@ -985,43 +1007,43 @@ const PLAUSIBLE_BOUNDS: Record<string, { min?: number; max?: number }> = {
 };
 
 const MARKER_VALIDATION_RANGES: Record<string, { min: number; max: number }> = {
-  testosterone_libre: { min: 2.5, max: 35 },
-  testosterone_total: { min: 150, max: 1500 },
-  estradiol: { min: 5, max: 80 },
-  lh: { min: 0.5, max: 12 },
-  fsh: { min: 0.5, max: 15 },
-  prolactine: { min: 2, max: 30 },
-  dhea_s: { min: 40, max: 700 },
+  testosterone_libre: { min: 1.5, max: 40 },
+  testosterone_total: { min: 100, max: 1500 },
+  estradiol: { min: 3, max: 100 },
+  lh: { min: 0.2, max: 20 },
+  fsh: { min: 0.2, max: 20 },
+  prolactine: { min: 1, max: 50 },
+  dhea_s: { min: 20, max: 800 },
   cortisol: { min: 1, max: 50 },
-  igf1: { min: 60, max: 450 },
-  tsh: { min: 0.2, max: 6 },
-  t4_libre: { min: 0.5, max: 2.5 },
-  t3_libre: { min: 2, max: 6 },
+  igf1: { min: 40, max: 500 },
+  tsh: { min: 0.1, max: 10 },
+  t4_libre: { min: 0.4, max: 3 },
+  t3_libre: { min: 1.5, max: 7 },
   t3_reverse: { min: 0, max: 50 },
-  glycemie_jeun: { min: 50, max: 200 },
-  hba1c: { min: 3.5, max: 10 },
-  insuline_jeun: { min: 1, max: 50 },
-  homa_ir: { min: 0.1, max: 10 },
-  triglycerides: { min: 20, max: 1000 },
-  hdl: { min: 10, max: 150 },
-  ldl: { min: 30, max: 250 },
-  apob: { min: 40, max: 200 },
-  lpa: { min: 0, max: 300 },
-  crp_us: { min: 0, max: 30 },
-  homocysteine: { min: 3, max: 40 },
-  ferritine: { min: 5, max: 500 },
-  fer_serique: { min: 20, max: 250 },
-  transferrine_sat: { min: 5, max: 80 },
-  vitamine_d: { min: 5, max: 150 },
-  b12: { min: 150, max: 2000 },
-  folate: { min: 2, max: 30 },
-  magnesium_rbc: { min: 3, max: 8 },
-  zinc: { min: 40, max: 200 },
-  alt: { min: 5, max: 200 },
-  ast: { min: 5, max: 200 },
-  ggt: { min: 5, max: 300 },
-  creatinine: { min: 0.3, max: 3 },
-  egfr: { min: 15, max: 200 },
+  glycemie_jeun: { min: 40, max: 300 },
+  hba1c: { min: 3, max: 14 },
+  insuline_jeun: { min: 0.5, max: 80 },
+  homa_ir: { min: 0.1, max: 15 },
+  triglycerides: { min: 15, max: 1500 },
+  hdl: { min: 8, max: 150 },
+  ldl: { min: 20, max: 300 },
+  apob: { min: 30, max: 250 },
+  lpa: { min: 0, max: 400 },
+  crp_us: { min: 0, max: 80 },
+  homocysteine: { min: 2, max: 50 },
+  ferritine: { min: 3, max: 1000 },
+  fer_serique: { min: 10, max: 300 },
+  transferrine_sat: { min: 3, max: 90 },
+  vitamine_d: { min: 3, max: 150 },
+  b12: { min: 80, max: 2500 },
+  folate: { min: 1, max: 40 },
+  magnesium_rbc: { min: 2, max: 10 },
+  zinc: { min: 30, max: 250 },
+  alt: { min: 3, max: 500 },
+  ast: { min: 3, max: 500 },
+  ggt: { min: 3, max: 500 },
+  creatinine: { min: 0.2, max: 5 },
+  egfr: { min: 10, max: 200 },
 };
 
 const isPlausibleMarkerValue = (markerId: string, value: number): boolean => {
