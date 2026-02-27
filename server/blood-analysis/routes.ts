@@ -58,6 +58,7 @@ import {
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
 } from "./ai-timeout";
+import { generateParallelHtmlReport } from "./parallel-html-generator";
 
 // Prevent duplicate background generation per instance.
 const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
@@ -153,46 +154,77 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      let aiAnalysis: { report: string; status: "generated" | "fallback"; model: string; validationMissing: string[] };
-      try {
-        const aiResult = await withAIGenerationTimeout(
-          () =>
-            generateAIBloodAnalysis(
-              analysisResult,
-              profile,
-              knowledgeContext
-            ),
-          "blood-analysis/analyze sync report"
-        );
-        // generateAIBloodAnalysis returns a string directly, wrap it in object
-        aiAnalysis = {
-          report: aiResult,
-          status: "generated" as const,
-          model: "claude",
-          validationMissing: [],
-        };
-      } catch (aiError) {
-        if (isAIGenerationTimeoutError(aiError)) {
-          console.warn("[BloodAnalysis] Analyze AI timed out, returning fallback.");
-        } else {
-          console.error("[BloodAnalysis] Analyze AI failed, returning fallback:", aiError);
+      const useParallelHtml = process.env.BLOOD_ANALYSIS_PARALLEL_HTML !== "false";
+      let aiAnalysis: { report: string; html?: string; status: "generated" | "fallback"; model: string; validationMissing: string[] };
+
+      if (useParallelHtml) {
+        try {
+          const parallelResult = await withAIGenerationTimeout(
+            () => generateParallelHtmlReport(analysisResult, profile as any, knowledgeContext),
+            "blood-analysis/analyze parallel-html report"
+          );
+          aiAnalysis = {
+            report: parallelResult.markdown,
+            html: parallelResult.html,
+            status: "generated" as const,
+            model: "claude-parallel",
+            validationMissing: [],
+          };
+        } catch (aiError) {
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodAnalysis] Parallel HTML timed out, returning fallback.");
+          } else {
+            console.error("[BloodAnalysis] Parallel HTML failed, returning fallback:", aiError);
+          }
+          aiAnalysis = {
+            report: buildFallbackAnalysis(analysisResult, profile as any),
+            status: "fallback" as const,
+            model: "fallback",
+            validationMissing: [] as string[],
+          };
         }
-        aiAnalysis = {
-          report: buildFallbackAnalysis(analysisResult, profile as any),
-          status: "fallback" as const,
-          model: "fallback",
-          validationMissing: [] as string[],
-        };
+      } else {
+        try {
+          const aiResult = await withAIGenerationTimeout(
+            () =>
+              generateAIBloodAnalysis(
+                analysisResult,
+                profile,
+                knowledgeContext
+              ),
+            "blood-analysis/analyze sync report"
+          );
+          aiAnalysis = {
+            report: aiResult,
+            status: "generated" as const,
+            model: "claude",
+            validationMissing: [],
+          };
+        } catch (aiError) {
+          if (isAIGenerationTimeoutError(aiError)) {
+            console.warn("[BloodAnalysis] Analyze AI timed out, returning fallback.");
+          } else {
+            console.error("[BloodAnalysis] Analyze AI failed, returning fallback:", aiError);
+          }
+          aiAnalysis = {
+            report: buildFallbackAnalysis(analysisResult, profile as any),
+            status: "fallback" as const,
+            model: "fallback",
+            validationMissing: [] as string[],
+          };
+        }
       }
 
       res.json({
         success: true,
         analysis: analysisResult,
         aiReport: aiAnalysis.report,
+        aiHtml: aiAnalysis.html || null,
         aiMeta: {
           status: aiAnalysis.status,
           model: aiAnalysis.model,
           validationMissing: aiAnalysis.validationMissing || null,
+          format: aiAnalysis.html ? "html" : "markdown",
         },
         sourcesUsed: knowledgeContext ? true : false
       });
@@ -472,36 +504,63 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         ...profile,
         age: computedAge,
       };
+      const useParallelHtml = process.env.BLOOD_ANALYSIS_PARALLEL_HTML !== "false";
       let aiAnalysis = "";
-      let aiMeta: { status: string; model: string; validationMissing: string[] | null } | null = null;
+      let aiHtmlContent = "";
+      let aiMeta: { status: string; model: string; validationMissing: string[] | null; format?: string } | null = null;
       let syncAiNeedsBackgroundRetry = false;
       if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
-        try {
-          const aiResult = await withAIGenerationTimeout(
-            () =>
-              generateAIBloodAnalysis(
-                analysisResult,
-                profileWithAge as any,
-                knowledgeContext
-              ),
-            "blood-analysis/submit sync report"
-          );
-          // generateAIBloodAnalysis returns a string directly
-          aiAnalysis = aiResult;
-          aiMeta = {
-            status: "generated",
-            model: "claude",
-            validationMissing: null,
-          };
-        } catch (aiError) {
-          syncAiNeedsBackgroundRetry = true;
-          if (isAIGenerationTimeoutError(aiError)) {
-            console.warn("[BloodAnalysis] Submit sync AI timed out, keeping processing state and queuing retry.");
-          } else {
-            console.error("[BloodAnalysis] Submit sync AI failed, keeping processing state and queuing retry:", aiError);
+        if (useParallelHtml) {
+          try {
+            const parallelResult = await withAIGenerationTimeout(
+              () => generateParallelHtmlReport(analysisResult, profileWithAge as any, knowledgeContext),
+              "blood-analysis/submit parallel-html report"
+            );
+            aiAnalysis = parallelResult.markdown;
+            aiHtmlContent = parallelResult.html;
+            aiMeta = {
+              status: "generated",
+              model: "claude-parallel",
+              validationMissing: null,
+              format: "html",
+            };
+          } catch (aiError) {
+            syncAiNeedsBackgroundRetry = true;
+            if (isAIGenerationTimeoutError(aiError)) {
+              console.warn("[BloodAnalysis] Submit parallel HTML timed out, keeping processing state and queuing retry.");
+            } else {
+              console.error("[BloodAnalysis] Submit parallel HTML failed, keeping processing state and queuing retry:", aiError);
+            }
+            aiAnalysis = "";
+            aiMeta = { status: "processing", model: "claude-parallel", validationMissing: null };
           }
-          aiAnalysis = "";
-          aiMeta = { status: "processing", model: "claude-opus-4-6", validationMissing: null };
+        } else {
+          try {
+            const aiResult = await withAIGenerationTimeout(
+              () =>
+                generateAIBloodAnalysis(
+                  analysisResult,
+                  profileWithAge as any,
+                  knowledgeContext
+                ),
+              "blood-analysis/submit sync report"
+            );
+            aiAnalysis = aiResult;
+            aiMeta = {
+              status: "generated",
+              model: "claude",
+              validationMissing: null,
+            };
+          } catch (aiError) {
+            syncAiNeedsBackgroundRetry = true;
+            if (isAIGenerationTimeoutError(aiError)) {
+              console.warn("[BloodAnalysis] Submit sync AI timed out, keeping processing state and queuing retry.");
+            } else {
+              console.error("[BloodAnalysis] Submit sync AI failed, keeping processing state and queuing retry:", aiError);
+            }
+            aiAnalysis = "";
+            aiMeta = { status: "processing", model: "claude-opus-4-6", validationMissing: null };
+          }
         }
       } else if (shouldIncludeAI && !process.env.ANTHROPIC_API_KEY) {
         aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
@@ -528,6 +587,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 aiStatus: shouldAsyncAI ? "processing" : (aiMeta?.status || "unknown"),
                 aiModel: shouldAsyncAI ? "claude-opus-4-6" : (aiMeta?.model || "unknown"),
                 aiValidationMissing: shouldAsyncAI ? null : (aiMeta?.validationMissing || null),
+                aiFormat: aiHtmlContent ? "html" : "markdown",
                 ...(shouldAsyncAI
                   ? {}
                   : {
@@ -539,35 +599,53 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             : {}),
         } as any,
         aiReport: aiAnalysis,
-      });
+        aiHtml: aiHtmlContent || undefined,
+      } as any);
 
       const shouldQueueBackgroundAI =
         shouldIncludeAI && process.env.ANTHROPIC_API_KEY && (shouldAsyncAI || syncAiNeedsBackgroundRetry);
       if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
-            // generateAIBloodAnalysis returns a string directly
-            const enrichedReport = await runAIGenerationWithRetry(
-              () =>
-                generateAIBloodAnalysis(
-                  analysisResult,
-                  profileWithAge as any,
-                  knowledgeContext
-                ),
-              "blood-analysis/submit async report"
-            );
+            let enrichedReport: string;
+            let enrichedHtml = "";
+            if (useParallelHtml) {
+              const parallelResult = await runAIGenerationWithRetry(
+                () => generateParallelHtmlReport(analysisResult, profileWithAge as any, knowledgeContext).then((r) => r.markdown),
+                "blood-analysis/submit async parallel-html report"
+              );
+              enrichedReport = parallelResult;
+              // Also generate HTML in async path
+              try {
+                const fullResult = await generateParallelHtmlReport(analysisResult, profileWithAge as any, knowledgeContext);
+                enrichedReport = fullResult.markdown;
+                enrichedHtml = fullResult.html;
+              } catch { /* use markdown-only from retry */ }
+            } else {
+              enrichedReport = await runAIGenerationWithRetry(
+                () =>
+                  generateAIBloodAnalysis(
+                    analysisResult,
+                    profileWithAge as any,
+                    knowledgeContext
+                  ),
+                "blood-analysis/submit async report"
+              );
+            }
             await storage.updateBloodReport(reportRecord.id, {
               aiReport: enrichedReport,
+              ...(enrichedHtml ? { aiHtml: enrichedHtml } : {}),
               analysis: {
                 ...analysisResult,
                 aiStatus: "generated",
-                aiModel: "claude",
+                aiModel: useParallelHtml ? "claude-parallel" : "claude",
                 aiGeneratedAt: new Date().toISOString(),
                 aiValidationMissing: null,
                 aiFallbackAt: null,
                 aiFallbackReason: null,
+                aiFormat: enrichedHtml ? "html" : "markdown",
               } as any,
-            });
+            } as any);
           } catch (err) {
             console.error("[BloodAnalysis] async AI failed:", err);
             try {
@@ -605,6 +683,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         reportId: reportRecord.id,
         analysis: analysisResult,
         aiReport: aiAnalysis,
+        aiHtml: aiHtmlContent || null,
         aiMeta,
         status:
           shouldIncludeAI &&
@@ -705,29 +784,43 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           analysisResult.patterns
         );
 
-	        let generated: { report: string; status: "generated" | "fallback"; model: string; validationMissing: string[] };
+	        const useParallelHtml = process.env.BLOOD_ANALYSIS_PARALLEL_HTML !== "false";
+	        let generated: { report: string; html?: string; status: "generated" | "fallback"; model: string; validationMissing: string[] };
 	        try {
-	          const aiResult = await withAIGenerationTimeout(
-	            () =>
-	              generateAIBloodAnalysis(
-	                analysisResult,
-	                normalizedProfile,
-	                knowledgeContext
-	              ),
-	            "blood-analysis/admin-regenerate sync report"
-	          );
-	          // generateAIBloodAnalysis returns a string directly, wrap it in object
-	          generated = {
-	            report: aiResult,
-	            status: "generated" as const,
-	            model: "claude",
-	            validationMissing: [],
-	          };
+	          if (useParallelHtml) {
+	            const parallelResult = await withAIGenerationTimeout(
+	              () => generateParallelHtmlReport(analysisResult, normalizedProfile, knowledgeContext),
+	              "blood-analysis/admin-regenerate parallel-html report"
+	            );
+	            generated = {
+	              report: parallelResult.markdown,
+	              html: parallelResult.html,
+	              status: "generated" as const,
+	              model: "claude-parallel",
+	              validationMissing: [],
+	            };
+	          } else {
+	            const aiResult = await withAIGenerationTimeout(
+	              () =>
+	                generateAIBloodAnalysis(
+	                  analysisResult,
+	                  normalizedProfile,
+	                  knowledgeContext
+	                ),
+	              "blood-analysis/admin-regenerate sync report"
+	            );
+	            generated = {
+	              report: aiResult,
+	              status: "generated" as const,
+	              model: "claude",
+	              validationMissing: [],
+	            };
+	          }
 	        } catch (aiError) {
 	          if (isAIGenerationTimeoutError(aiError)) {
-	            console.warn("[BloodAnalysis] Admin regenerate sync AI timed out, storing fallback.");
+	            console.warn("[BloodAnalysis] Admin regenerate timed out, storing fallback.");
 	          } else {
-	            console.error("[BloodAnalysis] Admin regenerate sync AI failed, storing fallback:", aiError);
+	            console.error("[BloodAnalysis] Admin regenerate failed, storing fallback:", aiError);
 	          }
 	          generated = {
 	            report: buildFallbackAnalysis(analysisResult, normalizedProfile),
@@ -757,9 +850,11 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	              aiModel: generated.model,
 	              aiGeneratedAt: new Date().toISOString(),
 	              aiValidationMissing: generated.validationMissing || null,
+	              aiFormat: generated.html ? "html" : "markdown",
 	            } as any,
 	            aiReport,
-	          });
+	            ...(generated.html ? { aiHtml: generated.html } : {}),
+	          } as any);
 	          return;
 	        }
 
@@ -776,10 +871,12 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 	          ...existingAnalysis,
 	          aiAnalysis: aiReport,
 	          aiReport: aiReport,
+	          ...(generated.html ? { aiHtml: generated.html } : {}),
 	          aiStatus: generated.status,
 	          aiGeneratedAt: new Date().toISOString(),
 	          aiModel: generated.model,
 	          aiValidationMissing: generated.validationMissing || null,
+	          aiFormat: generated.html ? "html" : "markdown",
 	        };
 
 	        await db.update(bloodTests).set({ analysis: updatedAnalysis }).where(eq(bloodTests.id, targetId));
@@ -2006,6 +2103,136 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     } catch (error) {
       console.error("[BloodAnalysis] Report fetch error:", error);
       res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  /**
+   * GET /api/blood-analysis/report/:id/html
+   * Serve the HTML version of the blood analysis report.
+   * If aiHtml is stored, serve it directly. Otherwise, generate on the fly.
+   */
+  app.get("/api/blood-analysis/report/:id/html", async (req, res) => {
+    try {
+      const reportId = req.params.id;
+      let report: any = await storage.getBloodReport(reportId);
+      let bloodTestRow: any | null = null;
+
+      if (!report) {
+        const { db } = await import("../db.js");
+        const { bloodTests } = await import("../../shared/drizzle-schema.js");
+        const { eq } = await import("drizzle-orm");
+        const results = await db.select().from(bloodTests).where(eq(bloodTests.id, reportId));
+        if (results.length > 0) {
+          bloodTestRow = results[0];
+        }
+      }
+
+      if (!report && !bloodTestRow) {
+        res.status(404).json({ error: "Rapport introuvable" });
+        return;
+      }
+
+      // Check if we have stored HTML
+      const storedHtml = report
+        ? (report as any).aiHtml
+        : (bloodTestRow?.analysis as any)?.aiHtml;
+
+      if (storedHtml && typeof storedHtml === "string" && storedHtml.trim().length > 100) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(storedHtml);
+        return;
+      }
+
+      // Generate HTML on the fly from stored markers
+      const profile = report
+        ? ((report.profile || {}) as Record<string, unknown>)
+        : (bloodTestRow?.patientProfile && typeof bloodTestRow.patientProfile === "object"
+            ? (bloodTestRow.patientProfile as Record<string, unknown>)
+            : {});
+
+      const rawMarkers: Array<Record<string, unknown>> = report
+        ? (((report.markers || []) as Array<Record<string, unknown>>) || [])
+        : (Array.isArray(bloodTestRow?.markers) ? (bloodTestRow.markers as Array<Record<string, unknown>>) : []);
+
+      const resolvedMarkers = rawMarkers
+        .map((m) => ({
+          markerId: normalizeMarkerName(String((m as any).markerId || (m as any).code || (m as any).name || "")),
+          value: Number((m as any).value),
+          unit: ((m as any).unit as string | undefined) || undefined,
+        }))
+        .filter((m) => m.markerId && Number.isFinite(m.value));
+
+      if (!resolvedMarkers.length) {
+        res.status(400).json({ error: "Aucun biomarqueur pour generer le rapport HTML" });
+        return;
+      }
+
+      let computedAge: string | undefined;
+      if (typeof profile.dob === "string") {
+        const dobDate = new Date(profile.dob);
+        if (!Number.isNaN(dobDate.getTime())) {
+          computedAge = String(Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)));
+        }
+      }
+
+      const analysisResult = await analyzeBloodwork(resolvedMarkers, {
+        gender: (profile.gender as "homme" | "femme") || "homme",
+        age: computedAge,
+      });
+
+      const knowledgeContext = await getBloodworkKnowledgeContext(
+        analysisResult.markers,
+        analysisResult.patterns
+      );
+
+      const parallelResult = await generateParallelHtmlReport(
+        analysisResult,
+        { ...profile, age: computedAge } as any,
+        knowledgeContext
+      );
+
+      // Store the generated HTML for next time
+      setImmediate(async () => {
+        try {
+          if (report) {
+            await storage.updateBloodReport(reportId, {
+              aiReport: parallelResult.markdown,
+              aiHtml: parallelResult.html,
+              analysis: {
+                ...(report.analysis || {}),
+                aiStatus: "generated",
+                aiModel: "claude-parallel",
+                aiGeneratedAt: new Date().toISOString(),
+                aiFormat: "html",
+              },
+            } as any);
+          } else if (bloodTestRow) {
+            const { db } = await import("../db.js");
+            const { bloodTests } = await import("../../shared/drizzle-schema.js");
+            const { eq } = await import("drizzle-orm");
+            const existing = typeof bloodTestRow.analysis === "object" ? bloodTestRow.analysis : {};
+            await db.update(bloodTests).set({
+              analysis: {
+                ...existing,
+                aiReport: parallelResult.markdown,
+                aiHtml: parallelResult.html,
+                aiStatus: "generated",
+                aiModel: "claude-parallel",
+                aiGeneratedAt: new Date().toISOString(),
+                aiFormat: "html",
+              },
+            }).where(eq(bloodTests.id, reportId));
+          }
+        } catch (err) {
+          console.error("[BloodAnalysis] Failed to persist generated HTML:", err);
+        }
+      });
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(parallelResult.html);
+    } catch (error) {
+      console.error("[BloodAnalysis] HTML report error:", error);
+      res.status(500).json({ error: "Erreur generation HTML" });
     }
   });
 
