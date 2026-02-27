@@ -3061,6 +3061,19 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           markersCount: newMarkers.length,
           markers: newMarkers.map((m) => m.markerId),
           mode: "re-extract+fallback",
+          _debug: {
+            analyzedCount: analysisResult.markers.length,
+            analyzedSample: analysisResult.markers.slice(0, 3).map((m: any) => ({
+              markerId: m.markerId,
+              name: m.name,
+              unit: m.unit,
+              status: m.status,
+              normalRange: m.normalRange,
+              optimalRange: m.optimalRange,
+            })),
+            summaryOptimal: analysisResult.summary.optimal,
+            summaryAction: analysisResult.summary.action,
+          },
         });
         return;
       }
