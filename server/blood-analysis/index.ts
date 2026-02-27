@@ -209,8 +209,8 @@ export const BIOMARKER_RANGES: Record<string, BiomarkerRange> = {
   cholesterol_total: {
     name: "Cholestérol total",
     unit: "mg/dL",
-    normalMin: 0, normalMax: 190,
-    optimalMin: 150, optimalMax: 200,
+    normalMin: 0, normalMax: 200,
+    optimalMin: 150, optimalMax: 190,
     context: "Total cholesterol"
   },
   apo_a1: {
@@ -1422,7 +1422,9 @@ function getMarkerStatus(value: number, range: BiomarkerRange): "optimal" | "nor
   }
 
   // Check if critically out of range (>20% outside normal)
-  const normalSpread = range.normalMax - range.normalMin;
+  // Cap spread to avoid sentinel values (999) inflating the threshold
+  const rawSpread = range.normalMax - range.normalMin;
+  const normalSpread = Math.min(rawSpread, range.normalMin * 2 || rawSpread);
   if (value < range.normalMin - normalSpread * 0.2 || value > range.normalMax + normalSpread * 0.2) {
     return "critical";
   }
@@ -2032,8 +2034,8 @@ export async function analyzeBloodwork(
       name: range.name,
       value: input.value,
       unit: range.unit,
-      normalRange: `${range.normalMin}-${range.normalMax}`,
-      optimalRange: `${range.optimalMin}-${range.optimalMax}`,
+      normalRange: range.normalMax >= 900 ? `>${range.normalMin}` : `${range.normalMin}-${range.normalMax}`,
+      optimalRange: range.optimalMax >= 900 ? `>${range.optimalMin}` : `${range.optimalMin}-${range.optimalMax}`,
       status,
       interpretation: range.context || ""
     };
@@ -2087,7 +2089,7 @@ export async function analyzeBloodwork(
   // Generate alerts
   const alerts: string[] = [];
   if (action.length > 0) {
-    alerts.push("Consultez un médecin pour les marqueurs critiques");
+    alerts.push("Consulte un médecin pour les marqueurs critiques");
   }
   if (patterns.some(p => p.name === "Insulin Resistance")) {
     alerts.push("Risque métabolique détecté - consultation recommandée");
@@ -2513,10 +2515,10 @@ export function buildFallbackAnalysis(
       ["testosterone_total", "testosterone_libre", "shbg", "estradiol", "lh", "fsh", "prolactine", "dhea_s", "igf1"].includes(m.markerId)
     ),
     metabolique: analysisResult.markers.filter((m) =>
-      ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "triglycerides", "acide_urique"].includes(m.markerId)
+      ["glycemie_jeun", "hba1c", "insuline_jeun", "homa_ir", "acide_urique"].includes(m.markerId)
     ),
     lipidique: analysisResult.markers.filter((m) =>
-      ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa"].includes(m.markerId)
+      ["cholesterol_total", "hdl", "ldl", "triglycerides", "apob", "lpa", "apo_a1"].includes(m.markerId)
     ),
     thyroide: analysisResult.markers.filter((m) =>
       ["tsh", "t4_libre", "t3_libre", "t3_reverse", "anti_tpo"].includes(m.markerId)
@@ -2562,6 +2564,8 @@ export function buildFallbackAnalysis(
       : null;
   const statusToPriority = (status: MarkerAnalysis["status"]) =>
     status === "critical" ? "CRITIQUE" : status === "suboptimal" ? "IMPORTANT" : status === "normal" ? "SURVEILLANCE" : "OPTIMISATION";
+  const statusFr = (status: MarkerAnalysis["status"]) =>
+    status === "critical" ? "critique" : status === "suboptimal" ? "sous-optimal" : status === "normal" ? "normal" : "optimal";
 
   const testedIds = new Set(analysisResult.markers.map((m) => m.markerId));
   const criticalMissing = ["testosterone_total", "cortisol", "tsh", "t3_libre", "vitamine_d", "hba1c", "ferritine", "crp_us"].filter(
@@ -2629,7 +2633,7 @@ export function buildFallbackAnalysis(
     const systemicSentences = topPriorityMarkers.slice(0, 6).map(
       (marker) =>
         `Ton ${marker.name} affiche un signal ${statusToPriority(marker.status).toLowerCase()} a ${marker.value} ${marker.unit || ""}, ` +
-        `avec un impact direct sur ton axe ${getMarkerPanelName(marker.markerId, marker.category).toLowerCase()}, ` +
+        `avec un impact direct sur ton ${getMarkerPanelName(marker.markerId, marker.category).toLowerCase()}, ` +
         `ta recuperation et ta progression a l'entrainement`
     );
     sections.push(systemicSentences.join(". ") + ".");
@@ -2937,7 +2941,7 @@ export function buildFallbackAnalysis(
     // Score and markers description
     sections.push(`Cet axe affiche un score de ${axisScore ?? "N/A"} sur dix chez toi.`);
     const markerDescriptions = axis.markers.map(
-      (m) => `ton ${m.name} a ${m.value} ${m.unit || ""} (range labo ${m.normalRange || "non specifie"}, range optimal ${m.optimalRange || "non specifie"}, statut ${m.status})`
+      (m) => `ton ${m.name} a ${m.value} ${m.unit || ""} (range labo ${m.normalRange || "non specifie"}, range optimal ${m.optimalRange || "non specifie"}, statut ${statusFr(m.status)})`
     );
     sections.push(`Tes marqueurs disponibles comprennent ${toProse(markerDescriptions)}.`);
     sections.push("");
@@ -2958,18 +2962,25 @@ export function buildFallbackAnalysis(
     sections.push(`Sur le plan clinique, ${clinicalReading}. ${dominantMarkerDesc}.`);
     sections.push("");
 
-    // Performance reading
-    sections.push(
-      "Du point de vue de ta performance et du bodybuilding, tant que tes marqueurs de cet axe restent hors cible, " +
-      "ta progression en force, ta composition corporelle et ta recuperation restent sous-optimales. " +
-      "L'objectif du cycle c'est de deplacer d'abord tes marqueurs critiques vers la zone normale, " +
-      "puis vers la zone optimale sur soixante a quatre-vingt-dix jours."
-    );
+    // Performance reading — only warn if axis has flagged markers
+    if (axisCritical > 0 || axisSuboptimal > 0) {
+      sections.push(
+        "Du point de vue de ta performance et du bodybuilding, tant que tes marqueurs de cet axe restent hors cible, " +
+        "ta progression en force, ta composition corporelle et ta recuperation restent sous-optimales. " +
+        "L'objectif du cycle c'est de deplacer d'abord tes marqueurs critiques vers la zone normale, " +
+        "puis vers la zone optimale sur soixante a quatre-vingt-dix jours."
+      );
+    } else {
+      sections.push(
+        "Du point de vue de ta performance et du bodybuilding, cet axe est en bon etat et ne freine pas ta progression. " +
+        "L'objectif c'est de maintenir tes habitudes actuelles et de consolider tes acquis."
+      );
+    }
     sections.push("");
 
     // Actions
     const allActions = [
-      ...axis.actions,
+      ...axis.actions.map((a) => a.replace(/\.$/, "")),
       "standardiser ton contexte de prelevement avec un prelevement matinal a jeun et au repos pour comparer des valeurs propres",
       "mettre en place un suivi hebdomadaire simple couvrant ton sommeil, ton energie, ta performance a l'entrainement et ton adherence nutritionnelle",
     ];
@@ -3013,7 +3024,7 @@ export function buildFallbackAnalysis(
       sections.push("");
 
       sections.push(
-        `Cliniquement, ta valeur est ${statusReadable} et il faut la remettre sous controle pour securiser ton axe ${axisName}. ` +
+        `Cliniquement, ta valeur est ${statusReadable} et il faut la remettre sous controle pour securiser ton ${axisName.toLowerCase()}. ` +
         `Cote performance et bodybuilding, tu as un impact probable sur ta recuperation, ton energie, ta tolerance au volume d'entrainement ` +
         `et ta progression physique tant que la correction n'est pas engagee.`
       );
@@ -3347,7 +3358,7 @@ export function buildFallbackAnalysis(
   if (priorityMarkers.length) {
     const stackByMarker = priorityMarkers.slice(0, 10).map((marker) => {
       const panel = getMarkerPanelName(marker.markerId, marker.category);
-      return `Pour ton ${marker.name} de l'axe ${panel}, on priorise les fondamentaux plus les options ciblees, ` +
+      return `Pour ton ${marker.name} (${panel.toLowerCase()}), on priorise les fondamentaux plus les options ciblees, ` +
         `puis on confirme l'efficacite au retest a soixante ou quatre-vingt-dix jours`;
     });
     sections.push(stackByMarker.join(". ") + ".");
@@ -3392,7 +3403,7 @@ export function buildFallbackAnalysis(
   sections.push("### Annexe A — Marqueurs secondaires\n");
   if (analysisResult.markers.length) {
     const markersList = analysisResult.markers.slice(0, 24).map(
-      (marker) => `ton ${marker.name} avec un statut ${marker.status} et une valeur de ${marker.value} ${marker.unit}`
+      (marker) => `ton ${marker.name} avec un statut ${statusFr(marker.status)} et une valeur de ${marker.value} ${marker.unit}`
     );
     sections.push(`Lecture rapide de tes marqueurs secondaires : ${toProse(markersList)}.`);
   } else {
@@ -3402,8 +3413,18 @@ export function buildFallbackAnalysis(
 
   sections.push("### Annexe B — Hypotheses et tests de confirmation\n");
   if (criticalMissing.length) {
+    const MISSING_HYPOTHESES: Record<string, string> = {
+      testosterone_total: "un deficit androgenique (testosterone totale basse)",
+      cortisol: "un axe HPA dysregule ou un profil de stress chronique",
+      t3_libre: "une conversion T4 vers T3 insuffisante malgre une TSH normale",
+      hba1c: "une hyperglycemie chronique masquee par une glycemie a jeun normale",
+      vitamine_d: "un deficit en vitamine D impactant immunite et axe hormonal",
+      ferritine: "un desequilibre du statut en fer (carence ou surcharge)",
+      crp_us: "un terrain inflammatoire bas bruit non detecte",
+      tsh: "une dysfonction thyroidienne subclinique",
+    };
     const hypotheses = criticalMissing.map(
-      (id) => `l'hypothese a confirmer via ${id.replace(/_/g, " ").toUpperCase()}`
+      (id) => MISSING_HYPOTHESES[id] || `un statut non evalue pour ${id.replace(/_/g, " ")}`
     );
     sections.push(`Les tests complementaires permettraient de verifier chez toi ${toProse(hypotheses)}.`);
   } else {
