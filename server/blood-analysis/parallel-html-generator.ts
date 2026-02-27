@@ -1,8 +1,13 @@
 /**
- * NEUROCORE 360 - Parallel HTML Blood Report Generator
+ * NEUROCORE 360 - Batched HTML Blood Report Generator (V2)
  *
- * Generates each report section in parallel via Promise.all(),
- * then assembles them into a styled HTML document.
+ * Architecture:
+ *   1. Build shared context (markers, patterns, lifestyle, deep dive)
+ *   2. Generate content via 3 sequential API calls (batches of related sections)
+ *      - Uses streaming, same pattern as the proven generateAIBloodAnalysis()
+ *   3. Parse sections from each response by ## headings
+ *   4. Render all sections into styled HTML template
+ *   5. Fallback: if batches fail, use generateAIBloodAnalysis() + parse + HTML
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -10,6 +15,7 @@ import { searchArticles } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import {
   BIOMARKER_RANGES,
+  generateAIBloodAnalysis,
   type BloodAnalysisResult,
   type MarkerAnalysis,
 } from "./index";
@@ -41,29 +47,8 @@ interface UserProfile {
   infectionRecent?: string;
 }
 
-interface SectionSpec {
-  key: string;
-  title: string;
-  maxTokens: number;
-  minChars: number;
-  buildPrompt: (ctx: PromptContext) => string;
-}
-
-interface PromptContext {
-  profile: UserProfile;
-  markersTable: string;
-  patternsText: string;
-  lifestyleLine: string;
-  deepDiveContext: string;
-  knowledgeContext: string;
-  focusMarkers: string;
-  markerCount: number;
-  minDeepDiveMarkers: number;
-  summaryText: string;
-}
-
 // ============================================
-// PANEL / HELPERS (duplicated minimal set to stay self-contained)
+// PANEL / HELPERS
 // ============================================
 
 const PANEL_KEYWORDS: Array<{ panel: string; markerIds: string[] }> = [
@@ -121,10 +106,47 @@ const buildSourceExcerpt = (article: ScrapedArticle) => {
 };
 
 // ============================================
-// SECTION SYSTEM PROMPT (shared for all sections)
+// SECTION DEFINITIONS & CONSTANTS
 // ============================================
 
-const SECTION_SYSTEM_PROMPT = `Tu es Achzod, coach expert bloodwork performance (sante + recomposition + longevite). Tu parles DIRECTEMENT au client en le tutoyant. C'est TOI le coach qui a analyse son bilan.
+const SECTION_ORDER = [
+  "synthese", "qualite", "tableau", "recomposition",
+  "axes", "interconnexions", "deep_dive", "plan",
+  "nutrition", "supplements", "annexes", "sources",
+] as const;
+
+const SECTION_TITLES: Record<string, string> = {
+  synthese: "Synthese executive",
+  qualite: "Qualite des donnees & limites",
+  tableau: "Tableau de bord (scores & priorites)",
+  recomposition: "Potentiel recomposition (perte de gras + gain de muscle)",
+  axes: "Lecture compartimentee par axes",
+  interconnexions: "Interconnexions majeures (le pattern)",
+  deep_dive: "Deep dive — marqueurs prioritaires",
+  plan: "Plan d'action 90 jours",
+  nutrition: "Nutrition & entrainement",
+  supplements: "Supplements & stack",
+  annexes: "Annexes (references et vigilance)",
+  sources: "Sources (bibliotheque)",
+};
+
+/** Map section heading text to section key (fuzzy) */
+const HEADING_TO_KEY: Array<{ pattern: RegExp; key: string }> = [
+  { pattern: /synth[eè]se\s+executive/i, key: "synthese" },
+  { pattern: /qualit[eé]\s+des\s+donn[eé]es/i, key: "qualite" },
+  { pattern: /tableau\s+de\s+bord/i, key: "tableau" },
+  { pattern: /potentiel\s+recomposition/i, key: "recomposition" },
+  { pattern: /lecture\s+compartiment/i, key: "axes" },
+  { pattern: /interconnexions?\s+majeure/i, key: "interconnexions" },
+  { pattern: /deep\s*dive/i, key: "deep_dive" },
+  { pattern: /plan\s+d['']?action\s+90/i, key: "plan" },
+  { pattern: /nutrition\s*[&et]+\s*entra[iî]nement/i, key: "nutrition" },
+  { pattern: /suppl[eé]ments?\s*[&et]+\s*stack/i, key: "supplements" },
+  { pattern: /annexes?\s*\(r[eé]f[eé]rences/i, key: "annexes" },
+  { pattern: /sources?\s*\(biblioth[eè]que/i, key: "sources" },
+];
+
+const SYSTEM_PROMPT = `Tu es Achzod, coach expert bloodwork performance (sante + recomposition + longevite). Tu parles DIRECTEMENT au client en le tutoyant. C'est TOI le coach qui a analyse son bilan.
 
 REGLES ABSOLUES:
 - Tu ES le coach. Premiere personne ("j'ai analyse ton bilan", "je te recommande").
@@ -137,242 +159,6 @@ REGLES ABSOLUES:
 - Interdiction absolue de listes a puces, listes numerotees, tableaux markdown.
 - Cite [SRC:ID] uniquement si l'ID existe dans le contexte fourni.
 - Ton expert, clair, concret, sans jargon inutile.`;
-
-// ============================================
-// SECTION DEFINITIONS
-// ============================================
-
-const buildSectionSpecs = (markerCount: number): SectionSpec[] => {
-  const mult = markerCount >= 22 ? 1.2 : markerCount >= 16 ? 1.08 : markerCount >= 12 ? 1.0 : markerCount >= 8 ? 0.85 : 0.72;
-  const mc = (base: number) => Math.round(base * mult);
-
-  return [
-    {
-      key: "synthese",
-      title: "Synthese executive",
-      maxTokens: 5000,
-      minChars: mc(1200),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Synthese executive".
-
-Contraintes:
-- Longueur minimale: ${mc(1200)} caracteres.
-- Inclure: triage des priorites, impact performance/recomposition, sequence logique des actions, risques a surveiller.
-- S'appuyer strictement sur les marqueurs reels et leur statut.
-- Inclure au moins 2 citations [SRC:ID] si des sources sont disponibles.
-
-Contexte:
-Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
-Lifestyle: ${ctx.lifestyleLine}
-Marqueurs: ${ctx.markersTable}
-Patterns: ${ctx.patternsText}
-Resume: ${ctx.summaryText}
-${ctx.knowledgeContext ? `\nSources disponibles:\n${ctx.knowledgeContext}` : ""}`,
-    },
-    {
-      key: "qualite",
-      title: "Qualite des donnees & limites",
-      maxTokens: 4200,
-      minChars: mc(900),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Qualite des donnees & limites".
-
-Contraintes:
-- Longueur minimale: ${mc(900)} caracteres.
-- Inclure: fiabilite du panel, limites de couverture, facteurs confondants, ce qui manque pour conclure, tests prioritaires a ajouter.
-- Quand une info manque: "Non renseigne" + impact concret.
-
-Contexte:
-Lifestyle: ${ctx.lifestyleLine}
-Marqueurs (${ctx.markerCount} au total): ${ctx.markersTable}
-Patterns: ${ctx.patternsText}`,
-    },
-    {
-      key: "tableau",
-      title: "Tableau de bord (scores & priorites)",
-      maxTokens: 4500,
-      minChars: mc(900),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Tableau de bord (scores & priorites)".
-
-Contraintes:
-- Longueur minimale: ${mc(900)} caracteres.
-- Inclure: priorites critiques/importantes, quick wins, KPI de suivi hebdo et mensuel, criteres d'escalade.
-- Lier explicitement les priorites aux biomarqueurs.
-
-Contexte:
-Marqueurs: ${ctx.markersTable}
-Patterns: ${ctx.patternsText}
-Resume: ${ctx.summaryText}`,
-    },
-    {
-      key: "recomposition",
-      title: "Potentiel recomposition (perte de gras + gain de muscle)",
-      maxTokens: 4500,
-      minChars: mc(1300),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Potentiel recomposition (perte de gras + gain de muscle)".
-
-Contraintes:
-- Longueur minimale: ${mc(1300)} caracteres.
-- Inclure: freins biologiques dominants, opportunites court terme, conditions de progression training/nutrition, indicateurs de validation.
-- Relier les conclusions aux marqueurs prioritaires.
-
-Contexte:
-Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
-Lifestyle: ${ctx.lifestyleLine}
-Marqueurs: ${ctx.markersTable}
-Patterns: ${ctx.patternsText}`,
-    },
-    {
-      key: "axes",
-      title: "Lecture compartimentee par axes",
-      maxTokens: 9000,
-      minChars: mc(6200),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Lecture compartimentee par axes".
-
-Contraintes:
-- Longueur minimale: ${mc(6200)} caracteres.
-- Couvre explicitement chaque axe disponible dans les marqueurs du bilan.
-- Pour chaque axe: sous-titre "### Nom de l'axe" puis score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
-- Utilise les vrais marqueurs et leurs valeurs. Si un axe est incomplet, ecris "Non renseigne" et les tests requis.
-
-Contexte marqueurs:
-${ctx.markersTable}
-
-Patterns:
-${ctx.patternsText}`,
-    },
-    {
-      key: "interconnexions",
-      title: "Interconnexions majeures (le pattern)",
-      maxTokens: 6000,
-      minChars: mc(1600),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Interconnexions majeures (le pattern)".
-
-Contraintes:
-- Longueur minimale: ${mc(1600)} caracteres.
-- 5 a 12 interconnexions concretes maximum.
-- Chaque interconnexion: pattern observe, hypothese mecanistique, ce qui confirmerait, action concrete.
-- Lier explicitement les marqueurs entre eux.
-- Cite [SRC:ID] si disponible.
-
-Contexte:
-Marqueurs: ${ctx.markersTable}
-Patterns: ${ctx.patternsText}
-${ctx.knowledgeContext ? `\nSources disponibles:\n${ctx.knowledgeContext}` : ""}`,
-    },
-    {
-      key: "deep_dive",
-      title: "Deep dive — marqueurs prioritaires",
-      maxTokens: 10000,
-      minChars: mc(5000),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Deep dive — marqueurs prioritaires".
-
-Contraintes:
-- Longueur minimale: ${mc(5000)} caracteres.
-- Couvrir au moins ${ctx.minDeepDiveMarkers} marqueurs prioritaires (critiques/suboptimaux d'abord).
-- Pour chaque marqueur: sous-titre "### Nom du marqueur" puis priorite, valeur et ranges, lecture clinique, lecture performance, causes plausibles, facteurs confondants, plan d'action, tests a ajouter, niveau de confiance.
-- Cite au moins 2 [SRC:ID] si disponible.
-
-Contexte:
-${ctx.markersTable}
-
-Top marqueurs focus: ${ctx.focusMarkers}
-${ctx.deepDiveContext ? `\nDonnees detaillees et sources:\n${ctx.deepDiveContext}` : ""}`,
-    },
-    {
-      key: "plan",
-      title: "Plan d'action 90 jours",
-      maxTokens: 9000,
-      minChars: mc(3500),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Plan d'action 90 jours".
-
-Contraintes:
-- Longueur minimale: ${mc(3500)} caracteres.
-- Sous-titres exacts obligatoires:
-  ### Jours 1-14 (Stabilisation)
-  ### Jours 15-30 (Phase d'Attaque)
-  ### Jours 31-60 (Consolidation)
-  ### Jours 61-90 (Optimisation)
-  ### Retest & conditions de prelevement
-- Dans chaque phase: objectifs, actions, indicateurs, erreurs a eviter.
-- Lier chaque action aux marqueurs concernes.
-
-Contexte:
-Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
-Lifestyle: ${ctx.lifestyleLine}
-Marqueurs: ${ctx.markersTable}
-Patterns: ${ctx.patternsText}`,
-    },
-    {
-      key: "nutrition",
-      title: "Nutrition & entrainement",
-      maxTokens: 8000,
-      minChars: mc(2700),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Nutrition & entrainement".
-
-Contraintes:
-- Longueur minimale: ${mc(2700)} caracteres.
-- Sous-sections: Nutrition / Entrainement.
-- Pour chaque recommandation: biomarqueur cible, rationale, implementation pratique.
-- Inclure structure hebdo, timing glucides, proteines, micronutriments, volume/intensite, cardio, NEAT, recuperation.
-- Si une donnee manque: "Non renseigne".
-
-Contexte:
-Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
-Lifestyle: ${ctx.lifestyleLine}
-Marqueurs: ${ctx.markersTable}`,
-    },
-    {
-      key: "supplements",
-      title: "Supplements & stack",
-      maxTokens: 9000,
-      minChars: mc(3200),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Supplements & stack".
-
-Contraintes:
-- Longueur minimale: ${mc(3200)} caracteres.
-- 8 a 16 options max, classees par priorite (Niveau 1/2/3).
-- Pour chaque supplement: pourquoi (marqueur/pattern vise), dose indicative, timing, duree, precautions/interactions, critere d'efficacite au retest.
-- Integrer ce qui est deja utilise par le client si l'info est disponible.
-
-Contexte:
-Supplements deja utilises: ${ctx.profile.supplementsUsed?.join(", ") || "Non renseigne"}
-${ctx.markersTable}
-Resume: ${ctx.summaryText}`,
-    },
-    {
-      key: "annexes",
-      title: "Annexes (references et vigilance)",
-      maxTokens: 5000,
-      minChars: mc(900),
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Annexes (references et vigilance)".
-
-Contraintes:
-- Longueur minimale: ${mc(900)} caracteres.
-- Inclure:
-  - Annexe A: marqueurs secondaires (statut + interpretation + action rapide)
-  - Annexe B: hypotheses ouvertes + tests de confirmation
-  - Annexe C: glossaire utile
-  - Vigilance
-
-Contexte:
-${ctx.markersTable}`,
-    },
-    {
-      key: "sources",
-      title: "Sources (bibliotheque)",
-      maxTokens: 3000,
-      minChars: 120,
-      buildPrompt: (ctx) => `Genere UNIQUEMENT la section "## Sources (bibliotheque)".
-
-Contraintes:
-- Liste uniquement les sources reellement utilisees dans le rapport.
-- Format: [SRC:ID] Titre — Auteur/Source — Resume en 1 ligne.
-- Si aucune source n'a ete citee: ecrire "Aucune source externe citee dans ce rapport."
-
-Sources disponibles:
-${ctx.knowledgeContext || "Aucune source fournie."}`,
-    },
-  ];
-};
 
 // ============================================
 // DEEP DIVE CONTEXT BUILDER
@@ -403,7 +189,7 @@ async function buildDeepDiveContext(
         "chris_masterjohn", "examine", "marek_health", "sbs", "newsletter",
       ]);
     } catch (err) {
-      console.warn(`[ParallelHTML] searchArticles failed for ${marker.name}, skipping sources:`, (err as any)?.message);
+      console.warn(`[BatchHTML] searchArticles failed for ${marker.name}, skipping sources:`, (err as any)?.message);
     }
     const sourceLines = articles.slice(0, 3).map(buildSourceExcerpt);
 
@@ -430,112 +216,276 @@ async function buildDeepDiveContext(
 }
 
 // ============================================
-// CONCURRENCY HELPERS
+// SECTION PARSER (from markdown with ## headings)
 // ============================================
 
-/** Run promises in batches of `concurrency` at a time */
-async function runWithConcurrency<T>(
-  tasks: Array<() => Promise<T>>,
-  concurrency: number,
-): Promise<PromiseSettledResult<T>[]> {
-  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
-  let index = 0;
+function parseMarkdownSections(markdown: string): Record<string, string> {
+  const result: Record<string, string> = {};
 
-  async function runNext(): Promise<void> {
-    while (index < tasks.length) {
-      const currentIndex = index++;
-      try {
-        const value = await tasks[currentIndex]();
-        results[currentIndex] = { status: "fulfilled", value };
-      } catch (reason: any) {
-        results[currentIndex] = { status: "rejected", reason };
+  // Split by ## headings
+  const parts = markdown.split(/(?=^##\s+)/m);
+
+  for (const part of parts) {
+    const headingMatch = part.match(/^##\s+(.+?)[\n\r]/);
+    if (!headingMatch) continue;
+
+    const headingText = headingMatch[1].trim();
+    const body = part.slice(headingMatch[0].length).trim();
+
+    // Match heading text to section key
+    let key: string | null = null;
+    for (const { pattern, key: k } of HEADING_TO_KEY) {
+      if (pattern.test(headingText)) {
+        key = k;
+        break;
       }
+    }
+
+    if (key && body.length > 20) {
+      result[key] = body;
     }
   }
 
-  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => runNext());
-  await Promise.all(workers);
-  return results;
-}
-
-/** Sleep helper */
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** Extract useful error details from Anthropic API errors */
-function formatApiError(err: any): string {
-  const parts: string[] = [err.message || "Unknown error"];
-  if (err.status) parts.push(`status=${err.status}`);
-  if (err.error?.type) parts.push(`type=${err.error.type}`);
-  if (err.error?.message) parts.push(`api_msg=${err.error.message}`);
-  if (err.headers?.["retry-after"]) parts.push(`retry-after=${err.headers["retry-after"]}s`);
-  if (err.headers?.["x-ratelimit-limit-requests"]) parts.push(`req_limit=${err.headers["x-ratelimit-limit-requests"]}`);
-  if (err.headers?.["x-ratelimit-remaining-requests"]) parts.push(`req_remaining=${err.headers["x-ratelimit-remaining-requests"]}`);
-  if (err.headers?.["x-ratelimit-limit-tokens"]) parts.push(`tok_limit=${err.headers["x-ratelimit-limit-tokens"]}`);
-  if (err.headers?.["x-ratelimit-remaining-tokens"]) parts.push(`tok_remaining=${err.headers["x-ratelimit-remaining-tokens"]}`);
-  return parts.join(" | ");
+  return result;
 }
 
 // ============================================
-// PARALLEL GENERATION ENGINE
+// STREAMING API CALL HELPER (matches existing working pattern)
 // ============================================
 
-const MAX_RETRIES = 3;
-const CONCURRENCY = 3; // Max 3 sections generating at once to avoid rate limits
-
-async function generateSectionContent(
+async function streamApiCall(
   anthropic: Anthropic,
-  spec: SectionSpec,
-  ctx: PromptContext,
-): Promise<{ key: string; title: string; content: string }> {
-  const prompt = spec.buildPrompt(ctx);
+  system: string,
+  userPrompt: string,
+  maxTokens: number,
+  label: string,
+): Promise<string> {
   const model = process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6";
+  console.log(`[BatchHTML] ${label}: starting stream (model=${model}, max_tokens=${maxTokens})`);
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  const stream = await anthropic.messages.create({
+    model,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: userPrompt }],
+    stream: true,
+  });
+
+  let content = "";
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+      content += event.delta.text;
+    }
+  }
+
+  const trimmed = content.trim();
+  console.log(`[BatchHTML] ${label}: completed, ${trimmed.length} chars`);
+  return trimmed;
+}
+
+// ============================================
+// BATCH GENERATION ENGINE
+// ============================================
+
+interface BatchContext {
+  profile: UserProfile;
+  markersTable: string;
+  patternsText: string;
+  lifestyleLine: string;
+  deepDiveContext: string;
+  knowledgeContext: string;
+  focusMarkers: string;
+  markerCount: number;
+  minDeepDiveMarkers: number;
+  summaryText: string;
+}
+
+function buildBatch1Prompt(ctx: BatchContext): string {
+  const mc = ctx.markerCount;
+  const minSynthese = mc >= 16 ? 1200 : 900;
+  const minQualite = mc >= 16 ? 900 : 700;
+  const minTableau = mc >= 16 ? 900 : 700;
+  const minRecomp = mc >= 16 ? 1300 : 1000;
+
+  return `Genere les 4 sections suivantes pour ce bilan sanguin. Chaque section doit commencer par son titre exact en ## (heading de niveau 2).
+
+## Synthese executive
+- Longueur minimale: ${minSynthese} caracteres.
+- Inclure: triage des priorites, impact performance/recomposition, sequence logique des actions, risques a surveiller.
+- Inclure au moins 2 citations [SRC:ID] si des sources sont disponibles.
+
+## Qualite des donnees & limites
+- Longueur minimale: ${minQualite} caracteres.
+- Inclure: fiabilite du panel, limites de couverture, facteurs confondants, ce qui manque pour conclure, tests prioritaires a ajouter.
+
+## Tableau de bord (scores & priorites)
+- Longueur minimale: ${minTableau} caracteres.
+- Inclure: priorites critiques/importantes, quick wins, KPI de suivi hebdo et mensuel, criteres d'escalade.
+
+## Potentiel recomposition (perte de gras + gain de muscle)
+- Longueur minimale: ${minRecomp} caracteres.
+- Inclure: freins biologiques dominants, opportunites court terme, conditions de progression training/nutrition, indicateurs de validation.
+
+CONTEXTE:
+Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
+Objectifs: ${ctx.profile.objectives || "Performance et sante"}
+Lifestyle: ${ctx.lifestyleLine}
+
+MARQUEURS:
+${ctx.markersTable}
+
+PATTERNS:
+${ctx.patternsText}
+
+RESUME: ${ctx.summaryText}
+${ctx.knowledgeContext ? `\nSOURCES DISPONIBLES:\n${ctx.knowledgeContext}` : ""}
+
+STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.`;
+}
+
+function buildBatch2Prompt(ctx: BatchContext): string {
+  const mc = ctx.markerCount;
+  const minAxes = mc >= 16 ? 6200 : 4700;
+  const minInterco = mc >= 16 ? 1600 : 1300;
+  const minDeepDive = mc >= 16 ? 5000 : 3800;
+
+  return `Genere les 3 sections suivantes pour ce bilan sanguin. Chaque section doit commencer par son titre exact en ## (heading de niveau 2).
+
+## Lecture compartimentee par axes
+- Longueur minimale: ${minAxes} caracteres.
+- Couvre chaque axe disponible dans les marqueurs du bilan.
+- Pour chaque axe: sous-titre "### Nom de l'axe" puis score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
+- Si un axe est incomplet: "Non renseigne" + tests requis.
+
+## Interconnexions majeures (le pattern)
+- Longueur minimale: ${minInterco} caracteres.
+- 5 a 12 interconnexions concretes.
+- Chaque interconnexion: pattern observe, hypothese mecanistique, ce qui confirmerait, action concrete.
+- Cite [SRC:ID] si disponible.
+
+## Deep dive — marqueurs prioritaires
+- Longueur minimale: ${minDeepDive} caracteres.
+- Couvrir au moins ${ctx.minDeepDiveMarkers} marqueurs prioritaires (critiques/suboptimaux d'abord).
+- Pour chaque marqueur: sous-titre "### Nom du marqueur" puis priorite, valeur et ranges, lecture clinique, lecture performance, causes plausibles, plan d'action, tests a ajouter.
+- Cite au moins 2 [SRC:ID] si disponible.
+
+CONTEXTE:
+Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
+Lifestyle: ${ctx.lifestyleLine}
+
+MARQUEURS:
+${ctx.markersTable}
+
+PATTERNS:
+${ctx.patternsText}
+
+Top marqueurs focus: ${ctx.focusMarkers}
+${ctx.deepDiveContext ? `\nDEEP DIVE - DONNEES & SOURCES:\n${ctx.deepDiveContext}` : ""}
+${ctx.knowledgeContext ? `\nSOURCES DISPONIBLES:\n${ctx.knowledgeContext}` : ""}
+
+STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.`;
+}
+
+function buildBatch3Prompt(ctx: BatchContext): string {
+  const mc = ctx.markerCount;
+  const minPlan = mc >= 16 ? 3500 : 2800;
+  const minNutrition = mc >= 16 ? 2700 : 2200;
+  const minSupplements = mc >= 16 ? 3200 : 2500;
+  const minAnnexes = mc >= 16 ? 900 : 700;
+
+  return `Genere les 5 sections suivantes pour ce bilan sanguin. Chaque section doit commencer par son titre exact en ## (heading de niveau 2).
+
+## Plan d'action 90 jours
+- Longueur minimale: ${minPlan} caracteres.
+- Sous-titres exacts obligatoires:
+  ### Jours 1-14 (Stabilisation)
+  ### Jours 15-30 (Phase d'Attaque)
+  ### Jours 31-60 (Consolidation)
+  ### Jours 61-90 (Optimisation)
+  ### Retest & conditions de prelevement
+- Dans chaque phase: objectifs, actions, indicateurs, erreurs a eviter.
+
+## Nutrition & entrainement
+- Longueur minimale: ${minNutrition} caracteres.
+- Sous-sections: Nutrition / Entrainement.
+- Pour chaque recommandation: biomarqueur cible, rationale, implementation pratique.
+
+## Supplements & stack
+- Longueur minimale: ${minSupplements} caracteres.
+- 8 a 16 options classees par priorite (Niveau 1/2/3).
+- Pour chaque supplement: pourquoi, dose, timing, duree, precautions, critere d'efficacite au retest.
+
+## Annexes (references et vigilance)
+- Longueur minimale: ${minAnnexes} caracteres.
+- Annexe A: marqueurs secondaires. Annexe B: hypotheses ouvertes. Annexe C: glossaire. Vigilance.
+
+## Sources (bibliotheque)
+- Lister uniquement les sources reellement citees [SRC:ID].
+- Si aucune source citee: "Aucune source externe citee dans ce rapport."
+
+CONTEXTE:
+Client: ${ctx.profile.prenom || "le client"} (${ctx.profile.gender} ${ctx.profile.age || ""})
+Lifestyle: ${ctx.lifestyleLine}
+Supplements deja utilises: ${ctx.profile.supplementsUsed?.join(", ") || "Non renseigne"}
+
+MARQUEURS:
+${ctx.markersTable}
+
+PATTERNS:
+${ctx.patternsText}
+
+RESUME: ${ctx.summaryText}
+${ctx.knowledgeContext ? `\nSOURCES DISPONIBLES:\n${ctx.knowledgeContext}` : ""}
+
+STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.`;
+}
+
+/**
+ * Generate report content via 3 sequential API calls.
+ * Each call generates a batch of related sections using streaming.
+ * Returns a map of { sectionKey: sectionContent }.
+ */
+async function generateBatchedContent(
+  anthropic: Anthropic,
+  ctx: BatchContext,
+): Promise<Record<string, string>> {
+  const allSections: Record<string, string> = {};
+
+  const batches = [
+    { label: "Batch 1/3 (overview)", prompt: buildBatch1Prompt(ctx), maxTokens: 16000, expectedKeys: ["synthese", "qualite", "tableau", "recomposition"] },
+    { label: "Batch 2/3 (analysis)", prompt: buildBatch2Prompt(ctx), maxTokens: 22000, expectedKeys: ["axes", "interconnexions", "deep_dive"] },
+    { label: "Batch 3/3 (action)", prompt: buildBatch3Prompt(ctx), maxTokens: 22000, expectedKeys: ["plan", "nutrition", "supplements", "annexes", "sources"] },
+  ];
+
+  for (const batch of batches) {
     try {
-      console.log(`[ParallelHTML] Section "${spec.key}" attempt ${attempt}/${MAX_RETRIES} (model=${model})`);
+      const rawContent = await streamApiCall(
+        anthropic,
+        SYSTEM_PROMPT,
+        batch.prompt,
+        batch.maxTokens,
+        batch.label,
+      );
 
-      // Use non-streaming for reliability
-      const response = await anthropic.messages.create({
-        model,
-        max_tokens: spec.maxTokens,
-        system: SECTION_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      });
+      // Parse sections from the response
+      const parsed = parseMarkdownSections(rawContent);
+      const foundKeys = Object.keys(parsed);
+      console.log(`[BatchHTML] ${batch.label}: parsed sections: [${foundKeys.join(", ")}]`);
 
-      let content = "";
-      for (const block of response.content) {
-        if (block.type === "text") {
-          content += block.text;
+      for (const key of batch.expectedKeys) {
+        if (parsed[key]) {
+          allSections[key] = parsed[key];
+        } else {
+          console.warn(`[BatchHTML] ${batch.label}: missing section "${key}"`);
         }
       }
-
-      const trimmed = content.trim();
-      console.log(`[ParallelHTML] Section "${spec.key}" generated: ${trimmed.length} chars (attempt ${attempt}, stop=${response.stop_reason}, input_tokens=${response.usage?.input_tokens}, output_tokens=${response.usage?.output_tokens})`);
-      return { key: spec.key, title: spec.title, content: trimmed };
-
     } catch (err: any) {
-      const errDetail = formatApiError(err);
-      console.error(`[ParallelHTML] Section "${spec.key}" attempt ${attempt} FAILED: ${errDetail}`);
-
-      // Check if rate limited (429) or overloaded (529) — retry with backoff
-      const status = err.status || err.statusCode || 0;
-      const isRetryable = status === 429 || status === 529 || status === 500 || status === 503;
-
-      if (isRetryable && attempt < MAX_RETRIES) {
-        const retryAfter = err.headers?.["retry-after"];
-        const backoffMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt) * 2000;
-        console.log(`[ParallelHTML] Retrying "${spec.key}" in ${backoffMs}ms...`);
-        await sleep(backoffMs);
-        continue;
-      }
-
-      // Non-retryable error or exhausted retries
-      throw err;
+      console.error(`[BatchHTML] ${batch.label} FAILED: ${err.message} (status=${err.status || "N/A"})`);
+      // Don't throw — continue with remaining batches, missing sections will use fallback
     }
   }
 
-  // Should never reach here, but TypeScript
-  throw new Error(`[ParallelHTML] Section "${spec.key}" exhausted all retries`);
+  return allSections;
 }
 
 // ============================================
@@ -572,7 +522,6 @@ function escapeHtml(text: string): string {
 
 /** Convert markdown-ish section content to basic HTML paragraphs */
 function sectionContentToHtml(content: string): string {
-  // Remove the ## heading if present at the start (we render it separately)
   let text = content.replace(/^\s*##\s+[^\n]+\n?/, "").trim();
 
   // Handle ### subheadings
@@ -591,7 +540,6 @@ function sectionContentToHtml(content: string): string {
       block = block.trim();
       if (!block) return "";
       if (block.startsWith("<h3")) return block;
-      // Preserve single newlines within paragraphs as <br>
       return `<p>${block.replace(/\n/g, "<br>")}</p>`;
     })
     .filter(Boolean)
@@ -644,15 +592,9 @@ function buildHtmlReport(
 ): string {
   const clientName = profile.prenom || "Client";
 
-  const sectionOrder = [
-    "synthese", "qualite", "tableau", "recomposition",
-    "axes", "interconnexions", "deep_dive", "plan",
-    "nutrition", "supplements", "annexes", "sources",
-  ];
-
   const sectionMap = new Map(sections.map((s) => [s.key, s]));
 
-  const sectionsHtml = sectionOrder
+  const sectionsHtml = SECTION_ORDER
     .map((key) => {
       const section = sectionMap.get(key);
       if (!section) return "";
@@ -664,7 +606,6 @@ function buildHtmlReport(
     })
     .join("\n");
 
-  // Summary stats
   const optimal = markers.filter((m) => m.status === "optimal").length;
   const normal = markers.filter((m) => m.status === "normal").length;
   const suboptimal = markers.filter((m) => m.status === "suboptimal").length;
@@ -983,7 +924,7 @@ function buildHtmlReport(
     <nav class="toc">
       <h3>Sommaire</h3>
       <ol class="toc-list">
-${sectionOrder.map((key, i) => {
+${SECTION_ORDER.map((key, i) => {
   const section = sectionMap.get(key);
   if (!section) return "";
   return `        <li><a href="#section-${key}"><span class="toc-num">${String(i + 1).padStart(2, "0")}</span>${escapeHtml(section.title)}</a></li>`;
@@ -1016,7 +957,7 @@ export async function generateParallelHtmlReport(
   const anthropic = new Anthropic();
   const markerCount = analysisResult.markers.length;
 
-  // Build markers table (shared across all prompts)
+  // Build markers table (shared context)
   const markersTable = analysisResult.markers
     .map((marker) => {
       const range = BIOMARKER_RANGES[marker.markerId];
@@ -1053,14 +994,14 @@ export async function generateParallelHtmlReport(
   const minDeepDiveMarkers = Math.max(3, Math.min(10, Math.ceil(markerCount * 0.55)));
 
   // Build deep dive context
-  console.log(`[ParallelHTML] Building deep dive context for ${markerCount} markers...`);
+  console.log(`[BatchHTML] Building deep dive context for ${markerCount} markers...`);
   const deepDivePayload = await buildDeepDiveContext(analysisResult.markers, {
     prenom: userProfile.prenom,
     nom: userProfile.nom,
     age: userProfile.age,
   });
 
-  const ctx: PromptContext = {
+  const ctx: BatchContext = {
     profile: userProfile,
     markersTable,
     patternsText,
@@ -1073,77 +1014,72 @@ export async function generateParallelHtmlReport(
     summaryText,
   };
 
-  // Build all section specs
-  const specs = buildSectionSpecs(markerCount);
-
-  // ========== PARALLEL GENERATION (with concurrency control) ==========
-  console.log(`[ParallelHTML] Launching ${specs.length} section generations (concurrency=${CONCURRENCY})...`);
   const startTime = Date.now();
+  let sectionsMap: Record<string, string> = {};
 
-  // Build task functions for the concurrency runner
-  const tasks = specs.map((spec) => () => generateSectionContent(anthropic, spec, ctx));
+  // ========== TIER 1: Batched sequential generation ==========
+  console.log(`[BatchHTML] Starting Tier 1: 3 sequential batched API calls...`);
+  try {
+    sectionsMap = await generateBatchedContent(anthropic, ctx);
+    const foundCount = Object.keys(sectionsMap).length;
+    console.log(`[BatchHTML] Tier 1 produced ${foundCount}/12 sections`);
+  } catch (err: any) {
+    console.error(`[BatchHTML] Tier 1 completely failed: ${err.message}`);
+  }
 
-  // Run with concurrency limit — max CONCURRENCY sections at a time
-  const results = await runWithConcurrency(tasks, CONCURRENCY);
+  // ========== TIER 2: Fallback to existing generateAIBloodAnalysis ==========
+  const missingSections = SECTION_ORDER.filter((k) => !sectionsMap[k]);
+  if (missingSections.length > 0) {
+    console.log(`[BatchHTML] Missing ${missingSections.length} sections: [${missingSections.join(", ")}]. Trying Tier 2 fallback...`);
+    try {
+      const fallbackMarkdown = await generateAIBloodAnalysis(analysisResult, userProfile, knowledgeContext);
+      const fallbackSections = parseMarkdownSections(fallbackMarkdown);
+      const fallbackKeys = Object.keys(fallbackSections);
+      console.log(`[BatchHTML] Tier 2 fallback parsed ${fallbackKeys.length} sections: [${fallbackKeys.join(", ")}]`);
+
+      // Fill in only the missing sections
+      for (const key of missingSections) {
+        if (fallbackSections[key]) {
+          sectionsMap[key] = fallbackSections[key];
+        }
+      }
+    } catch (err: any) {
+      console.error(`[BatchHTML] Tier 2 fallback also failed: ${err.message}`);
+    }
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`[ParallelHTML] All sections completed in ${elapsed}s`);
+  const totalSections = Object.keys(sectionsMap).length;
+  console.log(`[BatchHTML] Generation complete: ${totalSections}/12 sections in ${elapsed}s`);
 
-  // Collect results
+  // ========== ASSEMBLE SECTIONS ==========
   const generatedSections: Array<{ key: string; title: string; content: string }> = [];
-
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    const spec = specs[i];
-    if (result.status === "fulfilled") {
-      const { key, title, content } = result.value;
-      if (content.length < spec.minChars * 0.3) {
-        console.warn(`[ParallelHTML] Section "${key}" suspiciously short (${content.length}/${spec.minChars}), keeping anyway`);
-      }
-      console.log(`[ParallelHTML] Section "${key}": ${content.length} chars OK`);
-      generatedSections.push({ key, title, content });
-    } else {
-      const errDetail = formatApiError(result.reason);
-      console.error(`[ParallelHTML] Section "${spec.key}" FINAL FAILURE after all retries: ${errDetail}`);
-      // Push fallback so the report still has the heading
-      generatedSections.push({ key: spec.key, title: spec.title, content: `Section non disponible. Veuillez regenerer le rapport.` });
-    }
+  for (const key of SECTION_ORDER) {
+    const title = SECTION_TITLES[key] || key;
+    const content = sectionsMap[key] || "Section non disponible. Veuillez regenerer le rapport.";
+    generatedSections.push({ key, title, content });
   }
 
   // Build markdown for backwards compatibility
   const markdown = generatedSections
-    .sort((a, b) => {
-      const order = specs.map((s) => s.key);
-      return order.indexOf(a.key) - order.indexOf(b.key);
-    })
     .map((s) => {
-      // Ensure section starts with ## heading
       const hasHeading = s.content.match(/^\s*##\s+/);
       return hasHeading ? s.content : `## ${s.title}\n\n${s.content}`;
     })
     .join("\n\n");
-
-  // Build sections map
-  const sectionsMap: Record<string, string> = {};
-  for (const s of generatedSections) {
-    sectionsMap[s.key] = s.content;
-  }
 
   // Build HTML
   const now = new Date();
   const generatedAt = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
 
   const html = buildHtmlReport(
-    generatedSections.sort((a, b) => {
-      const order = specs.map((s) => s.key);
-      return order.indexOf(a.key) - order.indexOf(b.key);
-    }),
+    generatedSections,
     analysisResult.markers,
     userProfile,
     generatedAt,
   );
 
-  console.log(`[ParallelHTML] Final report: ${html.length} chars HTML, ${markdown.length} chars markdown, ${generatedSections.length}/${specs.length} sections`);
+  console.log(`[BatchHTML] Final: ${html.length} chars HTML, ${markdown.length} chars markdown, ${totalSections}/12 sections`);
 
   return { html, markdown, sections: sectionsMap };
 }
