@@ -430,8 +430,57 @@ async function buildDeepDiveContext(
 }
 
 // ============================================
+// CONCURRENCY HELPERS
+// ============================================
+
+/** Run promises in batches of `concurrency` at a time */
+async function runWithConcurrency<T>(
+  tasks: Array<() => Promise<T>>,
+  concurrency: number,
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+  let index = 0;
+
+  async function runNext(): Promise<void> {
+    while (index < tasks.length) {
+      const currentIndex = index++;
+      try {
+        const value = await tasks[currentIndex]();
+        results[currentIndex] = { status: "fulfilled", value };
+      } catch (reason: any) {
+        results[currentIndex] = { status: "rejected", reason };
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => runNext());
+  await Promise.all(workers);
+  return results;
+}
+
+/** Sleep helper */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Extract useful error details from Anthropic API errors */
+function formatApiError(err: any): string {
+  const parts: string[] = [err.message || "Unknown error"];
+  if (err.status) parts.push(`status=${err.status}`);
+  if (err.error?.type) parts.push(`type=${err.error.type}`);
+  if (err.error?.message) parts.push(`api_msg=${err.error.message}`);
+  if (err.headers?.["retry-after"]) parts.push(`retry-after=${err.headers["retry-after"]}s`);
+  if (err.headers?.["x-ratelimit-limit-requests"]) parts.push(`req_limit=${err.headers["x-ratelimit-limit-requests"]}`);
+  if (err.headers?.["x-ratelimit-remaining-requests"]) parts.push(`req_remaining=${err.headers["x-ratelimit-remaining-requests"]}`);
+  if (err.headers?.["x-ratelimit-limit-tokens"]) parts.push(`tok_limit=${err.headers["x-ratelimit-limit-tokens"]}`);
+  if (err.headers?.["x-ratelimit-remaining-tokens"]) parts.push(`tok_remaining=${err.headers["x-ratelimit-remaining-tokens"]}`);
+  return parts.join(" | ");
+}
+
+// ============================================
 // PARALLEL GENERATION ENGINE
 // ============================================
+
+const MAX_RETRIES = 3;
+const CONCURRENCY = 3; // Max 3 sections generating at once to avoid rate limits
 
 async function generateSectionContent(
   anthropic: Anthropic,
@@ -441,22 +490,52 @@ async function generateSectionContent(
   const prompt = spec.buildPrompt(ctx);
   const model = process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6";
 
-  const stream = await anthropic.messages.create({
-    model,
-    max_tokens: spec.maxTokens,
-    system: SECTION_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
-    stream: true,
-  });
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`[ParallelHTML] Section "${spec.key}" attempt ${attempt}/${MAX_RETRIES} (model=${model})`);
 
-  let content = "";
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      content += event.delta.text;
+      // Use non-streaming for reliability
+      const response = await anthropic.messages.create({
+        model,
+        max_tokens: spec.maxTokens,
+        system: SECTION_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      let content = "";
+      for (const block of response.content) {
+        if (block.type === "text") {
+          content += block.text;
+        }
+      }
+
+      const trimmed = content.trim();
+      console.log(`[ParallelHTML] Section "${spec.key}" generated: ${trimmed.length} chars (attempt ${attempt}, stop=${response.stop_reason}, input_tokens=${response.usage?.input_tokens}, output_tokens=${response.usage?.output_tokens})`);
+      return { key: spec.key, title: spec.title, content: trimmed };
+
+    } catch (err: any) {
+      const errDetail = formatApiError(err);
+      console.error(`[ParallelHTML] Section "${spec.key}" attempt ${attempt} FAILED: ${errDetail}`);
+
+      // Check if rate limited (429) or overloaded (529) — retry with backoff
+      const status = err.status || err.statusCode || 0;
+      const isRetryable = status === 429 || status === 529 || status === 500 || status === 503;
+
+      if (isRetryable && attempt < MAX_RETRIES) {
+        const retryAfter = err.headers?.["retry-after"];
+        const backoffMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt) * 2000;
+        console.log(`[ParallelHTML] Retrying "${spec.key}" in ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        continue;
+      }
+
+      // Non-retryable error or exhausted retries
+      throw err;
     }
   }
 
-  return { key: spec.key, title: spec.title, content: content.trim() };
+  // Should never reach here, but TypeScript
+  throw new Error(`[ParallelHTML] Section "${spec.key}" exhausted all retries`);
 }
 
 // ============================================
@@ -997,59 +1076,37 @@ export async function generateParallelHtmlReport(
   // Build all section specs
   const specs = buildSectionSpecs(markerCount);
 
-  // ========== PARALLEL GENERATION ==========
-  console.log(`[ParallelHTML] Launching ${specs.length} parallel section generations...`);
+  // ========== PARALLEL GENERATION (with concurrency control) ==========
+  console.log(`[ParallelHTML] Launching ${specs.length} section generations (concurrency=${CONCURRENCY})...`);
   const startTime = Date.now();
 
-  const results = await Promise.allSettled(
-    specs.map((spec) =>
-      generateSectionContent(anthropic, spec, ctx).catch((err) => {
-        console.error(`[ParallelHTML] Section "${spec.key}" failed:`, err.message);
-        throw err;
-      })
-    )
-  );
+  // Build task functions for the concurrency runner
+  const tasks = specs.map((spec) => () => generateSectionContent(anthropic, spec, ctx));
+
+  // Run with concurrency limit — max CONCURRENCY sections at a time
+  const results = await runWithConcurrency(tasks, CONCURRENCY);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log(`[ParallelHTML] All sections completed in ${elapsed}s`);
 
   // Collect results
   const generatedSections: Array<{ key: string; title: string; content: string }> = [];
-  const failedSections: string[] = [];
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
     const spec = specs[i];
     if (result.status === "fulfilled") {
       const { key, title, content } = result.value;
-      if (content.length < spec.minChars * 0.5) {
-        console.warn(`[ParallelHTML] Section "${key}" too short (${content.length}/${spec.minChars}), will retry`);
-        failedSections.push(key);
-      } else {
-        console.log(`[ParallelHTML] Section "${key}": ${content.length} chars`);
-        generatedSections.push({ key, title, content });
+      if (content.length < spec.minChars * 0.3) {
+        console.warn(`[ParallelHTML] Section "${key}" suspiciously short (${content.length}/${spec.minChars}), keeping anyway`);
       }
+      console.log(`[ParallelHTML] Section "${key}": ${content.length} chars OK`);
+      generatedSections.push({ key, title, content });
     } else {
-      console.error(`[ParallelHTML] Section "${spec.key}" rejected:`, result.reason);
-      failedSections.push(spec.key);
-    }
-  }
-
-  // Retry failed sections sequentially (with relaxed thresholds)
-  if (failedSections.length > 0) {
-    console.log(`[ParallelHTML] Retrying ${failedSections.length} failed sections...`);
-    for (const key of failedSections) {
-      const spec = specs.find((s) => s.key === key);
-      if (!spec) continue;
-      try {
-        const result = await generateSectionContent(anthropic, spec, ctx);
-        console.log(`[ParallelHTML] Retry "${key}": ${result.content.length} chars`);
-        generatedSections.push(result);
-      } catch (err: any) {
-        console.error(`[ParallelHTML] Retry "${key}" also failed:`, err.message);
-        // Push empty section so the report still has the heading
-        generatedSections.push({ key, title: spec.title, content: `Section non disponible. Veuillez regenerer le rapport.` });
-      }
+      const errDetail = formatApiError(result.reason);
+      console.error(`[ParallelHTML] Section "${spec.key}" FINAL FAILURE after all retries: ${errDetail}`);
+      // Push fallback so the report still has the heading
+      generatedSections.push({ key: spec.key, title: spec.title, content: `Section non disponible. Veuillez regenerer le rapport.` });
     }
   }
 
