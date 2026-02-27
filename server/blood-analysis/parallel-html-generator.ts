@@ -1,13 +1,15 @@
 /**
- * NEUROCORE 360 - Batched HTML Blood Report Generator (V2)
+ * NEUROCORE 360 - Parallel HTML Blood Report Generator (V3)
  *
  * Architecture:
  *   1. Build shared context (markers, patterns, lifestyle, deep dive)
- *   2. Generate content via 3 sequential API calls (batches of related sections)
- *      - Uses streaming, same pattern as the proven generateAIBloodAnalysis()
+ *   2. Generate content via 3 PARALLEL API calls (Promise.allSettled)
+ *      - Batch 1: synthese, qualite, tableau, recomposition
+ *      - Batch 2: axes, interconnexions, deep_dive
+ *      - Batch 3: plan, nutrition, supplements, annexes, sources
  *   3. Parse sections from each response by ## headings
  *   4. Render all sections into styled HTML template
- *   5. Fallback: if batches fail, use generateAIBloodAnalysis() + parse + HTML
+ *   Total time: ~60-90s (parallel) instead of ~180s+ (sequential)
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -15,7 +17,6 @@ import { searchArticles } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import {
   BIOMARKER_RANGES,
-  generateAIBloodAnalysis,
   type BloodAnalysisResult,
   type MarkerAnalysis,
 } from "./index";
@@ -457,8 +458,9 @@ async function generateBatchedContent(
     { label: "Batch 3/3 (action)", prompt: buildBatch3Prompt(ctx), maxTokens: 22000, expectedKeys: ["plan", "nutrition", "supplements", "annexes", "sources"] },
   ];
 
-  for (const batch of batches) {
-    try {
+  // Run all 3 batches IN PARALLEL (not sequential) — cuts time from ~180s to ~60-90s
+  const results = await Promise.allSettled(
+    batches.map(async (batch) => {
       const rawContent = await streamApiCall(
         anthropic,
         SYSTEM_PROMPT,
@@ -466,8 +468,13 @@ async function generateBatchedContent(
         batch.maxTokens,
         batch.label,
       );
+      return { batch, rawContent };
+    }),
+  );
 
-      // Parse sections from the response
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      const { batch, rawContent } = result.value;
       const parsed = parseMarkdownSections(rawContent);
       const foundKeys = Object.keys(parsed);
       console.log(`[BatchHTML] ${batch.label}: parsed sections: [${foundKeys.join(", ")}]`);
@@ -479,9 +486,8 @@ async function generateBatchedContent(
           console.warn(`[BatchHTML] ${batch.label}: missing section "${key}"`);
         }
       }
-    } catch (err: any) {
-      console.error(`[BatchHTML] ${batch.label} FAILED: ${err.message} (status=${err.status || "N/A"})`);
-      // Don't throw — continue with remaining batches, missing sections will use fallback
+    } else {
+      console.error(`[BatchHTML] Batch FAILED: ${result.reason?.message || result.reason}`);
     }
   }
 
@@ -1017,35 +1023,14 @@ export async function generateParallelHtmlReport(
   const startTime = Date.now();
   let sectionsMap: Record<string, string> = {};
 
-  // ========== TIER 1: Batched sequential generation ==========
-  console.log(`[BatchHTML] Starting Tier 1: 3 sequential batched API calls...`);
+  // ========== 3 PARALLEL batch calls ==========
+  console.log(`[BatchHTML] Starting 3 parallel batched API calls...`);
   try {
     sectionsMap = await generateBatchedContent(anthropic, ctx);
     const foundCount = Object.keys(sectionsMap).length;
-    console.log(`[BatchHTML] Tier 1 produced ${foundCount}/12 sections`);
+    console.log(`[BatchHTML] Parallel generation produced ${foundCount}/12 sections`);
   } catch (err: any) {
-    console.error(`[BatchHTML] Tier 1 completely failed: ${err.message}`);
-  }
-
-  // ========== TIER 2: Fallback to existing generateAIBloodAnalysis ==========
-  const missingSections = SECTION_ORDER.filter((k) => !sectionsMap[k]);
-  if (missingSections.length > 0) {
-    console.log(`[BatchHTML] Missing ${missingSections.length} sections: [${missingSections.join(", ")}]. Trying Tier 2 fallback...`);
-    try {
-      const fallbackMarkdown = await generateAIBloodAnalysis(analysisResult, userProfile, knowledgeContext);
-      const fallbackSections = parseMarkdownSections(fallbackMarkdown);
-      const fallbackKeys = Object.keys(fallbackSections);
-      console.log(`[BatchHTML] Tier 2 fallback parsed ${fallbackKeys.length} sections: [${fallbackKeys.join(", ")}]`);
-
-      // Fill in only the missing sections
-      for (const key of missingSections) {
-        if (fallbackSections[key]) {
-          sectionsMap[key] = fallbackSections[key];
-        }
-      }
-    } catch (err: any) {
-      console.error(`[BatchHTML] Tier 2 fallback also failed: ${err.message}`);
-    }
+    console.error(`[BatchHTML] Generation failed: ${err.message}`);
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
