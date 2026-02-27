@@ -47,7 +47,7 @@ import {
   searchKnowledgeForRisk
 } from "./recommendations-engine";
 import { storage } from "../storage";
-import { sendAdminEmailNewAudit, sendReportReadyEmail } from "../emailService";
+import { sendAdminEmailNewAudit, sendReportReadyEmail, sendBloodReportHtmlEmail } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
 import multer from "multer";
@@ -3366,6 +3366,47 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     } catch (error: any) {
       console.error("[BloodAnalysis] re-extract error:", error);
       res.status(500).json({ error: "Erreur re-extract", detail: error?.message || String(error) });
+    }
+  });
+
+  /**
+   * POST /api/blood-analysis/send-report-email
+   * Generate HTML report and send it to the specified email
+   */
+  app.post("/api/blood-analysis/send-report-email", async (req, res) => {
+    try {
+      const { markers, profile, email } = req.body as {
+        markers: BloodMarkerInput[];
+        profile: any;
+        email: string;
+      };
+
+      if (!email || !markers?.length) {
+        return res.status(400).json({ error: "email and markers required" });
+      }
+
+      const knowledgeContext = await getBloodworkKnowledgeContext(markers);
+      const analysisResult = analyzeBloodwork(markers, profile);
+
+      const parallelResult = await withAIGenerationTimeout(
+        () => generateParallelHtmlReport(analysisResult, profile, knowledgeContext),
+        "blood-analysis/send-report-email",
+        180_000
+      );
+
+      const clientName = profile?.prenom || "Client";
+      const sent = await sendBloodReportHtmlEmail(email, parallelResult.html, clientName);
+
+      res.json({
+        success: true,
+        emailSent: sent,
+        email,
+        htmlLength: parallelResult.html.length,
+        sectionsCount: Object.keys(parallelResult.sections).length,
+      });
+    } catch (error: any) {
+      console.error("[BloodAnalysis] send-report-email error:", error);
+      res.status(500).json({ error: "Erreur generation/email", detail: error?.message || String(error) });
     }
   });
 
