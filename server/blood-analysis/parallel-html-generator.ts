@@ -439,7 +439,7 @@ async function generateSectionContent(
   ctx: PromptContext,
 ): Promise<{ key: string; title: string; content: string }> {
   const prompt = spec.buildPrompt(ctx);
-  const model = process.env.BLOOD_ANALYSIS_MODEL || "claude-sonnet-4-20250514";
+  const model = process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6";
 
   const stream = await anthropic.messages.create({
     model,
