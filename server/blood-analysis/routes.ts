@@ -1565,17 +1565,31 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             "";
           const aiReportText = ensureAxesSectionTemplate(sanitizeBloodReportRegister(String(aiReportTextRaw || "")));
 
-          // Transform blood_tests marker format to blood_reports format for frontend
-          const analysisMarkers = markers.map((m: any) => ({
-            markerId: m.code || m.markerId || (m.name || "").toLowerCase().replace(/\s+/g, "_"),
-            name: m.name || m.code || "",
-            value: m.value,
-            unit: m.unit || "",
-            status: m.status || "normal",
-            normalRange: (m.refMin != null && m.refMax != null) ? `${m.refMin} - ${m.refMax}` : undefined,
-            optimalRange: (m.optimalMin != null && m.optimalMax != null) ? `${m.optimalMin} - ${m.optimalMax}` : undefined,
-            interpretation: m.interpretation || "",
-          }));
+          // Use analyzed markers from analysis.markers if available (has name, unit, status, ranges).
+          // Fall back to constructing from raw markers column for legacy records.
+          const storedAnalysisMarkers = Array.isArray((analysis as any).markers) ? (analysis as any).markers as any[] : [];
+          const hasRichMarkers = storedAnalysisMarkers.length > 0 && storedAnalysisMarkers[0]?.name;
+          const analysisMarkers = hasRichMarkers
+            ? storedAnalysisMarkers.map((m: any) => ({
+                markerId: m.markerId || m.code || "",
+                name: m.name || "",
+                value: m.value,
+                unit: m.unit || "",
+                status: m.status || "normal",
+                normalRange: m.normalRange,
+                optimalRange: m.optimalRange,
+                interpretation: m.interpretation || "",
+              }))
+            : markers.map((m: any) => ({
+                markerId: m.code || m.markerId || (m.name || "").toLowerCase().replace(/\s+/g, "_"),
+                name: m.name || m.code || "",
+                value: m.value,
+                unit: m.unit || "",
+                status: m.status || "normal",
+                normalRange: (m.refMin != null && m.refMax != null) ? `${m.refMin} - ${m.refMax}` : undefined,
+                optimalRange: (m.optimalMin != null && m.optimalMax != null) ? `${m.optimalMin} - ${m.optimalMax}` : undefined,
+                interpretation: m.interpretation || "",
+              }));
 
           report = {
             id: bloodTest.id,
@@ -3061,19 +3075,6 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           markersCount: newMarkers.length,
           markers: newMarkers.map((m) => m.markerId),
           mode: "re-extract+fallback",
-          _debug: {
-            analyzedCount: analysisResult.markers.length,
-            analyzedSample: analysisResult.markers.slice(0, 3).map((m: any) => ({
-              markerId: m.markerId,
-              name: m.name,
-              unit: m.unit,
-              status: m.status,
-              normalRange: m.normalRange,
-              optimalRange: m.optimalRange,
-            })),
-            summaryOptimal: analysisResult.summary.optimal,
-            summaryAction: analysisResult.summary.action,
-          },
         });
         return;
       }

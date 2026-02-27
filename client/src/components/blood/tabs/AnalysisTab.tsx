@@ -423,7 +423,7 @@ export function AnalysisTab({ aiSections }: AnalysisTabProps) {
                 className="text-xl font-semibold"
                 style={{ color: theme.textPrimary }}
               >
-                Analyse IA complète
+                Analyse approfondie
               </h2>
               <Sparkles
                 className="h-4 w-4"
