@@ -448,163 +448,359 @@ const escapeHtml = (value: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const markdownToEmailHtml = (markdown: string): string => {
-  const lines = String(markdown || "").split("\n");
+type MarkdownSection = {
+  title: string;
+  lines: string[];
+};
+
+const CLAUDE_THEME = {
+  paper: "#f7efe2",
+  paperSoft: "#fbf6ee",
+  card: "#f4ebdc",
+  cardStrong: "#efe3d1",
+  ink: "#2e241c",
+  muted: "#6f6254",
+  border: "#dfd0bc",
+  accent: "#c06f2e",
+  accentSoft: "#f2e2cc",
+  shadow: "rgba(69, 49, 30, 0.08)",
+};
+
+const slugifyTabId = (value: string, index: number): string => {
+  const slug = String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug ? `tab-${slug}` : `tab-${index + 1}`;
+};
+
+const parseMarkdownSections = (markdown: string): MarkdownSection[] => {
+  const lines = String(markdown || "").split(/\r?\n/);
+  const sections: MarkdownSection[] = [];
+  let current: MarkdownSection | null = null;
+
+  for (const rawLine of lines) {
+    const heading = rawLine.match(/^\s*##\s+(.+?)\s*$/);
+    if (heading) {
+      if (current) sections.push(current);
+      current = { title: heading[1].trim(), lines: [] };
+      continue;
+    }
+    if (current) current.lines.push(rawLine);
+  }
+
+  if (current) sections.push(current);
+
+  if (!sections.length && String(markdown || "").trim()) {
+    return [{ title: "Rapport complet", lines }];
+  }
+
+  return sections;
+};
+
+const renderSectionLinesToHtml = (lines: string[], textColor: string, mutedColor: string): string => {
+  const renderInlineMarkdown = (value: string): string => {
+    const escaped = escapeHtml(value);
+    return escaped
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/\[SRC:([^\]]+)\]/g, '<span style="font-weight:700;color:#7a4a21;">[SRC:$1]</span>');
+  };
+
   const html: string[] = [];
   let paragraph: string[] = [];
 
   const flushParagraph = () => {
     if (!paragraph.length) return;
     const text = paragraph.join(" ").trim();
-    if (text) {
-      html.push(
-        `<p style="margin: 0 0 14px; color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8;">${escapeHtml(
-          text,
-        )}</p>`,
-      );
+    if (!text) {
+      paragraph = [];
+      return;
     }
+    html.push(
+      `<p style="margin: 0 0 14px; color: ${mutedColor}; font-size: 15px; line-height: 1.82;">${renderInlineMarkdown(
+        text
+      )}</p>`
+    );
     paragraph = [];
   };
 
-  for (const lineRaw of lines) {
-    const line = lineRaw.trim();
+  for (const rawLine of lines) {
+    const line = String(rawLine || "").trim();
     if (!line) {
       flushParagraph();
       continue;
     }
-    if (line.startsWith("## ")) {
-      flushParagraph();
-      html.push(
-        `<h2 style="margin: 28px 0 12px; color: ${COLORS.text}; font-size: 21px; line-height: 1.35;">${escapeHtml(
-          line.slice(3),
-        )}</h2>`,
-      );
-      continue;
-    }
+
     if (line.startsWith("### ")) {
       flushParagraph();
       html.push(
-        `<h3 style="margin: 20px 0 10px; color: ${COLORS.text}; font-size: 17px; line-height: 1.4;">${escapeHtml(
-          line.slice(4),
-        )}</h3>`,
+        `<h3 style="margin: 20px 0 10px; color: ${textColor}; font-size: 19px; line-height: 1.4; letter-spacing: -0.01em;">${renderInlineMarkdown(
+          line.slice(4)
+        )}</h3>`
       );
       continue;
     }
+
     paragraph.push(line);
   }
+
   flushParagraph();
   return html.join("\n");
 };
 
-const buildStandaloneBloodHtmlDocument = (title: string, bodyHtml: string): string => {
-  return `<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(title)}</title>
-    <style>
-      :root {
-        --bg: #0d1117;
-        --card: #161b22;
-        --text: #e6edf3;
-        --muted: #9aa4b2;
-        --border: #30363d;
-        --accent: #ef4444;
-      }
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: radial-gradient(circle at top, #1b1f27 0%, var(--bg) 55%);
-        color: var(--text);
-        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      }
-      .wrap {
-        max-width: 980px;
-        margin: 24px auto;
-        padding: 0 20px 28px;
-      }
-      .header {
-        border: 1px solid var(--border);
-        background: linear-gradient(145deg, #171a22, #0f1219);
-        border-radius: 16px;
-        padding: 22px 24px;
-        margin-bottom: 18px;
-      }
-      .badge {
-        display: inline-block;
-        font-size: 11px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        color: #fecaca;
-        border: 1px solid rgba(239,68,68,.35);
-        background: rgba(239,68,68,.12);
-        border-radius: 999px;
-        padding: 6px 10px;
-      }
-      h1 {
-        margin: 12px 0 6px;
-        font-size: 30px;
-        line-height: 1.2;
-      }
-      .sub {
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-      }
-      .content {
-        border: 1px solid var(--border);
-        background: var(--card);
-        border-radius: 16px;
-        padding: 22px 24px;
-      }
-      .content h2 {
-        color: #f8fafc;
-        margin: 26px 0 10px;
-        font-size: 22px;
-      }
-      .content h3 {
-        color: #f8fafc;
-        margin: 18px 0 8px;
-        font-size: 18px;
-      }
-      .content p {
-        color: var(--text);
-        line-height: 1.82;
-        margin: 0 0 14px;
-        font-size: 15px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <section class="header">
-        <span class="badge">Blood Analysis</span>
-        <h1>${escapeHtml(title)}</h1>
-        <p class="sub">Fichier HTML autonome, prêt à ouvrir dans un navigateur.</p>
-      </section>
-      <section class="content">
+const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string): string => {
+  const sections = parseMarkdownSections(reportMarkdown);
+  const nav = sections
+    .map((section, index) => {
+      const tabId = slugifyTabId(section.title, index);
+      const isActive = index === 0 ? "true" : "false";
+      const activeClass = index === 0 ? " is-active" : "";
+      return `<button class="tab-btn${activeClass}" type="button" data-tab-target="${tabId}" aria-selected="${isActive}">${escapeHtml(
+        section.title
+      )}</button>`;
+    })
+    .join("\n");
+
+  const panels = sections
+    .map((section, index) => {
+      const tabId = slugifyTabId(section.title, index);
+      const activeClass = index === 0 ? " is-active" : "";
+      const bodyHtml = renderSectionLinesToHtml(section.lines, CLAUDE_THEME.ink, CLAUDE_THEME.muted);
+      return `
+      <section id="${tabId}" class="tab-panel${activeClass}" aria-label="${escapeHtml(section.title)}">
+        <h2>${escapeHtml(section.title)}</h2>
         ${bodyHtml}
-      </section>
-    </div>
-  </body>
+      </section>`;
+    })
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Analysis - ${escapeHtml(reportId)}</title>
+  <style>
+    :root {
+      --paper: ${CLAUDE_THEME.paper};
+      --paper-soft: ${CLAUDE_THEME.paperSoft};
+      --card: ${CLAUDE_THEME.card};
+      --card-strong: ${CLAUDE_THEME.cardStrong};
+      --ink: ${CLAUDE_THEME.ink};
+      --muted: ${CLAUDE_THEME.muted};
+      --border: ${CLAUDE_THEME.border};
+      --accent: ${CLAUDE_THEME.accent};
+      --accent-soft: ${CLAUDE_THEME.accentSoft};
+      --shadow: ${CLAUDE_THEME.shadow};
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    .wrap {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 32px 18px 44px;
+    }
+    .header {
+      background: linear-gradient(140deg, var(--card-strong) 0%, var(--paper-soft) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 22px 16px;
+      box-shadow: 0 10px 30px var(--shadow);
+      margin-bottom: 14px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+    .title {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .tabs-shell {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 0 8px 24px var(--shadow);
+      overflow: hidden;
+    }
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--paper-soft);
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .tabs-nav::-webkit-scrollbar { height: 8px; }
+    .tabs-nav::-webkit-scrollbar-thumb { background: #d9c8b0; border-radius: 999px; }
+    .tab-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 13px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s ease;
+    }
+    .tab-btn:hover {
+      color: var(--ink);
+      border-color: var(--border);
+      background: #f5ebde;
+    }
+    .tab-btn.is-active {
+      color: #ffffff;
+      border-color: #2f2822;
+      background: #2f2822;
+    }
+    .tabs-content {
+      padding: 20px;
+      background: var(--card);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.is-active { display: block; }
+    .tab-panel h2 {
+      margin: 0 0 16px;
+      font-size: 30px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    @media (max-width: 700px) {
+      .wrap { padding: 18px 10px 26px; }
+      .title { font-size: 28px; }
+      .tab-panel h2 { font-size: 24px; }
+      .tabs-content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div class="badge"><span class="badge-dot"></span>Theme Claude · Blood Analysis</div>
+      <h1 class="title">Rapport Biomarqueurs</h1>
+      <p class="subtitle">Version HTML à onglets, structurée en 12 sections premium.</p>
+    </header>
+    <main class="tabs-shell">
+      <nav class="tabs-nav" aria-label="Sections du rapport">
+        ${nav}
+      </nav>
+      <div class="tabs-content">
+        ${panels}
+      </div>
+    </main>
+    <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client</p>
+  </div>
+  <script>
+    (function () {
+      var buttons = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
+      var panels = Array.prototype.slice.call(document.querySelectorAll('.tab-panel'));
+      if (!buttons.length || !panels.length) return;
+      function activate(id) {
+        buttons.forEach(function (btn) {
+          var active = btn.getAttribute('data-tab-target') === id;
+          btn.classList.toggle('is-active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach(function (panel) {
+          panel.classList.toggle('is-active', panel.id === id);
+        });
+      }
+      buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          activate(btn.getAttribute('data-tab-target') || '');
+        });
+      });
+      activate(buttons[0].getAttribute('data-tab-target') || '');
+    })();
+  </script>
+</body>
 </html>`;
 };
 
-const sanitizeForFileName = (value: string): string => {
-  const normalized = String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-  return normalized || "blood-analysis";
-};
-
-const buildBloodAttachmentName = (clientName?: string, reportId?: string): string => {
-  const client = sanitizeForFileName(clientName || "client");
-  const suffix = sanitizeForFileName((reportId || "").slice(0, 8) || "report");
-  return `blood-analysis-${client}-${suffix}.html`;
+const getClaudeLightEmailWrapper = (
+  content: string,
+  headerTitle: string,
+  headerSubtitle: string,
+): string => {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  </style>
+</head>
+<body style="margin:0;padding:0;background:${CLAUDE_THEME.paper};font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${CLAUDE_THEME.ink};">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:30px 14px;background:${CLAUDE_THEME.paper};">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="700" cellspacing="0" cellpadding="0" style="max-width:700px;background:${CLAUDE_THEME.card};border-radius:16px;border:1px solid ${CLAUDE_THEME.border};overflow:hidden;">
+          <tr>
+            <td style="padding:26px 26px 20px;background:linear-gradient(140deg,${CLAUDE_THEME.cardStrong} 0%,${CLAUDE_THEME.paperSoft} 100%);border-bottom:1px solid ${CLAUDE_THEME.border};">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:${CLAUDE_THEME.accent};font-weight:700;margin-bottom:10px;">Theme Claude · ApexLabs</div>
+              <h1 style="margin:0;color:${CLAUDE_THEME.ink};font-size:30px;line-height:1.2;letter-spacing:-0.02em;">${escapeHtml(
+                headerTitle
+              )}</h1>
+              <p style="margin:10px 0 0;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.55;">${escapeHtml(
+                headerSubtitle
+              )}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:26px;">
+              ${content}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 };
 
 export async function sendBloodAnalysisHtmlEmail(
@@ -616,136 +812,92 @@ export async function sendBloodAnalysisHtmlEmail(
   try {
     const token = await getAccessToken();
     void baseUrl;
-    const reportHtml = markdownToEmailHtml(reportMarkdown);
-    const attachmentHtml = buildStandaloneBloodHtmlDocument("Blood Analysis - Rapport complet", reportHtml);
-    const attachmentName = buildBloodAttachmentName("client", reportId);
+    const standaloneReportHtml = renderClaudeTabbedReportHtml(reportId, reportMarkdown);
+    const sections = parseMarkdownSections(reportMarkdown);
+    const fullReportBodyHtml = sections.length
+      ? sections
+          .map((section) => {
+            const sectionBody = renderSectionLinesToHtml(section.lines, CLAUDE_THEME.ink, CLAUDE_THEME.muted);
+            return `<h3 style="margin:24px 0 10px;color:${CLAUDE_THEME.ink};font-size:22px;line-height:1.3;letter-spacing:-0.01em;">${escapeHtml(
+              section.title
+            )}</h3>${sectionBody}`;
+          })
+          .join("\n")
+      : `<p style="margin:0;color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.8;">Rapport prêt en pièce jointe HTML.</p>`;
 
     const content = `
-      <div style="text-align: center; margin-bottom: 20px;">
-        <span style="display: inline-block; background: ${COLORS.blood}20; color: ${COLORS.blood}; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${COLORS.blood}55;">
-          Blood Analysis
+      <div style="text-align:center;margin-bottom:18px;">
+        <span style="display:inline-block;background:${CLAUDE_THEME.accentSoft};color:${CLAUDE_THEME.accent};padding:8px 16px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;border:1px solid ${CLAUDE_THEME.border};">
+          HTML à onglets · Theme Claude
         </span>
       </div>
 
-      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 28px; text-align: center; font-weight: 700;">
-        Ton rapport complet est pret
+      <h2 style="color:${CLAUDE_THEME.ink};margin:0 0 10px;font-size:30px;text-align:center;font-weight:700;letter-spacing:-0.02em;">
+        Ton rapport complet est prêt
       </h2>
-      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 22px; text-align: center;">
-        Tu trouveras la version complete en piece jointe au format HTML autonome.
+      <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 18px;text-align:center;">
+        Le fichier joint contient la version complète avec onglets section par section, en thème CLAUDE clair.
       </p>
 
-      <div style="margin-top: 26px; padding-top: 22px; border-top: 1px solid ${COLORS.border};">
-        ${reportHtml}
+      <div style="margin-top:20px;padding:18px;border:1px solid ${CLAUDE_THEME.border};border-radius:12px;background:${CLAUDE_THEME.paperSoft};">
+        ${fullReportBodyHtml}
+      </div>
+
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid ${CLAUDE_THEME.border};text-align:center;">
+        <p style="margin:0;color:${CLAUDE_THEME.muted};font-size:12px;">Pièce jointe: <strong style="color:${CLAUDE_THEME.ink};">Blood_Analysis_${escapeHtml(
+          reportId
+        )}.html</strong></p>
       </div>
     `;
 
-    const emailContent = getEmailWrapper(
+    const emailContent = getClaudeLightEmailWrapper(
       content,
-      `linear-gradient(135deg, ${COLORS.blood} 0%, #7f1d1d 100%)`,
       "Blood Analysis",
-      "Rapport HTML complet",
+      "Rapport HTML à onglets (thème Claude)",
     );
 
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const baseEmailPayload = {
+      html: encodeBase64(emailContent),
+      text: `Ton Blood Analysis complet est inclus dans cet email.`,
+      subject: "Ton Blood Analysis complet (HTML) est prêt",
+      from: {
+        name: "ApexLabs by Achzod",
+        email: SENDER_EMAIL,
       },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: "Ton Blood Analysis complet est joint en fichier HTML.",
-          subject: "Ton Blood Analysis complet est pret (fichier HTML joint)",
-          from: {
-            name: "ApexLabs by Achzod",
-            email: SENDER_EMAIL,
-          },
-          to: [{ email }],
-          attachments_binary: {
-            [attachmentName]: encodeBase64(attachmentHtml),
-          },
+      to: [{ email }],
+    };
+
+    const postEmail = async (payload: Record<string, unknown>) => {
+      const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      }),
+        body: JSON.stringify({ email: payload }),
+      });
+      return (await response.json()) as { result: boolean; error?: any; message?: any };
+    };
+
+    let result = await postEmail({
+      ...baseEmailPayload,
+      attachments_binary: {
+        [`Blood_Analysis_${reportId}.html`]: encodeBase64(standaloneReportHtml),
+      },
     });
 
-    const result = (await response.json()) as { result: boolean; error?: any; message?: any };
+    if (result.result !== true) {
+      console.warn(
+        `[SendPulse] Blood HTML attachment send failed for ${email}, retrying inline-only email.`,
+        result
+      );
+      result = await postEmail(baseEmailPayload);
+    }
+
     console.log(`[SendPulse] Blood HTML email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending blood HTML email:", error);
-    return false;
-  }
-}
-
-export async function sendBloodReportHtmlEmail(
-  email: string,
-  htmlReport: string,
-  clientName: string,
-  reportId?: string,
-): Promise<boolean> {
-  try {
-    const token = await getAccessToken();
-    const safeClient = String(clientName || "Client").trim() || "Client";
-    const attachmentName = buildBloodAttachmentName(safeClient, reportId);
-    const attachmentHtml = buildStandaloneBloodHtmlDocument(
-      `Blood Analysis - ${safeClient}`,
-      String(htmlReport || "").trim() || "<p>Rapport indisponible.</p>",
-    );
-
-    const content = `
-      <div style="text-align: center; margin-bottom: 20px;">
-        <span style="display: inline-block; background: ${COLORS.blood}20; color: ${COLORS.blood}; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${COLORS.blood}55;">
-          Blood Analysis
-        </span>
-      </div>
-
-      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 28px; text-align: center; font-weight: 700;">
-        Rapport HTML complet pret pour ${escapeHtml(safeClient)}
-      </h2>
-      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 14px; text-align: center;">
-        Le rapport integral est joint au format <strong>.html</strong>. Ouvre simplement la piece jointe dans ton navigateur.
-      </p>
-      <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.7; margin: 0; text-align: center;">
-        Fichier joint: <strong>${escapeHtml(attachmentName)}</strong>
-      </p>
-    `;
-
-    const emailContent = getEmailWrapper(
-      content,
-      `linear-gradient(135deg, ${COLORS.blood} 0%, #7f1d1d 100%)`,
-      "Blood Analysis",
-      "Rapport HTML joint",
-    );
-
-    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        email: {
-          html: encodeBase64(emailContent),
-          text: `Ton rapport Blood Analysis est en piece jointe HTML: ${attachmentName}`,
-          subject: `Blood Analysis complet - ${safeClient} (HTML joint)`,
-          from: {
-            name: "ApexLabs by Achzod",
-            email: SENDER_EMAIL,
-          },
-          to: [{ email }],
-          attachments_binary: {
-            [attachmentName]: encodeBase64(attachmentHtml),
-          },
-        },
-      }),
-    });
-
-    const result = (await response.json()) as { result: boolean; error?: any; message?: any };
-    console.log(`[SendPulse] Blood HTML attachment email sent to ${email}:`, result);
-    return result.result === true;
-  } catch (error) {
-    console.error("[SendPulse] Error sending blood HTML attachment email:", error);
     return false;
   }
 }

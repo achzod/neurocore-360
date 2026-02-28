@@ -15,19 +15,25 @@ const DATA_DIR = path.resolve("data");
 const OUTPUT_DIR = path.resolve("output");
 
 const requiredSections: SectionRule[] = [
-  { title: "Synthese executive", minChars: 1200 },
-  { title: "Qualite des donnees & limites", minChars: 850 },
-  { title: "Tableau de bord (scores & priorites)", minChars: 900 },
+  { title: "Synthèse exécutive", minChars: 1200 },
+  { title: "Qualité des données & limites", minChars: 850 },
+  { title: "Tableau de bord (scores & priorités)", minChars: 900 },
   { title: "Potentiel recomposition (perte de gras + gain de muscle)", minChars: 1200 },
-  { title: "Lecture compartimentee par axes", minChars: 6000 },
+  { title: "Lecture compartimentée par axes", minChars: 6000 },
   { title: "Interconnexions majeures (le pattern)", minChars: 1500 },
   { title: "Deep dive — marqueurs prioritaires", minChars: 4600 },
   { title: "Plan d'action 90 jours", minChars: 3400 },
-  { title: "Nutrition & entrainement", minChars: 2600 },
-  { title: "Supplements & stack", minChars: 3000 },
-  { title: "Annexes (references et vigilance)", minChars: 900 },
-  { title: "Sources (bibliotheque)", minChars: 120 },
+  { title: "Nutrition & entraînement", minChars: 2600 },
+  { title: "Suppléments & stack", minChars: 3000 },
+  { title: "Annexes (références et vigilance)", minChars: 900 },
+  { title: "Sources (bibliothèque)", minChars: 120 },
 ];
+
+const normalizeLoose = (value: string) =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
 const splitSections = (markdown: string): Array<{ title: string; content: string }> => {
   const lines = String(markdown || "").split(/\r?\n/);
@@ -47,8 +53,24 @@ const splitSections = (markdown: string): Array<{ title: string; content: string
   return sections;
 };
 
-const findSection = (sections: Array<{ title: string; content: string }>, title: string) =>
-  sections.find((section) => section.title.toLowerCase().includes(title.toLowerCase()));
+const findSection = (sections: Array<{ title: string; content: string }>, title: string) => {
+  const normalizedTitle = normalizeLoose(title);
+  return sections.find((section) => normalizeLoose(section.title).includes(normalizedTitle));
+};
+
+const SOURCE_ID_REGEX = /\[SRC:([^\]]+)\]/gi;
+
+const extractSourceIds = (text: string): string[] => {
+  const ids: string[] = [];
+  let match: RegExpExecArray | null;
+  const regex = new RegExp(SOURCE_ID_REGEX.source, "gi");
+  while ((match = regex.exec(String(text || ""))) !== null) {
+    const id = String(match[1] || "").trim();
+    if (!id || /^id$/i.test(id)) continue;
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids;
+};
 
 async function pickRichestPdf() {
   const files = fs
@@ -62,7 +84,17 @@ async function pickRichestPdf() {
   for (const file of files) {
     try {
       const parsed = await pdf(fs.readFileSync(file));
-      const markers = await extractMarkersFromPdfText(parsed.text || "", path.basename(file));
+      // Keep richest-PDF detection deterministic: extraction must not depend on Anthropic credits.
+      const previousAnthropicKey = process.env.ANTHROPIC_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+      let markers: any[] = [];
+      try {
+        markers = await extractMarkersFromPdfText(parsed.text || "", path.basename(file));
+      } finally {
+        if (previousAnthropicKey) {
+          process.env.ANTHROPIC_API_KEY = previousAnthropicKey;
+        }
+      }
       if (!markers.length) {
         skips.push({ file: path.basename(file), reason: "no_markers" });
         continue;
@@ -88,6 +120,15 @@ function auditMarkdown(report: string, markerCount: number) {
   const tableCount = (report.match(/^\s*\|(?:[^|\n]+\|)+\s*$/gm) || []).length;
   const placeholderAxes = (report.match(/^\s*###\s*Axe\s+\d+\s+[—-]\s*Non renseigne\b/gim) || []).length;
   const dossierPlaceholder = (report.match(/non renseigne pour ce dossier/gi) || []).length;
+  const sourcesSection = findSection(sections, "Sources (bibliothèque)");
+  const reportWithoutSources = sourcesSection ? report.replace(sourcesSection.content, "").trim() : report;
+  const sourceIdsInBody = extractSourceIds(reportWithoutSources);
+  const sourceIdsInSourcesSection = extractSourceIds(sourcesSection?.content || "");
+  const missingSourceIdsInSourcesSection = sourceIdsInBody.filter((id) => !sourceIdsInSourcesSection.includes(id));
+  const extraSourceIdsInSourcesSection = sourceIdsInSourcesSection.filter((id) => !sourceIdsInBody.includes(id));
+  const baseMinSourceCitations = Math.max(2, Math.min(8, Math.ceil(markerCount / 4)));
+  const maxUsableSourceIds = Math.max(sourceIdsInBody.length, sourceIdsInSourcesSection.length);
+  const minSourceCitations = maxUsableSourceIds > 0 ? Math.min(baseMinSourceCitations, maxUsableSourceIds) : 0;
 
   const sectionAudits = requiredSections.map((rule) => {
     const found = findSection(sections, rule.title);
@@ -112,6 +153,10 @@ function auditMarkdown(report: string, markerCount: number) {
     tableCount,
     placeholderAxes,
     dossierPlaceholder,
+    sourceIdsInBodyCount: sourceIdsInBody.length,
+    minSourceCitations,
+    missingSourceIdsInSourcesSection,
+    extraSourceIdsInSourcesSection,
     sectionAudits,
     pass:
       missing.length === 0 &&
@@ -119,7 +164,10 @@ function auditMarkdown(report: string, markerCount: number) {
       bulletCount === 0 &&
       tableCount === 0 &&
       placeholderAxes === 0 &&
-      dossierPlaceholder <= 1,
+      dossierPlaceholder <= 1 &&
+      (minSourceCitations === 0 || sourceIdsInBody.length >= minSourceCitations) &&
+      missingSourceIdsInSourcesSection.length === 0 &&
+      extraSourceIdsInSourcesSection.length === 0,
     failReasons: [
       ...(missing.length ? [`missing_sections:${missing.join(",")}`] : []),
       ...(thin.length ? [`thin_sections:${thin.join(",")}`] : []),
@@ -127,11 +175,21 @@ function auditMarkdown(report: string, markerCount: number) {
       ...(tableCount ? [`markdown_tables:${tableCount}`] : []),
       ...(placeholderAxes ? [`placeholder_axes:${placeholderAxes}`] : []),
       ...(dossierPlaceholder > 1 ? [`dossier_placeholder_overuse:${dossierPlaceholder}`] : []),
+      ...(minSourceCitations > 0 && sourceIdsInBody.length < minSourceCitations
+        ? [`insufficient_source_citations:${sourceIdsInBody.length}/${minSourceCitations}`]
+        : []),
+      ...(missingSourceIdsInSourcesSection.length || extraSourceIdsInSourcesSection.length
+        ? [
+            `sources_section_mismatch:missing=${missingSourceIdsInSourcesSection.join(",") || "none"};extra=${
+              extraSourceIdsInSourcesSection.join(",") || "none"
+            }`,
+          ]
+        : []),
     ],
   };
 }
 
-async function renderEmailHtml(reportMarkdown: string) {
+async function renderEmailPayload(reportMarkdown: string) {
   process.env.SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || "qa-user";
   process.env.SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || "qa-secret";
 
@@ -171,11 +229,15 @@ async function renderEmailHtml(reportMarkdown: string) {
     if (!sent) {
       throw new Error("sendBloodAnalysisHtmlEmail returned false");
     }
-    const base64Html = smtpPayload?.email?.html;
-    if (!base64Html) {
+    const base64BodyHtml = smtpPayload?.email?.html;
+    if (!base64BodyHtml) {
       throw new Error("SMTP payload missing html body");
     }
-    return Buffer.from(base64Html, "base64").toString("utf8");
+    const bodyHtml = Buffer.from(base64BodyHtml, "base64").toString("utf8");
+    const attachments = smtpPayload?.email?.attachments_binary || {};
+    const attachmentName = Object.keys(attachments).find((name) => name.toLowerCase().endsWith(".html")) || null;
+    const attachmentHtml = attachmentName ? Buffer.from(String(attachments[attachmentName]), "base64").toString("utf8") : "";
+    return { bodyHtml, attachmentHtml, attachmentName };
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -207,7 +269,58 @@ function auditHtml(html: string) {
     missingHeadings,
     placeholderAxes,
     hasDashboardButton,
-    pass: missingHeadings.length === 0 && placeholderAxes === 0 && hasDashboardButton,
+    pass: missingHeadings.length === 0 && placeholderAxes === 0 && !hasDashboardButton,
+  };
+}
+
+function auditAttachmentHtml(html: string) {
+  const text = String(html || "");
+  const normalized = text
+    .toLowerCase()
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const missingHeadings = requiredSections
+    .filter((section) => {
+      const target = section.title
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return !normalized.includes(target);
+    })
+    .map((section) => section.title);
+
+  const hasTabsNav = /class=["'][^"']*tabs-nav[^"']*["']/i.test(text);
+  const hasTabButtons = /class=["'][^"']*tab-btn[^"']*["']/i.test(text);
+  const hasPanels = /class=["'][^"']*tab-panel[^"']*["']/i.test(text);
+  const hasTabScript = /data-tab-target/i.test(text) && /activate\(/i.test(text);
+
+  const darkThemeSignals = [
+    /background\s*:\s*#0{3,6}/i,
+    /background-color\s*:\s*#0{3,6}/i,
+    /background\s*:\s*black/i,
+    /--paper:\s*#0{3,6}/i,
+    /--card:\s*#0{3,6}/i,
+  ].filter((regex) => regex.test(text)).length;
+
+  return {
+    htmlLength: text.length,
+    missingHeadings,
+    hasTabsNav,
+    hasTabButtons,
+    hasPanels,
+    hasTabScript,
+    darkThemeSignals,
+    pass:
+      missingHeadings.length === 0 &&
+      hasTabsNav &&
+      hasTabButtons &&
+      hasPanels &&
+      hasTabScript &&
+      darkThemeSignals === 0,
   };
 }
 
@@ -223,29 +336,51 @@ async function main() {
   const analysis = await analyzeBloodwork(richest.markers, { gender: "homme" });
   const knowledge = await getBloodworkKnowledgeContext(analysis.markers, analysis.patterns);
 
-  const report = await generateAIBloodAnalysis(
-    analysis,
-    {
-      gender: "homme",
-      prenom: "Alex",
-      age: "34",
-      objectives: "Performance, recomposition corporelle et optimisation metabolique",
-      medications: "Aucun",
-      sleepHours: 6.5,
-      trainingHours: 6,
-      stressLevel: 6,
-      calorieDeficit: 12,
-      alcoholWeekly: 1,
-      fastingHours: 12,
-      drawTime: "08:00",
-      supplementsUsed: ["omega-3", "magnesium"],
-    },
-    knowledge,
-  );
+  let report = "";
+  let generationError: string | null = null;
+  try {
+    report = await generateAIBloodAnalysis(
+      analysis,
+      {
+        gender: "homme",
+        prenom: "Alex",
+        age: "34",
+        objectives: "Performance, recomposition corporelle et optimisation metabolique",
+        medications: "Aucun",
+        sleepHours: 6.5,
+        trainingHours: 6,
+        stressLevel: 6,
+        calorieDeficit: 12,
+        alcoholWeekly: 1,
+        fastingHours: 12,
+        drawTime: "08:00",
+        supplementsUsed: ["omega-3", "magnesium"],
+      },
+      knowledge,
+    );
+  } catch (error: any) {
+    generationError = String(error?.message || error);
+  }
+
+  if (!report) {
+    const summary = {
+      timestamp: new Date().toISOString(),
+      richestPdf: path.relative(process.cwd(), richest.file),
+      richestMarkerCount: richest.markers.length,
+      skippedPdfs: skips,
+      generationError: generationError || "empty_report",
+      pass: false,
+    };
+    fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-audit.json"), JSON.stringify(summary, null, 2));
+    console.log(JSON.stringify(summary, null, 2));
+    process.exitCode = 1;
+    return;
+  }
 
   const markdownAudit = auditMarkdown(report, analysis.markers.length);
-  const html = await renderEmailHtml(report);
-  const htmlAudit = auditHtml(html);
+  const emailPayload = await renderEmailPayload(report);
+  const htmlAudit = auditHtml(emailPayload.bodyHtml);
+  const attachmentHtmlAudit = auditAttachmentHtml(emailPayload.attachmentHtml);
 
   const summary = {
     timestamp: new Date().toISOString(),
@@ -254,11 +389,14 @@ async function main() {
     skippedPdfs: skips,
     markdownAudit,
     htmlAudit,
-    pass: markdownAudit.pass && htmlAudit.pass,
+    attachmentHtmlAudit,
+    attachmentName: emailPayload.attachmentName,
+    pass: markdownAudit.pass && htmlAudit.pass && attachmentHtmlAudit.pass,
   };
 
   fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report.md"), report);
-  fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-email.html"), html);
+  fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-email.html"), emailPayload.bodyHtml);
+  fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-attachment.html"), emailPayload.attachmentHtml || "");
   fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-audit.json"), JSON.stringify(summary, null, 2));
 
   console.log(JSON.stringify(summary, null, 2));
