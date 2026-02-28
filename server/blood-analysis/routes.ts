@@ -51,7 +51,6 @@ import {
   sendAdminEmailNewAudit,
   sendBloodAnalysisHtmlEmail,
   sendBloodReportHtmlEmail,
-  sendReportReadyEmail,
 } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
@@ -108,8 +107,7 @@ const sendBloodClientDeliveryEmail = async (
   if (!reportText) return false;
 
   const htmlSent = await sendBloodAnalysisHtmlEmail(recipientEmail, reportId, reportText, baseUrl);
-  if (htmlSent) return true;
-  return sendReportReadyEmail(recipientEmail, reportId, "BLOOD_ANALYSIS", baseUrl);
+  return htmlSent;
 };
 
 export function registerBloodAnalysisRoutes(app: Express): void {

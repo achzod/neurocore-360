@@ -496,6 +496,117 @@ const markdownToEmailHtml = (markdown: string): string => {
   return html.join("\n");
 };
 
+const buildStandaloneBloodHtmlDocument = (title: string, bodyHtml: string): string => {
+  return `<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(title)}</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --card: #161b22;
+        --text: #e6edf3;
+        --muted: #9aa4b2;
+        --border: #30363d;
+        --accent: #ef4444;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: radial-gradient(circle at top, #1b1f27 0%, var(--bg) 55%);
+        color: var(--text);
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 24px auto;
+        padding: 0 20px 28px;
+      }
+      .header {
+        border: 1px solid var(--border);
+        background: linear-gradient(145deg, #171a22, #0f1219);
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin-bottom: 18px;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #fecaca;
+        border: 1px solid rgba(239,68,68,.35);
+        background: rgba(239,68,68,.12);
+        border-radius: 999px;
+        padding: 6px 10px;
+      }
+      h1 {
+        margin: 12px 0 6px;
+        font-size: 30px;
+        line-height: 1.2;
+      }
+      .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .content {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 16px;
+        padding: 22px 24px;
+      }
+      .content h2 {
+        color: #f8fafc;
+        margin: 26px 0 10px;
+        font-size: 22px;
+      }
+      .content h3 {
+        color: #f8fafc;
+        margin: 18px 0 8px;
+        font-size: 18px;
+      }
+      .content p {
+        color: var(--text);
+        line-height: 1.82;
+        margin: 0 0 14px;
+        font-size: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="header">
+        <span class="badge">Blood Analysis</span>
+        <h1>${escapeHtml(title)}</h1>
+        <p class="sub">Fichier HTML autonome, prêt à ouvrir dans un navigateur.</p>
+      </section>
+      <section class="content">
+        ${bodyHtml}
+      </section>
+    </div>
+  </body>
+</html>`;
+};
+
+const sanitizeForFileName = (value: string): string => {
+  const normalized = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return normalized || "blood-analysis";
+};
+
+const buildBloodAttachmentName = (clientName?: string, reportId?: string): string => {
+  const client = sanitizeForFileName(clientName || "client");
+  const suffix = sanitizeForFileName((reportId || "").slice(0, 8) || "report");
+  return `blood-analysis-${client}-${suffix}.html`;
+};
+
 export async function sendBloodAnalysisHtmlEmail(
   email: string,
   reportId: string,
@@ -504,8 +615,10 @@ export async function sendBloodAnalysisHtmlEmail(
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
-    const reportLink = `${baseUrl}/analysis/${reportId}`;
+    void baseUrl;
     const reportHtml = markdownToEmailHtml(reportMarkdown);
+    const attachmentHtml = buildStandaloneBloodHtmlDocument("Blood Analysis - Rapport complet", reportHtml);
+    const attachmentName = buildBloodAttachmentName("client", reportId);
 
     const content = `
       <div style="text-align: center; margin-bottom: 20px;">
@@ -518,10 +631,8 @@ export async function sendBloodAnalysisHtmlEmail(
         Ton rapport complet est pret
       </h2>
       <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 22px; text-align: center;">
-        Version HTML integrale du rapport ci-dessous. Tu peux aussi l'ouvrir dans ton dashboard pour navigation onglet par onglet.
+        Tu trouveras la version complete en piece jointe au format HTML autonome.
       </p>
-
-      ${getPrimaryButton("Ouvrir le dashboard", reportLink, COLORS.blood)}
 
       <div style="margin-top: 26px; padding-top: 22px; border-top: 1px solid ${COLORS.border};">
         ${reportHtml}
@@ -544,13 +655,16 @@ export async function sendBloodAnalysisHtmlEmail(
       body: JSON.stringify({
         email: {
           html: encodeBase64(emailContent),
-          text: `Ton Blood Analysis complet est disponible ici: ${reportLink}`,
-          subject: "Ton Blood Analysis complet (HTML) est pret",
+          text: "Ton Blood Analysis complet est joint en fichier HTML.",
+          subject: "Ton Blood Analysis complet est pret (fichier HTML joint)",
           from: {
             name: "ApexLabs by Achzod",
             email: SENDER_EMAIL,
           },
           to: [{ email }],
+          attachments_binary: {
+            [attachmentName]: encodeBase64(attachmentHtml),
+          },
         },
       }),
     });
@@ -560,6 +674,78 @@ export async function sendBloodAnalysisHtmlEmail(
     return result.result === true;
   } catch (error) {
     console.error("[SendPulse] Error sending blood HTML email:", error);
+    return false;
+  }
+}
+
+export async function sendBloodReportHtmlEmail(
+  email: string,
+  htmlReport: string,
+  clientName: string,
+  reportId?: string,
+): Promise<boolean> {
+  try {
+    const token = await getAccessToken();
+    const safeClient = String(clientName || "Client").trim() || "Client";
+    const attachmentName = buildBloodAttachmentName(safeClient, reportId);
+    const attachmentHtml = buildStandaloneBloodHtmlDocument(
+      `Blood Analysis - ${safeClient}`,
+      String(htmlReport || "").trim() || "<p>Rapport indisponible.</p>",
+    );
+
+    const content = `
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; background: ${COLORS.blood}20; color: ${COLORS.blood}; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${COLORS.blood}55;">
+          Blood Analysis
+        </span>
+      </div>
+
+      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 28px; text-align: center; font-weight: 700;">
+        Rapport HTML complet pret pour ${escapeHtml(safeClient)}
+      </h2>
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 14px; text-align: center;">
+        Le rapport integral est joint au format <strong>.html</strong>. Ouvre simplement la piece jointe dans ton navigateur.
+      </p>
+      <p style="color: ${COLORS.textMuted}; font-size: 13px; line-height: 1.7; margin: 0; text-align: center;">
+        Fichier joint: <strong>${escapeHtml(attachmentName)}</strong>
+      </p>
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.blood} 0%, #7f1d1d 100%)`,
+      "Blood Analysis",
+      "Rapport HTML joint",
+    );
+
+    const response = await fetch("https://api.sendpulse.com/smtp/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        email: {
+          html: encodeBase64(emailContent),
+          text: `Ton rapport Blood Analysis est en piece jointe HTML: ${attachmentName}`,
+          subject: `Blood Analysis complet - ${safeClient} (HTML joint)`,
+          from: {
+            name: "ApexLabs by Achzod",
+            email: SENDER_EMAIL,
+          },
+          to: [{ email }],
+          attachments_binary: {
+            [attachmentName]: encodeBase64(attachmentHtml),
+          },
+        },
+      }),
+    });
+
+    const result = (await response.json()) as { result: boolean; error?: any; message?: any };
+    console.log(`[SendPulse] Blood HTML attachment email sent to ${email}:`, result);
+    return result.result === true;
+  } catch (error) {
+    console.error("[SendPulse] Error sending blood HTML attachment email:", error);
     return false;
   }
 }
