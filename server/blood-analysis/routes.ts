@@ -47,7 +47,12 @@ import {
   searchKnowledgeForRisk
 } from "./recommendations-engine";
 import { storage } from "../storage";
-import { sendAdminEmailNewAudit, sendReportReadyEmail, sendBloodReportHtmlEmail } from "../emailService";
+import {
+  sendAdminEmailNewAudit,
+  sendBloodAnalysisHtmlEmail,
+  sendBloodReportHtmlEmail,
+  sendReportReadyEmail,
+} from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
 import multer from "multer";
@@ -91,6 +96,20 @@ const getBaseUrl = (): string => {
     process.env.RENDER_EXTERNAL_URL ||
     "http://localhost:10000"
   );
+};
+
+const sendBloodClientDeliveryEmail = async (
+  recipientEmail: string,
+  reportId: string,
+  aiReport: string,
+  baseUrl: string,
+): Promise<boolean> => {
+  const reportText = String(aiReport || "").trim();
+  if (!reportText) return false;
+
+  const htmlSent = await sendBloodAnalysisHtmlEmail(recipientEmail, reportId, reportText, baseUrl);
+  if (htmlSent) return true;
+  return sendReportReadyEmail(recipientEmail, reportId, "BLOOD_ANALYSIS", baseUrl);
 };
 
 export function registerBloodAnalysisRoutes(app: Express): void {
@@ -501,6 +520,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
 
       const shouldIncludeAI = includeAI !== false;
       const shouldAsyncAI = asyncAI !== false;
+      const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
       const profileWithAge = {
         ...profile,
         age: computedAge,
@@ -510,7 +530,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       let aiHtmlContent = "";
       let aiMeta: { status: string; model: string; validationMissing: string[] | null; format?: string } | null = null;
       let syncAiNeedsBackgroundRetry = false;
-      if (shouldIncludeAI && !shouldAsyncAI && process.env.ANTHROPIC_API_KEY) {
+      if (shouldIncludeAI && !shouldAsyncAI && hasAnthropicKey) {
         if (useParallelHtml) {
           try {
             const parallelResult = await withAIGenerationTimeout(
@@ -564,14 +584,14 @@ export function registerBloodAnalysisRoutes(app: Express): void {
             aiMeta = { status: "processing", model: "claude-opus-4-6", validationMissing: null };
           }
         }
-      } else if (shouldIncludeAI && !process.env.ANTHROPIC_API_KEY) {
+      } else if (shouldIncludeAI && !hasAnthropicKey) {
         aiAnalysis = buildFallbackAnalysis(analysisResult, profileWithAge as any);
         aiMeta = { status: "fallback", model: "fallback", validationMissing: null };
       }
       const aiNowIso = new Date().toISOString();
       const aiFallbackReason =
         aiMeta?.status === "fallback"
-          ? (!process.env.ANTHROPIC_API_KEY
+          ? (!hasAnthropicKey
               ? "anthropic_key_missing"
               : syncAiNeedsBackgroundRetry
               ? "sync_timeout_or_error"
@@ -605,7 +625,25 @@ export function registerBloodAnalysisRoutes(app: Express): void {
       } as any);
 
       const shouldQueueBackgroundAI =
-        shouldIncludeAI && process.env.ANTHROPIC_API_KEY && (shouldAsyncAI || syncAiNeedsBackgroundRetry);
+        shouldIncludeAI && hasAnthropicKey && (shouldAsyncAI || syncAiNeedsBackgroundRetry);
+      const baseUrl = getBaseUrl();
+      const shouldDeferEmailToBackground = shouldQueueBackgroundAI;
+      if (aiAnalysis && !shouldDeferEmailToBackground) {
+        const emailSent = await sendBloodClientDeliveryEmail(
+          recipientEmail,
+          reportRecord.id,
+          aiAnalysis,
+          baseUrl
+        );
+        if (emailSent) {
+          await sendAdminEmailNewAudit(
+            recipientEmail,
+            recipientEmail.split("@")[0],
+            "BLOOD_ANALYSIS",
+            reportRecord.id
+          );
+        }
+      }
       if (shouldQueueBackgroundAI) {
         setImmediate(async () => {
           try {
@@ -648,6 +686,20 @@ export function registerBloodAnalysisRoutes(app: Express): void {
                 aiFormat: enrichedHtml ? "html" : "markdown",
               } as any,
             } as any);
+            const emailSent = await sendBloodClientDeliveryEmail(
+              recipientEmail,
+              reportRecord.id,
+              enrichedReport,
+              baseUrl
+            );
+            if (emailSent) {
+              await sendAdminEmailNewAudit(
+                recipientEmail,
+                recipientEmail.split("@")[0],
+                "BLOOD_ANALYSIS",
+                reportRecord.id
+              );
+            }
           } catch (err) {
             console.error("[BloodAnalysis] async AI failed:", err);
             try {
@@ -674,12 +726,6 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         });
       }
 
-      const baseUrl = getBaseUrl();
-      const emailSent = await sendReportReadyEmail(recipientEmail, reportRecord.id, "BLOOD_ANALYSIS", baseUrl);
-      if (emailSent) {
-        await sendAdminEmailNewAudit(recipientEmail, recipientEmail.split("@")[0], "BLOOD_ANALYSIS", reportRecord.id);
-      }
-
       res.json({
         success: true,
         reportId: reportRecord.id,
@@ -689,7 +735,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         aiMeta,
         status:
           shouldIncludeAI &&
-          Boolean(process.env.ANTHROPIC_API_KEY) &&
+          hasAnthropicKey &&
           (aiMeta?.status === "processing" || (shouldAsyncAI && !aiAnalysis))
             ? "processing"
             : "completed"

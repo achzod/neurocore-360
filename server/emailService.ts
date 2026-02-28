@@ -440,13 +440,100 @@ export async function sendReportReadyEmail(
   }
 }
 
-export async function sendBloodReportHtmlEmail(
+const escapeHtml = (value: string): string =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const markdownToEmailHtml = (markdown: string): string => {
+  const lines = String(markdown || "").split("\n");
+  const html: string[] = [];
+  let paragraph: string[] = [];
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const text = paragraph.join(" ").trim();
+    if (text) {
+      html.push(
+        `<p style="margin: 0 0 14px; color: ${COLORS.textMuted}; font-size: 14px; line-height: 1.8;">${escapeHtml(
+          text,
+        )}</p>`,
+      );
+    }
+    paragraph = [];
+  };
+
+  for (const lineRaw of lines) {
+    const line = lineRaw.trim();
+    if (!line) {
+      flushParagraph();
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushParagraph();
+      html.push(
+        `<h2 style="margin: 28px 0 12px; color: ${COLORS.text}; font-size: 21px; line-height: 1.35;">${escapeHtml(
+          line.slice(3),
+        )}</h2>`,
+      );
+      continue;
+    }
+    if (line.startsWith("### ")) {
+      flushParagraph();
+      html.push(
+        `<h3 style="margin: 20px 0 10px; color: ${COLORS.text}; font-size: 17px; line-height: 1.4;">${escapeHtml(
+          line.slice(4),
+        )}</h3>`,
+      );
+      continue;
+    }
+    paragraph.push(line);
+  }
+  flushParagraph();
+  return html.join("\n");
+};
+
+export async function sendBloodAnalysisHtmlEmail(
   email: string,
-  htmlReport: string,
-  clientName: string
+  reportId: string,
+  reportMarkdown: string,
+  baseUrl: string,
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
+    const reportLink = `${baseUrl}/analysis/${reportId}`;
+    const reportHtml = markdownToEmailHtml(reportMarkdown);
+
+    const content = `
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; background: ${COLORS.blood}20; color: ${COLORS.blood}; padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border: 1px solid ${COLORS.blood}55;">
+          Blood Analysis
+        </span>
+      </div>
+
+      <h2 style="color: ${COLORS.text}; margin: 0 0 12px; font-size: 28px; text-align: center; font-weight: 700;">
+        Ton rapport complet est pret
+      </h2>
+      <p style="color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.7; margin: 0 0 22px; text-align: center;">
+        Version HTML integrale du rapport ci-dessous. Tu peux aussi l'ouvrir dans ton dashboard pour navigation onglet par onglet.
+      </p>
+
+      ${getPrimaryButton("Ouvrir le dashboard", reportLink, COLORS.blood)}
+
+      <div style="margin-top: 26px; padding-top: 22px; border-top: 1px solid ${COLORS.border};">
+        ${reportHtml}
+      </div>
+    `;
+
+    const emailContent = getEmailWrapper(
+      content,
+      `linear-gradient(135deg, ${COLORS.blood} 0%, #7f1d1d 100%)`,
+      "Blood Analysis",
+      "Rapport HTML complet",
+    );
 
     const response = await fetch("https://api.sendpulse.com/smtp/emails", {
       method: "POST",
@@ -456,9 +543,9 @@ export async function sendBloodReportHtmlEmail(
       },
       body: JSON.stringify({
         email: {
-          html: encodeBase64(htmlReport),
-          text: `Rapport Blood Analysis pour ${clientName} - ApexLabs by Achzod`,
-          subject: `Blood Analysis — ${clientName}`,
+          html: encodeBase64(emailContent),
+          text: `Ton Blood Analysis complet est disponible ici: ${reportLink}`,
+          subject: "Ton Blood Analysis complet (HTML) est pret",
           from: {
             name: "ApexLabs by Achzod",
             email: SENDER_EMAIL,
@@ -468,11 +555,11 @@ export async function sendBloodReportHtmlEmail(
       }),
     });
 
-    const result = await response.json() as { result: boolean; error?: any; message?: any };
-    console.log(`[SendPulse] Blood HTML report sent to ${email}:`, result);
+    const result = (await response.json()) as { result: boolean; error?: any; message?: any };
+    console.log(`[SendPulse] Blood HTML email sent to ${email}:`, result);
     return result.result === true;
   } catch (error) {
-    console.error("[SendPulse] Error sending blood HTML report:", error);
+    console.error("[SendPulse] Error sending blood HTML email:", error);
     return false;
   }
 }

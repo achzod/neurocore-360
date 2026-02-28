@@ -5,6 +5,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import pLimit from "p-limit";
 import { searchArticles, searchFullText } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 
@@ -1812,6 +1813,8 @@ const reorderReportSections = (report: string): string => {
 
 const BULLET_LINE_REGEX = /^\s*(?:[-*+]|(?:\d+[\.\)]))\s+/;
 const MARKDOWN_TABLE_LINE_REGEX = /^\s*\|(?:[^|\n]+\|)+\s*$/;
+const PLACEHOLDER_AXIS_HEADING_REGEX = /^\s*###\s*Axe\s+\d+\s+[—-]\s*Non renseigne\b/im;
+const NON_RENSEIGNE_DOSSIER_REGEX = /non renseigne pour ce dossier/i;
 
 const validateNarrativeStyle = (output: string, markerCount: number): string[] => {
   const reasons: string[] = [];
@@ -1952,6 +1955,15 @@ const validateReportStructure = (
   }
 
   reasons.push(...validateNarrativeStyle(output, markerCount));
+
+  const placeholderAxisHeadings = countMatches(output, PLACEHOLDER_AXIS_HEADING_REGEX);
+  if (placeholderAxisHeadings > 0) {
+    reasons.push(`placeholder_axis_headings:${placeholderAxisHeadings}`);
+  }
+  const nonRenseigneDossierCount = countMatches(output, NON_RENSEIGNE_DOSSIER_REGEX);
+  if (nonRenseigneDossierCount > 1) {
+    reasons.push(`non_renseigne_placeholder_overuse:${nonRenseigneDossierCount}`);
+  }
 
   return {
     ok: reasons.length === 0,
@@ -2361,7 +2373,7 @@ const insertPlan90Section = (text: string, planSection: string): string => {
   return `${text.trim()}\n\n${planSection.trim()}`.trim();
 };
 
-const trimAiAnalysis = (text: string, maxChars = 100000): string => {
+const trimAiAnalysis = (text: string, maxChars = 180000): string => {
   if (!text) return "";
   const cleaned = stripEmojis(text).trim();
   if (cleaned.length <= maxChars) return cleaned;
@@ -3717,6 +3729,36 @@ const getMarkerPanelName = (markerId: string, fallback?: string) => {
   return "Axe general";
 };
 
+const buildAxisPromptContext = (markers: MarkerAnalysis[]): string => {
+  if (!markers.length) return "- Aucun axe exploitable (aucun biomarqueur interprete).";
+
+  const grouped = new Map<string, MarkerAnalysis[]>();
+  for (const marker of markers) {
+    const panel = getMarkerPanelName(marker.markerId, marker.category);
+    const existing = grouped.get(panel) || [];
+    existing.push(marker);
+    grouped.set(panel, existing);
+  }
+
+  const preferredOrder = PANEL_KEYWORDS.map((group) => group.panel);
+  const extraPanels = Array.from(grouped.keys()).filter((panel) => !preferredOrder.includes(panel));
+  const orderedPanels = [...preferredOrder, ...extraPanels].filter((panel) => (grouped.get(panel)?.length || 0) > 0);
+  if (!orderedPanels.length) return "- Aucun axe exploitable (aucun biomarqueur interprete).";
+
+  return orderedPanels
+    .map((panel, idx) => {
+      const panelMarkers = grouped.get(panel) || [];
+      const criticalCount = panelMarkers.filter((marker) => marker.status === "critical").length;
+      const suboptimalCount = panelMarkers.filter((marker) => marker.status === "suboptimal").length;
+      const markerPreview = panelMarkers
+        .slice(0, 6)
+        .map((marker) => `${marker.name}=${marker.value}${marker.unit ? ` ${marker.unit}` : ""} (${marker.status})`)
+        .join(" | ");
+      return `Axe ${idx + 1} — ${panel}: ${panelMarkers.length} marqueur(s), ${criticalCount} critique(s), ${suboptimalCount} important(s). Marqueurs disponibles: ${markerPreview}.`;
+    })
+    .join("\n");
+};
+
 export async function generateAIBloodAnalysis(
   analysisResult: BloodAnalysisResult,
   userProfile: {
@@ -3763,6 +3805,7 @@ export async function generateAIBloodAnalysis(
         .map((pattern) => `Pattern detecte: ${pattern.name}\nCauses probables: ${pattern.causes.join(", ")}`)
         .join("\n\n")
     : "Aucun pattern robuste detecte avec les donnees disponibles.";
+  const axisPromptContext = buildAxisPromptContext(analysisResult.markers);
 
   const bmi =
     typeof userProfile.poids === "number" && typeof userProfile.taille === "number" && userProfile.taille > 0
@@ -3828,6 +3871,9 @@ Nombre de marqueurs interpretes: ${markerCount}
 ${deepDivePayload.context ? `\nDEEP DIVE - DONNEES & SOURCES PAR BIOMARQUEUR:\n${deepDivePayload.context}` : ""}
 ${knowledgeContext ? `\nCONTEXTE SCIENTIFIQUE GENERAL:\n${knowledgeContext}` : ""}
 
+AXES DISPONIBLES (d'apres les marqueurs reels):
+${axisPromptContext}
+
 FORMAT OBLIGATOIRE (dans cet ordre exact):
 1. ## Synthese executive
 2. ## Qualite des donnees & limites
@@ -3849,6 +3895,7 @@ EXIGENCES DE QUALITE:
 - Longueur cible: ${targetChars} caracteres minimum, sans remplissage artificiel.
 - Traiter au moins ${minDeepDiveMarkers} marqueurs en deep dive (ou tous les non-optimaux s'il y en a moins).
 - Pour chaque axe et chaque marqueur prioritaire: lecture clinique + lecture performance + actions concretes.
+- Interdiction de creer des titres placeholders du type "Axe X — Non renseigne". Si un axe est incomplet, conserver son nom reel et indiquer "Non renseigne" uniquement dans le paragraphe.
 - Rediger exclusivement en prose narrative: paragraphes complets et phrases detaillees.
 - Interdiction absolue dans la sortie finale: listes a puces, listes numerotees, tableaux markdown.
 - Tu DOIS respecter des seuils de profondeur:
@@ -3877,72 +3924,89 @@ ${lowDataMode ? "\nMODE DONNEES PARTIELLES: panel incomplet. Renforce la section
 
   // Reduce retries to 1 for faster response, with timeout protection
   const maxAttempts = process.env.BLOOD_ANALYSIS_FAST_MODE === "true" ? 1 : 2;
+  const parallelSectionsEnabled = process.env.BLOOD_ANALYSIS_PARALLEL_SECTIONS !== "false";
+  const forceParallelSectionGeneration =
+    process.env.BLOOD_ANALYSIS_FORCE_PARALLEL_SECTIONS !== "false";
+  const parsedConcurrency = Number(process.env.BLOOD_ANALYSIS_SECTION_CONCURRENCY || "4");
+  const sectionConcurrency = Number.isFinite(parsedConcurrency)
+    ? Math.max(2, Math.min(6, Math.floor(parsedConcurrency)))
+    : 4;
+  const skipMonolithicGeneration =
+    parallelSectionsEnabled &&
+    forceParallelSectionGeneration &&
+    process.env.BLOOD_ANALYSIS_SKIP_MONOLITHIC !== "false";
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const retryNote =
-      attempt === 1
-        ? ""
-        : `\nATTENTION: Ta reponse precedente etait trop generique ou non conforme. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies, avec les 12 sections H2 exactes dans l'ordre, et un style 100% narratif sans puces, sans numerotation, sans tableaux.\n`;
-    const prompt = `${userPrompt}\n${retryNote}`;
+  if (!skipMonolithicGeneration) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const retryNote =
+        attempt === 1
+          ? ""
+          : `\nATTENTION: Ta reponse precedente etait trop generique ou non conforme. Corrige en utilisant STRICTEMENT les donnees patient et les sources fournies, avec les 12 sections H2 exactes dans l'ordre, et un style 100% narratif sans puces, sans numerotation, sans tableaux.\n`;
+      const prompt = `${userPrompt}\n${retryNote}`;
 
-    try {
-      // Stream output to support long narratives while keeping memory bounded.
-      const stream = await anthropic.messages.create({
-        model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
-        max_tokens: 22000,
-        system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-        stream: true,
-      });
+      try {
+        // Stream output to support long narratives while keeping memory bounded.
+        const stream = await anthropic.messages.create({
+          model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
+          max_tokens: 22000,
+          system: BLOOD_ANALYSIS_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+          stream: true,
+        });
 
-      let candidate = "";
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          candidate += event.delta.text;
+        let candidate = "";
+        for await (const event of stream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            candidate += event.delta.text;
+          }
         }
-      }
-      const normalizedCandidate = reorderReportSections(ensureSourcesSection(candidate));
-      const deepDiveCheck = validateDeepDive(normalizedCandidate, deepDivePayload.markerNames);
-      const structureCheck = validateReportStructure(normalizedCandidate, analysisResult.markers);
-      if (!deepDiveCheck.ok) {
-        console.warn(`[BloodAnalysis] Candidate deep-dive rejection: ${deepDiveCheck.reason}`);
-      }
-      if (!structureCheck.ok) {
-        console.warn(`[BloodAnalysis] Candidate structure rejection: ${structureCheck.reasons.join(" | ")}`);
-      }
-
-      const qualityOk = deepDiveCheck.ok && structureCheck.ok;
-      const score =
-        normalizedCandidate.length +
-        (deepDiveCheck.ok ? 7000 : 0) +
-        structureCheck.matchedSections * 1200 -
-        structureCheck.missing.length * 1800 -
-        structureCheck.thin.length * 1800;
-      if (score > bestScore) {
-        bestScore = score;
-        bestCandidate = normalizedCandidate;
-      }
-      if (qualityOk) {
-        output = normalizedCandidate;
-        break;
-      }
-    } catch (err: any) {
-      if (err.message === "API_TIMEOUT") {
-        console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
-        if (attempt === maxAttempts) {
-          throw new Error("AI_TIMEOUT_ALL_ATTEMPTS");
+        const normalizedCandidate = reorderReportSections(ensureSourcesSection(candidate));
+        const deepDiveCheck = validateDeepDive(normalizedCandidate, deepDivePayload.markerNames);
+        const structureCheck = validateReportStructure(normalizedCandidate, analysisResult.markers);
+        if (!deepDiveCheck.ok) {
+          console.warn(`[BloodAnalysis] Candidate deep-dive rejection: ${deepDiveCheck.reason}`);
         }
-      } else {
-        throw err;
+        if (!structureCheck.ok) {
+          console.warn(`[BloodAnalysis] Candidate structure rejection: ${structureCheck.reasons.join(" | ")}`);
+        }
+
+        const qualityOk = deepDiveCheck.ok && structureCheck.ok;
+        const score =
+          normalizedCandidate.length +
+          (deepDiveCheck.ok ? 7000 : 0) +
+          structureCheck.matchedSections * 1200 -
+          structureCheck.missing.length * 1800 -
+          structureCheck.thin.length * 1800;
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = normalizedCandidate;
+        }
+        if (qualityOk) {
+          output = normalizedCandidate;
+          break;
+        }
+      } catch (err: any) {
+        if (err.message === "API_TIMEOUT") {
+          console.warn(`[BloodAnalysis] Attempt ${attempt} timed out after ${API_TIMEOUT_MS}ms`);
+          if (attempt === maxAttempts) {
+            throw new Error("AI_TIMEOUT_ALL_ATTEMPTS");
+          }
+        } else {
+          throw err;
+        }
       }
     }
+  } else {
+    console.log(
+      `[BloodAnalysis] Skipping monolithic draft: parallel section generation is primary mode (concurrency=${sectionConcurrency}).`
+    );
   }
 
-  if (!output) {
+  if (!output && !skipMonolithicGeneration) {
     output = bestCandidate;
   }
 
-  if (!/(^|\n)##\s+Plan(?: d'action)? 90 jours/i.test(output)) {
+  if (!skipMonolithicGeneration && !/(^|\n)##\s+Plan(?: d'action)? 90 jours/i.test(output)) {
     const planPrompt = `Genere UNIQUEMENT la section "## Plan d'action 90 jours" pour ce bilan sanguin.
 
 Contraintes:
@@ -4102,11 +4166,15 @@ Contraintes:
 - Longueur minimale: ${qualityThresholds.axes} caracteres.
 - Couvre explicitement chaque axe disponible dans les marqueurs du bilan.
 - Pour chaque axe: score, lecture clinique, lecture performance/bodybuilding, actions prioritaires, tests manquants.
-- Utilise les vrais marqueurs et leurs valeurs. Si un axe est incomplet, ecris "Non renseigne" et les tests requis.
+- Utilise les vrais marqueurs et leurs valeurs. Si un axe est incomplet, ecris "Non renseigne" dans le corps, jamais dans le titre d'axe.
+- Interdiction de produire des titres du type "Axe X — Non renseigne": conserver le nom reel de l'axe.
 - Pas d'invention, pas de generalites vides.
 
 Contexte marqueurs:
 ${markersTable}
+
+Axes disponibles:
+${axisPromptContext}
 
 Patterns:
 ${patternsText}`,
@@ -4240,20 +4308,15 @@ ${markersTable}`,
     },
   ];
 
-  for (const spec of sectionRepairSpecs) {
-    const parsed = parseH2Sections(output);
-    const current = findSectionByAliases(parsed, spec.aliases);
-    const currentLength = current?.content.trim().length || 0;
-    const needsRepair = !current || currentLength < spec.minChars;
-
-    console.log(
-      `[BloodAnalysis] Section "${spec.title}": ${current ? `${currentLength} chars` : "missing"} (target >= ${spec.minChars})`
+  const generateSingleSection = async (
+    spec: (typeof sectionRepairSpecs)[number]
+  ): Promise<string> => {
+    const isAxesSection = spec.aliases.some((alias) =>
+      ["lecture-compartimentee-par-axes", "analyse-par-axe"].includes(alias)
     );
+    const maxSectionAttempts = isAxesSection ? 2 : 1;
 
-    if (!needsRepair) continue;
-
-    console.log(`[BloodAnalysis] ⚠️ Repairing section "${spec.title}"...`);
-    try {
+    for (let attempt = 1; attempt <= maxSectionAttempts; attempt += 1) {
       const sectionStream = await anthropic.messages.create({
         model: process.env.BLOOD_ANALYSIS_MODEL || "claude-opus-4-6",
         max_tokens: spec.maxTokens,
@@ -4272,15 +4335,92 @@ ${markersTable}`,
 
       const generated = sectionContent.trim();
       if (!generated) continue;
-
       const normalizedGenerated = parseH2Sections(generated);
-      const sectionToInsert = normalizedGenerated.length ? generated : `## ${spec.title}\n\n${generated}`;
-      output = upsertSectionByAliases(output, spec.aliases, sectionToInsert);
+      let body = "";
+      if (normalizedGenerated.length) {
+        body = normalizedGenerated[0].content.replace(/^\s*(?:\*\*)?##\s+.+?(?:\*\*)?\s*$/m, "").trim();
+      } else {
+        body = generated;
+      }
+      const candidate = `## ${spec.title}\n\n${body}`.trim();
+
+      if (isAxesSection && PLACEHOLDER_AXIS_HEADING_REGEX.test(candidate)) {
+        console.warn(
+          `[BloodAnalysis] Axes section attempt ${attempt} rejected: placeholder axis heading detected.`
+        );
+        continue;
+      }
+
+      return candidate;
+    }
+    return "";
+  };
+
+  if (parallelSectionsEnabled) {
+    console.log(
+      `[BloodAnalysis] Parallel sections mode enabled (concurrency=${sectionConcurrency}, force=${forceParallelSectionGeneration})`
+    );
+    const baselineSections = parseH2Sections(output);
+    const limiter = pLimit(sectionConcurrency);
+    const parallelResults = await Promise.all(
+      sectionRepairSpecs.map((spec) =>
+        limiter(async () => {
+          const current = findSectionByAliases(baselineSections, spec.aliases);
+          const currentLength = current?.content.trim().length || 0;
+          const needsRepair = !current || currentLength < spec.minChars;
+          console.log(
+            `[BloodAnalysis] Section "${spec.title}": ${current ? `${currentLength} chars` : "missing"} (target >= ${spec.minChars})`
+          );
+
+          if (!forceParallelSectionGeneration && !needsRepair) {
+            return { spec, sectionToInsert: "", currentLength, skipped: true };
+          }
+
+          try {
+            const sectionToInsert = await generateSingleSection(spec);
+            return { spec, sectionToInsert, currentLength, skipped: false };
+          } catch (err: any) {
+            console.error(
+              `[BloodAnalysis] ❌ Failed to generate section "${spec.title}" in parallel mode:`,
+              err.message
+            );
+            return { spec, sectionToInsert: "", currentLength, skipped: false };
+          }
+        })
+      )
+    );
+
+    for (const result of parallelResults) {
+      if (!result.sectionToInsert) continue;
+      output = upsertSectionByAliases(output, result.spec.aliases, result.sectionToInsert);
       console.log(
-        `[BloodAnalysis] ✅ Section "${spec.title}" repaired (${sectionToInsert.length} chars, previous ${currentLength})`
+        `[BloodAnalysis] ✅ Section "${result.spec.title}" upserted (${result.sectionToInsert.length} chars, previous ${result.currentLength})`
       );
-    } catch (err: any) {
-      console.error(`[BloodAnalysis] ❌ Failed to repair "${spec.title}":`, err.message);
+    }
+  } else {
+    for (const spec of sectionRepairSpecs) {
+      const parsed = parseH2Sections(output);
+      const current = findSectionByAliases(parsed, spec.aliases);
+      const currentLength = current?.content.trim().length || 0;
+      const needsRepair = !current || currentLength < spec.minChars;
+
+      console.log(
+        `[BloodAnalysis] Section "${spec.title}": ${current ? `${currentLength} chars` : "missing"} (target >= ${spec.minChars})`
+      );
+
+      if (!needsRepair) continue;
+
+      console.log(`[BloodAnalysis] ⚠️ Repairing section "${spec.title}"...`);
+      try {
+        const sectionToInsert = await generateSingleSection(spec);
+        if (!sectionToInsert) continue;
+        output = upsertSectionByAliases(output, spec.aliases, sectionToInsert);
+        console.log(
+          `[BloodAnalysis] ✅ Section "${spec.title}" repaired (${sectionToInsert.length} chars, previous ${currentLength})`
+        );
+      } catch (err: any) {
+        console.error(`[BloodAnalysis] ❌ Failed to repair "${spec.title}":`, err.message);
+      }
     }
   }
 
