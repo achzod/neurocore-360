@@ -17,6 +17,8 @@ import { searchArticles } from "../knowledge/storage";
 import type { ScrapedArticle } from "../knowledge/storage";
 import {
   BIOMARKER_RANGES,
+  buildFallbackAnalysis,
+  generateAIBloodAnalysis,
   type BloodAnalysisResult,
   type MarkerAnalysis,
 } from "./index";
@@ -1033,6 +1035,52 @@ export async function generateParallelHtmlReport(
     console.error(`[BatchHTML] Generation failed: ${err.message}`);
   }
 
+  const fillMissingFromMarkdown = (markdown: string, reason: string) => {
+    const parsed = parseMarkdownSections(markdown || "");
+    const missingBefore = SECTION_ORDER.filter((key) => !sectionsMap[key]);
+    for (const key of missingBefore) {
+      if (parsed[key]) sectionsMap[key] = parsed[key];
+    }
+    const missingAfter = SECTION_ORDER.filter((key) => !sectionsMap[key]);
+    console.log(
+      `[BatchHTML] Missing sections repair (${reason}): ${missingBefore.length} -> ${missingAfter.length}`
+    );
+  };
+
+  const missingAfterParallel = SECTION_ORDER.filter((key) => !sectionsMap[key]);
+  if (missingAfterParallel.length > 0) {
+    try {
+      console.warn(
+        `[BatchHTML] Incomplete parallel output (${missingAfterParallel.length}/12 missing). Running canonical markdown recovery.`
+      );
+      const canonicalMarkdown = await generateAIBloodAnalysis(
+        analysisResult,
+        userProfile,
+        knowledgeContext
+      );
+      fillMissingFromMarkdown(canonicalMarkdown, "canonical_markdown");
+    } catch (err: any) {
+      console.error(`[BatchHTML] Canonical markdown recovery failed: ${err?.message || err}`);
+    }
+  }
+
+  const missingAfterCanonical = SECTION_ORDER.filter((key) => !sectionsMap[key]);
+  if (missingAfterCanonical.length > 0) {
+    try {
+      console.warn(
+        `[BatchHTML] Still incomplete (${missingAfterCanonical.length}/12 missing). Applying deterministic fallback recovery.`
+      );
+      const fallbackMarkdown = buildFallbackAnalysis(
+        analysisResult,
+        userProfile,
+        knowledgeContext
+      );
+      fillMissingFromMarkdown(fallbackMarkdown, "deterministic_fallback");
+    } catch (err: any) {
+      console.error(`[BatchHTML] Deterministic fallback recovery failed: ${err?.message || err}`);
+    }
+  }
+
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const totalSections = Object.keys(sectionsMap).length;
   console.log(`[BatchHTML] Generation complete: ${totalSections}/12 sections in ${elapsed}s`);
@@ -1041,7 +1089,7 @@ export async function generateParallelHtmlReport(
   const generatedSections: Array<{ key: string; title: string; content: string }> = [];
   for (const key of SECTION_ORDER) {
     const title = SECTION_TITLES[key] || key;
-    const content = sectionsMap[key] || "Section non disponible. Veuillez regenerer le rapport.";
+    const content = sectionsMap[key] || "";
     generatedSections.push({ key, title, content });
   }
 
