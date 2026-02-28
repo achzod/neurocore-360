@@ -50,7 +50,6 @@ import { storage } from "../storage";
 import {
   sendAdminEmailNewAudit,
   sendBloodAnalysisHtmlEmail,
-  sendBloodReportHtmlEmail,
 } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
@@ -3435,21 +3434,33 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         analysisResult.patterns
       );
 
-      const parallelResult = await withAIGenerationTimeout(
-        () => generateParallelHtmlReport(analysisResult, profile, knowledgeContext),
-        "blood-analysis/send-report-email",
-        180_000
+      let finalMarkdown = await withAIGenerationTimeout(
+        () => generateAIBloodAnalysis(analysisResult, profile, knowledgeContext),
+        "blood-analysis/send-report-email-canonical",
+        240_000
       );
 
-      const clientName = profile?.prenom || "Client";
-      const sent = await sendBloodReportHtmlEmail(email, parallelResult.html, clientName);
+      // Hard guard: never deliver placeholder sections in client email.
+      if (/Section non disponible\. Veuillez regenerer le rapport\./i.test(finalMarkdown)) {
+        console.warn("[BloodAnalysis] send-report-email produced placeholder content, switching to deterministic fallback.");
+        finalMarkdown = buildFallbackAnalysis(analysisResult, profile, knowledgeContext);
+      }
+
+      const reportId = `mail-${Date.now().toString(36)}`;
+      const sent = await sendBloodAnalysisHtmlEmail(
+        email,
+        reportId,
+        finalMarkdown,
+        getBaseUrl()
+      );
+      const sectionsCount = (finalMarkdown.match(/^\s*##\s+/gm) || []).length;
 
       res.json({
         success: true,
         emailSent: sent,
         email,
-        htmlLength: parallelResult.html.length,
-        sectionsCount: Object.keys(parallelResult.sections).length,
+        markdownLength: finalMarkdown.length,
+        sectionsCount,
       });
     } catch (error: any) {
       console.error("[BloodAnalysis] send-report-email error:", error);
