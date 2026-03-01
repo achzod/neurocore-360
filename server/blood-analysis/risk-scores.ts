@@ -2071,123 +2071,107 @@ export function calculateHormonalHealthScore(
   profile: { gender: "homme" | "femme"; age?: string }
 ): RiskScore {
   const factors: RiskFactor[] = [];
-  let totalScore = 100;
   const markersUsed: string[] = [];
 
+  const checks: WeightedMarkerCheck[] = [];
+
   if (profile.gender === "homme") {
-    // Testosterone total
-    const testo = getMarkerValue(markers, "testosterone_total");
-    if (testo !== null) {
-      markersUsed.push("testosterone_total");
-      let deduction = 0;
-      if (testo < 300) deduction = 35;
-      else if (testo < 450) deduction = 25;
-      else if (testo < 550) deduction = 15;
-      else if (testo < 650) deduction = 5;
-      else if (testo <= 900) deduction = 0;
-      else deduction = 10; // Too high
-
-      totalScore -= deduction;
-      factors.push({
-        marker: "Testostérone totale",
-        value: testo,
-        unit: "ng/dL",
-        contribution: deduction > 15 ? "negative" : deduction > 5 ? "neutral" : "positive",
-        weight: deduction,
-        explanation: testo >= 600 ? "Testostérone optimale" : testo >= 450 ? "Testostérone acceptable" : "Testostérone basse"
-      });
-    }
-
-    // SHBG
-    const shbg = getMarkerValue(markers, "shbg");
-    if (shbg !== null) {
-      markersUsed.push("shbg");
-      let deduction = 0;
-      if (shbg < 15) deduction = 10;
-      else if (shbg <= 35) deduction = 0;
-      else if (shbg <= 50) deduction = 10;
-      else deduction = 20;
-
-      totalScore -= deduction;
-      factors.push({
-        marker: "SHBG",
-        value: shbg,
-        unit: "nmol/L",
-        contribution: deduction > 10 ? "negative" : deduction > 0 ? "neutral" : "positive",
-        weight: deduction,
-        explanation: shbg <= 35 ? "SHBG optimal" : shbg > 50 ? "SHBG élevé - moins de testo libre" : "SHBG acceptable"
-      });
-    }
-
-    // Estradiol
-    const e2 = getMarkerValue(markers, "estradiol");
-    if (e2 !== null) {
-      markersUsed.push("estradiol");
-      let deduction = 0;
-      if (e2 < 15) deduction = 15;
-      else if (e2 <= 30) deduction = 0;
-      else if (e2 <= 40) deduction = 10;
-      else deduction = 20;
-
-      totalScore -= deduction;
-      factors.push({
-        marker: "Estradiol",
-        value: e2,
+    checks.push(
+      {
+        markerId: "testosterone_libre",
+        label: "Testostérone libre",
         unit: "pg/mL",
-        contribution: deduction > 10 ? "negative" : deduction > 0 ? "neutral" : "positive",
-        weight: deduction,
-        explanation: e2 >= 20 && e2 <= 30 ? "Estradiol optimal" : e2 > 35 ? "Estradiol élevé" : "Estradiol bas"
-      });
-    }
+        maxWeight: 28, // DOMINANT for hormonal health in men
+        evaluate: (v) => {
+          if (v >= 15 && v <= 25) return { deduction: 0, explanation: "Testo libre optimale — axe androgénique bien calibré." };
+          if (v >= 12) return { deduction: 8, explanation: "Testo libre légèrement suboptimale — marge d'optimisation." };
+          if (v >= 8) return { deduction: 18, explanation: "Testo libre basse — déséquilibre hormonal significatif impactant énergie et récupération." };
+          if (v >= 5) return { deduction: 24, explanation: "Testo libre très basse — hypogonadisme fonctionnel probable." };
+          return { deduction: 28, explanation: "Testo libre effondrée — consultation endocrinologique urgente." };
+        },
+      },
+      {
+        markerId: "testosterone_total",
+        label: "Testostérone totale",
+        unit: "ng/dL",
+        maxWeight: 20,
+        evaluate: (v) => {
+          if (v >= 600 && v <= 900) return { deduction: 0, explanation: "Testostérone totale optimale." };
+          if (v >= 500) return { deduction: 5, explanation: "Testostérone totale acceptable." };
+          if (v >= 400) return { deduction: 12, explanation: "Testostérone totale basse." };
+          if (v >= 300) return { deduction: 17, explanation: "Testostérone totale très basse — frein hormonal majeur." };
+          return { deduction: 20, explanation: "Testostérone totale critique — investigation endocrinienne nécessaire." };
+        },
+      },
+      {
+        markerId: "shbg",
+        label: "SHBG",
+        unit: "nmol/L",
+        maxWeight: 15,
+        evaluate: (v) => {
+          if (v >= 20 && v <= 35) return { deduction: 0, explanation: "SHBG optimal — biodisponibilité hormonale maximale." };
+          if (v >= 15 && v <= 45) return { deduction: 5, explanation: "SHBG acceptable — léger impact sur la fraction libre." };
+          if (v <= 10 || v >= 55) return { deduction: 15, explanation: "SHBG très déséquilibré — impact sévère sur la biodisponibilité des hormones." };
+          return { deduction: 10, explanation: "SHBG hors zone — impact modéré sur la testo libre." };
+        },
+      },
+      {
+        markerId: "estradiol",
+        label: "Estradiol",
+        unit: "pg/mL",
+        maxWeight: 12,
+        evaluate: (v) => {
+          if (v >= 20 && v <= 35) return { deduction: 0, explanation: "Estradiol optimal — équilibre T/E2 correct." };
+          if (v >= 15 && v <= 40) return { deduction: 3, explanation: "Estradiol acceptable." };
+          return { deduction: 12, explanation: "Estradiol déséquilibré — impact sur l'axe hormonal global." };
+        },
+      },
+    );
   } else {
-    // Femme - à développer selon besoins
-    // Estradiol, progestérone, FSH, LH, etc.
-  }
-
-  // Cortisol (both genders)
-  const cortisol = getMarkerValue(markers, "cortisol");
-  if (cortisol !== null) {
-    markersUsed.push("cortisol");
-    let deduction = 0;
-    if (cortisol < 8) deduction = 15;
-    else if (cortisol >= 12 && cortisol <= 18) deduction = 0;
-    else if (cortisol <= 22) deduction = 10;
-    else deduction = 20;
-
-    totalScore -= deduction;
-    factors.push({
-      marker: "Cortisol matin",
-      value: cortisol,
-      unit: "µg/dL",
-      contribution: deduction > 10 ? "negative" : deduction > 0 ? "neutral" : "positive",
-      weight: deduction,
-      explanation: cortisol >= 12 && cortisol <= 18 ? "Cortisol optimal" : cortisol > 20 ? "Cortisol élevé - stress chronique" : "Cortisol bas - fatigue surrénale"
+    // Femme — estradiol domine
+    checks.push({
+      markerId: "estradiol",
+      label: "Estradiol",
+      unit: "pg/mL",
+      maxWeight: 25,
+      evaluate: (v) => {
+        if (v >= 30 && v <= 120) return { deduction: 0, explanation: "Estradiol dans la zone optimale femme." };
+        if (v >= 20 && v <= 150) return { deduction: 8, explanation: "Estradiol acceptable." };
+        return { deduction: 25, explanation: "Estradiol hors zone — déséquilibre hormonal significatif." };
+      },
     });
   }
 
-  // DHEA-S
-  const dheas = getMarkerValue(markers, "dhea_s");
-  if (dheas !== null) {
-    markersUsed.push("dhea_s");
-    let deduction = 0;
-    if (dheas < 200) deduction = 15;
-    else if (dheas < 300) deduction = 8;
-    else if (dheas <= 450) deduction = 0;
-    else deduction = 5;
-
-    totalScore -= deduction;
-    factors.push({
-      marker: "DHEA-S",
-      value: dheas,
+  // Shared markers
+  checks.push(
+    {
+      markerId: "cortisol",
+      label: "Cortisol matin",
       unit: "µg/dL",
-      contribution: deduction > 10 ? "negative" : deduction > 0 ? "neutral" : "positive",
-      weight: deduction,
-      explanation: dheas >= 300 ? "DHEA-S optimal (précurseur hormonal)" : "DHEA-S bas"
-    });
-  }
+      maxWeight: 15,
+      evaluate: (v) => {
+        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol optimal — bon équilibre surrénalien." };
+        if (v >= 8 && v <= 22) return { deduction: 5, explanation: "Cortisol acceptable." };
+        if (v > 25) return { deduction: 15, explanation: "Cortisol chroniquement élevé — stress surrénalien, frein hormonal majeur." };
+        return { deduction: 12, explanation: "Cortisol bas — fatigue surrénale possible." };
+      },
+    },
+    {
+      markerId: "dhea_s",
+      label: "DHEA-S",
+      unit: "µg/dL",
+      maxWeight: 10,
+      evaluate: (v) => {
+        if (v >= 300 && v <= 450) return { deduction: 0, explanation: "DHEA-S optimal — précurseur hormonal bien présent." };
+        if (v >= 200) return { deduction: 4, explanation: "DHEA-S acceptable mais perfectible." };
+        return { deduction: 10, explanation: "DHEA-S bas — axe surrénalien appauvri." };
+      },
+    },
+  );
 
-  const score = Math.max(0, Math.min(100, totalScore));
+  const score = evaluateWeightedMarkers(markers, checks, factors, markersUsed);
   const level = getRiskLevel(score);
+  const totalExpected = profile.gender === "homme" ? 6 : 3;
 
   let interpretation = "";
   if (score >= 85) {
@@ -2204,18 +2188,16 @@ export function calculateHormonalHealthScore(
 
   const recommendations: string[] = [];
   if (score < 85) {
-    recommendations.push("Sommeil 7-9h (crucial pour hormones)");
-    recommendations.push("Musculation 3x/semaine (stimule testostérone/GH)");
+    recommendations.push("Sommeil 7-9h — crucial pour la production hormonale nocturne.");
+    recommendations.push("Musculation 3x/semaine — stimule testostérone et GH.");
   }
   if (score < 70) {
-    recommendations.push("Ashwagandha KSM-66 600mg/jour");
-    recommendations.push("Zinc 30mg + Magnésium 400mg le soir");
-    recommendations.push("Vitamine D3 4000-5000 UI/jour si <50ng/mL");
+    recommendations.push("Zinc 30mg + Magnésium 400mg le soir (cofacteurs de la synthèse de testo).");
+    recommendations.push("Vitamine D3 4000-5000 UI/jour si <50 ng/mL.");
   }
   if (score < 55) {
-    recommendations.push("Tongkat Ali 400mg/jour");
-    recommendations.push("Réduire alcool et stress chronique");
-    recommendations.push("Bilan hormonal complet recommandé");
+    recommendations.push("Bilan hormonal complet : testo totale, SHBG, LH, FSH, cortisol, prolactine.");
+    recommendations.push("Réduire alcool et stress chronique — antagonistes directs de la testostérone.");
   }
 
   return {
@@ -2226,7 +2208,7 @@ export function calculateHormonalHealthScore(
     factors,
     recommendations,
     markers_used: markersUsed,
-    confidence: calculateConfidence(markersUsed.length, profile.gender === "homme" ? 5 : 3)
+    confidence: calculateConfidence(markersUsed.length, totalExpected)
   };
 }
 
@@ -2399,6 +2381,48 @@ export function calculateAnemiaRiskScore(
 // PERFORMANCE SCORES
 // ============================================
 
+// Weighted deduction system: each marker has a MAX deduction weight.
+// If marker is present: deduction = 0 (optimal) to MAX (critical).
+// If marker is ABSENT: deduction = 40% of MAX (penalize missing data).
+// Score = 100 - sum(deductions), clamped [0,100].
+
+interface WeightedMarkerCheck {
+  markerId: string;
+  label: string;
+  unit: string;
+  maxWeight: number;
+  evaluate: (value: number) => { deduction: number; explanation: string };
+}
+
+function evaluateWeightedMarkers(
+  markers: BloodMarkerInput[],
+  checks: WeightedMarkerCheck[],
+  factors: RiskFactor[],
+  markersUsed: string[],
+): number {
+  let totalDeduction = 0;
+  for (const check of checks) {
+    const value = getMarkerValue(markers, check.markerId);
+    if (value !== null) {
+      markersUsed.push(check.markerId);
+      const result = check.evaluate(value);
+      totalDeduction += result.deduction;
+      factors.push({
+        marker: check.label,
+        value,
+        unit: check.unit,
+        contribution: result.deduction <= check.maxWeight * 0.15 ? "positive" : result.deduction >= check.maxWeight * 0.6 ? "negative" : "neutral",
+        weight: result.deduction,
+        explanation: result.explanation,
+      });
+    } else {
+      // Missing marker penalty: 40% of max weight
+      totalDeduction += Math.round(check.maxWeight * 0.4);
+    }
+  }
+  return Math.max(0, Math.min(100, Math.round(100 - totalDeduction)));
+}
+
 export function calculateAnabolicCapacityScore(
   markers: BloodMarkerInput[],
   profile?: { gender?: "homme" | "femme" }
@@ -2406,290 +2430,167 @@ export function calculateAnabolicCapacityScore(
   const factors: RiskFactor[] = [];
   const markersUsed: string[] = [];
   const gender = profile?.gender || "homme";
-  let score = 50;
 
-  const testosteroneTotal = getMarkerValue(markers, "testosterone_total");
-  if (testosteroneTotal !== null) {
-    markersUsed.push("testosterone_total");
-    let delta = 0;
-    let explanation = "";
-    if (testosteroneTotal >= 700) {
-      delta = 10;
-      explanation = "Testostérone totale haute, terrain favorable à l'anabolisme.";
-    } else if (testosteroneTotal >= 550) {
-      delta = 6;
-      explanation = "Testostérone totale correcte pour soutenir progression et récupération.";
-    } else if (testosteroneTotal >= 450) {
-      delta = 2;
-      explanation = "Testostérone totale intermédiaire, marge d'optimisation.";
-    } else if (testosteroneTotal >= 350) {
-      delta = -6;
-      explanation = "Testostérone totale basse, frein probable sur force/hypertrophie.";
-    } else {
-      delta = -12;
-      explanation = "Testostérone totale très basse, impact anabolique majeur probable.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Testostérone totale",
-      value: testosteroneTotal,
+  // Marker weights — testo libre is DOMINANT (30pts), SHBG + VitD are major
+  const checks: WeightedMarkerCheck[] = [
+    {
+      markerId: "testosterone_libre",
+      label: "Testostérone libre",
+      unit: "pg/mL",
+      maxWeight: 30, // DOMINANT — the single most important marker
+      evaluate: (v) => {
+        if (v >= 20) return { deduction: 0, explanation: "Testo libre optimale — pleine capacité anabolique." };
+        if (v >= 15) return { deduction: 6, explanation: "Testo libre correcte — bon potentiel de construction musculaire." };
+        if (v >= 12) return { deduction: 15, explanation: "Testo libre suboptimale — frein modéré sur l'hypertrophie et la récupération." };
+        if (v >= 8) return { deduction: 22, explanation: "Testo libre basse — frein significatif sur l'anabolisme, la force et la récupération." };
+        return { deduction: 30, explanation: "Testo libre effondrée — blocage anabolique majeur, investigation endocrinienne nécessaire." };
+      },
+    },
+    {
+      markerId: "shbg",
+      label: "SHBG",
+      unit: "nmol/L",
+      maxWeight: 18, // Major — directly modulates free T bioavailability
+      evaluate: (v) => {
+        if (v >= 20 && v <= 35) return { deduction: 0, explanation: "SHBG optimal — biodisponibilité de la testo maximale." };
+        if (v >= 15 && v <= 40) return { deduction: 4, explanation: "SHBG acceptable — léger impact sur la testo libre." };
+        if (v >= 10 && v <= 50) return { deduction: 10, explanation: "SHBG hors zone — impact modéré sur la fraction libre de testo." };
+        return { deduction: 18, explanation: "SHBG très déséquilibré — la biodisponibilité de la testostérone est sévèrement impactée." };
+      },
+    },
+    {
+      markerId: "vitamine_d",
+      label: "Vitamine D",
+      unit: "ng/mL",
+      maxWeight: 15, // Major — VDR in testes, muscle, immune. <30 = deficient for performance
+      evaluate: (v) => {
+        if (v >= 50 && v <= 80) return { deduction: 0, explanation: "Vitamine D en zone performance — support hormonal et musculaire optimal." };
+        if (v >= 40) return { deduction: 4, explanation: "Vitamine D correcte — marge d'optimisation pour la performance." };
+        if (v >= 30) return { deduction: 9, explanation: "Vitamine D insuffisante — frein sur production de testo, force et immunité." };
+        return { deduction: 15, explanation: "Carence en vitamine D — impact majeur sur hormones, muscle et récupération." };
+      },
+    },
+    {
+      markerId: "testosterone_total",
+      label: "Testostérone totale",
       unit: "ng/dL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const testosteroneFree = getMarkerValue(markers, "testosterone_libre");
-  if (testosteroneFree !== null) {
-    markersUsed.push("testosterone_libre");
-    let delta = 0;
-    let explanation = "";
-    if (testosteroneFree >= 18) {
-      delta = 12;
-      explanation = "Testostérone libre élevée, capacité de construction musculaire solide.";
-    } else if (testosteroneFree >= 14) {
-      delta = 8;
-      explanation = "Testostérone libre correcte, bon support anabolique.";
-    } else if (testosteroneFree >= 10) {
-      delta = 3;
-      explanation = "Testostérone libre limite, potentiel présent mais fragile.";
-    } else if (testosteroneFree >= 7) {
-      delta = -6;
-      explanation = "Testostérone libre basse, frein probable sur progression.";
-    } else {
-      delta = -12;
-      explanation = "Testostérone libre très basse, blocage anabolique marqué.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Testostérone libre",
-      value: testosteroneFree,
-      unit: "pg/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const igf1 = getMarkerValue(markers, "igf1");
-  if (igf1 !== null) {
-    markersUsed.push("igf1");
-    let delta = 0;
-    let explanation = "";
-    if (igf1 >= 180) {
-      delta = 10;
-      explanation = "IGF-1 favorable, signal anabolique bien présent.";
-    } else if (igf1 >= 140) {
-      delta = 6;
-      explanation = "IGF-1 acceptable, capacité de progression correcte.";
-    } else if (igf1 >= 110) {
-      delta = 2;
-      explanation = "IGF-1 intermédiaire, zone de progression possible.";
-    } else {
-      delta = -8;
-      explanation = "IGF-1 bas, anabolisme et récupération possiblement limités.";
-    }
-    score += delta;
-    factors.push({
-      marker: "IGF-1",
-      value: igf1,
+      maxWeight: 12,
+      evaluate: (v) => {
+        if (gender === "femme") {
+          if (v >= 20 && v <= 50) return { deduction: 0, explanation: "Testostérone totale dans la zone optimale femme." };
+          return { deduction: 6, explanation: "Testostérone totale hors zone optimale femme." };
+        }
+        if (v >= 600 && v <= 900) return { deduction: 0, explanation: "Testostérone totale optimale — terrain anabolique solide." };
+        if (v >= 500) return { deduction: 4, explanation: "Testostérone totale acceptable mais sous l'optimal performance." };
+        if (v >= 400) return { deduction: 8, explanation: "Testostérone totale basse — frein sur force et hypertrophie." };
+        return { deduction: 12, explanation: "Testostérone totale très basse — impact anabolique majeur." };
+      },
+    },
+    {
+      markerId: "igf1",
+      label: "IGF-1",
       unit: "ng/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const dheaS = getMarkerValue(markers, "dhea_s");
-  if (dheaS !== null) {
-    markersUsed.push("dhea_s");
-    let delta = 0;
-    let explanation = "";
-    if (dheaS >= 250 && dheaS <= 500) {
-      delta = 6;
-      explanation = "DHEA-S dans une zone favorable à l'équilibre hormonal.";
-    } else if (dheaS >= 180) {
-      delta = 3;
-      explanation = "DHEA-S correcte mais perfectible pour la performance.";
-    } else {
-      delta = -6;
-      explanation = "DHEA-S basse, possible limitation de l'axe anabolique.";
-    }
-    score += delta;
-    factors.push({
-      marker: "DHEA-S",
-      value: dheaS,
+      maxWeight: 10,
+      evaluate: (v) => {
+        if (v >= 200 && v <= 280) return { deduction: 0, explanation: "IGF-1 optimal — signal anabolique de croissance bien présent." };
+        if (v >= 150) return { deduction: 3, explanation: "IGF-1 acceptable — progression correcte." };
+        if (v >= 110) return { deduction: 6, explanation: "IGF-1 bas — récupération et hypertrophie potentiellement limitées." };
+        return { deduction: 10, explanation: "IGF-1 très bas — signal de croissance insuffisant." };
+      },
+    },
+    {
+      markerId: "cortisol",
+      label: "Cortisol",
       unit: "µg/dL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const cortisol = getMarkerValue(markers, "cortisol");
-  if (cortisol !== null) {
-    markersUsed.push("cortisol");
-    let delta = 0;
-    let explanation = "";
-    if (cortisol >= 12 && cortisol <= 18) {
-      delta = 4;
-      explanation = "Cortisol bien calibré, environnement favorable à la récupération.";
-    } else if (cortisol >= 8 && cortisol <= 22) {
-      delta = 1;
-      explanation = "Cortisol acceptable, vigilance sur la charge allostatique.";
-    } else if (cortisol > 28) {
-      delta = -10;
-      explanation = "Cortisol élevé, contexte catabolique probable.";
-    } else {
-      delta = -6;
-      explanation = "Cortisol hors cible, peut freiner progression et récupération.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Cortisol",
-      value: cortisol,
-      unit: "µg/dL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const estradiol = getMarkerValue(markers, "estradiol");
-  if (estradiol !== null) {
-    markersUsed.push("estradiol");
-    const optimalMin = gender === "femme" ? 30 : 20;
-    const optimalMax = gender === "femme" ? 120 : 35;
-    let delta = 0;
-    let explanation = "";
-    if (estradiol >= optimalMin && estradiol <= optimalMax) {
-      delta = 4;
-      explanation = "Estradiol équilibré, soutien hormonal cohérent.";
-    } else if (estradiol >= optimalMin * 0.7 && estradiol <= optimalMax * 1.3) {
-      delta = 1;
-      explanation = "Estradiol proche de la cible, surveillance légère.";
-    } else {
-      delta = -4;
-      explanation = "Estradiol hors cible, impact possible sur performance et récupération.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Estradiol",
-      value: estradiol,
-      unit: "pg/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const ferritin = getMarkerValue(markers, "ferritine");
-  if (ferritin !== null) {
-    markersUsed.push("ferritine");
-    let delta = 0;
-    let explanation = "";
-    if (ferritin >= 80 && ferritin <= 150) {
-      delta = 4;
-      explanation = "Ferritine optimale, support de l'oxygénation et de l'effort.";
-    } else if ((ferritin >= 50 && ferritin < 80) || (ferritin > 150 && ferritin <= 220)) {
-      delta = 1;
-      explanation = "Ferritine correcte mais non optimale.";
-    } else {
-      delta = -4;
-      explanation = "Ferritine hors zone cible, impact possible sur énergie et récupération.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Ferritine",
-      value: ferritin,
-      unit: "ng/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const vitaminD = getMarkerValue(markers, "vitamine_d");
-  if (vitaminD !== null) {
-    markersUsed.push("vitamine_d");
-    let delta = 0;
-    let explanation = "";
-    if (vitaminD >= 50 && vitaminD <= 80) {
-      delta = 5;
-      explanation = "Vitamine D en zone performance, environnement hormonal favorable.";
-    } else if ((vitaminD >= 35 && vitaminD < 50) || (vitaminD > 80 && vitaminD <= 100)) {
-      delta = 2;
-      explanation = "Vitamine D acceptable mais perfectible.";
-    } else if (vitaminD < 35) {
-      delta = -5;
-      explanation = "Vitamine D basse, facteur limitant potentiel pour force/immunité.";
-    } else {
-      delta = -2;
-      explanation = "Vitamine D élevée, ajustement prudent recommandé.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Vitamine D",
-      value: vitaminD,
-      unit: "ng/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const crp = getMarkerValue(markers, "crp_us");
-  if (crp !== null) {
-    markersUsed.push("crp_us");
-    let delta = 0;
-    let explanation = "";
-    if (crp <= 0.8) {
-      delta = 5;
-      explanation = "Inflammation basse, favorable à l'anabolisme.";
-    } else if (crp <= 1.5) {
-      delta = 2;
-      explanation = "Inflammation contrôlée, impact limité.";
-    } else if (crp <= 3.0) {
-      delta = 0;
-      explanation = "Inflammation modérée, vigilance.";
-    } else {
-      delta = -6;
-      explanation = "Inflammation élevée, frein probable sur récupération et progression.";
-    }
-    score += delta;
-    factors.push({
-      marker: "CRP-us",
-      value: crp,
+      maxWeight: 10,
+      evaluate: (v) => {
+        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol calibré — environnement favorable à la récupération." };
+        if (v >= 8 && v <= 22) return { deduction: 3, explanation: "Cortisol acceptable — légère vigilance." };
+        if (v > 25) return { deduction: 10, explanation: "Cortisol élevé — contexte catabolique, frein direct sur l'anabolisme." };
+        return { deduction: 7, explanation: "Cortisol hors cible — récupération et progression possiblement impactées." };
+      },
+    },
+    {
+      markerId: "crp_us",
+      label: "CRP-us",
       unit: "mg/L",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
+      maxWeight: 8,
+      evaluate: (v) => {
+        if (v <= 0.5) return { deduction: 0, explanation: "Inflammation très basse — récupération et anabolisme favorisés." };
+        if (v <= 1.0) return { deduction: 2, explanation: "Inflammation faible — impact limité." };
+        if (v <= 2.0) return { deduction: 4, explanation: "Inflammation modérée — peut ralentir la récupération." };
+        return { deduction: 8, explanation: "Inflammation élevée — frein significatif sur récupération et progression." };
+      },
+    },
+    {
+      markerId: "estradiol",
+      label: "Estradiol",
+      unit: "pg/mL",
+      maxWeight: 6,
+      evaluate: (v) => {
+        const optMin = gender === "femme" ? 30 : 20;
+        const optMax = gender === "femme" ? 120 : 35;
+        if (v >= optMin && v <= optMax) return { deduction: 0, explanation: "Estradiol équilibré — soutien hormonal cohérent." };
+        if (v >= optMin * 0.7 && v <= optMax * 1.3) return { deduction: 3, explanation: "Estradiol légèrement hors cible." };
+        return { deduction: 6, explanation: "Estradiol déséquilibré — impact sur performance et récupération." };
+      },
+    },
+    {
+      markerId: "ferritine",
+      label: "Ferritine",
+      unit: "ng/mL",
+      maxWeight: 5,
+      evaluate: (v) => {
+        if (v >= 80 && v <= 150) return { deduction: 0, explanation: "Ferritine optimale — bon support de l'oxygénation musculaire." };
+        if ((v >= 50 && v < 80) || (v > 150 && v <= 220)) return { deduction: 2, explanation: "Ferritine correcte mais non optimale." };
+        return { deduction: 5, explanation: "Ferritine hors zone cible — impact possible sur énergie et récupération." };
+      },
+    },
+    {
+      markerId: "dhea_s",
+      label: "DHEA-S",
+      unit: "µg/dL",
+      maxWeight: 5,
+      evaluate: (v) => {
+        if (v >= 300 && v <= 450) return { deduction: 0, explanation: "DHEA-S optimal — précurseur anabolique bien présent." };
+        if (v >= 200) return { deduction: 2, explanation: "DHEA-S acceptable." };
+        return { deduction: 5, explanation: "DHEA-S bas — axe surrénalien possiblement limité." };
+      },
+    },
+  ];
+  // Total max deduction = 30+18+15+12+10+10+8+6+5+5 = 119
+  // So even with all markers at worst, score can hit 0 easily.
+  // With all optimal, score = 100. With all missing, score = 100 - 0.4*(119) = 100-48 = 52.
 
-  score = Math.max(0, Math.min(100, Math.round(score)));
+  const score = evaluateWeightedMarkers(markers, checks, factors, markersUsed);
   const level = getRiskLevel(score);
 
   let interpretation = `Score Anabolique: ${score}/100. `;
   if (score >= 85) {
-    interpretation += "Excellente capacité de construction musculaire.";
+    interpretation += "Excellente capacité de construction musculaire — terrain hormonal et métabolique très favorable.";
   } else if (score >= 70) {
-    interpretation += "Capacité anabolique solide, quelques optimisations possibles.";
+    interpretation += "Bonne capacité anabolique — quelques leviers d'optimisation identifiés.";
   } else if (score >= 55) {
-    interpretation += "Capacité anabolique modérée, plusieurs freins sont corrigibles.";
+    interpretation += "Capacité anabolique modérée — plusieurs freins corrigibles limitent ta progression.";
   } else if (score >= 40) {
-    interpretation += "Capacité anabolique limitée, stratégie de correction prioritaire recommandée.";
+    interpretation += "Capacité anabolique limitée — freins biologiques significatifs, correction prioritaire.";
+  } else if (score >= 25) {
+    interpretation += "Capacité anabolique faible — le terrain hormonal freine sérieusement la prise de muscle.";
   } else {
-    interpretation += "Capacité anabolique faible, correction structurée indispensable.";
+    interpretation += "Capacité anabolique critique — investigation endocrinienne urgente recommandée.";
   }
 
   const recommendations: string[] = [];
-  if (score < 80) recommendations.push("Prioriser sommeil régulier, charge d'entraînement maîtrisée et nutrition périodisée.");
-  if (testosteroneFree !== null && testosteroneFree < 14) recommendations.push("Optimiser l'axe androgénique via récupération, lipides de qualité et retest ciblé.");
-  if (vitaminD !== null && vitaminD < 50) recommendations.push("Corriger la vitamine D vers la zone 50-80 ng/mL avec suivi biologique.");
-  if (crp !== null && crp > 1.5) recommendations.push("Réduire la charge inflammatoire systémique pour restaurer la progression.");
-  if (!recommendations.length) recommendations.push("Maintenir le protocole actuel et sécuriser la progression par retest à 8-12 semaines.");
+  const testoLibre = getMarkerValue(markers, "testosterone_libre");
+  const vitD = getMarkerValue(markers, "vitamine_d");
+  const crp = getMarkerValue(markers, "crp_us");
+  const shbg = getMarkerValue(markers, "shbg");
+  if (testoLibre !== null && testoLibre < 15) recommendations.push("Priorité #1 : remonter la testo libre (sommeil 7-9h, lipides de qualité, zinc/magnésium, réduire stress).");
+  if (shbg !== null && shbg > 40) recommendations.push("SHBG élevé — investiguer causes (excès d'E2, thyroïde, foie) et optimiser pour libérer plus de testo.");
+  if (vitD !== null && vitD < 50) recommendations.push("Corriger vitamine D vers 50-80 ng/mL (D3 4000-5000 UI/jour + K2 MK7).");
+  if (crp !== null && crp > 1.5) recommendations.push("Réduire l'inflammation systémique (oméga-3, sommeil, charge d'entraînement).");
+  if (score < 70) recommendations.push("Bilan hormonal complet recommandé : testo totale, SHBG, LH, FSH, cortisol si non déjà dosés.");
+  if (!recommendations.length) recommendations.push("Maintenir le protocole et sécuriser par retest à 8-12 semaines.");
 
   return {
     name: "Score Anabolique",
@@ -2699,7 +2600,7 @@ export function calculateAnabolicCapacityScore(
     factors,
     recommendations,
     markers_used: markersUsed,
-    confidence: calculateConfidence(markersUsed.length, 9),
+    confidence: calculateConfidence(markersUsed.length, 10),
   };
 }
 
@@ -2718,301 +2619,175 @@ export function calculateMetabolicEfficiencyScore(
   const factors: RiskFactor[] = [];
   const markersUsed: string[] = [];
   const gender = profile?.gender || "homme";
-  let score = 55;
 
-  const tsh = getMarkerValue(markers, "tsh");
-  if (tsh !== null) {
-    markersUsed.push("tsh");
-    let delta = 0;
-    let explanation = "";
-    if (tsh >= 0.7 && tsh <= 2.0) {
-      delta = 6;
-      explanation = "TSH favorable à un métabolisme efficace.";
-    } else if (tsh > 2.0 && tsh <= 2.8) {
-      delta = 2;
-      explanation = "TSH correcte mais en zone de vigilance.";
-    } else if (tsh > 2.8) {
-      delta = -6;
-      explanation = "TSH élevée, ralentissement métabolique possible.";
-    } else {
-      delta = -3;
-      explanation = "TSH basse hors contexte, nécessite interprétation prudente.";
-    }
-    score += delta;
-    factors.push({
-      marker: "TSH",
-      value: tsh,
-      unit: "mIU/L",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const t3l = getMarkerValue(markers, "t3_libre");
-  if (t3l !== null) {
-    markersUsed.push("t3_libre");
-    let delta = 0;
-    let explanation = "";
-    if (t3l >= 3.1 && t3l <= 4.2) {
-      delta = 8;
-      explanation = "T3 libre favorable à la dépense énergétique.";
-    } else if (t3l >= 2.8) {
-      delta = 3;
-      explanation = "T3 libre acceptable, optimisation possible.";
-    } else {
-      delta = -7;
-      explanation = "T3 libre basse, frein possible sur lipolyse et énergie.";
-    }
-    score += delta;
-    factors.push({
-      marker: "T3 libre",
-      value: t3l,
-      unit: "pg/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const insulin = getMarkerValue(markers, "insuline_jeun");
-  if (insulin !== null) {
-    markersUsed.push("insuline_jeun");
-    let delta = 0;
-    let explanation = "";
-    if (insulin <= 6) {
-      delta = 12;
-      explanation = "Insuline à jeun optimale, très bonne sensibilité insulinique.";
-    } else if (insulin <= 9) {
-      delta = 7;
-      explanation = "Insuline correcte, bon potentiel de recomposition.";
-    } else if (insulin <= 12) {
-      delta = 2;
-      explanation = "Insuline limite, vigilance sur la stratégie glucidique.";
-    } else if (insulin <= 18) {
-      delta = -6;
-      explanation = "Hyperinsulinémie modérée, frein probable sur perte de gras.";
-    } else {
-      delta = -12;
-      explanation = "Hyperinsulinémie marquée, difficulté métabolique majeure.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Insuline à jeun",
-      value: insulin,
-      unit: "µIU/mL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const homaIr = getMarkerValue(markers, "homa_ir");
-  if (homaIr !== null) {
-    markersUsed.push("homa_ir");
-    let delta = 0;
-    let explanation = "";
-    if (homaIr < 1.2) {
-      delta = 10;
-      explanation = "HOMA-IR excellent, terrain favorable à la lipolyse.";
-    } else if (homaIr < 1.8) {
-      delta = 5;
-      explanation = "HOMA-IR bon, marge d'optimisation légère.";
-    } else if (homaIr < 2.5) {
-      delta = 0;
-      explanation = "HOMA-IR intermédiaire, efficacité métabolique moyenne.";
-    } else if (homaIr < 3.2) {
-      delta = -7;
-      explanation = "HOMA-IR élevé, résistance insulinique modérée.";
-    } else {
-      delta = -12;
-      explanation = "HOMA-IR très élevé, résistance insulinique marquée.";
-    }
-    score += delta;
-    factors.push({
-      marker: "HOMA-IR",
-      value: homaIr,
-      unit: "",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
+  // For TG/HDL ratio, we handle it specially since it's two markers
   const tg = getMarkerValue(markers, "triglycerides");
   const hdl = getMarkerValue(markers, "hdl");
+  const tgHdlMaxWeight = 25;
+  let tgHdlDeduction = Math.round(tgHdlMaxWeight * 0.4); // default missing penalty
   if (tg !== null && hdl !== null && hdl > 0) {
     markersUsed.push("triglycerides");
     markersUsed.push("hdl");
     const ratio = tg / hdl;
-    let delta = 0;
     let explanation = "";
-    if (ratio <= 1.5) {
-      delta = 10;
-      explanation = "Ratio TG/HDL excellent, terrain métabolique très favorable.";
-    } else if (ratio <= 2.2) {
-      delta = 5;
-      explanation = "Ratio TG/HDL bon, sensibilité insulinique globalement correcte.";
-    } else if (ratio <= 3.0) {
-      delta = 0;
-      explanation = "Ratio TG/HDL moyen, optimisation recommandée.";
-    } else if (ratio <= 4.0) {
-      delta = -8;
-      explanation = "Ratio TG/HDL défavorable, résistance insulinique probable.";
-    } else {
-      delta = -12;
-      explanation = "Ratio TG/HDL très défavorable, frein majeur sur perte de gras.";
-    }
-    score += delta;
+    if (ratio <= 1.5) { tgHdlDeduction = 0; explanation = "Ratio TG/HDL excellent — flexibilité métabolique optimale, lipolyse efficace."; }
+    else if (ratio <= 2.5) { tgHdlDeduction = 5; explanation = "Ratio TG/HDL bon — sensibilité insulinique correcte."; }
+    else if (ratio <= 3.5) { tgHdlDeduction = 12; explanation = "Ratio TG/HDL élevé — résistance insulinique probable, mobilisation des graisses freinée."; }
+    else if (ratio <= 5.0) { tgHdlDeduction = 20; explanation = "Ratio TG/HDL très élevé — frein majeur sur perte de gras, flexibilité métabolique compromise."; }
+    else { tgHdlDeduction = 25; explanation = "Ratio TG/HDL critique — résistance insulinique installée, recomposition extrêmement difficile."; }
     factors.push({
       marker: "Ratio TG/HDL",
       value: Number(ratio.toFixed(2)),
       unit: "",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
+      contribution: tgHdlDeduction <= 5 ? "positive" : tgHdlDeduction >= 15 ? "negative" : "neutral",
+      weight: tgHdlDeduction,
       explanation,
     });
   }
 
-  const glucose = getMarkerValue(markers, "glycemie_jeun");
-  if (glucose !== null) {
-    markersUsed.push("glycemie_jeun");
-    let delta = 0;
-    let explanation = "";
-    if (glucose >= 75 && glucose <= 90) {
-      delta = 8;
-      explanation = "Glycémie à jeun optimale.";
-    } else if (glucose <= 99) {
-      delta = 2;
-      explanation = "Glycémie normale mais perfectible.";
-    } else if (glucose <= 109) {
-      delta = -6;
-      explanation = "Glycémie élevée, dérive métabolique débutante.";
-    } else {
-      delta = -10;
-      explanation = "Glycémie haute, frein significatif sur recomposition.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Glycémie à jeun",
-      value: glucose,
+  const checks: WeightedMarkerCheck[] = [
+    {
+      markerId: "insuline_jeun",
+      label: "Insuline à jeun",
+      unit: "µIU/mL",
+      maxWeight: 22, // DOMINANT for metabolic score
+      evaluate: (v) => {
+        if (v <= 5) return { deduction: 0, explanation: "Insuline optimale — excellente sensibilité, lipolyse facilitée." };
+        if (v <= 8) return { deduction: 4, explanation: "Insuline correcte — bon potentiel de recomposition." };
+        if (v <= 12) return { deduction: 10, explanation: "Insuline limite — vigilance sur la stratégie glucidique." };
+        if (v <= 18) return { deduction: 17, explanation: "Hyperinsulinémie modérée — perte de gras significativement freinée." };
+        return { deduction: 22, explanation: "Hyperinsulinémie marquée — stockage adipeux favorisé, lipolyse quasi bloquée." };
+      },
+    },
+    {
+      markerId: "homa_ir",
+      label: "HOMA-IR",
+      unit: "",
+      maxWeight: 18,
+      evaluate: (v) => {
+        if (v < 1.0) return { deduction: 0, explanation: "HOMA-IR excellent — terrain très favorable à la lipolyse." };
+        if (v < 1.5) return { deduction: 3, explanation: "HOMA-IR bon — sensibilité insulinique correcte." };
+        if (v < 2.0) return { deduction: 8, explanation: "HOMA-IR intermédiaire — début de résistance insulinique." };
+        if (v < 3.0) return { deduction: 14, explanation: "HOMA-IR élevé — résistance insulinique installée, perte de gras difficile." };
+        return { deduction: 18, explanation: "HOMA-IR critique — résistance insulinique sévère." };
+      },
+    },
+    {
+      markerId: "tsh",
+      label: "TSH",
+      unit: "mIU/L",
+      maxWeight: 12,
+      evaluate: (v) => {
+        if (v >= 0.7 && v <= 2.0) return { deduction: 0, explanation: "TSH optimale — métabolisme bien piloté." };
+        if (v <= 2.8) return { deduction: 3, explanation: "TSH correcte — légère vigilance." };
+        if (v <= 4.0) return { deduction: 8, explanation: "TSH élevée — ralentissement métabolique probable." };
+        return { deduction: 12, explanation: "TSH très élevée — frein thyroïdien majeur sur la dépense énergétique." };
+      },
+    },
+    {
+      markerId: "t4_libre",
+      label: "T4 libre",
+      unit: "ng/dL",
+      maxWeight: 10,
+      evaluate: (v) => {
+        if (v >= 1.2 && v <= 1.8) return { deduction: 0, explanation: "T4 libre optimale — réserve thyroïdienne bien calibrée." };
+        if (v >= 1.0) return { deduction: 4, explanation: "T4 libre légèrement basse — conversion T3 possiblement réduite." };
+        if (v >= 0.8) return { deduction: 8, explanation: "T4 libre basse — frein métabolique, lipolyse ralentie." };
+        return { deduction: 10, explanation: "T4 libre très basse — frein métabolique sévère." };
+      },
+    },
+    {
+      markerId: "t3_libre",
+      label: "T3 libre",
+      unit: "pg/mL",
+      maxWeight: 12,
+      evaluate: (v) => {
+        if (v >= 3.1 && v <= 4.2) return { deduction: 0, explanation: "T3 libre optimale — dépense énergétique bien régulée." };
+        if (v >= 2.8) return { deduction: 4, explanation: "T3 libre acceptable — marge d'optimisation." };
+        if (v >= 2.3) return { deduction: 8, explanation: "T3 libre basse — lipolyse et thermogenèse freinées." };
+        return { deduction: 12, explanation: "T3 libre très basse — le métabolisme tourne au ralenti." };
+      },
+    },
+    {
+      markerId: "glycemie_jeun",
+      label: "Glycémie à jeun",
       unit: "mg/dL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const cortisol = getMarkerValue(markers, "cortisol");
-  if (cortisol !== null) {
-    markersUsed.push("cortisol");
-    let delta = 0;
-    let explanation = "";
-    if (cortisol >= 12 && cortisol <= 18) {
-      delta = 3;
-      explanation = "Cortisol bien régulé.";
-    } else if (cortisol >= 8 && cortisol <= 22) {
-      delta = 1;
-      explanation = "Cortisol acceptable.";
-    } else {
-      delta = -5;
-      explanation = "Cortisol hors cible, risque de frein sur perte de gras.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Cortisol",
-      value: cortisol,
+      maxWeight: 10,
+      evaluate: (v) => {
+        if (v >= 75 && v <= 90) return { deduction: 0, explanation: "Glycémie optimale — bon contrôle glucidique." };
+        if (v <= 99) return { deduction: 3, explanation: "Glycémie normale haute — perfectible." };
+        if (v <= 109) return { deduction: 7, explanation: "Pré-diabète — dérive métabolique significative." };
+        return { deduction: 10, explanation: "Glycémie élevée — résistance insulinique probable." };
+      },
+    },
+    {
+      markerId: "cortisol",
+      label: "Cortisol",
       unit: "µg/dL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
-
-  const crp = getMarkerValue(markers, "crp_us");
-  if (crp !== null) {
-    markersUsed.push("crp_us");
-    let delta = 0;
-    let explanation = "";
-    if (crp <= 0.8) {
-      delta = 4;
-      explanation = "Inflammation basse, favorable au métabolisme.";
-    } else if (crp <= 2.0) {
-      delta = 1;
-      explanation = "Inflammation contrôlée.";
-    } else if (crp <= 3.0) {
-      delta = -2;
-      explanation = "Inflammation modérée, peut gêner la recomposition.";
-    } else {
-      delta = -6;
-      explanation = "Inflammation élevée, frein net sur efficacité métabolique.";
-    }
-    score += delta;
-    factors.push({
-      marker: "CRP-us",
-      value: crp,
+      maxWeight: 8,
+      evaluate: (v) => {
+        if (v >= 12 && v <= 18) return { deduction: 0, explanation: "Cortisol optimal — pas de frein catabolique sur le métabolisme." };
+        if (v >= 8 && v <= 22) return { deduction: 2, explanation: "Cortisol acceptable." };
+        if (v > 25) return { deduction: 8, explanation: "Cortisol élevé — stockage viscéral favorisé, lipolyse perturbée." };
+        return { deduction: 5, explanation: "Cortisol hors cible — impact possible sur le métabolisme des graisses." };
+      },
+    },
+    {
+      markerId: "crp_us",
+      label: "CRP-us",
       unit: "mg/L",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
+      maxWeight: 6,
+      evaluate: (v) => {
+        if (v <= 0.5) return { deduction: 0, explanation: "Inflammation très basse — métabolisme non perturbé." };
+        if (v <= 1.5) return { deduction: 2, explanation: "Inflammation faible — impact limité." };
+        if (v <= 3.0) return { deduction: 4, explanation: "Inflammation modérée — peut freiner la recomposition." };
+        return { deduction: 6, explanation: "Inflammation élevée — frein métabolique significatif." };
+      },
+    },
+  ];
+  // Total max = 25(TG/HDL) + 22 + 18 + 12 + 10 + 12 + 10 + 8 + 6 = 123
 
-  const testosteroneTotal = getMarkerValue(markers, "testosterone_total");
-  if (testosteroneTotal !== null) {
-    markersUsed.push("testosterone_total");
-    let delta = 0;
-    let explanation = "";
-    if ((gender === "homme" && testosteroneTotal >= 600) || (gender === "femme" && testosteroneTotal >= 35)) {
-      delta = 4;
-      explanation = "Signal androgénique favorable au maintien de masse maigre.";
-    } else if ((gender === "homme" && testosteroneTotal >= 450) || (gender === "femme" && testosteroneTotal >= 20)) {
-      delta = 2;
-      explanation = "Signal androgénique acceptable.";
-    } else {
-      delta = -4;
-      explanation = "Signal androgénique bas, risque de ralentissement métabolique.";
-    }
-    score += delta;
-    factors.push({
-      marker: "Testostérone totale",
-      value: testosteroneTotal,
-      unit: gender === "femme" ? "ng/dL (ajuster selon labo)" : "ng/dL",
-      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
-      weight: Math.abs(delta),
-      explanation,
-    });
-  }
+  const baseScore = evaluateWeightedMarkers(markers, checks, factors, markersUsed);
+  // Apply TG/HDL deduction on top
+  const score = Math.max(0, Math.min(100, baseScore - tgHdlDeduction + Math.round(checks.reduce((sum, c) => sum, 0))));
+  // Simpler: just compute total manually
+  const totalChecksDeduction = factors.reduce((sum, f) => sum + f.weight, 0);
+  const finalScore = Math.max(0, Math.min(100, Math.round(100 - totalChecksDeduction)));
+  const level = getRiskLevel(finalScore);
+  const difficulty = metabolicDifficultyFromScore(finalScore);
 
-  score = Math.max(0, Math.min(100, Math.round(score)));
-  const level = getRiskLevel(score);
-  const difficulty = metabolicDifficultyFromScore(score);
-
-  let interpretation = `Score Métabolique: ${score}/100. Difficulté de perte de gras estimée: ${difficulty}. `;
-  if (difficulty === "FACILE" || difficulty === "NORMAL") {
-    interpretation += "Ton terrain biologique répond bien à une stratégie classique de recomposition.";
+  let interpretation = `Score Métabolique: ${finalScore}/100. Difficulté de perte de gras estimée: ${difficulty}. `;
+  if (difficulty === "FACILE") {
+    interpretation += "Ton terrain biologique est favorable — la perte de gras répond bien à un protocole standard.";
+  } else if (difficulty === "NORMAL") {
+    interpretation += "Bonne capacité de recomposition avec un protocole bien structuré.";
   } else if (difficulty === "MODERE") {
-    interpretation += "La perte de gras est possible mais demande un protocole bien séquencé.";
+    interpretation += "La perte de gras est possible mais demande un protocole séquencé et progressif.";
+  } else if (difficulty === "DIFFICILE") {
+    interpretation += "Le terrain métabolique impose une stratégie rigoureuse — résistance insulinique et/ou thyroïdienne probable.";
   } else {
-    interpretation += "Le terrain métabolique impose une stratégie rigoureuse et progressive.";
+    interpretation += "Frein métabolique sévère — correction des dysfonctions sous-jacentes nécessaire avant toute sèche agressive.";
   }
 
   const recommendations: string[] = [];
-  recommendations.push("Structurer le timing glucidique autour de l'entraînement et renforcer la marche post-prandiale.");
-  if (insulin !== null && insulin > 9) recommendations.push("Prioriser la réduction de l'hyperinsulinémie (fibres, sommeil, zone 2, gestion du stress).");
-  if (homaIr !== null && homaIr >= 2.0) recommendations.push("Objectiver et corriger la résistance insulinique avec retest HOMA-IR à 8-12 semaines.");
-  if (tsh !== null && tsh > 2.8) recommendations.push("Surveiller l'axe thyroïdien (TSH/FT3/FT4) avant tout déficit calorique agressif.");
-  if (tg !== null && hdl !== null && hdl > 0 && tg / hdl > 3.0) recommendations.push("Cibler d'abord le ratio TG/HDL via hygiène métabolique intensive.");
+  const insulin = getMarkerValue(markers, "insuline_jeun");
+  const homaIr = getMarkerValue(markers, "homa_ir");
+  const tsh = getMarkerValue(markers, "tsh");
+  recommendations.push("Structurer le timing glucidique autour de l'entraînement + marche post-prandiale 15-20 min.");
+  if (insulin !== null && insulin > 9) recommendations.push("Priorité : réduire l'hyperinsulinémie (fibres solubles, sommeil 7-9h, zone 2, gestion stress).");
+  if (homaIr !== null && homaIr >= 2.0) recommendations.push("Retest HOMA-IR à 8-12 semaines pour confirmer la correction de la résistance insulinique.");
+  if (tsh !== null && tsh > 2.8) recommendations.push("Bilan thyroïdien complet (TSH/FT3/FT4) avant déficit calorique agressif.");
+  if (tg !== null && hdl !== null && hdl > 0 && tg / hdl > 3.0) recommendations.push("Cibler le ratio TG/HDL en priorité : oméga-3, réduction sucres raffinés, cardio zone 2.");
 
   return {
     name: "Score Métabolique",
-    score,
+    score: finalScore,
     level,
     interpretation,
     factors,
     recommendations,
     markers_used: Array.from(new Set(markersUsed)),
-    confidence: calculateConfidence(Array.from(new Set(markersUsed)).length, 9),
+    confidence: calculateConfidence(Array.from(new Set(markersUsed)).length, 10),
   };
 }
 

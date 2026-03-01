@@ -1058,12 +1058,19 @@ const renderCompositeScoreCard = (
   }
 
   const tone = compositeToneByScore(score.score);
+  const confidence = typeof score.confidence === "number" ? Math.round(score.confidence) : 100;
+  const confidenceBadge = confidence < 60
+    ? `<span class="confidence-badge is-low">Données limitées (${confidence}%)</span>`
+    : confidence < 80
+    ? `<span class="confidence-badge is-medium">Confiance ${confidence}%</span>`
+    : "";
   return `
     <article class="composite-card ${compact ? "is-compact" : ""}">
       <div class="composite-card-head">
         <h3>${escapeHtml(title)}</h3>
         <span class="score-chip ${tone.chipClass}">${score.score}/100</span>
       </div>
+      ${confidenceBadge}
       <p class="composite-subtitle">${escapeHtml(subtitle)}</p>
       <p class="score-meta">Niveau: ${escapeHtml(tone.label)}</p>
       <p>${escapeHtml(score.interpretation)}</p>
@@ -1580,6 +1587,24 @@ const renderClaudeTabbedReportHtml = (
     }
     .composite-card.is-compact {
       padding: 10px;
+    }
+    .confidence-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 4px;
+    }
+    .confidence-badge.is-low {
+      background: rgba(192,57,43,0.12);
+      color: #c0392b;
+    }
+    .confidence-badge.is-medium {
+      background: rgba(243,156,18,0.12);
+      color: #e67e22;
     }
     .composite-card-head {
       display: flex;
