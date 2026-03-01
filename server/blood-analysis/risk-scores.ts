@@ -785,14 +785,25 @@ export function calculatePrediabetesRisk(
     });
   }
 
+  // Core glycemic markers needed to make any prediabetes claim
+  const hasCoreGlycemicData = hba1c !== null || glucose !== null || insulin !== null;
+
   // Calculate final score (inverted - lower risk = higher score)
   const rawRisk = maxPoints > 0 ? (riskPoints / maxPoints) * 100 : 50;
-  const score = Math.round(100 - rawRisk);
+  let score = Math.round(100 - rawRisk);
   const level = getRiskLevel(score);
 
-  // Generate interpretation
+  // Generate interpretation — NEVER claim diabetes/prediabetes without glycemic data
   let interpretation = "";
-  if (score >= 85) {
+  if (!hasCoreGlycemicData) {
+    // Only indirect markers (TG, HOMA-IR) — cannot diagnose prediabetes
+    score = Math.max(score, 50); // Floor at 50 to avoid alarming labels
+    interpretation = `DONNÉES INSUFFISANTES pour évaluer le risque de pré-diabète. Il manque l'HbA1c, la glycémie à jeun et l'insuline à jeun. ${
+      tg !== null && tg > 150
+        ? "Le ratio TG/HDL élevé suggère un risque de résistance à l'insuline, mais un bilan glycémique complet est indispensable pour conclure."
+        : "Ajoute ces marqueurs au prochain bilan pour obtenir une évaluation fiable."
+    }`;
+  } else if (score >= 85) {
     interpretation = "Risque de pré-diabète MINIMAL. Ton métabolisme glucidique est excellent. Continue de maintenir ces habitudes.";
   } else if (score >= 70) {
     interpretation = "Risque de pré-diabète FAIBLE. Quelques marqueurs légèrement élevés mais rien d'alarmant. Prévention recommandée.";
@@ -801,37 +812,42 @@ export function calculatePrediabetesRisk(
   } else if (score >= 40) {
     interpretation = "Risque de pré-diabète ÉLEVÉ. Plusieurs marqueurs indiquent une dysrégulation glycémique. Intervention nutritionnelle et lifestyle urgente.";
   } else if (score >= 25) {
-    interpretation = "PRÉ-DIABÈTE PROBABLE. Tes résultats correspondent aux critères diagnostiques. Consultation médicale recommandée.";
+    interpretation = "PRÉ-DIABÈTE PROBABLE selon tes marqueurs glycémiques. Consultation médicale recommandée pour confirmer le diagnostic.";
   } else {
-    interpretation = "DIABÈTE PROBABLE ou PRÉ-DIABÈTE SÉVÈRE. Consultation médicale URGENTE nécessaire pour diagnostic et prise en charge.";
+    interpretation = "RISQUE TRÈS ÉLEVÉ de pré-diabète ou diabète selon tes marqueurs glycémiques. Consultation médicale URGENTE nécessaire pour diagnostic et prise en charge.";
   }
 
   // Generate recommendations based on factors
   const recommendations: string[] = [];
-  
-  if (score < 85) {
-    recommendations.push("Réduire les glucides raffinés et sucres ajoutés");
-    recommendations.push("Marche 15min après chaque repas (réduit pic glycémique de 30-50%)");
-  }
-  
-  if (score < 70) {
-    recommendations.push("Musculation 3x/semaine minimum (améliore sensibilité insuline)");
-    recommendations.push("Manger fibres et protéines AVANT les glucides");
-    recommendations.push("Considérer berbérine 500mg 2x/jour avant repas glucidiques");
-  }
-  
-  if (score < 55) {
-    recommendations.push("Jeûne intermittent 16:8 pour améliorer sensibilité insuline");
-    recommendations.push("Limiter glucides à <100g/jour temporairement");
-    recommendations.push("Supplémenter magnésium glycinate 400mg/jour");
-    recommendations.push("Chrome 200mcg/jour");
-  }
-  
-  if (score < 40) {
-    recommendations.push("CONSULTATION MÉDICALE RECOMMANDÉE");
-    recommendations.push("Régime cétogène ou très low-carb (<50g/jour) à considérer");
-    recommendations.push("ALA (acide alpha-lipoïque) 600mg/jour");
-    recommendations.push("Contrôle glycémique régulier avec glucomètre");
+
+  if (!hasCoreGlycemicData) {
+    recommendations.push("PRIORITÉ : Ajouter HbA1c, glycémie à jeun et insuline à jeun au prochain bilan");
+    recommendations.push("Calcul du HOMA-IR nécessaire pour quantifier la résistance à l'insuline");
+    if (tg !== null && tg > 150) {
+      recommendations.push("Réduire les glucides raffinés — tes triglycérides élevés suggèrent une sensibilité insulinique réduite");
+    }
+  } else {
+    if (score < 85) {
+      recommendations.push("Réduire les glucides raffinés et sucres ajoutés");
+      recommendations.push("Marche 15min après chaque repas (réduit pic glycémique de 30-50%)");
+    }
+    if (score < 70) {
+      recommendations.push("Musculation 3x/semaine minimum (améliore sensibilité insuline)");
+      recommendations.push("Manger fibres et protéines AVANT les glucides");
+      recommendations.push("Considérer berbérine 500mg 2x/jour avant repas glucidiques");
+    }
+    if (score < 55) {
+      recommendations.push("Jeûne intermittent 16:8 pour améliorer sensibilité insuline");
+      recommendations.push("Limiter glucides à <100g/jour temporairement");
+      recommendations.push("Supplémenter magnésium glycinate 400mg/jour");
+      recommendations.push("Chrome 200mcg/jour");
+    }
+    if (score < 40) {
+      recommendations.push("CONSULTATION MÉDICALE RECOMMANDÉE");
+      recommendations.push("Régime cétogène ou très low-carb (<50g/jour) à considérer");
+      recommendations.push("ALA (acide alpha-lipoïque) 600mg/jour");
+      recommendations.push("Contrôle glycémique régulier avec glucomètre");
+    }
   }
 
   return {
@@ -2794,8 +2810,14 @@ export function calculateMetabolicEfficiencyScore(
 export function calculateOverallHealthScore(
   riskScores: Omit<ComprehensiveRiskProfile, 'overallHealth' | 'timestamp'>
 ): RiskScore {
+  // Only include prediabetes in overall if core glycemic data exists
+  const prediabetesHasCoreData = riskScores.prediabetes.markers_used?.some(
+    (m: string) => m === "hba1c" || m === "glycemie_jeun" || m === "insuline_jeun",
+  );
   const scores = [
-    { name: "Pré-diabète", score: riskScores.prediabetes.score, weight: 1.2 },
+    ...(prediabetesHasCoreData
+      ? [{ name: "Pré-diabète", score: riskScores.prediabetes.score, weight: 1.2 }]
+      : []),
     { name: "Résistance insuline", score: riskScores.insulinResistance.score, weight: 1.1 },
     { name: "Score anabolique", score: riskScores.anabolicCapacity.score, weight: 1.2 },
     { name: "Score métabolique", score: riskScores.metabolicEfficiency.score, weight: 1.2 },

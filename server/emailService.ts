@@ -1117,15 +1117,24 @@ const renderCompositeScoresPanel = (riskProfile?: ComprehensiveRiskProfile): str
     ),
   ].join("\n");
 
+  // Only show Pré-diabète card when core glycemic markers exist (HbA1c, glycémie, insuline)
+  // NEVER display a diabetes diagnosis based only on triglycerides
+  const prediabetesHasCoreData = riskProfile.prediabetes.markers_used?.some(
+    (m: string) => m === "hba1c" || m === "glycemie_jeun" || m === "insuline_jeun",
+  );
   const healthCards = [
+    prediabetesHasCoreData
+      ? renderCompositeScoreCard("Pré-diabète", riskProfile.prediabetes, "Risque de dérive glycémique précoce.", true)
+      : "",
     renderCompositeScoreCard("Cardiovasculaire", riskProfile.cardiovascular, "Risque cardio-métabolique global.", true),
     renderCompositeScoreCard("Foie", riskProfile.liverHealth, "Robustesse hépatique et charge métabolique.", true),
     renderCompositeScoreCard("Reins", riskProfile.kidneyFunction, "Capacité de filtration et équilibre hydrique.", true),
     renderCompositeScoreCard("Hormonal", riskProfile.hormonalHealth, "Stabilité endocrine et récupération.", true),
     renderCompositeScoreCard("Thyroïde", riskProfile.thyroidDysfunction, "Pilotage thyroïdien du métabolisme.", true),
     renderCompositeScoreCard("Inflammation", riskProfile.inflammation, "Charge inflammatoire systémique.", true),
+    renderCompositeScoreCard("Anémie", riskProfile.anemia, "Risque de déficit d'oxygénation et de réserves en fer.", true),
     renderCompositeScoreCard("Syndrome Métabolique", riskProfile.metabolicSyndrome, "Agrégation des facteurs de dérive métabolique.", true),
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   return `
     <p class="score-intro">Je consolide ici les marqueurs en scores composites pour visualiser rapidement tes priorités performance et santé.</p>
