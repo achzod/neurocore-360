@@ -36,6 +36,8 @@ export interface RiskFactor {
 export interface ComprehensiveRiskProfile {
   prediabetes: RiskScore;
   insulinResistance: RiskScore;
+  anabolicCapacity: RiskScore;
+  metabolicEfficiency: RiskScore;
   cardiovascular: RiskScore;
   metabolicSyndrome: RiskScore;
   thyroidDysfunction: RiskScore;
@@ -2394,6 +2396,627 @@ export function calculateAnemiaRiskScore(
 }
 
 // ============================================
+// PERFORMANCE SCORES
+// ============================================
+
+export function calculateAnabolicCapacityScore(
+  markers: BloodMarkerInput[],
+  profile?: { gender?: "homme" | "femme" }
+): RiskScore {
+  const factors: RiskFactor[] = [];
+  const markersUsed: string[] = [];
+  const gender = profile?.gender || "homme";
+  let score = 50;
+
+  const testosteroneTotal = getMarkerValue(markers, "testosterone_total");
+  if (testosteroneTotal !== null) {
+    markersUsed.push("testosterone_total");
+    let delta = 0;
+    let explanation = "";
+    if (testosteroneTotal >= 700) {
+      delta = 10;
+      explanation = "Testostérone totale haute, terrain favorable à l'anabolisme.";
+    } else if (testosteroneTotal >= 550) {
+      delta = 6;
+      explanation = "Testostérone totale correcte pour soutenir progression et récupération.";
+    } else if (testosteroneTotal >= 450) {
+      delta = 2;
+      explanation = "Testostérone totale intermédiaire, marge d'optimisation.";
+    } else if (testosteroneTotal >= 350) {
+      delta = -6;
+      explanation = "Testostérone totale basse, frein probable sur force/hypertrophie.";
+    } else {
+      delta = -12;
+      explanation = "Testostérone totale très basse, impact anabolique majeur probable.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Testostérone totale",
+      value: testosteroneTotal,
+      unit: "ng/dL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const testosteroneFree = getMarkerValue(markers, "testosterone_libre");
+  if (testosteroneFree !== null) {
+    markersUsed.push("testosterone_libre");
+    let delta = 0;
+    let explanation = "";
+    if (testosteroneFree >= 18) {
+      delta = 12;
+      explanation = "Testostérone libre élevée, capacité de construction musculaire solide.";
+    } else if (testosteroneFree >= 14) {
+      delta = 8;
+      explanation = "Testostérone libre correcte, bon support anabolique.";
+    } else if (testosteroneFree >= 10) {
+      delta = 3;
+      explanation = "Testostérone libre limite, potentiel présent mais fragile.";
+    } else if (testosteroneFree >= 7) {
+      delta = -6;
+      explanation = "Testostérone libre basse, frein probable sur progression.";
+    } else {
+      delta = -12;
+      explanation = "Testostérone libre très basse, blocage anabolique marqué.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Testostérone libre",
+      value: testosteroneFree,
+      unit: "pg/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const igf1 = getMarkerValue(markers, "igf1");
+  if (igf1 !== null) {
+    markersUsed.push("igf1");
+    let delta = 0;
+    let explanation = "";
+    if (igf1 >= 180) {
+      delta = 10;
+      explanation = "IGF-1 favorable, signal anabolique bien présent.";
+    } else if (igf1 >= 140) {
+      delta = 6;
+      explanation = "IGF-1 acceptable, capacité de progression correcte.";
+    } else if (igf1 >= 110) {
+      delta = 2;
+      explanation = "IGF-1 intermédiaire, zone de progression possible.";
+    } else {
+      delta = -8;
+      explanation = "IGF-1 bas, anabolisme et récupération possiblement limités.";
+    }
+    score += delta;
+    factors.push({
+      marker: "IGF-1",
+      value: igf1,
+      unit: "ng/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const dheaS = getMarkerValue(markers, "dhea_s");
+  if (dheaS !== null) {
+    markersUsed.push("dhea_s");
+    let delta = 0;
+    let explanation = "";
+    if (dheaS >= 250 && dheaS <= 500) {
+      delta = 6;
+      explanation = "DHEA-S dans une zone favorable à l'équilibre hormonal.";
+    } else if (dheaS >= 180) {
+      delta = 3;
+      explanation = "DHEA-S correcte mais perfectible pour la performance.";
+    } else {
+      delta = -6;
+      explanation = "DHEA-S basse, possible limitation de l'axe anabolique.";
+    }
+    score += delta;
+    factors.push({
+      marker: "DHEA-S",
+      value: dheaS,
+      unit: "µg/dL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const cortisol = getMarkerValue(markers, "cortisol");
+  if (cortisol !== null) {
+    markersUsed.push("cortisol");
+    let delta = 0;
+    let explanation = "";
+    if (cortisol >= 12 && cortisol <= 18) {
+      delta = 4;
+      explanation = "Cortisol bien calibré, environnement favorable à la récupération.";
+    } else if (cortisol >= 8 && cortisol <= 22) {
+      delta = 1;
+      explanation = "Cortisol acceptable, vigilance sur la charge allostatique.";
+    } else if (cortisol > 28) {
+      delta = -10;
+      explanation = "Cortisol élevé, contexte catabolique probable.";
+    } else {
+      delta = -6;
+      explanation = "Cortisol hors cible, peut freiner progression et récupération.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Cortisol",
+      value: cortisol,
+      unit: "µg/dL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const estradiol = getMarkerValue(markers, "estradiol");
+  if (estradiol !== null) {
+    markersUsed.push("estradiol");
+    const optimalMin = gender === "femme" ? 30 : 20;
+    const optimalMax = gender === "femme" ? 120 : 35;
+    let delta = 0;
+    let explanation = "";
+    if (estradiol >= optimalMin && estradiol <= optimalMax) {
+      delta = 4;
+      explanation = "Estradiol équilibré, soutien hormonal cohérent.";
+    } else if (estradiol >= optimalMin * 0.7 && estradiol <= optimalMax * 1.3) {
+      delta = 1;
+      explanation = "Estradiol proche de la cible, surveillance légère.";
+    } else {
+      delta = -4;
+      explanation = "Estradiol hors cible, impact possible sur performance et récupération.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Estradiol",
+      value: estradiol,
+      unit: "pg/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const ferritin = getMarkerValue(markers, "ferritine");
+  if (ferritin !== null) {
+    markersUsed.push("ferritine");
+    let delta = 0;
+    let explanation = "";
+    if (ferritin >= 80 && ferritin <= 150) {
+      delta = 4;
+      explanation = "Ferritine optimale, support de l'oxygénation et de l'effort.";
+    } else if ((ferritin >= 50 && ferritin < 80) || (ferritin > 150 && ferritin <= 220)) {
+      delta = 1;
+      explanation = "Ferritine correcte mais non optimale.";
+    } else {
+      delta = -4;
+      explanation = "Ferritine hors zone cible, impact possible sur énergie et récupération.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Ferritine",
+      value: ferritin,
+      unit: "ng/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const vitaminD = getMarkerValue(markers, "vitamine_d");
+  if (vitaminD !== null) {
+    markersUsed.push("vitamine_d");
+    let delta = 0;
+    let explanation = "";
+    if (vitaminD >= 50 && vitaminD <= 80) {
+      delta = 5;
+      explanation = "Vitamine D en zone performance, environnement hormonal favorable.";
+    } else if ((vitaminD >= 35 && vitaminD < 50) || (vitaminD > 80 && vitaminD <= 100)) {
+      delta = 2;
+      explanation = "Vitamine D acceptable mais perfectible.";
+    } else if (vitaminD < 35) {
+      delta = -5;
+      explanation = "Vitamine D basse, facteur limitant potentiel pour force/immunité.";
+    } else {
+      delta = -2;
+      explanation = "Vitamine D élevée, ajustement prudent recommandé.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Vitamine D",
+      value: vitaminD,
+      unit: "ng/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const crp = getMarkerValue(markers, "crp_us");
+  if (crp !== null) {
+    markersUsed.push("crp_us");
+    let delta = 0;
+    let explanation = "";
+    if (crp <= 0.8) {
+      delta = 5;
+      explanation = "Inflammation basse, favorable à l'anabolisme.";
+    } else if (crp <= 1.5) {
+      delta = 2;
+      explanation = "Inflammation contrôlée, impact limité.";
+    } else if (crp <= 3.0) {
+      delta = 0;
+      explanation = "Inflammation modérée, vigilance.";
+    } else {
+      delta = -6;
+      explanation = "Inflammation élevée, frein probable sur récupération et progression.";
+    }
+    score += delta;
+    factors.push({
+      marker: "CRP-us",
+      value: crp,
+      unit: "mg/L",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const level = getRiskLevel(score);
+
+  let interpretation = `Score Anabolique: ${score}/100. `;
+  if (score >= 85) {
+    interpretation += "Excellente capacité de construction musculaire.";
+  } else if (score >= 70) {
+    interpretation += "Capacité anabolique solide, quelques optimisations possibles.";
+  } else if (score >= 55) {
+    interpretation += "Capacité anabolique modérée, plusieurs freins sont corrigibles.";
+  } else if (score >= 40) {
+    interpretation += "Capacité anabolique limitée, stratégie de correction prioritaire recommandée.";
+  } else {
+    interpretation += "Capacité anabolique faible, correction structurée indispensable.";
+  }
+
+  const recommendations: string[] = [];
+  if (score < 80) recommendations.push("Prioriser sommeil régulier, charge d'entraînement maîtrisée et nutrition périodisée.");
+  if (testosteroneFree !== null && testosteroneFree < 14) recommendations.push("Optimiser l'axe androgénique via récupération, lipides de qualité et retest ciblé.");
+  if (vitaminD !== null && vitaminD < 50) recommendations.push("Corriger la vitamine D vers la zone 50-80 ng/mL avec suivi biologique.");
+  if (crp !== null && crp > 1.5) recommendations.push("Réduire la charge inflammatoire systémique pour restaurer la progression.");
+  if (!recommendations.length) recommendations.push("Maintenir le protocole actuel et sécuriser la progression par retest à 8-12 semaines.");
+
+  return {
+    name: "Score Anabolique",
+    score,
+    level,
+    interpretation,
+    factors,
+    recommendations,
+    markers_used: markersUsed,
+    confidence: calculateConfidence(markersUsed.length, 9),
+  };
+}
+
+const metabolicDifficultyFromScore = (score: number): "FACILE" | "NORMAL" | "MODERE" | "DIFFICILE" | "TRES DIFFICILE" => {
+  if (score >= 85) return "FACILE";
+  if (score >= 72) return "NORMAL";
+  if (score >= 58) return "MODERE";
+  if (score >= 42) return "DIFFICILE";
+  return "TRES DIFFICILE";
+};
+
+export function calculateMetabolicEfficiencyScore(
+  markers: BloodMarkerInput[],
+  profile?: { gender?: "homme" | "femme" }
+): RiskScore {
+  const factors: RiskFactor[] = [];
+  const markersUsed: string[] = [];
+  const gender = profile?.gender || "homme";
+  let score = 55;
+
+  const tsh = getMarkerValue(markers, "tsh");
+  if (tsh !== null) {
+    markersUsed.push("tsh");
+    let delta = 0;
+    let explanation = "";
+    if (tsh >= 0.7 && tsh <= 2.0) {
+      delta = 6;
+      explanation = "TSH favorable à un métabolisme efficace.";
+    } else if (tsh > 2.0 && tsh <= 2.8) {
+      delta = 2;
+      explanation = "TSH correcte mais en zone de vigilance.";
+    } else if (tsh > 2.8) {
+      delta = -6;
+      explanation = "TSH élevée, ralentissement métabolique possible.";
+    } else {
+      delta = -3;
+      explanation = "TSH basse hors contexte, nécessite interprétation prudente.";
+    }
+    score += delta;
+    factors.push({
+      marker: "TSH",
+      value: tsh,
+      unit: "mIU/L",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const t3l = getMarkerValue(markers, "t3_libre");
+  if (t3l !== null) {
+    markersUsed.push("t3_libre");
+    let delta = 0;
+    let explanation = "";
+    if (t3l >= 3.1 && t3l <= 4.2) {
+      delta = 8;
+      explanation = "T3 libre favorable à la dépense énergétique.";
+    } else if (t3l >= 2.8) {
+      delta = 3;
+      explanation = "T3 libre acceptable, optimisation possible.";
+    } else {
+      delta = -7;
+      explanation = "T3 libre basse, frein possible sur lipolyse et énergie.";
+    }
+    score += delta;
+    factors.push({
+      marker: "T3 libre",
+      value: t3l,
+      unit: "pg/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const insulin = getMarkerValue(markers, "insuline_jeun");
+  if (insulin !== null) {
+    markersUsed.push("insuline_jeun");
+    let delta = 0;
+    let explanation = "";
+    if (insulin <= 6) {
+      delta = 12;
+      explanation = "Insuline à jeun optimale, très bonne sensibilité insulinique.";
+    } else if (insulin <= 9) {
+      delta = 7;
+      explanation = "Insuline correcte, bon potentiel de recomposition.";
+    } else if (insulin <= 12) {
+      delta = 2;
+      explanation = "Insuline limite, vigilance sur la stratégie glucidique.";
+    } else if (insulin <= 18) {
+      delta = -6;
+      explanation = "Hyperinsulinémie modérée, frein probable sur perte de gras.";
+    } else {
+      delta = -12;
+      explanation = "Hyperinsulinémie marquée, difficulté métabolique majeure.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Insuline à jeun",
+      value: insulin,
+      unit: "µIU/mL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const homaIr = getMarkerValue(markers, "homa_ir");
+  if (homaIr !== null) {
+    markersUsed.push("homa_ir");
+    let delta = 0;
+    let explanation = "";
+    if (homaIr < 1.2) {
+      delta = 10;
+      explanation = "HOMA-IR excellent, terrain favorable à la lipolyse.";
+    } else if (homaIr < 1.8) {
+      delta = 5;
+      explanation = "HOMA-IR bon, marge d'optimisation légère.";
+    } else if (homaIr < 2.5) {
+      delta = 0;
+      explanation = "HOMA-IR intermédiaire, efficacité métabolique moyenne.";
+    } else if (homaIr < 3.2) {
+      delta = -7;
+      explanation = "HOMA-IR élevé, résistance insulinique modérée.";
+    } else {
+      delta = -12;
+      explanation = "HOMA-IR très élevé, résistance insulinique marquée.";
+    }
+    score += delta;
+    factors.push({
+      marker: "HOMA-IR",
+      value: homaIr,
+      unit: "",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const tg = getMarkerValue(markers, "triglycerides");
+  const hdl = getMarkerValue(markers, "hdl");
+  if (tg !== null && hdl !== null && hdl > 0) {
+    markersUsed.push("triglycerides");
+    markersUsed.push("hdl");
+    const ratio = tg / hdl;
+    let delta = 0;
+    let explanation = "";
+    if (ratio <= 1.5) {
+      delta = 10;
+      explanation = "Ratio TG/HDL excellent, terrain métabolique très favorable.";
+    } else if (ratio <= 2.2) {
+      delta = 5;
+      explanation = "Ratio TG/HDL bon, sensibilité insulinique globalement correcte.";
+    } else if (ratio <= 3.0) {
+      delta = 0;
+      explanation = "Ratio TG/HDL moyen, optimisation recommandée.";
+    } else if (ratio <= 4.0) {
+      delta = -8;
+      explanation = "Ratio TG/HDL défavorable, résistance insulinique probable.";
+    } else {
+      delta = -12;
+      explanation = "Ratio TG/HDL très défavorable, frein majeur sur perte de gras.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Ratio TG/HDL",
+      value: Number(ratio.toFixed(2)),
+      unit: "",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const glucose = getMarkerValue(markers, "glycemie_jeun");
+  if (glucose !== null) {
+    markersUsed.push("glycemie_jeun");
+    let delta = 0;
+    let explanation = "";
+    if (glucose >= 75 && glucose <= 90) {
+      delta = 8;
+      explanation = "Glycémie à jeun optimale.";
+    } else if (glucose <= 99) {
+      delta = 2;
+      explanation = "Glycémie normale mais perfectible.";
+    } else if (glucose <= 109) {
+      delta = -6;
+      explanation = "Glycémie élevée, dérive métabolique débutante.";
+    } else {
+      delta = -10;
+      explanation = "Glycémie haute, frein significatif sur recomposition.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Glycémie à jeun",
+      value: glucose,
+      unit: "mg/dL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const cortisol = getMarkerValue(markers, "cortisol");
+  if (cortisol !== null) {
+    markersUsed.push("cortisol");
+    let delta = 0;
+    let explanation = "";
+    if (cortisol >= 12 && cortisol <= 18) {
+      delta = 3;
+      explanation = "Cortisol bien régulé.";
+    } else if (cortisol >= 8 && cortisol <= 22) {
+      delta = 1;
+      explanation = "Cortisol acceptable.";
+    } else {
+      delta = -5;
+      explanation = "Cortisol hors cible, risque de frein sur perte de gras.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Cortisol",
+      value: cortisol,
+      unit: "µg/dL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const crp = getMarkerValue(markers, "crp_us");
+  if (crp !== null) {
+    markersUsed.push("crp_us");
+    let delta = 0;
+    let explanation = "";
+    if (crp <= 0.8) {
+      delta = 4;
+      explanation = "Inflammation basse, favorable au métabolisme.";
+    } else if (crp <= 2.0) {
+      delta = 1;
+      explanation = "Inflammation contrôlée.";
+    } else if (crp <= 3.0) {
+      delta = -2;
+      explanation = "Inflammation modérée, peut gêner la recomposition.";
+    } else {
+      delta = -6;
+      explanation = "Inflammation élevée, frein net sur efficacité métabolique.";
+    }
+    score += delta;
+    factors.push({
+      marker: "CRP-us",
+      value: crp,
+      unit: "mg/L",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  const testosteroneTotal = getMarkerValue(markers, "testosterone_total");
+  if (testosteroneTotal !== null) {
+    markersUsed.push("testosterone_total");
+    let delta = 0;
+    let explanation = "";
+    if ((gender === "homme" && testosteroneTotal >= 600) || (gender === "femme" && testosteroneTotal >= 35)) {
+      delta = 4;
+      explanation = "Signal androgénique favorable au maintien de masse maigre.";
+    } else if ((gender === "homme" && testosteroneTotal >= 450) || (gender === "femme" && testosteroneTotal >= 20)) {
+      delta = 2;
+      explanation = "Signal androgénique acceptable.";
+    } else {
+      delta = -4;
+      explanation = "Signal androgénique bas, risque de ralentissement métabolique.";
+    }
+    score += delta;
+    factors.push({
+      marker: "Testostérone totale",
+      value: testosteroneTotal,
+      unit: gender === "femme" ? "ng/dL (ajuster selon labo)" : "ng/dL",
+      contribution: delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral",
+      weight: Math.abs(delta),
+      explanation,
+    });
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const level = getRiskLevel(score);
+  const difficulty = metabolicDifficultyFromScore(score);
+
+  let interpretation = `Score Métabolique: ${score}/100. Difficulté de perte de gras estimée: ${difficulty}. `;
+  if (difficulty === "FACILE" || difficulty === "NORMAL") {
+    interpretation += "Ton terrain biologique répond bien à une stratégie classique de recomposition.";
+  } else if (difficulty === "MODERE") {
+    interpretation += "La perte de gras est possible mais demande un protocole bien séquencé.";
+  } else {
+    interpretation += "Le terrain métabolique impose une stratégie rigoureuse et progressive.";
+  }
+
+  const recommendations: string[] = [];
+  recommendations.push("Structurer le timing glucidique autour de l'entraînement et renforcer la marche post-prandiale.");
+  if (insulin !== null && insulin > 9) recommendations.push("Prioriser la réduction de l'hyperinsulinémie (fibres, sommeil, zone 2, gestion du stress).");
+  if (homaIr !== null && homaIr >= 2.0) recommendations.push("Objectiver et corriger la résistance insulinique avec retest HOMA-IR à 8-12 semaines.");
+  if (tsh !== null && tsh > 2.8) recommendations.push("Surveiller l'axe thyroïdien (TSH/FT3/FT4) avant tout déficit calorique agressif.");
+  if (tg !== null && hdl !== null && hdl > 0 && tg / hdl > 3.0) recommendations.push("Cibler d'abord le ratio TG/HDL via hygiène métabolique intensive.");
+
+  return {
+    name: "Score Métabolique",
+    score,
+    level,
+    interpretation,
+    factors,
+    recommendations,
+    markers_used: Array.from(new Set(markersUsed)),
+    confidence: calculateConfidence(Array.from(new Set(markersUsed)).length, 9),
+  };
+}
+
+// ============================================
 // OVERALL HEALTH SCORE
 // ============================================
 
@@ -2403,6 +3026,8 @@ export function calculateOverallHealthScore(
   const scores = [
     { name: "Pré-diabète", score: riskScores.prediabetes.score, weight: 1.2 },
     { name: "Résistance insuline", score: riskScores.insulinResistance.score, weight: 1.1 },
+    { name: "Score anabolique", score: riskScores.anabolicCapacity.score, weight: 1.2 },
+    { name: "Score métabolique", score: riskScores.metabolicEfficiency.score, weight: 1.2 },
     { name: "Cardiovasculaire", score: riskScores.cardiovascular.score, weight: 1.3 },
     { name: "Syndrome métabolique", score: riskScores.metabolicSyndrome.score, weight: 1.2 },
     { name: "Thyroïde", score: riskScores.thyroidDysfunction.score, weight: 1.0 },
@@ -2493,6 +3118,8 @@ export function generateComprehensiveRiskProfile(
 ): ComprehensiveRiskProfile {
   const prediabetes = calculatePrediabetesRisk(markers, profile);
   const insulinResistance = calculateInsulinResistanceIndex(markers);
+  const anabolicCapacity = calculateAnabolicCapacityScore(markers, { gender: profile.gender });
+  const metabolicEfficiency = calculateMetabolicEfficiencyScore(markers, { gender: profile.gender });
   const cardiovascular = calculateCardiovascularRisk(markers, profile);
   const metabolicSyndrome = detectMetabolicSyndrome(markers, profile);
   const thyroidDysfunction = calculateThyroidScore(markers);
@@ -2505,6 +3132,8 @@ export function generateComprehensiveRiskProfile(
   const partialProfile = {
     prediabetes,
     insulinResistance,
+    anabolicCapacity,
+    metabolicEfficiency,
     cardiovascular,
     metabolicSyndrome,
     thyroidDysfunction,

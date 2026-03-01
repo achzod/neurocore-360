@@ -7,6 +7,7 @@ import {
   analyzeBloodwork,
   extractMarkersFromPdfText,
 } from "../server/blood-analysis/index.ts";
+import { generateComprehensiveRiskProfile } from "../server/blood-analysis/risk-scores.ts";
 
 const DATA_DIR = path.resolve("data");
 const OUTPUT_DIR = path.resolve("output");
@@ -64,12 +65,21 @@ async function main() {
 
   const richest = await pickRichestPdf();
   const analysis = await analyzeBloodwork(richest.markers, { gender: "homme" });
+  const riskProfile = generateComprehensiveRiskProfile(richest.markers as any[], {
+    gender: "homme",
+    age: "34",
+  });
   const sent = await sendBloodAnalysisHtmlEmail(
     to,
     reportId,
     reportMarkdown,
     baseUrl,
     analysis.markers as any[],
+    {
+      clientName: "Alex",
+      markerCount: analysis.markers.length,
+      riskProfile,
+    },
   );
   if (!sent) {
     throw new Error("Envoi SendPulse échoué");

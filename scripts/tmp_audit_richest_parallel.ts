@@ -6,8 +6,9 @@ import {
   extractMarkersFromPdfText,
   analyzeBloodwork,
   getBloodworkKnowledgeContext,
-  generateAIBloodAnalysis,
 } from "../server/blood-analysis/index.ts";
+import { generateComprehensiveRiskProfile } from "../server/blood-analysis/risk-scores.ts";
+import { generateParallelHtmlReport } from "../server/blood-analysis/parallel-html-generator.ts";
 
 type SectionRule = { title: string; minChars: number };
 
@@ -189,7 +190,251 @@ function auditMarkdown(report: string, markerCount: number) {
   };
 }
 
-async function renderEmailPayload(reportMarkdown: string, markerSnapshots?: any[]) {
+type CriterionResult = {
+  key: string;
+  pass: boolean;
+  details: string;
+};
+
+const normalizeAudit = (value: string) =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const countRegex = (text: string, regex: RegExp) => {
+  const matches = String(text || "").match(regex);
+  return matches ? matches.length : 0;
+};
+
+const findSentenceWindow = (text: string, index: number): string => {
+  const source = String(text || "");
+  if (index < 0 || index >= source.length) return "";
+  const start = Math.max(
+    source.lastIndexOf(".", index),
+    source.lastIndexOf("!", index),
+    source.lastIndexOf("?", index),
+    source.lastIndexOf("\n", index),
+  );
+  const rightSlice = source.slice(index);
+  const relEndCandidates = [rightSlice.indexOf("."), rightSlice.indexOf("!"), rightSlice.indexOf("?"), rightSlice.indexOf("\n")]
+    .filter((v) => v >= 0);
+  const relEnd = relEndCandidates.length ? Math.min(...relEndCandidates) : Math.min(rightSlice.length, 320);
+  const end = index + relEnd + 1;
+  return source.slice(Math.max(0, start + 1), Math.min(source.length, end + 220)).trim();
+};
+
+const isWordLikeChar = (char?: string) => {
+  if (!char) return false;
+  return /[A-Za-z0-9À-ÖØ-öø-ÿ]/.test(char);
+};
+
+const findWholeTermIndex = (source: string, term: string): number => {
+  const text = String(source || "");
+  const needle = String(term || "");
+  if (!needle) return -1;
+  const normalizedSource = normalizeAudit(text);
+  const normalizedNeedle = normalizeAudit(needle);
+  let from = 0;
+  while (from < normalizedSource.length) {
+    const idx = normalizedSource.indexOf(normalizedNeedle, from);
+    if (idx === -1) return -1;
+    const before = normalizedSource[idx - 1];
+    const after = normalizedSource[idx + normalizedNeedle.length];
+    if (!isWordLikeChar(before) && !isWordLikeChar(after)) return idx;
+    from = idx + Math.max(1, normalizedNeedle.length);
+  }
+  return -1;
+};
+
+function auditPromptCriteriaV2(
+  report: string,
+  markerSnapshots: Array<{ markerId?: string; name: string; value: number }>,
+  attachmentHtmlAudit: any,
+) {
+  const sections = splitSections(report);
+  const normalizedReport = normalizeAudit(report);
+
+  const tutoiementForbiddenPatterns: Array<{ label: string; regex: RegExp }> = [
+    { label: "vous", regex: /\bvous\b/gi },
+    { label: "il presente", regex: /\bil presente\b/gi },
+    { label: "le client", regex: /\ble client\b/gi },
+    { label: "d'alex", regex: /\bd['’]alex\b/gi },
+    { label: "son profil", regex: /\bson profil\b/gi },
+  ];
+  const tutoiementHits = tutoiementForbiddenPatterns
+    .map((rule) => ({ label: rule.label, count: countRegex(normalizedReport, rule.regex) }))
+    .filter((entry) => entry.count > 0);
+
+  const markerNames = Array.from(
+    new Set(
+      markerSnapshots
+        .map((marker) => String(marker?.name || "").trim())
+        .filter((name) => name.length >= 2),
+    ),
+  );
+  const definitionHintRegex =
+    /\b(?:mesure|indique|refl[eè]te|represente|c['’]est|correspond|evalue|designe|sert a|permet de|estime|hormone|enzyme|joue un role)\b/i;
+  const markerDefinitionMisses: Array<{ section: string; marker: string; excerpt: string }> = [];
+  for (const section of sections) {
+    if (normalizeAudit(section.title).includes("sources")) continue;
+    const sectionText = section.content;
+    for (const markerName of markerNames) {
+      const markerNorm = normalizeAudit(markerName);
+      if (!markerNorm || markerNorm.length < 3) continue;
+      const firstIndex = findWholeTermIndex(sectionText, markerName);
+      if (firstIndex === -1) continue;
+      const sentence = findSentenceWindow(sectionText, firstIndex);
+      if (!definitionHintRegex.test(normalizeAudit(sentence))) {
+        markerDefinitionMisses.push({
+          section: section.title,
+          marker: markerName,
+          excerpt: sentence.slice(0, 180),
+        });
+      }
+    }
+  }
+
+  const steroidHits = countRegex(
+    normalizedReport,
+    /\b(?:steroides?|anabolisants?|dopants?|dopage|substances?\s+anabolisantes?|substances?\s+dopantes?)\b/gi,
+  );
+
+  const altMarker = markerSnapshots.find((marker) => normalizeAudit(marker.markerId || marker.name) === "alt");
+  const altValue = altMarker?.value;
+  const supplementsSection = sections.find((section) => normalizeAudit(section.title).includes("supplements"));
+  const supplementsContent = String(supplementsSection?.content || "");
+  const niacineMentionCount = countRegex(normalizeAudit(supplementsContent), /\bniacine\b/gi);
+  const niacineSentences = supplementsContent
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 0 && /\bniacine\b/i.test(sentence));
+  const niacineRecommendationSentences = niacineSentences.filter((sentence) => {
+    const normalized = normalizeAudit(sentence);
+    const hasPositiveVerb = /\b(recommande|ajoute|prendre|prends|utilise|introduis|dose|stack)\b/.test(normalized);
+    const hasContraSignal =
+      /\b(ne\s+te\s+recommande\s+pas|contre.?indiqu(?:e|ee|ees)?|interdit|a\s+eviter|hepatotoxiques?|pas\s+de\s+niacine)\b/.test(
+        normalized,
+      );
+    return hasPositiveVerb && !hasContraSignal;
+  });
+  const niacineForbidden = typeof altValue === "number" && altValue > 40;
+
+  const statPatterns: Array<{ key: string; regex: RegExp }> = [
+    { key: "hdl_19", regex: /\bhdl\b[\s\S]{0,40}\b19\s*mg\/?d?l\b/i },
+    { key: "tg_166", regex: /\btriglycerides?\b[\s\S]{0,40}\b166\s*mg\/?d?l\b/i },
+    { key: "alt_56", regex: /\balt\b[\s\S]{0,30}\b56\s*u\/?l\b/i },
+  ];
+  const statSectionCounts = statPatterns.map((pattern) => {
+    let count = 0;
+    for (const section of sections) {
+      if (pattern.regex.test(normalizeAudit(section.content))) count += 1;
+    }
+    return { key: pattern.key, count };
+  });
+  const repetitionViolations = statSectionCounts.filter((entry) => entry.count > 3);
+
+  const sourcesSection = sections.find((section) => normalizeAudit(section.title).includes("sources"));
+  const bodyWithoutSources = sourcesSection ? report.replace(sourcesSection.content, "") : report;
+  const citationIds = extractSourceIds(bodyWithoutSources);
+  const uniqueCitationIds = Array.from(new Set(citationIds));
+
+  const radarCoherent =
+    attachmentHtmlAudit?.hasRadarTab === true &&
+    attachmentHtmlAudit?.hasRadarSvg === true &&
+    attachmentHtmlAudit?.hasScoreCards === true &&
+    attachmentHtmlAudit?.testosteroneFreeScore !== 90;
+
+  const themeOk =
+    attachmentHtmlAudit?.hasTabsNav === true &&
+    attachmentHtmlAudit?.hasTabButtons === true &&
+    attachmentHtmlAudit?.hasPanels === true &&
+    attachmentHtmlAudit?.hasTabScript === true &&
+    attachmentHtmlAudit?.darkThemeSignals === 0;
+
+  const criteria: CriterionResult[] = [
+    {
+      key: "TUTOIEMENT",
+      pass: tutoiementHits.length === 0,
+      details:
+        tutoiementHits.length === 0
+          ? "Aucune occurrence interdite detectee."
+          : `Occurrences interdites: ${tutoiementHits.map((h) => `${h.label}:${h.count}`).join(", ")}`,
+    },
+    {
+      key: "DEFINITIONS",
+      pass: markerDefinitionMisses.length === 0,
+      details:
+        markerDefinitionMisses.length === 0
+          ? "Definition detectee a la premiere mention pour chaque marqueur."
+          : `Mentions sans definition: ${markerDefinitionMisses
+              .slice(0, 12)
+              .map((m) => `${m.section} -> ${m.marker}`)
+              .join(" | ")}`,
+    },
+    {
+      key: "STEROIDES",
+      pass: steroidHits === 0,
+      details: steroidHits === 0 ? "Aucune mention interdite." : `Mentions detectees: ${steroidHits}`,
+    },
+    {
+      key: "NIACINE",
+      pass: !(niacineForbidden && niacineRecommendationSentences.length > 0),
+      details:
+        niacineForbidden && niacineRecommendationSentences.length > 0
+          ? `ALT=${altValue} > 40 et niacine recommandee dans le stack: ${niacineRecommendationSentences
+              .slice(0, 2)
+              .join(" | ")}`
+          : niacineForbidden
+          ? `ALT=${altValue} > 40 et aucune recommandation de niacine (mentions=${niacineMentionCount}).`
+          : `ALT=${altValue ?? "N/A"} (regle non applicable).`,
+    },
+    {
+      key: "REPETITION",
+      pass: repetitionViolations.length === 0,
+      details:
+        repetitionViolations.length === 0
+          ? `Repetitions controlees: ${statSectionCounts.map((s) => `${s.key}:${s.count}`).join(", ")}`
+          : `Stats repetees dans >3 sections: ${repetitionViolations.map((s) => `${s.key}:${s.count}`).join(", ")}`,
+    },
+    {
+      key: "CITATIONS",
+      pass: uniqueCitationIds.length >= 8,
+      details: `Sources uniques dans le corps: ${uniqueCitationIds.length} (${uniqueCitationIds.join(", ") || "none"})`,
+    },
+    {
+      key: "RADAR",
+      pass: radarCoherent,
+      details: `testosteroneFreeScore=${attachmentHtmlAudit?.testosteroneFreeScore ?? "N/A"}; hasRadar=${attachmentHtmlAudit?.hasRadarSvg === true}`,
+    },
+    {
+      key: "THEME",
+      pass: themeOk,
+      details: `tabsNav=${attachmentHtmlAudit?.hasTabsNav === true}, tabScript=${attachmentHtmlAudit?.hasTabScript === true}, darkSignals=${attachmentHtmlAudit?.darkThemeSignals ?? "N/A"}`,
+    },
+  ];
+
+  return {
+    criteria,
+    pass: criteria.every((criterion) => criterion.pass),
+    debug: {
+      tutoiementHits,
+      markerDefinitionMisses: markerDefinitionMisses.slice(0, 50),
+      steroidHits,
+      niacineMentionCount,
+      niacineRecommendationSentences,
+      altValue,
+      statSectionCounts,
+      uniqueCitationIds,
+    },
+  };
+}
+
+async function renderEmailPayload(
+  reportMarkdown: string,
+  markerSnapshots?: any[],
+  riskProfile?: any,
+) {
   process.env.SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || "qa-user";
   process.env.SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || "qa-secret";
 
@@ -226,6 +471,11 @@ async function renderEmailPayload(reportMarkdown: string, markerSnapshots?: any[
       reportMarkdown,
       "https://neurocore-360.onrender.com",
       markerSnapshots,
+      {
+        clientName: "Alex",
+        markerCount: Array.isArray(markerSnapshots) ? markerSnapshots.length : undefined,
+        riskProfile,
+      },
     );
     if (!sent) {
       throw new Error("sendBloodAnalysisHtmlEmail returned false");
@@ -301,6 +551,10 @@ function auditAttachmentHtml(html: string) {
   const hasRadarTab = /Radar des scores biomarqueurs/i.test(text);
   const hasRadarSvg = /class=["'][^"']*score-radar[^"']*["']/i.test(text);
   const hasScoreCards = /class=["'][^"']*score-card[^"']*["']/i.test(text);
+  const hasCompositeScores = /Scores Composites/i.test(text);
+  const hasAnabolicScore = /Score Anabolique|Anabolique/i.test(text);
+  const hasMetabolicScore = /Score Métabolique|Métabolique/i.test(text);
+  const hasInsulinScore = /Résistance Insuline|Resistance Insuline/i.test(text);
   const testosteroneCardMatch = text.match(
     /<h3>\s*Testost[ée]rone libre\s*<\/h3>[\s\S]{0,400}?(\d{1,3})\/100/i,
   );
@@ -323,6 +577,10 @@ function auditAttachmentHtml(html: string) {
     hasTabButtons,
     hasPanels,
     hasTabScript,
+    hasCompositeScores,
+    hasAnabolicScore,
+    hasMetabolicScore,
+    hasInsulinScore,
     hasRadarTab,
     hasRadarSvg,
     hasScoreCards,
@@ -335,6 +593,10 @@ function auditAttachmentHtml(html: string) {
       hasTabButtons &&
       hasPanels &&
       hasTabScript &&
+      hasCompositeScores &&
+      hasAnabolicScore &&
+      hasMetabolicScore &&
+      hasInsulinScore &&
       hasRadarTab &&
       hasRadarSvg &&
       hasScoreCards &&
@@ -353,12 +615,17 @@ async function main() {
 
   const { richest, skips } = await pickRichestPdf();
   const analysis = await analyzeBloodwork(richest.markers, { gender: "homme" });
+  const riskProfile = generateComprehensiveRiskProfile(richest.markers as any[], {
+    gender: "homme",
+    age: "34",
+  });
   const knowledge = await getBloodworkKnowledgeContext(analysis.markers, analysis.patterns);
 
   let report = "";
+  let generatedHtml = "";
   let generationError: string | null = null;
   try {
-    report = await generateAIBloodAnalysis(
+    const generated = await generateParallelHtmlReport(
       analysis,
       {
         gender: "homme",
@@ -377,6 +644,8 @@ async function main() {
       },
       knowledge,
     );
+    report = String(generated.markdown || "").trim();
+    generatedHtml = String(generated.html || "");
   } catch (error: any) {
     generationError = String(error?.message || error);
   }
@@ -391,15 +660,17 @@ async function main() {
       pass: false,
     };
     fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-audit.json"), JSON.stringify(summary, null, 2));
+    fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-audit-v2.json"), JSON.stringify(summary, null, 2));
     console.log(JSON.stringify(summary, null, 2));
     process.exitCode = 1;
     return;
   }
 
   const markdownAudit = auditMarkdown(report, analysis.markers.length);
-  const emailPayload = await renderEmailPayload(report, analysis.markers as any[]);
+  const emailPayload = await renderEmailPayload(report, analysis.markers as any[], riskProfile);
   const htmlAudit = auditHtml(emailPayload.bodyHtml);
   const attachmentHtmlAudit = auditAttachmentHtml(emailPayload.attachmentHtml);
+  const promptCriteriaV2 = auditPromptCriteriaV2(report, analysis.markers as any[], attachmentHtmlAudit);
 
   const summary = {
     timestamp: new Date().toISOString(),
@@ -409,14 +680,17 @@ async function main() {
     markdownAudit,
     htmlAudit,
     attachmentHtmlAudit,
+    promptCriteriaV2,
     attachmentName: emailPayload.attachmentName,
-    pass: markdownAudit.pass && htmlAudit.pass && attachmentHtmlAudit.pass,
+    pass: markdownAudit.pass && htmlAudit.pass && attachmentHtmlAudit.pass && promptCriteriaV2.pass,
   };
 
   fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report.md"), report);
+  fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-parallel.html"), generatedHtml || "");
   fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-email.html"), emailPayload.bodyHtml);
   fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-attachment.html"), emailPayload.attachmentHtml || "");
   fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-audit.json"), JSON.stringify(summary, null, 2));
+  fs.writeFileSync(path.join(OUTPUT_DIR, "richest-report-audit-v2.json"), JSON.stringify(summary, null, 2));
 
   console.log(JSON.stringify(summary, null, 2));
 

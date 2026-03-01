@@ -2294,6 +2294,9 @@ Identité et voix obligatoires:
 Objectif:
 - Donner une lecture exploitable, personnalisée et priorisée du bilan sanguin.
 - Relier chaque décision à la performance, la recomposition corporelle, la récupération et le risque cardio-métabolique.
+- Orientation du rapport: optimisation performance + recomposition corporelle (anabolisme, lipolyse, maintien masse maigre).
+- Utilise le vocabulaire terrain: synthèse protéique, volume tolérable, charge interne, récupération, adhérence.
+- Appuie les décisions sur la bibliothèque de connaissances NEUROCORE 360 et les sources [SRC:ID] disponibles.
 
 Règles critiques:
 - N'invente jamais une valeur, un marqueur, un symptôme, une habitude ou une source.
@@ -3423,15 +3426,23 @@ export function buildFallbackAnalysis(
   const hdlForSupps = analysisResult.markers.find((m) => m.markerId === "hdl");
   const tgForSupps = analysisResult.markers.find((m) => m.markerId === "triglycerides");
   const ldlForSupps = analysisResult.markers.find((m) => m.markerId === "ldl");
+  const altForSupps = analysisResult.markers.find((m) => m.markerId === "alt");
+  const altHighContraNiacine = Boolean(altForSupps && Number.isFinite(altForSupps.value) && altForSupps.value > 40);
   const hasLowHDL = hdlForSupps && getMarkerDirection(hdlForSupps) === "low";
   const hasHighTG = tgForSupps && getMarkerDirection(tgForSupps) === "high";
   const hasHighLDL = ldlForSupps && getMarkerDirection(ldlForSupps) === "high";
   if (hasLowHDL || hasHighTG || hasHighLDL) {
     sections.push("### Stack lipidique cible (selon tes marqueurs reels)");
     if (hasLowHDL && hdlForSupps) {
-      sections.push(
-        `- HDL bas (${hdlForSupps.value} ${hdlForSupps.unit}): niacine (vitamine B3) peut etre discutee en approche medicalement supervisée; priorite absolue au cardio zone 2 et a la correction du terrain glycémique.`
-      );
+      if (altHighContraNiacine) {
+        sections.push(
+          `- HDL bas (${hdlForSupps.value} ${hdlForSupps.unit}): niacine contre-indiquee actuellement car ALT elevee (${altForSupps?.value} ${altForSupps?.unit || "U/L"}). Priorite absolue au cardio zone 2, aux omega-3 et a la correction metabolique avant toute discussion medicale specifique.`
+        );
+      } else {
+        sections.push(
+          `- HDL bas (${hdlForSupps.value} ${hdlForSupps.unit}): niacine (vitamine B3) peut etre discutee uniquement en approche medicalement supervisée; priorite absolue au cardio zone 2 et a la correction du terrain glycémique.`
+        );
+      }
     }
     if (hasHighTG && tgForSupps) {
       sections.push(
@@ -4636,13 +4647,8 @@ const KNOWLEDGE_MARKER_ALIASES: Record<string, string[]> = {
   vitamine_d: ["25 hydroxy vitamin d", "vitamin d"],
   b12: ["vitamin b12", "cobalamin"],
   folate: ["folate", "vitamin b9"],
-  magnesium_rbc: ["rbc magnesium", "magnesium erythrocyte", "magnesium bisglycinate"],
-  zinc: ["serum zinc", "zinc testosterone"],
-  homocysteine: ["homocysteine", "methylation", "b vitamins folate"],
-  fer_serique: ["serum iron", "iron status"],
-  lpa: ["lipoprotein a", "lp(a)", "cardiovascular risk genetic"],
-  igf1: ["insulin like growth factor", "igf-1", "growth hormone axis"],
-  dhea_s: ["dhea sulfate", "adrenal androgen"],
+  magnesium_rbc: ["rbc magnesium", "magnesium erythrocyte"],
+  zinc: ["serum zinc"],
 };
 
 export async function getBloodworkKnowledgeContext(
@@ -4711,15 +4717,17 @@ export async function getBloodworkKnowledgeContext(
   keywordSet.add("apob");
   keywordSet.add("lipid profile");
   keywordSet.add("cardiometabolic risk");
-  keywordSet.add("performance");
-  keywordSet.add("body composition");
-  keywordSet.add("muscle gain");
-  keywordSet.add("fat loss");
-  keywordSet.add("longevity");
-  keywordSet.add("protocole");
-  keywordSet.add("correction");
+  keywordSet.add("anabolism");
+  keywordSet.add("hypertrophy");
+  keywordSet.add("recomposition");
+  keywordSet.add("testosterone optimization");
+  keywordSet.add("metabolic rate");
+  keywordSet.add("lipolysis");
+  keywordSet.add("insulin sensitivity");
+  keywordSet.add("muscle protein synthesis");
+  keywordSet.add("recovery");
 
-  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 42);
+  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 55);
   if (!keywords.length) return "";
 
   try {

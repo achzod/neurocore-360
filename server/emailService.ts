@@ -1,3 +1,5 @@
+import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-scores";
+
 const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
 const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
 const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
@@ -619,10 +621,24 @@ const summarizeBand = (
 
 const parseRange = (value?: string): { min: number; max: number } | null => {
   if (!value) return null;
-  const nums = String(value).match(/-?\d+(?:[.,]\d+)?/g);
-  if (!nums || nums.length < 2) return null;
-  const min = Number(nums[0].replace(",", "."));
-  const max = Number(nums[1].replace(",", "."));
+  const text = String(value).replace(/\u2212/g, "-").trim();
+
+  // Prefer explicit range parsing (avoids treating separator "-" as negative sign).
+  const explicit = text.match(
+    /(-?\d+(?:[.,]\d+)?)\s*(?:-|–|—|to|a|à)\s*(-?\d+(?:[.,]\d+)?)/i,
+  );
+  let min: number;
+  let max: number;
+  if (explicit) {
+    min = Number(String(explicit[1]).replace(",", "."));
+    max = Number(String(explicit[2]).replace(",", "."));
+  } else {
+    const nums = text.match(/\d+(?:[.,]\d+)?/g);
+    if (!nums || nums.length < 2) return null;
+    min = Number(nums[0].replace(",", "."));
+    max = Number(nums[1].replace(",", "."));
+  }
+
   if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return null;
   return min < max ? { min, max } : { min: max, max: min };
 };
@@ -676,7 +692,7 @@ const scoreFromSnapshot = (marker: BloodReportMarkerSnapshot): number => {
   if (status === "critical") score = Math.min(score, 35);
   if (status === "suboptimal") score = Math.min(score, 69);
   if (status === "normal") score = Math.max(score, 62);
-  if (status === "optimal") score = Math.max(score, 86);
+  if (status === "optimal") score = Math.max(score, 80);
 
   return clampNumber(score, 6, 100);
 };
@@ -778,6 +794,110 @@ const deriveBiomarkerScoresFromMarkdown = (reportMarkdown: string): BiomarkerSco
   return rows.sort((a, b) => a.score - b.score).slice(0, 24);
 };
 
+const compositeToneByScore = (
+  score: number,
+): { chipClass: "is-critical" | "is-suboptimal" | "is-watch" | "is-solid"; label: string } => {
+  if (score <= 35) return { chipClass: "is-critical", label: "Critique" };
+  if (score <= 60) return { chipClass: "is-suboptimal", label: "Suboptimal" };
+  if (score <= 80) return { chipClass: "is-watch", label: "À surveiller" };
+  return { chipClass: "is-solid", label: "Solide" };
+};
+
+const renderCompositeScoreCard = (
+  title: string,
+  score: RiskScore | undefined,
+  icon: string,
+  subtitle: string,
+  compact = false,
+): string => {
+  if (!score) {
+    return `
+      <article class="composite-card ${compact ? "is-compact" : ""}">
+        <div class="composite-card-head">
+          <h3>${escapeHtml(icon)} ${escapeHtml(title)}</h3>
+          <span class="score-chip is-watch">N/A</span>
+        </div>
+        <p class="composite-subtitle">${escapeHtml(subtitle)}</p>
+        <p class="score-intro">Score non disponible pour ce dossier.</p>
+      </article>
+    `;
+  }
+
+  const tone = compositeToneByScore(score.score);
+  return `
+    <article class="composite-card ${compact ? "is-compact" : ""}">
+      <div class="composite-card-head">
+        <h3>${escapeHtml(icon)} ${escapeHtml(title)}</h3>
+        <span class="score-chip ${tone.chipClass}">${score.score}/100</span>
+      </div>
+      <p class="composite-subtitle">${escapeHtml(subtitle)}</p>
+      <p class="score-meta">Niveau: ${escapeHtml(tone.label)}</p>
+      <p>${escapeHtml(score.interpretation)}</p>
+    </article>
+  `;
+};
+
+const renderCompositeScoresPanel = (riskProfile?: ComprehensiveRiskProfile): string => {
+  if (!riskProfile) {
+    return `<p class="score-intro">Les scores composites ne sont pas disponibles sur cette version du rapport. Relance la génération avec le profil de risque complet.</p>`;
+  }
+
+  const overall = riskProfile.overallHealth;
+  const overallTone = compositeToneByScore(overall.score);
+  const performanceCards = [
+    renderCompositeScoreCard(
+      "Score Anabolique",
+      riskProfile.anabolicCapacity,
+      "💪",
+      "Capacité à construire de la masse musculaire.",
+    ),
+    renderCompositeScoreCard(
+      "Score Métabolique",
+      riskProfile.metabolicEfficiency,
+      "🔥",
+      "Capacité à mobiliser les graisses en recomposition.",
+    ),
+    renderCompositeScoreCard(
+      "Résistance Insuline",
+      riskProfile.insulinResistance,
+      "🩸",
+      "Tolérance glucidique et sensibilité insulinique.",
+    ),
+  ].join("\n");
+
+  const healthCards = [
+    renderCompositeScoreCard("Cardiovasculaire", riskProfile.cardiovascular, "❤️", "Risque cardio-métabolique global.", true),
+    renderCompositeScoreCard("Foie", riskProfile.liverHealth, "🧪", "Robustesse hépatique et charge métabolique.", true),
+    renderCompositeScoreCard("Reins", riskProfile.kidneyFunction, "💧", "Capacité de filtration et équilibre hydrique.", true),
+    renderCompositeScoreCard("Hormonal", riskProfile.hormonalHealth, "⚙️", "Stabilité endocrine et récupération.", true),
+    renderCompositeScoreCard("Thyroïde", riskProfile.thyroidDysfunction, "🦋", "Pilotage thyroïdien du métabolisme.", true),
+    renderCompositeScoreCard("Inflammation", riskProfile.inflammation, "🛡️", "Charge inflammatoire systémique.", true),
+    renderCompositeScoreCard("Syndrome Métabolique", riskProfile.metabolicSyndrome, "📉", "Agrégation des facteurs de dérive métabolique.", true),
+  ].join("\n");
+
+  return `
+    <p class="score-intro">Je consolide ici les marqueurs en scores composites pour visualiser rapidement tes priorités performance et santé.</p>
+    <div class="composite-overall-shell">
+      <div class="composite-overall-score ${overallTone.chipClass}">
+        <span class="composite-overall-value">${overall.score}</span>
+        <span class="composite-overall-unit">/100</span>
+      </div>
+      <div class="composite-overall-copy">
+        <h3>Score global NEUROCORE 360</h3>
+        <p>${escapeHtml(overall.interpretation)}</p>
+      </div>
+    </div>
+    <h3 class="composite-group-title">Scores performance</h3>
+    <div class="composite-grid performance-grid">
+      ${performanceCards}
+    </div>
+    <h3 class="composite-group-title">Scores santé</h3>
+    <div class="composite-grid health-grid">
+      ${healthCards}
+    </div>
+  `;
+};
+
 const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
   if (!rows.length) {
     return `<p style="margin:0;color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.8;">Le radar des scores n'a pas pu être construit automatiquement sur cette version du rapport. Je te recommande de relancer la génération pour obtenir la cartographie complète de chaque biomarqueur.</p>`;
@@ -866,15 +986,38 @@ const renderClaudeTabbedReportHtml = (
   reportId: string,
   reportMarkdown: string,
   markerSnapshots?: BloodReportMarkerSnapshot[],
+  meta?: {
+    clientName?: string;
+    reportDate?: string;
+    markerCount?: number;
+    riskProfile?: ComprehensiveRiskProfile;
+  },
 ): string => {
   const sections = parseMarkdownSections(reportMarkdown);
   const biomarkerScoreRows =
     markerSnapshots && markerSnapshots.length
       ? deriveBiomarkerScoresFromSnapshots(markerSnapshots)
       : deriveBiomarkerScoresFromMarkdown(reportMarkdown);
+  const clientName = String(meta?.clientName || "Client").trim();
+  const reportDate =
+    String(meta?.reportDate || "").trim() ||
+    new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const markerCount =
+    typeof meta?.markerCount === "number" && Number.isFinite(meta.markerCount)
+      ? Math.max(0, Math.round(meta.markerCount))
+      : markerSnapshots?.length || 0;
+  const subtitleParts = [`Bilan réalisé le ${reportDate}`];
+  if (markerCount > 0) subtitleParts.push(`${markerCount} marqueurs analysés`);
+  const subtitle = subtitleParts.join(" · ");
+  const compositeTabId = "tab-scores-composites";
+  const compositePanel = `
+      <section id="${compositeTabId}" class="tab-panel is-active" aria-label="Scores composites">
+        <h2>Scores Composites</h2>
+        ${renderCompositeScoresPanel(meta?.riskProfile)}
+      </section>`;
   const radarTabId = "tab-radar-scores-biomarqueurs";
   const radarPanel = `
-      <section id="${radarTabId}" class="tab-panel is-active" aria-label="Radar des scores biomarqueurs">
+      <section id="${radarTabId}" class="tab-panel" aria-label="Radar des scores biomarqueurs">
         <h2>Radar des scores biomarqueurs</h2>
         ${renderBiomarkerRadarPanel(biomarkerScoreRows)}
       </section>`;
@@ -905,17 +1048,18 @@ const renderClaudeTabbedReportHtml = (
     .trim();
 
   const navWithRadar = `
-      <button class="tab-btn is-active" type="button" data-tab-target="${radarTabId}" aria-selected="true">Radar des scores biomarqueurs</button>
+      <button class="tab-btn is-active" type="button" data-tab-target="${compositeTabId}" aria-selected="true">Scores Composites</button>
+      <button class="tab-btn" type="button" data-tab-target="${radarTabId}" aria-selected="false">Radar des scores biomarqueurs</button>
       ${nav}
   `.trim();
-  const panelsWithRadar = `${radarPanel}\n${panels}`.trim();
+  const panelsWithRadar = `${compositePanel}\n${radarPanel}\n${panels}`.trim();
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blood Analysis - ${escapeHtml(reportId)}</title>
+  <title>${escapeHtml(clientName)} - Bilan sanguin complet</title>
   <style>
     :root {
       --paper: ${CLAUDE_THEME.paper};
@@ -1102,6 +1246,106 @@ const renderClaudeTabbedReportHtml = (
       color: #7b6d5d;
       font-weight: 600;
     }
+    .composite-overall-shell {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--paper-soft);
+      margin-bottom: 16px;
+    }
+    .composite-overall-score {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 18px 10px;
+      background: #f9f2e7;
+      min-height: 120px;
+    }
+    .composite-overall-score.is-critical { background: #fbe2dc; border-color: #efc2b7; color: #8e3423; }
+    .composite-overall-score.is-suboptimal { background: #f8ead5; border-color: #eac598; color: #8f5a17; }
+    .composite-overall-score.is-watch { background: #eaf0dc; border-color: #cddcb0; color: #4f6b21; }
+    .composite-overall-score.is-solid { background: #ddeedf; border-color: #b8d8be; color: #1e6840; }
+    .composite-overall-value {
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    .composite-overall-unit {
+      font-size: 18px;
+      font-weight: 700;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+    .composite-overall-copy h3 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .composite-overall-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .composite-group-title {
+      margin: 18px 0 10px;
+      font-size: 18px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    .composite-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .performance-grid {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .health-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .composite-card {
+      border: 1px solid var(--border);
+      background: #f9f2e7;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .composite-card.is-compact {
+      padding: 10px;
+    }
+    .composite-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .composite-card-head h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    .composite-subtitle {
+      margin: 0 0 6px;
+      color: #7b6d5d;
+      font-size: 12px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
     .score-chip {
       display: inline-flex;
       align-items: center;
@@ -1147,15 +1391,18 @@ const renderClaudeTabbedReportHtml = (
       .tab-panel h2 { font-size: 24px; }
       .tabs-content { padding: 16px; }
       .score-grid { grid-template-columns: 1fr; }
+      .composite-overall-shell { grid-template-columns: 1fr; }
+      .composite-overall-value { font-size: 52px; }
+      .performance-grid, .health-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header class="header">
-      <div class="badge"><span class="badge-dot"></span>Theme Claude · Blood Analysis</div>
-      <h1 class="title">Rapport Biomarqueurs</h1>
-      <p class="subtitle">Version HTML à onglets en thème Claude, avec radar de scores biomarqueurs et lecture coach signée Achzod.</p>
+      <div class="badge"><span class="badge-dot"></span>NEUROCORE 360</div>
+      <h1 class="title">${escapeHtml(clientName)} — Bilan sanguin complet</h1>
+      <p class="subtitle">${escapeHtml(subtitle)}</p>
     </header>
     <main class="tabs-shell">
       <nav class="tabs-nav" aria-label="Sections du rapport">
@@ -1243,11 +1490,30 @@ export async function sendBloodAnalysisHtmlEmail(
   reportMarkdown: string,
   baseUrl: string,
   markerSnapshots?: BloodReportMarkerSnapshot[],
+  meta?: {
+    clientName?: string;
+    reportDate?: string;
+    markerCount?: number;
+    riskProfile?: ComprehensiveRiskProfile;
+  },
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
     void baseUrl;
-    const standaloneReportHtml = renderClaudeTabbedReportHtml(reportId, reportMarkdown, markerSnapshots);
+    const fallbackNameFromEmail = String(email || "")
+      .split("@")[0]
+      .replace(/[._-]+/g, " ")
+      .trim()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+    const standaloneReportHtml = renderClaudeTabbedReportHtml(reportId, reportMarkdown, markerSnapshots, {
+      clientName: meta?.clientName || fallbackNameFromEmail || "Client",
+      reportDate: meta?.reportDate,
+      markerCount:
+        typeof meta?.markerCount === "number" && Number.isFinite(meta.markerCount)
+          ? meta.markerCount
+          : markerSnapshots?.length,
+      riskProfile: meta?.riskProfile,
+    });
     const sections = parseMarkdownSections(reportMarkdown);
     const fullReportBodyHtml = sections.length
       ? sections

@@ -45,6 +45,7 @@ import { storage } from "../storage";
 import {
   sendAdminEmailNewAudit,
   sendBloodAnalysisHtmlEmail,
+  type BloodReportMarkerSnapshot,
 } from "../emailService";
 import { getUncachableStripeClient } from "../stripeClient";
 import pdf from "pdf-parse";
@@ -114,7 +115,8 @@ const sendBloodClientDeliveryEmail = async (
   reportId: string,
   aiReport: string,
   baseUrl: string,
-  markerSnapshots?: MarkerAnalysis[],
+  markerSnapshots?: MarkerAnalysis[] | BloodReportMarkerSnapshot[],
+  profile?: Record<string, unknown>,
 ): Promise<boolean> => {
   void baseUrl;
   const reportText = canonicalizeBloodReport(aiReport).trim();
@@ -125,8 +127,48 @@ const sendBloodClientDeliveryEmail = async (
     return false;
   }
 
+  const inferClientName = () => {
+    const profileName =
+      String(
+        profile?.prenom ||
+          profile?.firstName ||
+          profile?.firstname ||
+          profile?.name ||
+          profile?.fullName ||
+          "",
+      ).trim();
+    if (profileName) return profileName;
+    const fromEmail = String(recipientEmail || "")
+      .split("@")[0]
+      .replace(/[._-]+/g, " ")
+      .trim();
+    if (!fromEmail) return "Client";
+    return fromEmail.replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   // Strict mode: only full HTML delivery, no dashboard-link fallback.
-  return sendBloodAnalysisHtmlEmail(recipientEmail, reportId, reportText, baseUrl, markerSnapshots);
+  const resolvedGender = String(profile?.gender || "homme").toLowerCase() === "femme" ? "femme" : "homme";
+  const markerInputs = (Array.isArray(markerSnapshots) ? markerSnapshots : [])
+    .map((marker) => {
+      const markerId = String((marker as any)?.markerId || "").trim();
+      const value = Number((marker as any)?.value);
+      if (!markerId || !Number.isFinite(value)) return null;
+      return { markerId, value };
+    })
+    .filter((marker): marker is { markerId: string; value: number } => Boolean(marker));
+  const riskProfileForEmail =
+    markerInputs.length > 0
+      ? generateComprehensiveRiskProfile(markerInputs as any[], {
+          gender: resolvedGender,
+          age: profile?.age ? String(profile.age) : undefined,
+        })
+      : undefined;
+
+  return sendBloodAnalysisHtmlEmail(recipientEmail, reportId, reportText, baseUrl, markerSnapshots, {
+    clientName: inferClientName(),
+    markerCount: Array.isArray(markerSnapshots) ? markerSnapshots.length : undefined,
+    riskProfile: riskProfileForEmail,
+  });
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -747,6 +789,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           aiAnalysis,
           baseUrl,
           analysisResult.markers,
+          profileWithAge as Record<string, unknown>,
         );
         if (emailSent) {
           await sendAdminEmailNewAudit(
@@ -791,6 +834,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               enriched,
               baseUrl,
               analysisResult.markers,
+              profileWithAge as Record<string, unknown>,
             );
             if (emailSent) {
               await sendAdminEmailNewAudit(

@@ -119,34 +119,526 @@ const SECTION_ORDER = [
 ] as const;
 
 const SECTION_TITLES: Record<string, string> = {
-  synthese: "Synthese executive",
-  qualite: "Qualite des donnees & limites",
-  tableau: "Tableau de bord (scores & priorites)",
+  synthese: "Synthèse exécutive",
+  qualite: "Qualité des données & limites",
+  tableau: "Tableau de bord (scores & priorités)",
   recomposition: "Potentiel recomposition (perte de gras + gain de muscle)",
-  axes: "Lecture compartimentee par axes",
+  axes: "Lecture compartimentée par axes",
   interconnexions: "Interconnexions majeures (le pattern)",
   deep_dive: "Deep dive — marqueurs prioritaires",
   plan: "Plan d'action 90 jours",
-  nutrition: "Nutrition & entrainement",
-  supplements: "Supplements & stack",
-  annexes: "Annexes (references et vigilance)",
-  sources: "Sources (bibliotheque)",
+  nutrition: "Nutrition & entraînement",
+  supplements: "Suppléments & stack",
+  annexes: "Annexes (références et vigilance)",
+  sources: "Sources (bibliothèque)",
 };
+
+const DEFINITION_HINT_REGEX = /\b(?:mesure|indique|reflete|represente|correspond|c est|c'est|sert a|permet de|estime|hormone|enzyme)\b/i;
+
+const MARKER_DEFINITION_BY_KEY: Record<string, string> = {
+  hdl: "ce marqueur mesure ton cholesterol protecteur qui ramene l'exces de lipides vers le foie",
+  ldl: "ce marqueur mesure le cholesterol transporte vers les tissus, utile pour estimer la charge atherogene",
+  triglycerides: "ce marqueur mesure les graisses circulantes issues du metabolisme energetique et hepatique",
+  cholesteroltotal: "ce marqueur mesure la charge totale de cholesterol circulant dans ton sang",
+  apoa1: "ce marqueur mesure la principale proteine du HDL, centrale pour le transport inverse du cholesterol",
+  apob: "ce marqueur mesure le nombre de particules atherogenes impliquant le risque cardiovasculaire",
+  lpa: "ce marqueur mesure une lipoproteine a risque genetique qui augmente le risque cardiovasculaire",
+  alt: "ce marqueur mesure une enzyme hepatique qui monte quand les cellules du foie sont irritees",
+  ast: "ce marqueur mesure une enzyme presente dans le foie et le muscle, utile pour differencier la charge tissulaire",
+  ggt: "ce marqueur mesure une enzyme hepatobiliaire sensible au stress oxydatif et a la surcharge hepatique",
+  creatinine: "ce marqueur mesure un dechet musculaire utilise pour estimer la fonction renale",
+  egfr: "ce marqueur estime le debit de filtration de tes reins",
+  tsh: "ce marqueur mesure le signal hypophysaire qui pilote l'activite de ta thyroide",
+  t4libre: "ce marqueur mesure la reserve hormonale thyroidienne disponible pour conversion en T3",
+  t3libre: "ce marqueur mesure l'hormone thyroidienne active qui regle ton niveau energetique",
+  t3reverse: "ce marqueur mesure la forme inactive de T3 qui freine le signal thyroidien",
+  testosteronelibre: "ce marqueur mesure la fraction de testosterone biologiquement active",
+  testosteronetotale: "ce marqueur mesure la quantite totale de testosterone circulante",
+  estradiol: "ce marqueur mesure l'estrogene principal qui module l'equilibre hormonal et cardiovasculaire",
+  prolactine: "ce marqueur mesure une hormone hypophysaire qui influence l'axe gonadique",
+  dhes: "ce marqueur mesure un precurseur androgenique produit par les glandes surrenales",
+  igf1: "ce marqueur mesure le signal anabolique relaye par l'hormone de croissance",
+  crpus: "ce marqueur mesure l'inflammation de bas grade associee au risque cardiometabolique",
+  ferritine: "ce marqueur mesure tes reserves de fer",
+  ferserique: "ce marqueur mesure le fer circulant disponible a court terme",
+  transferrinesat: "ce marqueur mesure le pourcentage de saturation du transporteur de fer",
+  b12: "ce marqueur mesure une vitamine cle pour les globules rouges, le systeme nerveux et la methylation",
+  vitamined: "ce marqueur mesure une hormone-vitamine cle pour l'immunite, les hormones et la performance",
+  homocysteine: "ce marqueur mesure un metabolite de methylation associe au risque cardiovasculaire",
+};
+
+function normalizeGuard(value: string): string {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function guardKey(value: string): string {
+  return normalizeGuard(value).replace(/[^a-z0-9]/g, "");
+}
+
+function escapeRegExp(value: string): string {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function accentInsensitivePattern(term: string): string {
+  const accentGroups: Record<string, string> = {
+    a: "aàáâäãå",
+    c: "cç",
+    e: "eéèêë",
+    i: "iíìîï",
+    n: "nñ",
+    o: "oóòôöõ",
+    u: "uúùûü",
+    y: "yýÿ",
+  };
+
+  let out = "";
+  for (const char of String(term || "")) {
+    if (/\s/.test(char)) {
+      out += "\\s+";
+      continue;
+    }
+    const base = normalizeGuard(char);
+    if (accentGroups[base]) {
+      out += `[${accentGroups[base]}]`;
+      continue;
+    }
+    out += escapeRegExp(char);
+  }
+  return out;
+}
+
+function isWordLikeChar(char: string | undefined): boolean {
+  if (!char) return false;
+  return /[A-Za-z0-9À-ÖØ-öø-ÿ]/.test(char);
+}
+
+function findWholeTermMatch(text: string, pattern: RegExp): RegExpExecArray | null {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  const regex = new RegExp(pattern.source, flags);
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    const before = match.index > 0 ? text[match.index - 1] : "";
+    const after = text[match.index + match[0].length] || "";
+    if (isWordLikeChar(before) || isWordLikeChar(after)) continue;
+    return match;
+  }
+  return null;
+}
+
+function sanitizeNarrativeTone(sectionsMap: Record<string, string>): Record<string, string> {
+  const replacements: Array<[RegExp, string]> = [
+    [/\bil\s+presente\b/gi, "tu presentes"],
+    [/\ble client\b/gi, "tu"],
+    [/\bson profil\b/gi, "ton profil"],
+    [/d['’]alex/gi, "de ton bilan"],
+    [/\bvous\b/gi, "tu"],
+    [/\bvotre\b/gi, "ton"],
+    [/\bvos\b/gi, "tes"],
+    [/st[eé]ro[iï]dogen[eè]se/gi, "synthese hormonale"],
+    [/\bst[eé]ro[iï]des?\b/gi, "causes non documentees"],
+    [/hormones?\s+st[eé]ro[iï]diennes?/gi, "hormones"],
+    [/st[eé]ro[iï]dien(?:ne|nes|s)?/gi, "hormonal"],
+    [/\banabolis(?:ant|ante|ants|antes)\b/gi, "de construction musculaire"],
+    [/\banabolisants?\b/gi, "de construction musculaire"],
+    [/\bdopage\b/gi, "cause non documentee"],
+    [/\bdopants?\b/gi, "causes non documentees"],
+    [/\bsubstances?\s+anabolisantes?\b/gi, "causes non documentees"],
+    [/\bsubstances?\s+dopantes?\b/gi, "causes non documentees"],
+  ];
+
+  const out: Record<string, string> = { ...sectionsMap };
+  for (const key of SECTION_ORDER) {
+    if (!out[key]) continue;
+    let text = out[key];
+    for (const [pattern, replacement] of replacements) {
+      text = text.replace(pattern, replacement);
+    }
+    out[key] = text;
+  }
+  return out;
+}
+
+function getDefinitionForMarker(marker: MarkerAnalysis): string | null {
+  const idKey = guardKey(marker.markerId || "");
+  if (idKey && MARKER_DEFINITION_BY_KEY[idKey]) return MARKER_DEFINITION_BY_KEY[idKey];
+
+  const nameKey = guardKey(marker.name || "");
+  if (nameKey && MARKER_DEFINITION_BY_KEY[nameKey]) return MARKER_DEFINITION_BY_KEY[nameKey];
+
+  if (nameKey.includes("testosterone") && nameKey.includes("libre")) {
+    return MARKER_DEFINITION_BY_KEY.testosteronelibre;
+  }
+  if (nameKey.includes("testosterone") && nameKey.includes("total")) {
+    return MARKER_DEFINITION_BY_KEY.testosteronetotale;
+  }
+  if (nameKey.includes("vitamine") && nameKey.includes("d")) {
+    return MARKER_DEFINITION_BY_KEY.vitamined;
+  }
+  if (nameKey.includes("triglycer")) {
+    return MARKER_DEFINITION_BY_KEY.triglycerides;
+  }
+
+  return null;
+}
+
+function injectFirstMentionDefinitions(
+  sectionsMap: Record<string, string>,
+  markers: MarkerAnalysis[],
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  const sortedMarkers = [...markers].sort((a, b) => b.name.length - a.name.length);
+
+  for (const key of SECTION_ORDER) {
+    if (key === "sources") continue;
+    if (!out[key]) continue;
+    let text = out[key];
+    for (const marker of sortedMarkers) {
+      const markerName = String(marker.name || "").trim();
+      if (!markerName) continue;
+      let pattern = accentInsensitivePattern(markerName);
+      const isVitamineD = guardKey(markerName) === "vitamined";
+      if (isVitamineD) {
+        // Accept naming variants like "vitamine D3".
+        pattern = `${pattern}(?:\\s*\\d+)?`;
+      }
+      const matchRegex = new RegExp(pattern, "ig");
+      const match = findWholeTermMatch(text, matchRegex);
+      if (!match) continue;
+
+      const afterStart = match.index + match[0].length;
+      const afterWindow = normalizeGuard(text.slice(afterStart, Math.min(text.length, afterStart + 180)));
+      if (DEFINITION_HINT_REGEX.test(afterWindow)) continue;
+
+      const definition = getDefinitionForMarker(marker);
+      if (!definition) continue;
+
+      let insertion = `${match[0]} (${definition})`;
+      if (isVitamineD && /\b[dD]\s*3\b/.test(match[0])) {
+        insertion = `Vitamine D (${definition})`;
+      }
+      text = `${text.slice(0, match.index)}${insertion}${text.slice(match.index + match[0].length)}`;
+    }
+    out[key] = text;
+  }
+
+  return out;
+}
+
+function limitRepeatedStatMentions(
+  sectionsMap: Record<string, string>,
+  markers: MarkerAnalysis[],
+  maxSectionsPerStat = 3,
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  const keyTargets = [
+    { markerId: "hdl", label: "HDL hors cible", names: ["hdl"] },
+    { markerId: "triglycerides", label: "triglycerides hors cible", names: ["triglycerides", "triglycérides"] },
+    { markerId: "alt", label: "ALT hors cible", names: ["alt"] },
+  ];
+
+  const guards = keyTargets
+    .map((target) => {
+      const marker = markers.find((m) => guardKey(m.markerId || "") === guardKey(target.markerId));
+      if (!marker || !Number.isFinite(Number(marker.value))) return null;
+      const rawValue = Number(marker.value);
+      const valuePattern = escapeRegExp(String(rawValue)).replace("\\.", "[.,]");
+      const labelPattern = target.names.map((name) => accentInsensitivePattern(name)).join("|");
+      return {
+        key: target.markerId,
+        detect: new RegExp(`\\b(?:${labelPattern})\\b[\\s\\S]{0,120}?\\b${valuePattern}\\b`, "i"),
+        replace: new RegExp(`\\b(?:${labelPattern})\\b[\\s\\S]{0,120}?\\b${valuePattern}\\b\\s*(?:[a-zA-Z%/]+)?`, "gi"),
+        replacement: `${target.label} (deja detaille plus haut)`,
+      };
+    })
+    .filter(Boolean) as Array<{
+    key: string;
+    detect: RegExp;
+    replace: RegExp;
+    replacement: string;
+  }>;
+
+  for (const guard of guards) {
+    const matchedSections = SECTION_ORDER.filter((sectionKey) =>
+      guard.detect.test(normalizeGuard(out[sectionKey] || "")),
+    );
+    if (matchedSections.length <= maxSectionsPerStat) continue;
+
+    for (const sectionKey of matchedSections.slice(maxSectionsPerStat)) {
+      out[sectionKey] = String(out[sectionKey] || "").replace(guard.replace, guard.replacement);
+    }
+  }
+
+  return out;
+}
+
+function extractSourceIdsFromText(text: string): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const regex = /\[SRC:([^\]]+)\]/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(String(text || ""))) !== null) {
+    const id = String(match[1] || "").trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+function extractKnowledgeSourceIds(knowledgeContext: string): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const line of String(knowledgeContext || "").split(/\r?\n/)) {
+    const match = line.match(/\[SRC:([^\]]+)\]/i);
+    if (!match) continue;
+    const id = String(match[1] || "").trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+function narrativeLineFromTableRow(
+  rowCells: string[],
+  headerCells: string[] | null,
+): string {
+  if (!rowCells.length) return "";
+  if (headerCells && headerCells.length === rowCells.length) {
+    const parts = rowCells.map((cell, index) => `${headerCells[index]}: ${cell}`);
+    return `Je retiens ${parts.join(", ")}.`;
+  }
+  return `Je retiens ${rowCells.join(", ")}.`;
+}
+
+function cleanSentenceEnding(line: string): string {
+  const trimmed = String(line || "").trim();
+  if (!trimmed) return "";
+  if (/[.!?]$/.test(trimmed)) return trimmed;
+  return `${trimmed}.`;
+}
+
+function normalizeSectionToNarrative(sectionText: string): string {
+  const lines = String(sectionText || "").split(/\r?\n/);
+  const out: string[] = [];
+  let tableHeader: string[] | null = null;
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      if (out.length && out[out.length - 1] !== "") out.push("");
+      continue;
+    }
+    if (/^###\s+/.test(trimmed)) {
+      out.push(trimmed);
+      tableHeader = null;
+      continue;
+    }
+    if (/^\|/.test(trimmed)) {
+      const cells = trimmed
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter(Boolean);
+      if (!cells.length) continue;
+      if (cells.every((cell) => /^-+$/.test(cell) || /^-+:$/.test(cell) || /^:-+$/.test(cell) || /^:-+:$/.test(cell))) {
+        continue;
+      }
+      if (!tableHeader) {
+        tableHeader = cells;
+        continue;
+      }
+      out.push(cleanSentenceEnding(narrativeLineFromTableRow(cells, tableHeader)));
+      continue;
+    }
+
+    const bulletMatch = trimmed.match(/^[-*+]\s+(.+)$/);
+    if (bulletMatch) {
+      const item = bulletMatch[1].trim();
+      out.push(cleanSentenceEnding(`Je te recommande de ${item.charAt(0).toLowerCase()}${item.slice(1)}`));
+      continue;
+    }
+
+    const numberedMatch = trimmed.match(/^\d+[\.)]\s+(.+)$/);
+    if (numberedMatch) {
+      out.push(cleanSentenceEnding(`Ensuite, ${numberedMatch[1].trim()}`));
+      continue;
+    }
+
+    out.push(cleanSentenceEnding(trimmed));
+    tableHeader = null;
+  }
+
+  const merged = out
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, "")
+    .trim();
+  return merged;
+}
+
+function enforceNarrativeProse(sectionsMap: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  for (const key of SECTION_ORDER) {
+    if (!out[key]) continue;
+    out[key] = normalizeSectionToNarrative(out[key]);
+  }
+  return out;
+}
+
+function ensureBodySourceCitations(
+  sectionsMap: Record<string, string>,
+  knowledgeContext: string,
+  minUniqueCitations = 8,
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  const availableIds = extractKnowledgeSourceIds(knowledgeContext);
+  if (!availableIds.length) return out;
+
+  const bodyKeys = SECTION_ORDER.filter((key) => key !== "sources");
+  const currentBodyText = bodyKeys.map((key) => out[key] || "").join("\n");
+  const currentIds = new Set(extractSourceIdsFromText(currentBodyText));
+  const targetUnique = Math.min(minUniqueCitations, availableIds.length);
+
+  let sourceCursor = 0;
+  for (const key of bodyKeys) {
+    if (currentIds.size >= targetUnique) break;
+    const section = String(out[key] || "").trim();
+    if (!section) continue;
+
+    while (sourceCursor < availableIds.length && currentIds.has(availableIds[sourceCursor])) {
+      sourceCursor += 1;
+    }
+    if (sourceCursor >= availableIds.length) break;
+    const id = availableIds[sourceCursor];
+    sourceCursor += 1;
+    out[key] = `${section}\n\nCette orientation est soutenue par la littérature retenue pour ton dossier [SRC:${id}].`;
+    currentIds.add(id);
+  }
+
+  return out;
+}
+
+function buildSyntheseFallback(
+  analysisResult: BloodAnalysisResult,
+  userProfile: UserProfile,
+): string {
+  const critical = analysisResult.markers.filter((marker) => marker.status === "critical");
+  const suboptimal = analysisResult.markers.filter((marker) => marker.status === "suboptimal");
+  const normal = analysisResult.markers.filter((marker) => marker.status === "normal");
+  const topAlerts = [...critical, ...suboptimal].slice(0, 4);
+  const topLabels = topAlerts.length
+    ? topAlerts.map((marker) => `${marker.name} (${marker.value} ${marker.unit || ""})`).join(", ")
+    : "aucun marqueur d'alerte majeur";
+  const profileText = `${userProfile.gender}${userProfile.age ? ` de ${userProfile.age} ans` : ""}`;
+
+  return [
+    `J'ai analysé ton bilan sanguin de manière systémique sur ${analysisResult.markers.length} biomarqueurs. Tu as un profil ${profileText} avec ${critical.length} signal${critical.length > 1 ? "s" : ""} critique${critical.length > 1 ? "s" : ""}, ${suboptimal.length} signal${suboptimal.length > 1 ? "s" : ""} suboptimal${suboptimal.length > 1 ? "s" : ""} et ${normal.length} marqueur${normal.length > 1 ? "s" : ""} en zone de surveillance active. L'enjeu n'est pas seulement de corriger une valeur isolée mais de restaurer un terrain stable pour soutenir ta performance, ta recomposition corporelle et ta récupération.`,
+    `Les priorités immédiates que je retiens sont ${topLabels}. Ces marqueurs forment le noyau qui freine le plus vite ta progression: tant qu'ils restent hors cible, tu paies un coût biologique élevé, avec plus de fatigue, une moins bonne tolérance au volume d'entraînement et une progression moins prévisible. Je te fais donc travailler en séquence: d'abord stabiliser le contexte de base (sommeil, timing des repas, charge d'entraînement), puis corriger les marqueurs critiques, puis consolider la zone suboptimale.`,
+    `Sur les 90 prochains jours, je pilote ton plan comme un cycle structuré: phase de stabilisation, phase d'attaque, phase de consolidation puis phase d'optimisation. À chaque étape, je relie les actions nutrition/training/supplémentation aux biomarqueurs réellement dégradés, je suis les tendances hebdomadaires et je valide les décisions par retest standardisé. Cette méthode évite les protocoles génériques, réduit les erreurs d'interprétation et donne une trajectoire claire, mesurable et durable.`,
+  ].join("\n\n");
+}
+
+function ensureMandatorySections(
+  sectionsMap: Record<string, string>,
+  analysisResult: BloodAnalysisResult,
+  userProfile: UserProfile,
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  if (!String(out.synthese || "").trim() || String(out.synthese || "").trim().length < 300) {
+    out.synthese = buildSyntheseFallback(analysisResult, userProfile);
+  }
+  if (!String(out.sources || "").trim()) {
+    out.sources = "Aucune source externe citée dans ce rapport.";
+  }
+  return out;
+}
+
+function rebuildSourcesSectionFromCitations(
+  sectionsMap: Record<string, string>,
+  knowledgeContext: string,
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  const sourceLookup = new Map<string, string>();
+  const citationContextById = new Map<string, string>();
+
+  for (const line of String(knowledgeContext || "").split(/\r?\n/)) {
+    const match = line.match(/\[SRC:([^\]]+)\]\s*(.+)$/i);
+    if (!match) continue;
+    const id = String(match[1] || "").trim();
+    const raw = String(match[2] || "").trim().replace(/^-+\s*/, "");
+    if (!id) continue;
+    sourceLookup.set(id, raw);
+  }
+
+  const orderedIds: string[] = [];
+  const seen = new Set<string>();
+  const citationRegex = /\[SRC:([^\]]+)\]/gi;
+
+  for (const key of SECTION_ORDER) {
+    if (key === "sources") continue;
+    const content = String(out[key] || "");
+    let match: RegExpExecArray | null;
+    while ((match = citationRegex.exec(content)) !== null) {
+      const id = String(match[1] || "").trim();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      orderedIds.push(id);
+      const sentenceParts = content
+        .split(/(?<=[.!?])\s+|\n+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const sentence = sentenceParts.find((part) => part.includes(`[SRC:${id}]`));
+      if (sentence && !citationContextById.has(id)) {
+        citationContextById.set(
+          id,
+          sentence
+            .replace(/\[SRC:[^\]]+\]/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 220),
+        );
+      }
+    }
+  }
+
+  if (!orderedIds.length) {
+    out.sources = "Aucune source externe citee dans ce rapport.";
+    return out;
+  }
+
+  out.sources = orderedIds
+    .map((id) => {
+      const raw = sourceLookup.get(id);
+      if (!raw) {
+        const context = citationContextById.get(id);
+        if (context) return `[SRC:${id}] Référence citée: ${context}.`;
+        return `[SRC:${id}] Référence citée dans le rapport (détail non retrouvé dans le contexte KB).`;
+      }
+      const withoutPrefix = raw.replace(new RegExp(`^\\[SRC:${escapeRegExp(id)}\\]\\s*`, "i"), "").trim();
+      return `[SRC:${id}] ${withoutPrefix || "Référence citée dans le rapport."}`;
+    })
+    .join("\n\n");
+
+  return out;
+}
 
 /** Map section heading text to section key (fuzzy) */
 const HEADING_TO_KEY: Array<{ pattern: RegExp; key: string }> = [
-  { pattern: /synth[eè]se\s+executive/i, key: "synthese" },
+  { pattern: /synth[eéè]se\s+ex[eé]cutive/i, key: "synthese" },
   { pattern: /qualit[eé]\s+des\s+donn[eé]es/i, key: "qualite" },
   { pattern: /tableau\s+de\s+bord/i, key: "tableau" },
   { pattern: /potentiel\s+recomposition/i, key: "recomposition" },
-  { pattern: /lecture\s+compartiment/i, key: "axes" },
-  { pattern: /interconnexions?\s+majeure/i, key: "interconnexions" },
+  { pattern: /lecture\s+compartiment[eé]e/i, key: "axes" },
+  { pattern: /interconnexions?\s+majeures?/i, key: "interconnexions" },
   { pattern: /deep\s*dive/i, key: "deep_dive" },
-  { pattern: /plan\s+d['']?action\s+90/i, key: "plan" },
+  { pattern: /plan\s+d['’]action\s+90/i, key: "plan" },
   { pattern: /nutrition\s*[&et]+\s*entra[iî]nement/i, key: "nutrition" },
   { pattern: /suppl[eé]ments?\s*[&et]+\s*stack/i, key: "supplements" },
   { pattern: /annexes?\s*\(r[eé]f[eé]rences/i, key: "annexes" },
-  { pattern: /sources?\s*\(biblioth[eè]que/i, key: "sources" },
+  { pattern: /sources?\s*\(biblioth[eéè]que/i, key: "sources" },
 ];
 
 const SYSTEM_PROMPT = `Tu es Achzod, coach expert bloodwork performance (sante + recomposition + longevite). Tu parles DIRECTEMENT au client en le TUTOYANT. C'est TOI le coach qui a analyse son bilan.
@@ -167,7 +659,12 @@ REGLES ABSOLUES:
 - DEFINITION DE CHAQUE MARQUEUR: Quand tu mentionnes un marqueur pour la premiere fois dans une section, explique brievement ce qu'il mesure et pourquoi c'est important. Exemple: "Le HDL, c'est ton cholesterol protecteur — celui qui evacue les graisses des arteres vers le foie. A 19 mg/dL, le tien est effondre."
 - INTERDICTION ABSOLUE de speculations sur l'utilisation de steroides, substances anabolisantes, ou produits dopants. Ne jamais insinuer, suggerer ou mentionner cette possibilite, meme comme "cause plausible". Focus uniquement sur les causes metaboliques, nutritionnelles, genetiques et liees au mode de vie.
 - REGLE NIACINE: Ne JAMAIS recommander la niacine (vitamine B3) si l'ALT est > 40 U/L. La niacine est hepatotoxique et contre-indiquee en cas de souffrance hepatique.
-- EVITER LA REPETITION: Ne repete pas les memes statistiques (valeur, pourcentage d'ecart) dans plusieurs sections. Si un marqueur a deja ete detaille dans une section precedente, fais reference a cette section au lieu de redonner tous les chiffres.`;
+- EVITER LA REPETITION: Ne repete pas les memes statistiques (valeur, pourcentage d'ecart) dans plusieurs sections. Si un marqueur a deja ete detaille dans une section precedente, fais reference a cette section au lieu de redonner tous les chiffres.
+- ORIENTATION DU RAPPORT:
+  - Oriente chaque analyse vers la performance, l'anabolisme, la lipolyse et la recomposition corporelle.
+  - Utilise un vocabulaire d'expert terrain: volume tolerable, recuperation, synthese proteique, flexibilite metabolique, adherence.
+  - Appuie tes recommandations sur la bibliotheque de connaissances NEUROCORE 360 et les sources [SRC:ID] disponibles.
+  - Relie toujours les decisions nutrition/training/supplements aux marqueurs qui les justifient biologiquement.`;
 
 // ============================================
 // DEEP DIVE CONTEXT BUILDER
@@ -1094,6 +1591,16 @@ export async function generateParallelHtmlReport(
       console.error(`[BatchHTML] Deterministic fallback recovery failed: ${err?.message || err}`);
     }
   }
+
+  // Deterministic quality guards so final output always follows hard constraints
+  sectionsMap = ensureMandatorySections(sectionsMap, analysisResult, userProfile);
+  sectionsMap = sanitizeNarrativeTone(sectionsMap);
+  sectionsMap = injectFirstMentionDefinitions(sectionsMap, analysisResult.markers);
+  sectionsMap = enforceNarrativeProse(sectionsMap);
+  sectionsMap = ensureBodySourceCitations(sectionsMap, ctx.knowledgeContext || "", 8);
+  sectionsMap = limitRepeatedStatMentions(sectionsMap, analysisResult.markers, 3);
+  sectionsMap = sanitizeNarrativeTone(sectionsMap);
+  sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, ctx.knowledgeContext || "");
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const totalSections = Object.keys(sectionsMap).length;
