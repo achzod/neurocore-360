@@ -297,6 +297,9 @@ function auditAttachmentHtml(html: string) {
   const hasTabButtons = /class=["'][^"']*tab-btn[^"']*["']/i.test(text);
   const hasPanels = /class=["'][^"']*tab-panel[^"']*["']/i.test(text);
   const hasTabScript = /data-tab-target/i.test(text) && /activate\(/i.test(text);
+  const hasRadarTab = /Radar des scores biomarqueurs/i.test(text);
+  const hasRadarSvg = /class=["'][^"']*score-radar[^"']*["']/i.test(text);
+  const hasScoreCards = /class=["'][^"']*score-card[^"']*["']/i.test(text);
 
   const darkThemeSignals = [
     /background\s*:\s*#0{3,6}/i,
@@ -313,6 +316,9 @@ function auditAttachmentHtml(html: string) {
     hasTabButtons,
     hasPanels,
     hasTabScript,
+    hasRadarTab,
+    hasRadarSvg,
+    hasScoreCards,
     darkThemeSignals,
     pass:
       missingHeadings.length === 0 &&
@@ -320,6 +326,9 @@ function auditAttachmentHtml(html: string) {
       hasTabButtons &&
       hasPanels &&
       hasTabScript &&
+      hasRadarTab &&
+      hasRadarSvg &&
+      hasScoreCards &&
       darkThemeSignals === 0,
   };
 }

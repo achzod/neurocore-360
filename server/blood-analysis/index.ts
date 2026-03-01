@@ -1897,6 +1897,10 @@ const BULLET_LINE_REGEX = /^\s*(?:[-*+]|(?:\d+[\.\)]))\s+/;
 const MARKDOWN_TABLE_LINE_REGEX = /^\s*\|(?:[^|\n]+\|)+\s*$/;
 const PLACEHOLDER_AXIS_HEADING_REGEX = /^\s*###\s*Axe\s+\d+\s+[—-]\s*Non renseigne\b/im;
 const NON_RENSEIGNE_DOSSIER_REGEX = /non renseigne pour ce dossier/i;
+const ACHZOD_FIRST_PERSON_REGEX = /\b(?:je|j['’]ai|j['’]analyse|j['’]observe|j['’]identifie|je te|je t['’]|je vais)\b/gi;
+const ACHZOD_TUTEOIEMENT_REGEX = /\b(?:tu|ton|ta|tes|toi|t['’]es|t['’]as|t['’]a)\b/gi;
+const FORBIDDEN_THIRD_PERSON_PATIENT_REGEX =
+  /\b(?:le patient|ce patient|il presente|il est recommande|ce dossier concerne|on recommande)\b/gi;
 
 const validateNarrativeStyle = (output: string, markerCount: number): string[] => {
   const reasons: string[] = [];
@@ -1915,6 +1919,28 @@ const validateNarrativeStyle = (output: string, markerCount: number): string[] =
   const minSentences = Math.max(35, markerCount * 4);
   if (sentenceCount < minSentences) {
     reasons.push(`insufficient_sentence_density:${sentenceCount}/${minSentences}`);
+  }
+
+  return reasons;
+};
+
+const validateCoachVoice = (output: string, markerCount: number): string[] => {
+  const reasons: string[] = [];
+  const firstPersonCount = countMatches(output, ACHZOD_FIRST_PERSON_REGEX);
+  const tutoiementCount = countMatches(output, ACHZOD_TUTEOIEMENT_REGEX);
+  const thirdPersonPatientCount = countMatches(output, FORBIDDEN_THIRD_PERSON_PATIENT_REGEX);
+
+  const minFirstPerson = Math.max(4, Math.min(20, Math.ceil(markerCount / 2)));
+  const minTutoiement = Math.max(14, Math.min(65, markerCount * 3));
+
+  if (firstPersonCount < minFirstPerson) {
+    reasons.push(`insufficient_first_person_coach_voice:${firstPersonCount}/${minFirstPerson}`);
+  }
+  if (tutoiementCount < minTutoiement) {
+    reasons.push(`insufficient_tutoiement_density:${tutoiementCount}/${minTutoiement}`);
+  }
+  if (thirdPersonPatientCount > 0) {
+    reasons.push(`forbidden_third_person_patient_voice:${thirdPersonPatientCount}`);
   }
 
   return reasons;
@@ -2068,6 +2094,7 @@ const validateReportStructure = (
   }
 
   reasons.push(...validateNarrativeStyle(output, markerCount));
+  reasons.push(...validateCoachVoice(output, markerCount));
   reasons.push(...validateFrenchOrthography(output, markerCount));
 
   const placeholderAxisHeadings = countMatches(output, PLACEHOLDER_AXIS_HEADING_REGEX);
@@ -2250,31 +2277,36 @@ export async function analyzeBloodwork(
 // AI-POWERED ANALYSIS
 // ============================================
 
-const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es un expert bloodwork performance (santé + recomposition + longévité) et tu écris un rapport premium en français.
+const BLOOD_ANALYSIS_SYSTEM_PROMPT = `Tu es Achzod. Tu es le coach qui a analysé le bilan sanguin du client et tu rédiges un rapport premium en français.
+
+Identité et voix obligatoires:
+- Tu parles à la première personne: "j'analyse", "je vois", "je te recommande", "je priorise".
+- Tu t'adresses directement au client en tutoiement: "tu", "ton", "tes".
+- Interdit: style impersonnel ou clinique à la troisième personne ("le patient", "ce patient", "il présente", "on recommande").
+- Interdit: mention d'IA, d'automatisation, de modèle, de prompt ou de génération.
 
 Objectif:
-- Donner une lecture exploitable et personnalisée du bilan sanguin.
-- Prioriser les leviers qui changent réellement les résultats (énergie, composition corporelle, récupération, risque cardio-métabolique).
+- Donner une lecture exploitable, personnalisée et priorisée du bilan sanguin.
+- Relier chaque décision à la performance, la recomposition corporelle, la récupération et le risque cardio-métabolique.
 
 Règles critiques:
 - N'invente jamais une valeur, un marqueur, un symptôme, une habitude ou une source.
-- Si une donnée manque: écris "Non renseigne", explique l'impact, propose le test utile.
+- Si une donnée manque: écris "Non renseigne", explique l'impact concret et propose le test utile.
 - Distingue clairement "normal labo" vs "optimal performance".
 - Pas de diagnostic définitif: hypothèses + degré de confiance + tests de confirmation.
 - Ne donne pas d'instruction médicamenteuse; renvoie vers avis médical quand nécessaire.
 - Emoji interdits.
 
-Style:
-- Tutoiement naturel, ton expert, clair, concret, sans jargon inutile.
-- Style narratif dense, avec phrases complètes et paragraphes consistants.
-- Interdiction de sortie en liste à puces, liste numérotée, checklist ou tableau markdown.
-- Chaque recommandation doit être intégrée dans une phrase explicite reliée aux biomarqueurs du patient.
-- Qualité linguistique obligatoire: français irréprochable avec accents, cédilles et orthographe soignée.
+Style de rendu:
+- Narratif dense, en phrases complètes et paragraphes consistants.
+- Interdiction totale des listes à puces, listes numérotées, checklists et tableaux markdown.
+- Chaque recommandation doit être reliée explicitement aux biomarqueurs du client.
+- Français irréprochable: accents, cédilles, orthographe et syntaxe soignés.
 
 Sources:
 - Tu peux citer des sources uniquement via [SRC:ID] quand l'ID existe dans le contexte fourni.
-- Pas d'invention de DOI/épisode/titre/lien.
-- La section "Sources (bibliothèque)" doit lister seulement ce qui est réellement utilisé.
+- Pas d'invention de DOI, épisode, titre ou lien.
+- La section "Sources (bibliothèque)" doit lister seulement ce qui est réellement cité.
 
 Format obligatoire (titres H2 exacts, dans cet ordre):
 ## Synthèse exécutive
@@ -2292,14 +2324,13 @@ Format obligatoire (titres H2 exacts, dans cet ordre):
 
 Contraintes de qualité:
 - Rapport complet et cohérent (en général 16 000 à 35 000 caracteres selon le volume de marqueurs).
-- Chaque section doit contenir des informations utiles et spécifiques au patient.
 - Les 12 sections H2 sont obligatoires, dans l'ordre exact, sans section additionnelle.
 - Sections obligatoirement denses:
-  - "Lecture compartimentée par axes": longue et détaillée (pas une synthèse courte).
-  - "Deep dive — marqueurs prioritaires": marqueur par marqueur avec plan d'action concret.
-  - "Plan d'action 90 jours": détail phase par phase avec KPI et erreurs à éviter.
-  - "Nutrition & entraînement" et "Suppléments & stack": protocoles complets et reliés aux biomarqueurs.
-- Priorise toujours la précision, la clarté et l'actionnabilité.
+  - "Lecture compartimentée par axes": longue et détaillée.
+  - "Deep dive — marqueurs prioritaires": marqueur par marqueur, concret.
+  - "Plan d'action 90 jours": phase par phase avec KPI et conditions de progression.
+  - "Nutrition & entraînement" et "Suppléments & stack": protocoles complets reliés aux biomarqueurs.
+- Priorise la précision, la clarté et l'actionnabilité.
 
 Réponds uniquement avec le rapport final markdown.`;
 
@@ -4112,7 +4143,7 @@ ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
   // Multi-pass generation: repair missing/thin sections with hard depth targets.
   console.log(`[BloodAnalysis] Starting multi-pass check. Output length: ${output.length} chars`);
   const narrativeConstraint =
-    "Rediger uniquement en paragraphes complets, sans puces, sans numerotation, sans tableaux markdown, avec orthographe francaise irreprochable (accents obligatoires).";
+    "Ecrire en tant qu'Achzod, a la premiere personne et en tutoyant directement le client, uniquement en paragraphes complets, sans puces, sans numerotation, sans tableaux markdown, avec orthographe francaise irreprochable (accents obligatoires).";
 
   const sectionRepairSpecs: Array<{
     title: string;

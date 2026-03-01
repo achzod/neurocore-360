@@ -551,23 +551,228 @@ const renderSectionLinesToHtml = (lines: string[], textColor: string, mutedColor
   return html.join("\n");
 };
 
+type BiomarkerScoreRow = {
+  name: string;
+  score: number;
+  statusLabel: string;
+  bandClass: "is-critical" | "is-suboptimal" | "is-watch" | "is-solid";
+  meaning: string;
+};
+
+const clampNumber = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, value));
+
+const normalizeLoose = (value: string): string =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const summarizeBand = (
+  score: number,
+): Pick<BiomarkerScoreRow, "statusLabel" | "bandClass" | "meaning"> => {
+  if (score <= 35) {
+    return {
+      statusLabel: "Critique",
+      bandClass: "is-critical",
+      meaning:
+        "Ce score représente un écart majeur avec la zone optimale. Je traite ce marqueur en priorité absolue pour limiter le risque et relancer ta progression.",
+    };
+  }
+  if (score <= 60) {
+    return {
+      statusLabel: "Suboptimal",
+      bandClass: "is-suboptimal",
+      meaning:
+        "Ce score représente une dérive importante. Je cible ce marqueur dans les premières semaines pour corriger le frein biologique principal.",
+    };
+  }
+  if (score <= 80) {
+    return {
+      statusLabel: "À surveiller",
+      bandClass: "is-watch",
+      meaning:
+        "Ce score représente une zone intermédiaire. Le marqueur reste exploitable, mais je surveille son évolution pour éviter une rechute métabolique.",
+    };
+  }
+  return {
+    statusLabel: "Solide",
+    bandClass: "is-solid",
+    meaning:
+      "Ce score représente un bon niveau de stabilité. Je conserve ce marqueur comme point d'appui pendant qu'on corrige les priorités plus dégradées.",
+  };
+};
+
+const inferScoreFromBlock = (body: string): number => {
+  const text = String(body || "");
+  const lower = text.toLowerCase();
+  let score = 72;
+
+  if (/\bcritique\b/.test(lower)) {
+    score = 26;
+  } else if (/\bsuboptimal\b|sous[- ]optimal|en retrait|depasse|d[eé]grad[eé]/.test(lower)) {
+    score = 56;
+  } else if (/\boptimal\b|zone optimale|stabilise/.test(lower)) {
+    score = 90;
+  } else if (/\bnormal\b|dans le range/.test(lower)) {
+    score = 78;
+  }
+
+  const deviation = text.match(/(\d{1,3})\s*%/);
+  if (deviation) {
+    const pct = Number(deviation[1]);
+    if (Number.isFinite(pct)) {
+      score -= Math.min(35, Math.round(pct * 0.35));
+    }
+  }
+
+  return clampNumber(Math.round(score), 8, 98);
+};
+
+const deriveBiomarkerScoresFromMarkdown = (reportMarkdown: string): BiomarkerScoreRow[] => {
+  const sections = parseMarkdownSections(reportMarkdown);
+  const deepDiveSection = sections.find((section) => /deep\s*dive/i.test(section.title));
+  const sourceText = deepDiveSection ? deepDiveSection.lines.join("\n") : String(reportMarkdown || "");
+  const regex = /(?:^|\n)###\s+([^\n]+)\n([\s\S]*?)(?=\n###\s+|\n##\s+|$)/g;
+
+  const rows: BiomarkerScoreRow[] = [];
+  const seen = new Set<string>();
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(sourceText)) !== null) {
+    const name = String(match[1] || "").trim();
+    const body = String(match[2] || "").trim();
+    if (!name || !body) continue;
+
+    const norm = normalizeLoose(name);
+    if (!norm || norm.length < 2) continue;
+    if (/^(jours?|phase|annexe|retest|sources?|vigilance)/.test(norm)) continue;
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+
+    const score = inferScoreFromBlock(body);
+    const band = summarizeBand(score);
+    rows.push({
+      name,
+      score,
+      statusLabel: band.statusLabel,
+      bandClass: band.bandClass,
+      meaning: band.meaning,
+    });
+  }
+
+  return rows.sort((a, b) => a.score - b.score).slice(0, 24);
+};
+
+const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
+  if (!rows.length) {
+    return `<p style="margin:0;color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.8;">Le radar des scores n'a pas pu être construit automatiquement sur cette version du rapport. Je te recommande de relancer la génération pour obtenir la cartographie complète de chaque biomarqueur.</p>`;
+  }
+
+  const topRows = rows.slice(0, Math.min(10, rows.length));
+  const size = 520;
+  const center = size / 2;
+  const radius = 180;
+  const toAngle = (index: number) => (-Math.PI / 2) + (index * Math.PI * 2) / topRows.length;
+  const polar = (angle: number, r: number) => ({
+    x: center + Math.cos(angle) * r,
+    y: center + Math.sin(angle) * r,
+  });
+
+  const gridRings = [0.25, 0.5, 0.75, 1].map((factor) => {
+    const r = radius * factor;
+    return `<circle cx="${center}" cy="${center}" r="${r.toFixed(2)}" fill="none" stroke="#d7c6af" stroke-width="1" />`;
+  });
+
+  const axisLines = topRows.map((row, index) => {
+    const angle = toAngle(index);
+    const outer = polar(angle, radius);
+    const label = polar(angle, radius + 24);
+    const shortName = row.name.length > 26 ? `${row.name.slice(0, 23)}...` : row.name;
+    return `
+      <line x1="${center}" y1="${center}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="#d7c6af" stroke-width="1" />
+      <text x="${label.x.toFixed(2)}" y="${label.y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#6f6254">${escapeHtml(shortName)}</text>
+    `;
+  });
+
+  const polygonPoints = topRows
+    .map((row, index) => {
+      const angle = toAngle(index);
+      const point = polar(angle, (radius * row.score) / 100);
+      return `${point.x.toFixed(2)},${point.y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  const valueDots = topRows.map((row, index) => {
+    const angle = toAngle(index);
+    const point = polar(angle, (radius * row.score) / 100);
+    return `<circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="4.5" fill="#c06f2e" />`;
+  });
+
+  const cards = rows
+    .map(
+      (row) => `
+      <article class="score-card">
+        <div class="score-card-head">
+          <h3>${escapeHtml(row.name)}</h3>
+          <span class="score-chip ${row.bandClass}">${row.score}/100</span>
+        </div>
+        <p class="score-meta">Niveau: ${escapeHtml(row.statusLabel)}</p>
+        <p>${escapeHtml(row.meaning)}</p>
+      </article>`,
+    )
+    .join("\n");
+
+  return `
+    <p class="score-intro">Je t'explique ici comment lire tes notes biomarqueurs. Chaque score va de 0 à 100. Plus la note est basse, plus l'écart avec la zone optimale est fort et plus je priorise ce levier dans ton plan d'action.</p>
+    <p class="score-intro">Ce radar résume les biomarqueurs les plus sensibles du rapport et te montre visuellement où concentrer ton énergie en premier.</p>
+    <div class="score-radar-shell">
+      <svg class="score-radar" viewBox="0 0 ${size} ${size}" role="img" aria-label="Radar des scores biomarqueurs">
+        ${gridRings.join("\n")}
+        ${axisLines.join("\n")}
+        <polygon points="${polygonPoints}" fill="rgba(192,111,46,0.18)" stroke="#c06f2e" stroke-width="2" />
+        ${valueDots.join("\n")}
+      </svg>
+    </div>
+    <div class="score-legend">
+      <span class="score-chip is-critical">0-35 Critique</span>
+      <span class="score-chip is-suboptimal">36-60 Suboptimal</span>
+      <span class="score-chip is-watch">61-80 À surveiller</span>
+      <span class="score-chip is-solid">81-100 Solide</span>
+    </div>
+    <div class="score-grid">
+      ${cards}
+    </div>
+  `;
+};
+
 const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string): string => {
   const sections = parseMarkdownSections(reportMarkdown);
+  const biomarkerScoreRows = deriveBiomarkerScoresFromMarkdown(reportMarkdown);
+  const radarTabId = "tab-radar-scores-biomarqueurs";
+  const radarPanel = `
+      <section id="${radarTabId}" class="tab-panel is-active" aria-label="Radar des scores biomarqueurs">
+        <h2>Radar des scores biomarqueurs</h2>
+        ${renderBiomarkerRadarPanel(biomarkerScoreRows)}
+      </section>`;
   const nav = sections
     .map((section, index) => {
       const tabId = slugifyTabId(section.title, index);
-      const isActive = index === 0 ? "true" : "false";
-      const activeClass = index === 0 ? " is-active" : "";
+      const isActive = "false";
+      const activeClass = "";
       return `<button class="tab-btn${activeClass}" type="button" data-tab-target="${tabId}" aria-selected="${isActive}">${escapeHtml(
         section.title
       )}</button>`;
     })
-    .join("\n");
+    .join("\n")
+    .trim();
 
   const panels = sections
     .map((section, index) => {
       const tabId = slugifyTabId(section.title, index);
-      const activeClass = index === 0 ? " is-active" : "";
+      const activeClass = "";
       const bodyHtml = renderSectionLinesToHtml(section.lines, CLAUDE_THEME.ink, CLAUDE_THEME.muted);
       return `
       <section id="${tabId}" class="tab-panel${activeClass}" aria-label="${escapeHtml(section.title)}">
@@ -575,7 +780,14 @@ const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string):
         ${bodyHtml}
       </section>`;
     })
-    .join("\n");
+    .join("\n")
+    .trim();
+
+  const navWithRadar = `
+      <button class="tab-btn is-active" type="button" data-tab-target="${radarTabId}" aria-selected="true">Radar des scores biomarqueurs</button>
+      ${nav}
+  `.trim();
+  const panelsWithRadar = `${radarPanel}\n${panels}`.trim();
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -702,6 +914,106 @@ const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string):
       letter-spacing: -0.02em;
       color: var(--ink);
     }
+    .score-intro {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.78;
+    }
+    .score-radar-shell {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--paper-soft);
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+    }
+    .score-radar {
+      width: 100%;
+      max-width: 520px;
+      height: auto;
+      display: block;
+    }
+    .score-legend {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .score-grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .score-card {
+      border: 1px solid var(--border);
+      background: #f9f2e7;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .score-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .score-card h3 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+    }
+    .score-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+    }
+    .score-card .score-meta {
+      margin-bottom: 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #7b6d5d;
+      font-weight: 600;
+    }
+    .score-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 94px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .score-chip.is-critical {
+      background: #fbe2dc;
+      border-color: #efc2b7;
+      color: #8e3423;
+    }
+    .score-chip.is-suboptimal {
+      background: #f8ead5;
+      border-color: #eac598;
+      color: #8f5a17;
+    }
+    .score-chip.is-watch {
+      background: #eaf0dc;
+      border-color: #cddcb0;
+      color: #4f6b21;
+    }
+    .score-chip.is-solid {
+      background: #ddeedf;
+      border-color: #b8d8be;
+      color: #1e6840;
+    }
     .footer-note {
       margin-top: 14px;
       color: var(--muted);
@@ -713,6 +1025,7 @@ const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string):
       .title { font-size: 28px; }
       .tab-panel h2 { font-size: 24px; }
       .tabs-content { padding: 16px; }
+      .score-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -721,14 +1034,14 @@ const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string):
     <header class="header">
       <div class="badge"><span class="badge-dot"></span>Theme Claude · Blood Analysis</div>
       <h1 class="title">Rapport Biomarqueurs</h1>
-      <p class="subtitle">Version HTML à onglets, structurée en 12 sections premium.</p>
+      <p class="subtitle">Version HTML à onglets en thème Claude, avec radar de scores biomarqueurs et lecture coach signée Achzod.</p>
     </header>
     <main class="tabs-shell">
       <nav class="tabs-nav" aria-label="Sections du rapport">
-        ${nav}
+        ${navWithRadar}
       </nav>
       <div class="tabs-content">
-        ${panels}
+        ${panelsWithRadar}
       </div>
     </main>
     <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client</p>
