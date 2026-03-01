@@ -1901,6 +1901,8 @@ const ACHZOD_FIRST_PERSON_REGEX = /\b(?:je|j['’]ai|j['’]analyse|j['’]obser
 const ACHZOD_TUTEOIEMENT_REGEX = /\b(?:tu|ton|ta|tes|toi|t['’]es|t['’]as|t['’]a)\b/gi;
 const FORBIDDEN_THIRD_PERSON_PATIENT_REGEX =
   /\b(?:le patient|ce patient|il presente|il est recommande|ce dossier concerne|on recommande)\b/gi;
+const FORBIDDEN_UNGROUNDED_DOPING_REGEX =
+  /\b(?:tu\s+(?:prends|utilises|consommes)|prise|usage|consommation|suspicion|abus)\s+(?:de\s+)?(?:st[ée]ro[iï]des?|anabolisants?|dopage)\b/gi;
 
 const validateNarrativeStyle = (output: string, markerCount: number): string[] => {
   const reasons: string[] = [];
@@ -1941,6 +1943,10 @@ const validateCoachVoice = (output: string, markerCount: number): string[] => {
   }
   if (thirdPersonPatientCount > 0) {
     reasons.push(`forbidden_third_person_patient_voice:${thirdPersonPatientCount}`);
+  }
+  const ungroundedDopingMentions = countMatches(output, FORBIDDEN_UNGROUNDED_DOPING_REGEX);
+  if (ungroundedDopingMentions > 0) {
+    reasons.push(`forbidden_ungrounded_doping_mentions:${ungroundedDopingMentions}`);
   }
 
   return reasons;
@@ -2295,6 +2301,9 @@ Règles critiques:
 - Distingue clairement "normal labo" vs "optimal performance".
 - Pas de diagnostic définitif: hypothèses + degré de confiance + tests de confirmation.
 - Ne donne pas d'instruction médicamenteuse; renvoie vers avis médical quand nécessaire.
+- Quand tu cites un biomarqueur pour la première fois, explique en une phrase ce qu'il mesure et pourquoi il compte.
+- Interdiction absolue d'insinuer un usage de stéroïdes, dopage ou substances non renseignées.
+- Si une recommandation de niacine est évoquée avec ALT > 40 U/L ou foie en souffrance, impose une progression prudente et une surveillance stricte des transaminases.
 - Emoji interdits.
 
 Style de rendu:
@@ -2302,11 +2311,13 @@ Style de rendu:
 - Interdiction totale des listes à puces, listes numérotées, checklists et tableaux markdown.
 - Chaque recommandation doit être reliée explicitement aux biomarqueurs du client.
 - Français irréprochable: accents, cédilles, orthographe et syntaxe soignés.
+- Evite la répétition: chaque section doit apporter des informations nouvelles et spécifiques.
 
 Sources:
 - Tu peux citer des sources uniquement via [SRC:ID] quand l'ID existe dans le contexte fourni.
 - Pas d'invention de DOI, épisode, titre ou lien.
 - La section "Sources (bibliothèque)" doit lister seulement ce qui est réellement cité.
+- Citer le maximum de sources pertinentes disponibles dans le contexte, sans citation artificielle.
 
 Format obligatoire (titres H2 exacts, dans cet ordre):
 ## Synthèse exécutive
@@ -3956,6 +3967,9 @@ EXIGENCES DE QUALITE:
 - Rediger exclusivement en prose narrative: paragraphes complets et phrases detaillees.
 - Interdiction absolue dans la sortie finale: listes a puces, listes numerotees, tableaux markdown.
 - Orthographe premium obligatoire: accents, cédilles et français naturel irréprochable.
+- Interdiction absolue d'insinuer dopage/steroides/anabolisants sans donnee explicite.
+- A la premiere mention d'un biomarqueur, expliquer ce qu'il mesure et son impact pratique.
+- Eviter toute repetition entre sections: chaque section doit apporter un angle nouveau.
 - Tu DOIS respecter des seuils de profondeur:
   - "## Synthèse exécutive": au moins ${qualityThresholds.synthese} caracteres, avec priorites immediates + impact performance + sequence d'action.
   - "## Qualité des données & limites": au moins ${qualityThresholds.qualite} caracteres, avec limites explicites, confondants et tests de confirmation.
@@ -4143,7 +4157,7 @@ ${knowledgeContext ? `Contexte scientifique:\n${knowledgeContext}\n` : ""}`;
   // Multi-pass generation: repair missing/thin sections with hard depth targets.
   console.log(`[BloodAnalysis] Starting multi-pass check. Output length: ${output.length} chars`);
   const narrativeConstraint =
-    "Ecrire en tant qu'Achzod, a la premiere personne et en tutoyant directement le client, uniquement en paragraphes complets, sans puces, sans numerotation, sans tableaux markdown, avec orthographe francaise irreprochable (accents obligatoires).";
+    "Ecrire en tant qu'Achzod, a la premiere personne et en tutoyant directement le client, uniquement en paragraphes complets, sans puces, sans numerotation, sans tableaux markdown, avec orthographe francaise irreprochable (accents obligatoires), sans insinuation de dopage/steroides non renseignes, et en definissant le biomarqueur lors de sa premiere mention.";
 
   const sectionRepairSpecs: Array<{
     title: string;
@@ -4288,6 +4302,8 @@ Contraintes:
 - Longueur minimale: ${qualityThresholds.deepDive} caracteres.
 - Couvrir au moins ${minDeepDiveMarkers} marqueurs prioritaires, en priorisant critiques/suboptimaux.
 - Pour chaque marqueur prioritaire, creer un sous-titre "### Nom du marqueur" puis des paragraphes dedies a la priorite, la valeur et les ranges, la lecture clinique, la lecture performance, les causes plausibles, les facteurs confondants, le plan d'action, les tests a ajouter et le niveau de confiance.
+- A la premiere phrase de chaque marqueur, expliquer clairement ce que ce marqueur mesure dans l'organisme et pourquoi il est important ici.
+- Interdiction absolue d'insinuer dopage/steroides/anabolisants sans preuve explicite dans les donnees.
 - ${deepDiveCitationTarget > 0 ? `Inserer au moins ${deepDiveCitationTarget} citations [SRC:ID] dans cette section et associer les citations aux phrases analytiques.` : "Ne pas inventer de citation [SRC:ID] sans ID disponible."}
 - IDs autorises: ${availableSourceIdList}.
 - Ne jamais inventer une valeur.
@@ -4359,6 +4375,8 @@ Contraintes:
 - 8 a 16 options max, classees par priorite (Niveau 1/2/3).
 - Pour chaque supplement: pourquoi (marqueur/pattern vise), dose indicative, timing, duree, precautions/interactions, critere d'efficacite au retest.
 - Integrer ce qui est deja utilise par le client si l'info est disponible.
+- Si la niacine est proposee et que ALT > 40 U/L (ou foie en souffrance), imposer demarrage bas, progression graduelle et controle transaminases a mi-parcours.
+- Interdiction absolue d'insinuer dopage/steroides/anabolisants sans preuve explicite dans les donnees.
 - ${supplementsCitationTarget > 0 ? `Inserer au moins ${supplementsCitationTarget} citations [SRC:ID] sur les options prioritaires.` : "Ne pas inventer de citation [SRC:ID] sans ID disponible."}
 - IDs autorises: ${availableSourceIdList}.
 - Pas d'invention de marqueur.
@@ -4586,6 +4604,42 @@ const KNOWLEDGE_KEYWORDS_BY_MARKER: Record<string, string[]> = {
   t3_libre: ["t3", "thyroid", "energy expenditure", "metabolic adaptation"],
 };
 
+const KNOWLEDGE_MARKER_ALIASES: Record<string, string[]> = {
+  hdl: ["high density lipoprotein", "hdl cholesterol", "reverse cholesterol transport"],
+  ldl: ["low density lipoprotein", "ldl cholesterol", "atherogenic lipoprotein"],
+  triglycerides: ["triglyceride", "serum triglycerides", "tg hdl ratio"],
+  apob: ["apolipoprotein b", "apo b", "particle number"],
+  apoa1: ["apolipoprotein a1", "apo a1", "protective lipoprotein"],
+  cholesterol_total: ["total cholesterol", "serum cholesterol"],
+  glycemie_jeun: ["fasting glucose", "glucose a jeun", "serum glucose"],
+  hba1c: ["hemoglobin a1c", "hémoglobine glyquée", "glycated hemoglobin"],
+  insuline_jeun: ["fasting insulin", "insuline a jeun", "insulin resistance"],
+  homa_ir: ["homa ir", "insulin resistance index"],
+  crp_us: ["high sensitivity crp", "hs-crp", "c reactive protein"],
+  ferritine: ["ferritin", "iron storage", "acute phase reactant"],
+  transferrine_sat: ["transferrin saturation", "sat transferrine"],
+  alt: ["alanine aminotransferase", "alt liver enzyme"],
+  ast: ["aspartate aminotransferase", "ast liver enzyme"],
+  ggt: ["gamma glutamyl transferase", "ggt liver marker"],
+  creatinine: ["serum creatinine", "renal function"],
+  egfr: ["estimated glomerular filtration rate", "egfr renal"],
+  testosterone_total: ["total testosterone", "serum testosterone", "androgen status"],
+  testosterone_libre: ["free testosterone", "bioavailable testosterone"],
+  shbg: ["sex hormone binding globulin", "shbg"],
+  estradiol: ["estradiol", "estrogen e2"],
+  prolactine: ["prolactin"],
+  cortisol: ["serum cortisol", "hpa axis cortisol"],
+  tsh: ["thyroid stimulating hormone", "tsh thyroid"],
+  t3_libre: ["free t3", "triiodothyronine"],
+  t4_libre: ["free t4", "thyroxine"],
+  t3_reverse: ["reverse t3", "rt3"],
+  vitamine_d: ["25 hydroxy vitamin d", "vitamin d"],
+  b12: ["vitamin b12", "cobalamin"],
+  folate: ["folate", "vitamin b9"],
+  magnesium_rbc: ["rbc magnesium", "magnesium erythrocyte"],
+  zinc: ["serum zinc"],
+};
+
 export async function getBloodworkKnowledgeContext(
   markers: MarkerAnalysis[],
   patterns: DiagnosticPattern[]
@@ -4627,6 +4681,11 @@ export async function getBloodworkKnowledgeContext(
         keywordSet.add(token.toLowerCase());
         focusTokenSet.add(normalizePlain(token));
       }
+      const markerAliases = KNOWLEDGE_MARKER_ALIASES[markerId] || [];
+      for (const alias of markerAliases) {
+        keywordSet.add(alias.toLowerCase());
+        focusTokenSet.add(normalizePlain(alias));
+      }
     }
   }
 
@@ -4648,23 +4707,23 @@ export async function getBloodworkKnowledgeContext(
   keywordSet.add("lipid profile");
   keywordSet.add("cardiometabolic risk");
 
-  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 28);
+  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 36);
   if (!keywords.length) return "";
 
   try {
-    const primaryArticles = await searchArticles(keywords, 28, sourceFilter);
+    const primaryArticles = await searchArticles(keywords, 40, sourceFilter);
     let allArticles = [...primaryArticles];
 
-    if (allArticles.length < 8) {
+    if (allArticles.length < 12) {
       const markerQueries = markers
         .filter((marker) => marker.status !== "optimal")
-        .slice(0, 4)
+        .slice(0, 6)
         .map((marker) => `${marker.name || ""} ${(marker.markerId || "").replace(/_/g, " ")}`.trim())
         .filter(Boolean);
 
       for (const query of markerQueries) {
         try {
-          const extra = await searchFullText(query, 4);
+          const extra = await searchFullText(query, 6);
           allArticles.push(...extra);
         } catch {
           // Ignore full-text errors and keep primary retrieval.
@@ -4691,6 +4750,19 @@ export async function getBloodworkKnowledgeContext(
       let score = 0;
       for (const token of tokenSet) {
         if (haystack.includes(token)) score += 1;
+      }
+      if (article.source === "manual") {
+        const manualCategory = normalizePlain(article.category || "");
+        const manualKeywords = (article.keywords || []).map((token) => normalizePlain(token));
+        if (
+          manualCategory.includes("bloodwork") ||
+          manualCategory.includes("hormones") ||
+          manualCategory.includes("metabolisme") ||
+          manualCategory.includes("lipides") ||
+          manualKeywords.some((token) => token.includes("pubmed"))
+        ) {
+          score += 3;
+        }
       }
       let focusHits = 0;
       for (const token of focusTokenSet) {
@@ -4719,16 +4791,17 @@ export async function getBloodworkKnowledgeContext(
     const sorted = scored
       .filter((item) => item.score >= 3)
       .map((item) => item.article)
-      .slice(0, 20);
+      .slice(0, 40);
 
     const selected: ScrapedArticle[] = [];
     const perSourceCount = new Map<string, number>();
     for (const article of sorted) {
       const count = perSourceCount.get(article.source) || 0;
-      if (count >= 2) continue;
+      const perSourceLimit = article.source === "manual" ? 8 : 3;
+      if (count >= perSourceLimit) continue;
       selected.push(article);
       perSourceCount.set(article.source, count + 1);
-      if (selected.length >= 10) break;
+      if (selected.length >= 16) break;
     }
 
     if (!selected.length) return "";
@@ -4740,11 +4813,15 @@ export async function getBloodworkKnowledgeContext(
     for (const article of selected) {
       const sourceId = getSourceRefId(article);
       const label = SOURCE_LABELS[article.source] || article.source;
-      const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 380);
+      const excerpt = article.content.replace(/\s+/g, " ").trim().slice(0, 500);
       contextLines.push(`[SRC:${sourceId}] ${label} — ${article.title}`);
       if (article.url) contextLines.push(`URL: ${article.url}`);
       if (article.category) contextLines.push(`Categorie: ${article.category}`);
-      contextLines.push(`Extrait: ${excerpt}${excerpt.length >= 380 ? "..." : ""}`);
+      if (article.keywords?.length) {
+        const keywordsPreview = article.keywords.slice(0, 10).join(", ");
+        contextLines.push(`Mots-cles: ${keywordsPreview}`);
+      }
+      contextLines.push(`Extrait: ${excerpt}${excerpt.length >= 500 ? "..." : ""}`);
       contextLines.push("");
     }
 

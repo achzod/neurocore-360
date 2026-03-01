@@ -551,12 +551,24 @@ const renderSectionLinesToHtml = (lines: string[], textColor: string, mutedColor
   return html.join("\n");
 };
 
+export type BloodReportMarkerSnapshot = {
+  markerId?: string;
+  name: string;
+  value: number;
+  unit?: string;
+  status?: string;
+  normalRange?: string;
+  optimalRange?: string;
+};
+
 type BiomarkerScoreRow = {
   name: string;
   score: number;
   statusLabel: string;
   bandClass: "is-critical" | "is-suboptimal" | "is-watch" | "is-solid";
   meaning: string;
+  valueLabel?: string;
+  rangeLabel?: string;
 };
 
 const clampNumber = (value: number, min: number, max: number): number =>
@@ -605,6 +617,70 @@ const summarizeBand = (
   };
 };
 
+const parseRange = (value?: string): { min: number; max: number } | null => {
+  if (!value) return null;
+  const nums = String(value).match(/-?\d+(?:[.,]\d+)?/g);
+  if (!nums || nums.length < 2) return null;
+  const min = Number(nums[0].replace(",", "."));
+  const max = Number(nums[1].replace(",", "."));
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) return null;
+  return min < max ? { min, max } : { min: max, max: min };
+};
+
+const scoreFromSnapshot = (marker: BloodReportMarkerSnapshot): number => {
+  const value = Number(marker.value);
+  if (!Number.isFinite(value)) {
+    const fallbackByStatus = String(marker.status || "").toLowerCase();
+    if (fallbackByStatus === "critical") return 22;
+    if (fallbackByStatus === "suboptimal") return 52;
+    if (fallbackByStatus === "normal") return 76;
+    if (fallbackByStatus === "optimal") return 94;
+    return 70;
+  }
+
+  const normal = parseRange(marker.normalRange);
+  const optimal = parseRange(marker.optimalRange);
+  const status = String(marker.status || "").toLowerCase();
+
+  if (!normal || !optimal) {
+    if (status === "critical") return 24;
+    if (status === "suboptimal") return 54;
+    if (status === "normal") return 78;
+    if (status === "optimal") return 94;
+    return 72;
+  }
+
+  const normalSpan = Math.max(1e-6, normal.max - normal.min);
+  const optimalSpan = Math.max(1e-6, optimal.max - optimal.min);
+  const optimalCenter = (optimal.min + optimal.max) / 2;
+  let score = 70;
+
+  if (value >= optimal.min && value <= optimal.max) {
+    const half = Math.max(1e-6, optimalSpan / 2);
+    const ratioFromCenter = Math.min(1, Math.abs(value - optimalCenter) / half);
+    score = 100 - Math.round(ratioFromCenter * 10);
+  } else if (value >= normal.min && value <= normal.max) {
+    const belowOptimal = value < optimal.min;
+    const corridor = belowOptimal
+      ? Math.max(1e-6, optimal.min - normal.min)
+      : Math.max(1e-6, normal.max - optimal.max);
+    const gap = belowOptimal ? optimal.min - value : value - optimal.max;
+    const ratio = clampNumber(gap / corridor, 0, 1);
+    score = Math.round(88 - ratio * 28);
+  } else {
+    const outsideGap = value < normal.min ? normal.min - value : value - normal.max;
+    const ratio = outsideGap / normalSpan;
+    score = Math.round(58 - clampNumber(ratio, 0, 1.5) * 35);
+  }
+
+  if (status === "critical") score = Math.min(score, 35);
+  if (status === "suboptimal") score = Math.min(score, 69);
+  if (status === "normal") score = Math.max(score, 62);
+  if (status === "optimal") score = Math.max(score, 86);
+
+  return clampNumber(score, 6, 100);
+};
+
 const inferScoreFromBlock = (body: string): number => {
   const text = String(body || "");
   const lower = text.toLowerCase();
@@ -629,6 +705,42 @@ const inferScoreFromBlock = (body: string): number => {
   }
 
   return clampNumber(Math.round(score), 8, 98);
+};
+
+const deriveBiomarkerScoresFromSnapshots = (
+  snapshots: BloodReportMarkerSnapshot[],
+): BiomarkerScoreRow[] => {
+  const rows = snapshots
+    .filter((marker) => marker && marker.name && Number.isFinite(Number(marker.value)))
+    .map((marker) => {
+      const score = scoreFromSnapshot(marker);
+      const band = summarizeBand(score);
+      const unit = marker.unit ? ` ${marker.unit}` : "";
+      return {
+        name: marker.name,
+        score,
+        statusLabel: band.statusLabel,
+        bandClass: band.bandClass,
+        meaning: band.meaning,
+        valueLabel: `${Number(marker.value)}${unit}`,
+        rangeLabel: marker.optimalRange
+          ? `Zone optimale ${marker.optimalRange}${unit}`
+          : marker.normalRange
+          ? `Zone normale ${marker.normalRange}${unit}`
+          : undefined,
+      } as BiomarkerScoreRow;
+    });
+
+  const dedup = new Map<string, BiomarkerScoreRow>();
+  for (const row of rows) {
+    const key = normalizeLoose(row.name);
+    if (!key) continue;
+    const existing = dedup.get(key);
+    if (!existing || row.score < existing.score) {
+      dedup.set(key, row);
+    }
+  }
+  return Array.from(dedup.values()).sort((a, b) => a.score - b.score);
 };
 
 const deriveBiomarkerScoresFromMarkdown = (reportMarkdown: string): BiomarkerScoreRow[] => {
@@ -720,14 +832,16 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
           <span class="score-chip ${row.bandClass}">${row.score}/100</span>
         </div>
         <p class="score-meta">Niveau: ${escapeHtml(row.statusLabel)}</p>
+        ${row.valueLabel ? `<p class="score-meta">Valeur: ${escapeHtml(row.valueLabel)}</p>` : ""}
+        ${row.rangeLabel ? `<p class="score-meta">${escapeHtml(row.rangeLabel)}</p>` : ""}
         <p>${escapeHtml(row.meaning)}</p>
       </article>`,
     )
     .join("\n");
 
   return `
-    <p class="score-intro">Je t'explique ici comment lire tes notes biomarqueurs. Chaque score va de 0 à 100. Plus la note est basse, plus l'écart avec la zone optimale est fort et plus je priorise ce levier dans ton plan d'action.</p>
-    <p class="score-intro">Ce radar résume les biomarqueurs les plus sensibles du rapport et te montre visuellement où concentrer ton énergie en premier.</p>
+    <p class="score-intro">Je calcule chaque note biomarqueur automatiquement à partir de ta valeur réelle, de la zone normale et de la zone optimale. Chaque score va de 0 à 100, et plus la note est basse, plus l'écart à l'optimal est important.</p>
+    <p class="score-intro">Ce radar est dynamique: il se met à jour selon les valeurs de ton bilan et te montre visuellement où concentrer tes priorités biologiques.</p>
     <div class="score-radar-shell">
       <svg class="score-radar" viewBox="0 0 ${size} ${size}" role="img" aria-label="Radar des scores biomarqueurs">
         ${gridRings.join("\n")}
@@ -748,9 +862,16 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
   `;
 };
 
-const renderClaudeTabbedReportHtml = (reportId: string, reportMarkdown: string): string => {
+const renderClaudeTabbedReportHtml = (
+  reportId: string,
+  reportMarkdown: string,
+  markerSnapshots?: BloodReportMarkerSnapshot[],
+): string => {
   const sections = parseMarkdownSections(reportMarkdown);
-  const biomarkerScoreRows = deriveBiomarkerScoresFromMarkdown(reportMarkdown);
+  const biomarkerScoreRows =
+    markerSnapshots && markerSnapshots.length
+      ? deriveBiomarkerScoresFromSnapshots(markerSnapshots)
+      : deriveBiomarkerScoresFromMarkdown(reportMarkdown);
   const radarTabId = "tab-radar-scores-biomarqueurs";
   const radarPanel = `
       <section id="${radarTabId}" class="tab-panel is-active" aria-label="Radar des scores biomarqueurs">
@@ -1121,11 +1242,12 @@ export async function sendBloodAnalysisHtmlEmail(
   reportId: string,
   reportMarkdown: string,
   baseUrl: string,
+  markerSnapshots?: BloodReportMarkerSnapshot[],
 ): Promise<boolean> {
   try {
     const token = await getAccessToken();
     void baseUrl;
-    const standaloneReportHtml = renderClaudeTabbedReportHtml(reportId, reportMarkdown);
+    const standaloneReportHtml = renderClaudeTabbedReportHtml(reportId, reportMarkdown, markerSnapshots);
     const sections = parseMarkdownSections(reportMarkdown);
     const fullReportBodyHtml = sections.length
       ? sections

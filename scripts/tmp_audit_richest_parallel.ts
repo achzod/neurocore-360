@@ -189,7 +189,7 @@ function auditMarkdown(report: string, markerCount: number) {
   };
 }
 
-async function renderEmailPayload(reportMarkdown: string) {
+async function renderEmailPayload(reportMarkdown: string, markerSnapshots?: any[]) {
   process.env.SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID || "qa-user";
   process.env.SENDPULSE_SECRET = process.env.SENDPULSE_SECRET || "qa-secret";
 
@@ -225,6 +225,7 @@ async function renderEmailPayload(reportMarkdown: string) {
       "qa-report-id",
       reportMarkdown,
       "https://neurocore-360.onrender.com",
+      markerSnapshots,
     );
     if (!sent) {
       throw new Error("sendBloodAnalysisHtmlEmail returned false");
@@ -300,6 +301,12 @@ function auditAttachmentHtml(html: string) {
   const hasRadarTab = /Radar des scores biomarqueurs/i.test(text);
   const hasRadarSvg = /class=["'][^"']*score-radar[^"']*["']/i.test(text);
   const hasScoreCards = /class=["'][^"']*score-card[^"']*["']/i.test(text);
+  const testosteroneCardMatch = text.match(
+    /<h3>\s*Testost[ée]rone libre\s*<\/h3>[\s\S]{0,400}?(\d{1,3})\/100/i,
+  );
+  const testosteroneFreeScore = testosteroneCardMatch ? Number(testosteroneCardMatch[1]) : null;
+  const testosteroneScoreLooksDynamic =
+    testosteroneFreeScore === null ? true : testosteroneFreeScore <= 70;
 
   const darkThemeSignals = [
     /background\s*:\s*#0{3,6}/i,
@@ -319,6 +326,8 @@ function auditAttachmentHtml(html: string) {
     hasRadarTab,
     hasRadarSvg,
     hasScoreCards,
+    testosteroneFreeScore,
+    testosteroneScoreLooksDynamic,
     darkThemeSignals,
     pass:
       missingHeadings.length === 0 &&
@@ -329,6 +338,7 @@ function auditAttachmentHtml(html: string) {
       hasRadarTab &&
       hasRadarSvg &&
       hasScoreCards &&
+      testosteroneScoreLooksDynamic &&
       darkThemeSignals === 0,
   };
 }
@@ -387,7 +397,7 @@ async function main() {
   }
 
   const markdownAudit = auditMarkdown(report, analysis.markers.length);
-  const emailPayload = await renderEmailPayload(report);
+  const emailPayload = await renderEmailPayload(report, analysis.markers as any[]);
   const htmlAudit = auditHtml(emailPayload.bodyHtml);
   const attachmentHtmlAudit = auditAttachmentHtml(emailPayload.attachmentHtml);
 

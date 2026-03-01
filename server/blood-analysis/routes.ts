@@ -13,7 +13,8 @@ import {
   normalizeMarkerName,
   BIOMARKER_RANGES,
   DIAGNOSTIC_PATTERNS,
-  BloodMarkerInput
+  BloodMarkerInput,
+  type MarkerAnalysis,
 } from "./index";
 import {
   generateComprehensiveRiskProfile,
@@ -113,6 +114,7 @@ const sendBloodClientDeliveryEmail = async (
   reportId: string,
   aiReport: string,
   baseUrl: string,
+  markerSnapshots?: MarkerAnalysis[],
 ): Promise<boolean> => {
   void baseUrl;
   const reportText = canonicalizeBloodReport(aiReport).trim();
@@ -124,7 +126,7 @@ const sendBloodClientDeliveryEmail = async (
   }
 
   // Strict mode: only full HTML delivery, no dashboard-link fallback.
-  return sendBloodAnalysisHtmlEmail(recipientEmail, reportId, reportText, baseUrl);
+  return sendBloodAnalysisHtmlEmail(recipientEmail, reportId, reportText, baseUrl, markerSnapshots);
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -743,7 +745,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           recipientEmail,
           reportRecord.id,
           aiAnalysis,
-          baseUrl
+          baseUrl,
+          analysisResult.markers,
         );
         if (emailSent) {
           await sendAdminEmailNewAudit(
@@ -786,7 +789,8 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               recipientEmail,
               reportRecord.id,
               enriched,
-              baseUrl
+              baseUrl,
+              analysisResult.markers,
             );
             if (emailSent) {
               await sendAdminEmailNewAudit(
