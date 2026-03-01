@@ -34,7 +34,10 @@ const normalizeLoose = (value: string) =>
   String(value || "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[—–-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
 const splitSections = (markdown: string): Array<{ title: string; content: string }> => {
   const lines = String(markdown || "").split(/\r?\n/);
@@ -502,13 +505,19 @@ function auditHtml(html: string) {
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&nbsp;/g, " ")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[—–-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
   const missingHeadings = requiredSections
     .filter((section) => {
       const target = section.title
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[—–-]+/g, " ")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
       return !normalized.includes(target);
     })
     .map((section) => section.title);
@@ -532,14 +541,20 @@ function auditAttachmentHtml(html: string) {
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&nbsp;/g, " ")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[—–-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
   const missingHeadings = requiredSections
     .filter((section) => {
       const target = section.title
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[—–-]+/g, " ")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
       return !normalized.includes(target);
     })
     .map((section) => section.title);

@@ -167,6 +167,14 @@ const MARKER_DEFINITION_BY_KEY: Record<string, string> = {
   homocysteine: "ce marqueur mesure un metabolite de methylation associe au risque cardiovasculaire",
 };
 
+const stripForbiddenStyleTokens = (value: string): string =>
+  String(value || "")
+    .replace(/[—–]/g, "-")
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
+    .replace(/[\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[\uFE0E\uFE0F]/g, "");
+
 function normalizeGuard(value: string): string {
   return String(value || "")
     .toLowerCase()
@@ -652,6 +660,7 @@ REGLES ABSOLUES:
 - N'invente jamais une valeur, un marqueur, un symptome ou une source.
 - Si une donnee manque: "Non renseigne" + impact + test utile.
 - Emoji interdits.
+- N'utilise jamais le caractere de tiret long "—". Utilise uniquement "-" dans toutes les phrases et titres.
 - Style narratif dense: paragraphes complets, phrases detaillees.
 - Interdiction absolue de listes a puces, listes numerotees, tableaux markdown.
 - Cite [SRC:ID] uniquement si l'ID existe dans le contexte fourni. Cite le maximum de sources disponibles.
@@ -1601,6 +1610,9 @@ export async function generateParallelHtmlReport(
   sectionsMap = limitRepeatedStatMentions(sectionsMap, analysisResult.markers, 3);
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
   sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, ctx.knowledgeContext || "");
+  sectionsMap = Object.fromEntries(
+    Object.entries(sectionsMap).map(([key, value]) => [key, stripForbiddenStyleTokens(value || "")]),
+  );
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const totalSections = Object.keys(sectionsMap).length;
@@ -1615,23 +1627,23 @@ export async function generateParallelHtmlReport(
   }
 
   // Build markdown for backwards compatibility
-  const markdown = generatedSections
+  const markdown = stripForbiddenStyleTokens(generatedSections
     .map((s) => {
       const hasHeading = s.content.match(/^\s*##\s+/);
       return hasHeading ? s.content : `## ${s.title}\n\n${s.content}`;
     })
-    .join("\n\n");
+    .join("\n\n"));
 
   // Build HTML
   const now = new Date();
   const generatedAt = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
 
-  const html = buildHtmlReport(
+  const html = stripForbiddenStyleTokens(buildHtmlReport(
     generatedSections,
     analysisResult.markers,
     userProfile,
     generatedAt,
-  );
+  ));
 
   console.log(`[BatchHTML] Final: ${html.length} chars HTML, ${markdown.length} chars markdown, ${totalSections}/12 sections`);
 

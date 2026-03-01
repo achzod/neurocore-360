@@ -442,8 +442,16 @@ export async function sendReportReadyEmail(
   }
 }
 
-const escapeHtml = (value: string): string =>
+const stripBloodForbiddenFormatting = (value: string): string =>
   String(value || "")
+    .replace(/[—–]/g, "-")
+    .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
+    .replace(/[\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[\uFE0E\uFE0F]/g, "");
+
+const escapeHtml = (value: string): string =>
+  stripBloodForbiddenFormatting(String(value || ""))
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -571,6 +579,18 @@ type BiomarkerScoreRow = {
   meaning: string;
   valueLabel?: string;
   rangeLabel?: string;
+};
+
+type MarkerReferenceRow = {
+  name: string;
+  markerId?: string;
+  statusLabel: string;
+  bandClass: "is-critical" | "is-suboptimal" | "is-watch" | "is-solid";
+  valueLabel?: string;
+  rangeLabel?: string;
+  definition: string;
+  positiveImpact: string;
+  negativeImpact: string;
 };
 
 const clampNumber = (value: number, min: number, max: number): number =>
@@ -794,6 +814,221 @@ const deriveBiomarkerScoresFromMarkdown = (reportMarkdown: string): BiomarkerSco
   return rows.sort((a, b) => a.score - b.score).slice(0, 24);
 };
 
+const statusRank = (status?: string): number => {
+  const normalized = normalizeLoose(status || "");
+  if (normalized === "critical") return 0;
+  if (normalized === "suboptimal") return 1;
+  if (normalized === "normal") return 2;
+  if (normalized === "optimal") return 3;
+  return 4;
+};
+
+const statusTone = (
+  status?: string,
+): { statusLabel: string; bandClass: "is-critical" | "is-suboptimal" | "is-watch" | "is-solid" } => {
+  const normalized = normalizeLoose(status || "");
+  if (normalized === "critical") return { statusLabel: "Critique", bandClass: "is-critical" };
+  if (normalized === "suboptimal") return { statusLabel: "Suboptimal", bandClass: "is-suboptimal" };
+  if (normalized === "normal") return { statusLabel: "A surveiller", bandClass: "is-watch" };
+  if (normalized === "optimal") return { statusLabel: "Solide", bandClass: "is-solid" };
+  return { statusLabel: "A surveiller", bandClass: "is-watch" };
+};
+
+type MarkerInsightTemplate = {
+  definition: string;
+  positiveImpact: string;
+  negativeImpact: string;
+};
+
+const MARKER_INSIGHT_LIBRARY: Record<string, MarkerInsightTemplate> = {
+  hdl: {
+    definition: "Le HDL mesure la capacite de transport inverse du cholesterol vers le foie.",
+    positiveImpact: "Quand ton HDL reste solide, la protection cardiovasculaire et la recuperation metabolique sont meilleures.",
+    negativeImpact: "Quand ton HDL chute, le risque cardio-metabolique monte et la flexibilite energetique diminue.",
+  },
+  ldl: {
+    definition: "Le LDL mesure la charge de cholesterol transportee vers les tissus.",
+    positiveImpact: "Quand le LDL est bien controle, la contrainte arterielle est reduite et le risque vasculaire baisse.",
+    negativeImpact: "Quand le LDL est trop eleve, la pression atherogene augmente et la priorite cardiovasculaire devient immediate.",
+  },
+  triglycerides: {
+    definition: "Les triglycerides mesurent les graisses circulantes disponibles a court terme.",
+    positiveImpact: "Quand ils sont stables, la sensibilite a l'insuline et la mobilite metabolique sont meilleures.",
+    negativeImpact: "Quand ils montent, le terrain insulinique se degrade et la perte de gras devient plus difficile.",
+  },
+  apob: {
+    definition: "L'ApoB estime le nombre de particules lipidiques atherogenes.",
+    positiveImpact: "Quand l'ApoB est bas, la charge particulaire vasculaire est mieux controlee.",
+    negativeImpact: "Quand l'ApoB augmente, le risque cardiovasculaire structurel est plus eleve.",
+  },
+  testosterone_libre: {
+    definition: "La testosterone libre mesure la fraction androgene biologiquement active.",
+    positiveImpact: "Quand elle est solide, la synthese proteique, la force et la recuperation sont favorisees.",
+    negativeImpact: "Quand elle est basse, l'anabolisme ralentit, la fatigue augmente et la progression musculaire freine.",
+  },
+  testosterone_totale: {
+    definition: "La testosterone totale mesure le stock androgenique circulant.",
+    positiveImpact: "Quand elle est robuste, le potentiel de progression physique reste eleve.",
+    negativeImpact: "Quand elle baisse, la marge anabolique et la tolerance d'entrainement diminuent.",
+  },
+  tsh: {
+    definition: "La TSH mesure le signal hypophysaire qui pilote la thyroide.",
+    positiveImpact: "Quand la TSH reste dans la cible, le pilotage metabolique est plus stable.",
+    negativeImpact: "Quand elle derive, le debit energetique et la regulation du poids peuvent se degrader.",
+  },
+  t3_libre: {
+    definition: "La T3 libre mesure l'hormone thyroidienne active.",
+    positiveImpact: "Quand elle est solide, l'energie disponible, la thermogenese et la vitalite sont mieux soutenues.",
+    negativeImpact: "Quand elle est basse, la depense energetique peut ralentir et la fatigue s'installer.",
+  },
+  insuline_jeun: {
+    definition: "L'insuline a jeun mesure la pression insulinique de base.",
+    positiveImpact: "Quand elle est bien regulee, la partition des nutriments et la perte de gras sont facilitees.",
+    negativeImpact: "Quand elle monte, le stockage graisseux augmente et la flexibilite metabolique recule.",
+  },
+  homa_ir: {
+    definition: "Le HOMA-IR estime la resistance a l'insuline.",
+    positiveImpact: "Quand il est bas, le metabolisme glucidique est plus efficace.",
+    negativeImpact: "Quand il monte, le risque metabolique et la difficulte de recomposition augmentent.",
+  },
+  glycemie_jeun: {
+    definition: "La glycemie a jeun mesure le glucose circulant au repos.",
+    positiveImpact: "Quand elle est stable, l'equilibre energetique et la clarte cognitive sont plus robustes.",
+    negativeImpact: "Quand elle est elevee, la regulation insulinique est sous contrainte.",
+  },
+  crp_us: {
+    definition: "La CRP-us mesure l'inflammation de bas grade.",
+    positiveImpact: "Quand elle est basse, la recuperation tissulaire et la sante cardiovasculaire sont favorisees.",
+    negativeImpact: "Quand elle monte, la recuperation se degrade et le risque systemic augmente.",
+  },
+  ferritine: {
+    definition: "La ferritine mesure les reserves de fer.",
+    positiveImpact: "Quand elle est bien calibree, l'oxygenation et la capacite de travail sont mieux soutenues.",
+    negativeImpact: "Quand elle est trop basse ou trop haute, la performance et la recuperation peuvent etre penalisees.",
+  },
+  vitamine_d: {
+    definition: "La vitamine D mesure une hormone cle pour l'immunite, les hormones et le muscle.",
+    positiveImpact: "Quand elle est optimale, la fonction immunitaire et neuromusculaire est plus robuste.",
+    negativeImpact: "Quand elle chute, le terrain inflammatoire et hormonal peut se fragiliser.",
+  },
+  alt: {
+    definition: "L'ALT mesure une enzyme hepatique sensible a la charge cellulaire du foie.",
+    positiveImpact: "Quand l'ALT est maitrisee, la tolerance hepatique aux protocoles est meilleure.",
+    negativeImpact: "Quand l'ALT monte, la priorite est de reduire la charge hepatique et de securiser les actions.",
+  },
+  ast: {
+    definition: "L'AST mesure une enzyme presente dans le foie et les muscles.",
+    positiveImpact: "Quand elle est stable, la charge tissulaire reste compatible avec la progression.",
+    negativeImpact: "Quand elle monte, il faut distinguer stress musculaire et contrainte hepatique.",
+  },
+  creatinine: {
+    definition: "La creatinine mesure un dechet metabolique utile au suivi renal.",
+    positiveImpact: "Quand elle est stable, la fonction de filtration est globalement rassurante.",
+    negativeImpact: "Quand elle derive, la priorite est de verifier hydratation, charge musculaire et fonction renale.",
+  },
+  egfr: {
+    definition: "L'eGFR estime la capacite de filtration des reins.",
+    positiveImpact: "Quand il est bon, la securite de filtration et la gestion des dechets metaboliques sont plus solides.",
+    negativeImpact: "Quand il baisse, le suivi renal devient prioritaire.",
+  },
+};
+
+const genericMarkerInsight = (name: string): MarkerInsightTemplate => ({
+  definition: `${name} mesure un indicateur biologique de ton etat metabolique actuel.`,
+  positiveImpact: `Quand ${name} reste dans sa cible, la stabilite physiologique et la progression sont plus previsibles.`,
+  negativeImpact: `Quand ${name} sort de la cible, la fatigue, le risque et les blocages de progression augmentent.`,
+});
+
+const resolveMarkerInsight = (marker: BloodReportMarkerSnapshot): MarkerInsightTemplate => {
+  const markerId = normalizeLoose(marker.markerId || "").replace(/\s+/g, "_");
+  if (markerId && MARKER_INSIGHT_LIBRARY[markerId]) return MARKER_INSIGHT_LIBRARY[markerId];
+  const nameKey = normalizeLoose(marker.name || "").replace(/\s+/g, "_");
+  if (nameKey && MARKER_INSIGHT_LIBRARY[nameKey]) return MARKER_INSIGHT_LIBRARY[nameKey];
+  return genericMarkerInsight(marker.name || "Ce marqueur");
+};
+
+const deriveMarkerReferenceRows = (snapshots?: BloodReportMarkerSnapshot[]): MarkerReferenceRow[] => {
+  if (!Array.isArray(snapshots) || !snapshots.length) return [];
+  const dedup = new Map<string, BloodReportMarkerSnapshot>();
+  for (const marker of snapshots) {
+    if (!marker?.name) continue;
+    const idKey = normalizeLoose(marker.markerId || "");
+    const nameKey = normalizeLoose(marker.name || "");
+    const key = idKey || nameKey;
+    if (!key) continue;
+    const existing = dedup.get(key);
+    if (!existing || statusRank(marker.status) < statusRank(existing.status)) dedup.set(key, marker);
+  }
+
+  return Array.from(dedup.values())
+    .map((marker) => {
+      const insight = resolveMarkerInsight(marker);
+      const tone = statusTone(marker.status);
+      const unit = marker.unit ? ` ${marker.unit}` : "";
+      return {
+        name: marker.name,
+        markerId: marker.markerId,
+        statusLabel: tone.statusLabel,
+        bandClass: tone.bandClass,
+        valueLabel: Number.isFinite(Number(marker.value)) ? `${Number(marker.value)}${unit}` : undefined,
+        rangeLabel: marker.optimalRange
+          ? `Zone optimale ${marker.optimalRange}${unit}`
+          : marker.normalRange
+          ? `Zone normale ${marker.normalRange}${unit}`
+          : undefined,
+        definition: insight.definition,
+        positiveImpact: insight.positiveImpact,
+        negativeImpact: insight.negativeImpact,
+      } satisfies MarkerReferenceRow;
+    })
+    .sort((a, b) => {
+      const rankByBand: Record<MarkerReferenceRow["bandClass"], number> = {
+        "is-critical": 0,
+        "is-suboptimal": 1,
+        "is-watch": 2,
+        "is-solid": 3,
+      };
+      const rankDiff = rankByBand[a.bandClass] - rankByBand[b.bandClass];
+      if (rankDiff !== 0) return rankDiff;
+      return a.name.localeCompare(b.name, "fr");
+    });
+};
+
+const renderExtractedMarkersPanel = (snapshots?: BloodReportMarkerSnapshot[]): string => {
+  const rows = deriveMarkerReferenceRows(snapshots);
+  if (!rows.length) {
+    return `<p class="score-intro">Aucun marqueur extrait n'est disponible dans cette version du rapport. Relance la generation avec le lot de biomarqueurs pour remplir cet onglet.</p>`;
+  }
+
+  const cards = rows
+    .map((row) => {
+      const markerIdLabel = row.markerId ? `<p class="score-meta">Code: ${escapeHtml(row.markerId)}</p>` : "";
+      const valueLabel = row.valueLabel ? `<p class="score-meta">Valeur: ${escapeHtml(row.valueLabel)}</p>` : "";
+      const rangeLabel = row.rangeLabel ? `<p class="score-meta">${escapeHtml(row.rangeLabel)}</p>` : "";
+      return `
+      <article class="marker-card">
+        <div class="score-card-head">
+          <h3>${escapeHtml(row.name)}</h3>
+          <span class="score-chip ${row.bandClass}">${escapeHtml(row.statusLabel)}</span>
+        </div>
+        ${markerIdLabel}
+        ${valueLabel}
+        ${rangeLabel}
+        <p><strong>Definition:</strong> ${escapeHtml(row.definition)}</p>
+        <p><strong>Quand c'est bien:</strong> ${escapeHtml(row.positiveImpact)}</p>
+        <p><strong>Quand ce n'est pas bien:</strong> ${escapeHtml(row.negativeImpact)}</p>
+      </article>`;
+    })
+    .join("\n");
+
+  return `
+    <p class="score-intro">Dans cet onglet, je detaille chaque marqueur extrait avec sa definition et ses consequences concretes quand il est stable ou degrade.</p>
+    <div class="marker-grid">
+      ${cards}
+    </div>
+  `;
+};
+
 const compositeToneByScore = (
   score: number,
 ): { chipClass: "is-critical" | "is-suboptimal" | "is-watch" | "is-solid"; label: string } => {
@@ -806,7 +1041,6 @@ const compositeToneByScore = (
 const renderCompositeScoreCard = (
   title: string,
   score: RiskScore | undefined,
-  icon: string,
   subtitle: string,
   compact = false,
 ): string => {
@@ -814,7 +1048,7 @@ const renderCompositeScoreCard = (
     return `
       <article class="composite-card ${compact ? "is-compact" : ""}">
         <div class="composite-card-head">
-          <h3>${escapeHtml(icon)} ${escapeHtml(title)}</h3>
+          <h3>${escapeHtml(title)}</h3>
           <span class="score-chip is-watch">N/A</span>
         </div>
         <p class="composite-subtitle">${escapeHtml(subtitle)}</p>
@@ -827,7 +1061,7 @@ const renderCompositeScoreCard = (
   return `
     <article class="composite-card ${compact ? "is-compact" : ""}">
       <div class="composite-card-head">
-        <h3>${escapeHtml(icon)} ${escapeHtml(title)}</h3>
+        <h3>${escapeHtml(title)}</h3>
         <span class="score-chip ${tone.chipClass}">${score.score}/100</span>
       </div>
       <p class="composite-subtitle">${escapeHtml(subtitle)}</p>
@@ -848,31 +1082,28 @@ const renderCompositeScoresPanel = (riskProfile?: ComprehensiveRiskProfile): str
     renderCompositeScoreCard(
       "Score Anabolique",
       riskProfile.anabolicCapacity,
-      "💪",
       "Capacité à construire de la masse musculaire.",
     ),
     renderCompositeScoreCard(
       "Score Métabolique",
       riskProfile.metabolicEfficiency,
-      "🔥",
       "Capacité à mobiliser les graisses en recomposition.",
     ),
     renderCompositeScoreCard(
       "Résistance Insuline",
       riskProfile.insulinResistance,
-      "🩸",
       "Tolérance glucidique et sensibilité insulinique.",
     ),
   ].join("\n");
 
   const healthCards = [
-    renderCompositeScoreCard("Cardiovasculaire", riskProfile.cardiovascular, "❤️", "Risque cardio-métabolique global.", true),
-    renderCompositeScoreCard("Foie", riskProfile.liverHealth, "🧪", "Robustesse hépatique et charge métabolique.", true),
-    renderCompositeScoreCard("Reins", riskProfile.kidneyFunction, "💧", "Capacité de filtration et équilibre hydrique.", true),
-    renderCompositeScoreCard("Hormonal", riskProfile.hormonalHealth, "⚙️", "Stabilité endocrine et récupération.", true),
-    renderCompositeScoreCard("Thyroïde", riskProfile.thyroidDysfunction, "🦋", "Pilotage thyroïdien du métabolisme.", true),
-    renderCompositeScoreCard("Inflammation", riskProfile.inflammation, "🛡️", "Charge inflammatoire systémique.", true),
-    renderCompositeScoreCard("Syndrome Métabolique", riskProfile.metabolicSyndrome, "📉", "Agrégation des facteurs de dérive métabolique.", true),
+    renderCompositeScoreCard("Cardiovasculaire", riskProfile.cardiovascular, "Risque cardio-métabolique global.", true),
+    renderCompositeScoreCard("Foie", riskProfile.liverHealth, "Robustesse hépatique et charge métabolique.", true),
+    renderCompositeScoreCard("Reins", riskProfile.kidneyFunction, "Capacité de filtration et équilibre hydrique.", true),
+    renderCompositeScoreCard("Hormonal", riskProfile.hormonalHealth, "Stabilité endocrine et récupération.", true),
+    renderCompositeScoreCard("Thyroïde", riskProfile.thyroidDysfunction, "Pilotage thyroïdien du métabolisme.", true),
+    renderCompositeScoreCard("Inflammation", riskProfile.inflammation, "Charge inflammatoire systémique.", true),
+    renderCompositeScoreCard("Syndrome Métabolique", riskProfile.metabolicSyndrome, "Agrégation des facteurs de dérive métabolique.", true),
   ].join("\n");
 
   return `
@@ -993,11 +1224,12 @@ const renderClaudeTabbedReportHtml = (
     riskProfile?: ComprehensiveRiskProfile;
   },
 ): string => {
-  const sections = parseMarkdownSections(reportMarkdown);
+  const sanitizedMarkdown = stripBloodForbiddenFormatting(reportMarkdown);
+  const sections = parseMarkdownSections(sanitizedMarkdown);
   const biomarkerScoreRows =
     markerSnapshots && markerSnapshots.length
       ? deriveBiomarkerScoresFromSnapshots(markerSnapshots)
-      : deriveBiomarkerScoresFromMarkdown(reportMarkdown);
+      : deriveBiomarkerScoresFromMarkdown(sanitizedMarkdown);
   const clientName = String(meta?.clientName || "Client").trim();
   const reportDate =
     String(meta?.reportDate || "").trim() ||
@@ -1020,6 +1252,12 @@ const renderClaudeTabbedReportHtml = (
       <section id="${radarTabId}" class="tab-panel" aria-label="Radar des scores biomarqueurs">
         <h2>Radar des scores biomarqueurs</h2>
         ${renderBiomarkerRadarPanel(biomarkerScoreRows)}
+      </section>`;
+  const markersTabId = "tab-marqueurs-extraits";
+  const markersPanel = `
+      <section id="${markersTabId}" class="tab-panel" aria-label="Marqueurs extraits">
+        <h2>Marqueurs extraits et interprétation</h2>
+        ${renderExtractedMarkersPanel(markerSnapshots)}
       </section>`;
   const nav = sections
     .map((section, index) => {
@@ -1047,14 +1285,15 @@ const renderClaudeTabbedReportHtml = (
     .join("\n")
     .trim();
 
-  const navWithRadar = `
+  const navWithExtraTabs = `
       <button class="tab-btn is-active" type="button" data-tab-target="${compositeTabId}" aria-selected="true">Scores Composites</button>
       <button class="tab-btn" type="button" data-tab-target="${radarTabId}" aria-selected="false">Radar des scores biomarqueurs</button>
+      <button class="tab-btn" type="button" data-tab-target="${markersTabId}" aria-selected="false">Marqueurs extraits</button>
       ${nav}
   `.trim();
-  const panelsWithRadar = `${compositePanel}\n${radarPanel}\n${panels}`.trim();
+  const panelsWithExtraTabs = `${compositePanel}\n${radarPanel}\n${markersPanel}\n${panels}`.trim();
 
-  return `<!DOCTYPE html>
+  return stripBloodForbiddenFormatting(`<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -1212,6 +1451,25 @@ const renderClaudeTabbedReportHtml = (
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 12px;
     }
+    .marker-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .marker-card {
+      border: 1px solid var(--border);
+      background: #f9f2e7;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .marker-card p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+    }
+    .marker-card p:last-child { margin-bottom: 0; }
     .score-card {
       border: 1px solid var(--border);
       background: #f9f2e7;
@@ -1391,6 +1649,7 @@ const renderClaudeTabbedReportHtml = (
       .tab-panel h2 { font-size: 24px; }
       .tabs-content { padding: 16px; }
       .score-grid { grid-template-columns: 1fr; }
+      .marker-grid { grid-template-columns: 1fr; }
       .composite-overall-shell { grid-template-columns: 1fr; }
       .composite-overall-value { font-size: 52px; }
       .performance-grid, .health-grid { grid-template-columns: 1fr; }
@@ -1401,15 +1660,15 @@ const renderClaudeTabbedReportHtml = (
   <div class="wrap">
     <header class="header">
       <div class="badge"><span class="badge-dot"></span>NEUROCORE 360</div>
-      <h1 class="title">${escapeHtml(clientName)} — Bilan sanguin complet</h1>
+      <h1 class="title">${escapeHtml(clientName)} - Bilan sanguin complet</h1>
       <p class="subtitle">${escapeHtml(subtitle)}</p>
     </header>
     <main class="tabs-shell">
       <nav class="tabs-nav" aria-label="Sections du rapport">
-        ${navWithRadar}
+        ${navWithExtraTabs}
       </nav>
       <div class="tabs-content">
-        ${panelsWithRadar}
+        ${panelsWithExtraTabs}
       </div>
     </main>
     <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client</p>
@@ -1438,7 +1697,7 @@ const renderClaudeTabbedReportHtml = (
     })();
   </script>
 </body>
-</html>`;
+</html>`);
 };
 
 const getClaudeLightEmailWrapper = (
@@ -1514,34 +1773,46 @@ export async function sendBloodAnalysisHtmlEmail(
           : markerSnapshots?.length,
       riskProfile: meta?.riskProfile,
     });
-    const sections = parseMarkdownSections(reportMarkdown);
-    const fullReportBodyHtml = sections.length
-      ? sections
-          .map((section) => {
-            const sectionBody = renderSectionLinesToHtml(section.lines, CLAUDE_THEME.ink, CLAUDE_THEME.muted);
-            return `<h3 style="margin:24px 0 10px;color:${CLAUDE_THEME.ink};font-size:22px;line-height:1.3;letter-spacing:-0.01em;">${escapeHtml(
-              section.title
-            )}</h3>${sectionBody}`;
-          })
-          .join("\n")
-      : `<p style="margin:0;color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.8;">Rapport prêt en pièce jointe HTML.</p>`;
+    const clientName = meta?.clientName || fallbackNameFromEmail || "Client";
+    const markerCount =
+      typeof meta?.markerCount === "number" && Number.isFinite(meta.markerCount)
+        ? Math.max(0, Math.round(meta.markerCount))
+        : markerSnapshots?.length || 0;
+    const topPriorityText = (() => {
+      const rows = Array.isArray(markerSnapshots)
+        ? markerSnapshots
+            .filter((marker) => marker && marker.name)
+            .sort((a, b) => statusRank(a.status) - statusRank(b.status))
+            .slice(0, 3)
+            .map((marker) => {
+              const unit = marker.unit ? ` ${marker.unit}` : "";
+              const value = Number.isFinite(Number(marker.value)) ? `${Number(marker.value)}${unit}` : "non renseignee";
+              return `${marker.name} (${value})`;
+            })
+        : [];
+      return rows.length ? rows.join(", ") : "je te detaille les priorites directement dans le fichier joint";
+    })();
 
     const content = `
       <div style="text-align:center;margin-bottom:18px;">
         <span style="display:inline-block;background:${CLAUDE_THEME.accentSoft};color:${CLAUDE_THEME.accent};padding:8px 16px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;border:1px solid ${CLAUDE_THEME.border};">
-          HTML à onglets · Theme Claude
+          Rapport client en piece jointe
         </span>
       </div>
 
       <h2 style="color:${CLAUDE_THEME.ink};margin:0 0 10px;font-size:30px;text-align:center;font-weight:700;letter-spacing:-0.02em;">
-        Ton rapport complet est prêt
+        Ton rapport Blood Analysis est pret
       </h2>
-      <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 18px;text-align:center;">
-        Le fichier joint contient la version complète avec onglets section par section, en thème CLAUDE clair.
+      <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 12px;">
+        ${escapeHtml(clientName)}, j'ai finalise ton analyse sanguine complete. Le rapport est livre uniquement en fichier HTML joint pour que tu puisses l'ouvrir localement avec tous les onglets interactifs.
       </p>
-
-      <div style="margin-top:20px;padding:18px;border:1px solid ${CLAUDE_THEME.border};border-radius:12px;background:${CLAUDE_THEME.paperSoft};">
-        ${fullReportBodyHtml}
+      <p style="color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.75;margin:0 0 12px;">
+        Ce livrable contient les scores composites, le radar dynamique, l'onglet de chaque marqueur extrait avec definition et impacts, puis toutes les sections d'analyse et de plan d'action.
+      </p>
+      <div style="margin:12px 0 0;padding:14px;border:1px solid ${CLAUDE_THEME.border};border-radius:12px;background:${CLAUDE_THEME.paperSoft};">
+        <p style="margin:0 0 8px;color:${CLAUDE_THEME.ink};font-size:14px;font-weight:700;">Rappel dossier</p>
+        <p style="margin:0 0 4px;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.65;">Nombre de marqueurs analyses: ${markerCount}</p>
+        <p style="margin:0;color:${CLAUDE_THEME.muted};font-size:14px;line-height:1.65;">Priorites visibles sur cette extraction: ${escapeHtml(topPriorityText)}.</p>
       </div>
 
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid ${CLAUDE_THEME.border};text-align:center;">
@@ -1551,16 +1822,16 @@ export async function sendBloodAnalysisHtmlEmail(
       </div>
     `;
 
-    const emailContent = getClaudeLightEmailWrapper(
+    const emailContent = stripBloodForbiddenFormatting(getClaudeLightEmailWrapper(
       content,
       "Blood Analysis",
-      "Rapport HTML à onglets (thème Claude)",
-    );
+      "Rapport HTML a onglets (theme Claude)",
+    ));
 
     const baseEmailPayload = {
       html: encodeBase64(emailContent),
-      text: `Ton Blood Analysis complet est inclus dans cet email.`,
-      subject: "Ton Blood Analysis complet (HTML) est prêt",
+      text: stripBloodForbiddenFormatting(`Ton rapport Blood Analysis est pret. Ouvre la piece jointe HTML: Blood_Analysis_${reportId}.html`),
+      subject: stripBloodForbiddenFormatting("Ton rapport Blood Analysis est pret - piece jointe HTML"),
       from: {
         name: "ApexLabs by Achzod",
         email: SENDER_EMAIL,
@@ -1580,19 +1851,20 @@ export async function sendBloodAnalysisHtmlEmail(
       return (await response.json()) as { result: boolean; error?: any; message?: any };
     };
 
-    let result = await postEmail({
+    const attachmentPayload = {
       ...baseEmailPayload,
       attachments_binary: {
         [`Blood_Analysis_${reportId}.html`]: encodeBase64(standaloneReportHtml),
       },
-    });
+    };
+    let result = await postEmail(attachmentPayload);
 
     if (result.result !== true) {
       console.warn(
-        `[SendPulse] Blood HTML attachment send failed for ${email}, retrying inline-only email.`,
+        `[SendPulse] Blood HTML attachment send failed for ${email}, retrying with attachment.`,
         result
       );
-      result = await postEmail(baseEmailPayload);
+      result = await postEmail(attachmentPayload);
     }
 
     console.log(`[SendPulse] Blood HTML email sent to ${email}:`, result);
