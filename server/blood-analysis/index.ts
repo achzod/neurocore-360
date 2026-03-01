@@ -4636,8 +4636,13 @@ const KNOWLEDGE_MARKER_ALIASES: Record<string, string[]> = {
   vitamine_d: ["25 hydroxy vitamin d", "vitamin d"],
   b12: ["vitamin b12", "cobalamin"],
   folate: ["folate", "vitamin b9"],
-  magnesium_rbc: ["rbc magnesium", "magnesium erythrocyte"],
-  zinc: ["serum zinc"],
+  magnesium_rbc: ["rbc magnesium", "magnesium erythrocyte", "magnesium bisglycinate"],
+  zinc: ["serum zinc", "zinc testosterone"],
+  homocysteine: ["homocysteine", "methylation", "b vitamins folate"],
+  fer_serique: ["serum iron", "iron status"],
+  lpa: ["lipoprotein a", "lp(a)", "cardiovascular risk genetic"],
+  igf1: ["insulin like growth factor", "igf-1", "growth hormone axis"],
+  dhea_s: ["dhea sulfate", "adrenal androgen"],
 };
 
 export async function getBloodworkKnowledgeContext(
@@ -4706,8 +4711,15 @@ export async function getBloodworkKnowledgeContext(
   keywordSet.add("apob");
   keywordSet.add("lipid profile");
   keywordSet.add("cardiometabolic risk");
+  keywordSet.add("performance");
+  keywordSet.add("body composition");
+  keywordSet.add("muscle gain");
+  keywordSet.add("fat loss");
+  keywordSet.add("longevity");
+  keywordSet.add("protocole");
+  keywordSet.add("correction");
 
-  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 36);
+  const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 42);
   if (!keywords.length) return "";
 
   try {
