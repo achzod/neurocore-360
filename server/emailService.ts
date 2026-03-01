@@ -1,7 +1,10 @@
 import type { ComprehensiveRiskProfile, RiskScore } from "./blood-analysis/risk-scores";
+import { logBloodEmailDelivery } from "./blood-analysis/delivery-log";
 
-const SENDPULSE_USER_ID = process.env.SENDPULSE_USER_ID;
-const SENDPULSE_SECRET = process.env.SENDPULSE_SECRET;
+const SENDPULSE_USER_ID =
+  process.env.SENDPULSE_USER_ID || process.env.SENDPULSE_API_USER_ID || "";
+const SENDPULSE_SECRET =
+  process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET || "";
 const SENDER_EMAIL = process.env.SENDER_EMAIL || "coaching@achzodcoaching.com";
 const SENDER_NAME = process.env.SENDER_NAME || "ApexLabs by Achzod";
 
@@ -90,7 +93,9 @@ let tokenExpiry: number = 0;
 
 async function getAccessToken(): Promise<string> {
   if (!SENDPULSE_USER_ID || !SENDPULSE_SECRET) {
-    console.error("[SendPulse] MISSING CREDENTIALS - SENDPULSE_USER_ID or SENDPULSE_SECRET not configured");
+    console.error(
+      "[SendPulse] MISSING CREDENTIALS - configure SENDPULSE_USER_ID/SENDPULSE_SECRET or SENDPULSE_API_USER_ID/SENDPULSE_API_SECRET",
+    );
     throw new Error("SendPulse credentials not configured");
   }
 
@@ -1058,12 +1063,21 @@ const renderCompositeScoreCard = (
   }
 
   const tone = compositeToneByScore(score.score);
-  const confidence = typeof score.confidence === "number" ? Math.round(score.confidence) : 100;
-  const confidenceBadge = confidence < 60
-    ? `<span class="confidence-badge is-low">Données limitées (${confidence}%)</span>`
-    : confidence < 80
-    ? `<span class="confidence-badge is-medium">Confiance ${confidence}%</span>`
-    : "";
+  const confidence = (() => {
+    if (typeof score.confidence === "number" && Number.isFinite(score.confidence)) {
+      return Math.max(0, Math.min(100, Math.round(score.confidence)));
+    }
+    if (score.confidence === "low") return 45;
+    if (score.confidence === "medium") return 70;
+    if (score.confidence === "high") return 90;
+    return 100;
+  })();
+  const confidenceBadge =
+    confidence < 60
+      ? `<span class="confidence-badge is-low">Données limitées (${confidence}%)</span>`
+      : confidence < 80
+      ? `<span class="confidence-badge is-medium">Confiance ${confidence}%</span>`
+      : "";
   return `
     <article class="composite-card ${compact ? "is-compact" : ""}">
       <div class="composite-card-head">
@@ -1768,6 +1782,124 @@ const getClaudeLightEmailWrapper = (
 </html>`;
 };
 
+type BloodDeliveryQualityGateResult = {
+  pass: boolean;
+  checks: Record<string, unknown>;
+  reasons: string[];
+};
+
+const DELIVERY_REQUIRED_SECTION_TITLES = [
+  "Synthèse exécutive",
+  "Qualité des données & limites",
+  "Tableau de bord (scores & priorités)",
+  "Potentiel recomposition (perte de gras + gain de muscle)",
+  "Lecture compartimentée par axes",
+  "Interconnexions majeures (le pattern)",
+  "Deep dive - marqueurs prioritaires",
+  "Plan d'action 90 jours",
+  "Nutrition & entraînement",
+  "Suppléments & stack",
+  "Annexes (références et vigilance)",
+  "Sources (bibliothèque)",
+];
+
+const FORBIDDEN_DASH_REGEX = /[—–]/;
+const FORBIDDEN_EMOJI_REGEX = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
+
+const normalizeQualityText = (value: string): string =>
+  String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[—–-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const evaluateBloodDeliveryQuality = (
+  reportMarkdown: string,
+  attachmentHtml: string,
+  emailBodyHtml: string,
+): BloodDeliveryQualityGateResult => {
+  const reportText = String(reportMarkdown || "");
+  const attachmentText = String(attachmentHtml || "");
+  const bodyText = String(emailBodyHtml || "");
+
+  const normalizedReport = normalizeQualityText(reportText);
+  const normalizedAttachment = normalizeQualityText(attachmentText);
+
+  const missingSectionsInMarkdown = DELIVERY_REQUIRED_SECTION_TITLES.filter(
+    (title) => !normalizedReport.includes(normalizeQualityText(title)),
+  );
+  const missingSectionsInAttachment = DELIVERY_REQUIRED_SECTION_TITLES.filter(
+    (title) => !normalizedAttachment.includes(normalizeQualityText(title)),
+  );
+
+  const hasCompositeTab = /Scores Composites/i.test(attachmentText);
+  const hasRadarTab = /Radar des scores biomarqueurs/i.test(attachmentText);
+  const hasMarkersTab = /Marqueurs extraits/i.test(attachmentText);
+  const hasTabsScript = /data-tab-target/i.test(attachmentText) && /activate\(/i.test(attachmentText);
+  const hasBodyInlineReportShell = /class=["'][^"']*tabs-shell[^"']*["']/i.test(bodyText);
+  const hasPlaceholder =
+    /section non disponible|veuillez reg(?:e|é)n(?:e|é)rer le rapport/i.test(reportText) ||
+    /section non disponible|veuillez reg(?:e|é)n(?:e|é)rer le rapport/i.test(attachmentText);
+
+  const hasForbiddenDash =
+    FORBIDDEN_DASH_REGEX.test(reportText) ||
+    FORBIDDEN_DASH_REGEX.test(attachmentText) ||
+    FORBIDDEN_DASH_REGEX.test(bodyText);
+  const hasForbiddenEmoji =
+    FORBIDDEN_EMOJI_REGEX.test(reportText) ||
+    FORBIDDEN_EMOJI_REGEX.test(attachmentText) ||
+    FORBIDDEN_EMOJI_REGEX.test(bodyText);
+
+  const checks: Record<string, unknown> = {
+    reportLength: reportText.length,
+    attachmentLength: attachmentText.length,
+    bodyLength: bodyText.length,
+    missingSectionsInMarkdown,
+    missingSectionsInAttachment,
+    hasCompositeTab,
+    hasRadarTab,
+    hasMarkersTab,
+    hasTabsScript,
+    hasBodyInlineReportShell,
+    hasPlaceholder,
+    hasForbiddenDash,
+    hasForbiddenEmoji,
+  };
+
+  const reasons: string[] = [];
+  if (missingSectionsInMarkdown.length) reasons.push(`missing_sections_markdown:${missingSectionsInMarkdown.join(",")}`);
+  if (missingSectionsInAttachment.length) reasons.push(`missing_sections_attachment:${missingSectionsInAttachment.join(",")}`);
+  if (!hasCompositeTab) reasons.push("missing_tab_scores_composites");
+  if (!hasRadarTab) reasons.push("missing_tab_radar");
+  if (!hasMarkersTab) reasons.push("missing_tab_marqueurs_extraits");
+  if (!hasTabsScript) reasons.push("missing_tabs_script");
+  if (hasBodyInlineReportShell) reasons.push("email_body_contains_full_report_shell");
+  if (hasPlaceholder) reasons.push("placeholder_detected");
+  if (hasForbiddenDash) reasons.push("forbidden_dash_detected");
+  if (hasForbiddenEmoji) reasons.push("forbidden_emoji_detected");
+
+  return {
+    pass: reasons.length === 0,
+    checks,
+    reasons,
+  };
+};
+
+const extractSendPulseDeliveryId = (payload: unknown): string | undefined => {
+  if (!payload || typeof payload !== "object") return undefined;
+  const candidate = (payload as any).id || (payload as any).message?.id || (payload as any).data?.id;
+  if (candidate) return String(candidate);
+  try {
+    const raw = JSON.stringify(payload);
+    const match = raw.match(/[a-z0-9]{6,}-[a-z0-9]{4,}-[a-z0-9]{2,}/i);
+    return match ? match[0] : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export async function sendBloodAnalysisHtmlEmail(
   email: string,
   reportId: string,
@@ -1779,6 +1911,7 @@ export async function sendBloodAnalysisHtmlEmail(
     reportDate?: string;
     markerCount?: number;
     riskProfile?: ComprehensiveRiskProfile;
+    orderRef?: string;
   },
 ): Promise<boolean> {
   try {
@@ -1852,6 +1985,25 @@ export async function sendBloodAnalysisHtmlEmail(
       "Blood Analysis",
       "Rapport HTML a onglets (theme Claude)",
     ));
+    const attachmentName = `Blood_Analysis_${reportId}.html`;
+
+    const qualityGate = evaluateBloodDeliveryQuality(reportMarkdown, standaloneReportHtml, emailContent);
+    if (!qualityGate.pass) {
+      console.error(`[SendPulse] BLOOD_DELIVERY_BLOCKED ${reportId}:`, qualityGate.reasons);
+      await logBloodEmailDelivery({
+        reportId,
+        recipientEmail: email,
+        clientName,
+        orderRef: meta?.orderRef,
+        status: "blocked",
+        qualityPass: false,
+        qualityChecks: qualityGate.checks,
+        attachmentName,
+        subject: "Ton rapport Blood Analysis est pret - piece jointe HTML",
+        errorMessage: qualityGate.reasons.join(" | "),
+      });
+      return false;
+    }
 
     const baseEmailPayload = {
       html: encodeBase64(emailContent),
@@ -1879,7 +2031,7 @@ export async function sendBloodAnalysisHtmlEmail(
     const attachmentPayload = {
       ...baseEmailPayload,
       attachments_binary: {
-        [`Blood_Analysis_${reportId}.html`]: encodeBase64(standaloneReportHtml),
+        [attachmentName]: encodeBase64(standaloneReportHtml),
       },
     };
     let result = await postEmail(attachmentPayload);
@@ -1893,9 +2045,43 @@ export async function sendBloodAnalysisHtmlEmail(
     }
 
     console.log(`[SendPulse] Blood HTML email sent to ${email}:`, result);
-    return result.result === true;
+    const sent = result.result === true;
+    await logBloodEmailDelivery({
+      reportId,
+      recipientEmail: email,
+      clientName,
+      orderRef: meta?.orderRef,
+      status: sent ? "sent" : "failed",
+      qualityPass: true,
+      qualityChecks: {
+        ...qualityGate.checks,
+        qualityReasons: qualityGate.reasons,
+      },
+      sendpulseId: extractSendPulseDeliveryId(result),
+      attachmentName,
+      subject: String(baseEmailPayload.subject || ""),
+      errorMessage: sent ? undefined : JSON.stringify(result),
+      sentAt: sent ? new Date() : null,
+    });
+    return sent;
   } catch (error) {
     console.error("[SendPulse] Error sending blood HTML email:", error);
+    try {
+      await logBloodEmailDelivery({
+        reportId,
+        recipientEmail: email,
+        clientName: meta?.clientName,
+        orderRef: meta?.orderRef,
+        status: "failed",
+        qualityPass: false,
+        qualityChecks: {},
+        attachmentName: `Blood_Analysis_${reportId}.html`,
+        subject: "Ton rapport Blood Analysis est pret - piece jointe HTML",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+    } catch {
+      // no-op
+    }
     return false;
   }
 }

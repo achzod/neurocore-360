@@ -49,6 +49,7 @@ async function main() {
   const to = String(process.env.BLOOD_REPORT_TO || "achkou@gmail.com").trim();
   const baseUrl = String(process.env.PUBLIC_BASE_URL || "https://neurocore-360.onrender.com").trim();
   const reportId = `richest-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+  const orderRef = `manual-richest-${Date.now()}`;
 
   if (!to || !to.includes("@")) {
     throw new Error("BLOOD_REPORT_TO invalide");
@@ -79,6 +80,7 @@ async function main() {
       clientName: "Alex",
       markerCount: analysis.markers.length,
       riskProfile,
+      orderRef,
     },
   );
   if (!sent) {
@@ -94,6 +96,7 @@ async function main() {
         richestPdf: path.relative(process.cwd(), richest.file),
         richestMarkerCount: richest.markers.length,
         reportPath: path.relative(process.cwd(), REPORT_MD_PATH),
+        orderRef,
       },
       null,
       2,

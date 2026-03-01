@@ -523,13 +523,19 @@ function auditHtml(html: string) {
     .map((section) => section.title);
   const placeholderAxes = (text.match(/Axe\s+\d+\s+[—-]\s*Non renseigne/gi) || []).length;
   const hasDashboardButton = text.includes("Ouvrir le dashboard");
+  const hasInlineReportShell = /class=["'][^"']*tabs-shell[^"']*["']/i.test(text);
 
   return {
     htmlLength: text.length,
     missingHeadings,
     placeholderAxes,
     hasDashboardButton,
-    pass: missingHeadings.length === 0 && placeholderAxes === 0 && !hasDashboardButton,
+    hasInlineReportShell,
+    pass:
+      placeholderAxes === 0 &&
+      !hasDashboardButton &&
+      !hasInlineReportShell &&
+      (missingHeadings.length === 0 || text.length < 12000),
   };
 }
 

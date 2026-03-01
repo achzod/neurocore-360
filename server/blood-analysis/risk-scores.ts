@@ -2747,12 +2747,8 @@ export function calculateMetabolicEfficiencyScore(
   ];
   // Total max = 25(TG/HDL) + 22 + 18 + 12 + 10 + 12 + 10 + 8 + 6 = 123
 
-  const baseScore = evaluateWeightedMarkers(markers, checks, factors, markersUsed);
-  // Apply TG/HDL deduction on top
-  const score = Math.max(0, Math.min(100, baseScore - tgHdlDeduction + Math.round(checks.reduce((sum, c) => sum, 0))));
-  // Simpler: just compute total manually
-  const totalChecksDeduction = factors.reduce((sum, f) => sum + f.weight, 0);
-  const finalScore = Math.max(0, Math.min(100, Math.round(100 - totalChecksDeduction)));
+  const weightedChecksScore = evaluateWeightedMarkers(markers, checks, factors, markersUsed);
+  const finalScore = Math.max(0, Math.min(100, weightedChecksScore - tgHdlDeduction));
   const level = getRiskLevel(finalScore);
   const difficulty = metabolicDifficultyFromScore(finalScore);
 

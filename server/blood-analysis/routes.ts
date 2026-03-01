@@ -53,6 +53,7 @@ import {
   withAIGenerationTimeout,
   isAIGenerationTimeoutError,
 } from "./ai-timeout";
+import { listBloodEmailDeliveries } from "./delivery-log";
 
 // Prevent duplicate background generation per instance.
 const BLOOD_AI_REPORT_IN_FLIGHT = new Set<string>();
@@ -64,6 +65,12 @@ const getBaseUrl = (): string => {
     process.env.RENDER_EXTERNAL_URL ||
     "http://localhost:10000"
   );
+};
+
+const isAdminRequestAuthorized = (req: any): boolean => {
+  const adminKey = req.headers["x-admin-key"] || req.query.key || req.body?.adminKey;
+  const validKey = process.env.ADMIN_SECRET || process.env.ADMIN_KEY;
+  return Boolean(validKey && adminKey && adminKey === validKey);
 };
 
 const BLOOD_REQUIRED_SECTION_PATTERNS: RegExp[] = [
@@ -117,6 +124,7 @@ const sendBloodClientDeliveryEmail = async (
   baseUrl: string,
   markerSnapshots?: MarkerAnalysis[] | BloodReportMarkerSnapshot[],
   profile?: Record<string, unknown>,
+  deliveryMeta?: { orderRef?: string },
 ): Promise<boolean> => {
   void baseUrl;
   const reportText = canonicalizeBloodReport(aiReport).trim();
@@ -168,6 +176,7 @@ const sendBloodClientDeliveryEmail = async (
     clientName: inferClientName(),
     markerCount: Array.isArray(markerSnapshots) ? markerSnapshots.length : undefined,
     riskProfile: riskProfileForEmail,
+    orderRef: deliveryMeta?.orderRef,
   });
 };
 
@@ -790,6 +799,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
           baseUrl,
           analysisResult.markers,
           profileWithAge as Record<string, unknown>,
+          { orderRef: sessionId },
         );
         if (emailSent) {
           await sendAdminEmailNewAudit(
@@ -835,6 +845,7 @@ export function registerBloodAnalysisRoutes(app: Express): void {
               baseUrl,
               analysisResult.markers,
               profileWithAge as Record<string, unknown>,
+              { orderRef: sessionId },
             );
             if (emailSent) {
               await sendAdminEmailNewAudit(
@@ -867,6 +878,47 @@ export function registerBloodAnalysisRoutes(app: Express): void {
     } catch (error) {
       console.error("[BloodAnalysis] Submit error:", error);
       res.status(500).json({ error: "Erreur lors de l'analyse" });
+    }
+  });
+
+  /**
+   * GET /api/admin/blood-analysis/deliveries
+   * Retrieve blood email deliveries with filters (email/report/order/status)
+   */
+  app.get("/api/admin/blood-analysis/deliveries", async (req, res) => {
+    try {
+      if (!isAdminRequestAuthorized(req)) {
+        res.status(401).json({ error: "Unauthorized - admin key required" });
+        return;
+      }
+
+      const email = typeof req.query.email === "string" ? req.query.email.trim().toLowerCase() : undefined;
+      const reportId = typeof req.query.reportId === "string" ? req.query.reportId.trim() : undefined;
+      const orderRef = typeof req.query.orderRef === "string" ? req.query.orderRef.trim() : undefined;
+      const status =
+        typeof req.query.status === "string" && ["blocked", "sent", "failed"].includes(req.query.status)
+          ? (req.query.status as "blocked" | "sent" | "failed")
+          : undefined;
+      const limitRaw = typeof req.query.limit === "string" ? Number(req.query.limit) : undefined;
+      const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(500, Number(limitRaw))) : 100;
+
+      const deliveries = await listBloodEmailDeliveries({
+        email,
+        reportId,
+        orderRef,
+        status,
+        limit,
+      });
+
+      res.json({
+        success: true,
+        count: deliveries.length,
+        filters: { email, reportId, orderRef, status, limit },
+        deliveries,
+      });
+    } catch (error) {
+      console.error("[BloodAnalysis] Admin deliveries lookup error:", error);
+      res.status(500).json({ error: "Erreur lors de la récupération des livraisons" });
     }
   });
 
