@@ -87,6 +87,46 @@ interface PromoCode {
   createdAt: string;
 }
 
+interface AdminOrder {
+  id: string;
+  email: string;
+  productType: string;
+  productName: string;
+  amountCents: number;
+  finalAmountCents: number;
+  discountCents: number;
+  promoCode: string | null;
+  status: string;
+  refundAmountCents: number;
+  refundReason: string | null;
+  auditId: string | null;
+  bloodReportId: string | null;
+  createdAt: string;
+  paidAt: string | null;
+}
+
+interface OrderStats {
+  totalOrders: number;
+  totalRevenueCents: number;
+  totalRefundedCents: number;
+  netRevenueCents: number;
+  byProduct: Record<string, { count: number; revenueCents: number }>;
+  byStatus: Record<string, number>;
+  last7d: { count: number; revenueCents: number };
+  last30d: { count: number; revenueCents: number };
+}
+
+interface ClientDetail {
+  user: { id: string; email: string; name?: string; credits?: number } | null;
+  email: string;
+  orders: AdminOrder[];
+  audits: { id: string; type: string; status: string; reportDeliveryStatus: string; createdAt: string; reportSentAt?: string }[];
+  bloodReports: { id: string; createdAt: string; markerCount: number }[];
+  totalSpentCents: number;
+  totalRefundedCents: number;
+  netSpentCents: number;
+}
+
 const ADMIN_ENV_KEY = import.meta.env.VITE_ADMIN_KEY || "";
 
 const getAuditReportUrl = (audit: Audit) => {
@@ -112,6 +152,16 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [showPromoModal, setShowPromoModal] = useState(false);
   const [editingPromo, setEditingPromo] = useState<PromoCode | null>(null);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [orderStatusFilter, setOrderStatusFilter] = useState("");
+  const [orderProductFilter, setOrderProductFilter] = useState("");
+  const [showRefundModal, setShowRefundModal] = useState<AdminOrder | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [clientDetail, setClientDetail] = useState<ClientDetail | null>(null);
+  const [showClientModal, setShowClientModal] = useState(false);
   const [newPromo, setNewPromo] = useState({
     code: "",
     discountPercent: 20,
@@ -278,6 +328,86 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchOrders = async () => {
+    if (!adminKey) return;
+    try {
+      const params = new URLSearchParams();
+      if (orderStatusFilter) params.set("status", orderStatusFilter);
+      if (orderProductFilter) params.set("productType", orderProductFilter);
+      params.set("limit", "100");
+      const response = await fetch(`/api/admin/orders?${params}`, {
+        headers: { "x-admin-key": adminKey },
+      });
+      const data = await handleAdminResponse(response);
+      setOrders(data.orders);
+      setOrdersTotal(data.total);
+    } catch {}
+  };
+
+  const fetchOrderStats = async () => {
+    if (!adminKey) return;
+    try {
+      const response = await fetch("/api/admin/orders/stats", {
+        headers: { "x-admin-key": adminKey },
+      });
+      const data = await handleAdminResponse(response);
+      setOrderStats(data.stats);
+    } catch {}
+  };
+
+  const handleRefund = async () => {
+    if (!adminKey || !showRefundModal) return;
+    setRefundLoading(true);
+    try {
+      const response = await fetch(`/api/admin/orders/${showRefundModal.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ reason: refundReason }),
+      });
+      const data = await handleAdminResponse(response);
+      toast({ title: "Remboursement effectué", description: `Commande ${data.order.id.slice(0, 8)} remboursée` });
+      setShowRefundModal(null);
+      setRefundReason("");
+      fetchOrders();
+      fetchOrderStats();
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message || "Erreur remboursement", variant: "destructive" });
+    } finally {
+      setRefundLoading(false);
+    }
+  };
+
+  const handleViewClient = async (email: string) => {
+    if (!adminKey) return;
+    try {
+      const response = await fetch(`/api/admin/clients/${encodeURIComponent(email)}`, {
+        headers: { "x-admin-key": adminKey },
+      });
+      const data = await handleAdminResponse(response);
+      setClientDetail(data.client);
+      setShowClientModal(true);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message || "Erreur chargement client", variant: "destructive" });
+    }
+  };
+
+  const formatCents = (cents: number) => {
+    return `${(cents / 100).toFixed(2)}€`;
+  };
+
+  const orderStatusBadge = (status: string) => {
+    const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+      pending: { label: "En attente", variant: "outline" },
+      paid: { label: "Payé", variant: "default" },
+      refunded: { label: "Remboursé", variant: "destructive" },
+      partial_refund: { label: "Remb. partiel", variant: "secondary" },
+      failed: { label: "Échoué", variant: "destructive" },
+      cancelled: { label: "Annulé", variant: "outline" },
+    };
+    const cfg = map[status] || { label: status, variant: "outline" as const };
+    return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
+  };
+
   const handleCreatePromo = async () => {
     if (!adminKey) {
       toast({
@@ -408,6 +538,8 @@ export default function AdminDashboard() {
       fetchPendingReviews();
       fetchIncompleteQuestionnaires();
       fetchPromoCodes();
+      fetchOrders();
+      fetchOrderStats();
     }
   }, [isAuthenticated, adminKey]);
 
@@ -422,8 +554,18 @@ export default function AdminDashboard() {
       fetchIncompleteQuestionnaires();
     } else if (activeTab === "promo") {
       fetchPromoCodes();
+    } else if (activeTab === "orders") {
+      fetchOrders();
+      fetchOrderStats();
     }
   }, [activeTab, isAuthenticated, adminKey]);
+
+  // Refetch orders when filters change
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "orders") {
+      fetchOrders();
+    }
+  }, [orderStatusFilter, orderProductFilter]);
 
   const handleApprove = async (reviewId: string) => {
     if (!adminKey) return;
@@ -633,6 +775,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="reviews" className="gap-2">
               <Star className="w-4 h-4" />
               Avis ({reviews.length})
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="gap-2">
+              <Crown className="w-4 h-4" />
+              Commandes ({ordersTotal})
             </TabsTrigger>
             <TabsTrigger value="promo" className="gap-2">
               <Tag className="w-4 h-4" />
@@ -1179,6 +1325,120 @@ export default function AdminDashboard() {
             )}
           </TabsContent>
 
+          {/* Tab: Commandes */}
+          <TabsContent value="orders">
+            {/* Revenue Stats Bar */}
+            {orderStats && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-sm text-muted-foreground">Revenu total</div>
+                    <div className="text-2xl font-bold text-emerald-400">{formatCents(orderStats.netRevenueCents)}</div>
+                    <div className="text-xs text-muted-foreground">{orderStats.totalOrders} commandes</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-sm text-muted-foreground">7 derniers jours</div>
+                    <div className="text-2xl font-bold">{formatCents(orderStats.last7d.revenueCents)}</div>
+                    <div className="text-xs text-muted-foreground">{orderStats.last7d.count} ventes</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-sm text-muted-foreground">30 derniers jours</div>
+                    <div className="text-2xl font-bold">{formatCents(orderStats.last30d.revenueCents)}</div>
+                    <div className="text-xs text-muted-foreground">{orderStats.last30d.count} ventes</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-sm text-muted-foreground">Remboursements</div>
+                    <div className="text-2xl font-bold text-red-400">{formatCents(orderStats.totalRefundedCents)}</div>
+                    <div className="text-xs text-muted-foreground">{orderStats.byStatus["refunded"] || 0} remboursés</div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Filters */}
+            <div className="flex gap-3 mb-4 flex-wrap">
+              <select
+                className="bg-background border rounded-md px-3 py-2 text-sm"
+                value={orderStatusFilter}
+                onChange={(e) => setOrderStatusFilter(e.target.value)}
+              >
+                <option value="">Tous les statuts</option>
+                <option value="pending">En attente</option>
+                <option value="paid">Payé</option>
+                <option value="refunded">Remboursé</option>
+                <option value="partial_refund">Remb. partiel</option>
+                <option value="cancelled">Annulé</option>
+              </select>
+              <select
+                className="bg-background border rounded-md px-3 py-2 text-sm"
+                value={orderProductFilter}
+                onChange={(e) => setOrderProductFilter(e.target.value)}
+              >
+                <option value="">Tous les produits</option>
+                <option value="GRATUIT">Discovery Scan</option>
+                <option value="PREMIUM">Anabolic Bioscan</option>
+                <option value="ELITE">Ultimate Scan</option>
+                <option value="BLOOD_ANALYSIS">Blood Analysis</option>
+              </select>
+              <Button variant="outline" size="sm" onClick={() => { fetchOrders(); fetchOrderStats(); }}>
+                <RefreshCw className="w-4 h-4 mr-1" /> Rafraîchir
+              </Button>
+            </div>
+
+            {/* Orders Table */}
+            {orders.length === 0 ? (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">Aucune commande</CardContent></Card>
+            ) : (
+              <div className="space-y-2">
+                {orders.map((order) => (
+                  <Card key={order.id}>
+                    <CardContent className="py-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <button
+                          className="text-sm font-medium text-blue-400 hover:underline truncate block"
+                          onClick={() => handleViewClient(order.email)}
+                        >
+                          {order.email}
+                        </button>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium w-36">{order.productName}</div>
+                      <div className="text-sm font-bold w-20 text-right">
+                        {order.finalAmountCents === 0 ? "Gratuit" : formatCents(order.finalAmountCents)}
+                        {order.discountCents > 0 && (
+                          <div className="text-xs text-emerald-400">-{formatCents(order.discountCents)}</div>
+                        )}
+                      </div>
+                      <div className="w-28">{orderStatusBadge(order.status)}</div>
+                      <div className="flex gap-2">
+                        {order.auditId && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={getAuditReportUrl({ id: order.auditId, type: order.productType } as Audit)} target="_blank">
+                              <Eye className="w-3 h-3 mr-1" /> Rapport
+                            </a>
+                          </Button>
+                        )}
+                        {(order.status === "paid" || order.status === "partial_refund") && order.finalAmountCents > 0 && (
+                          <Button variant="destructive" size="sm" onClick={() => { setShowRefundModal(order); setRefundReason(""); }}>
+                            Rembourser
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
           {/* Tab: Codes promo */}
           <TabsContent value="promo">
             <div className="flex items-center justify-between mb-6">
@@ -1295,6 +1555,132 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal Remboursement */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-400">
+                <AlertTriangle className="w-5 h-5" />
+                Confirmer le remboursement
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm space-y-1">
+                <div><strong>Client:</strong> {showRefundModal.email}</div>
+                <div><strong>Produit:</strong> {showRefundModal.productName}</div>
+                <div><strong>Montant:</strong> {formatCents(showRefundModal.finalAmountCents - showRefundModal.refundAmountCents)}</div>
+              </div>
+              <div>
+                <Label>Raison du remboursement</Label>
+                <Textarea
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Raison optionnelle..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowRefundModal(null)}>Annuler</Button>
+                <Button variant="destructive" onClick={handleRefund} disabled={refundLoading}>
+                  {refundLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Rembourser {formatCents(showRefundModal.finalAmountCents - showRefundModal.refundAmountCents)}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Client Detail */}
+      {showClientModal && clientDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-auto">
+          <Card className="max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Client: {clientDetail.email}</span>
+                <Button variant="ghost" size="sm" onClick={() => setShowClientModal(false)}>✕</Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 rounded bg-muted/30">
+                  <div className="text-2xl font-bold text-emerald-400">{formatCents(clientDetail.totalSpentCents)}</div>
+                  <div className="text-xs text-muted-foreground">Total dépensé</div>
+                </div>
+                <div className="text-center p-3 rounded bg-muted/30">
+                  <div className="text-2xl font-bold text-red-400">{formatCents(clientDetail.totalRefundedCents)}</div>
+                  <div className="text-xs text-muted-foreground">Remboursé</div>
+                </div>
+                <div className="text-center p-3 rounded bg-muted/30">
+                  <div className="text-2xl font-bold">{formatCents(clientDetail.netSpentCents)}</div>
+                  <div className="text-xs text-muted-foreground">Net</div>
+                </div>
+              </div>
+
+              {/* Orders */}
+              <div>
+                <h3 className="font-semibold mb-2">Commandes ({clientDetail.orders.length})</h3>
+                {clientDetail.orders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucune commande</p>
+                ) : (
+                  <div className="space-y-1">
+                    {clientDetail.orders.map((o) => (
+                      <div key={o.id} className="flex items-center gap-3 text-sm p-2 rounded bg-muted/20">
+                        <span className="text-muted-foreground text-xs">{new Date(o.createdAt).toLocaleDateString("fr-FR")}</span>
+                        <span className="font-medium">{o.productName}</span>
+                        <span className="font-bold">{o.finalAmountCents === 0 ? "Gratuit" : formatCents(o.finalAmountCents)}</span>
+                        {orderStatusBadge(o.status)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Audits */}
+              <div>
+                <h3 className="font-semibold mb-2">Rapports ({clientDetail.audits.length})</h3>
+                {clientDetail.audits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun rapport</p>
+                ) : (
+                  <div className="space-y-1">
+                    {clientDetail.audits.map((a) => (
+                      <div key={a.id} className="flex items-center gap-3 text-sm p-2 rounded bg-muted/20">
+                        <span className="text-muted-foreground text-xs">{new Date(a.createdAt).toLocaleDateString("fr-FR")}</span>
+                        <span className="font-medium">{a.type}</span>
+                        <Badge variant={a.reportDeliveryStatus === "SENT" ? "default" : "outline"}>{a.reportDeliveryStatus}</Badge>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={getAuditReportUrl(a as Audit)} target="_blank"><Eye className="w-3 h-3 mr-1" /> Voir</a>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Blood Reports */}
+              {clientDetail.bloodReports.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2">Analyses sanguines ({clientDetail.bloodReports.length})</h3>
+                  <div className="space-y-1">
+                    {clientDetail.bloodReports.map((b) => (
+                      <div key={b.id} className="flex items-center gap-3 text-sm p-2 rounded bg-muted/20">
+                        <span className="text-muted-foreground text-xs">{new Date(b.createdAt).toLocaleDateString("fr-FR")}</span>
+                        <span>{b.markerCount} marqueurs</span>
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={`/blood-report/${b.id}`} target="_blank"><Eye className="w-3 h-3 mr-1" /> Voir</a>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Modal Nouveau Code Promo */}
       {showPromoModal && (

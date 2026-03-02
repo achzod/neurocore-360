@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage, reviewStorage, PROMO_CODES_BY_AUDIT_TYPE } from "./storage";
 import { pool } from "./db";
-import { saveProgressSchema, insertAuditSchema, insertReviewSchema } from "@shared/schema";
+import { saveProgressSchema, insertAuditSchema, insertReviewSchema, ProductPriceCents, ProductDisplayNames, type ProductTypeEnum } from "@shared/schema";
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
@@ -56,6 +56,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  // Ensure missing indexes on existing tables (non-blocking)
+  storage.ensureExistingTableIndexes().catch((err: any) => {
+    console.error("[Boot] Error ensuring indexes:", err);
+  });
+
   // Redirect root to /apexlabs for prelaunch subdomain
   app.use((req, res, next) => {
     const host = req.get('host') || '';
@@ -93,6 +98,7 @@ export async function registerRoutes(
 
   const auditCreateLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
   const discoveryLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
+  const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -395,6 +401,19 @@ export async function registerRoutes(
           email: data.email,
           responses: mergedResponses,
         });
+
+        // Create zero-amount order for free audit
+        try {
+          const freeOrder = await storage.createOrder({
+            email: data.email,
+            productType: "GRATUIT",
+            amountCents: 0,
+            finalAmountCents: 0,
+          });
+          await storage.updateOrder(freeOrder.id, { status: "paid", paidAt: new Date(), auditId: audit.id });
+        } catch (orderErr) {
+          console.error("[Orders] Error creating free audit order:", orderErr);
+        }
 
         // Nettoie la progression une fois l'audit crée pour éviter les pre-remplissages obsoletes.
         try {
@@ -1182,6 +1201,38 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== USER ORDER HISTORY ====================
+
+  app.get("/api/user/orders", async (req, res) => {
+    try {
+      const payload = getAuthPayload(req);
+      if (!payload) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      const orders = await storage.getOrdersByEmail(payload.email);
+      // Strip sensitive fields
+      const safeOrders = orders.map(o => ({
+        id: o.id,
+        productType: o.productType,
+        productName: o.productName,
+        finalAmountCents: o.finalAmountCents,
+        discountCents: o.discountCents,
+        currency: o.currency,
+        status: o.status,
+        refundAmountCents: o.refundAmountCents,
+        auditId: o.auditId,
+        bloodReportId: o.bloodReportId,
+        createdAt: o.createdAt,
+        paidAt: o.paidAt,
+      }));
+      res.json({ success: true, orders: safeOrders });
+    } catch (error) {
+      console.error("[User Orders] Error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.get("/api/config/delivery-mode", async (req, res) => {
     const mode = process.env.DELIVERY_MODE || "instant";
     res.json({ 
@@ -1857,7 +1908,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/stripe/create-checkout-session", async (req, res) => {
+  app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
       const { priceId, email, planType, responses, promoCode } = req.body;
 
@@ -1926,9 +1977,43 @@ export async function registerRoutes(
 
       const session = await stripe.checkout.sessions.create(sessionParams);
 
-      // Increment promo code usage if checkout session created successfully
-      if (validatedPromoCode) {
-        await storage.incrementPromoCodeUse(validatedPromoCode);
+      // Create pending order
+      try {
+        const pType = (planType as ProductTypeEnum) || "PREMIUM";
+        const baseCents = ProductPriceCents[pType] ?? 0;
+        const promoObj = validatedPromoCode ? await storage.getPromoCode(validatedPromoCode) : null;
+        const discountCents = promoObj ? Math.round(baseCents * promoObj.discountPercent / 100) : 0;
+
+        const order = await storage.createOrder({
+          email,
+          productType: pType,
+          amountCents: baseCents,
+          discountCents,
+          promoCode: validatedPromoCode,
+          promoCodeId: promoObj?.id || null,
+          finalAmountCents: Math.max(0, baseCents - discountCents),
+          stripeCheckoutSessionId: session.id,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+          metadata: { planType, responsesPreview: JSON.stringify(responses).substring(0, 200) },
+        });
+
+        // Track promo code usage on the order
+        if (validatedPromoCode && promoObj) {
+          await storage.incrementPromoCodeUse(validatedPromoCode);
+          await storage.createPromoCodeUsage({
+            promoCodeId: promoObj.id,
+            promoCode: validatedPromoCode,
+            userId: null,
+            email,
+            orderId: order.id,
+            discountPercent: promoObj.discountPercent,
+            discountAmountCents: discountCents,
+          });
+        }
+      } catch (orderErr) {
+        console.error("[Orders] Error creating pending order:", orderErr);
+        // Non-blocking: checkout still works even if order tracking fails
       }
 
       res.json({ sessionId: session.id, url: session.url });
@@ -1974,23 +2059,35 @@ export async function registerRoutes(
         return;
       }
 
+      // Update order to paid if exists
+      const existingOrder = await storage.getOrderByStripeSession(sessionId);
+      if (existingOrder && existingOrder.status === "paid" && existingOrder.auditId) {
+        // Idempotency: already processed
+        res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
+        return;
+      }
+      if (existingOrder && existingOrder.status !== "paid") {
+        await storage.updateOrder(existingOrder.id, {
+          status: "paid",
+          paidAt: new Date(),
+          stripePaymentIntentId: (session as any).payment_intent || null,
+          stripeCustomerId: (session as any).customer || null,
+        });
+      }
+
       if (planType === "BLOOD_ANALYSIS") {
+        if (existingOrder) {
+          await storage.updateOrder(existingOrder.id, { status: "paid", paidAt: new Date() });
+        }
         res.json({ success: true, auditId: "", auditType: "BLOOD_ANALYSIS", email });
         return;
       }
 
       const normalizedPlanType = planType as "GRATUIT" | "PREMIUM" | "ELITE";
 
-      const existingAudits = await storage.getAuditsByEmail(email);
-      const sessionCreatedAt = session.created ? session.created * 1000 : Date.now();
-      const recentAudit = existingAudits.find((audit) => {
-        if (audit.type !== normalizedPlanType) return false;
-        const createdAt = audit.createdAt ? new Date(audit.createdAt).getTime() : 0;
-        return createdAt >= sessionCreatedAt - 6 * 60 * 60 * 1000;
-      });
-
-      if (recentAudit) {
-        res.json({ success: true, auditId: recentAudit.id, auditType: recentAudit.type, existing: true });
+      // Check if an audit is already linked to this order (prevents duplicate creation on double-click / retry)
+      if (existingOrder?.auditId) {
+        res.json({ success: true, auditId: existingOrder.auditId, auditType: planType, existing: true });
         return;
       }
 
@@ -2020,6 +2117,11 @@ export async function registerRoutes(
         email,
         responses: responses as Record<string, unknown>,
       });
+
+      // Link order to audit
+      if (existingOrder) {
+        await storage.updateOrder(existingOrder.id, { auditId: audit.id });
+      }
 
       await storage.updateAudit(audit.id, { reportDeliveryStatus: "GENERATING" });
       await startReportGeneration(audit.id, audit.responses, audit.scores || {}, normalizedPlanType);
@@ -2658,6 +2760,255 @@ export async function registerRoutes(
       res.json({ success: true, promo });
     } catch (error) {
       console.error("[Promo Codes] Error updating:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // ==================== ADMIN ORDER MANAGEMENT ====================
+
+  app.get("/api/admin/orders", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const offset = Number(req.query.offset) || 0;
+      const status = (req.query.status as string) || undefined;
+      const productType = (req.query.productType as string) || undefined;
+      const email = (req.query.email as string) || undefined;
+      const result = await storage.getAllOrders({ limit, offset, status: status as any, productType: productType as any, email });
+      res.json({ success: true, ...result });
+    } catch (error) {
+      console.error("[Admin Orders] Error listing:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/orders/stats", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orders: allOrders } = await storage.getAllOrders({ limit: 10000 });
+      const now = Date.now();
+      const d7 = now - 7 * 86400000;
+      const d30 = now - 30 * 86400000;
+
+      const paid = allOrders.filter(o => o.status === "paid" || o.status === "refunded" || o.status === "partial_refund");
+      const totalRevenueCents = paid.reduce((s, o) => s + o.finalAmountCents, 0);
+      const totalRefundedCents = allOrders.reduce((s, o) => s + o.refundAmountCents, 0);
+
+      const byProduct: Record<string, { count: number; revenueCents: number }> = {};
+      for (const o of paid) {
+        if (!byProduct[o.productType]) byProduct[o.productType] = { count: 0, revenueCents: 0 };
+        byProduct[o.productType].count++;
+        byProduct[o.productType].revenueCents += o.finalAmountCents;
+      }
+
+      const byStatus: Record<string, number> = {};
+      for (const o of allOrders) {
+        byStatus[o.status] = (byStatus[o.status] || 0) + 1;
+      }
+
+      const last7d = paid.filter(o => new Date(o.createdAt).getTime() >= d7);
+      const last30d = paid.filter(o => new Date(o.createdAt).getTime() >= d30);
+
+      res.json({
+        success: true,
+        stats: {
+          totalOrders: allOrders.length,
+          totalRevenueCents,
+          totalRefundedCents,
+          netRevenueCents: totalRevenueCents - totalRefundedCents,
+          byProduct,
+          byStatus,
+          last7d: { count: last7d.length, revenueCents: last7d.reduce((s, o) => s + o.finalAmountCents, 0) },
+          last30d: { count: last30d.length, revenueCents: last30d.reduce((s, o) => s + o.finalAmountCents, 0) },
+        },
+      });
+    } catch (error) {
+      console.error("[Admin Orders] Error getting stats:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/orders/:id", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        res.status(404).json({ success: false, error: "Commande non trouvée" });
+        return;
+      }
+      res.json({ success: true, order });
+    } catch (error) {
+      console.error("[Admin Orders] Error getting order:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/orders/:id/refund", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        res.status(404).json({ success: false, error: "Commande non trouvée" });
+        return;
+      }
+      if (order.finalAmountCents === 0) {
+        res.status(400).json({ success: false, error: "Impossible de rembourser une commande gratuite" });
+        return;
+      }
+      if (order.status === "refunded") {
+        res.status(400).json({ success: false, error: "Commande déjà remboursée" });
+        return;
+      }
+      if (order.status !== "paid" && order.status !== "partial_refund") {
+        res.status(400).json({ success: false, error: `Impossible de rembourser une commande au statut ${order.status}` });
+        return;
+      }
+
+      const { reason, amountCents } = req.body as { reason?: string; amountCents?: number };
+      const maxRefundable = order.finalAmountCents - order.refundAmountCents;
+      const refundAmount = amountCents ? Math.min(amountCents, maxRefundable) : maxRefundable;
+
+      if (refundAmount <= 0) {
+        res.status(400).json({ success: false, error: "Montant de remboursement invalide ou déjà intégralement remboursé" });
+        return;
+      }
+
+      // Process Stripe refund
+      let stripeRefundId: string | null = null;
+      if (order.stripePaymentIntentId) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          const refund = await stripe.refunds.create({
+            payment_intent: order.stripePaymentIntentId,
+            amount: refundAmount,
+            reason: "requested_by_customer" as const,
+          });
+          stripeRefundId = refund.id;
+        } catch (stripeErr: any) {
+          console.error("[Admin Orders] Stripe refund error:", stripeErr);
+          res.status(500).json({ success: false, error: `Erreur Stripe: ${stripeErr.message}` });
+          return;
+        }
+      }
+
+      const totalRefunded = order.refundAmountCents + refundAmount;
+      const isFullRefund = totalRefunded >= order.finalAmountCents;
+
+      await storage.updateOrder(order.id, {
+        status: isFullRefund ? "refunded" : "partial_refund",
+        refundAmountCents: totalRefunded,
+        refundReason: reason || null,
+        refundStripeId: stripeRefundId,
+        refundedAt: new Date(),
+        refundedBy: "admin",
+      });
+
+      const updated = await storage.getOrder(order.id);
+      res.json({ success: true, order: updated, stripeRefundId });
+    } catch (error) {
+      console.error("[Admin Orders] Error processing refund:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/clients/:email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+      const user = await storage.getUserByEmail(email);
+      const orders = await storage.getOrdersByEmail(email);
+      const audits = await storage.getAuditsByEmail(email);
+      const bloodReports = await storage.getAllBloodReports();
+      const clientBloodReports = bloodReports.filter(r => r.email.trim().toLowerCase() === email);
+
+      // Gather email tracking for all audits
+      const emailTrackings: any[] = [];
+      for (const audit of audits) {
+        const trackings = await storage.getEmailTrackingForAudit(audit.id);
+        emailTrackings.push(...trackings.map(t => ({ ...t, auditId: audit.id })));
+      }
+
+      const paidOrders = orders.filter(o => o.status === "paid" || o.status === "refunded" || o.status === "partial_refund");
+      const totalSpentCents = paidOrders.reduce((s, o) => s + o.finalAmountCents, 0);
+      const totalRefundedCents = orders.reduce((s, o) => s + o.refundAmountCents, 0);
+
+      res.json({
+        success: true,
+        client: {
+          user: user || null,
+          email,
+          orders,
+          audits: audits.map(a => ({
+            id: a.id,
+            type: a.type,
+            status: a.status,
+            reportDeliveryStatus: a.reportDeliveryStatus,
+            createdAt: a.createdAt,
+            completedAt: a.completedAt,
+            reportSentAt: a.reportSentAt,
+          })),
+          bloodReports: clientBloodReports.map(r => ({
+            id: r.id,
+            createdAt: r.createdAt,
+            markerCount: Array.isArray(r.markers) ? r.markers.length : 0,
+          })),
+          emailTrackings,
+          totalSpentCents,
+          totalRefundedCents,
+          netSpentCents: totalSpentCents - totalRefundedCents,
+        },
+      });
+    } catch (error) {
+      console.error("[Admin Clients] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/audits/:id/report-artifacts", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const auditId = req.params.id;
+      const audit = await storage.getAudit(auditId);
+      if (!audit) {
+        res.status(404).json({ success: false, error: "Audit non trouvé" });
+        return;
+      }
+      // Fetch from report_artifacts table
+      const result = await pool.query(
+        "SELECT id, audit_id, tier, engine, model, created_at FROM report_artifacts WHERE audit_id = $1 ORDER BY created_at DESC",
+        [auditId]
+      );
+      res.json({
+        success: true,
+        artifacts: result.rows.map((r: any) => ({
+          id: r.id,
+          auditId: r.audit_id,
+          tier: r.tier,
+          engine: r.engine,
+          model: r.model,
+          createdAt: r.created_at,
+        })),
+      });
+    } catch (error) {
+      console.error("[Admin Artifacts] Error:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  app.get("/api/admin/promo-codes/:id/usages", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      // Get the promo code first to find the code string
+      const allPromos = await storage.getAllPromoCodes();
+      const promo = allPromos.find(p => p.id === req.params.id);
+      if (!promo) {
+        res.status(404).json({ success: false, error: "Code promo non trouvé" });
+        return;
+      }
+      const usages = await storage.getPromoCodeUsagesByCode(promo.code);
+      res.json({ success: true, usages, promo: { id: promo.id, code: promo.code, currentUses: promo.currentUses } });
+    } catch (error) {
+      console.error("[Admin Promo Usages] Error:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }
   });
@@ -3532,6 +3883,129 @@ export async function registerRoutes(
 
   // ==================== BLOOD TESTS DASHBOARD ROUTES ====================
   registerBloodTestsRoutes(app);
+
+  // ==================== STRIPE WEBHOOK ====================
+  app.post("/api/stripe/webhook", async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret || !sig) {
+      res.status(400).json({ error: "Missing webhook configuration" });
+      return;
+    }
+
+    let event: any;
+    try {
+      const stripe = await getUncachableStripeClient();
+      event = stripe.webhooks.constructEvent(req.rawBody as string | Buffer, sig as string, webhookSecret);
+    } catch (err: any) {
+      console.error("[Webhook] Signature verification failed:", err.message);
+      res.status(400).json({ error: "Invalid signature" });
+      return;
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+          const order = await storage.getOrderByStripeSession(session.id);
+          if (order && order.status === "pending") {
+            await storage.updateOrder(order.id, {
+              status: "paid",
+              paidAt: new Date(),
+              stripePaymentIntentId: session.payment_intent || null,
+              stripeCustomerId: session.customer || null,
+            });
+            console.log(`[Webhook] Order ${order.id} marked as paid via webhook`);
+          }
+          break;
+        }
+        case "charge.refunded": {
+          const charge = event.data.object;
+          const paymentIntentId = charge.payment_intent;
+          if (paymentIntentId) {
+            // Find order by payment intent
+            const { orders } = await storage.getAllOrders({ limit: 1000 });
+            const order = orders.find(o => o.stripePaymentIntentId === paymentIntentId);
+            if (order && order.status !== "refunded") {
+              const refundedAmount = charge.amount_refunded || 0;
+              const isFullRefund = refundedAmount >= order.finalAmountCents;
+              await storage.updateOrder(order.id, {
+                status: isFullRefund ? "refunded" : "partial_refund",
+                refundAmountCents: refundedAmount,
+                refundedAt: new Date(),
+              });
+              console.log(`[Webhook] Order ${order.id} refund processed via webhook`);
+            }
+          }
+          break;
+        }
+        case "checkout.session.expired": {
+          const session = event.data.object;
+          const order = await storage.getOrderByStripeSession(session.id);
+          if (order && order.status === "pending") {
+            await storage.updateOrder(order.id, { status: "cancelled" });
+            console.log(`[Webhook] Order ${order.id} cancelled (session expired)`);
+          }
+          break;
+        }
+      }
+      res.json({ received: true });
+    } catch (error) {
+      console.error("[Webhook] Processing error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // ==================== ADMIN CSV EXPORT ====================
+  app.get("/api/admin/orders/export/csv", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orders } = await storage.getAllOrders({ limit: 50000 });
+      const header = "id,email,product_type,product_name,amount_cents,discount_cents,final_amount_cents,promo_code,status,refund_amount_cents,refund_reason,audit_id,created_at,paid_at\n";
+      const rows = orders.map(o => {
+        const escape = (v: string | null | undefined) => {
+          if (v == null) return "";
+          return `"${String(v).replace(/"/g, '""')}"`;
+        };
+        return [
+          o.id, escape(o.email), o.productType, escape(o.productName),
+          o.amountCents, o.discountCents, o.finalAmountCents,
+          escape(o.promoCode), o.status, o.refundAmountCents,
+          escape(o.refundReason), o.auditId || "",
+          o.createdAt ? new Date(o.createdAt).toISOString() : "",
+          o.paidAt ? new Date(o.paidAt).toISOString() : "",
+        ].join(",");
+      }).join("\n");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="neurocore-orders-${new Date().toISOString().split("T")[0]}.csv"`);
+      res.send(header + rows);
+    } catch (error) {
+      console.error("[Admin CSV] Error:", error);
+      res.status(500).json({ error: "Erreur export CSV" });
+    }
+  });
+
+  // ==================== ADMIN CLEANUP EXPIRED ORDERS ====================
+  app.post("/api/admin/orders/cleanup-expired", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
+    try {
+      const { orders } = await storage.getAllOrders({ limit: 10000, status: "pending" as any });
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      let cancelled = 0;
+      for (const order of orders) {
+        if (new Date(order.createdAt).getTime() < cutoff) {
+          await storage.updateOrder(order.id, { status: "cancelled" });
+          cancelled++;
+        }
+      }
+      res.json({ success: true, cancelled, checked: orders.length });
+    } catch (error) {
+      console.error("[Admin Cleanup] Error:", error);
+      res.status(500).json({ error: "Erreur nettoyage" });
+    }
+  });
 
   return httpServer;
 }

@@ -20,9 +20,7 @@ export function getStripeClient(): Stripe {
     if (!STRIPE_SECRET_KEY) {
       throw new Error('STRIPE_SECRET_KEY is required');
     }
-    stripeClient = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: '2025-12-15.clover',
-    });
+    stripeClient = new Stripe(STRIPE_SECRET_KEY);
   }
   return stripeClient;
 }

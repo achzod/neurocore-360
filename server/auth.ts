@@ -7,13 +7,20 @@ export type AuthPayload = {
 };
 
 const getAuthSecret = (): string => {
-  return (
+  const secret =
     process.env.SESSION_SECRET ||
     process.env.JWT_SECRET ||
     process.env.ADMIN_SECRET ||
-    process.env.ADMIN_KEY ||
-    "dev-auth-secret"
-  );
+    process.env.ADMIN_KEY;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("CRITICAL: SESSION_SECRET must be set in production. Refusing to start with insecure default.");
+    }
+    console.warn("[Auth] WARNING: No SESSION_SECRET set. Using insecure default for development only.");
+    return "dev-auth-secret";
+  }
+  return secret;
 };
 
 export const signAuthToken = (payload: AuthPayload): string => {

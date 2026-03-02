@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import * as Sentry from "@sentry/node";
+import helmet from "helmet";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -16,6 +18,32 @@ if (sentryEnabled) {
     tracesSampleRate: 0.1,
   });
 }
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Let Vite handle CSP in dev
+  crossOriginEmbedderPolicy: false,
+}));
+
+// CORS
+const allowedOrigins = [
+  process.env.APP_URL,
+  process.env.RENDER_EXTERNAL_URL,
+  "http://localhost:5000",
+  "http://localhost:3000",
+].filter(Boolean) as string[];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (same-origin, mobile apps, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      return callback(null, true);
+    }
+    callback(null, false);
+  },
+  credentials: true,
+}));
 
 declare module "http" {
   interface IncomingMessage {

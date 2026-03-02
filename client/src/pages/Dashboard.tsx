@@ -642,6 +642,16 @@ export default function Dashboard() {
     enabled: !!userEmail,
   });
 
+  const { data: userOrdersData } = useQuery<{ success: boolean; orders: Array<{
+    id: string; productType: string; productName: string; finalAmountCents: number;
+    discountCents: number; currency: string; status: string; refundAmountCents: number;
+    auditId: string | null; createdAt: string; paidAt: string | null;
+  }> }>({
+    queryKey: ["/api/user/orders"],
+    enabled: !!userEmail,
+  });
+  const userOrders = userOrdersData?.orders || [];
+
   const latestAudit = audits?.[0];
   const hasCompletedAudit = latestAudit?.status === "COMPLETED" && latestAudit?.scores;
 
@@ -888,6 +898,60 @@ export default function Dashboard() {
                 ))}
               </div>
             </motion.div>
+
+            {/* Historique des commandes */}
+            {userOrders.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.45 }}
+                className="mt-12"
+              >
+                <h2 className="mb-6 text-xl font-semibold flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-primary" />
+                  Historique des commandes ({userOrders.length})
+                </h2>
+                <div className="space-y-3">
+                  {userOrders.map((order) => (
+                    <Card key={order.id} style={cardStyle}>
+                      <CardContent className="flex items-center gap-4 py-3">
+                        <div className="flex-1">
+                          <div className="font-medium">{order.productName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(order.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold">
+                          {order.finalAmountCents === 0 ? "Gratuit" : `${(order.finalAmountCents / 100).toFixed(2)}€`}
+                        </div>
+                        <Badge variant={
+                          order.status === "paid" ? "default" :
+                          order.status === "refunded" ? "destructive" :
+                          "outline"
+                        }>
+                          {order.status === "paid" ? "Payé" :
+                           order.status === "refunded" ? "Remboursé" :
+                           order.status === "pending" ? "En attente" :
+                           order.status}
+                        </Badge>
+                        {order.auditId && (
+                          <Link href={
+                            order.productType === "GRATUIT" ? `/scan/${order.auditId}` :
+                            order.productType === "PREMIUM" ? `/anabolic/${order.auditId}` :
+                            order.productType === "ELITE" ? `/ultimate/${order.auditId}` :
+                            `/dashboard/${order.auditId}`
+                          }>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-3 w-3 mr-1" /> Rapport
+                            </Button>
+                          </Link>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {audits.some((a) => a.type === "GRATUIT") && (
               <motion.div

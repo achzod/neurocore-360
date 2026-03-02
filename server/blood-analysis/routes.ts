@@ -584,6 +584,21 @@ export function registerBloodAnalysisRoutes(app: Express): void {
         },
       });
 
+      // Create pending order for blood analysis
+      try {
+        await storage.createOrder({
+          email: recipientEmail,
+          userId: userId || null,
+          productType: "BLOOD_ANALYSIS",
+          amountCents: 9900,
+          stripeCheckoutSessionId: session.id,
+          ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
+          userAgent: req.headers["user-agent"] || null,
+        });
+      } catch (orderErr) {
+        console.error("[BloodAnalysis] Error creating order:", orderErr);
+      }
+
       res.json({
         success: true,
         sessionId: session.id,

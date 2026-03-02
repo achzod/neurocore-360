@@ -394,3 +394,108 @@ export const insertReviewSchema = z.object({
 });
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
+
+// ==================== ORDER MANAGEMENT ====================
+
+export const OrderStatus = {
+  PENDING: "pending",
+  PAID: "paid",
+  REFUNDED: "refunded",
+  PARTIAL_REFUND: "partial_refund",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+} as const;
+
+export type OrderStatusEnum = (typeof OrderStatus)[keyof typeof OrderStatus];
+
+export const ProductType = {
+  GRATUIT: "GRATUIT",
+  PREMIUM: "PREMIUM",
+  ELITE: "ELITE",
+  BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
+} as const;
+
+export type ProductTypeEnum = (typeof ProductType)[keyof typeof ProductType];
+
+export const ProductDisplayNames: Record<ProductTypeEnum, string> = {
+  GRATUIT: "Discovery Scan",
+  PREMIUM: "Anabolic Bioscan",
+  ELITE: "Ultimate Scan",
+  BLOOD_ANALYSIS: "Blood Analysis",
+};
+
+export const ProductPriceCents: Record<ProductTypeEnum, number> = {
+  GRATUIT: 0,
+  PREMIUM: 5900,
+  ELITE: 7900,
+  BLOOD_ANALYSIS: 9900,
+};
+
+export interface Order {
+  id: string;
+  userId: string | null;
+  email: string;
+  productType: ProductTypeEnum;
+  productName: string;
+  amountCents: number;
+  currency: string;
+  discountCents: number;
+  promoCode: string | null;
+  promoCodeId: string | null;
+  finalAmountCents: number;
+  stripeCheckoutSessionId: string | null;
+  stripePaymentIntentId: string | null;
+  stripeCustomerId: string | null;
+  status: OrderStatusEnum;
+  refundAmountCents: number;
+  refundReason: string | null;
+  refundStripeId: string | null;
+  refundedAt: Date | string | null;
+  refundedBy: string | null;
+  auditId: string | null;
+  bloodReportId: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: Date | string;
+  paidAt: Date | string | null;
+  updatedAt: Date | string;
+}
+
+export interface CreateOrderInput {
+  email: string;
+  userId?: string | null;
+  productType: ProductTypeEnum;
+  productName?: string;
+  amountCents: number;
+  currency?: string;
+  discountCents?: number;
+  promoCode?: string | null;
+  promoCodeId?: string | null;
+  finalAmountCents?: number;
+  stripeCheckoutSessionId?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface OrderSummary {
+  totalOrders: number;
+  totalRevenueCents: number;
+  totalRefundedCents: number;
+  netRevenueCents: number;
+  byProduct: Record<string, { count: number; revenueCents: number }>;
+  byStatus: Record<string, number>;
+}
+
+export interface PromoCodeUsage {
+  id: string;
+  promoCodeId: string;
+  promoCode: string;
+  userId: string | null;
+  email: string;
+  orderId: string;
+  discountPercent: number;
+  discountAmountCents: number;
+  usedAt: Date | string;
+}

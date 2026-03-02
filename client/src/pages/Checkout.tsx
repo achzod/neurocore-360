@@ -191,8 +191,8 @@ export default function Checkout() {
   }, [selectedPlan]);
 
 const STRIPE_PRICE_IDS: Record<Exclude<PlanId, "gratuit">, string> = {
-  anabolic: import.meta.env.VITE_STRIPE_PRICE_ANABOLIC || "price_1SisNBRDE5WXnLZXF6QIJuh4",
-  ultimate: import.meta.env.VITE_STRIPE_PRICE_ULTIMATE || "price_1SisNCRDE5WXnLZXTk4obahF",
+  anabolic: import.meta.env.VITE_STRIPE_PRICE_ANABOLIC,
+  ultimate: import.meta.env.VITE_STRIPE_PRICE_ULTIMATE,
 };
 
   const createAuditMutation = useMutation({

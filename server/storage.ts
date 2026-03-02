@@ -12,7 +12,13 @@ import type {
   ReportJob,
   ReportJobStatusEnum,
   ReviewAuditTypeEnum,
+  Order,
+  CreateOrderInput,
+  OrderStatusEnum,
+  ProductTypeEnum,
+  PromoCodeUsage,
 } from "@shared/schema";
+import { ProductDisplayNames, ProductPriceCents } from "@shared/schema";
 import { calculateScoresFromResponses, generateFullAnalysis } from "./analysisEngine";
 
 // Configuration de la connexion PostgreSQL
@@ -190,6 +196,20 @@ export interface IStorage {
   markEmailOpened(trackingId: string): Promise<void>;
   getEmailTrackingForAudit(auditId: string): Promise<EmailTracking[]>;
   hasUserLeftReview(auditId: string): Promise<boolean>;
+
+  // Orders
+  createOrder(input: CreateOrderInput): Promise<Order>;
+  getOrder(id: string): Promise<Order | undefined>;
+  getOrderByStripeSession(sessionId: string): Promise<Order | undefined>;
+  getOrdersByUserId(userId: string): Promise<Order[]>;
+  getOrdersByEmail(email: string): Promise<Order[]>;
+  getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }>;
+  updateOrder(id: string, data: Partial<Order>): Promise<Order | undefined>;
+
+  // Promo code usages
+  createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage>;
+  getPromoCodeUsagesByCode(promoCode: string): Promise<PromoCodeUsage[]>;
+  getPromoCodeUsagesByEmail(email: string): Promise<PromoCodeUsage[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -671,6 +691,71 @@ export class MemStorage implements IStorage {
     // MemStorage doesn't have reviews, always return false
     return false;
   }
+
+  // Orders (MemStorage stubs)
+  private memOrders: Map<string, Order> = new Map();
+  private memPromoUsages: PromoCodeUsage[] = [];
+
+  async createOrder(input: CreateOrderInput): Promise<Order> {
+    const id = randomUUID();
+    const productName = input.productName || ProductDisplayNames[input.productType] || input.productType;
+    const discountCents = input.discountCents ?? 0;
+    const finalAmountCents = input.finalAmountCents ?? Math.max(0, input.amountCents - discountCents);
+    const order: Order = {
+      id, userId: input.userId || null, email: input.email.trim().toLowerCase(),
+      productType: input.productType, productName, amountCents: input.amountCents,
+      currency: input.currency || "eur", discountCents, promoCode: input.promoCode || null,
+      promoCodeId: input.promoCodeId || null, finalAmountCents,
+      stripeCheckoutSessionId: input.stripeCheckoutSessionId || null,
+      stripePaymentIntentId: null, stripeCustomerId: null, status: "pending",
+      refundAmountCents: 0, refundReason: null, refundStripeId: null,
+      refundedAt: null, refundedBy: null, auditId: null, bloodReportId: null,
+      ipAddress: input.ipAddress || null, userAgent: input.userAgent || null,
+      metadata: input.metadata || null, createdAt: new Date(), paidAt: null, updatedAt: new Date(),
+    };
+    this.memOrders.set(id, order);
+    return order;
+  }
+  async getOrder(id: string): Promise<Order | undefined> { return this.memOrders.get(id); }
+  async getOrderByStripeSession(sessionId: string): Promise<Order | undefined> {
+    return Array.from(this.memOrders.values()).find(o => o.stripeCheckoutSessionId === sessionId);
+  }
+  async getOrdersByUserId(userId: string): Promise<Order[]> {
+    return Array.from(this.memOrders.values()).filter(o => o.userId === userId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  async getOrdersByEmail(email: string): Promise<Order[]> {
+    const norm = email.trim().toLowerCase();
+    return Array.from(this.memOrders.values()).filter(o => o.email === norm).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+  async getAllOrders(opts?: { limit?: number; offset?: number; status?: OrderStatusEnum; productType?: ProductTypeEnum; email?: string }): Promise<{ orders: Order[]; total: number }> {
+    let list = Array.from(this.memOrders.values());
+    if (opts?.status) list = list.filter(o => o.status === opts.status);
+    if (opts?.productType) list = list.filter(o => o.productType === opts.productType);
+    if (opts?.email) { const e = opts.email.trim().toLowerCase(); list = list.filter(o => o.email === e); }
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const total = list.length;
+    const offset = opts?.offset || 0;
+    const limit = opts?.limit || 50;
+    return { orders: list.slice(offset, offset + limit), total };
+  }
+  async updateOrder(id: string, data: Partial<Order>): Promise<Order | undefined> {
+    const order = this.memOrders.get(id);
+    if (!order) return undefined;
+    const updated = { ...order, ...data, updatedAt: new Date() };
+    this.memOrders.set(id, updated);
+    return updated;
+  }
+  async createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage> {
+    const usage: PromoCodeUsage = { ...input, id: randomUUID(), usedAt: new Date() };
+    this.memPromoUsages.push(usage);
+    return usage;
+  }
+  async getPromoCodeUsagesByCode(promoCode: string): Promise<PromoCodeUsage[]> {
+    return this.memPromoUsages.filter(u => u.promoCode.toUpperCase() === promoCode.toUpperCase());
+  }
+  async getPromoCodeUsagesByEmail(email: string): Promise<PromoCodeUsage[]> {
+    return this.memPromoUsages.filter(u => u.email === email.trim().toLowerCase());
+  }
 }
 
 export class PgStorage implements IStorage {
@@ -680,6 +765,9 @@ export class PgStorage implements IStorage {
   private ensuredUserCreditsColumn = false;
   private ensuredBloodTestsTable = false;
   private ensuredMagicTokensTable = false;
+  private ensuredOrdersTable = false;
+  private ensuredPromoCodeUsagesTable = false;
+  private ensuredExistingIndexes = false;
 
   private async ensureAuditColumnsLoaded(): Promise<Set<string>> {
     if (this.auditColumnsCache) return this.auditColumnsCache;
@@ -1983,6 +2071,364 @@ export class PgStorage implements IStorage {
       eventType: row.event_type,
       data: row.data,
       createdAt: row.created_at,
+    }));
+  }
+
+  // ==================== ORDERS ====================
+
+  private async ensureOrdersTableCreated(): Promise<void> {
+    if (this.ensuredOrdersTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS orders (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(36),
+          email VARCHAR(255) NOT NULL,
+          product_type VARCHAR(30) NOT NULL,
+          product_name VARCHAR(100) NOT NULL,
+          amount_cents INTEGER NOT NULL DEFAULT 0,
+          currency VARCHAR(10) NOT NULL DEFAULT 'eur',
+          discount_cents INTEGER NOT NULL DEFAULT 0,
+          promo_code VARCHAR(50),
+          promo_code_id VARCHAR(36),
+          final_amount_cents INTEGER NOT NULL DEFAULT 0,
+          stripe_checkout_session_id VARCHAR(255),
+          stripe_payment_intent_id VARCHAR(255),
+          stripe_customer_id VARCHAR(255),
+          status VARCHAR(30) NOT NULL DEFAULT 'pending',
+          refund_amount_cents INTEGER NOT NULL DEFAULT 0,
+          refund_reason TEXT,
+          refund_stripe_id VARCHAR(255),
+          refunded_at TIMESTAMP,
+          refunded_by VARCHAR(255),
+          audit_id VARCHAR(36),
+          blood_report_id VARCHAR(36),
+          ip_address VARCHAR(50),
+          user_agent TEXT,
+          metadata JSONB,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          paid_at TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_product_type ON orders(product_type)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_stripe_session ON orders(stripe_checkout_session_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_audit_id ON orders(audit_id)`);
+      this.ensuredOrdersTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating orders table:", err);
+      this.ensuredOrdersTable = true;
+    }
+  }
+
+  private async ensurePromoCodeUsagesTableCreated(): Promise<void> {
+    if (this.ensuredPromoCodeUsagesTable) return;
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS promo_code_usages (
+          id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+          promo_code_id VARCHAR(36) NOT NULL,
+          promo_code VARCHAR(50) NOT NULL,
+          user_id VARCHAR(36),
+          email VARCHAR(255) NOT NULL,
+          order_id VARCHAR(36) NOT NULL,
+          discount_percent INTEGER NOT NULL DEFAULT 0,
+          discount_amount_cents INTEGER NOT NULL DEFAULT 0,
+          used_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_promo_usages_promo_code ON promo_code_usages(promo_code)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_promo_usages_email ON promo_code_usages(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_promo_usages_user_id ON promo_code_usages(user_id)`);
+      this.ensuredPromoCodeUsagesTable = true;
+    } catch (err) {
+      console.error("[Storage] Error creating promo_code_usages table:", err);
+      this.ensuredPromoCodeUsagesTable = true;
+    }
+  }
+
+  async ensureExistingTableIndexes(): Promise<void> {
+    if (this.ensuredExistingIndexes) return;
+    try {
+      // audits
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_audits_user_id ON audits(user_id)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_audits_email ON audits(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_audits_type ON audits(type)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_audits_created_at ON audits(created_at DESC)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_audits_delivery_status ON audits(report_delivery_status)`);
+      // users
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+      // questionnaire_progress
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_qp_email ON questionnaire_progress(email)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_qp_status ON questionnaire_progress(status)`);
+      // promo_codes
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code)`);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_promo_codes_active ON promo_codes(is_active)`);
+    } catch (err) {
+      console.error("[Storage] Error creating missing indexes:", err);
+    } finally {
+      this.ensuredExistingIndexes = true;
+    }
+  }
+
+  private rowToOrder(row: any): Order {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      email: row.email,
+      productType: row.product_type,
+      productName: row.product_name,
+      amountCents: Number(row.amount_cents),
+      currency: row.currency,
+      discountCents: Number(row.discount_cents),
+      promoCode: row.promo_code,
+      promoCodeId: row.promo_code_id,
+      finalAmountCents: Number(row.final_amount_cents),
+      stripeCheckoutSessionId: row.stripe_checkout_session_id,
+      stripePaymentIntentId: row.stripe_payment_intent_id,
+      stripeCustomerId: row.stripe_customer_id,
+      status: row.status,
+      refundAmountCents: Number(row.refund_amount_cents),
+      refundReason: row.refund_reason,
+      refundStripeId: row.refund_stripe_id,
+      refundedAt: row.refunded_at,
+      refundedBy: row.refunded_by,
+      auditId: row.audit_id,
+      bloodReportId: row.blood_report_id,
+      ipAddress: row.ip_address,
+      userAgent: row.user_agent,
+      metadata: row.metadata,
+      createdAt: row.created_at,
+      paidAt: row.paid_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  async createOrder(input: CreateOrderInput): Promise<Order> {
+    await this.ensureOrdersTableCreated();
+    const id = randomUUID();
+    const productName = input.productName || ProductDisplayNames[input.productType] || input.productType;
+    const amountCents = input.amountCents;
+    const discountCents = input.discountCents ?? 0;
+    const finalAmountCents = input.finalAmountCents ?? Math.max(0, amountCents - discountCents);
+
+    const result = await pool.query(
+      `INSERT INTO orders (id, user_id, email, product_type, product_name, amount_cents, currency,
+        discount_cents, promo_code, promo_code_id, final_amount_cents, stripe_checkout_session_id,
+        ip_address, user_agent, metadata, status, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'pending',NOW(),NOW())
+       RETURNING *`,
+      [
+        id,
+        input.userId || null,
+        input.email.trim().toLowerCase(),
+        input.productType,
+        productName,
+        amountCents,
+        input.currency || "eur",
+        discountCents,
+        input.promoCode || null,
+        input.promoCodeId || null,
+        finalAmountCents,
+        input.stripeCheckoutSessionId || null,
+        input.ipAddress || null,
+        input.userAgent || null,
+        input.metadata ? JSON.stringify(input.metadata) : null,
+      ]
+    );
+    return this.rowToOrder(result.rows[0]);
+  }
+
+  async getOrder(id: string): Promise<Order | undefined> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query("SELECT * FROM orders WHERE id = $1", [id]);
+    if (result.rows.length === 0) return undefined;
+    return this.rowToOrder(result.rows[0]);
+  }
+
+  async getOrderByStripeSession(sessionId: string): Promise<Order | undefined> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE stripe_checkout_session_id = $1",
+      [sessionId]
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToOrder(result.rows[0]);
+  }
+
+  async getOrdersByUserId(userId: string): Promise<Order[]> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC",
+      [userId]
+    );
+    return result.rows.map((r: any) => this.rowToOrder(r));
+  }
+
+  async getOrdersByEmail(email: string): Promise<Order[]> {
+    await this.ensureOrdersTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM orders WHERE LOWER(email) = $1 ORDER BY created_at DESC",
+      [email.trim().toLowerCase()]
+    );
+    return result.rows.map((r: any) => this.rowToOrder(r));
+  }
+
+  async getAllOrders(opts?: {
+    limit?: number;
+    offset?: number;
+    status?: OrderStatusEnum;
+    productType?: ProductTypeEnum;
+    email?: string;
+  }): Promise<{ orders: Order[]; total: number }> {
+    await this.ensureOrdersTableCreated();
+    const conditions: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (opts?.status) {
+      conditions.push(`status = $${idx++}`);
+      values.push(opts.status);
+    }
+    if (opts?.productType) {
+      conditions.push(`product_type = $${idx++}`);
+      values.push(opts.productType);
+    }
+    if (opts?.email) {
+      conditions.push(`LOWER(email) = $${idx++}`);
+      values.push(opts.email.trim().toLowerCase());
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const countResult = await pool.query(`SELECT COUNT(*) FROM orders ${where}`, values);
+    const total = Number(countResult.rows[0].count);
+
+    const limit = opts?.limit || 50;
+    const offset = opts?.offset || 0;
+    const dataValues = [...values, limit, offset];
+    const result = await pool.query(
+      `SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
+      dataValues
+    );
+
+    return { orders: result.rows.map((r: any) => this.rowToOrder(r)), total };
+  }
+
+  async updateOrder(id: string, data: Partial<Order>): Promise<Order | undefined> {
+    await this.ensureOrdersTableCreated();
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    const fieldMap: Record<string, string> = {
+      userId: "user_id",
+      email: "email",
+      status: "status",
+      stripePaymentIntentId: "stripe_payment_intent_id",
+      stripeCustomerId: "stripe_customer_id",
+      auditId: "audit_id",
+      bloodReportId: "blood_report_id",
+      paidAt: "paid_at",
+      refundAmountCents: "refund_amount_cents",
+      refundReason: "refund_reason",
+      refundStripeId: "refund_stripe_id",
+      refundedAt: "refunded_at",
+      refundedBy: "refunded_by",
+      metadata: "metadata",
+    };
+
+    for (const [key, col] of Object.entries(fieldMap)) {
+      if ((data as any)[key] !== undefined) {
+        updates.push(`${col} = $${idx++}`);
+        const val = (data as any)[key];
+        values.push(key === "metadata" ? JSON.stringify(val) : val);
+      }
+    }
+
+    if (updates.length === 0) return this.getOrder(id);
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE orders SET ${updates.join(", ")} WHERE id = $${idx} RETURNING *`,
+      values
+    );
+    if (result.rows.length === 0) return undefined;
+    return this.rowToOrder(result.rows[0]);
+  }
+
+  // Promo code usage tracking
+
+  async createPromoCodeUsage(input: Omit<PromoCodeUsage, "id" | "usedAt">): Promise<PromoCodeUsage> {
+    await this.ensurePromoCodeUsagesTableCreated();
+    const id = randomUUID();
+    const result = await pool.query(
+      `INSERT INTO promo_code_usages (id, promo_code_id, promo_code, user_id, email, order_id, discount_percent, discount_amount_cents)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [
+        id,
+        input.promoCodeId,
+        input.promoCode.toUpperCase(),
+        input.userId || null,
+        input.email.trim().toLowerCase(),
+        input.orderId,
+        input.discountPercent,
+        input.discountAmountCents,
+      ]
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      promoCodeId: row.promo_code_id,
+      promoCode: row.promo_code,
+      userId: row.user_id,
+      email: row.email,
+      orderId: row.order_id,
+      discountPercent: Number(row.discount_percent),
+      discountAmountCents: Number(row.discount_amount_cents),
+      usedAt: row.used_at,
+    };
+  }
+
+  async getPromoCodeUsagesByCode(promoCode: string): Promise<PromoCodeUsage[]> {
+    await this.ensurePromoCodeUsagesTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM promo_code_usages WHERE UPPER(promo_code) = $1 ORDER BY used_at DESC",
+      [promoCode.toUpperCase()]
+    );
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      promoCodeId: row.promo_code_id,
+      promoCode: row.promo_code,
+      userId: row.user_id,
+      email: row.email,
+      orderId: row.order_id,
+      discountPercent: Number(row.discount_percent),
+      discountAmountCents: Number(row.discount_amount_cents),
+      usedAt: row.used_at,
+    }));
+  }
+
+  async getPromoCodeUsagesByEmail(email: string): Promise<PromoCodeUsage[]> {
+    await this.ensurePromoCodeUsagesTableCreated();
+    const result = await pool.query(
+      "SELECT * FROM promo_code_usages WHERE LOWER(email) = $1 ORDER BY used_at DESC",
+      [email.trim().toLowerCase()]
+    );
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      promoCodeId: row.promo_code_id,
+      promoCode: row.promo_code,
+      userId: row.user_id,
+      email: row.email,
+      orderId: row.order_id,
+      discountPercent: Number(row.discount_percent),
+      discountAmountCents: Number(row.discount_amount_cents),
+      usedAt: row.used_at,
     }));
   }
 }
