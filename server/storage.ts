@@ -812,7 +812,7 @@ export class PgStorage implements IStorage {
     if (this.ensuredUserCreditsColumn) return;
     try {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER NOT NULL DEFAULT 0`);
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP DEFAULT NOW()`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`);
     } catch (err) {
       console.error("[Storage] Error ensuring user credits column:", err);
     } finally {
@@ -920,7 +920,7 @@ export class PgStorage implements IStorage {
     const id = randomUUID();
     const normalizedEmail = insertUser.email.trim().toLowerCase();
     const result = await pool.query(
-      `INSERT INTO users (id, email, name, credits, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *`,
+      `INSERT INTO users (id, email, name, credits, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING *`,
       [id, normalizedEmail, insertUser.name || null, insertUser.credits ?? DEFAULT_USER_CREDITS]
     );
     const row = result.rows[0];
@@ -938,7 +938,7 @@ export class PgStorage implements IStorage {
     const result = await pool.query(
       `UPDATE users
        SET credits = GREATEST(credits + $2, 0),
-           "updatedAt" = NOW()
+           updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [id, delta]
