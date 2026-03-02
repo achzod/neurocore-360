@@ -412,6 +412,7 @@ export const ProductType = {
   GRATUIT: "GRATUIT",
   PREMIUM: "PREMIUM",
   ELITE: "ELITE",
+  BURNOUT: "BURNOUT",
   BLOOD_ANALYSIS: "BLOOD_ANALYSIS",
 } as const;
 
@@ -421,6 +422,7 @@ export const ProductDisplayNames: Record<ProductTypeEnum, string> = {
   GRATUIT: "Discovery Scan",
   PREMIUM: "Anabolic Bioscan",
   ELITE: "Ultimate Scan",
+  BURNOUT: "Burnout Engine",
   BLOOD_ANALYSIS: "Blood Analysis",
 };
 
@@ -428,6 +430,7 @@ export const ProductPriceCents: Record<ProductTypeEnum, number> = {
   GRATUIT: 0,
   PREMIUM: 5900,
   ELITE: 7900,
+  BURNOUT: 3900,
   BLOOD_ANALYSIS: 19900,
 };
 
