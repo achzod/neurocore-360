@@ -1955,7 +1955,7 @@ export async function registerRoutes(
         metadata: {
           email,
           planType,
-          responses: JSON.stringify(responses).substring(0, 500),
+          responses: responses ? JSON.stringify(responses).substring(0, 500) : '',
           promoCode: validatedPromoCode || '',
         },
       };
@@ -1985,7 +1985,7 @@ export async function registerRoutes(
           stripeCheckoutSessionId: session.id,
           ipAddress: (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           userAgent: req.headers["user-agent"] || null,
-          metadata: { planType, responsesPreview: JSON.stringify(responses).substring(0, 200) },
+          metadata: { planType, responsesPreview: responses ? JSON.stringify(responses).substring(0, 200) : '' },
         });
 
         // Track promo code usage on the order
