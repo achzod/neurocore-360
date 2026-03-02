@@ -1920,7 +1920,20 @@ export async function registerRoutes(
 
   app.post("/api/stripe/create-checkout-session", checkoutLimiter, async (req, res) => {
     try {
-      const { priceId, email, planType, responses, promoCode } = req.body;
+      const { priceId: clientPriceId, email, planType, responses, promoCode } = req.body;
+
+      // Server-side price ID lookup as fallback when frontend doesn't send priceId
+      const PRICE_ID_MAP: Record<string, string | undefined> = {
+        PREMIUM: process.env.VITE_STRIPE_PRICE_ANABOLIC,
+        ELITE: process.env.VITE_STRIPE_PRICE_ULTIMATE,
+        BURNOUT: process.env.STRIPE_BURNOUT_PRICE_ID,
+        BLOOD_ANALYSIS: process.env.BLOOD_ANALYSIS_PRICE_ID || process.env.VITE_STRIPE_PRICE_BLOOD_ANALYSIS,
+      };
+      const priceId = clientPriceId || PRICE_ID_MAP[planType];
+      if (!priceId) {
+        res.status(400).json({ error: "INVALID_PLAN", message: `No Stripe price configured for plan: ${planType}` });
+        return;
+      }
 
       const stripe = await getUncachableStripeClient();
 
