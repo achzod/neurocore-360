@@ -138,10 +138,10 @@ export interface BlockageAnalysis {
 }
 
 const MIN_KNOWLEDGE_CONTEXT_CHARS = 200;
-const MIN_DISCOVERY_SECTION_CHARS = 5200;
-const MIN_DISCOVERY_SECTION_LINES = 55;
-const MIN_DISCOVERY_SECTION_WORDS = 700;
-const MIN_DISCOVERY_SECTION_PARAGRAPHS = 14;
+const MIN_DISCOVERY_SECTION_CHARS = 3000;
+const MIN_DISCOVERY_SECTION_LINES = 30;
+const MIN_DISCOVERY_SECTION_WORDS = 400;
+const MIN_DISCOVERY_SECTION_PARAGRAPHS = 8;
 const DISCOVERY_AI_TIMEOUT_MS = Number(process.env.DISCOVERY_AI_TIMEOUT_MS ?? "90000");
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -1138,10 +1138,10 @@ async function generateSectionContentAI(
   const domainResponses = extractDomainResponses(domain, responses);
   const instructions = SECTION_INSTRUCTIONS[domain] || '';
 
-  // GARDE-FOUS: Minimum 20 lines = ~1200 characters
+  // GARDE-FOUS: Minimum content thresholds
   const MIN_CONTENT_LENGTH = MIN_DISCOVERY_SECTION_CHARS;
   const MIN_LINE_COUNT = MIN_DISCOVERY_SECTION_LINES;
-  const MAX_RETRIES = 5;
+  const MAX_RETRIES = 2; // Reduced from 5 to avoid 5min+ generation times
   let bestCandidate = "";
   let bestValidation = { charCount: 0, wordCount: 0, lineCount: 0, paragraphCount: 0 };
 

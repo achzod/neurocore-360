@@ -4757,7 +4757,7 @@ Remarque : La plupart des anciennes références utilisées  ne sont plus dispo
   },
   {  id: "mph-36",
     priority: 50,
-    slug: "hypertrophie-vs-hyperplasie",
+    slug: "hypertrophie-vs-hyperplasie-musculaire",
     title: "Hypertrophie vs hyperplasie",
     excerpt: "Nous savons que les muscles se développent selon un processus appelé « hypertrophie ». Mais il y a aussi ce processus fantaisiste appelé « hyperplasie », qui est entouré d’une tornade de controverses...",
     category: "supplements",
