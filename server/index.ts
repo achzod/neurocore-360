@@ -37,7 +37,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (same-origin, mobile apps, Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     callback(null, false);

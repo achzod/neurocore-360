@@ -333,27 +333,20 @@ export async function registerRoutes(
 
   // Test endpoint for Claude API
   app.get("/api/test-claude", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const isConfigured = validateAnthropicConfig();
       const hasKey = !!ANTHROPIC_CONFIG.ANTHROPIC_API_KEY;
-      const keyPreview = hasKey
-        ? `${ANTHROPIC_CONFIG.ANTHROPIC_API_KEY.substring(0, 8)}...${ANTHROPIC_CONFIG.ANTHROPIC_API_KEY.substring(ANTHROPIC_CONFIG.ANTHROPIC_API_KEY.length - 4)}`
-        : "NOT SET";
 
       if (!isConfigured) {
         res.status(500).json({
           status: "error",
           message: "ANTHROPIC_API_KEY not configured",
-          config: {
-            hasKey,
-            keyPreview,
-            model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-          }
+          config: { hasKey, model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL }
         });
         return;
       }
 
-      // Try a simple API call
       const Anthropic = require('@anthropic-ai/sdk').default;
       const client = new Anthropic({ apiKey: ANTHROPIC_CONFIG.ANTHROPIC_API_KEY });
 
@@ -370,20 +363,13 @@ export async function registerRoutes(
         status: "success",
         message: "Claude API is working",
         response: text,
-        config: {
-          model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL,
-          keyPreview,
-        }
+        config: { model: ANTHROPIC_CONFIG.ANTHROPIC_MODEL }
       });
     } catch (error: any) {
       console.error("[Test Claude] Error:", error);
       res.status(500).json({
         status: "error",
         message: error?.message || "Unknown error",
-        details: {
-          status: error?.status,
-          type: error?.type,
-        }
       });
     }
   });
@@ -1472,7 +1458,8 @@ export async function registerRoutes(
   });
 
   // Get all Terra data stored in DB (admin endpoint)
-  app.get("/api/terra/db/all", async (_req, res) => {
+  app.get("/api/terra/db/all", async (_req: any, res) => {
+    if (!requireAdminAuth(_req, res)) return;
     try {
       const data = await storage.getAllTerraData(100);
       res.json({ success: true, count: data.length, data });
@@ -1484,6 +1471,7 @@ export async function registerRoutes(
 
   // Get Terra data by email
   app.get("/api/terra/db/email/:email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const data = await storage.getTerraDataByEmail(req.params.email);
       res.json({ success: true, count: data.length, data });
@@ -1645,6 +1633,7 @@ export async function registerRoutes(
   // ============================================
 
   app.post("/api/audit/:id/regenerate", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
@@ -1709,6 +1698,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/audit/:id/resend-email", async (req, res) => {
+    if (!requireAdminAuth(req, res)) return;
     try {
       const auditId = req.params.id;
       const audit = await storage.getAudit(auditId);
@@ -2285,34 +2275,10 @@ export async function registerRoutes(
         res.status(400).json({ success: false, error: "Données invalides", details: error.errors });
       } else {
         console.error("[Review] Error:", error);
-        const debug = req.query.debug === "1";
-        const err = error as any;
-        let columns: string[] | null = null;
-        if (debug) {
-          try {
-            const result = await pool.query(
-              `SELECT column_name FROM information_schema.columns WHERE table_name = 'reviews' ORDER BY column_name`
-            );
-            columns = (result.rows || []).map((row: any) => row.column_name);
-          } catch {
-            columns = null;
-          }
-        }
+        console.error("[Review] DB Error:", (error as any)?.code, (error as any)?.detail);
         res.status(500).json({
           success: false,
           error: "Erreur serveur",
-          ...(debug
-            ? {
-                debug: {
-                  code: err?.code || null,
-                  column: err?.column || null,
-                  table: err?.table || null,
-                  constraint: err?.constraint || null,
-                  detail: err?.detail || null,
-                  columns,
-                },
-              }
-            : {}),
         });
       }
     }

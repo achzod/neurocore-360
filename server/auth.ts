@@ -9,9 +9,7 @@ export type AuthPayload = {
 const getAuthSecret = (): string => {
   const secret =
     process.env.SESSION_SECRET ||
-    process.env.JWT_SECRET ||
-    process.env.ADMIN_SECRET ||
-    process.env.ADMIN_KEY;
+    process.env.JWT_SECRET;
 
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
