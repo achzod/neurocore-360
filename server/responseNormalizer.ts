@@ -278,8 +278,19 @@ export function normalizeResponses(
   responses: Responses,
   options?: { mode?: NormalizeMode }
 ): Responses {
-  const normalized: Responses = { ...responses };
+  const normalized: Responses = {};
   const mode = options?.mode ?? "analysis";
+
+  // Safety net: convert underscore_case keys to kebab-case
+  // (handles any API test calls or edge cases with wrong key format)
+  for (const [key, value] of Object.entries(responses)) {
+    const kebabKey = key.includes('_') && !key.includes('-') ? key.replace(/_/g, '-') : key;
+    normalized[kebabKey] = value;
+    // Also keep original if different (for backward compatibility)
+    if (kebabKey !== key && !normalized[key]) {
+      normalized[key] = value;
+    }
+  }
 
   for (const [target, sources] of Object.entries(RESPONSE_ALIASES)) {
     if (hasValue(normalized[target])) continue;

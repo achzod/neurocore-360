@@ -686,22 +686,57 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouvé" });
         return;
       }
-      
+
       const narrativeReport = audit.narrativeReport as any;
-      if (!narrativeReport?.txt) {
+      if (!narrativeReport) {
         res.status(400).json({ error: "Rapport non disponible" });
         return;
       }
-      
+
+      // Discovery Scan (GRATUIT) returns { sections, metrics, globalScore, clientName }
+      if (narrativeReport.sections && Array.isArray(narrativeReport.sections)) {
+        const category = req.query.category as string;
+        const sections = narrativeReport.sections.map((s: any, idx: number) => ({
+          id: s.id || `section-${idx}`,
+          title: s.title || "",
+          score: 0,
+          content: s.content || "",
+          order: idx,
+          category: s.id === "intro" || s.id === "global" ? "executive" : "analysis",
+          subtitle: s.subtitle || "",
+          chips: s.chips || [],
+        }));
+
+        const dashboard = {
+          clientName: narrativeReport.clientName || "Profil",
+          generatedAt: narrativeReport.generatedAt || "",
+          global: narrativeReport.globalScore || 0,
+          sections: category ? sections.filter((s: any) => s.category === category) : sections,
+          metrics: narrativeReport.metrics || [],
+          metadata: {
+            totalSections: sections.length,
+            totalCharacters: sections.reduce((sum: number, s: any) => sum + (s.content?.length || 0), 0),
+          },
+        };
+        res.json(dashboard);
+        return;
+      }
+
+      // Premium/Elite format with .txt
+      if (!narrativeReport.txt) {
+        res.status(400).json({ error: "Rapport non disponible" });
+        return;
+      }
+
       const dashboard = formatTxtToDashboard(narrativeReport.txt);
-      
+
       const category = req.query.category as string;
       if (category) {
         const filteredSections = getSectionsByCategory(dashboard, category as any);
         res.json({ ...dashboard, sections: filteredSections });
         return;
       }
-      
+
       res.json(dashboard);
     } catch (error) {
       console.error("[Dashboard] Error:", error);
@@ -1845,21 +1880,83 @@ export async function registerRoutes(
         res.status(404).json({ error: "Audit non trouve" });
         return;
       }
-      
+
       // Priorité: reportHtml direct > narrativeReport.html > génération à la volée
       const narrativeReport = audit.narrativeReport as any;
       let html = (audit as any).reportHtml || narrativeReport?.html;
-      
+
       if (!html) {
-        // Fallback: génération à la volée si pas de HTML stocké
         if (!narrativeReport) {
           res.status(400).json({ error: "Rapport non disponible (génération en cours ou échouée)" });
           return;
         }
-        const photos = extractPhotosFromAudit(audit);
-        html = await generateExportHTML(narrativeReport, auditId, photos);
+
+        // Discovery Scan format: { sections[], metrics[], globalScore, clientName }
+        if (narrativeReport.sections && Array.isArray(narrativeReport.sections)) {
+          const clientName = narrativeReport.clientName || "Profil";
+          const globalScore = narrativeReport.globalScore || 0;
+          const metrics = narrativeReport.metrics || [];
+          const generatedAt = narrativeReport.generatedAt || new Date().toISOString();
+          const sectionsHtml = narrativeReport.sections.map((s: any) => `
+            <div class="section" style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: #111; border: 1px solid #222;">
+              <h2 style="font-size: 1.3rem; font-weight: 700; color: #E8C547; margin-bottom: 0.25rem;">${s.title || ''}</h2>
+              ${s.subtitle ? `<p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">${s.subtitle}</p>` : ''}
+              ${s.chips?.length ? `<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">${s.chips.map((c: string) => `<span style="padding: 0.25rem 0.75rem; border-radius: 99px; background: rgba(232,197,71,0.15); color: #E8C547; font-size: 0.75rem; font-weight: 500;">${c}</span>`).join('')}</div>` : ''}
+              <div style="color: #ccc; line-height: 1.7; font-size: 0.95rem;">${s.content || ''}</div>
+            </div>
+          `).join('\n');
+
+          const metricsHtml = metrics.map((m: any) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #1a1a1a;">
+              <span style="color: #aaa; font-size: 0.85rem;">${m.label}</span>
+              <span style="color: #E8C547; font-weight: 700;">${m.value}/${m.max}</span>
+            </div>
+          `).join('\n');
+
+          html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discovery Scan - ${clientName} | APEXLABS</title>
+  <style>
+    :root { --color-primary: #E8C547; --color-bg: #0a0a0a; --color-surface: #111; --color-border: #222; --color-text: #ccc; --color-text-muted: #888; --color-on-primary: #000; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--color-bg); color: var(--color-text); line-height: 1.6; }
+    .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1, h2, h3 { color: #fff; }
+    strong { color: #fff; }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--color-primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header style="text-align: center; padding: 2rem 0; margin-bottom: 2rem; border-bottom: 1px solid #222;">
+      <div style="font-size: 0.75rem; letter-spacing: 0.2em; color: #E8C547; text-transform: uppercase; margin-bottom: 0.5rem;">APEXLABS</div>
+      <h1 style="font-size: 2rem; font-weight: 900; color: #fff; margin-bottom: 0.5rem;">Discovery Scan</h1>
+      <p style="color: #888;">${clientName} &mdash; ${new Date(generatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <div style="margin-top: 1.5rem; font-size: 3rem; font-weight: 900; color: #E8C547;">${globalScore}<span style="font-size: 1.5rem; color: #888;">/10</span></div>
+      <p style="font-size: 0.85rem; color: #888; margin-top: 0.25rem;">Score Global</p>
+    </header>
+
+    ${metricsHtml ? `<div style="margin-bottom: 2rem; padding: 1.5rem; border-radius: 12px; background: #111; border: 1px solid #222;">${metricsHtml}</div>` : ''}
+
+    ${sectionsHtml}
+
+    <footer style="text-align: center; padding: 2rem 0; margin-top: 2rem; border-top: 1px solid #222; color: #555; font-size: 0.8rem;">
+      <p>APEXLABS by Achzod &mdash; apexlabs.onrender.com</p>
+    </footer>
+  </div>
+</body>
+</html>`;
+        } else {
+          // Premium/Elite format with .txt
+          const photos = extractPhotosFromAudit(audit);
+          html = await generateExportHTML(narrativeReport, auditId, photos);
+        }
       }
-      
+
       if (!html || html.length < 500) {
         res.status(400).json({ error: "Rapport HTML invalide ou trop court" });
         return;
