@@ -1821,12 +1821,21 @@ const FRENCH_HEADING_REPLACEMENTS: Array<{ pattern: RegExp; replacement: string 
 const FRENCH_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bsante\b/gi, "santé"],
   [/\bentrainement\b/gi, "entraînement"],
+  [/\bentrainements\b/gi, "entraînements"],
+  [/\brecuperation\b/gi, "récupération"],
+  [/\brecuperations\b/gi, "récupérations"],
   [/\bsupplements\b/gi, "suppléments"],
   [/\bbibliotheque\b/gi, "bibliothèque"],
   [/\breferences\b/gi, "références"],
   [/\bqualite\b/gi, "qualité"],
   [/\bdonnees\b/gi, "données"],
   [/\bmetabolique\b/gi, "métabolique"],
+  [/\bmetaboliques\b/gi, "métaboliques"],
+  [/\bhepatique\b/gi, "hépatique"],
+  [/\bhepatiques\b/gi, "hépatiques"],
+  [/\bpremiere\b/gi, "première"],
+  [/\bpremieres\b/gi, "premières"],
+  [/\bprecisement\b/gi, "précisément"],
   [/\bprelevement\b/gi, "prélèvement"],
   [/\bdetaillee\b/gi, "détaillée"],
   [/\bdetaille\b/gi, "détaillé"],
@@ -2314,6 +2323,8 @@ Style de rendu:
 - Interdiction totale des listes à puces, listes numérotées, checklists et tableaux markdown.
 - Chaque recommandation doit être reliée explicitement aux biomarqueurs du client.
 - Français irréprochable: accents, cédilles, orthographe et syntaxe soignés.
+- IMPORTANT: tu écris en français avec TOUS les accents (é, è, ê, à, ù, ç, ô, î, û), sans exception.
+- Exemples obligatoires: métabolique, hépatique, première, détaillé, précisément, récupération, entraînement.
 - Evite la répétition: chaque section doit apporter des informations nouvelles et spécifiques.
 
 Sources:
@@ -4673,6 +4684,23 @@ export async function getBloodworkKnowledgeContext(
 
   const keywordSet = new Set<string>();
   const focusTokenSet = new Set<string>();
+  const getMarkerNumericValue = (idCandidates: string[], nameHints: string[] = []): number | null => {
+    const normalizedIdCandidates = idCandidates.map((value) => normalizePlain(value));
+    const normalizedNameHints = nameHints.map((value) => normalizePlain(value));
+    for (const marker of markers) {
+      const rawValue = Number(marker?.value);
+      if (!Number.isFinite(rawValue)) continue;
+      const markerId = normalizePlain(String(marker?.markerId || ""));
+      const markerName = normalizePlain(String(marker?.name || ""));
+      if (
+        normalizedIdCandidates.some((candidate) => candidate && (markerId === candidate || markerId.includes(candidate))) ||
+        normalizedNameHints.some((hint) => hint && markerName.includes(hint))
+      ) {
+        return rawValue;
+      }
+    }
+    return null;
+  };
 
   for (const marker of markers) {
     if (!marker || marker.status === "optimal") continue;
@@ -4727,12 +4755,103 @@ export async function getBloodworkKnowledgeContext(
   keywordSet.add("muscle protein synthesis");
   keywordSet.add("recovery");
 
+  const freeTestosterone = getMarkerNumericValue(
+    ["testosterone_libre", "free_testosterone", "testosterone_free"],
+    ["testosterone libre", "free testosterone"]
+  );
+  const hdl = getMarkerNumericValue(["hdl"], ["hdl"]);
+  const triglycerides = getMarkerNumericValue(["triglycerides", "tg"], ["triglycerides", "triglycerides"]);
+  const apoA1 = getMarkerNumericValue(["apo_a1", "apoa1"], ["apolipoproteines a1", "apoa1", "apo a1"]);
+  const alt = getMarkerNumericValue(["alt"], ["alt", "alanine aminotransferase"]);
+  const ggt = getMarkerNumericValue(["ggt"], ["ggt", "gamma glutamyl"]);
+
+  const lowFreeTestosterone = freeTestosterone !== null && freeTestosterone < 15;
+  const dyslipidemiaPattern =
+    (hdl !== null && hdl < 40) ||
+    (triglycerides !== null && triglycerides > 120) ||
+    (apoA1 !== null && apoA1 < 125);
+  const liverStressPattern = (alt !== null && alt > 40) || (ggt !== null && ggt > 25);
+
+  if (lowFreeTestosterone) {
+    const androgenKeywords = [
+      "tongkat ali",
+      "fadogia agrestis",
+      "boron supplementation",
+      "shbg reduction",
+      "free testosterone optimization",
+      "lh fsh axis",
+      "huberman testosterone",
+      "applied metabolics testosterone",
+    ];
+    for (const keyword of androgenKeywords) {
+      keywordSet.add(keyword);
+      focusTokenSet.add(normalizePlain(keyword));
+    }
+  }
+
+  if (dyslipidemiaPattern) {
+    const lipidKeywords = [
+      "berberine triglycerides",
+      "citrus bergamot lipid profile",
+      "myo inositol insulin sensitivity",
+      "epa dha triglycerides",
+      "tg hdl ratio intervention",
+      "applied metabolics lipids",
+      "examine berberine",
+    ];
+    for (const keyword of lipidKeywords) {
+      keywordSet.add(keyword);
+      focusTokenSet.add(normalizePlain(keyword));
+    }
+  }
+
+  if (liverStressPattern) {
+    const liverKeywords = [
+      "tudca liver enzymes",
+      "nac glutathione liver",
+      "taurine liver support",
+      "silymarin alt reduction",
+      "nafld supplement protocol",
+      "applied metabolics liver",
+      "huberman liver health",
+    ];
+    for (const keyword of liverKeywords) {
+      keywordSet.add(keyword);
+      focusTokenSet.add(normalizePlain(keyword));
+    }
+  }
+
   const keywords = Array.from(keywordSet).filter((keyword) => keyword.length >= 3).slice(0, 55);
   if (!keywords.length) return "";
 
   try {
     const primaryArticles = await searchArticles(keywords, 40, sourceFilter);
     let allArticles = [...primaryArticles];
+
+    const expertQuerySeeds = [
+      "free testosterone tongkat ali",
+      "fadogia agrestis",
+      "berberine triglycerides hdl",
+      "citrus bergamot lipid profile",
+      "tudca liver enzymes",
+      "taurine liver metabolism",
+      "myo inositol insulin sensitivity",
+    ];
+    const expertSources: Array<"huberman" | "applied_metabolics" | "examine"> = [
+      "huberman",
+      "applied_metabolics",
+      "examine",
+    ];
+    for (const source of expertSources) {
+      for (const seed of expertQuerySeeds) {
+        try {
+          const sourceHits = await searchArticles([seed], 2, [source] as any);
+          allArticles.push(...sourceHits);
+        } catch {
+          // Ignore source-specific retrieval failures and continue with broader corpus.
+        }
+      }
+    }
 
     if (allArticles.length < 12) {
       const markerQueries = markers
@@ -4814,14 +4933,52 @@ export async function getBloodworkKnowledgeContext(
       .slice(0, 40);
 
     const selected: ScrapedArticle[] = [];
+    const selectedKeys = new Set<string>();
+    const rememberSelected = (article: ScrapedArticle) => {
+      const key = article.id || `${article.source}:${normalizePlain(article.title || "")}`;
+      if (selectedKeys.has(key)) return false;
+      selectedKeys.add(key);
+      selected.push(article);
+      return true;
+    };
+
+    const prioritySources: Array<{ source: string; min: number }> = [
+      { source: "huberman", min: 1 },
+      { source: "applied_metabolics", min: 1 },
+      { source: "examine", min: 1 },
+      { source: "pubmed", min: 1 },
+      { source: "peter_attia", min: 1 },
+    ];
+    const priorityPool = scored.map((item) => item.article);
+    for (const { source, min } of prioritySources) {
+      let taken = 0;
+      for (const article of priorityPool) {
+        if (taken >= min) break;
+        if (article.source !== source) continue;
+        if (rememberSelected(article)) taken += 1;
+      }
+    }
+
     const perSourceCount = new Map<string, number>();
+    for (const article of selected) {
+      perSourceCount.set(article.source, (perSourceCount.get(article.source) || 0) + 1);
+    }
     for (const article of sorted) {
+      if (selected.length >= 20) break;
+      const key = article.id || `${article.source}:${normalizePlain(article.title || "")}`;
+      if (selectedKeys.has(key)) continue;
       const count = perSourceCount.get(article.source) || 0;
-      const perSourceLimit = article.source === "manual" ? 8 : 3;
+      const perSourceLimit =
+        article.source === "manual"
+          ? 8
+          : article.source === "huberman" || article.source === "applied_metabolics" || article.source === "examine"
+            ? 5
+            : 3;
       if (count >= perSourceLimit) continue;
       selected.push(article);
+      selectedKeys.add(key);
       perSourceCount.set(article.source, count + 1);
-      if (selected.length >= 16) break;
+      if (selected.length >= 20) break;
     }
 
     if (!selected.length) return "";

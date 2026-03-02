@@ -320,6 +320,8 @@ function sanitizeNarrativeTone(sectionsMap: Record<string, string>): Record<stri
     [/\bvous\b/gi, "tu"],
     [/\bvotre\b/gi, "ton"],
     [/\bvos\b/gi, "tes"],
+    [/\bta\s+niacine\b/gi, "la niacine"],
+    [/\bton\s+alt,\s*ce\s+marqueur\s+mesure[^,]+,\s*reste\b/gi, "ton ALT reste"],
     [/st[eé]ro[iï]dogen[eè]se/gi, "synthese hormonale"],
     [/\bst[eé]ro[iï]des?\b/gi, ""],
     [/hormones?\s+st[eé]ro[iï]diennes?/gi, "hormones"],
@@ -975,6 +977,7 @@ interface BatchContext {
   markerCount: number;
   minDeepDiveMarkers: number;
   summaryText: string;
+  supplementsExpertDirectives: string;
 }
 
 function buildBatch1Prompt(ctx: BatchContext): string {
@@ -1096,6 +1099,9 @@ function buildBatch3Prompt(ctx: BatchContext): string {
 - Longueur minimale: ${minSupplements} caracteres.
 - 8 a 16 options classees par priorite (Niveau 1/2/3).
 - Pour chaque supplement: pourquoi, dose, timing, duree, precautions, critere d'efficacite au retest.
+- Niveau d'expertise attendu: clinique avancee, mecanismes concrets, formes galeniques precises, fenetres d'introduction, interactions et contre-indications.
+- Priorite bibliotheque: Huberman Lab + Applied Metabolics + Examine + PubMed quand disponibles dans les [SRC:ID].
+- Interdiction de recommandations basiques ou generiques non reliees aux biomarqueurs.
 - REGLE NIACINE: Si ALT > 40 U/L, la niacine est INTERDITE (hepatotoxique). Recommande des alternatives (exercice aerobie, omega-3, fibres solubles).
 
 ## Annexes (references et vigilance)
@@ -1120,10 +1126,227 @@ ${ctx.patternsText}
 RESUME: ${ctx.summaryText}
 ${ctx.knowledgeContext ? `\nSOURCES DISPONIBLES:\n${ctx.knowledgeContext}` : ""}
 
+CONTRAINTES EXPERT SUPPLEMENTS (OBLIGATOIRES):
+${ctx.supplementsExpertDirectives}
+
 STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.
 TUTOIEMENT: OBLIGATOIRE. Utilise UNIQUEMENT "tu", "ton", "ta", "tes", "toi". JAMAIS "il", "elle", "le client", "Alex", "vous".
 DEFINITIONS: Dans chaque section de ce batch, a la premiere mention d'un marqueur, ajoute une phrase courte "ce marqueur mesure...". N'ecris jamais "deja detaille plus haut".
 STEROIDES: INTERDIT de mentionner, insinuer ou speculer sur l'utilisation de steroides ou produits dopants.`;
+}
+
+function getMarkerNumericValue(markers: MarkerAnalysis[], idHints: string[], nameHints: string[] = []): number | null {
+  const normalizedIdHints = idHints.map((value) => guardKey(value));
+  const normalizedNameHints = nameHints.map((value) => normalizeGuard(value));
+  for (const marker of markers) {
+    const value = Number(marker?.value);
+    if (!Number.isFinite(value)) continue;
+    const markerId = guardKey(String(marker?.markerId || ""));
+    const markerName = normalizeGuard(String(marker?.name || ""));
+    if (
+      normalizedIdHints.some((hint) => hint && (markerId === hint || markerId.includes(hint))) ||
+      normalizedNameHints.some((hint) => hint && markerName.includes(hint))
+    ) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function buildSupplementsExpertDirectives(markers: MarkerAnalysis[]): string {
+  const directives: string[] = [];
+  const freeTestosterone = getMarkerNumericValue(
+    markers,
+    ["testosterone_libre", "free_testosterone", "testosterone_free"],
+    ["testosterone libre", "free testosterone"],
+  );
+  const hdl = getMarkerNumericValue(markers, ["hdl"], ["hdl"]);
+  const triglycerides = getMarkerNumericValue(markers, ["triglycerides", "tg"], ["triglycerides"]);
+  const apoA1 = getMarkerNumericValue(markers, ["apo_a1", "apoa1"], ["apo a1", "apolipoproteines a1"]);
+  const alt = getMarkerNumericValue(markers, ["alt"], ["alanine aminotransferase", "alt"]);
+  const ggt = getMarkerNumericValue(markers, ["ggt"], ["ggt"]);
+
+  directives.push(
+    "1) Le niveau de detail doit rester expert et mecanistique: relie chaque dose a la biologie, aux ranges cibles et au retest.",
+  );
+  directives.push(
+    "2) Appuie en priorite sur les sources Huberman Lab, Applied Metabolics, Examine et PubMed presentes dans les IDs fournis.",
+  );
+
+  if (freeTestosterone !== null && freeTestosterone < 15) {
+    directives.push(
+      `3) Testostérone libre basse detectee (${freeTestosterone}): inclure un bloc avance sur Tongkat Ali, Fadogia agrestis et bore (boron), avec dose, forme, cycle ON/OFF, risques et monitoring hormonal.`,
+    );
+  }
+  if ((hdl !== null && hdl < 40) || (triglycerides !== null && triglycerides > 120) || (apoA1 !== null && apoA1 < 125)) {
+    directives.push(
+      `4) Dyslipidemie detectee (HDL=${hdl ?? "NR"}, TG=${triglycerides ?? "NR"}, ApoA1=${apoA1 ?? "NR"}): inclure berberine, citrus bergamot et myo-inositol avec rationnel sur TG/HDL, sensibilite insulinique et timing.`,
+    );
+  }
+  if ((alt !== null && alt > 40) || (ggt !== null && ggt > 25)) {
+    directives.push(
+      `5) Stress hepatique detecte (ALT=${alt ?? "NR"}, GGT=${ggt ?? "NR"}): inclure TUDCA, NAC, taurine et silymarine avec fenetre d'introduction et garde-fous hepatiques; niacine strictement interdite.`,
+    );
+  }
+
+  if (directives.length <= 2) {
+    directives.push(
+      "3) Meme sans drapeau majeur, detailler un niveau avance sur interactions, biomarqueurs sentinelles, et logique de sevrage/cycle.",
+    );
+  }
+
+  return directives.join("\n");
+}
+
+type KnowledgeSourceEntry = {
+  id: string;
+  header: string;
+  sourceLabel: string;
+  normalizedHeader: string;
+  normalizedSourceLabel: string;
+};
+
+function parseKnowledgeSourceEntries(knowledgeContext: string): KnowledgeSourceEntry[] {
+  const entries: KnowledgeSourceEntry[] = [];
+  for (const line of String(knowledgeContext || "").split(/\r?\n/)) {
+    const match = line.match(/\[SRC:([^\]]+)\]\s*(.+)$/i);
+    if (!match) continue;
+    const id = String(match[1] || "").trim();
+    const header = String(match[2] || "").trim().replace(/^-+\s*/, "");
+    if (!id || !header) continue;
+    const sourceLabel = header.split("—")[0].trim();
+    entries.push({
+      id,
+      header,
+      sourceLabel,
+      normalizedHeader: normalizeGuard(header),
+      normalizedSourceLabel: normalizeGuard(sourceLabel),
+    });
+  }
+  return entries;
+}
+
+function pickSourceCitationId(
+  entries: KnowledgeSourceEntry[],
+  contentHints: string[],
+  preferredSources: string[] = [],
+): string | null {
+  if (!entries.length) return null;
+  const hintTokens = contentHints.map((value) => normalizeGuard(value)).filter(Boolean);
+  const preferredTokens = preferredSources.map((value) => normalizeGuard(value)).filter(Boolean);
+
+  const byPreferredAndHint = entries.find((entry) => {
+    const preferredOk =
+      preferredTokens.length === 0 || preferredTokens.some((token) => entry.normalizedSourceLabel.includes(token));
+    const hintOk = hintTokens.length === 0 || hintTokens.some((token) => entry.normalizedHeader.includes(token));
+    return preferredOk && hintOk;
+  });
+  if (byPreferredAndHint) return byPreferredAndHint.id;
+
+  const byHint = entries.find((entry) =>
+    hintTokens.length === 0 ? false : hintTokens.some((token) => entry.normalizedHeader.includes(token)),
+  );
+  if (byHint) return byHint.id;
+
+  const byPreferred = entries.find((entry) =>
+    preferredTokens.length === 0 ? false : preferredTokens.some((token) => entry.normalizedSourceLabel.includes(token)),
+  );
+  if (byPreferred) return byPreferred.id;
+
+  return entries[0].id;
+}
+
+function pickSourceCitationIdBySource(
+  entries: KnowledgeSourceEntry[],
+  preferredSource: string,
+): string | null {
+  const token = normalizeGuard(preferredSource);
+  const match = entries.find((entry) => entry.normalizedSourceLabel.includes(token));
+  return match ? match.id : null;
+}
+
+function enforceExpertSupplementsSection(
+  sectionsMap: Record<string, string>,
+  markers: MarkerAnalysis[],
+  knowledgeContext: string,
+): Record<string, string> {
+  const out: Record<string, string> = { ...sectionsMap };
+  let supplements = String(out.supplements || "");
+  if (!supplements.trim()) return out;
+
+  const catalog = parseKnowledgeSourceEntries(knowledgeContext);
+  const citation = (hints: string[], preferredSources: string[] = []) => {
+    const id = pickSourceCitationId(catalog, hints, preferredSources);
+    return id ? ` [SRC:${id}]` : "";
+  };
+
+  const freeTestosterone = getMarkerNumericValue(
+    markers,
+    ["testosterone_libre", "free_testosterone", "testosterone_free"],
+    ["testosterone libre", "free testosterone"],
+  );
+  const hdl = getMarkerNumericValue(markers, ["hdl"], ["hdl"]);
+  const triglycerides = getMarkerNumericValue(markers, ["triglycerides", "tg"], ["triglycerides"]);
+  const apoA1 = getMarkerNumericValue(markers, ["apo_a1", "apoa1"], ["apo a1", "apolipoproteines a1"]);
+  const alt = getMarkerNumericValue(markers, ["alt"], ["alt", "alanine aminotransferase"]);
+  const ggt = getMarkerNumericValue(markers, ["ggt"], ["ggt"]);
+
+  const lowFreeTestosterone = freeTestosterone !== null && freeTestosterone < 15;
+  const dyslipidemiaPattern =
+    (hdl !== null && hdl < 40) ||
+    (triglycerides !== null && triglycerides > 120) ||
+    (apoA1 !== null && apoA1 < 125);
+  const liverStressPattern = (alt !== null && alt > 40) || (ggt !== null && ggt > 25);
+  const hasTudca = /\btudca\b/i.test(supplements);
+  const hasTaurine = /\btaurine\b/i.test(supplements);
+
+  if (lowFreeTestosterone && !/(tongkat|fadogia|boron|bore)/i.test(supplements)) {
+    supplements += `\n\nSur ton axe androgénique, je monte clairement au niveau expert: ta testostérone libre est trop basse pour optimiser la recomposition, donc j'ajoute un bloc ciblé Tongkat Ali + Fadogia agrestis + bore. Le Tongkat Ali se dose sur extrait standardisé (généralement 200 a 400 mg/j selon la concentration), avec suivi du sommeil, de l'irritabilité et du ressenti nerveux${citation(["tongkat ali", "testosterone"], ["huberman", "examine"])}. La Fadogia se raisonne en cycle court avec fenêtre OFF stricte et surveillance hépatique/rénale, parce que l'objectif est de tester une réponse de l'axe LH-FSH sans dérive de tolérance${citation(["fadogia", "testosterone"], ["huberman", "examine"])}. Le bore se place en appoint (souvent 6 a 10 mg/j en cycle) pour travailler la fraction libre de testostérone via la SHBG, avec arrêt immédiat en cas d'effet indésirable et contrôle biologique au retest${citation(["boron", "free testosterone", "shbg"], ["examine", "huberman"])}.`;
+  }
+
+  if (dyslipidemiaPattern && !/(berb[eé]rine|citrus\s+bergamot|myo[\s-]?inositol|inositol)/i.test(supplements)) {
+    supplements += `\n\nSur le bloc lipides-insuline, je ne reste pas sur un stack basique: j'intègre la berbérine de manière structurée (souvent 500 mg avant deux ou trois repas riches en glucides) pour agir sur la sensibilité insulinique et la production hépatique de glucose${citation(["berberine", "insulin", "triglycerides"], ["examine", "huberman"])}. J'ajoute la citrus bergamot pour travailler la qualité du profil lipidique, en particulier quand HDL bas et triglycérides hauts s'installent ensemble${citation(["citrus bergamot", "lipid"], ["applied metabolics", "examine"])}. Le myo-inositol complète la stratégie sur la signalisation insulinique et la flexibilité métabolique, avec progression de dose et suivi digestif pour maintenir l'adhérence${citation(["inositol", "insulin sensitivity"], ["huberman", "applied metabolics", "examine"])}.`;
+  }
+
+  if (liverStressPattern && (!hasTudca || !hasTaurine)) {
+    supplements += `\n\nVu ton stress hépatique, je renforce le protocole avec une logique hépatoprotectrice de niveau supérieur: TUDCA en introduction prudente, NAC en base antioxydante et taurine pour soutenir le flux biliaire et le terrain métabolique${citation(["tudca", "liver", "nafld"], ["applied metabolics", "mpmd", "newsletter"])}${citation(["nac", "glutathione", "liver"], ["applied metabolics", "pubmed"])}${citation(["taurine", "liver", "metabolic"], ["examine", "applied metabolics"])}. Je garde la silymarine comme fondation, je bloque les molécules potentiellement hépatotoxiques, et je ne valide aucune montée de dose si ALT/GGT ne s'améliorent pas objectivement au retest${citation(["silymarin", "alt", "nafld"], ["pubmed", "applied metabolics"])}.`;
+  }
+
+  const citationIds = new Set(extractSourceIdsFromText(supplements));
+  const sourceById = new Map(catalog.map((entry) => [entry.id, entry.normalizedSourceLabel]));
+  const hasHubermanCitation = Array.from(citationIds).some((id) => (sourceById.get(id) || "").includes("huberman"));
+  const hasAppliedCitation = Array.from(citationIds).some((id) =>
+    (sourceById.get(id) || "").includes("applied metabolics"),
+  );
+  const hasExamineCitation = Array.from(citationIds).some((id) => (sourceById.get(id) || "").includes("examine"));
+  if ((lowFreeTestosterone || dyslipidemiaPattern || liverStressPattern) && (!hasHubermanCitation || !hasAppliedCitation || !hasExamineCitation)) {
+    const hubermanId = pickSourceCitationIdBySource(catalog, "huberman");
+    const appliedId = pickSourceCitationIdBySource(catalog, "applied metabolics");
+    const examineId = pickSourceCitationIdBySource(catalog, "examine");
+    const anchors: string[] = [];
+    if (hubermanId) {
+      anchors.push(`les leviers pratiques de Huberman Lab sur l'axe hormonal et la regulation neuroendocrine [SRC:${hubermanId}]`);
+    }
+    if (appliedId) {
+      anchors.push(`l'approche terrain Applied Metabolics sur lipides, recomposition et charge hépatique [SRC:${appliedId}]`);
+    }
+    if (examineId) {
+      anchors.push(`les fiches evidence-based Examine sur formes, dosages et interactions [SRC:${examineId}]`);
+    }
+    if (anchors.length) {
+      supplements += `\n\nAncrage bibliotheque expert: ce protocole s'appuie explicitement sur ${anchors.join(", ")}.`;
+    }
+  }
+
+  if (/\bALT\b/i.test(supplements) && !/\bALT\s*(?:\(|,)\s*ce\s+marqueur\s+mesure/i.test(supplements)) {
+    supplements = supplements.replace(
+      /\bALT\b/i,
+      "ALT (ce marqueur mesure une enzyme hépatique qui monte quand les cellules du foie sont irritées)",
+    );
+  }
+
+  out.supplements = supplements;
+  return out;
 }
 
 /**
@@ -1703,6 +1926,7 @@ export async function generateParallelHtmlReport(
     markerCount,
     minDeepDiveMarkers,
     summaryText,
+    supplementsExpertDirectives: buildSupplementsExpertDirectives(analysisResult.markers),
   };
 
   const sourcesContext = [ctx.knowledgeContext, ctx.deepDiveContext].filter(Boolean).join("\n\n");
@@ -1774,6 +1998,7 @@ export async function generateParallelHtmlReport(
   sectionsMap = ensureBodySourceCitations(sectionsMap, sourcesContext, 8);
   sectionsMap = normalizeSourceIdsAgainstKnowledge(sectionsMap, sourcesContext);
   sectionsMap = limitRepeatedStatMentions(sectionsMap, analysisResult.markers, 3);
+  sectionsMap = enforceExpertSupplementsSection(sectionsMap, analysisResult.markers, sourcesContext);
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
   sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, sourcesContext);
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
