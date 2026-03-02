@@ -538,7 +538,8 @@ ${dataStr}
       }
 
       if (!knowledgeContext || knowledgeContext.length < MIN_KNOWLEDGE_CONTEXT_CHARS) {
-        throw new Error(`KNOWLEDGE_CONTEXT_EMPTY:${section}`);
+        console.warn(`[Claude] Knowledge context empty/short for "${section}" — proceeding without external context`);
+        knowledgeContext = "";
       }
 
       // Calcul de la longueur cible basé sur le tier
@@ -558,7 +559,7 @@ INSTRUCTIONS IMPORTANTES:
 - Paragraphes uniquement (pas de listes, pas de puces)
 - Si une consigne de section propose un format liste, transforme-la en narration fluide
 - N'utilise pas de markdown (pas de ** ou ##)
-- Integre la knowledge base sans citer de sources ni noms propres
+- Si un contexte scientifique est fourni ci-dessous, integre-le sans citer de sources ni noms propres
 - Ne dis jamais "client", "nous", "notre" ou "on"
 - Parle a la premiere personne ("je") et tutoie ${firstName}
 - Ne mentionne aucune offre, coaching, promo, email, site ou call-to-action
