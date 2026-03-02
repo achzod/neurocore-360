@@ -668,6 +668,22 @@ const parseRange = (value?: string): { min: number; max: number } | null => {
   return min < max ? { min, max } : { min: max, max: min };
 };
 
+const formatRangeNumber = (value: number): string => {
+  if (!Number.isFinite(value)) return "";
+  const rounded = Math.round(value * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : String(rounded).replace(/\.0+$/, "");
+};
+
+const formatRangeForDisplay = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  const parsed = parseRange(value);
+  if (!parsed) return String(value);
+  if (parsed.max >= 900) {
+    return `${formatRangeNumber(parsed.min)}+`;
+  }
+  return `${formatRangeNumber(parsed.min)} - ${formatRangeNumber(parsed.max)}`;
+};
+
 const scoreFromSnapshot = (marker: BloodReportMarkerSnapshot): number => {
   const value = Number(marker.value);
   if (!Number.isFinite(value)) {
@@ -856,9 +872,9 @@ const deriveBiomarkerScoresFromSnapshots = (
         meaning: band.meaning,
         valueLabel: `${Number(marker.value)}${unit}`,
         rangeLabel: marker.optimalRange
-          ? `Zone optimale ${marker.optimalRange}${unit}`
+          ? `Zone optimale ${formatRangeForDisplay(marker.optimalRange)}${unit}`
           : marker.normalRange
-          ? `Zone normale ${marker.normalRange}${unit}`
+          ? `Zone normale ${formatRangeForDisplay(marker.normalRange)}${unit}`
           : undefined,
       } as BiomarkerScoreRow;
     });
@@ -1128,9 +1144,9 @@ const deriveMarkerReferenceRows = (snapshots?: BloodReportMarkerSnapshot[]): Mar
         bandClass: tone.bandClass,
         valueLabel: Number.isFinite(Number(marker.value)) ? `${Number(marker.value)}${unit}` : undefined,
         rangeLabel: marker.optimalRange
-          ? `Zone optimale ${marker.optimalRange}${unit}`
+          ? `Zone optimale ${formatRangeForDisplay(marker.optimalRange)}${unit}`
           : marker.normalRange
-          ? `Zone normale ${marker.normalRange}${unit}`
+          ? `Zone normale ${formatRangeForDisplay(marker.normalRange)}${unit}`
           : undefined,
         definition: applyFrenchAccentFixes(insight.definition),
         positiveImpact: applyFrenchAccentFixes(insight.positiveImpact),
@@ -1326,6 +1342,16 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
   const labelRadius = axisCount > 14 ? radius + 30 : radius + 24;
   const labelFontSize = axisCount > 18 ? 8 : axisCount > 14 ? 9 : 11;
   const maxLabelLength = axisCount > 18 ? 16 : axisCount > 14 ? 18 : 26;
+  const shortenRadarLabel = (rawName: string): string => {
+    const lower = normalizeLoose(rawName);
+    if (lower.includes("apolipoproteines a1") || lower.includes("apolipoproteine a1") || lower.includes("apo a1")) {
+      return "Apo A1";
+    }
+    if (lower.includes("apob") || lower.includes("apo b")) {
+      return "ApoB";
+    }
+    return rawName;
+  };
 
   const gridRings = [0.25, 0.5, 0.75, 1].map((factor) => {
     const r = radius * factor;
@@ -1336,7 +1362,8 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
     const angle = toAngle(index);
     const outer = polar(angle, radius);
     const label = polar(angle, labelRadius);
-    const shortName = row.name.length > maxLabelLength ? `${row.name.slice(0, maxLabelLength - 3)}...` : row.name;
+    const radarLabel = shortenRadarLabel(row.name);
+    const shortName = radarLabel.length > maxLabelLength ? `${radarLabel.slice(0, maxLabelLength - 3)}...` : radarLabel;
     return `
       <line x1="${center}" y1="${center}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="#d7c6af" stroke-width="1" />
       <text x="${label.x.toFixed(2)}" y="${label.y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${labelFontSize}" fill="#6f6254">${escapeHtml(shortName)}</text>
@@ -1442,17 +1469,12 @@ const renderClaudeTabbedReportHtml = (
         <h2>Marqueurs extraits et interprétation</h2>
         ${renderExtractedMarkersPanel(markerSnapshots)}
       </section>`;
-  const nav = sections
+  const generatedTabs = sections
     .map((section, index) => {
       const tabId = slugifyTabId(section.title, index);
-      const isActive = "false";
-      const activeClass = "";
-      return `<button class="tab-btn${activeClass}" type="button" data-tab-target="${tabId}" aria-selected="${isActive}">${escapeHtml(
-        section.title
-      )}</button>`;
+      return { id: tabId, title: section.title };
     })
-    .join("\n")
-    .trim();
+    .filter((tab) => tab.id && tab.title);
 
   const panels = sections
     .map((section, index) => {
@@ -1468,12 +1490,28 @@ const renderClaudeTabbedReportHtml = (
     .join("\n")
     .trim();
 
-  const navWithExtraTabs = `
-      <button class="tab-btn is-active" type="button" data-tab-target="${compositeTabId}" aria-selected="true">Scores Composites</button>
-      <button class="tab-btn" type="button" data-tab-target="${radarTabId}" aria-selected="false">Radar des scores biomarqueurs</button>
-      <button class="tab-btn" type="button" data-tab-target="${markersTabId}" aria-selected="false">Marqueurs extraits</button>
-      ${nav}
-  `.trim();
+  const tabDescriptors = [
+    { id: compositeTabId, title: "Scores Composites", isActive: true },
+    { id: radarTabId, title: "Radar des scores biomarqueurs", isActive: false },
+    { id: markersTabId, title: "Marqueurs extraits", isActive: false },
+    ...generatedTabs.map((tab) => ({ ...tab, isActive: false })),
+  ];
+  const navWithExtraTabs = tabDescriptors
+    .map(
+      (tab) =>
+        `<button class="tab-btn${tab.isActive ? " is-active" : ""}" type="button" data-tab-target="${tab.id}" aria-selected="${
+          tab.isActive ? "true" : "false"
+        }">${escapeHtml(tab.title)}</button>`,
+    )
+    .join("\n")
+    .trim();
+  const mobileTabOptions = tabDescriptors
+    .map(
+      (tab) =>
+        `<option value="${tab.id}"${tab.isActive ? " selected" : ""}>${escapeHtml(tab.title)}</option>`,
+    )
+    .join("\n")
+    .trim();
   const panelsWithExtraTabs = `${compositePanel}\n${radarPanel}\n${markersPanel}\n${panels}`.trim();
 
   return stripBloodForbiddenFormatting(`<!DOCTYPE html>
@@ -1481,7 +1519,8 @@ const renderClaudeTabbedReportHtml = (
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(clientName)} - Bilan sanguin complet</title>
+  <title>NEUROCORE 360 | ACHZOD | ${escapeHtml(clientName)} | Bilan sanguin complet</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f2822'/%3E%3Cpath d='M32 11l17 42h-8.3l-3.2-8.7H26.4L23.2 53H15L32 11zm2.8 25.8L32 28.7l-2.8 8.1h5.6z' fill='%23f8dcc0'/%3E%3C/svg%3E">
   <style>
     :root {
       --paper: ${CLAUDE_THEME.paper};
@@ -1528,6 +1567,37 @@ const renderClaudeTabbedReportHtml = (
       font-weight: 700;
       margin-bottom: 10px;
     }
+    .brand-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .achzod-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #594a3d;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+    .achzod-mark-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 8px;
+      background: #2f2822;
+      color: #f8dcc0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+    }
     .badge-dot {
       width: 8px;
       height: 8px;
@@ -1553,6 +1623,30 @@ const renderClaudeTabbedReportHtml = (
       background: var(--card);
       box-shadow: 0 8px 24px var(--shadow);
       overflow: hidden;
+    }
+    .tabs-select-wrap {
+      display: none;
+      border-bottom: 1px solid var(--border);
+      background: var(--paper-soft);
+      padding: 12px;
+    }
+    .tabs-select-label {
+      margin: 0 0 6px;
+      color: #7b6d5d;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .tabs-select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #fff7eb;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 600;
     }
     .tabs-nav {
       display: flex;
@@ -1844,11 +1938,16 @@ const renderClaudeTabbedReportHtml = (
       font-size: 12px;
       text-align: center;
     }
+    .footer-note strong {
+      color: #5f4735;
+    }
     @media (max-width: 700px) {
       .wrap { padding: 18px 10px 26px; }
       .title { font-size: 28px; }
       .tab-panel h2 { font-size: 24px; }
       .tabs-content { padding: 16px; }
+      .tabs-nav { display: none; }
+      .tabs-select-wrap { display: block; }
       .score-grid { grid-template-columns: 1fr; }
       .marker-grid { grid-template-columns: 1fr; }
       .composite-overall-shell { grid-template-columns: 1fr; }
@@ -1860,11 +1959,20 @@ const renderClaudeTabbedReportHtml = (
 <body>
   <div class="wrap">
     <header class="header">
-      <div class="badge"><span class="badge-dot"></span>NEUROCORE 360</div>
+      <div class="brand-line">
+        <div class="badge"><span class="badge-dot"></span>NEUROCORE 360</div>
+        <div class="achzod-mark"><span class="achzod-mark-icon">A</span><span>ACHZOD</span></div>
+      </div>
       <h1 class="title">${escapeHtml(clientName)} - Bilan sanguin complet</h1>
       <p class="subtitle">${escapeHtml(subtitle)}</p>
     </header>
     <main class="tabs-shell">
+      <div class="tabs-select-wrap">
+        <p class="tabs-select-label">Navigation rapport</p>
+        <select id="tabs-select" class="tabs-select" aria-label="Choisir un onglet">
+          ${mobileTabOptions}
+        </select>
+      </div>
       <nav class="tabs-nav" aria-label="Sections du rapport">
         ${navWithExtraTabs}
       </nav>
@@ -1872,12 +1980,14 @@ const renderClaudeTabbedReportHtml = (
         ${panelsWithExtraTabs}
       </div>
     </main>
-    <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client</p>
+    <p class="footer-note">Rapport ID: ${escapeHtml(reportId)} · Généré pour envoi client · <strong>NEUROCORE 360 by ACHZOD</strong></p>
+    <p class="footer-note">Copyright ${new Date().getFullYear()} ACHZOD. Tous droits réservés.</p>
   </div>
   <script>
     (function () {
       var buttons = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
       var panels = Array.prototype.slice.call(document.querySelectorAll('.tab-panel'));
+      var selectEl = document.getElementById('tabs-select');
       if (!buttons.length || !panels.length) return;
       function activate(id) {
         buttons.forEach(function (btn) {
@@ -1888,12 +1998,20 @@ const renderClaudeTabbedReportHtml = (
         panels.forEach(function (panel) {
           panel.classList.toggle('is-active', panel.id === id);
         });
+        if (selectEl && selectEl.value !== id) {
+          selectEl.value = id;
+        }
       }
       buttons.forEach(function (btn) {
         btn.addEventListener('click', function () {
           activate(btn.getAttribute('data-tab-target') || '');
         });
       });
+      if (selectEl) {
+        selectEl.addEventListener('change', function () {
+          activate(selectEl.value || '');
+        });
+      }
       activate(buttons[0].getAttribute('data-tab-target') || '');
     })();
   </script>

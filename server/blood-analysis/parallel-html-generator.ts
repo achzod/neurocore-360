@@ -1465,6 +1465,19 @@ function sectionContentToHtml(content: string): string {
 function buildMarkersTableHtml(markers: MarkerAnalysis[]): string {
   if (!markers.length) return "";
 
+  const formatRangeDisplay = (range: string): string => {
+    const text = String(range || "").trim();
+    const match = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:-|–|—)\s*(-?\d+(?:[.,]\d+)?)/);
+    if (!match) return text;
+    const min = Number(String(match[1]).replace(",", "."));
+    const max = Number(String(match[2]).replace(",", "."));
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return text;
+    const minLabel = Number.isInteger(min) ? String(min) : String(min);
+    const maxLabel = Number.isInteger(max) ? String(max) : String(max);
+    if (max >= 900) return `${minLabel}+`;
+    return `${minLabel} - ${maxLabel}`;
+  };
+
   const rows = markers
     .map((m) => {
       const color = statusToColor(m.status);
@@ -1472,8 +1485,8 @@ function buildMarkersTableHtml(markers: MarkerAnalysis[]): string {
       return `<tr>
         <td class="marker-name">${escapeHtml(m.name)}</td>
         <td class="marker-value">${m.value} ${escapeHtml(m.unit)}</td>
-        <td class="marker-range">${escapeHtml(m.normalRange)}</td>
-        <td class="marker-range">${escapeHtml(m.optimalRange)}</td>
+        <td class="marker-range">${escapeHtml(formatRangeDisplay(m.normalRange))}</td>
+        <td class="marker-range">${escapeHtml(formatRangeDisplay(m.optimalRange))}</td>
         <td><span class="status-badge" style="background:${color}">${label}</span></td>
       </tr>`;
     })
@@ -1530,7 +1543,7 @@ function buildHtmlReport(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rapport Sanguin — ${escapeHtml(clientName)}</title>
+  <title>NEUROCORE 360 | ACHZOD | ${escapeHtml(clientName)} | Bilan sanguin complet</title>
   <style>
     :root {
       --bg: #0a0a0f;
