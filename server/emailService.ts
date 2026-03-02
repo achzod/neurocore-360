@@ -701,25 +701,116 @@ const scoreFromSnapshot = (marker: BloodReportMarkerSnapshot): number => {
     const ratioFromCenter = Math.min(1, Math.abs(value - optimalCenter) / half);
     score = 100 - Math.round(ratioFromCenter * 10);
   } else if (value >= normal.min && value <= normal.max) {
-    const belowOptimal = value < optimal.min;
-    const corridor = belowOptimal
-      ? Math.max(1e-6, optimal.min - normal.min)
-      : Math.max(1e-6, normal.max - optimal.max);
-    const gap = belowOptimal ? optimal.min - value : value - optimal.max;
-    const ratio = clampNumber(gap / corridor, 0, 1);
-    score = Math.round(88 - ratio * 28);
+    if (value < optimal.min) {
+      // Penalty below optimal is proportional to deficit vs optimal low.
+      // Example: 11 vs optimal low 15 => 26.7% deficit -> ~53/100.
+      const deficitRatio = clampNumber((optimal.min - value) / Math.max(1e-6, Math.abs(optimal.min)), 0, 1.2);
+      score = Math.round(90 - deficitRatio * 138);
+    } else {
+      // Above optimal: penalize proportionally vs optimal high.
+      const excessRatio = clampNumber((value - optimal.max) / Math.max(1e-6, Math.abs(optimal.max)), 0, 1.2);
+      score = Math.round(90 - excessRatio * 130);
+    }
   } else {
     const outsideGap = value < normal.min ? normal.min - value : value - normal.max;
     const ratio = outsideGap / normalSpan;
     score = Math.round(58 - clampNumber(ratio, 0, 1.5) * 35);
   }
 
-  if (status === "critical") score = Math.min(score, 35);
-  if (status === "suboptimal") score = Math.min(score, 69);
-  if (status === "normal") score = Math.max(score, 62);
-  if (status === "optimal") score = Math.max(score, 80);
+  if (status === "critical") {
+    score = clampNumber(score, 6, 35);
+  } else if (status === "suboptimal") {
+    // Keep suboptimal markers visible without collapsing to near-zero scores.
+    score = clampNumber(score, 25, 69);
+  } else if (status === "normal") {
+    score = clampNumber(score, 62, 89);
+  } else if (status === "optimal") {
+    score = clampNumber(score, 80, 100);
+  }
 
   return clampNumber(score, 6, 100);
+};
+
+const FRENCH_ACCENT_FIXES: Array<[RegExp, string]> = [
+  [/\bcapacite\b/gi, "capacité"],
+  [/\bcapacites\b/gi, "capacités"],
+  [/\bflexibilite\b/gi, "flexibilité"],
+  [/\bmobilite\b/gi, "mobilité"],
+  [/\bmetabolique\b/gi, "métabolique"],
+  [/\bmetaboliques\b/gi, "métaboliques"],
+  [/\bmetabolisme\b/gi, "métabolisme"],
+  [/\brecuperation\b/gi, "récupération"],
+  [/\brecuperer\b/gi, "récupérer"],
+  [/\bdegradee\b/gi, "dégradée"],
+  [/\bdegrades\b/gi, "dégradés"],
+  [/\bdegradees\b/gi, "dégradées"],
+  [/\bse degrade\b/gi, "se dégrade"],
+  [/\bse degradent\b/gi, "se dégradent"],
+  [/\benergetique\b/gi, "énergétique"],
+  [/\benergetiques\b/gi, "énergétiques"],
+  [/\benergie\b/gi, "énergie"],
+  [/\bhepatique\b/gi, "hépatique"],
+  [/\bhepatiques\b/gi, "hépatiques"],
+  [/\boxydatif\b/gi, "oxydatif"],
+  [/\bcholesterol\b/gi, "cholestérol"],
+  [/\bthyroide\b/gi, "thyroïde"],
+  [/\bdefinition\b/gi, "définition"],
+  [/\bdechet\b/gi, "déchet"],
+  [/\banabolisme\b/gi, "anabolisme"],
+  [/\bsynthese\b/gi, "synthèse"],
+  [/\bproteique\b/gi, "protéique"],
+  [/\bsensibilite\b/gi, "sensibilité"],
+  [/\btestosterone\b/gi, "testostérone"],
+  [/\bandrogene\b/gi, "androgène"],
+  [/\bimmunite\b/gi, "immunité"],
+  [/\bcle\b/gi, "clé"],
+  [/\brenal\b/gi, "rénal"],
+  [/\brenale\b/gi, "rénale"],
+  [/\brenales\b/gi, "rénales"],
+  [/\breserves\b/gi, "réserves"],
+  [/\bregulee\b/gi, "régulée"],
+  [/\bregule\b/gi, "régule"],
+  [/\bderive\b/gi, "dérive"],
+  [/\bsante\b/gi, "santé"],
+  [/\bpriorite\b/gi, "priorité"],
+  [/\breduire\b/gi, "réduire"],
+  [/\bverifier\b/gi, "vérifier"],
+  [/\bdebit\b/gi, "débit"],
+  [/\bregulation\b/gi, "régulation"],
+  [/\btolerance\b/gi, "tolérance"],
+  [/\bcalibree\b/gi, "calibrée"],
+  [/\bfavorisees\b/gi, "favorisées"],
+  [/\bpenalisees\b/gi, "pénalisées"],
+  [/\bsystemic\b/gi, "systémique"],
+  [/\betre\b/gi, "être"],
+  [/\bpresente\b/gi, "présente"],
+  [/\bcreatinine\b/gi, "créatinine"],
+  [/\bdechets\b/gi, "déchets"],
+  [/\ba court terme\b/gi, "à court terme"],
+  [/\bsensible a\b/gi, "sensible à"],
+  [/\bsensibilite a\b/gi, "sensibilité à"],
+  [/\bdisponibles a\b/gi, "disponibles à"],
+  [/\butile au suivi\b/gi, "utile au suivi"],
+  [/\beleve\b/gi, "élevé"],
+  [/\belevee\b/gi, "élevée"],
+  [/\beleves\b/gi, "élevés"],
+  [/\boxygenation\b/gi, "oxygénation"],
+  [/\bmaitrisee\b/gi, "maîtrisée"],
+  [/\bmaitrise\b/gi, "maîtrise"],
+  [/\bsecuriser\b/gi, "sécuriser"],
+  [/\bcontrolee\b/gi, "contrôlée"],
+  [/\bcontrole\b/gi, "contrôle"],
+  [/\bsecurite\b/gi, "sécurité"],
+  [/\bentrainement\b/gi, "entraînement"],
+  [/\bgeneration\b/gi, "génération"],
+];
+
+const applyFrenchAccentFixes = (value: string): string => {
+  let next = String(value || "");
+  for (const [pattern, replacement] of FRENCH_ACCENT_FIXES) {
+    next = next.replace(pattern, replacement);
+  }
+  return next;
 };
 
 const inferScoreFromBlock = (body: string): number => {
@@ -866,6 +957,11 @@ const MARKER_INSIGHT_LIBRARY: Record<string, MarkerInsightTemplate> = {
     positiveImpact: "Quand l'ApoB est bas, la charge particulaire vasculaire est mieux controlee.",
     negativeImpact: "Quand l'ApoB augmente, le risque cardiovasculaire structurel est plus eleve.",
   },
+  apoa1: {
+    definition: "L'Apo A1 mesure la principale protéine des particules HDL.",
+    positiveImpact: "Quand l'Apo A1 est solide, la protection cardiovasculaire et l'évacuation des lipides sont meilleures.",
+    negativeImpact: "Quand l'Apo A1 est basse, le transport inverse du cholestérol ralentit et le risque cardio-métabolique augmente.",
+  },
   testosterone_libre: {
     definition: "La testosterone libre mesure la fraction androgene biologiquement active.",
     positiveImpact: "Quand elle est solide, la synthese proteique, la force et la recuperation sont favorisees.",
@@ -885,6 +981,11 @@ const MARKER_INSIGHT_LIBRARY: Record<string, MarkerInsightTemplate> = {
     definition: "La T3 libre mesure l'hormone thyroidienne active.",
     positiveImpact: "Quand elle est solide, l'energie disponible, la thermogenese et la vitalite sont mieux soutenues.",
     negativeImpact: "Quand elle est basse, la depense energetique peut ralentir et la fatigue s'installer.",
+  },
+  t4_libre: {
+    definition: "La T4 libre mesure la réserve hormonale thyroïdienne disponible pour conversion en T3.",
+    positiveImpact: "Quand la T4 libre reste bien positionnée, le métabolisme énergétique garde une base stable.",
+    negativeImpact: "Quand la T4 libre baisse, la conversion hormonale peut limiter énergie, récupération et perte de gras.",
   },
   insuline_jeun: {
     definition: "L'insuline a jeun mesure la pression insulinique de base.",
@@ -911,6 +1012,16 @@ const MARKER_INSIGHT_LIBRARY: Record<string, MarkerInsightTemplate> = {
     positiveImpact: "Quand elle est bien calibree, l'oxygenation et la capacite de travail sont mieux soutenues.",
     negativeImpact: "Quand elle est trop basse ou trop haute, la performance et la recuperation peuvent etre penalisees.",
   },
+  transferrine_saturation: {
+    definition: "La saturation de la transferrine mesure le pourcentage de transport du fer disponible.",
+    positiveImpact: "Quand elle est équilibrée, l'oxygénation et la performance aérobie sont mieux soutenues.",
+    negativeImpact: "Quand elle dérive, le transport du fer peut limiter récupération et capacité d'effort.",
+  },
+  b12: {
+    definition: "La vitamine B12 mesure un cofacteur clé pour le système nerveux, la méthylation et les globules rouges.",
+    positiveImpact: "Quand la B12 est solide, l'énergie cellulaire, la concentration et l'oxygénation sont mieux soutenues.",
+    negativeImpact: "Quand la B12 baisse, la fatigue, les troubles neurocognitifs et la baisse de performance peuvent augmenter.",
+  },
   vitamine_d: {
     definition: "La vitamine D mesure une hormone cle pour l'immunite, les hormones et le muscle.",
     positiveImpact: "Quand elle est optimale, la fonction immunitaire et neuromusculaire est plus robuste.",
@@ -926,6 +1037,21 @@ const MARKER_INSIGHT_LIBRARY: Record<string, MarkerInsightTemplate> = {
     positiveImpact: "Quand elle est stable, la charge tissulaire reste compatible avec la progression.",
     negativeImpact: "Quand elle monte, il faut distinguer stress musculaire et contrainte hepatique.",
   },
+  ggt: {
+    definition: "La GGT mesure une enzyme hépato-biliaire sensible au stress oxydatif et à la charge hépatique.",
+    positiveImpact: "Quand la GGT reste maîtrisée, la tolérance métabolique et hépatique est plus solide.",
+    negativeImpact: "Quand la GGT monte, le stress hépatique augmente et peut freiner la progression.",
+  },
+  estradiol: {
+    definition: "L'estradiol mesure un œstrogène clé de l'équilibre hormonal et vasculaire.",
+    positiveImpact: "Quand il est bien calibré, récupération, santé osseuse et équilibre hormonal sont favorisés.",
+    negativeImpact: "Quand il dérive, la qualité de récupération et l'équilibre endocrinien peuvent se dégrader.",
+  },
+  prolactine: {
+    definition: "La prolactine mesure une hormone hypophysaire qui module l'axe gonadique.",
+    positiveImpact: "Quand elle est stable, l'équilibre hormonal et la récupération nerveuse restent robustes.",
+    negativeImpact: "Quand elle est élevée, libido, récupération et signal androgénique peuvent être freinés.",
+  },
   creatinine: {
     definition: "La creatinine mesure un dechet metabolique utile au suivi renal.",
     positiveImpact: "Quand elle est stable, la fonction de filtration est globalement rassurante.",
@@ -939,16 +1065,41 @@ const MARKER_INSIGHT_LIBRARY: Record<string, MarkerInsightTemplate> = {
 };
 
 const genericMarkerInsight = (name: string): MarkerInsightTemplate => ({
-  definition: `${name} mesure un indicateur biologique de ton etat metabolique actuel.`,
-  positiveImpact: `Quand ${name} reste dans sa cible, la stabilite physiologique et la progression sont plus previsibles.`,
+  definition: `${name} mesure un indicateur biologique de ton état métabolique actuel.`,
+  positiveImpact: `Quand ${name} reste dans sa cible, la stabilité physiologique et la progression sont plus prévisibles.`,
   negativeImpact: `Quand ${name} sort de la cible, la fatigue, le risque et les blocages de progression augmentent.`,
 });
 
+const MARKER_INSIGHT_ALIASES: Record<string, string> = {
+  apo_a1: "apoa1",
+  apolipoproteines_a1: "apoa1",
+  apolipoproteine_a1: "apoa1",
+  transferrine_sat: "transferrine_saturation",
+  transferrine_sat_: "transferrine_saturation",
+  saturation_transferrine: "transferrine_saturation",
+  t4l: "t4_libre",
+  t4_libre: "t4_libre",
+  estradiol_e2: "estradiol",
+  e2: "estradiol",
+  vitamine_b12: "b12",
+};
+
+const normalizeInsightKey = (value: string): string =>
+  normalizeLoose(value || "")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
 const resolveMarkerInsight = (marker: BloodReportMarkerSnapshot): MarkerInsightTemplate => {
-  const markerId = normalizeLoose(marker.markerId || "").replace(/\s+/g, "_");
-  if (markerId && MARKER_INSIGHT_LIBRARY[markerId]) return MARKER_INSIGHT_LIBRARY[markerId];
-  const nameKey = normalizeLoose(marker.name || "").replace(/\s+/g, "_");
-  if (nameKey && MARKER_INSIGHT_LIBRARY[nameKey]) return MARKER_INSIGHT_LIBRARY[nameKey];
+  const candidateKeys = [normalizeInsightKey(marker.markerId || ""), normalizeInsightKey(marker.name || "")].filter(Boolean);
+  for (const key of candidateKeys) {
+    if (MARKER_INSIGHT_LIBRARY[key]) return MARKER_INSIGHT_LIBRARY[key];
+    const alias = MARKER_INSIGHT_ALIASES[key];
+    if (alias && MARKER_INSIGHT_LIBRARY[alias]) return MARKER_INSIGHT_LIBRARY[alias];
+    if (key.includes("apo") && key.includes("a1")) return MARKER_INSIGHT_LIBRARY.apoa1;
+    if (key.includes("transferrine") && key.includes("sat")) return MARKER_INSIGHT_LIBRARY.transferrine_saturation;
+    if (key.includes("t4") && key.includes("libre")) return MARKER_INSIGHT_LIBRARY.t4_libre;
+  }
   return genericMarkerInsight(marker.name || "Ce marqueur");
 };
 
@@ -981,9 +1132,9 @@ const deriveMarkerReferenceRows = (snapshots?: BloodReportMarkerSnapshot[]): Mar
           : marker.normalRange
           ? `Zone normale ${marker.normalRange}${unit}`
           : undefined,
-        definition: insight.definition,
-        positiveImpact: insight.positiveImpact,
-        negativeImpact: insight.negativeImpact,
+        definition: applyFrenchAccentFixes(insight.definition),
+        positiveImpact: applyFrenchAccentFixes(insight.positiveImpact),
+        negativeImpact: applyFrenchAccentFixes(insight.negativeImpact),
       } satisfies MarkerReferenceRow;
     })
     .sort((a, b) => {
@@ -1002,7 +1153,7 @@ const deriveMarkerReferenceRows = (snapshots?: BloodReportMarkerSnapshot[]): Mar
 const renderExtractedMarkersPanel = (snapshots?: BloodReportMarkerSnapshot[]): string => {
   const rows = deriveMarkerReferenceRows(snapshots);
   if (!rows.length) {
-    return `<p class="score-intro">Aucun marqueur extrait n'est disponible dans cette version du rapport. Relance la generation avec le lot de biomarqueurs pour remplir cet onglet.</p>`;
+    return `<p class="score-intro">Aucun marqueur extrait n'est disponible dans cette version du rapport. Relance la génération avec le lot de biomarqueurs pour remplir cet onglet.</p>`;
   }
 
   const cards = rows
@@ -1019,7 +1170,7 @@ const renderExtractedMarkersPanel = (snapshots?: BloodReportMarkerSnapshot[]): s
         ${markerIdLabel}
         ${valueLabel}
         ${rangeLabel}
-        <p><strong>Definition:</strong> ${escapeHtml(row.definition)}</p>
+        <p><strong>Définition:</strong> ${escapeHtml(row.definition)}</p>
         <p><strong>Quand c'est bien:</strong> ${escapeHtml(row.positiveImpact)}</p>
         <p><strong>Quand ce n'est pas bien:</strong> ${escapeHtml(row.negativeImpact)}</p>
       </article>`;
@@ -1027,7 +1178,7 @@ const renderExtractedMarkersPanel = (snapshots?: BloodReportMarkerSnapshot[]): s
     .join("\n");
 
   return `
-    <p class="score-intro">Dans cet onglet, je detaille chaque marqueur extrait avec sa definition et ses consequences concretes quand il est stable ou degrade.</p>
+    <p class="score-intro">Dans cet onglet, je détaille chaque marqueur extrait avec sa définition et ses conséquences concrètes quand il est stable ou dégradé.</p>
     <div class="marker-grid">
       ${cards}
     </div>
@@ -1117,8 +1268,6 @@ const renderCompositeScoresPanel = (riskProfile?: ComprehensiveRiskProfile): str
     ),
   ].join("\n");
 
-  // Only show Pré-diabète card when core glycemic markers exist (HbA1c, glycémie, insuline)
-  // NEVER display a diabetes diagnosis based only on triglycerides
   const prediabetesHasCoreData = riskProfile.prediabetes.markers_used?.some(
     (m: string) => m === "hba1c" || m === "glycemie_jeun" || m === "insuline_jeun",
   );
@@ -1164,33 +1313,37 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
     return `<p style="margin:0;color:${CLAUDE_THEME.muted};font-size:15px;line-height:1.8;">Le radar des scores n'a pas pu être construit automatiquement sur cette version du rapport. Je te recommande de relancer la génération pour obtenir la cartographie complète de chaque biomarqueur.</p>`;
   }
 
-  const topRows = rows.slice(0, Math.min(10, rows.length));
+  const radarRows = rows.slice(0, Math.min(24, rows.length));
+  const axisCount = Math.max(1, radarRows.length);
   const size = 520;
   const center = size / 2;
   const radius = 180;
-  const toAngle = (index: number) => (-Math.PI / 2) + (index * Math.PI * 2) / topRows.length;
+  const toAngle = (index: number) => (-Math.PI / 2) + (index * Math.PI * 2) / axisCount;
   const polar = (angle: number, r: number) => ({
     x: center + Math.cos(angle) * r,
     y: center + Math.sin(angle) * r,
   });
+  const labelRadius = axisCount > 14 ? radius + 30 : radius + 24;
+  const labelFontSize = axisCount > 18 ? 8 : axisCount > 14 ? 9 : 11;
+  const maxLabelLength = axisCount > 18 ? 16 : axisCount > 14 ? 18 : 26;
 
   const gridRings = [0.25, 0.5, 0.75, 1].map((factor) => {
     const r = radius * factor;
     return `<circle cx="${center}" cy="${center}" r="${r.toFixed(2)}" fill="none" stroke="#d7c6af" stroke-width="1" />`;
   });
 
-  const axisLines = topRows.map((row, index) => {
+  const axisLines = radarRows.map((row, index) => {
     const angle = toAngle(index);
     const outer = polar(angle, radius);
-    const label = polar(angle, radius + 24);
-    const shortName = row.name.length > 26 ? `${row.name.slice(0, 23)}...` : row.name;
+    const label = polar(angle, labelRadius);
+    const shortName = row.name.length > maxLabelLength ? `${row.name.slice(0, maxLabelLength - 3)}...` : row.name;
     return `
       <line x1="${center}" y1="${center}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="#d7c6af" stroke-width="1" />
-      <text x="${label.x.toFixed(2)}" y="${label.y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#6f6254">${escapeHtml(shortName)}</text>
+      <text x="${label.x.toFixed(2)}" y="${label.y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" font-size="${labelFontSize}" fill="#6f6254">${escapeHtml(shortName)}</text>
     `;
   });
 
-  const polygonPoints = topRows
+  const polygonPoints = radarRows
     .map((row, index) => {
       const angle = toAngle(index);
       const point = polar(angle, (radius * row.score) / 100);
@@ -1198,7 +1351,7 @@ const renderBiomarkerRadarPanel = (rows: BiomarkerScoreRow[]): string => {
     })
     .join(" ");
 
-  const valueDots = topRows.map((row, index) => {
+  const valueDots = radarRows.map((row, index) => {
     const angle = toAngle(index);
     const point = polar(angle, (radius * row.score) / 100);
     return `<circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="4.5" fill="#c06f2e" />`;

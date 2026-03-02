@@ -136,35 +136,35 @@ const SECTION_TITLES: Record<string, string> = {
 const DEFINITION_HINT_REGEX = /\b(?:mesure|indique|reflete|represente|correspond|c est|c'est|sert a|permet de|estime|hormone|enzyme)\b/i;
 
 const MARKER_DEFINITION_BY_KEY: Record<string, string> = {
-  hdl: "ce marqueur mesure ton cholesterol protecteur qui ramene l'exces de lipides vers le foie",
-  ldl: "ce marqueur mesure le cholesterol transporte vers les tissus, utile pour estimer la charge atherogene",
-  triglycerides: "ce marqueur mesure les graisses circulantes issues du metabolisme energetique et hepatique",
-  cholesteroltotal: "ce marqueur mesure la charge totale de cholesterol circulant dans ton sang",
-  apoa1: "ce marqueur mesure la principale proteine du HDL, centrale pour le transport inverse du cholesterol",
-  apob: "ce marqueur mesure le nombre de particules atherogenes impliquant le risque cardiovasculaire",
-  lpa: "ce marqueur mesure une lipoproteine a risque genetique qui augmente le risque cardiovasculaire",
-  alt: "ce marqueur mesure une enzyme hepatique qui monte quand les cellules du foie sont irritees",
-  ast: "ce marqueur mesure une enzyme presente dans le foie et le muscle, utile pour differencier la charge tissulaire",
-  ggt: "ce marqueur mesure une enzyme hepatobiliaire sensible au stress oxydatif et a la surcharge hepatique",
-  creatinine: "ce marqueur mesure un dechet musculaire utilise pour estimer la fonction renale",
-  egfr: "ce marqueur estime le debit de filtration de tes reins",
-  tsh: "ce marqueur mesure le signal hypophysaire qui pilote l'activite de ta thyroide",
-  t4libre: "ce marqueur mesure la reserve hormonale thyroidienne disponible pour conversion en T3",
-  t3libre: "ce marqueur mesure l'hormone thyroidienne active qui regle ton niveau energetique",
-  t3reverse: "ce marqueur mesure la forme inactive de T3 qui freine le signal thyroidien",
-  testosteronelibre: "ce marqueur mesure la fraction de testosterone biologiquement active",
-  testosteronetotale: "ce marqueur mesure la quantite totale de testosterone circulante",
-  estradiol: "ce marqueur mesure l'estrogene principal qui module l'equilibre hormonal et cardiovasculaire",
+  hdl: "ce marqueur mesure ton cholestérol protecteur qui ramène l'excès de lipides vers le foie",
+  ldl: "ce marqueur mesure le cholestérol transporté vers les tissus, utile pour estimer la charge athérogène",
+  triglycerides: "ce marqueur mesure les graisses circulantes issues du métabolisme énergétique et hépatique",
+  cholesteroltotal: "ce marqueur mesure la charge totale de cholestérol circulant dans ton sang",
+  apoa1: "ce marqueur mesure la principale protéine du HDL, centrale pour le transport inverse du cholestérol",
+  apob: "ce marqueur mesure le nombre de particules athérogènes impliquant le risque cardiovasculaire",
+  lpa: "ce marqueur mesure une lipoprotéine à risque génétique qui augmente le risque cardiovasculaire",
+  alt: "ce marqueur mesure une enzyme hépatique qui monte quand les cellules du foie sont irritées",
+  ast: "ce marqueur mesure une enzyme présente dans le foie et le muscle, utile pour différencier la charge tissulaire",
+  ggt: "ce marqueur mesure une enzyme hépatobiliaire sensible au stress oxydatif et à la surcharge hépatique",
+  creatinine: "ce marqueur mesure un déchet musculaire utilisé pour estimer la fonction rénale",
+  egfr: "ce marqueur estime le débit de filtration de tes reins",
+  tsh: "ce marqueur mesure le signal hypophysaire qui pilote l'activité de ta thyroïde",
+  t4libre: "ce marqueur mesure la réserve hormonale thyroïdienne disponible pour conversion en T3",
+  t3libre: "ce marqueur mesure l'hormone thyroïdienne active qui règle ton niveau énergétique",
+  t3reverse: "ce marqueur mesure la forme inactive de T3 qui freine le signal thyroïdien",
+  testosteronelibre: "ce marqueur mesure la fraction de testostérone biologiquement active",
+  testosteronetotale: "ce marqueur mesure la quantité totale de testostérone circulante",
+  estradiol: "ce marqueur mesure l'œstrogène principal qui module l'équilibre hormonal et cardiovasculaire",
   prolactine: "ce marqueur mesure une hormone hypophysaire qui influence l'axe gonadique",
-  dhes: "ce marqueur mesure un precurseur androgenique produit par les glandes surrenales",
-  igf1: "ce marqueur mesure le signal anabolique relaye par l'hormone de croissance",
-  crpus: "ce marqueur mesure l'inflammation de bas grade associee au risque cardiometabolique",
-  ferritine: "ce marqueur mesure tes reserves de fer",
-  ferserique: "ce marqueur mesure le fer circulant disponible a court terme",
+  dhes: "ce marqueur mesure un précurseur androgénique produit par les glandes surrénales",
+  igf1: "ce marqueur mesure le signal anabolique relayé par l'hormone de croissance",
+  crpus: "ce marqueur mesure l'inflammation de bas grade associée au risque cardiométabolique",
+  ferritine: "ce marqueur mesure tes réserves de fer",
+  ferserique: "ce marqueur mesure le fer circulant disponible à court terme",
   transferrinesat: "ce marqueur mesure le pourcentage de saturation du transporteur de fer",
-  b12: "ce marqueur mesure une vitamine cle pour les globules rouges, le systeme nerveux et la methylation",
-  vitamined: "ce marqueur mesure une hormone-vitamine cle pour l'immunite, les hormones et la performance",
-  homocysteine: "ce marqueur mesure un metabolite de methylation associe au risque cardiovasculaire",
+  b12: "ce marqueur mesure une vitamine clé pour les globules rouges, le système nerveux et la méthylation",
+  vitamined: "ce marqueur mesure une hormone-vitamine clé pour l'immunité, les hormones et la performance",
+  homocysteine: "ce marqueur mesure un métabolite de méthylation associé au risque cardiovasculaire",
 };
 
 const stripForbiddenStyleTokens = (value: string): string =>
@@ -174,6 +174,51 @@ const stripForbiddenStyleTokens = (value: string): string =>
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
     .replace(/[\u{2600}-\u{27BF}]/gu, "")
     .replace(/[\uFE0E\uFE0F]/g, "");
+
+const FRENCH_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bpremiere\b/gi, "première"],
+  [/\bpremieres\b/gi, "premières"],
+  [/\bdeuxieme\b/gi, "deuxième"],
+  [/\btroisieme\b/gi, "troisième"],
+  [/\bmetabolique\b/gi, "métabolique"],
+  [/\bmetaboliques\b/gi, "métaboliques"],
+  [/\bhepatique\b/gi, "hépatique"],
+  [/\bhepatiques\b/gi, "hépatiques"],
+  [/\brecuperation\b/gi, "récupération"],
+  [/\brecuperer\b/gi, "récupérer"],
+  [/\bentrainement\b/gi, "entraînement"],
+  [/\bentrainements\b/gi, "entraînements"],
+  [/\bdetaille\b/gi, "détaillé"],
+  [/\bdetaillee\b/gi, "détaillée"],
+  [/\bdetaillees\b/gi, "détaillées"],
+  [/\bprecisement\b/gi, "précisément"],
+  [/\bqualite\b/gi, "qualité"],
+  [/\bdonnees\b/gi, "données"],
+  [/\bsynthese\b/gi, "synthèse"],
+  [/\bsupplements\b/gi, "suppléments"],
+  [/\breferences\b/gi, "références"],
+  [/\bbibliotheque\b/gi, "bibliothèque"],
+  [/\bprelevement\b/gi, "prélèvement"],
+  [/\banemie\b/gi, "anémie"],
+  [/\bprediabete\b/gi, "pré-diabète"],
+  [/\bthyroide\b/gi, "thyroïde"],
+  [/\bstrategie\b/gi, "stratégie"],
+  [/\bnecessaire\b/gi, "nécessaire"],
+  [/\beleve\b/gi, "élevé"],
+  [/\belevee\b/gi, "élevée"],
+  [/\beleves\b/gi, "élevés"],
+  [/\belevees\b/gi, "élevées"],
+  [/\bdeficit\b/gi, "déficit"],
+  [/\bproteique\b/gi, "protéique"],
+];
+
+const applyFrenchAccentCorrections = (value: string): string => {
+  let next = String(value || "");
+  for (const [pattern, replacement] of FRENCH_TEXT_REPLACEMENTS) {
+    next = next.replace(pattern, replacement);
+  }
+  return next;
+};
 
 function normalizeGuard(value: string): string {
   return String(value || "")
@@ -306,11 +351,15 @@ function injectFirstMentionDefinitions(
     for (const marker of sortedMarkers) {
       const markerName = String(marker.name || "").trim();
       if (!markerName) continue;
+      const markerKey = guardKey(markerName);
       let pattern = accentInsensitivePattern(markerName);
-      const isVitamineD = guardKey(markerName) === "vitamined";
+      const isVitamineD =
+        markerKey === "vitamined" ||
+        (markerKey.includes("vitamine") && markerKey.includes("d")) ||
+        (markerKey.includes("vitamin") && markerKey.includes("d"));
       if (isVitamineD) {
-        // Accept naming variants like "vitamine D3".
-        pattern = `${pattern}(?:\\s*\\d+)?`;
+        // Accept naming variants like "vitamine D3", "vitamin D", "25-OH Vitamine D".
+        pattern = "(?:25\\s*(?:-| )?hydroxy\\s*)?(?:vitamine|vitamin)\\s*d(?:\\s*3)?|25\\s*[- ]?oh\\s*(?:vitamine|vitamin)\\s*d(?:\\s*3)?";
       }
       const matchRegex = new RegExp(pattern, "ig");
       const match = findWholeTermMatch(text, matchRegex);
@@ -342,9 +391,21 @@ function limitRepeatedStatMentions(
 ): Record<string, string> {
   const out: Record<string, string> = { ...sectionsMap };
   const keyTargets = [
-    { markerId: "hdl", label: "HDL hors cible", names: ["hdl"] },
-    { markerId: "triglycerides", label: "triglycerides hors cible", names: ["triglycerides", "triglycérides"] },
-    { markerId: "alt", label: "ALT hors cible", names: ["alt"] },
+    {
+      markerId: "hdl",
+      names: ["hdl"],
+      replacement: "HDL, ce marqueur mesure ton cholestérol protecteur, reste hors cible",
+    },
+    {
+      markerId: "triglycerides",
+      names: ["triglycerides", "triglycérides"],
+      replacement: "Les triglycérides, ce marqueur mesure les graisses circulantes, restent hors cible",
+    },
+    {
+      markerId: "alt",
+      names: ["alt"],
+      replacement: "ALT, ce marqueur mesure une enzyme hépatique, reste hors cible",
+    },
   ];
 
   const guards = keyTargets
@@ -358,7 +419,7 @@ function limitRepeatedStatMentions(
         key: target.markerId,
         detect: new RegExp(`\\b(?:${labelPattern})\\b[\\s\\S]{0,120}?\\b${valuePattern}\\b`, "i"),
         replace: new RegExp(`\\b(?:${labelPattern})\\b[\\s\\S]{0,120}?\\b${valuePattern}\\b\\s*(?:[a-zA-Z%/]+)?`, "gi"),
-        replacement: `${target.label} (deja detaille plus haut)`,
+        replacement: target.replacement,
       };
     })
     .filter(Boolean) as Array<{
@@ -570,7 +631,6 @@ function rebuildSourcesSectionFromCitations(
 ): Record<string, string> {
   const out: Record<string, string> = { ...sectionsMap };
   const sourceLookup = new Map<string, string>();
-  const citationContextById = new Map<string, string>();
 
   for (const line of String(knowledgeContext || "").split(/\r?\n/)) {
     const match = line.match(/\[SRC:([^\]]+)\]\s*(.+)$/i);
@@ -578,6 +638,16 @@ function rebuildSourcesSectionFromCitations(
     const id = String(match[1] || "").trim();
     const raw = String(match[2] || "").trim().replace(/^-+\s*/, "");
     if (!id) continue;
+    sourceLookup.set(id, raw);
+  }
+
+  // Preserve any explicit bibliographic lines that may already exist in the generated sources block.
+  for (const line of String(out.sources || "").split(/\r?\n/)) {
+    const match = line.match(/\[SRC:([^\]]+)\]\s*(.+)$/i);
+    if (!match) continue;
+    const id = String(match[1] || "").trim();
+    const raw = String(match[2] || "").trim().replace(/^-+\s*/, "");
+    if (!id || !raw || sourceLookup.has(id)) continue;
     sourceLookup.set(id, raw);
   }
 
@@ -594,26 +664,11 @@ function rebuildSourcesSectionFromCitations(
       if (!id || seen.has(id)) continue;
       seen.add(id);
       orderedIds.push(id);
-      const sentenceParts = content
-        .split(/(?<=[.!?])\s+|\n+/)
-        .map((part) => part.trim())
-        .filter(Boolean);
-      const sentence = sentenceParts.find((part) => part.includes(`[SRC:${id}]`));
-      if (sentence && !citationContextById.has(id)) {
-        citationContextById.set(
-          id,
-          sentence
-            .replace(/\[SRC:[^\]]+\]/g, "")
-            .replace(/\s+/g, " ")
-            .trim()
-            .slice(0, 220),
-        );
-      }
     }
   }
 
   if (!orderedIds.length) {
-    out.sources = "Aucune source externe citee dans ce rapport.";
+    out.sources = "Aucune source externe citée dans ce rapport.";
     return out;
   }
 
@@ -621,9 +676,7 @@ function rebuildSourcesSectionFromCitations(
     .map((id) => {
       const raw = sourceLookup.get(id);
       if (!raw) {
-        const context = citationContextById.get(id);
-        if (context) return `[SRC:${id}] Référence citée: ${context}.`;
-        return `[SRC:${id}] Référence citée dans le rapport (détail non retrouvé dans le contexte KB).`;
+        return `[SRC:${id}] Référence citée dans le rapport. Métadonnées bibliographiques non disponibles dans le contexte transmis.`;
       }
       const withoutPrefix = raw.replace(new RegExp(`^\\[SRC:${escapeRegExp(id)}\\]\\s*`, "i"), "").trim();
       return `[SRC:${id}] ${withoutPrefix || "Référence citée dans le rapport."}`;
@@ -665,10 +718,12 @@ REGLES ABSOLUES:
 - Interdiction absolue de listes a puces, listes numerotees, tableaux markdown.
 - Cite [SRC:ID] uniquement si l'ID existe dans le contexte fourni. Cite le maximum de sources disponibles.
 - Ton expert, clair, concret, sans jargon inutile.
-- DEFINITION DE CHAQUE MARQUEUR: Quand tu mentionnes un marqueur pour la premiere fois dans une section, explique brievement ce qu'il mesure et pourquoi c'est important. Exemple: "Le HDL, c'est ton cholesterol protecteur — celui qui evacue les graisses des arteres vers le foie. A 19 mg/dL, le tien est effondre."
+- IMPORTANT: Tu ecris en francais avec TOUS les accents (é, è, ê, à, ù, ç, ô, î, û). Ne jamais omettre les accents.
+  Exemples obligatoires: métabolique, hépatique, première, détaillé, précisément, récupération, entraînement.
+- DEFINITION DE CHAQUE MARQUEUR: Quand tu mentionnes un marqueur pour la premiere fois dans une section, explique brievement ce qu'il mesure et pourquoi c'est important. Exemple: "Le HDL, c'est ton cholesterol protecteur - celui qui evacue les graisses des arteres vers le foie. A 19 mg/dL, le tien est effondre."
 - INTERDICTION ABSOLUE de speculations sur l'utilisation de steroides, substances anabolisantes, ou produits dopants. Ne jamais insinuer, suggerer ou mentionner cette possibilite, meme comme "cause plausible". Focus uniquement sur les causes metaboliques, nutritionnelles, genetiques et liees au mode de vie.
 - REGLE NIACINE: Ne JAMAIS recommander la niacine (vitamine B3) si l'ALT est > 40 U/L. La niacine est hepatotoxique et contre-indiquee en cas de souffrance hepatique.
-- EVITER LA REPETITION: Ne repete pas les memes statistiques (valeur, pourcentage d'ecart) dans plusieurs sections. Si un marqueur a deja ete detaille dans une section precedente, fais reference a cette section au lieu de redonner tous les chiffres.
+- EVITER LA REPETITION: Ne repete pas les memes statistiques (valeur, pourcentage d'ecart) dans plusieurs sections. Tu peux rappeler la definition courte d'un marqueur a sa premiere mention dans chaque section, mais sans recopier tous les chiffres deja poses ailleurs. N'ecris jamais "deja detaille plus haut".
 - ORIENTATION DU RAPPORT:
   - Oriente chaque analyse vers la performance, l'anabolisme, la lipolyse et la recomposition corporelle.
   - Utilise un vocabulaire d'expert terrain: volume tolerable, recuperation, synthese proteique, flexibilite metabolique, adherence.
@@ -857,7 +912,7 @@ ${ctx.knowledgeContext ? `\nSOURCES DISPONIBLES:\n${ctx.knowledgeContext}` : ""}
 
 STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.
 TUTOIEMENT: OBLIGATOIRE. Utilise UNIQUEMENT "tu", "ton", "ta", "tes", "toi". JAMAIS "il", "elle", "le client", "Alex", "vous".
-DEFINITIONS: Quand tu mentionnes un marqueur pour la premiere fois, explique ce qu'il mesure en 1 phrase simple.`;
+DEFINITIONS: Quand tu mentionnes un marqueur pour la premiere fois dans CHAQUE section generee, explique ce qu'il mesure en 1 phrase simple.`;
 }
 
 function buildBatch2Prompt(ctx: BatchContext): string {
@@ -960,6 +1015,7 @@ ${ctx.knowledgeContext ? `\nSOURCES DISPONIBLES:\n${ctx.knowledgeContext}` : ""}
 
 STYLE: Prose narrative dense. Interdiction absolue de listes a puces, listes numerotees, tableaux. Uniquement paragraphes complets.
 TUTOIEMENT: OBLIGATOIRE. Utilise UNIQUEMENT "tu", "ton", "ta", "tes", "toi". JAMAIS "il", "elle", "le client", "Alex", "vous".
+DEFINITIONS: Dans chaque section de ce batch, a la premiere mention d'un marqueur, ajoute une phrase courte "ce marqueur mesure...". N'ecris jamais "deja detaille plus haut".
 STEROIDES: INTERDIT de mentionner, insinuer ou speculer sur l'utilisation de steroides ou produits dopants.`;
 }
 
@@ -1611,7 +1667,10 @@ export async function generateParallelHtmlReport(
   sectionsMap = sanitizeNarrativeTone(sectionsMap);
   sectionsMap = rebuildSourcesSectionFromCitations(sectionsMap, ctx.knowledgeContext || "");
   sectionsMap = Object.fromEntries(
-    Object.entries(sectionsMap).map(([key, value]) => [key, stripForbiddenStyleTokens(value || "")]),
+    Object.entries(sectionsMap).map(([key, value]) => [
+      key,
+      stripForbiddenStyleTokens(applyFrenchAccentCorrections(value || "")),
+    ]),
   );
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

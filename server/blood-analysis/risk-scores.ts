@@ -785,19 +785,17 @@ export function calculatePrediabetesRisk(
     });
   }
 
-  // Core glycemic markers needed to make any prediabetes claim
+  // Core glycemic markers needed to make any prediabetes claim.
   const hasCoreGlycemicData = hba1c !== null || glucose !== null || insulin !== null;
 
   // Calculate final score (inverted - lower risk = higher score)
   const rawRisk = maxPoints > 0 ? (riskPoints / maxPoints) * 100 : 50;
   let score = Math.round(100 - rawRisk);
-  const level = getRiskLevel(score);
 
-  // Generate interpretation — NEVER claim diabetes/prediabetes without glycemic data
+  // Generate interpretation — never claim diabetes/prediabetes without glycemic data.
   let interpretation = "";
   if (!hasCoreGlycemicData) {
-    // Only indirect markers (TG, HOMA-IR) — cannot diagnose prediabetes
-    score = Math.max(score, 50); // Floor at 50 to avoid alarming labels
+    score = Math.max(score, 50);
     interpretation = `DONNÉES INSUFFISANTES pour évaluer le risque de pré-diabète. Il manque l'HbA1c, la glycémie à jeun et l'insuline à jeun. ${
       tg !== null && tg > 150
         ? "Le ratio TG/HDL élevé suggère un risque de résistance à l'insuline, mais un bilan glycémique complet est indispensable pour conclure."
@@ -817,6 +815,8 @@ export function calculatePrediabetesRisk(
     interpretation = "RISQUE TRÈS ÉLEVÉ de pré-diabète ou diabète selon tes marqueurs glycémiques. Consultation médicale URGENTE nécessaire pour diagnostic et prise en charge.";
   }
 
+  const level = getRiskLevel(score);
+
   // Generate recommendations based on factors
   const recommendations: string[] = [];
 
@@ -824,7 +824,7 @@ export function calculatePrediabetesRisk(
     recommendations.push("PRIORITÉ : Ajouter HbA1c, glycémie à jeun et insuline à jeun au prochain bilan");
     recommendations.push("Calcul du HOMA-IR nécessaire pour quantifier la résistance à l'insuline");
     if (tg !== null && tg > 150) {
-      recommendations.push("Réduire les glucides raffinés — tes triglycérides élevés suggèrent une sensibilité insulinique réduite");
+      recommendations.push("Réduire les glucides raffinés - tes triglycérides élevés suggèrent une sensibilité insulinique réduite");
     }
   } else {
     if (score < 85) {
@@ -1062,7 +1062,7 @@ export function calculateCardiovascularRisk(
   if (ldl !== null) {
     markersUsed.push("ldl");
     let points = 0;
-    if (ldl >= 190) points = 15;
+    if (ldl >= 190) points = 16;
     else if (ldl >= 160) points = 12;
     else if (ldl >= 130) points = 8;
     else if (ldl >= 100) points = 4;
@@ -1123,9 +1123,12 @@ export function calculateCardiovascularRisk(
   if (hdl !== null) {
     markersUsed.push("hdl");
     let points = 0;
-    if (hdl < 40) points = 10;
-    else if (hdl < 50) points = 5;
-    else if (hdl >= 60) points = -5; // Protective
+    // Dominant cardiovascular weight.
+    if (hdl < 25) points = 28;
+    else if (hdl < 35) points = 22;
+    else if (hdl < 40) points = 18;
+    else if (hdl < 50) points = 10;
+    else if (hdl >= 60) points = -6; // Protective
 
     riskPoints += points;
     factors.push({
@@ -1138,14 +1141,43 @@ export function calculateCardiovascularRisk(
     });
   }
 
+  // ApoA1 (protective HDL structural protein)
+  const apoA1 = getMarkerValue(markers, "apo_a1") ?? getMarkerValue(markers, "apoa1");
+  if (apoA1 !== null) {
+    markersUsed.push("apo_a1");
+    let points = 0;
+    if (apoA1 < 90) points = 16;
+    else if (apoA1 < 120) points = 10;
+    else if (apoA1 < 140) points = 6;
+    else if (apoA1 >= 170) points = -3;
+
+    riskPoints += points;
+    factors.push({
+      marker: "Apo A1",
+      value: apoA1,
+      unit: "mg/dL",
+      contribution: points < 0 ? "positive" : points >= 10 ? "negative" : points > 0 ? "neutral" : "positive",
+      weight: Math.abs(points),
+      explanation:
+        apoA1 >= 170
+          ? "Apo A1 élevé, profil HDL protecteur."
+          : apoA1 >= 140
+          ? "Apo A1 dans la zone optimale."
+          : apoA1 >= 120
+          ? "Apo A1 suboptimal, protection HDL incomplète."
+          : "Apo A1 bas, déficit de protection cardiovasculaire."
+    });
+  }
+
   // Triglycérides
   const tg = getMarkerValue(markers, "triglycerides");
   if (tg !== null) {
     markersUsed.push("triglycerides");
     let points = 0;
     if (tg >= 500) points = 12;
-    else if (tg >= 200) points = 8;
-    else if (tg >= 150) points = 4;
+    else if (tg >= 300) points = 10;
+    else if (tg >= 200) points = 7;
+    else if (tg >= 150) points = 5;
 
     riskPoints += points;
     factors.push({
@@ -1235,8 +1267,8 @@ export function calculateCardiovascularRisk(
     });
   }
 
-  // Calculate score (max ~100 points, inverted)
-  const maxPoints = 100;
+  // Calculate score (weighted model, inverted)
+  const maxPoints = 105;
   const score = Math.max(0, Math.min(100, Math.round(100 - (riskPoints / maxPoints) * 100)));
   const level = getRiskLevel(score);
 
@@ -1446,6 +1478,9 @@ export function calculateThyroidScore(
   const factors: RiskFactor[] = [];
   let totalScore = 100;
   const markersUsed: string[] = [];
+  let hasT3Libre = false;
+  let hasT3Reverse = false;
+  let hasAntiTpo = false;
 
   // TSH (most important screening)
   const tsh = getMarkerValue(markers, "tsh");
@@ -1523,6 +1558,7 @@ export function calculateThyroidScore(
   // T3 libre
   const t3 = getMarkerValue(markers, "t3_libre");
   if (t3 !== null) {
+    hasT3Libre = true;
     markersUsed.push("t3_libre");
     let deduction = 0;
     let explanation = "";
@@ -1558,6 +1594,7 @@ export function calculateThyroidScore(
   // T3 reverse
   const rt3 = getMarkerValue(markers, "t3_reverse");
   if (rt3 !== null) {
+    hasT3Reverse = true;
     markersUsed.push("t3_reverse");
     let deduction = 0;
     let explanation = "";
@@ -1587,6 +1624,7 @@ export function calculateThyroidScore(
   // Anti-TPO
   const antiTpo = getMarkerValue(markers, "anti_tpo");
   if (antiTpo !== null) {
+    hasAntiTpo = true;
     markersUsed.push("anti_tpo");
     let deduction = 0;
     let explanation = "";
@@ -1613,6 +1651,21 @@ export function calculateThyroidScore(
       contribution: deduction > 10 ? "negative" : deduction > 0 ? "neutral" : "positive",
       weight: deduction,
       explanation
+    });
+  }
+
+  // Guardrail: avoid over-optimistic thyroid score when panel coverage is partial.
+  const missingContextMarkers = [hasT3Libre, hasT3Reverse, hasAntiTpo].filter((present) => !present).length;
+  if (missingContextMarkers > 0 && totalScore > 70) {
+    const completenessPenalty = Math.min(15, missingContextMarkers * 5);
+    totalScore -= completenessPenalty;
+    factors.push({
+      marker: "Complétude thyroïdienne",
+      value: 3 - missingContextMarkers,
+      unit: "/3",
+      contribution: "neutral",
+      weight: completenessPenalty,
+      explanation: `Panel partiel: ${missingContextMarkers} marqueur${missingContextMarkers > 1 ? "s" : ""} clé${missingContextMarkers > 1 ? "s" : ""} non renseigné${missingContextMarkers > 1 ? "s" : ""}. Le score est pondéré à la baisse pour éviter une lecture trop optimiste.`,
     });
   }
 
@@ -2810,7 +2863,6 @@ export function calculateMetabolicEfficiencyScore(
 export function calculateOverallHealthScore(
   riskScores: Omit<ComprehensiveRiskProfile, 'overallHealth' | 'timestamp'>
 ): RiskScore {
-  // Only include prediabetes in overall if core glycemic data exists
   const prediabetesHasCoreData = riskScores.prediabetes.markers_used?.some(
     (m: string) => m === "hba1c" || m === "glycemie_jeun" || m === "insuline_jeun",
   );
