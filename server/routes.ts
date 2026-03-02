@@ -2488,35 +2488,67 @@ export async function registerRoutes(
       results.storagePool = { ok: false, error: e.message };
     }
 
-    // Test 2: fresh pool with SSL
+    // Test 2: ssl: { rejectUnauthorized: false }
     try {
       const { Pool } = await import("pg");
-      const freshPool = new Pool({
-        connectionString: databaseUrl,
-        ssl: databaseUrl.includes("render.com") ? { rejectUnauthorized: false } : false,
-      });
+      const p2 = new Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 });
       const t0 = Date.now();
-      const r = await freshPool.query("SELECT 1 as ok");
-      results.freshPool = { ok: true, ms: Date.now() - t0, rows: r.rows };
-      await freshPool.end();
+      await p2.query("SELECT 1 as ok");
+      results.sslRejectFalse = { ok: true, ms: Date.now() - t0 };
+      await p2.end();
     } catch (e: any) {
-      results.freshPool = { ok: false, error: e.message };
+      results.sslRejectFalse = { ok: false, error: e.message };
     }
 
-    // Test 3: fresh pool WITHOUT SSL
+    // Test 3: ssl: true
     try {
       const { Pool } = await import("pg");
-      const noSslPool = new Pool({
-        connectionString: databaseUrl,
-        ssl: false,
-        connectionTimeoutMillis: 5000,
-      });
+      const p3 = new Pool({ connectionString: databaseUrl, ssl: true, connectionTimeoutMillis: 8000 });
       const t0 = Date.now();
-      const r = await noSslPool.query("SELECT 1 as ok");
-      results.noSslPool = { ok: true, ms: Date.now() - t0, rows: r.rows };
-      await noSslPool.end();
+      await p3.query("SELECT 1 as ok");
+      results.sslTrue = { ok: true, ms: Date.now() - t0 };
+      await p3.end();
     } catch (e: any) {
-      results.noSslPool = { ok: false, error: e.message };
+      results.sslTrue = { ok: false, error: e.message };
+    }
+
+    // Test 4: sslmode=require in URL
+    try {
+      const { Pool } = await import("pg");
+      const sslUrl = databaseUrl.includes("?") ? databaseUrl + "&sslmode=require" : databaseUrl + "?sslmode=require";
+      const p4 = new Pool({ connectionString: sslUrl, connectionTimeoutMillis: 8000 });
+      const t0 = Date.now();
+      await p4.query("SELECT 1 as ok");
+      results.sslmodeRequire = { ok: true, ms: Date.now() - t0 };
+      await p4.end();
+    } catch (e: any) {
+      results.sslmodeRequire = { ok: false, error: e.message };
+    }
+
+    // Test 5: no SSL
+    try {
+      const { Pool } = await import("pg");
+      const p5 = new Pool({ connectionString: databaseUrl, ssl: false, connectionTimeoutMillis: 5000 });
+      const t0 = Date.now();
+      await p5.query("SELECT 1 as ok");
+      results.noSsl = { ok: true, ms: Date.now() - t0 };
+      await p5.end();
+    } catch (e: any) {
+      results.noSsl = { ok: false, error: e.message };
+    }
+
+    // Test 6: internal URL (no -a suffix) with SSL
+    try {
+      const { Pool } = await import("pg");
+      const internalUrl = databaseUrl.replace("-a.oregon-postgres.render.com", ".oregon-postgres.render.com");
+      results.triedInternalUrl = internalUrl.substring(0, 50) + "...";
+      const p6 = new Pool({ connectionString: internalUrl, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 });
+      const t0 = Date.now();
+      await p6.query("SELECT 1 as ok");
+      results.internalUrlSsl = { ok: true, ms: Date.now() - t0 };
+      await p6.end();
+    } catch (e: any) {
+      results.internalUrlSsl = { ok: false, error: e.message };
     }
 
     res.json(results);
